@@ -98,6 +98,37 @@ router.post('/import/json', upload.single('jsonFile'), async (req, res) => {
   }
 });
 
+// Import studies from Excel file upload
+router.post('/import/excel', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    
+    const filePath = req.file.path;
+    console.log(`Received Excel file: ${filePath}`);
+    
+    // Import the studies from the Excel file
+    const result = await importStudiesFromExcel(filePath);
+    
+    // Clean up the file after import
+    fs.unlinkSync(filePath);
+    
+    return res.status(200).json({
+      success: true,
+      message: `Successfully imported ${result.success} out of ${result.total} studies`,
+      total: result.total,
+      success: result.success
+    });
+  } catch (error: any) {
+    console.error('Error importing Excel file:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'An error occurred during import'
+    });
+  }
+});
+
 // Import from attached files in the project
 router.post('/import/attached', async (req, res) => {
   try {

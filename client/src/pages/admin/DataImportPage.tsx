@@ -102,13 +102,13 @@ export default function DataImportPage() {
       const data = await response.json();
 
       setImportStats({
-        total: response.total || 0,
-        success: response.success || 0,
+        total: data.total || 0,
+        success: data.success || 0,
       });
 
       toast({
         title: "Import successful",
-        description: `Successfully imported ${response.success} out of ${response.total} studies.`,
+        description: `Successfully imported ${data.success} out of ${data.total} studies.`,
       });
     } catch (error) {
       console.error('Import error:', error);
@@ -142,22 +142,29 @@ export default function DataImportPage() {
     setImportStats(null);
 
     try {
-      const response = await apiRequest('/api/import/googlesheet', {
+      const response = await fetch('/api/import/googlesheet', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ url: googleSheetUrl }),
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Import failed: ${response.status} ${errorText || response.statusText}`);
+      }
+      
+      const data = await response.json();
 
       setImportStats({
-        total: response.total || 0,
-        success: response.success || 0,
+        total: data.total || 0,
+        success: data.success || 0,
       });
 
       toast({
         title: "Import successful",
-        description: `Successfully imported ${response.success} out of ${response.total} studies.`,
+        description: `Successfully imported ${data.success} out of ${data.total} studies.`,
       });
     } catch (error) {
       console.error('Google Sheet import error:', error);
