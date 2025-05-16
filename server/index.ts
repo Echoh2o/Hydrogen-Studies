@@ -66,6 +66,11 @@ app.use((req, res, next) => {
     const { updateSchemaWithHealthFields } = await import('./update-health-fields');
     await updateSchemaWithHealthFields();
     console.log('Successfully initialized health conditions and body systems fields');
+    
+    // Add hydrogen research database specific fields
+    const { addHydrogenResearchFields } = await import('../shared/schema-hydrogen-fields');
+    await addHydrogenResearchFields();
+    console.log('Successfully initialized hydrogen research database fields');
   } catch (error) {
     console.error('Error initializing database tables:', error);
   }
