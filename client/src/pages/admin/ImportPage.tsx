@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ImportForm } from '@/components/admin/ImportForm';
 import ExcelImportForm from '@/components/admin/ExcelImportForm';
 import SimpleImportForm from '@/components/admin/SimpleImportForm';
@@ -6,8 +6,51 @@ import UrlScraperForm from '@/components/admin/UrlScraperForm';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ImportPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [scraperId, setScraperId] = useState<string | null>(null);
+  
+  // Mutation to start the scraper
+  const startScraperMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/scraper/start");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Scraper started",
+        description: "The hydrogen studies scraper has been started successfully",
+      });
+      // Set a polling interval to check status
+      queryClient.invalidateQueries({ queryKey: ['/api/scraper/status'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to start scraper",
+        description: error.message || "An error occurred while starting the scraper",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Query to get scraper status
+  const { data: scraperStatus, isLoading: isStatusLoading } = useQuery({
+    queryKey: ['/api/scraper/status'],
+    refetchInterval: scraperId ? 5000 : false, // Poll every 5 seconds if we have a scraper ID
+    enabled: !!scraperId
+  });
+  
+  const handleStartScraper = () => {
+    startScraperMutation.mutate();
+  };
+  
   return (
     <div className="container mx-auto py-8 max-w-4xl">
       <div className="mb-8 flex items-center justify-between">
@@ -66,11 +109,21 @@ export default function ImportPage() {
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-4">Alternative Import Methods</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline" className="h-auto p-4 justify-start" onClick={() => alert('Starting scraper...')}>
-              <div className="text-left">
-                <div className="font-medium">Run Hydrogen Studies Scraper</div>
-                <div className="text-sm text-muted-foreground">
-                  Automatically discover and import studies from hydrogenstudies.com
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 justify-start" 
+              onClick={handleStartScraper}
+              disabled={startScraperMutation.isPending || !!scraperId}
+            >
+              <div className="text-left flex items-center">
+                {startScraperMutation.isPending && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                <div>
+                  <div className="font-medium">Run Hydrogen Studies Scraper</div>
+                  <div className="text-sm text-muted-foreground">
+                    Automatically discover and import studies from hydrogenstudies.com
+                  </div>
                 </div>
               </div>
             </Button>
@@ -83,6 +136,25 @@ export default function ImportPage() {
               </div>
             </Button>
           </div>
+          
+          {scraperStatus && scraperStatus.status?.isRunning && (
+            <div className="mt-4">
+              <Alert>
+                <AlertTitle>Scraper Running</AlertTitle>
+                <AlertDescription>
+                  <div className="text-sm">
+                    {scraperStatus.status.current?.currentStep || 'Processing...'}
+                    <div className="mt-2 text-xs">
+                      Processed: {scraperStatus.status.current?.processedItems || 0} / 
+                      {scraperStatus.status.current?.totalItems || '?'}
+                      {scraperStatus.status.current?.successItems > 0 && 
+                        ` (${scraperStatus.status.current.successItems} successful)`}
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         </div>
       </div>
     </div>
