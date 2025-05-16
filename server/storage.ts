@@ -112,7 +112,7 @@ export class MemStorage implements IStorage {
       });
     }
 
-    if (filters.category) {
+    if (filters.category && filters.category !== 'all') {
       results = results.filter(study => 
         study.category.toLowerCase() === filters.category.toLowerCase()
       );
