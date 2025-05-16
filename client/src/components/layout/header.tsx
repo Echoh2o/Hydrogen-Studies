@@ -8,6 +8,7 @@ const navigationLinks = [
   { href: "/studies", label: "Studies" },
   { href: "/categories", label: "Categories" },
   { href: "/resources", label: "Resources" },
+  { href: "/learn", label: "Learn" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];

@@ -16,6 +16,7 @@ import Categories from "@/pages/categories";
 import CategoryDetails from "@/pages/category-details";
 import About from "@/pages/about";
 import Resources from "@/pages/resources";
+import Learn from "@/pages/learn";
 import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
 import AdminPage from "@/pages/admin/AdminPage";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/category/:id" component={CategoryDetails} />
       <Route path="/about" component={About} />
       <Route path="/resources" component={Resources} />
+      <Route path="/learn" component={Learn} />
       <Route path="/contact" component={Contact} />
       <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
