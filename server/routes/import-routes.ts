@@ -110,11 +110,15 @@ router.post('/import/attached', async (req, res) => {
       });
     }
     
+    console.log(`Attempting to import from: ${filePath}`);
+    const absolutePath = path.resolve(process.cwd(), filePath);
+    console.log(`Absolute path: ${absolutePath}`);
+    
     // Check if file exists
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(absolutePath)) {
       return res.status(404).json({ 
         success: false, 
-        message: `File not found: ${filePath}` 
+        message: `File not found: ${absolutePath}` 
       });
     }
     
