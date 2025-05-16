@@ -61,6 +61,11 @@ app.use((req, res, next) => {
     const { updateSchema } = await import('./schema-update');
     await updateSchema();
     console.log('Successfully initialized database tables for new features');
+    
+    // Add health conditions and body systems fields support
+    const { updateSchemaWithHealthFields } = await import('./update-health-fields');
+    await updateSchemaWithHealthFields();
+    console.log('Successfully initialized health conditions and body systems fields');
   } catch (error) {
     console.error('Error initializing database tables:', error);
   }
