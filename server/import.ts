@@ -1,6 +1,5 @@
 import fs from 'fs';
-import path from 'path';
-import { parse as parseCsv } from 'csv-parse/sync';
+import { parse as csvParse } from 'csv-parse/sync';
 import { storage } from './storage';
 import { InsertStudy } from '@shared/schema';
 
@@ -10,17 +9,17 @@ import { InsertStudy } from '@shared/schema';
  */
 export async function importStudiesFromJson(filePath: string): Promise<{total: number, success: number}> {
   try {
-    console.log(`Importing studies from JSON file: ${filePath}`);
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    // Read JSON file
+    const fileContent = fs.readFileSync(filePath, 'utf8');
     const studies = JSON.parse(fileContent);
     
     if (!Array.isArray(studies)) {
-      throw new Error('JSON file must contain an array of studies');
+      throw new Error('Invalid JSON format. Expected an array of studies.');
     }
     
     return await importStudies(studies);
   } catch (error) {
-    console.error('Error importing studies from JSON:', error);
+    console.error(`Error importing studies from JSON: ${error.message}`);
     throw error;
   }
 }
@@ -31,38 +30,23 @@ export async function importStudiesFromJson(filePath: string): Promise<{total: n
  */
 export async function importStudiesFromCsv(filePath: string): Promise<{total: number, success: number}> {
   try {
-    console.log(`Importing studies from CSV file: ${filePath}`);
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    // Read CSV file
+    const fileContent = fs.readFileSync(filePath, 'utf8');
     
     // Parse CSV
-    const records = parseCsv(fileContent, {
+    const records = csvParse(fileContent, {
       columns: true,
       skip_empty_lines: true,
       trim: true
     });
     
-    // Map CSV records to study objects
-    const studies = records.map((record: any) => {
-      return {
-        title: record.title || '',
-        abstract: record.abstract || '',
-        authors: record.authors || '',
-        journal: record.journal || '',
-        publishDate: formatDate(record.publishDate || record.publish_date || record.date || ''),
-        category: record.category || 'General',
-        methods: record.methods || '',
-        results: record.results || '',
-        conclusion: record.conclusion || '',
-        doi: record.doi || '',
-        pdfUrl: record.pdfUrl || record.pdf_url || '',
-        citationUrl: record.citationUrl || record.citation_url || '',
-        peerReviewed: parseBooleanValue(record.peerReviewed || record.peer_reviewed || 'false')
-      };
-    });
+    if (!Array.isArray(records)) {
+      throw new Error('Invalid CSV format. Expected rows of study data.');
+    }
     
-    return await importStudies(studies);
+    return await importStudies(records);
   } catch (error) {
-    console.error('Error importing studies from CSV:', error);
+    console.error(`Error importing studies from CSV: ${error.message}`);
     throw error;
   }
 }
@@ -74,54 +58,60 @@ export async function importStudiesFromCsv(filePath: string): Promise<{total: nu
 async function importStudies(studies: any[]): Promise<{total: number, success: number}> {
   let successCount = 0;
   
-  console.log(`Found ${studies.length} studies to import`);
-  
-  for (let i = 0; i < studies.length; i++) {
+  for (const rawStudy of studies) {
     try {
-      const studyData = studies[i];
+      // Transform and validate study data
+      const study: InsertStudy = {
+        title: rawStudy.title || '',
+        abstract: rawStudy.abstract || '',
+        authors: rawStudy.authors || '',
+        journal: rawStudy.journal || '',
+        publishDate: formatDate(rawStudy.publishDate || new Date().toISOString()),
+        category: rawStudy.category || 'General',
+        methods: rawStudy.methods || '',
+        results: rawStudy.results || '',
+        conclusion: rawStudy.conclusion || '',
+        doi: rawStudy.doi || '',
+        pdfUrl: rawStudy.pdfUrl || '',
+        citationUrl: rawStudy.citationUrl || '',
+        peerReviewed: parseBooleanValue(rawStudy.peerReviewed)
+      };
       
-      // Validate required fields
-      if (!studyData.title) {
-        console.log(`Skipping study at index ${i} because title is missing`);
+      // Skip studies with missing required fields
+      if (!study.title || !study.abstract) {
+        console.log(`Skipping study with missing required fields: ${study.title || 'Untitled'}`);
         continue;
       }
       
-      // Ensure publishDate is a valid date string
-      if (!studyData.publishDate) {
-        studyData.publishDate = new Date().toISOString();
+      // Check if a study with this title already exists
+      const existingStudies = await storage.getStudies({
+        query: study.title
+      });
+      
+      const existingStudy = existingStudies.find(s => 
+        s.title.toLowerCase() === study.title.toLowerCase() &&
+        s.authors.toLowerCase() === study.authors.toLowerCase()
+      );
+      
+      if (existingStudy) {
+        console.log(`Study already exists: ${study.title}`);
+        continue;
       }
       
-      // Create the study in the database
-      const study: InsertStudy = {
-        title: studyData.title,
-        abstract: studyData.abstract || '',
-        authors: studyData.authors || '',
-        journal: studyData.journal || '',
-        publishDate: studyData.publishDate,
-        category: studyData.category || 'General',
-        methods: studyData.methods || '',
-        results: studyData.results || '',
-        conclusion: studyData.conclusion || '',
-        doi: studyData.doi || '',
-        pdfUrl: studyData.pdfUrl || '',
-        citationUrl: studyData.citationUrl || '',
-        peerReviewed: Boolean(studyData.peerReviewed)
-      };
-      
+      // Create the study
       await storage.createStudy(study);
       successCount++;
+      console.log(`Imported study: ${study.title}`);
       
-      // Log progress periodically
-      if (i % 10 === 0 || i === studies.length - 1) {
-        console.log(`Imported ${successCount}/${i+1} studies so far...`);
-      }
     } catch (error) {
-      console.error(`Error importing study at index ${i}:`, error.message);
+      console.error(`Error importing study: ${error.message}`);
     }
   }
   
-  console.log(`Import complete. Successfully imported ${successCount}/${studies.length} studies.`);
-  return { total: studies.length, success: successCount };
+  return {
+    total: studies.length,
+    success: successCount
+  };
 }
 
 /**
@@ -129,15 +119,16 @@ async function importStudies(studies: any[]): Promise<{total: number, success: n
  * @param dateString Input date string
  */
 function formatDate(dateString: string): string {
-  if (!dateString) return new Date().toISOString();
-  
   try {
+    // Handle different date formats
     const date = new Date(dateString);
+    
+    // Check if the date is valid
     if (!isNaN(date.getTime())) {
       return date.toISOString();
     }
     
-    // Try to parse year only
+    // Try to extract just the year if full date parsing fails
     const yearMatch = dateString.match(/\d{4}/);
     if (yearMatch) {
       const year = parseInt(yearMatch[0]);
@@ -145,20 +136,24 @@ function formatDate(dateString: string): string {
         return new Date(`${year}-01-01`).toISOString();
       }
     }
+    
+    // Default to current date
+    return new Date().toISOString();
   } catch (e) {
-    console.log(`Error parsing date: ${dateString}`);
+    console.error(`Error formatting date: ${dateString}`);
+    return new Date().toISOString();
   }
-  
-  return new Date().toISOString();
 }
 
 /**
  * Parse boolean values from strings
  * @param value Boolean string representation
  */
-function parseBooleanValue(value: string): boolean {
+function parseBooleanValue(value: string | boolean): boolean {
   if (typeof value === 'boolean') return value;
-  
-  const strValue = String(value).toLowerCase().trim();
-  return ['true', 'yes', '1', 'y'].includes(strValue);
+  if (typeof value === 'string') {
+    const lowerValue = value.toLowerCase();
+    return lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1';
+  }
+  return false;
 }
