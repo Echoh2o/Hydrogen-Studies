@@ -73,15 +73,50 @@ export class MemStorage implements IStorage {
   async getStudies(filters: StudyFilters = {}): Promise<Study[]> {
     let results = Array.from(this.studiesData.values());
 
-    // Apply filters
+    // Apply filters with enhanced search
     if (filters.query) {
       const query = filters.query.toLowerCase();
-      results = results.filter(study => 
-        study.title.toLowerCase().includes(query) || 
-        study.abstract.toLowerCase().includes(query) ||
-        study.authors.toLowerCase().includes(query) ||
-        study.journal.toLowerCase().includes(query)
-      );
+      
+      // Split the query into words for more flexible matching
+      const queryWords = query.split(/\s+/).filter(word => word.length > 2);
+      
+      results = results.filter(study => {
+        // Check for exact matches first (highest priority)
+        if (study.title.toLowerCase().includes(query) || 
+            study.abstract.toLowerCase().includes(query) ||
+            study.authors.toLowerCase().includes(query) ||
+            study.journal.toLowerCase().includes(query) ||
+            study.category.toLowerCase().includes(query)) {
+          return true;
+        }
+        
+        // If there are query words, check if multiple words match across different fields
+        if (queryWords.length > 0) {
+          const titleLower = study.title.toLowerCase();
+          const abstractLower = study.abstract.toLowerCase();
+          const authorsLower = study.authors.toLowerCase();
+          const journalLower = study.journal.toLowerCase();
+          const methodsLower = (study.methods || '').toLowerCase();
+          const resultsLower = (study.results || '').toLowerCase();
+          const conclusionLower = (study.conclusion || '').toLowerCase();
+          
+          // Count how many query words appear in the study
+          const matchCount = queryWords.filter(word => 
+            titleLower.includes(word) || 
+            abstractLower.includes(word) || 
+            authorsLower.includes(word) || 
+            journalLower.includes(word) ||
+            methodsLower.includes(word) ||
+            resultsLower.includes(word) ||
+            conclusionLower.includes(word)
+          ).length;
+          
+          // Return true if at least 50% of query words are found
+          return matchCount >= Math.ceil(queryWords.length * 0.5);
+        }
+        
+        return false;
+      });
     }
 
     if (filters.keyword) {

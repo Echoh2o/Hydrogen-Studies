@@ -1,5 +1,7 @@
 import fs from 'fs';
 import { parse as csvParse } from 'csv-parse/sync';
+import * as XLSX from 'xlsx';
+import axios from 'axios';
 import { storage } from './storage';
 import { InsertStudy } from '@shared/schema';
 
