@@ -2,12 +2,14 @@ import {
   studies, 
   categories, 
   newsletters, 
+  contactMessages,
   type Study, 
   type Category, 
   type Newsletter, 
   type InsertStudy, 
   type InsertCategory, 
-  type InsertNewsletter 
+  type InsertNewsletter,
+  type InsertContact
 } from "@shared/schema";
 
 export interface StudyFilters {
@@ -36,6 +38,9 @@ export interface IStorage {
   // Newsletter operations
   subscribeNewsletter(subscription: InsertNewsletter): Promise<Newsletter>;
   
+  // Contact operations
+  submitContactMessage(message: InsertContact): Promise<any>;
+  
   // Sample data initialization
   initializeSampleData(): Promise<void>;
 }
@@ -44,17 +49,21 @@ export class MemStorage implements IStorage {
   private studiesData: Map<number, Study>;
   private categoriesData: Map<number, Category>;
   private newslettersData: Map<number, Newsletter>;
+  private contactMessagesData: Map<number, any>;
   private studyCurrentId: number;
   private categoryCurrentId: number;
   private newsletterCurrentId: number;
+  private contactMessageCurrentId: number;
 
   constructor() {
     this.studiesData = new Map();
     this.categoriesData = new Map();
     this.newslettersData = new Map();
+    this.contactMessagesData = new Map();
     this.studyCurrentId = 1;
     this.categoryCurrentId = 1;
     this.newsletterCurrentId = 1;
+    this.contactMessageCurrentId = 1;
   }
 
   // Studies methods
