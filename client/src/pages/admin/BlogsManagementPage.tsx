@@ -185,7 +185,7 @@ export default function BlogsManagementPage() {
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="summary">Summary</SelectItem>
                       <SelectItem value="elon">Elon Musk Style</SelectItem>
                       <SelectItem value="explainer">Explainer</SelectItem>
@@ -201,7 +201,7 @@ export default function BlogsManagementPage() {
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Status</SelectItem>
+                      <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="published">Published</SelectItem>
                       <SelectItem value="unpublished">Unpublished</SelectItem>
                     </SelectContent>
