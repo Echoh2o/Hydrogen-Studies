@@ -1,7 +1,9 @@
 import React from 'react';
 import { ImportForm } from '@/components/admin/ImportForm';
+import ExcelImportForm from '@/components/admin/ExcelImportForm';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ImportPage() {
   return (
@@ -21,20 +23,31 @@ export default function ImportPage() {
       </div>
 
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-6">
-          <ImportForm />
-        </div>
+        <Tabs defaultValue="excel" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="excel">Excel Import</TabsTrigger>
+            <TabsTrigger value="general">General Import</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="excel" className="mt-4">
+            <ExcelImportForm />
+          </TabsContent>
+          
+          <TabsContent value="general" className="mt-4">
+            <ImportForm />
+          </TabsContent>
+        </Tabs>
         
         <div className="bg-muted p-4 rounded-lg">
           <h3 className="font-medium mb-2">Excel File Format Guide</h3>
           <p className="text-sm mb-3">
-            Your Excel file should contain columns that match our database structure. The importer
-            will try to map columns automatically based on headers.
+            Your Excel file should contain columns that match our database structure. The system supports
+            specific column names from your Hydrogen Research Database format.
           </p>
           <div className="text-xs space-y-1">
-            <p><strong>Required columns:</strong> Title, Abstract, Authors, Journal, Publish Date</p>
-            <p><strong>Optional columns:</strong> Category, Methods, Results, Conclusion, DOI, PDF URL, Citation URL, Peer Reviewed, 
-            Publish Year, Country, Region, Study Type, Sample Size, Duration</p>
+            <p><strong>Required columns:</strong> Title, Abstract, Authors/First Author, Journal, Publish Date/Year</p>
+            <p><strong>Optional columns:</strong> Primary Topic, Secondary Topic, Model, Category, Methods, Results, Conclusion, DOI, PDF URL, 
+            Peer Reviewed, Country, Region, Study Type, Sample Size, Duration, Health Conditions, Body Systems</p>
           </div>
         </div>
         

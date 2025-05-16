@@ -1,126 +1,154 @@
-import express from 'express';
+import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import * as importService from '../import';
 import fs from 'fs';
+import { importStudiesFromExcel, importStudiesFromCsv, importStudiesFromJson } from '../import';
+import excelImportRoutes from './excel-import-route';
 
-const router = express.Router();
+const router = Router();
 
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadDir = path.join(process.cwd(), 'uploads');
-      // Create directory if it doesn't exist
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      // Create unique filename
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-  }),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max file size
-  },
-  fileFilter: (req, file, cb) => {
-    // Accept only specific file types
-    const filetypes = /xlsx|xls|csv|json/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
+// Register the Excel-specific import routes
+router.use(excelImportRoutes);
+
+// Configure storage for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads');
     
-    if (extname && mimetype) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only .xlsx, .xls, .csv, or .json files are allowed'));
+    // Create the directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
+    
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Create unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
 });
 
-/**
- * Import studies from an Excel file
- * POST /api/import/excel
- */
-router.post('/import/excel', upload.single('file'), async (req, res) => {
+// Create the multer upload instance
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max file size
+  }
+});
+
+// Import studies from CSV file upload
+router.post('/import/csv', upload.single('csvFile'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'No file uploaded' 
-      });
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-
+    
     const filePath = req.file.path;
-    const fileExt = path.extname(req.file.originalname).toLowerCase();
+    console.log(`Received CSV file: ${filePath}`);
     
-    let result;
+    // Import the studies from the CSV file
+    const result = await importStudiesFromCsv(filePath);
     
-    if (fileExt === '.xlsx' || fileExt === '.xls') {
-      result = await importService.importStudiesFromExcel(filePath);
-    } else if (fileExt === '.csv') {
-      result = await importService.importStudiesFromCsv(filePath);
-    } else if (fileExt === '.json') {
-      result = await importService.importStudiesFromJson(filePath);
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: 'Unsupported file format'
-      });
-    }
-    
-    // Clean up the uploaded file
+    // Clean up the file after import
     fs.unlinkSync(filePath);
     
     return res.status(200).json({
       success: true,
-      imported: result.success,
-      total: result.total,
-      failed: result.total - result.success,
-      message: `Successfully imported ${result.success} out of ${result.total} studies`
+      message: `Successfully imported ${result.success} out of ${result.total} studies`,
+      ...result
     });
-    
   } catch (error: any) {
-    console.error('Import error:', error);
+    console.error('Error importing CSV file:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Failed to import studies'
+      message: error.message || 'An error occurred during import'
     });
   }
 });
 
-/**
- * Import studies from Google Sheets
- * POST /api/import/sheets
- */
-router.post('/import/sheets', async (req, res) => {
+// Import studies from JSON file upload
+router.post('/import/json', upload.single('jsonFile'), async (req, res) => {
   try {
-    const { sheetUrl } = req.body;
-    
-    if (!sheetUrl) {
-      return res.status(400).json({
-        success: false,
-        message: 'Google Sheet URL is required'
-      });
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
     
-    const result = await importService.importStudiesFromGoogleSheets(sheetUrl);
+    const filePath = req.file.path;
+    console.log(`Received JSON file: ${filePath}`);
+    
+    // Import the studies from the JSON file
+    const result = await importStudiesFromJson(filePath);
+    
+    // Clean up the file after import
+    fs.unlinkSync(filePath);
     
     return res.status(200).json({
       success: true,
-      imported: result.success,
-      total: result.total,
-      failed: result.total - result.success,
-      message: `Successfully imported ${result.success} out of ${result.total} studies`
+      message: `Successfully imported ${result.success} out of ${result.total} studies`,
+      ...result
     });
-    
   } catch (error: any) {
-    console.error('Google Sheets import error:', error);
+    console.error('Error importing JSON file:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Failed to import studies from Google Sheets'
+      message: error.message || 'An error occurred during import'
+    });
+  }
+});
+
+// Import from attached files in the project
+router.post('/import/attached', async (req, res) => {
+  try {
+    const { filePath, fileType } = req.body;
+    
+    if (!filePath || !fileType) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'File path and file type are required' 
+      });
+    }
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `File not found: ${filePath}` 
+      });
+    }
+    
+    let result;
+    
+    // Import based on file type
+    switch (fileType.toLowerCase()) {
+      case 'csv':
+        result = await importStudiesFromCsv(filePath);
+        break;
+      case 'json':
+        result = await importStudiesFromJson(filePath);
+        break;
+      case 'xlsx':
+      case 'xls':
+        result = await importStudiesFromExcel(filePath);
+        break;
+      default:
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Unsupported file type. Supported types: csv, json, xlsx, xls' 
+        });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: `Successfully imported ${result.success} out of ${result.total} studies`,
+      ...result
+    });
+  } catch (error: any) {
+    console.error('Error importing attached file:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'An error occurred during import'
     });
   }
 });
