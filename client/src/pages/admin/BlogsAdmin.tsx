@@ -21,6 +21,8 @@ export default function BlogsAdmin() {
   const [selectedStudyId, setSelectedStudyId] = useState<number | undefined>(undefined);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [sortField, setSortField] = useState<string>("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Fetch all blog articles
   const { data: blogs = [], isLoading } = useQuery({
@@ -60,6 +62,30 @@ export default function BlogsAdmin() {
       // 'all' tab or default
       return matchesSearch;
     }
+  });
+  
+  // Sort the filtered blogs
+  const sortedBlogs = [...filteredBlogs].sort((a, b) => {
+    // Handle special sorting for date fields
+    if (sortField === 'createdAt' || sortField === 'updatedAt') {
+      const dateA = new Date(a[sortField]).getTime();
+      const dateB = new Date(b[sortField]).getTime();
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    }
+    
+    // Handle numeric fields
+    if (sortField === 'id' || sortField === 'studyId') {
+      return sortOrder === 'asc' 
+        ? a[sortField] - b[sortField] 
+        : b[sortField] - a[sortField];
+    }
+    
+    // Default string comparison for other fields like title
+    const valueA = a[sortField]?.toString().toLowerCase() || '';
+    const valueB = b[sortField]?.toString().toLowerCase() || '';
+    return sortOrder === 'asc'
+      ? valueA.localeCompare(valueB)
+      : valueB.localeCompare(valueA);
   });
 
   // Delete blog mutation
@@ -242,7 +268,7 @@ export default function BlogsAdmin() {
             
             {isLoading ? (
               <div className="flex justify-center p-4">Loading blog articles...</div>
-            ) : filteredBlogs.length === 0 ? (
+            ) : sortedBlogs.length === 0 ? (
               <div className="text-center p-6 border rounded-md bg-muted/40">
                 <p className="text-muted-foreground">
                   {searchQuery 
@@ -265,7 +291,7 @@ export default function BlogsAdmin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBlogs.map((blog: any) => (
+                    {sortedBlogs.map((blog: any) => (
                       <tr key={blog.id} className="border-b hover:bg-muted/20">
                         <td className="p-3">
                           <div>
