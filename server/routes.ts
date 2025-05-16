@@ -24,6 +24,7 @@ import educationalRoutes from "./routes/educational";
 import scraperRoutes from "./routes/scraper-routes";
 import importRoutes from "./routes/import-routes";
 import hydrogenImportRoutes from "./routes/hydrogen-import";
+import excelAnalysisRoutes from "./routes/excel-analysis";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -115,6 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register hydrogen database import route
   app.use('/api', hydrogenImportRoutes);
+  
+  // Register Excel analysis routes for field mapping
+  app.use('/api', excelAnalysisRoutes);
   // API routes
   
   // Studies routes
