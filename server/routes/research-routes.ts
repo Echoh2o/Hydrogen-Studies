@@ -5,6 +5,9 @@ import { db } from '../db';
 import { studies } from '../../shared/schema';
 import { enrichStudyFromPubMed } from '../pubmed-enricher';
 
+// Check if PubMed API key is available
+const PUBMED_API_KEY = process.env.PUBMED_API_KEY;
+
 const router = Router();
 
 // Schema for validating discovery parameters
@@ -213,6 +216,155 @@ function extractYear(pubdate: string): number | null {
   }
   
   return null;
+}
+
+/**
+ * Search for research articles
+ */
+router.get('/research/search', async (req, res) => {
+  try {
+    // Extract query parameters
+    const query = req.query.query as string || 'hydrogen therapy';
+    const source = req.query.source as string || 'pubmed';
+    const startIndex = parseInt(req.query.startIndex as string || '0');
+    const maxResults = parseInt(req.query.maxResults as string || '10');
+    const sortBy = req.query.sortBy as string || 'relevance';
+    
+    if (!PUBMED_API_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'PubMed API key is not configured. Please add your PubMed API key in the environment variables.'
+      });
+    }
+    
+    // Search PubMed for articles
+    if (source === 'pubmed') {
+      const articles = await searchPubMedWithPagination(query, startIndex, maxResults, sortBy);
+      
+      // Check if articles are already in the database
+      const articleIds = articles.map(article => article.pmid);
+      const existingStudies = await checkArticlesInDatabase(articleIds);
+      
+      // Mark articles that are already in the database
+      const articlesWithDbStatus = articles.map(article => ({
+        ...article,
+        inDatabase: existingStudies.includes(article.pmid)
+      }));
+      
+      return res.json({
+        success: true,
+        source: 'pubmed',
+        query,
+        total: articles.length > 0 ? articles[0].totalResults || articles.length : 0,
+        startIndex,
+        nextIndex: startIndex + articles.length < (articles[0]?.totalResults || 0) ? 
+                  startIndex + maxResults : null,
+        articles: articlesWithDbStatus
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: `Source '${source}' is not supported yet.`
+      });
+    }
+  } catch (error: any) {
+    console.error('Error searching for articles:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to search for articles'
+    });
+  }
+});
+
+/**
+ * Search PubMed with pagination support
+ */
+async function searchPubMedWithPagination(query: string, start: number = 0, max: number = 10, sortBy: string = 'relevance'): Promise<any[]> {
+  try {
+    // First, search for article IDs
+    const searchUrl = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+    const searchParams = {
+      db: 'pubmed',
+      term: query,
+      retmode: 'json',
+      retstart: start,
+      retmax: max,
+      sort: sortBy === 'pub_date' ? 'date' : 'relevance',
+      api_key: PUBMED_API_KEY
+    };
+    
+    const searchResponse = await axios.get(searchUrl, { params: searchParams });
+    const data = searchResponse.data.esearchresult;
+    const idList = data.idlist;
+    const totalResults = parseInt(data.count);
+    
+    if (!idList || idList.length === 0) {
+      return [];
+    }
+    
+    // Then, get summaries for those IDs
+    const summaryUrl = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi';
+    const summaryParams = {
+      db: 'pubmed',
+      id: idList.join(','),
+      retmode: 'json',
+      api_key: PUBMED_API_KEY
+    };
+    
+    const summaryResponse = await axios.get(summaryUrl, { params: summaryParams });
+    const results = summaryResponse.data.result;
+    
+    // Convert to our article format
+    const articles = idList.map((id: string) => {
+      const articleData = results[id];
+      
+      if (!articleData) return null;
+      
+      return {
+        pmid: id,
+        id: id, // Use PMID as the ID
+        title: articleData.title || 'Untitled Article',
+        authors: formatAuthors(articleData.authors),
+        journal: articleData.fulljournalname || articleData.source || '',
+        publicationDate: formatPubDate(articleData.pubdate),
+        year: extractYear(articleData.pubdate),
+        abstract: '', // Summaries don't include abstracts
+        url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+        totalResults // Add total results count to each article for pagination info
+      };
+    }).filter(Boolean);
+    
+    return articles;
+  } catch (error) {
+    console.error('Error searching PubMed with pagination:', error);
+    return [];
+  }
+}
+
+/**
+ * Check if articles are already in the database
+ */
+async function checkArticlesInDatabase(pmids: string[]): Promise<string[]> {
+  if (!pmids || pmids.length === 0) {
+    return [];
+  }
+  
+  try {
+    // Find studies with URLs containing the PMIDs
+    const existingStudies = await Promise.all(
+      pmids.map(async (pmid) => {
+        const study = await db.query.studies.findFirst({
+          where: (studies, { like }) => like(studies.url, `%${pmid}%`)
+        });
+        return study ? pmid : null;
+      })
+    );
+    
+    return existingStudies.filter(Boolean) as string[];
+  } catch (error) {
+    console.error('Error checking database for articles:', error);
+    return [];
+  }
 }
 
 export default router;
