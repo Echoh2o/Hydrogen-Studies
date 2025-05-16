@@ -48,6 +48,7 @@ export default function StudyForm({ studyId, onSuccess }: StudyFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdStudyId, setCreatedStudyId] = useState<number | undefined>(studyId);
   
   // Fetch categories for dropdown
   const { data: categories = [] } = useQuery<Category[]>({
@@ -107,6 +108,11 @@ export default function StudyForm({ studyId, onSuccess }: StudyFormProps) {
           ? "The study was successfully updated" 
           : "The study was successfully created",
       });
+      
+      // Save the created study ID for the media upload section
+      if (!studyId && data && data.id) {
+        setCreatedStudyId(data.id);
+      }
       
       // Invalidate studies queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
@@ -413,6 +419,69 @@ export default function StudyForm({ studyId, onSuccess }: StudyFormProps) {
           )}
         </Button>
       </form>
+      
+      {/* Media Upload Section - Only shown after study is created or when editing */}
+      {createdStudyId && (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Media Attachments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="image" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="image">Images</TabsTrigger>
+                <TabsTrigger value="video">Video</TabsTrigger>
+                <TabsTrigger value="audio">Audio</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="image" className="space-y-4">
+                <p className="text-sm text-muted-foreground">Upload images related to this study. The first image uploaded will be used as the main image.</p>
+                <MediaUpload 
+                  entityId={createdStudyId} 
+                  entityType="study"
+                  onSuccess={(mediaUrl) => {
+                    toast({
+                      title: "Image uploaded",
+                      description: "The image has been successfully uploaded and linked to this study."
+                    });
+                    queryClient.invalidateQueries({ queryKey: [`/api/studies/${createdStudyId}`] });
+                  }}
+                />
+              </TabsContent>
+              
+              <TabsContent value="video" className="space-y-4">
+                <p className="text-sm text-muted-foreground">Upload a video presentation or explanation of this study.</p>
+                <MediaUpload 
+                  entityId={createdStudyId} 
+                  entityType="study"
+                  onSuccess={(mediaUrl) => {
+                    toast({
+                      title: "Video uploaded",
+                      description: "The video has been successfully uploaded and linked to this study."
+                    });
+                    queryClient.invalidateQueries({ queryKey: [`/api/studies/${createdStudyId}`] });
+                  }}
+                />
+              </TabsContent>
+              
+              <TabsContent value="audio" className="space-y-4">
+                <p className="text-sm text-muted-foreground">Upload audio files such as interviews or podcasts related to this study.</p>
+                <MediaUpload 
+                  entityId={createdStudyId} 
+                  entityType="study"
+                  onSuccess={(mediaUrl) => {
+                    toast({
+                      title: "Audio uploaded",
+                      description: "The audio file has been successfully uploaded and linked to this study."
+                    });
+                    queryClient.invalidateQueries({ queryKey: [`/api/studies/${createdStudyId}`] });
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
     </Form>
   );
 }
