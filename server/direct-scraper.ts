@@ -40,6 +40,15 @@ export async function scrapeStudyFromUrl(url: string): Promise<InsertStudy | nul
       case 'semantic-scholar':
         study = await scrapeSemanticScholar(url);
         break;
+      case 'core':
+        study = await scrapeCoreAPI(url);
+        break;
+      case 'rxivist':
+        study = await scrapeRxivist(url);
+        break;
+      case 'dimensions':
+        study = await scrapeDimensions(url);
+        break;
       default:
         throw new Error('Unsupported platform');
     }
@@ -106,6 +115,10 @@ function detectPlatform(url: string): string | null {
     return 'crossref';
   } else if (lowerUrl.includes('semanticscholar.org')) {
     return 'semantic-scholar';
+  } else if (lowerUrl.includes('core.ac.uk')) {
+    return 'core';
+  } else if (lowerUrl.includes('dimensions.ai') || lowerUrl.includes('app.dimensions.ai')) {
+    return 'dimensions';
   }
   
   return null;
@@ -525,6 +538,217 @@ function extractTextFromSelectors($: cheerio.CheerioAPI, selectors: string[]): s
     }
   }
   return '';
+}
+
+/**
+ * Scrape a CORE API article
+ */
+async function scrapeCoreAPI(url: string): Promise<InsertStudy | null> {
+  try {
+    // Extract article ID from URL
+    const idMatch = url.match(/\/works\/(\d+)/);
+    const articleId = idMatch ? idMatch[1] : null;
+    
+    if (!articleId) {
+      throw new Error('Could not extract article ID from CORE URL');
+    }
+    
+    if (!process.env.CORE_API_KEY) {
+      throw new Error('CORE_API_KEY environment variable not set');
+    }
+    
+    // Fetch article data from CORE API
+    const response = await axios.get(`https://api.core.ac.uk/v3/works/${articleId}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.CORE_API_KEY}`
+      }
+    });
+    
+    const data = response.data;
+    
+    // Extract study data
+    const title = data.title || '';
+    
+    // Extract authors
+    const authorNames: string[] = [];
+    if (data.authors) {
+      data.authors.forEach((author: any) => {
+        const name = author.name || '';
+        if (name) authorNames.push(name);
+      });
+    }
+    const authors = authorNames.join(', ');
+    
+    // Extract abstract
+    const abstract = data.abstract || '';
+    
+    // Extract journal info
+    const journal = data.journalName || data.publisher || '';
+    
+    // Extract publication date
+    let publishDate = data.publicationDate || '';
+    
+    // Extract DOI if available
+    const doi = data.doi || '';
+    
+    // Extract PDF URL if available
+    const pdfUrl = data.downloadUrl || '';
+    
+    // Determine if peer-reviewed (most academic papers in CORE are)
+    const peerReviewed = data.documentType === 'journal-article' || data.documentType === 'proceedings-article';
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate: formatPublicationDate(publishDate),
+      doi,
+      pdfUrl,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'CORE'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping CORE:', error);
+    throw error;
+  }
+}
+
+/**
+ * Scrape a Rxivist preprint
+ */
+async function scrapeRxivist(url: string): Promise<InsertStudy | null> {
+  try {
+    // Extract paper ID from URL
+    const idMatch = url.match(/\/papers\/(\d+)/);
+    const paperId = idMatch ? idMatch[1] : null;
+    
+    if (!paperId) {
+      throw new Error('Could not extract paper ID from Rxivist URL');
+    }
+    
+    // Fetch article data from Rxivist API
+    const response = await axios.get(`https://api.rxivist.org/v1/papers/${paperId}`);
+    const data = response.data;
+    
+    // Extract study data
+    const title = data.title || '';
+    
+    // Extract authors
+    const authorNames: string[] = [];
+    if (data.authors) {
+      data.authors.forEach((author: any) => {
+        const name = author.name || '';
+        if (name) authorNames.push(name);
+      });
+    }
+    const authors = authorNames.join(', ');
+    
+    // Extract abstract
+    const abstract = data.abstract || '';
+    
+    // Extract journal info (usually bioRxiv for Rxivist)
+    const journal = data.server || 'bioRxiv';
+    
+    // Extract publication date
+    let publishDate = data.first_posted || '';
+    
+    // Extract DOI if available
+    const doi = data.doi || '';
+    
+    // Extract PDF URL if available
+    const pdfUrl = data.biorxiv_url ? `${data.biorxiv_url}.full.pdf` : '';
+    
+    // Determine if peer-reviewed (preprints are not peer-reviewed)
+    const peerReviewed = false;
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate: formatPublicationDate(publishDate),
+      doi,
+      pdfUrl,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'Rxivist'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping Rxivist:', error);
+    throw error;
+  }
+}
+
+/**
+ * Scrape Dimensions.ai
+ * Note: Dimensions requires institutional access or subscription for full API
+ * This currently uses HTML scraping as fallback
+ */
+async function scrapeDimensions(url: string): Promise<InsertStudy | null> {
+  try {
+    // For Dimensions, we'll have to scrape the HTML directly
+    const response = await axios.get(url);
+    const html = response.data;
+    const $ = cheerio.load(html);
+    
+    // Extract study data
+    const title = $('h1.title').text().trim();
+    
+    // Extract authors
+    const authorElements = $('.author-list span.author-name');
+    const authorNames: string[] = [];
+    authorElements.each((i, el) => {
+      authorNames.push($(el).text().trim());
+    });
+    const authors = authorNames.join(', ');
+    
+    // Extract abstract
+    const abstract = $('.abstract-content').text().trim();
+    
+    // Extract journal info
+    const journal = $('.journal-title').text().trim();
+    
+    // Extract publication date
+    const publishDate = $('.pub-date').text().trim();
+    
+    // Extract DOI if available
+    let doi = '';
+    $('.identifiers span').each((i, el) => {
+      const text = $(el).text();
+      if (text.toLowerCase().includes('doi:')) {
+        doi = text.replace(/doi:\s*/i, '').trim();
+      }
+    });
+    
+    // Determine if peer-reviewed
+    const peerReviewed = $('.publication-type').text().toLowerCase().includes('journal');
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate: formatPublicationDate(publishDate),
+      doi,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'Dimensions'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping Dimensions:', error);
+    throw error;
+  }
 }
 
 /**
