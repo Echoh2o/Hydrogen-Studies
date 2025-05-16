@@ -135,7 +135,8 @@ export class HydrogenStudiesScraper extends BaseScraper {
     }
     
     // Deduplicate the links
-    const uniqueLinks = [...new Set(links)];
+    const uniqueLinksSet = new Set(links);
+    const uniqueLinks = Array.from(uniqueLinksSet);
     console.log(`Total unique study links found: ${uniqueLinks.length}`);
     
     return uniqueLinks;
