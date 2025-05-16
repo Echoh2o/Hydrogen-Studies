@@ -59,6 +59,7 @@ export interface IStorage {
   getStudyById(id: number): Promise<Study | undefined>;
   getStudyByIdentifier(identifier: string): Promise<Study | undefined>;
   getLatestStudies(limit?: number): Promise<Study[]>;
+  getStudiesByTitle(title: string): Promise<Study[]>; // New method for duplicate checking
   createStudy(study: InsertStudy): Promise<Study>;
   updateStudy(id: number, study: Partial<InsertStudy>): Promise<Study>;
   deleteStudy(id: number): Promise<void>;
@@ -284,6 +285,40 @@ export class MemStorage implements IStorage {
     }
     
     return undefined;
+  }
+  
+  async getStudiesByTitle(title: string): Promise<Study[]> {
+    // Find studies with similar titles to avoid duplicates
+    const normalizedTitle = title.trim().toLowerCase();
+    const results: Study[] = [];
+    
+    for (const study of this.studiesData.values()) {
+      const studyTitle = study.title.toLowerCase();
+      
+      // Calculate simple similarity
+      if (studyTitle.includes(normalizedTitle) || normalizedTitle.includes(studyTitle)) {
+        results.push(study);
+        continue;
+      }
+      
+      // Check for significant word overlap (more than 70% of words match)
+      const titleWords = normalizedTitle.split(/\s+/).filter(w => w.length > 3);
+      const studyTitleWords = studyTitle.split(/\s+/).filter(w => w.length > 3);
+      
+      if (titleWords.length === 0 || studyTitleWords.length === 0) continue;
+      
+      const matchCount = titleWords.filter(word => studyTitleWords.some(sw => sw.includes(word) || word.includes(sw))).length;
+      const matchPercentage = Math.max(
+        matchCount / titleWords.length,
+        matchCount / studyTitleWords.length
+      );
+      
+      if (matchPercentage > 0.7) {
+        results.push(study);
+      }
+    }
+    
+    return results;
   }
 
   async getLatestStudies(limit: number = 3): Promise<Study[]> {
