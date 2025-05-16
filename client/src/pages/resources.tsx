@@ -38,12 +38,12 @@ export default function Resources() {
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <div className="overflow-x-auto pb-2">
-                <TabsList className="grid w-full min-w-[600px] grid-cols-5">
-                  <TabsTrigger value="researchers">For Researchers</TabsTrigger>
-                  <TabsTrigger value="healthcare">Healthcare Providers</TabsTrigger>
-                  <TabsTrigger value="bibliography">Bibliography Tools</TabsTrigger>
-                  <TabsTrigger value="methodology">Methodology</TabsTrigger>
-                  <TabsTrigger value="contact">Contact Us</TabsTrigger>
+                <TabsList className="inline-flex w-auto min-w-max border rounded-lg p-1 gap-1">
+                  <TabsTrigger value="researchers" className="flex-1 whitespace-nowrap px-3">For Researchers</TabsTrigger>
+                  <TabsTrigger value="healthcare" className="flex-1 whitespace-nowrap px-3">Healthcare Providers</TabsTrigger>
+                  <TabsTrigger value="bibliography" className="flex-1 whitespace-nowrap px-3">Bibliography Tools</TabsTrigger>
+                  <TabsTrigger value="methodology" className="flex-1 whitespace-nowrap px-3">Methodology</TabsTrigger>
+                  <TabsTrigger value="contact" className="flex-1 whitespace-nowrap px-3">Contact Us</TabsTrigger>
                 </TabsList>
               </div>
               
