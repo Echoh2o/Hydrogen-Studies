@@ -60,6 +60,7 @@ export interface IStorage {
   getStudyByIdentifier(identifier: string): Promise<Study | undefined>;
   getLatestStudies(limit?: number): Promise<Study[]>;
   getStudiesByTitle(title: string): Promise<Study[]>; // New method for duplicate checking
+  getStudiesBySourcePlatform(platform: string): Promise<Study[]>; // Method to get studies from specific platforms
   createStudy(study: InsertStudy): Promise<Study>;
   updateStudy(id: number, study: Partial<InsertStudy>): Promise<Study>;
   deleteStudy(id: number): Promise<void>;
@@ -314,6 +315,21 @@ export class MemStorage implements IStorage {
       );
       
       if (matchPercentage > 0.7) {
+        results.push(study);
+      }
+    }
+    
+    return results;
+  }
+  
+  async getStudiesBySourcePlatform(platform: string): Promise<Study[]> {
+    // Find all studies from a specific source platform
+    const normalizedPlatform = platform.trim().toLowerCase();
+    const results: Study[] = [];
+    
+    for (const study of this.studiesData.values()) {
+      // Check if sourcePlatform exists and matches
+      if (study.sourcePlatform && study.sourcePlatform.toLowerCase() === normalizedPlatform) {
         results.push(study);
       }
     }
