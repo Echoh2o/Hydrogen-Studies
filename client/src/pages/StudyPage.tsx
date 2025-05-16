@@ -133,9 +133,9 @@ const StudyPage = () => {
             <div className="bg-white border border-neutral-200 rounded-xl shadow-sm mb-10">
               <div className="p-6 md:p-8">
                 <h2 className="text-xl font-semibold mb-4">Abstract</h2>
-                <p className="text-neutral-700 mb-8 leading-relaxed">
+                <div className="text-neutral-700 mb-8 leading-relaxed whitespace-pre-line">
                   {study.abstract}
-                </p>
+                </div>
 
                 <Separator className="my-6" />
 
