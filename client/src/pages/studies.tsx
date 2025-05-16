@@ -33,8 +33,23 @@ export default function Studies() {
     if (value) queryParams.append(key, value.toString());
   });
   
+  // Update query when filters change
+  useEffect(() => {
+    // Update the URL with new filters without navigating
+    const newParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && key !== 'sortBy') newParams.append(key, value.toString());
+    });
+    
+    // Only update URL if we have parameters and they're different
+    const newSearch = newParams.toString();
+    if (newSearch && window.location.search !== `?${newSearch}`) {
+      window.history.replaceState(null, '', `?${newSearch}`);
+    }
+  }, [filters]);
+  
   const { data: studies, isLoading } = useQuery<Study[]>({
-    queryKey: [`/api/studies?${queryParams.toString()}`],
+    queryKey: [`/api/studies`, queryParams.toString()],
   });
   
   const handleFilterChange = (key: string, value: string | boolean) => {
