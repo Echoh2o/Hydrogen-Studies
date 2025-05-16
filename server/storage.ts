@@ -210,6 +210,15 @@ export class MemStorage implements IStorage {
     this.newslettersData.set(id, newsletter);
     return newsletter;
   }
+  
+  // Contact form methods
+  async submitContactMessage(insertContact: InsertContact): Promise<any> {
+    const id = this.contactMessageCurrentId++;
+    const createdAt = new Date().toISOString();
+    const contactMessage = { ...insertContact, id, createdAt };
+    this.contactMessagesData.set(id, contactMessage);
+    return contactMessage;
+  }
 
   // Initialize sample data
   async initializeSampleData(): Promise<void> {
