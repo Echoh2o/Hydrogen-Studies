@@ -33,7 +33,22 @@ export default function BlogsAdmin() {
       blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       blog.summary.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesSearch;
+    // Filter based on the active tab
+    if (activeTab === 'published') {
+      return matchesSearch && blog.isPublished === true;
+    } else if (activeTab === 'drafts') {
+      return matchesSearch && blog.isPublished === false;
+    } else if (activeTab === 'withImages') {
+      return matchesSearch && blog.imageUrl;
+    } else if (activeTab === 'withoutImages') {
+      return matchesSearch && !blog.imageUrl;
+    } else if (activeTab === 'byStudy') {
+      // TODO: Implement study filter when needed
+      return matchesSearch;
+    } else {
+      // 'all' tab or default
+      return matchesSearch;
+    }
   });
 
   // Delete blog mutation
@@ -132,8 +147,10 @@ export default function BlogsAdmin() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="w-full md:w-auto grid grid-cols-4 md:inline-flex mb-4">
+            <TabsList className="w-full md:w-auto grid grid-cols-6 md:inline-flex mb-4">
               <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="published">Published</TabsTrigger>
+              <TabsTrigger value="drafts">Drafts</TabsTrigger>
               <TabsTrigger value="withImages">With Images</TabsTrigger>
               <TabsTrigger value="withoutImages">Without Images</TabsTrigger>
               <TabsTrigger value="byStudy">By Study</TabsTrigger>

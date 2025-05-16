@@ -734,15 +734,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate blog articles with specified options
       const articles = await generateBlogArticlesForStudy(study, options);
       
-      // Set all generated blogs to unpublished draft state initially
-      const articlesWithDraftStatus = articles.map(article => ({
-        ...article,
-        isPublished: false,
-        editorNotes: "AI-generated content. Please review before publishing."
-      }));
+      // Blog articles are already set as unpublished drafts in the blog-generator
       
       // Save blog articles to database
-      const savedArticleIds = await saveBlogArticles(articlesWithDraftStatus);
+      const savedArticleIds = await saveBlogArticles(articles);
       
       // Fetch the saved articles
       const savedArticles = await Promise.all(
