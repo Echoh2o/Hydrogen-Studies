@@ -31,7 +31,7 @@ const studySchema = z.object({
   methods: z.string().optional(),
   results: z.string().optional(),
   conclusion: z.string().optional(),
-  doi: z.string().optional(),
+  doi: z.string().optional().or(z.literal("")),
   pdfUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   citationUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   peerReviewed: z.boolean().default(false)
@@ -153,6 +153,72 @@ export default function StudyForm({ studyId, onSuccess }: StudyFormProps) {
     }
   });
   
+  // Function to auto-fetch data from DOI or PMID
+  const [isFetchingData, setIsFetchingData] = useState(false);
+  
+  const handleAutoFetchData = async () => {
+    const doiValue = form.getValues("doi");
+    
+    if (!doiValue) {
+      toast({
+        title: "Missing information",
+        description: "Please enter a DOI or PMID to auto-fetch data",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setIsFetchingData(true);
+      
+      // Call API to fetch study details
+      const response = await apiRequest("POST", "/api/studies/fetch-details", {
+        identifier: doiValue
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch study details");
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update form with fetched data
+        form.setValue("title", data.study.title || form.getValues("title"));
+        form.setValue("abstract", data.study.abstract || form.getValues("abstract"));
+        form.setValue("authors", data.study.authors || form.getValues("authors"));
+        form.setValue("journal", data.study.journal || form.getValues("journal"));
+        form.setValue("publishDate", data.study.publishDate || form.getValues("publishDate"));
+        form.setValue("pdfUrl", data.study.pdfUrl || form.getValues("pdfUrl"));
+        form.setValue("citationUrl", data.study.citationUrl || form.getValues("citationUrl"));
+        
+        if (data.study.methods) form.setValue("methods", data.study.methods);
+        if (data.study.results) form.setValue("results", data.study.results);
+        if (data.study.conclusion) form.setValue("conclusion", data.study.conclusion);
+        
+        toast({
+          title: "Data fetched successfully",
+          description: "Study information has been updated",
+        });
+      } else {
+        toast({
+          title: "Could not find study",
+          description: data.message || "No information found for this DOI/PMID",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error fetching data",
+        description: error.message || "Failed to fetch study details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingData(false);
+    }
+  };
+
   // Form submission handler
   const onSubmit = (values: StudyFormValues) => {
     setIsSubmitting(true);
@@ -338,10 +404,30 @@ export default function StudyForm({ studyId, onSuccess }: StudyFormProps) {
             name="doi"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>DOI</FormLabel>
-                <FormControl>
-                  <Input placeholder="Digital Object Identifier (optional)" {...field} value={field.value || ""} />
-                </FormControl>
+                <FormLabel>DOI or PMID</FormLabel>
+                <div className="flex space-x-2">
+                  <FormControl>
+                    <Input placeholder="Digital Object Identifier or PubMed ID" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleAutoFetchData}
+                    disabled={isFetchingData || !field.value}
+                  >
+                    {isFetchingData ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Fetching...
+                      </>
+                    ) : (
+                      "Auto-Complete"
+                    )}
+                  </Button>
+                </div>
+                <FormDescription>
+                  Enter a DOI or PubMed ID to auto-fetch missing information
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
