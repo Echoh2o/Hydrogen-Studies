@@ -17,12 +17,7 @@ const ExcelImportForm = () => {
   // Mutation for uploading Excel file
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await apiRequest<{
-        success: boolean;
-        message: string;
-        total: number;
-        success: number;
-      }>('/api/import/excel', {
+      const response = await apiRequest('/api/import/excel', {
         method: 'POST',
         body: formData,
       });
@@ -47,12 +42,7 @@ const ExcelImportForm = () => {
   // Mutation for importing from attached file
   const attachedFileMutation = useMutation({
     mutationFn: async (data: { filePath: string; fileType: string }) => {
-      const response = await apiRequest<{
-        success: boolean;
-        message: string;
-        total: number;
-        success: number;
-      }>('/api/import/attached', {
+      const response = await apiRequest('/api/import/attached', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
