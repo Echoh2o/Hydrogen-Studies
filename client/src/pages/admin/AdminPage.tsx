@@ -11,6 +11,7 @@ import { Study } from "@/types";
 import { Loader2, Upload, RefreshCw, Database, FileText, Search } from "lucide-react";
 import StudyForm from "@/components/admin/StudyForm";
 import StudyTable from "@/components/admin/StudyTable";
+import BlogsAdmin from "@/pages/admin/BlogsAdmin";
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -153,9 +154,10 @@ export default function AdminPage() {
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid grid-cols-4 gap-2">
+            <TabsList className="grid grid-cols-5 gap-2">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="studies">Manage Studies</TabsTrigger>
+              <TabsTrigger value="blogs">Manage Blogs</TabsTrigger>
               <TabsTrigger value="import">Import Data</TabsTrigger>
               <TabsTrigger value="add">Add Study</TabsTrigger>
             </TabsList>
@@ -373,6 +375,11 @@ export default function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+            
+            {/* Blog Management Tab */}
+            <TabsContent value="blogs" className="space-y-6">
+              <BlogsAdmin />
             </TabsContent>
             
             {/* Add Study Tab */}
