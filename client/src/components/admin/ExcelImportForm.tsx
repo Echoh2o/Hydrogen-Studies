@@ -120,11 +120,37 @@ const ExcelImportForm = () => {
   };
 
   // For the hydrogen research database file
+  const hydrogenDatabaseMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/import-hydrogen-database', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Import failed: ${response.statusText}`);
+      }
+      return response.json() as Promise<ImportResponse>;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Import Successful",
+        description: `${data.imported || 0} out of ${data.total || 0} studies were imported from Hydrogen Research Database.`,
+        duration: 5000,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import Hydrogen Research Database",
+        variant: "destructive",
+      });
+    },
+  });
+  
   const handleImportHydrogenDatabase = () => {
-    attachedFileMutation.mutate({
-      filePath: 'attached_assets/Hydrogen Research Database_Timeline.xlsx',
-      fileType: 'xlsx'
-    });
+    hydrogenDatabaseMutation.mutate();
   };
 
   return (

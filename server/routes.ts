@@ -23,6 +23,7 @@ import { eq, desc } from "drizzle-orm";
 import educationalRoutes from "./routes/educational";
 import scraperRoutes from "./routes/scraper-routes";
 import importRoutes from "./routes/import-routes";
+import hydrogenImportRoutes from "./routes/hydrogen-import";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -111,6 +112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register import routes for Excel and other data sources
   app.use('/api', importRoutes);
+  
+  // Register hydrogen database import route
+  app.use('/api', hydrogenImportRoutes);
   // API routes
   
   // Studies routes

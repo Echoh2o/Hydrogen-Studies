@@ -127,14 +127,14 @@ router.post('/import/attached', async (req, res) => {
     // Import based on file type
     switch (fileType.toLowerCase()) {
       case 'csv':
-        result = await importStudiesFromCsv(filePath);
+        result = await importStudiesFromCsv(absolutePath);
         break;
       case 'json':
-        result = await importStudiesFromJson(filePath);
+        result = await importStudiesFromJson(absolutePath);
         break;
       case 'xlsx':
       case 'xls':
-        result = await importStudiesFromExcel(filePath);
+        result = await importStudiesFromExcel(absolutePath);
         break;
       default:
         return res.status(400).json({ 
