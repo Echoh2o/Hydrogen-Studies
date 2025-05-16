@@ -234,13 +234,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract file data and type
       const fileData = req.body.file;
       const fileType = req.body.fileType;
+      const googleSheetUrl = req.body.googleSheetUrl;
       
+      // Import from Google Sheets
+      if (googleSheetUrl) {
+        const { importStudiesFromGoogleSheets } = await import('./import');
+        const result = await importStudiesFromGoogleSheets(googleSheetUrl);
+        return res.status(200).json(result);
+      }
+      
+      // Import from file upload
       if (!fileData || !fileType) {
         return res.status(400).json({ message: "Missing file data or file type" });
       }
       
       // Process based on file type
-      const { importStudiesFromJson, importStudiesFromCsv } = await import('./import');
+      const { 
+        importStudiesFromJson, 
+        importStudiesFromCsv, 
+        importStudiesFromExcel 
+      } = await import('./import');
+      
       let result;
       
       // Create a temporary file path
@@ -253,6 +267,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         result = await importStudiesFromJson(tempFilePath);
       } else if (fileType === 'csv') {
         result = await importStudiesFromCsv(tempFilePath);
+      } else if (fileType === 'xlsx' || fileType === 'xls') {
+        result = await importStudiesFromExcel(tempFilePath);
       } else {
         // Clean up temp file
         fs.unlinkSync(tempFilePath);

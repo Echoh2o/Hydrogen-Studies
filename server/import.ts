@@ -54,6 +54,73 @@ export async function importStudiesFromCsv(filePath: string): Promise<{total: nu
 }
 
 /**
+ * Imports studies from an Excel file (XLSX)
+ * @param filePath Path to the Excel file
+ */
+export async function importStudiesFromExcel(filePath: string): Promise<{total: number, success: number}> {
+  try {
+    // Read Excel file
+    const workbook = XLSX.readFile(filePath);
+    
+    // Get the first worksheet
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON
+    const records = XLSX.utils.sheet_to_json(worksheet);
+    
+    if (!Array.isArray(records)) {
+      throw new Error('Invalid Excel format. Expected rows of study data.');
+    }
+    
+    return await importStudies(records);
+  } catch (error) {
+    console.error(`Error importing studies from Excel: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Imports studies from Google Sheets
+ * @param sheetUrl URL to the Google Sheet (must be publicly accessible or shared)
+ */
+export async function importStudiesFromGoogleSheets(sheetUrl: string): Promise<{total: number, success: number}> {
+  try {
+    // Extract sheet ID from URL (various Google Sheets URL formats)
+    let sheetId = '';
+    const urlMatch = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (urlMatch && urlMatch[1]) {
+      sheetId = urlMatch[1];
+    } else {
+      throw new Error('Invalid Google Sheets URL. Could not extract sheet ID.');
+    }
+    
+    // Google Sheets export URL (exports as CSV)
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+    
+    // Fetch the sheet data
+    const response = await axios.get(exportUrl);
+    const csvData = response.data;
+    
+    // Parse CSV
+    const records = csvParse(csvData, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true
+    });
+    
+    if (!Array.isArray(records)) {
+      throw new Error('Invalid Google Sheets data. Expected rows of study data.');
+    }
+    
+    return await importStudies(records);
+  } catch (error) {
+    console.error(`Error importing studies from Google Sheets: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * Import studies into the database
  * @param studies Array of studies to import
  */
