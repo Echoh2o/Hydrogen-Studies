@@ -29,6 +29,9 @@ const BLOG_TYPES = [
   "elon_howto" // How-to guide in Elon's voice at 6th grade level
 ];
 
+// Default system role for blog generation
+let systemRole = "You are a scientific writer specializing in making complex research accessible to the general public. Write engaging, accurate content at a 6th grade reading level.";
+
 /**
  * Generate multiple blog articles for a study
  * @param study Study object to generate blog articles for
@@ -153,6 +156,142 @@ async function generateArticleContent(study: Study, articleType: string): Promis
       Format with proper Markdown including headers, comparison tables if relevant, and emphasis.
       Aim for about 800-1000 words.`;
     }
+    // Elon Musk style blogs at 6th grade reading level
+    else if (articleType === "elon_simple") {
+      // Change system prompt for Elon's voice
+      systemRole = "You are Elon Musk explaining complex scientific concepts in simple terms that a 6th grader could understand. You're enthusiastic, visionary, and occasionally make bold statements, but you keep your language very simple and accessible.";
+      
+      prompt = `Write a blog post explaining this hydrogen study in extremely simple terms:
+      
+      Study Title: ${study.title}
+      Authors: ${study.authors}
+      Abstract: ${study.abstract}
+      
+      Write an SEO-optimized article with this structure:
+      1. Title (H1): Include "hydrogen health benefits" as your primary keyword and make it click-worthy
+      2. Introduction (1-2 paragraphs): Hook the reader with something mind-blowing about hydrogen
+      3. Body Content with H2/H3 subheadings:
+         - Each section should be 200-300 words
+         - Include lists (bullets or numbered)
+         - Use short paragraphs (2-4 sentences max)
+         - Bold important text for emphasis
+      4. FAQ Section: Add 3-5 common questions using long-tail keywords
+      5. Conclusion: Summarize key takeaways and why people should be excited
+      
+      Keep the reading level at exactly 6th grade (Flesch-Kincaid level 6.0).
+      Write in Elon Musk's distinctive voice and style, but simplified for a young audience.
+      Include analogies and metaphors that make the scientific concepts crystal clear.
+      Make it exciting and emphasize why this matters for the future.
+      Explain any scientific terms as if to a child - don't assume any prior knowledge.
+      The blog should be around 1000 words and include an "insanely exciting" hook at the start.`;
+    }
+    else if (articleType === "elon_benefits") {
+      // Change system prompt for Elon's voice
+      systemRole = "You are Elon Musk explaining complex scientific concepts in simple terms that a 6th grader could understand. You're enthusiastic, visionary, and occasionally make bold statements, but you keep your language very simple and accessible.";
+      
+      prompt = `Write a blog post focusing on the practical benefits of this hydrogen research:
+      
+      Study Title: ${study.title}
+      Authors: ${study.authors}
+      Abstract: ${study.abstract}
+      
+      Write an SEO-optimized article with this structure:
+      1. Title (H1): Include "hydrogen therapy benefits" as your primary keyword and make it click-worthy
+      2. Introduction (1-2 paragraphs): Hook the reader with the most incredible benefit
+      3. Body Content with H2/H3 subheadings:
+         - Each section should focus on a different benefit
+         - Include lists (bullets or numbered)
+         - Use short paragraphs (2-4 sentences max)
+         - Bold important text for emphasis
+      4. Section titled "Why This Is Revolutionary" 
+      5. FAQ Section: Add 3-5 common questions about benefits
+      6. Conclusion: Summarize key benefits and encourage action
+      
+      Keep the reading level at exactly 6th grade (Flesch-Kincaid level 6.0).
+      Write in Elon Musk's distinctive voice and style, but simplified for a young audience.
+      Focus on the specific health benefits that real people might experience.
+      Tie the benefits to everyday life - how would someone feel different?
+      The blog should have a bold, attention-grabbing title.`;
+    }
+    else if (articleType === "elon_future") {
+      // Change system prompt for Elon's voice
+      systemRole = "You are Elon Musk explaining complex scientific concepts in simple terms that a 6th grader could understand. You're enthusiastic, visionary, and occasionally make bold statements, but you keep your language very simple and accessible.";
+      
+      prompt = `Write a blog post about the future implications of this hydrogen research:
+      
+      Study Title: ${study.title}
+      Authors: ${study.authors}
+      Abstract: ${study.abstract}
+      
+      Write an SEO-optimized article with this structure:
+      1. Title (H1): Include "future of hydrogen therapy" as your primary keyword and make it sound visionary
+      2. Introduction (1-2 paragraphs): Make a bold prediction about the future
+      3. Body Content with H2/H3 subheadings:
+         - "How This Changes Everything"
+         - "The Next 5 Years in Hydrogen Research"
+         - "Why Traditional Medicine Will Have to Adapt"
+         - "The Breakthrough Moment We're Waiting For"
+      4. FAQ Section: Add 3-5 future-oriented questions
+      5. Conclusion: Paint an exciting picture of what's possible
+      
+      Keep the reading level at exactly 6th grade (Flesch-Kincaid level 6.0).
+      Write in Elon Musk's distinctive voice and style, but simplified for a young audience.
+      Focus on how this research might change the future of healthcare and wellness.
+      Include bold predictions about how this technology could evolve.
+      Tie it to other futuristic technologies where relevant.
+      Maintain a sense of wonder and excitement throughout.`;
+    }
+    else if (articleType === "elon_faq") {
+      // Change system prompt for Elon's voice
+      systemRole = "You are Elon Musk explaining complex scientific concepts in simple terms that a 6th grader could understand. You're enthusiastic, visionary, and occasionally make bold statements, but you keep your language very simple and accessible.";
+      
+      prompt = `Write a FAQ-style blog post about this hydrogen research:
+      
+      Study Title: ${study.title}
+      Authors: ${study.authors}
+      Abstract: ${study.abstract}
+      
+      Write an SEO-optimized article with this structure:
+      1. Title (H1): Include "hydrogen therapy explained" as your primary keyword
+      2. Introduction (1-2 paragraphs): Explain why people have questions about hydrogen
+      3. 10 FAQ sections with H2 headings for each question:
+         - Start with basic questions: "What is hydrogen therapy?"
+         - Include practical questions: "How can I try hydrogen therapy?"
+         - Add advanced questions: "Could hydrogen therapy replace medications?"
+      4. Conclusion: Summarize key takeaways and encourage exploration
+      
+      Keep the reading level at exactly 6th grade (Flesch-Kincaid level 6.0).
+      Write in Elon Musk's distinctive voice and style, but simplified for a young audience.
+      Make sure each answer is genuinely informative but extremely easy to understand.
+      Use analogies and examples that kids would understand.
+      Bold important terms and keep answers concise but complete.`;
+    }
+    else if (articleType === "elon_howto") {
+      // Change system prompt for Elon's voice
+      systemRole = "You are Elon Musk explaining complex scientific concepts in simple terms that a 6th grader could understand. You're enthusiastic, visionary, and occasionally make bold statements, but you keep your language very simple and accessible.";
+      
+      prompt = `Write a how-to guide blog post based on this hydrogen research:
+      
+      Study Title: ${study.title}
+      Authors: ${study.authors}
+      Abstract: ${study.abstract}
+      
+      Write an SEO-optimized article with this structure:
+      1. Title (H1): Include "how to use hydrogen therapy" as your primary keyword
+      2. Introduction (1-2 paragraphs): Explain why this guide matters
+      3. "What You'll Need" section with a bulleted list
+      4. Step-by-step guide with numbered steps and H2 headings
+      5. "Safety Considerations" section
+      6. "Common Challenges and Solutions" section
+      7. FAQ Section: Add 3-5 practical questions
+      8. Conclusion: Encourage readers to try it and report back
+      
+      Keep the reading level at exactly 6th grade (Flesch-Kincaid level 6.0).
+      Write in Elon Musk's distinctive voice and style, but simplified for a young audience.
+      Include step-by-step instructions on how someone might apply this research.
+      Make it both practical and inspiring - explain not just how, but why it matters.
+      Bold important instructions and warnings.`;
+    }
     
     // Generate the blog content
     const contentResponse = await openai.chat.completions.create({
@@ -160,7 +299,7 @@ async function generateArticleContent(study: Study, articleType: string): Promis
       messages: [
         {
           role: "system",
-          content: "You are a scientific writer specializing in making complex research accessible to the general public. Write engaging, accurate content at a 6th grade reading level."
+          content: systemRole
         },
         {
           role: "user",
@@ -173,13 +312,20 @@ async function generateArticleContent(study: Study, articleType: string): Promis
     
     const content = contentResponse.choices[0].message.content || "";
     
-    // Generate a summary
+    // Generate a summary - adjust the system prompt based on the article type
+    let summarySystemRole = "Create a concise 2-3 sentence summary of the following blog post. Keep it engaging and informative.";
+    
+    // If it's an Elon style article, use Elon's voice for the summary too
+    if (articleType.startsWith("elon_")) {
+      summarySystemRole = "You are Elon Musk. Create a concise 2-3 sentence summary of the following blog post. Use simple language at a 6th grade reading level. Be enthusiastic and forward-thinking like Elon would be.";
+    }
+    
     const summaryResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "Create a concise 2-3 sentence summary of the following blog post. Keep it engaging and informative."
+          content: summarySystemRole
         },
         {
           role: "user",
