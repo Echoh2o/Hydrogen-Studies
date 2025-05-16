@@ -4,6 +4,7 @@
  */
 import { HydrogenStudiesScraper } from './hydrogen-studies-scraper';
 import { PubMedScraper } from './pubmed-scraper';
+import { GoogleScholarScraper } from './google-scholar-scraper';
 
 /**
  * Get all registered scrapers
@@ -11,7 +12,8 @@ import { PubMedScraper } from './pubmed-scraper';
 export function getAllScrapers() {
   return [
     new HydrogenStudiesScraper(),
-    new PubMedScraper()
+    new PubMedScraper(),
+    new GoogleScholarScraper()
   ];
 }
 

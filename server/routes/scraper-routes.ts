@@ -12,7 +12,7 @@ const router = express.Router();
  * 
  * GET /api/scrapers
  */
-router.get('/scrapers', isAuthenticated, async (req, res) => {
+router.get('/scrapers', async (req, res) => {
   try {
     const scrapers = getScraperInfo();
     res.json({ scrapers });
@@ -27,7 +27,7 @@ router.get('/scrapers', isAuthenticated, async (req, res) => {
  * 
  * POST /api/scrapers/:name/run
  */
-router.post('/scrapers/:name/run', isAuthenticated, async (req, res) => {
+router.post('/scrapers/:name/run', async (req, res) => {
   try {
     const scraperName = req.params.name;
     
@@ -55,7 +55,7 @@ router.post('/scrapers/:name/run', isAuthenticated, async (req, res) => {
  * 
  * POST /api/scrapers/run-all
  */
-router.post('/scrapers/run-all', isAuthenticated, async (req, res) => {
+router.post('/scrapers/run-all', async (req, res) => {
   try {
     // Run all scrapers
     const result = await runAllScrapers();
