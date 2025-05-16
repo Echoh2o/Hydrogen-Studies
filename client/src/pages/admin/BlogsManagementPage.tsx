@@ -141,19 +141,15 @@ export default function BlogsManagementPage() {
           </div>
           <div className="flex space-x-4">
             <Button asChild>
-              <Link href="/admin/blogs/generate">
-                <a className="flex items-center">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Generate Blogs
-                </a>
+              <Link href="/admin/blogs/generate" className="flex items-center">
+                <FileText className="mr-2 h-4 w-4" />
+                Generate Blogs
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/admin/blogs/add">
-                <a className="flex items-center">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Manual Blog
-                </a>
+              <Link href="/admin/blogs/add" className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Manual Blog
               </Link>
             </Button>
           </div>

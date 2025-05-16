@@ -247,13 +247,11 @@ export default function StudiesManagementPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {studies.data.map((study: Study) => (
+                      {studies && studies.data && studies.data.map((study: Study) => (
                         <TableRow key={study.id}>
                           <TableCell className="font-medium max-w-xs truncate">
-                            <Link href={`/admin/studies/edit/${study.id}`}>
-                              <a className="hover:underline">
+                            <Link href={`/admin/studies/edit/${study.id}`} className="hover:underline">
                                 {study.title}
-                              </a>
                             </Link>
                           </TableCell>
                           <TableCell>{study.journal}</TableCell>
