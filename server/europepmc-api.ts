@@ -16,6 +16,9 @@ const EUROPEPMC_HEADERS = {
   'Accept': 'application/json'
 };
 
+// PubMed API key is also used for Europe PMC in some cases
+const PUBMED_API_KEY = process.env.PUBMED_API_KEY;
+
 /**
  * Search Europe PMC for articles
  * @param query Search query
@@ -35,23 +38,41 @@ export async function searchEuropePMC(
     if (sortBy === 'date') sort = 'DATE';
     else if (sortBy === 'cited') sort = 'CITED';
     
+    // Add hydrogen to query if not already included
+    if (!query.toLowerCase().includes('hydrogen')) {
+      query = `${query} AND hydrogen`;
+    }
+    
+    console.log(`Searching Europe PMC with query: "${query}"`);
+    
     const url = `${EUROPEPMC_API_BASE}/search`;
+    const params: any = {
+      query,
+      resultType: 'core',
+      format: 'json',
+      cursorMark: '*',
+      pageSize,
+      sort
+    };
+    
+    // Add API key if available
+    if (PUBMED_API_KEY) {
+      params.apiKey = PUBMED_API_KEY;
+    }
+    
     const response = await axios.get(url, {
-      params: {
-        query,
-        resultType: 'core',
-        format: 'json',
-        cursorMark: '*',
-        pageSize,
-        sort
-      },
+      params,
       headers: EUROPEPMC_HEADERS,
       timeout: 15000 // 15 second timeout
     });
     
+    console.log('Europe PMC response structure:', JSON.stringify(response.data).substring(0, 200) + '...');
+    
     // The API response structure has hitCount and resultList
     const resultList = response.data.resultList || { result: [] };
     const hitCount = response.data.hitCount || 0;
+    
+    console.log(`Europe PMC search found ${hitCount} results`);
     
     return {
       resultList,
