@@ -57,6 +57,7 @@ export const insertContactSchema = createInsertSchema(contactMessages).omit({ id
 export type InsertStudy = z.infer<typeof insertStudySchema>;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
+export type InsertContact = z.infer<typeof insertContactSchema>;
 
 // Types for selection
 export type Study = typeof studies.$inferSelect;
