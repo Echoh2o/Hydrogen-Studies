@@ -10,6 +10,12 @@ import { InsertStudy } from '@shared/schema';
 
 const EUROPEPMC_API_BASE = 'https://www.ebi.ac.uk/europepmc/webservices/rest';
 
+// Set headers for Europe PMC API requests to identify our application
+const EUROPEPMC_HEADERS = {
+  'User-Agent': 'HydrogenStudies/1.0 (https://hydrogenstudies.com; info@hydrogenstudies.com)',
+  'Accept': 'application/json'
+};
+
 /**
  * Search Europe PMC for articles
  * @param query Search query
@@ -39,12 +45,20 @@ export async function searchEuropePMC(
         pageSize,
         page,
         sort
-      }
+      },
+      headers: EUROPEPMC_HEADERS,
+      timeout: 15000 // 15 second timeout
     });
     
     return response.data.resultList;
-  } catch (error) {
-    console.error('Error searching Europe PMC:', error);
+  } catch (error: any) {
+    console.error('Error searching Europe PMC:', error.message);
+    if (error.response) {
+      console.error('Europe PMC API response status:', error.response.status);
+      console.error('Europe PMC API response data:', error.response.data);
+    } else if (error.request) {
+      console.error('Europe PMC API request failed to receive response');
+    }
     throw new Error('Failed to search Europe PMC');
   }
 }
@@ -69,12 +83,20 @@ export async function getEuropePMCArticle(id: string): Promise<any> {
     const response = await axios.get(url, {
       params: {
         format: 'json'
-      }
+      },
+      headers: EUROPEPMC_HEADERS,
+      timeout: 15000 // 15 second timeout
     });
     
     return response.data.result;
-  } catch (error) {
-    console.error('Error fetching article from Europe PMC:', error);
+  } catch (error: any) {
+    console.error('Error fetching article from Europe PMC:', error.message);
+    if (error.response) {
+      console.error('Europe PMC API response status:', error.response.status);
+      console.error('Europe PMC API response data:', error.response.data);
+    } else if (error.request) {
+      console.error('Europe PMC API request failed to receive response');
+    }
     throw new Error('Failed to fetch article from Europe PMC');
   }
 }
