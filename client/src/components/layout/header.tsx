@@ -9,6 +9,7 @@ const navigationLinks = [
   { href: "/categories", label: "Categories" },
   { href: "/resources", label: "Resources" },
   { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export default function Header() {
