@@ -62,11 +62,11 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-bold mb-4">Resources</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/resources#researchers" className="hover:text-white transition-colors">For Researchers</Link></li>
-              <li><Link href="/resources#healthcare" className="hover:text-white transition-colors">For Healthcare Providers</Link></li>
-              <li><Link href="/resources#bibliography" className="hover:text-white transition-colors">Bibliography Tools</Link></li>
-              <li><Link href="/resources#methodology" className="hover:text-white transition-colors">Methodology</Link></li>
-              <li><Link href="/resources#contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+              <li><a href="/resources#researchers" className="hover:text-white transition-colors">For Researchers</a></li>
+              <li><a href="/resources#healthcare" className="hover:text-white transition-colors">For Healthcare Providers</a></li>
+              <li><a href="/resources#bibliography" className="hover:text-white transition-colors">Bibliography Tools</a></li>
+              <li><a href="/resources#methodology" className="hover:text-white transition-colors">Methodology</a></li>
+              <li><a href="/resources#contact" className="hover:text-white transition-colors">Contact Us</a></li>
             </ul>
           </div>
         </div>
