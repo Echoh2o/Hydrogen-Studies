@@ -269,23 +269,42 @@ export default function AdminPage() {
                           accept=".csv,.json"
                           onChange={handleFileUpload}
                         />
-                        <Button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isImporting}
-                        >
-                          {isImporting ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Importing...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Upload File
-                            </>
-                          )}
-                        </Button>
+                        <div className="space-y-2">
+                          <Button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isImporting}
+                          >
+                            {isImporting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Importing...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload File
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            className="ml-2" 
+                            onClick={() => window.location.href = '/admin/import'}
+                          >
+                            Import Excel Format
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 text-sm text-blue-600">
+                        <a href="/admin/import" className="hover:underline">
+                          Advanced Excel Import →
+                        </a>
+                        <p className="text-xs text-neutral-500 mt-1">
+                          Use our specialized Excel importer for hydrogen research databases
+                        </p>
                       </div>
                     </div>
                   </CardContent>

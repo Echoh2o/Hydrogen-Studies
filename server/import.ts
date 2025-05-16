@@ -1,9 +1,11 @@
 import fs from 'fs';
-import { parse as csvParse } from 'csv-parse/sync';
-import * as XLSX from 'xlsx';
+import path from 'path';
+import { parse } from 'csv-parse/sync';
+import * as xlsx from 'xlsx';
 import axios from 'axios';
 import { storage } from './storage';
 import { InsertStudy } from '@shared/schema';
+import { z } from 'zod';
 
 /**
  * Imports studies from a JSON file
@@ -11,18 +13,17 @@ import { InsertStudy } from '@shared/schema';
  */
 export async function importStudiesFromJson(filePath: string): Promise<{total: number, success: number}> {
   try {
-    // Read JSON file
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const studies = JSON.parse(fileContent);
     
     if (!Array.isArray(studies)) {
-      throw new Error('Invalid JSON format. Expected an array of studies.');
+      throw new Error('JSON file must contain an array of studies');
     }
     
     return await importStudies(studies);
-  } catch (error) {
-    console.error(`Error importing studies from JSON: ${error.message}`);
-    throw error;
+  } catch (error: any) {
+    console.error('Error importing from JSON:', error);
+    throw new Error(`Failed to import studies from JSON: ${error.message}`);
   }
 }
 
@@ -32,24 +33,17 @@ export async function importStudiesFromJson(filePath: string): Promise<{total: n
  */
 export async function importStudiesFromCsv(filePath: string): Promise<{total: number, success: number}> {
   try {
-    // Read CSV file
     const fileContent = fs.readFileSync(filePath, 'utf8');
-    
-    // Parse CSV
-    const records = csvParse(fileContent, {
+    const records = parse(fileContent, {
       columns: true,
       skip_empty_lines: true,
       trim: true
     });
     
-    if (!Array.isArray(records)) {
-      throw new Error('Invalid CSV format. Expected rows of study data.');
-    }
-    
     return await importStudies(records);
-  } catch (error) {
-    console.error(`Error importing studies from CSV: ${error.message}`);
-    throw error;
+  } catch (error: any) {
+    console.error('Error importing from CSV:', error);
+    throw new Error(`Failed to import studies from CSV: ${error.message}`);
   }
 }
 
@@ -59,24 +53,17 @@ export async function importStudiesFromCsv(filePath: string): Promise<{total: nu
  */
 export async function importStudiesFromExcel(filePath: string): Promise<{total: number, success: number}> {
   try {
-    // Read Excel file
-    const workbook = XLSX.readFile(filePath);
-    
-    // Get the first worksheet
+    const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     
     // Convert to JSON
-    const records = XLSX.utils.sheet_to_json(worksheet);
-    
-    if (!Array.isArray(records)) {
-      throw new Error('Invalid Excel format. Expected rows of study data.');
-    }
+    const records = xlsx.utils.sheet_to_json(worksheet);
     
     return await importStudies(records);
-  } catch (error) {
-    console.error(`Error importing studies from Excel: ${error.message}`);
-    throw error;
+  } catch (error: any) {
+    console.error('Error importing from Excel:', error);
+    throw new Error(`Failed to import studies from Excel: ${error.message}`);
   }
 }
 
@@ -86,100 +73,134 @@ export async function importStudiesFromExcel(filePath: string): Promise<{total: 
  */
 export async function importStudiesFromGoogleSheets(sheetUrl: string): Promise<{total: number, success: number}> {
   try {
-    // Extract sheet ID from URL (various Google Sheets URL formats)
-    let sheetId = '';
-    const urlMatch = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-    if (urlMatch && urlMatch[1]) {
-      sheetId = urlMatch[1];
-    } else {
-      throw new Error('Invalid Google Sheets URL. Could not extract sheet ID.');
+    // Check if it's a valid Google Sheets URL
+    if (!sheetUrl.includes('docs.google.com/spreadsheets')) {
+      throw new Error('Invalid Google Sheets URL');
     }
     
-    // Google Sheets export URL (exports as CSV)
+    // Extract the sheet ID from the URL
+    const matches = sheetUrl.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (!matches || !matches[1]) {
+      throw new Error('Could not extract sheet ID from URL');
+    }
+    
+    const sheetId = matches[1];
+    
+    // Construct the export URL (CSV format)
     const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
     
-    // Fetch the sheet data
-    const response = await axios.get(exportUrl);
-    const csvData = response.data;
+    // Fetch the CSV data
+    const response = await axios.get(exportUrl, { responseType: 'text' });
     
-    // Parse CSV
-    const records = csvParse(csvData, {
+    // Parse the CSV data
+    const records = parse(response.data, {
       columns: true,
       skip_empty_lines: true,
       trim: true
     });
     
-    if (!Array.isArray(records)) {
-      throw new Error('Invalid Google Sheets data. Expected rows of study data.');
-    }
-    
     return await importStudies(records);
-  } catch (error) {
-    console.error(`Error importing studies from Google Sheets: ${error.message}`);
-    throw error;
+  } catch (error: any) {
+    console.error('Error importing from Google Sheets:', error);
+    throw new Error(`Failed to import studies from Google Sheets: ${error.message}`);
   }
 }
+
+// Define a schema for hydrogen research database imports
+const hydrogernResearchSchema = z.object({
+  Study: z.string().optional(),
+  Title: z.string().optional(),
+  Abstract: z.string().optional(),
+  Results: z.string().optional(),
+  Conclusion: z.string().optional(),
+  Authors: z.string().optional(),
+  Year: z.union([z.string(), z.number()]).optional(),
+  PublishedDate: z.string().optional(),
+  PublishDate: z.string().optional(),
+  PublishYear: z.union([z.string(), z.number()]).optional(),
+  Journal: z.string().optional(),
+  PeerReviewed: z.union([z.string(), z.boolean()]).optional(),
+  DOI: z.string().optional(),
+  PDF: z.string().optional(),
+  PdfUrl: z.string().optional(),
+  CitationUrl: z.string().optional(),
+  ImageUrl: z.string().optional(),
+  Keywords: z.string().optional(),
+  Methods: z.string().optional(),
+  Category: z.string().optional(),
+  Conditions: z.string().optional(),
+  HealthConditions: z.string().optional(),
+  BodySystems: z.string().optional(),
+  StudyType: z.string().optional(),
+  Country: z.string().optional(),
+  Region: z.string().optional(),
+  SampleSize: z.union([z.string(), z.number()]).optional(),
+  Duration: z.string().optional(),
+}).passthrough(); // Allow additional fields
 
 /**
  * Import studies into the database
  * @param studies Array of studies to import
  */
 async function importStudies(studies: any[]): Promise<{total: number, success: number}> {
-  let successCount = 0;
+  let imported = 0;
+  const total = studies.length;
   
-  for (const rawStudy of studies) {
+  console.log(`Starting import of ${total} studies...`);
+  
+  for (const item of studies) {
     try {
-      // Transform and validate study data
+      // Validate and transform the study data
+      const validatedData = hydrogernResearchSchema.parse(item);
+      
+      // Map fields from the Excel format to our database schema
       const study: InsertStudy = {
-        title: rawStudy.title || '',
-        abstract: rawStudy.abstract || '',
-        authors: rawStudy.authors || '',
-        journal: rawStudy.journal || '',
-        publishDate: formatDate(rawStudy.publishDate || new Date().toISOString()),
-        category: rawStudy.category || 'General',
-        methods: rawStudy.methods || '',
-        results: rawStudy.results || '',
-        conclusion: rawStudy.conclusion || '',
-        doi: rawStudy.doi || '',
-        pdfUrl: rawStudy.pdfUrl || '',
-        citationUrl: rawStudy.citationUrl || '',
-        peerReviewed: parseBooleanValue(rawStudy.peerReviewed)
+        title: validatedData.Title || validatedData.Study || '',
+        abstract: validatedData.Abstract || '',
+        authors: validatedData.Authors || '',
+        journal: validatedData.Journal || '',
+        publishDate: formatDate(validatedData.PublishDate || validatedData.PublishedDate || ''),
+        publishYear: parseInt(String(validatedData.PublishYear || validatedData.Year || 0)) || null,
+        category: validatedData.Category || '',
+        methods: validatedData.Methods || '',
+        results: validatedData.Results || '',
+        conclusion: validatedData.Conclusion || '',
+        doi: validatedData.DOI || '',
+        pdfUrl: validatedData.PdfUrl || validatedData.PDF || '',
+        citationUrl: validatedData.CitationUrl || '',
+        peerReviewed: parseBooleanValue(validatedData.PeerReviewed),
+        imageUrl: validatedData.ImageUrl || '',
+        // Handle additional fields for advanced filtering
+        keywords: validatedData.Keywords || '',
+        healthConditions: validatedData.HealthConditions || validatedData.Conditions || '',
+        bodySystems: validatedData.BodySystems || '',
+        studyType: validatedData.StudyType || '',
+        country: validatedData.Country || '',
+        region: validatedData.Region || '',
+        sampleSize: parseInt(String(validatedData.SampleSize || 0)) || null,
+        duration: validatedData.Duration || ''
       };
       
-      // Skip studies with missing required fields
-      if (!study.title || !study.abstract) {
-        console.log(`Skipping study with missing required fields: ${study.title || 'Untitled'}`);
+      // Check required fields
+      if (!study.title) {
+        console.warn('Skipping study with no title');
         continue;
       }
       
-      // Check if a study with this title already exists
-      const existingStudies = await storage.getStudies({
-        query: study.title
-      });
-      
-      const existingStudy = existingStudies.find(s => 
-        s.title.toLowerCase() === study.title.toLowerCase() &&
-        s.authors.toLowerCase() === study.authors.toLowerCase()
-      );
-      
-      if (existingStudy) {
-        console.log(`Study already exists: ${study.title}`);
-        continue;
-      }
-      
-      // Create the study
+      // Create the study in the database
       await storage.createStudy(study);
-      successCount++;
-      console.log(`Imported study: ${study.title}`);
+      imported++;
       
     } catch (error) {
-      console.error(`Error importing study: ${error.message}`);
+      console.error('Failed to import study:', error);
     }
   }
   
+  console.log(`Import completed. Imported ${imported} out of ${total} studies.`);
+  
   return {
-    total: studies.length,
-    success: successCount
+    total,
+    success: imported
   };
 }
 
@@ -188,28 +209,66 @@ async function importStudies(studies: any[]): Promise<{total: number, success: n
  * @param dateString Input date string
  */
 function formatDate(dateString: string): string {
+  if (!dateString) return new Date().toISOString();
+  
   try {
-    // Handle different date formats
+    // Try to parse the date directly
     const date = new Date(dateString);
-    
-    // Check if the date is valid
     if (!isNaN(date.getTime())) {
       return date.toISOString();
     }
     
-    // Try to extract just the year if full date parsing fails
-    const yearMatch = dateString.match(/\d{4}/);
-    if (yearMatch) {
-      const year = parseInt(yearMatch[0]);
-      if (year >= 1900 && year <= new Date().getFullYear()) {
-        return new Date(`${year}-01-01`).toISOString();
+    // Check for common date formats
+    // Format: YYYY-MM-DD
+    const isoFormat = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+    // Format: MM/DD/YYYY
+    const usFormat = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+    // Format: Month DD, YYYY (e.g., January 1, 2022)
+    const textFormat = /^([a-zA-Z]+)\s+(\d{1,2}),\s+(\d{4})$/;
+    
+    let match;
+    
+    if ((match = isoFormat.exec(dateString))) {
+      const [_, year, month, day] = match;
+      return new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day)
+      ).toISOString();
+    }
+    
+    if ((match = usFormat.exec(dateString))) {
+      const [_, month, day, year] = match;
+      return new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day)
+      ).toISOString();
+    }
+    
+    if ((match = textFormat.exec(dateString))) {
+      const [_, monthName, day, year] = match;
+      const months = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+      };
+      
+      const monthIndex = months[monthName.toLowerCase() as keyof typeof months];
+      
+      if (monthIndex !== undefined) {
+        return new Date(
+          parseInt(year),
+          monthIndex,
+          parseInt(day)
+        ).toISOString();
       }
     }
     
-    // Default to current date
+    // Fall back to current date
     return new Date().toISOString();
-  } catch (e) {
-    console.error(`Error formatting date: ${dateString}`);
+    
+  } catch (error) {
+    console.warn(`Error parsing date "${dateString}":`, error);
     return new Date().toISOString();
   }
 }
@@ -218,11 +277,16 @@ function formatDate(dateString: string): string {
  * Parse boolean values from strings
  * @param value Boolean string representation
  */
-function parseBooleanValue(value: string | boolean): boolean {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') {
-    const lowerValue = value.toLowerCase();
-    return lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1';
+function parseBooleanValue(value: string | boolean | undefined): boolean {
+  if (value === undefined || value === null) {
+    return false;
   }
-  return false;
+  
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  const trueValues = ['true', 'yes', 'y', '1', 'on'];
+  
+  return trueValues.includes(value.toString().toLowerCase());
 }
