@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
+import ContactForm from "@/components/contact/ContactForm";
 
 export default function Resources() {
   const [location] = useLocation();
@@ -279,6 +280,17 @@ export default function Resources() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    <section>
+                      <h3 className="text-lg font-bold mb-2">Send Us a Message</h3>
+                      <p className="text-neutral-700 mb-4">
+                        Fill out the form below and we'll get back to you as soon as possible.
+                      </p>
+                      
+                      <ContactForm />
+                    </section>
+                    
+                    <Separator />
+                    
                     <section>
                       <h3 className="text-lg font-bold mb-2">General Inquiries</h3>
                       <p className="text-neutral-700 mb-2">

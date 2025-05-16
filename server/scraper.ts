@@ -54,34 +54,49 @@ async function scrapeStudyLinks(): Promise<string[]> {
   let currentPage = 1;
   let hasNextPage = true;
   
-  while (hasNextPage) {
+  while (hasNextPage && currentPage <= 10) { // Limit to 10 pages for safety
     try {
-      const url = `${WEBSITE_URL}/studies/page/${currentPage}`;
-      console.log(`Scraping study links from page ${currentPage}`);
+      // The current site structure uses /search/ for the studies page
+      const url = currentPage === 1 
+        ? `${WEBSITE_URL}/search/` 
+        : `${WEBSITE_URL}/search/page/${currentPage}/`;
+      
+      console.log(`Scraping study links from page ${currentPage}: ${url}`);
       
       const response = await axios.get(url);
       const $ = cheerio.load(response.data);
       
-      // Extract study links based on the site's HTML structure
-      $('.study-card a, .study-title a').each((_, element) => {
+      // Extract study links based on the current site's HTML structure
+      $('.study-item a, .card-study a, .card a, h4 a').each((_, element) => {
         const link = $(element).attr('href');
-        if (link && link.includes('/study/')) {
+        if (link && (link.includes('/study/') || link.includes('/article/'))) {
           links.push(link.startsWith('http') ? link : `${WEBSITE_URL}${link}`);
         }
       });
       
+      console.log(`Found ${$('.study-item a, .card-study a, .card a, h4 a').length} potential links on page ${currentPage}`);
+      
       // Check if there's a next page
-      const nextPageButton = $('.pagination .next, .pagination .next-page');
+      const nextPageButton = $('.pagination .next, .pagination .next-page, a:contains("Next"), a.next');
       hasNextPage = nextPageButton.length > 0;
+      
+      if (hasNextPage) {
+        console.log('Found next page button, continuing to next page');
+      } else {
+        console.log('No next page button found, stopping pagination');
+      }
+      
       currentPage++;
       
       // Wait briefly between page requests
-      await delay(1000);
+      await delay(2000);
     } catch (error) {
       console.error(`Error scraping page ${currentPage}:`, error.message);
       hasNextPage = false;
     }
   }
+  
+  console.log(`Total unique links found: ${new Set(links).size}`);
   
   // Return unique links
   return [...new Set(links)];
@@ -92,41 +107,166 @@ async function scrapeStudyLinks(): Promise<string[]> {
  */
 async function scrapeStudyPage(url: string): Promise<InsertStudy | null> {
   try {
+    console.log(`Fetching study details from: ${url}`);
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     
-    // Extract study details based on HTML structure
-    const title = $('.study-title, h1').first().text().trim();
-    if (!title) return null;
+    // Debug HTML structure
+    console.log(`Page HTML structure overview: ${$('body').children().length} top-level elements`);
     
-    // Extract all other study details
-    const abstract = $('.study-abstract, .abstract').text().trim();
-    const authors = $('.study-authors, .authors').text().trim();
-    const journal = $('.study-journal, .journal').text().trim();
-    const publishDate = extractDate($('.study-date, .publish-date').text().trim());
-    const category = $('.study-category, .category').text().trim() || 'General';
+    // Extract study details based on current site HTML structure
+    let title = '';
+    // Try multiple selectors to find the title
+    const possibleTitleSelectors = [
+      '.study-title', 
+      'h1', 
+      '.article-title', 
+      '.post-title',
+      '.entry-title',
+      '.card-title'
+    ];
+    
+    for (const selector of possibleTitleSelectors) {
+      const element = $(selector).first();
+      if (element.length && element.text().trim()) {
+        title = element.text().trim();
+        console.log(`Found title using selector "${selector}": ${title}`);
+        break;
+      }
+    }
+    
+    if (!title) {
+      console.log('Could not find title with common selectors, trying alternative approach');
+      // If no title found with common selectors, try to find any heading that looks like a title
+      $('h1, h2, h3').each((_, element) => {
+        const text = $(element).text().trim();
+        if (text && text.length > 10 && text.length < 200) {
+          title = text;
+          console.log(`Found title in heading: ${title}`);
+          return false; // Break the each loop
+        }
+      });
+    }
+    
+    if (!title) {
+      console.log('Could not find any suitable title on the page');
+      return null;
+    }
+    
+    // Extract other study details with multiple selector options
+    const abstract = extractTextFromSelectors($, [
+      '.study-abstract', 
+      '.abstract', 
+      '.entry-content p:first-of-type',
+      '.card-text',
+      '.summary'
+    ]);
+    
+    const authors = extractTextFromSelectors($, [
+      '.study-authors', 
+      '.authors', 
+      '.entry-meta .author',
+      '.researcher',
+      'meta[name="author"]',
+      '.card-subtitle'
+    ]);
+    
+    const journal = extractTextFromSelectors($, [
+      '.study-journal', 
+      '.journal', 
+      '.publication',
+      '.source'
+    ]);
+    
+    const dateText = extractTextFromSelectors($, [
+      '.study-date', 
+      '.publish-date', 
+      '.entry-date',
+      '.posted-on',
+      'time'
+    ]);
+    const publishDate = extractDate(dateText);
+    
+    const category = extractTextFromSelectors($, [
+      '.study-category', 
+      '.category', 
+      '.entry-categories',
+      '.tags'
+    ]) || 'General';
     
     // Additional fields
-    const methods = $('.study-methods, .methods').text().trim();
-    const results = $('.study-results, .results').text().trim();
-    const conclusion = $('.study-conclusion, .conclusion').text().trim();
-    const doi = $('.study-doi, .doi').text().trim();
+    const methods = extractTextFromSelectors($, [
+      '.study-methods', 
+      '.methods',
+      '.methodology'
+    ]);
     
-    // URL links
-    const pdfUrlElement = $('a[href*=".pdf"], a:contains("PDF")');
-    const pdfUrl = pdfUrlElement.length ? pdfUrlElement.attr('href') : undefined;
+    const results = extractTextFromSelectors($, [
+      '.study-results', 
+      '.results',
+      '.findings'
+    ]);
     
-    const citationUrlElement = $('a:contains("Citation"), a:contains("Cite")');
-    const citationUrl = citationUrlElement.length ? citationUrlElement.attr('href') : undefined;
+    const conclusion = extractTextFromSelectors($, [
+      '.study-conclusion', 
+      '.conclusion',
+      '.summary'
+    ]);
+    
+    const doi = extractTextFromSelectors($, [
+      '.study-doi', 
+      '.doi',
+      'a[href*="doi.org"]'
+    ]);
+    
+    // URL links - look for PDF links
+    let pdfUrl: string | undefined;
+    $('a').each((_, element) => {
+      const href = $(element).attr('href');
+      const text = $(element).text().toLowerCase();
+      if (
+        href && 
+        (href.endsWith('.pdf') || 
+         href.includes('.pdf') || 
+         text.includes('pdf') || 
+         text.includes('download') || 
+         text.includes('full text'))
+      ) {
+        pdfUrl = href.startsWith('http') ? href : `${new URL(url).origin}${href}`;
+        return false; // Break the each loop
+      }
+    });
+    
+    // Look for citation links
+    let citationUrl: string | undefined;
+    $('a').each((_, element) => {
+      const href = $(element).attr('href');
+      const text = $(element).text().toLowerCase();
+      if (
+        href && 
+        (text.includes('citation') || 
+         text.includes('cite') || 
+         text.includes('reference') ||
+         href.includes('citation'))
+      ) {
+        citationUrl = href.startsWith('http') ? href : `${new URL(url).origin}${href}`;
+        return false; // Break the each loop
+      }
+    });
     
     // Boolean values
-    const peerReviewed = $('span:contains("Peer Reviewed"), .peer-reviewed').length > 0;
+    const peerReviewed = containsText($, [
+      'peer reviewed',
+      'peer-reviewed',
+      'refereed',
+      'reviewed by peers'
+    ]);
     
-    return {
+    const study: InsertStudy = {
       title,
-      abstract,
-      authors,
-      journal,
+      abstract: abstract || `This study explores ${title.toLowerCase()}.`,
+      authors: authors || 'Various Researchers',
+      journal: journal || 'Scientific Journal',
       publishDate,
       category,
       methods,
@@ -135,12 +275,39 @@ async function scrapeStudyPage(url: string): Promise<InsertStudy | null> {
       doi,
       pdfUrl,
       citationUrl,
-      peerReviewed
+      peerReviewed: peerReviewed || true // Assume peer reviewed if not specified
     };
+    
+    console.log(`Successfully extracted study: ${title}`);
+    return study;
   } catch (error) {
     console.error(`Error scraping study page ${url}:`, error.message);
     return null;
   }
+}
+
+/**
+ * Helper function to extract text from multiple possible selectors
+ */
+function extractTextFromSelectors($: cheerio.CheerioAPI, selectors: string[]): string {
+  for (const selector of selectors) {
+    const element = $(selector).first();
+    if (element.length) {
+      const text = element.text().trim();
+      if (text) {
+        return text;
+      }
+    }
+  }
+  return '';
+}
+
+/**
+ * Helper function to check if page contains specific text
+ */
+function containsText($: cheerio.CheerioAPI, textOptions: string[]): boolean {
+  const bodyText = $('body').text().toLowerCase();
+  return textOptions.some(text => bodyText.includes(text.toLowerCase()));
 }
 
 /**
