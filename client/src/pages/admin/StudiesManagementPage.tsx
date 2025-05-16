@@ -56,7 +56,7 @@ export default function StudiesManagementPage() {
   const pageSize = 10;
   
   // Fetch studies
-  const { data: studies, isLoading: isLoadingStudies } = useQuery({
+  const { data: studiesData, isLoading: isLoadingStudies } = useQuery({
     queryKey: ['/api/studies', { page: currentPage, searchQuery, categoryFilter }],
     retry: false,
   });
@@ -66,6 +66,12 @@ export default function StudiesManagementPage() {
     queryKey: ['/api/categories'],
     retry: false,
   });
+  
+  // Process studies data
+  const studies = studiesData ? {
+    data: studiesData,
+    totalCount: studiesData.length
+  } : { data: [], totalCount: 0 };
   
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -94,7 +100,7 @@ export default function StudiesManagementPage() {
   };
   
   // Total pages calculation
-  const totalItems = studies?.totalCount || 0;
+  const totalItems = studies.totalCount || 0;
   const totalPages = Math.ceil(totalItems / pageSize);
   
   return (
@@ -209,7 +215,7 @@ export default function StudiesManagementPage() {
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : !studies || studies.data?.length === 0 ? (
+            ) : !studies.data || studies.data.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <AlertCircle className="h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-medium">No studies found</h3>
@@ -247,7 +253,7 @@ export default function StudiesManagementPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {studies && studies.data && studies.data.map((study: Study) => (
+                      {studies.data && studies.data.map((study: Study) => (
                         <TableRow key={study.id}>
                           <TableCell className="font-medium max-w-xs truncate">
                             <Link href={`/admin/studies/edit/${study.id}`} className="hover:underline">
