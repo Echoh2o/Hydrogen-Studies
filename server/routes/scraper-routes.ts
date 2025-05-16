@@ -1,81 +1,98 @@
-import express from 'express';
-import { scrapeStudyFromUrl, saveScrapedStudy } from '../direct-scraper';
+import { Router } from 'express';
+import { z } from 'zod';
+import { 
+  getAllScraperStatuses, 
+  getScraperStatus 
+} from '../scrapers/scraper-status';
+import { scrapeAllHydrogenStudies } from '../scrapers/hydrogen-studies-scraper';
 
-const router = express.Router();
+const router = Router();
 
-/**
- * Preview a URL by scraping its content
- * This is called when a user wants to preview a study from an external URL
- */
-router.post('/preview-url', async (req, res) => {
+// Get status of all scrapers
+router.get('/scraper/status', (req, res) => {
   try {
-    const { url } = req.body;
+    // Get all scraper statuses
+    const scraperStatuses = getAllScraperStatuses();
     
-    if (!url) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'URL is required' 
-      });
-    }
+    // Check if any scraper is currently running
+    const runningStatus = scraperStatuses.find(s => s.status === 'running');
     
-    // Try to scrape the study data
-    const study = await scrapeStudyFromUrl(url);
-    
-    if (!study) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Could not extract study data from the provided URL' 
-      });
-    }
-    
-    return res.json({
+    // Prepare response data
+    const responseData = {
       success: true,
-      study
-    });
+      status: {
+        isRunning: !!runningStatus,
+        current: runningStatus || scraperStatuses[0] || null,
+        all: scraperStatuses,
+      }
+    };
+    
+    return res.json(responseData);
   } catch (error: any) {
-    console.error('Error previewing URL:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: error.message || 'An error occurred while previewing the URL' 
+      message: error.message || 'Failed to get scraper status'
     });
   }
 });
 
-/**
- * Save a study from a URL
- * This is called when a user wants to save a study after previewing it
- */
-router.post('/save-url', async (req, res) => {
+// Start the hydrogen studies scraper
+router.post('/scraper/start', async (req, res) => {
   try {
-    const { url } = req.body;
+    // Check if a scraper is already running
+    const scraperStatuses = getAllScraperStatuses();
+    const runningStatus = scraperStatuses.find(s => s.status === 'running');
     
-    if (!url) {
-      return res.status(400).json({ 
+    if (runningStatus) {
+      return res.status(400).json({
         success: false,
-        message: 'URL is required' 
+        message: 'A scraper is already running',
+        status: runningStatus
       });
     }
     
-    // Save the scraped study
-    const result = await saveScrapedStudy(url);
+    // Start the hydrogen studies scraper (non-blocking)
+    setTimeout(async () => {
+      try {
+        await scrapeAllHydrogenStudies();
+      } catch (error) {
+        console.error('Error running hydrogen studies scraper:', error);
+      }
+    }, 0);
     
-    if (!result.success) {
-      return res.status(400).json({
+    return res.json({
+      success: true,
+      message: 'Hydrogen studies scraper started'
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to start scraper'
+    });
+  }
+});
+
+// Get status of a specific scraper
+router.get('/scraper/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const status = getScraperStatus(id);
+    
+    if (!status) {
+      return res.status(404).json({
         success: false,
-        message: result.message
+        message: `No scraper found with ID: ${id}`
       });
     }
     
     return res.json({
       success: true,
-      message: 'Study saved successfully',
-      study: result.study
+      status
     });
   } catch (error: any) {
-    console.error('Error saving study from URL:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: error.message || 'An error occurred while saving the study' 
+      message: error.message || 'Failed to get scraper status'
     });
   }
 });
