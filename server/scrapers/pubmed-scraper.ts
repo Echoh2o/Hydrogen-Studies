@@ -1,313 +1,452 @@
-/**
- * Scraper for PubMed medical research database
- * Specifically focused on hydrogen-related research studies
- */
-import { BaseScraper, ScraperSource } from './base-scraper';
+import axios from 'axios';
+import { BaseScraper } from './base-scraper';
 import { InsertStudy } from '@shared/schema';
-import * as cheerio from 'cheerio';
+import { storage } from '../storage';
+
+interface PubMedSearchResult {
+  esearchresult: {
+    count: string;
+    retmax: string;
+    retstart: string;
+    idlist: string[];
+  };
+}
+
+interface PubMedSummaryResult {
+  result: {
+    uids: string[];
+    [uid: string]: {
+      uid: string;
+      pubdate: string;
+      epubdate: string;
+      source: string;
+      authors: Array<{
+        name: string;
+        authtype: string;
+        clusterid: string;
+      }>;
+      lastauthor: string;
+      title: string;
+      sortTitle: string;
+      volume: string;
+      issue: string;
+      pages: string;
+      lang: string[];
+      nlmuniqueid: string;
+      issn: string;
+      essn: string;
+      pubtype: string[];
+      recordstatus: string;
+      pubstatus: string;
+      articleids: Array<{
+        idtype: string;
+        idtypen: number;
+        value: string;
+      }>;
+      history: Array<{
+        pubstatus: string;
+        date: string;
+      }>;
+      references: string[];
+      attributes: string[];
+      pmcrefcount: string;
+      fulljournalname: string;
+      elocationid: string;
+      doctype: string;
+      srccontriblist: any[];
+      booktitle: string;
+      medium: string;
+      edition: string;
+      publisherlocation: string;
+      publishername: string;
+      srcdate: string;
+      reportnumber: string;
+      availablefromurl: string;
+      locationlabel: string;
+      doccontriblist: any[];
+      docdate: string;
+      bookname: string;
+      chapter: string;
+      sortpubdate: string;
+      sortfirstauthor: string;
+      vernaculartitle: string;
+      abstracttext?: string;
+    };
+  };
+}
 
 export class PubMedScraper extends BaseScraper {
+  private apiKey: string;
+  private baseUrl = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
+  
   constructor() {
-    const source: ScraperSource = {
-      name: 'PubMed',
-      baseUrl: 'https://pubmed.ncbi.nlm.nih.gov',
-      description: 'PubMed - National Library of Medicine database of biomedical literature',
-      enabled: true
-    };
-    super(source);
-  }
-
-  /**
-   * Get list of study links from PubMed relating to hydrogen research
-   */
-  protected async getStudyLinks(): Promise<string[]> {
-    const searchTerms = [
-      'hydrogen+water',
-      'molecular+hydrogen+therapy',
-      'hydrogen+gas+medicine',
-      'hydrogen+rich+water',
-      'hydrogen+medicine',
-      'hydrogen+therapy',
-      'hydrogen+therapeutic',
-      'h2+antioxidant',
-      'hydrogen+oxidative+stress',
-      'hydrogen+inflammation'
-    ];
-    
-    const links: string[] = [];
-    
-    for (const searchTerm of searchTerms) {
-      let page = 1;
-      let hasMoreResults = true;
-      
-      while (hasMoreResults && page <= 5) { // Limit to 5 pages per search term to avoid overwhelming
-        try {
-          const searchUrl = `${this.source.baseUrl}/search/?term=${searchTerm}&page=${page}`;
-          console.log(`Searching PubMed: ${searchUrl}`);
-          
-          const $ = await this.makeRequest(searchUrl);
-          
-          // Extract article links from search results
-          const articleLinks = $('.docsum-title');
-          
-          if (articleLinks.length === 0) {
-            console.log(`No more results for search term: ${searchTerm}`);
-            hasMoreResults = false;
-            break;
-          }
-          
-          console.log(`Found ${articleLinks.length} results on page ${page} for term ${searchTerm}`);
-          
-          articleLinks.each((_, element) => {
-            const href = $(element).attr('href');
-            if (href) {
-              const fullUrl = `${this.source.baseUrl}${href}`;
-              links.push(fullUrl);
-            }
-          });
-          
-          // Check if there's a next page
-          const nextPageLink = $('.next-page-link');
-          if (nextPageLink.length === 0) {
-            hasMoreResults = false;
-          }
-          
-          page++;
-          
-          // Be gentle with the API
-          await this.delay(3000);
-        } catch (err) {
-          const error = err as Error; 
-          console.error(`Error fetching PubMed search results for term ${searchTerm}, page ${page}:`, error.message);
-          hasMoreResults = false;
-        }
-      }
+    super('pubmed');
+    this.apiKey = process.env.PUBMED_API_KEY || '';
+    if (!this.apiKey) {
+      console.warn('Warning: PUBMED_API_KEY not set. API rate limits will be restricted.');
     }
-    
-    // Remove duplicates
-    const uniqueLinks = Array.from(new Set(links));
-    console.log(`Found ${uniqueLinks.length} unique study links on PubMed`);
-    
-    return uniqueLinks;
   }
-
+  
   /**
-   * Extract study details from a PubMed article page
+   * Search PubMed for studies related to hydrogen therapy
    */
-  protected async scrapeStudyPage(url: string): Promise<InsertStudy | null> {
+  async searchArticles(
+    query: string = 'hydrogen therapy',
+    options: {
+      max?: number;
+      startIndex?: number;
+      sort?: 'relevance' | 'pub_date';
+    } = {}
+  ): Promise<{ 
+    articles: any[]; 
+    total: number; 
+    nextIndex?: number;
+  }> {
     try {
-      console.log(`Fetching study details from PubMed: ${url}`);
-      const $ = await this.makeRequest(url);
+      const { max = 10, startIndex = 0, sort = 'relevance' } = options;
       
-      // Extract the PMID from the URL
-      const pmidMatch = url.match(/\/(\d+)\/?$/);
-      const pmid = pmidMatch ? pmidMatch[1] : '';
+      // Step 1: Search for article IDs
+      const searchUrl = `${this.baseUrl}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=${max}&retstart=${startIndex}&retmode=json&sort=${sort === 'pub_date' ? 'pub+date' : 'relevance'}${this.apiKey ? `&api_key=${this.apiKey}` : ''}`;
       
-      // Extract title
-      const title = $('.heading-title').text().trim();
-      if (!title) {
-        console.log('Could not find title on PubMed page');
-        return null;
+      const searchResponse = await axios.get<PubMedSearchResult>(searchUrl, {
+        headers: this.getRandomizedHeaders()
+      });
+      
+      const searchData = searchResponse.data;
+      const idList = searchData.esearchresult.idlist;
+      const totalResults = parseInt(searchData.esearchresult.count);
+      
+      if (idList.length === 0) {
+        return { articles: [], total: 0 };
       }
       
-      // Extract authors
-      let authors = '';
-      $('.authors-list .authors-list-item').each((i, element) => {
-        const author = $(element).find('.full-name').text().trim();
-        if (author) {
-          authors += (i > 0 ? ', ' : '') + author;
-        }
+      // Step 2: Fetch article details using the IDs
+      const summaryUrl = `${this.baseUrl}/esummary.fcgi?db=pubmed&id=${idList.join(',')}&retmode=json${this.apiKey ? `&api_key=${this.apiKey}` : ''}`;
+      
+      const summaryResponse = await axios.get<PubMedSummaryResult>(summaryUrl, {
+        headers: this.getRandomizedHeaders()
       });
       
-      // If no structured authors found, try alternative selectors
-      if (!authors) {
-        authors = $('.authors-list').text().trim();
-      }
+      const summaryData = summaryResponse.data;
       
-      // Extract abstract
-      let abstract = '';
-      $('.abstract-content p').each((_, element) => {
-        abstract += $(element).text().trim() + ' ';
-      });
-      abstract = abstract.trim();
-      
-      // Extract journal info
-      const journal = $('.journal-citation').text().trim();
-      
-      // Extract publication date
-      let publishDate = '';
-      const pubDateElement = $('.publish-date');
-      if (pubDateElement.length) {
-        publishDate = pubDateElement.text().trim();
-      } else {
-        // Try alternative date format
-        const pubDateAlt = $('.cit').text().match(/(\d{4})\s+[A-Za-z]+\s*;/);
-        if (pubDateAlt) {
-          publishDate = pubDateAlt[1];
-        }
-      }
-      
-      // Format the date to ISO string
-      const formattedDate = this.formatPublicationDate(publishDate);
-      
-      // Extract DOI
-      let doi = '';
-      $('.identifier.doi').each((_, element) => {
-        const doiText = $(element).text().trim();
-        if (doiText.includes('doi:')) {
-          doi = doiText.replace('doi:', '').trim();
-        }
+      // Step 3: Process the results into a standardized format
+      const articles = idList.map(id => {
+        const article = summaryData.result[id];
+        
+        // Extract DOI if available
+        const doiObject = article.articleids.find(id => id.idtype === 'doi');
+        const doi = doiObject ? doiObject.value : '';
+        
+        // Extract PMID
+        const pmidObject = article.articleids.find(id => id.idtype === 'pubmed');
+        const pmid = pmidObject ? pmidObject.value : '';
+        
+        // Format authors
+        const authorsList = article.authors ? 
+          article.authors.map(author => author.name).join(', ') : '';
+        
+        return {
+          id: pmid,
+          title: article.title,
+          abstract: article.abstracttext || '',
+          authors: authorsList,
+          journal: article.fulljournalname,
+          publishDate: article.pubdate,
+          doi: doi,
+          pmid: pmid,
+          articleType: article.pubtype ? article.pubtype.join(', ') : '',
+          url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+          source: 'PubMed'
+        };
       });
       
-      // Extract keywords (tagged terms)
-      const keywords: string[] = [];
-      $('.keywords-list .keyword-actions-trigger').each((_, element) => {
-        keywords.push($(element).text().trim());
-      });
+      // Calculate next index for pagination
+      const nextIndex = startIndex + idList.length < totalResults ? 
+        startIndex + idList.length : undefined;
       
-      const category = keywords.length > 0 ? keywords[0] : 'Hydrogen Research';
-      
-      // Extract methods and results sections if they exist
-      const methodsSection = this.extractSection($, 'methods');
-      const resultsSection = this.extractSection($, 'results');
-      const conclusionSection = this.extractSection($, 'conclusion');
-      
-      // PDF link (if available)
-      let pdfUrl: string | undefined;
-      $('.links-navbar a').each((_, element) => {
-        const href = $(element).attr('href');
-        const text = $(element).text().toLowerCase();
-        if (href && (text.includes('full text') || text.includes('pdf'))) {
-          pdfUrl = href.startsWith('http') ? href : `https://doi.org/${doi}`;
-        }
-      });
-      
-      // Create citation URL
-      const citationUrl = `${this.source.baseUrl}/${pmid}/cite/`;
-      
-      // Determine if peer reviewed (assume all PubMed articles are peer reviewed)
-      const peerReviewed = true;
-      
-      // Create the study object
-      const study: InsertStudy = {
-        title,
-        abstract: abstract || `Study published in ${journal} with PMID ${pmid}`,
-        authors: authors || 'PubMed Authors',
-        journal: journal || 'Scientific Journal',
-        publishDate: formattedDate,
-        category,
-        methods: methodsSection,
-        results: resultsSection,
-        conclusion: conclusionSection,
-        doi,
-        pdfUrl,
-        citationUrl,
-        peerReviewed,
-        sourceUrl: url,
-        sourcePlatform: this.source.name
+      return { 
+        articles, 
+        total: totalResults,
+        nextIndex
       };
       
-      console.log(`Successfully extracted PubMed study: ${title}`);
-      return study;
-    } catch (err) {
-      const error = err as Error;
-      console.error(`Error scraping PubMed study at ${url}:`, error.message);
-      return null;
+    } catch (error) {
+      console.error('Error searching PubMed:', error);
+      throw new Error(`Failed to search PubMed: ${error.message}`);
     }
   }
   
   /**
-   * Helper function to extract specific sections like methods, results, conclusion
+   * Fetch full article details for a specific PubMed ID
    */
-  private extractSection($: cheerio.CheerioAPI, sectionName: string): string {
-    let sectionText = '';
-    
-    // Try to find labeled sections
-    $('.abstract-content').find('p, div').each((_, element) => {
-      const text = $(element).text().trim();
-      const label = $(element).find('.label').text().toLowerCase();
-      
-      if (label && label.includes(sectionName)) {
-        sectionText = text.replace(label, '').trim();
-        return false; // Break the loop
-      }
-      
-      // Look for strong/b tags that might indicate sections
-      const strongLabel = $(element).find('strong, b').text().toLowerCase();
-      if (strongLabel && strongLabel.includes(sectionName)) {
-        sectionText = text.replace(strongLabel, '').trim();
-        return false;
-      }
-    });
-    
-    return sectionText;
-  }
-  
-  /**
-   * Format publication date to ISO string
-   */
-  private formatPublicationDate(dateText: string): string {
-    if (!dateText) return new Date().toISOString();
-    
+  async getArticleDetails(pmid: string): Promise<any> {
     try {
-      // Try to parse various PubMed date formats
-      // Format: "2022 Jan 15"
-      const dateMatch = dateText.match(/(\d{4})\s+([A-Za-z]+)\s+(\d{1,2})/);
-      if (dateMatch) {
-        const year = dateMatch[1];
-        const month = this.getMonthNumber(dateMatch[2]);
-        const day = dateMatch[3].padStart(2, '0');
-        return new Date(`${year}-${month}-${day}`).toISOString();
-      }
+      // Fetch detailed article information
+      const detailsUrl = `${this.baseUrl}/efetch.fcgi?db=pubmed&id=${pmid}&retmode=xml${this.apiKey ? `&api_key=${this.apiKey}` : ''}`;
       
-      // Format: "2022 Jan"
-      const monthYearMatch = dateText.match(/(\d{4})\s+([A-Za-z]+)/);
-      if (monthYearMatch) {
-        const year = monthYearMatch[1];
-        const month = this.getMonthNumber(monthYearMatch[2]);
-        return new Date(`${year}-${month}-01`).toISOString();
-      }
+      const response = await axios.get(detailsUrl, {
+        headers: this.getRandomizedHeaders()
+      });
       
-      // Format: "2022"
-      const yearMatch = dateText.match(/(\d{4})/);
-      if (yearMatch) {
-        return new Date(`${yearMatch[1]}-01-01`).toISOString();
-      }
-    } catch (e) {
-      console.log(`Error parsing PubMed date: ${dateText}`);
+      // For XML response, we would need to parse the XML
+      // This is a simplified version that returns the raw XML
+      return {
+        xml: response.data,
+        url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`
+      };
+      
+    } catch (error) {
+      console.error(`Error fetching article details for PMID ${pmid}:`, error);
+      throw new Error(`Failed to fetch article details: ${error.message}`);
     }
-    
-    // Default to current date if parsing fails
-    return new Date().toISOString();
   }
   
   /**
-   * Convert month name to month number
+   * Convert a PubMed article to our study format
    */
-  private getMonthNumber(monthName: string): string {
-    const months: Record<string, string> = {
-      'jan': '01', 'january': '01',
-      'feb': '02', 'february': '02',
-      'mar': '03', 'march': '03',
-      'apr': '04', 'april': '04',
-      'may': '05',
-      'jun': '06', 'june': '06',
-      'jul': '07', 'july': '07',
-      'aug': '08', 'august': '08',
-      'sep': '09', 'september': '09', 'sept': '09',
-      'oct': '10', 'october': '10',
-      'nov': '11', 'november': '11',
-      'dec': '12', 'december': '12'
+  convertToStudy(article: any): InsertStudy {
+    // Determine if the article is peer-reviewed based on journal and pub type
+    const isPeerReviewed = this.isPeerReviewedArticle(article);
+    
+    // Extract publication year from the date
+    let publishYear = null;
+    if (article.publishDate) {
+      const yearMatch = article.publishDate.match(/(\d{4})/);
+      if (yearMatch && yearMatch[1]) {
+        publishYear = parseInt(yearMatch[1]);
+      }
+    }
+    
+    // Convert the article to our study schema
+    const study: InsertStudy = {
+      title: article.title || '',
+      abstract: article.abstract || '',
+      authors: article.authors || '',
+      journal: article.journal || '',
+      publishDate: this.formatDate(article.publishDate) || new Date().toISOString(),
+      publishYear,
+      category: this.detectCategory(article.title, article.abstract),
+      methods: '',
+      results: '',
+      conclusion: '',
+      doi: article.doi || '',
+      pdfUrl: article.url || '',
+      citationUrl: article.url || '',
+      peerReviewed: isPeerReviewed,
+      imageUrl: '',
+      keywords: this.extractKeywords(article.title, article.abstract),
+      healthConditions: this.extractHealthConditions(article.title, article.abstract),
+      bodySystems: this.extractBodySystems(article.title, article.abstract),
+      studyType: this.detectStudyType(article.title, article.abstract, article.articleType),
+      country: '',
+      region: '',
+      sampleSize: null,
+      duration: ''
     };
     
-    const monthLower = monthName.toLowerCase();
-    return months[monthLower] || '01';
+    return study;
   }
   
   /**
-   * Use a longer delay for PubMed to avoid hitting rate limits
+   * Format a PubMed date to ISO string
    */
-  protected getRequestDelay(): number {
-    return 5000; // 5 seconds between requests
+  private formatDate(pubmedDate: string): string {
+    if (!pubmedDate) return new Date().toISOString();
+    
+    try {
+      // Handle different PubMed date formats
+      // Format: YYYY Mon Day
+      const dateFormat = /^(\d{4})\s+([A-Za-z]{3})(?:\s+(\d{1,2}))?/;
+      const match = pubmedDate.match(dateFormat);
+      
+      if (match) {
+        const [_, year, month, day] = match;
+        const months: Record<string, number> = {
+          Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+          Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+        };
+        
+        // Use 1 as default day if not provided
+        const dayNumber = day ? parseInt(day) : 1;
+        
+        return new Date(
+          parseInt(year),
+          months[month] || 0,
+          dayNumber
+        ).toISOString();
+      }
+      
+      // Try parsing as is
+      const date = new Date(pubmedDate);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+      
+      // Fall back to current date
+      return new Date().toISOString();
+      
+    } catch (error) {
+      console.warn(`Error parsing date "${pubmedDate}":`, error);
+      return new Date().toISOString();
+    }
+  }
+  
+  /**
+   * Determine if an article is peer-reviewed based on journal info
+   */
+  private isPeerReviewedArticle(article: any): boolean {
+    // Most articles in PubMed are from peer-reviewed journals
+    // Articles with these pub types are typically not peer-reviewed
+    const nonPeerReviewedTypes = [
+      'preprint', 
+      'blog', 
+      'comment', 
+      'letter', 
+      'news', 
+      'editorial'
+    ];
+    
+    if (article.articleType) {
+      const articleType = article.articleType.toLowerCase();
+      for (const type of nonPeerReviewedTypes) {
+        if (articleType.includes(type)) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Detect study category based on title and abstract
+   */
+  private detectCategory(title: string, abstract: string): string {
+    const content = `${title} ${abstract}`.toLowerCase();
+    
+    // Check for common categories
+    if (content.includes('inflammation') || content.includes('inflammatory')) {
+      return 'Inflammation';
+    } else if (content.includes('cancer') || content.includes('tumor') || content.includes('oncology')) {
+      return 'Cancer';
+    } else if (content.includes('brain') || content.includes('neuro') || content.includes('cognitive')) {
+      return 'Neurological';
+    } else if (content.includes('heart') || content.includes('cardiac') || content.includes('cardiovascular')) {
+      return 'Cardiovascular';
+    } else if (content.includes('diabetes') || content.includes('metabolic')) {
+      return 'Metabolic';
+    } else if (content.includes('skin') || content.includes('dermatology')) {
+      return 'Dermatology';
+    } else if (content.includes('liver') || content.includes('hepatic')) {
+      return 'Liver';
+    } else if (content.includes('kidney') || content.includes('renal')) {
+      return 'Kidney';
+    } else if (content.includes('lung') || content.includes('respiratory') || content.includes('pulmonary')) {
+      return 'Respiratory';
+    } else if (content.includes('gut') || content.includes('intestine') || content.includes('gastro')) {
+      return 'Gastrointestinal';
+    } else if (content.includes('muscle') || content.includes('exercise') || content.includes('athletic')) {
+      return 'Fitness';
+    }
+    
+    return 'General';
+  }
+  
+  /**
+   * Extract keywords from title and abstract
+   */
+  private extractKeywords(title: string, abstract: string): string {
+    const content = `${title} ${abstract}`.toLowerCase();
+    const potentialKeywords = [
+      'hydrogen', 'h2', 'molecular hydrogen', 'hydrogen-rich', 'hydrogen gas',
+      'antioxidant', 'inflammation', 'oxidative stress', 'reactive oxygen species',
+      'therapeutic', 'treatment', 'therapy', 'disease', 'prevention',
+      'mitochondria', 'signaling', 'nrf2', 'water', 'saline'
+    ];
+    
+    const foundKeywords = potentialKeywords.filter(keyword => 
+      content.includes(keyword.toLowerCase())
+    );
+    
+    return foundKeywords.join(', ');
+  }
+  
+  /**
+   * Extract health conditions mentioned in title and abstract
+   */
+  private extractHealthConditions(title: string, abstract: string): string {
+    const content = `${title} ${abstract}`.toLowerCase();
+    const conditions = [
+      'alzheimer', 'parkinson', 'diabetes', 'cancer', 'stroke', 'heart disease',
+      'arthritis', 'asthma', 'copd', 'depression', 'anxiety', 'hypertension',
+      'obesity', 'inflammation', 'injury', 'wound', 'pain', 'fatigue',
+      'allergy', 'autoimmune', 'ischemia'
+    ];
+    
+    const foundConditions = conditions.filter(condition => 
+      content.includes(condition.toLowerCase())
+    );
+    
+    return foundConditions.join(', ');
+  }
+  
+  /**
+   * Extract body systems mentioned in title and abstract
+   */
+  private extractBodySystems(title: string, abstract: string): string {
+    const content = `${title} ${abstract}`.toLowerCase();
+    const systems = [
+      'nervous system', 'brain', 'neurological',
+      'cardiovascular', 'heart', 'circulatory',
+      'respiratory', 'lung', 'pulmonary',
+      'digestive', 'gastrointestinal', 'gut', 'intestine',
+      'immune system', 'lymphatic',
+      'endocrine', 'hormonal',
+      'muscular', 'muscle',
+      'skeletal', 'bone',
+      'integumentary', 'skin',
+      'renal', 'kidney', 'urinary',
+      'reproductive'
+    ];
+    
+    const foundSystems = systems.filter(system => 
+      content.includes(system.toLowerCase())
+    );
+    
+    return foundSystems.join(', ');
+  }
+  
+  /**
+   * Detect study type based on content and article type
+   */
+  private detectStudyType(title: string, abstract: string, articleType: string): string {
+    const content = `${title} ${abstract} ${articleType || ''}`.toLowerCase();
+    
+    // Check for specific study types
+    if (content.includes('review') || content.includes('meta-analysis')) {
+      if (content.includes('systematic')) {
+        return 'Systematic Review';
+      }
+      return 'Review';
+    } else if (content.includes('randomized') || content.includes('rct')) {
+      return 'Randomized Controlled Trial';
+    } else if (content.includes('case report') || content.includes('case study')) {
+      return 'Case Report';
+    } else if (content.includes('cohort')) {
+      return 'Cohort Study';
+    } else if (content.includes('observational')) {
+      return 'Observational Study';
+    } else if (content.includes('clinical trial')) {
+      return 'Clinical Trial';
+    } else if (content.includes('pilot')) {
+      return 'Pilot Study';
+    } else if (content.includes('animal') || content.includes('mouse') || content.includes('rat') || 
+              content.includes('mice') || content.includes('in vivo')) {
+      return 'Animal Study';
+    } else if (content.includes('in vitro') || content.includes('cell')) {
+      return 'In Vitro Study';
+    }
+    
+    return 'Research Article';
   }
 }

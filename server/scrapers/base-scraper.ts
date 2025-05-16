@@ -1,226 +1,65 @@
 /**
- * Base scraper class for research platforms
- * Provides common functionality for all research platform scrapers
+ * Supported scraper sources
  */
-import { InsertStudy, scrapedSources } from '@shared/schema';
-import axios from 'axios';
-import * as cheerio from 'cheerio';
-import { storage } from '../storage';
-import { db } from '../db';
-import { eq } from 'drizzle-orm';
+export type ScraperSource = 'pubmed' | 'google-scholar' | 'hydrogen-studies';
 
-export interface ScraperSource {
-  name: string;
-  baseUrl: string;
-  description: string;
-  enabled: boolean;
-}
-
+/**
+ * Base scraper class with common functionality for all scrapers
+ */
 export abstract class BaseScraper {
-  public readonly source: ScraperSource;
-  protected userAgent: string = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+  protected source: ScraperSource;
+  protected userAgents: string[];
   
   constructor(source: ScraperSource) {
     this.source = source;
-  }
-  
-  /**
-   * Execute the scraper to find and extract studies
-   */
-  public async execute(): Promise<{ total: number; success: number }> {
-    console.log(`Starting scraper for ${this.source.name}...`);
     
-    try {
-      // Get list of study links to scrape
-      const studyLinks = await this.getStudyLinks();
-      console.log(`Found ${studyLinks.length} potential studies to scrape from ${this.source.name}`);
-      
-      // Filter out already scraped sources
-      const newLinks = await this.filterAlreadyScrapedSources(studyLinks);
-      console.log(`${newLinks.length} new studies to scrape from ${this.source.name}`);
-      
-      // Scrape each study
-      let successCount = 0;
-      for (let i = 0; i < newLinks.length; i++) {
-        const link = newLinks[i];
-        try {
-          console.log(`Scraping study ${i + 1}/${newLinks.length}: ${link}`);
-          const study = await this.scrapeStudyPage(link);
-          
-          if (study) {
-            // Create the study in the database
-            const createdStudy = await storage.createStudy(study);
-            
-            // Record that we've scraped this source
-            await this.recordScrapedSource(link, createdStudy.id);
-            
-            successCount++;
-            console.log(`Successfully imported study: ${study.title}`);
-          }
-        } catch (err) {
-          const error = err as Error;
-          console.error(`Error scraping study at ${link}: ${error.message}`);
-        }
-        
-        // Delay between requests to avoid overloading the server
-        await this.delay(this.getRequestDelay());
-      }
-      
-      console.log(`Scraping complete for ${this.source.name}. Successfully imported ${successCount} studies.`);
-      return { total: newLinks.length, success: successCount };
-    } catch (err) {
-      const error = err as Error;
-      console.error(`Error executing scraper for ${this.source.name}:`, error);
-      throw error;
-    }
+    // List of user agents to rotate through
+    this.userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36'
+    ];
   }
   
   /**
-   * Get a list of URLs to study pages that should be scraped
-   * This needs to be implemented by each specific scraper
+   * Generate headers with a random user agent to mimic browser behavior
+   * This helps avoid being blocked by anti-scraping measures
    */
-  protected abstract getStudyLinks(): Promise<string[]>;
-  
-  /**
-   * Extract study details from a specific page
-   * This needs to be implemented by each specific scraper
-   */
-  protected abstract scrapeStudyPage(url: string): Promise<InsertStudy | null>;
-  
-  /**
-   * Get the delay between requests (ms)
-   * Can be overridden by specific scrapers
-   */
-  protected getRequestDelay(): number {
-    return 2000; // Default 2 seconds
-  }
-  
-  /**
-   * Make an HTTP request with appropriate headers that better simulate a real browser
-   */
-  protected async makeRequest(url: string): Promise<cheerio.CheerioAPI> {
-    // Add randomization to request timing to appear more human-like
-    const randomDelay = Math.floor(Math.random() * 1000) + 500;
-    await this.delay(randomDelay);
+  protected getRandomizedHeaders(): Record<string, string> {
+    const randomUserAgent = this.userAgents[Math.floor(Math.random() * this.userAgents.length)];
     
-    // Use more complete browser headers to avoid detection
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': this.userAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="120", "Chromium";v="120"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1',
-        'Priority': 'u=0, i',
-        'Cache-Control': 'max-age=0',
-        'Referer': 'https://www.google.com/'
-      },
-      timeout: 30000, // Increase timeout to 30 seconds
-      maxRedirects: 5
-    });
-    
-    return cheerio.load(response.data);
+    return {
+      'User-Agent': randomUserAgent,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Cache-Control': 'max-age=0'
+    };
   }
   
   /**
-   * Helper to delay execution
+   * Add random delay between requests to avoid detection
    */
-  protected delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  protected async randomDelay(minMs: number = 1000, maxMs: number = 3000): Promise<void> {
+    const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+    return new Promise(resolve => setTimeout(resolve, delay));
   }
   
   /**
-   * Filter out URLs that have already been scraped
+   * Extract text content from HTML
    */
-  private async filterAlreadyScrapedSources(urls: string[]): Promise<string[]> {
-    // Get all already scraped sources for this platform
-    const scrapedUrls = await db.select()
-      .from(scrapedSources)
-      .where(eq(scrapedSources.sourcePlatform, this.source.name));
-    
-    // Extract just the URLs
-    const existingUrls = new Set(scrapedUrls.map(item => item.sourceUrl));
-    
-    // Filter out URLs we've already scraped
-    return urls.filter(url => !existingUrls.has(url));
+  protected cleanHtmlContent(html: string): string {
+    return html
+      .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
+      .replace(/\s+/g, ' ')      // Replace multiple spaces with a single space
+      .trim();                   // Trim leading/trailing spaces
   }
   
   /**
-   * Record that we've scraped a particular source
+   * Abstract methods that must be implemented by derived classes
    */
-  private async recordScrapedSource(url: string, studyId: number): Promise<void> {
-    await db.insert(scrapedSources)
-      .values({
-        sourceUrl: url,
-        sourcePlatform: this.source.name,
-        studyId: studyId,
-        scrapedAt: new Date(),
-      });
-  }
-  
-  /**
-   * Helper function to extract text from multiple possible selectors
-   */
-  protected extractTextFromSelectors($: cheerio.CheerioAPI, selectors: string[]): string {
-    for (const selector of selectors) {
-      const element = $(selector).first();
-      if (element.length) {
-        const text = element.text().trim();
-        if (text) {
-          return text;
-        }
-      }
-    }
-    return '';
-  }
-  
-  /**
-   * Helper function to check if page contains specific text
-   */
-  protected containsText($: cheerio.CheerioAPI, textOptions: string[]): boolean {
-    const bodyText = $('body').text().toLowerCase();
-    return textOptions.some(text => bodyText.includes(text.toLowerCase()));
-  }
-  
-  /**
-   * Helper function to extract a date from a text string
-   */
-  protected extractDate(dateText: string): string {
-    if (!dateText) return new Date().toISOString();
-    
-    // Try to parse the date text
-    try {
-      // Look for common date formats in the text
-      const dateMatch = dateText.match(/(\d{1,2}\/\d{1,2}\/\d{4})|(\d{4}-\d{1,2}-\d{1,2})|(\w+ \d{1,2},? \d{4})/);
-      if (dateMatch) {
-        const dateString = dateMatch[0];
-        const date = new Date(dateString);
-        if (!isNaN(date.getTime())) {
-          return date.toISOString();
-        }
-      }
-      
-      // If we can extract just a year
-      const yearMatch = dateText.match(/\d{4}/);
-      if (yearMatch) {
-        const year = parseInt(yearMatch[0]);
-        if (year >= 1900 && year <= new Date().getFullYear()) {
-          return new Date(`${year}-01-01`).toISOString();
-        }
-      }
-    } catch (e) {
-      console.log(`Error parsing date: ${dateText}`);
-    }
-    
-    // Default to current date if parsing fails
-    return new Date().toISOString();
-  }
+  abstract searchArticles(query: string, options?: any): Promise<any>;
 }
