@@ -21,7 +21,7 @@ import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 import educationalRoutes from "./routes/educational";
-import { generateStandardizedSummary } from "../shared/schema-updates";
+import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize database tables for new features
@@ -797,10 +797,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Generate standardized summary from the study abstract
-      const summary = await generateStandardizedSummary(study);
+      const summaryObj = await generateStandardizedSummary(study);
       
       // Update the study with the standardized summary
-      const updatedStudy = await updateStudyWithStandardizedSummary(studyId, summary);
+      const updatedStudy = await updateStudyWithStandardizedSummary(studyId, summaryObj);
       
       res.json({ 
         success: true,
@@ -821,7 +821,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get all studies
       const studies = await storage.getStudies();
-      const results = {
+      const results: {
+        total: number;
+        success: number;
+        failed: number;
+        errors: Array<{studyId: number; error: string}>;
+      } = {
         total: studies.length,
         success: 0,
         failed: 0,
@@ -842,11 +847,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return;
             }
             
-            // Generate standardized summary
-            const summary = await generateStandardizedSummary(study);
+            // Generate standardized summary object
+            const summaryObj = await generateStandardizedSummary(study);
             
             // Update the study with the standardized summary
-            await updateStudyWithStandardizedSummary(study.id, summary);
+            await updateStudyWithStandardizedSummary(study.id, summaryObj);
             
             results.success++;
           } catch (error) {

@@ -52,7 +52,13 @@ export async function updateStudyWithStandardizedSummary(
 }
 
 // Function to generate standardized summary from existing study data
-export async function generateStandardizedSummary(study: Study) {
+export async function generateStandardizedSummary(study: Study): Promise<{
+  objective: string;
+  methodsShort: string;
+  resultsShort: string;
+  conclusionShort: string;
+  summaryMarkdown: string;
+}> {
   // Extract objective from abstract (typically the first sentence)
   const objective = extractObjective(study.abstract);
   
@@ -88,14 +94,14 @@ ${study.pdfUrl ? `**Full Text**: [View PDF](${study.pdfUrl})` : ''}
 ${study.citationUrl ? `**Citation**: [View Citation](${study.citationUrl})` : ''}
 `;
 
-  // Update the study with the new standardized summary
-  return await updateStudyWithStandardizedSummary(study.id, {
+  // Return the standardized summary object
+  return {
     objective,
     methodsShort,
     resultsShort,
     conclusionShort,
     summaryMarkdown
-  });
+  };
 }
 
 // Helper function to extract objective from abstract
