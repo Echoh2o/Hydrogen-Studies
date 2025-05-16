@@ -160,7 +160,7 @@ export class PubMedScraper extends BaseScraper {
       });
       
       // Extract keywords (tagged terms)
-      const keywords = [];
+      const keywords: string[] = [];
       $('.keywords-list .keyword-actions-trigger').each((_, element) => {
         keywords.push($(element).text().trim());
       });
