@@ -351,6 +351,7 @@ export class HydrogenStudiesScraper extends BaseScraper {
         'reviewed by peers'
       ]);
       
+      // Create study object with source tracking
       const study: InsertStudy = {
         title,
         abstract: abstract || `This study explores ${title.toLowerCase()}.`,
@@ -371,7 +372,8 @@ export class HydrogenStudiesScraper extends BaseScraper {
       
       console.log(`Successfully extracted study: ${title}`);
       return study;
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       console.error(`Error scraping study page ${url}:`, error.message);
       return null;
     }

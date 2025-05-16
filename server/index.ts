@@ -56,6 +56,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Apply schema updates for new scraper functionality
+  try {
+    const { updateSchema } = await import('./schema-update');
+    await updateSchema();
+    console.log('Successfully initialized database tables for new features');
+  } catch (error) {
+    console.error('Error initializing database tables:', error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
