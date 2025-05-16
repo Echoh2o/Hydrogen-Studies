@@ -177,4 +177,64 @@ router.post('/research/bulk-approve', async (req, res) => {
   }
 });
 
+/**
+ * Get the current status of the hydrogen studies scraper
+ * GET /api/scraper/status
+ */
+router.get('/scraper/status', (req, res) => {
+  try {
+    const status = getScraperStatus();
+    const description = getScraperProgressDescription();
+    
+    return res.status(200).json({
+      success: true,
+      status,
+      description
+    });
+  } catch (error: any) {
+    console.error('Error getting scraper status:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get scraper status'
+    });
+  }
+});
+
+/**
+ * Start scraping the hydrogen studies website
+ * POST /api/scraper/start
+ */
+router.post('/scraper/start', (req, res) => {
+  try {
+    const status = getScraperStatus();
+    
+    // If scraper is already running, return the status
+    if (status.isRunning) {
+      return res.status(400).json({
+        success: false,
+        message: 'Scraper is already running',
+        status,
+        description: getScraperProgressDescription()
+      });
+    }
+    
+    // Start the scraper in the background
+    scrapeHydrogenStudies().catch(error => {
+      console.error('Error during hydrogen studies scraping:', error);
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Scraper started successfully',
+      description: getScraperProgressDescription()
+    });
+  } catch (error: any) {
+    console.error('Error starting scraper:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to start scraper'
+    });
+  }
+});
+
 export default router;
