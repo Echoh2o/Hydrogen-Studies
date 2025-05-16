@@ -24,6 +24,85 @@ import educationalRoutes from "./routes/educational";
 import { generateStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize database tables for new features
+  try {
+    // Add standardized summary fields to studies table
+    await db.execute(`
+      ALTER TABLE studies 
+      ADD COLUMN IF NOT EXISTS objective TEXT, 
+      ADD COLUMN IF NOT EXISTS methods_short TEXT,
+      ADD COLUMN IF NOT EXISTS results_short TEXT,
+      ADD COLUMN IF NOT EXISTS conclusion_short TEXT,
+      ADD COLUMN IF NOT EXISTS summary_markdown TEXT
+    `);
+    
+    // Create tables for educational resources if they don't exist
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS educational_resources (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        content TEXT NOT NULL,
+        content_markdown TEXT NOT NULL,
+        resource_type TEXT NOT NULL,
+        featured_order INTEGER DEFAULT 0,
+        view_count INTEGER DEFAULT 0,
+        is_published BOOLEAN DEFAULT true,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS glossary_terms (
+        id SERIAL PRIMARY KEY,
+        term TEXT NOT NULL UNIQUE,
+        definition TEXT NOT NULL,
+        long_definition TEXT,
+        citation_sources TEXT,
+        related_terms TEXT[],
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS faq_items (
+        id SERIAL PRIMARY KEY,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        answer_markdown TEXT NOT NULL,
+        category TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS study_collections (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        image_url TEXT,
+        image_alt TEXT,
+        featured_order INTEGER DEFAULT 0,
+        is_published BOOLEAN DEFAULT true,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS collection_studies (
+        collection_id INTEGER NOT NULL REFERENCES study_collections(id),
+        study_id INTEGER NOT NULL REFERENCES studies(id),
+        display_order INTEGER DEFAULT 0,
+        added_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (collection_id, study_id)
+      );
+    `);
+    
+    console.log("Successfully initialized database tables for new features");
+  } catch (error) {
+    console.error("Error initializing database tables:", error);
+  }
+  
+  // Register the educational routes
+  app.use('/api', educationalRoutes);
   // API routes
   
   // Studies routes
@@ -701,6 +780,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate standardized summary for a specific study
+  app.post("/api/studies/:id/standardize-summary", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const studyId = parseInt(id, 10);
+      
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const study = await storage.getStudyById(studyId);
+      
+      if (!study) {
+        return res.status(404).json({ message: "Study not found" });
+      }
+      
+      // Generate standardized summary from the study abstract
+      const summary = await generateStandardizedSummary(study);
+      
+      // Update the study with the standardized summary
+      const updatedStudy = await updateStudyWithStandardizedSummary(studyId, summary);
+      
+      res.json({ 
+        success: true,
+        message: "Successfully generated standardized summary", 
+        study: updatedStudy 
+      });
+    } catch (error) {
+      console.error("Error generating standardized summary:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to generate standardized summary"
+      });
+    }
+  });
+  
+  // Generate standardized summaries for all studies
+  app.post("/api/studies/standardize-all-summaries", async (req, res) => {
+    try {
+      // Get all studies
+      const studies = await storage.getStudies();
+      const results = {
+        total: studies.length,
+        success: 0,
+        failed: 0,
+        errors: []
+      };
+      
+      // Process studies in batches to avoid overwhelming the server
+      const batchSize = 10;
+      for (let i = 0; i < studies.length; i += batchSize) {
+        const batch = studies.slice(i, i + batchSize);
+        
+        // Process each study in the batch
+        await Promise.all(batch.map(async (study) => {
+          try {
+            // Skip studies that already have standardized summaries
+            if (study.objective && study.methodsShort && study.resultsShort && study.conclusionShort) {
+              results.success++;
+              return;
+            }
+            
+            // Generate standardized summary
+            const summary = await generateStandardizedSummary(study);
+            
+            // Update the study with the standardized summary
+            await updateStudyWithStandardizedSummary(study.id, summary);
+            
+            results.success++;
+          } catch (error) {
+            results.failed++;
+            results.errors.push({
+              studyId: study.id,
+              error: String(error)
+            });
+          }
+        }));
+      }
+      
+      res.json({
+        success: true,
+        message: "Standardized summary generation completed",
+        results
+      });
+    } catch (error) {
+      console.error("Error generating standardized summaries for all studies:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate standardized summaries"
+      });
+    }
+  });
+
   // Initialize sample data (only in development)
   if (process.env.NODE_ENV === 'development') {
     try {

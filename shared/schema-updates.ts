@@ -20,13 +20,35 @@ export async function updateStudyWithStandardizedSummary(
     summaryMarkdown: string;
   }
 ) {
-  const [updatedStudy] = await db
-    .update(studies)
-    .set(summary)
-    .where(eq(studies.id, studyId))
-    .returning();
-  
-  return updatedStudy;
+  try {
+    // Update the database schema first to add the new columns if they don't exist
+    await db.execute(`
+      ALTER TABLE studies 
+      ADD COLUMN IF NOT EXISTS objective TEXT, 
+      ADD COLUMN IF NOT EXISTS methods_short TEXT,
+      ADD COLUMN IF NOT EXISTS results_short TEXT,
+      ADD COLUMN IF NOT EXISTS conclusion_short TEXT,
+      ADD COLUMN IF NOT EXISTS summary_markdown TEXT
+    `);
+
+    // Now update the study with the standardized summary
+    const [updatedStudy] = await db
+      .update(studies)
+      .set({
+        objective: summary.objective,
+        methodsShort: summary.methodsShort,
+        resultsShort: summary.resultsShort,
+        conclusionShort: summary.conclusionShort,
+        summaryMarkdown: summary.summaryMarkdown
+      })
+      .where(eq(studies.id, studyId))
+      .returning();
+    
+    return updatedStudy;
+  } catch (error) {
+    console.error("Error updating study with standardized summary:", error);
+    throw error;
+  }
 }
 
 // Function to generate standardized summary from existing study data
