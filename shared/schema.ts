@@ -38,10 +38,20 @@ export const newsletters = pgTable("newsletters", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Contact form messages table schema
+export const contactMessages = pgTable("contact_messages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Create insertion schemas and types
 export const insertStudySchema = createInsertSchema(studies).omit({ id: true, createdAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertNewsletterSchema = createInsertSchema(newsletters).omit({ id: true, createdAt: true });
+export const insertContactSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
 
 // Types for insertion
 export type InsertStudy = z.infer<typeof insertStudySchema>;

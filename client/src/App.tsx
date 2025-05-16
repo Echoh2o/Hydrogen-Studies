@@ -16,6 +16,7 @@ import Categories from "@/pages/categories";
 import CategoryDetails from "@/pages/category-details";
 import About from "@/pages/about";
 import Resources from "@/pages/resources";
+import ContactPage from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
 
 function ScrollToTop() {
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/category/:id" component={CategoryDetails} />
       <Route path="/about" component={About} />
       <Route path="/resources" component={Resources} />
+      <Route path="/contact" component={ContactPage} />
       <Route component={NotFound} />
     </Switch>
   );
