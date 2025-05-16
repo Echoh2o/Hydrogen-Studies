@@ -271,8 +271,17 @@ async function importStudies(studies: any[]): Promise<{total: number, success: n
       
       // Handle application duration
       const application = validatedData.Application as string || '';
-      const duration = validatedData.Duration || getApplicationDuration(application);
+      const durationText = validatedData.Duration || getApplicationDuration(application);
+      // Convert duration to number if possible, otherwise null
+      let durationValue: number | null = null;
+      if (durationText) {
+        const parsed = parseInt(durationText);
+        if (!isNaN(parsed)) {
+          durationValue = parsed;
+        }
+      }
       
+      // Create the study object with properly typed fields
       const study: InsertStudy = {
         title: title,
         abstract: validatedData.Abstract || '',
@@ -290,14 +299,13 @@ async function importStudies(studies: any[]): Promise<{total: number, success: n
         peerReviewed: peerReviewed,
         imageUrl: validatedData.ImageUrl || '',
         // Advanced filtering fields
-        keywords: keywords,
         healthConditions: healthConditions,
         bodySystems: bodySystems,
         studyType: studyType,
         country: validatedData.Country || '',
         region: validatedData.Region || '',
         sampleSize: null, // We'll set this properly if available
-        duration: duration
+        duration: durationValue
       };
       
       // Handle sampleSize separately to avoid type issues
@@ -453,11 +461,11 @@ function isBodySystemTopic(topic: string): boolean {
 }
 
 /**
- * Determine category from primary and secondary topics
+ * Map topic to category
  * @param primaryTopic Primary topic
  * @param secondaryTopic Secondary topic
  */
-function determineCategory(primaryTopic?: string, secondaryTopic?: string): string {
+function mapTopicToCategory(primaryTopic?: string, secondaryTopic?: string): string {
   // Default category
   let category = 'General';
   
@@ -514,10 +522,10 @@ function determineCategory(primaryTopic?: string, secondaryTopic?: string): stri
 }
 
 /**
- * Determine methods from model
+ * Map model to methods
  * @param model Model name (Human, Animal, In Vitro, etc.)
  */
-function determineMethodsFromModel(model?: string): string {
+function mapModelToMethods(model?: string): string {
   if (!model) return '';
   
   const modelLower = model.toLowerCase();
@@ -538,10 +546,10 @@ function determineMethodsFromModel(model?: string): string {
 }
 
 /**
- * Determine if a journal is likely peer-reviewed
+ * Check if a journal is likely peer-reviewed
  * @param journal Journal name
  */
-function isProbablyPeerReviewed(journal?: string): boolean {
+function checkIfPeerReviewed(journal?: string): boolean {
   if (!journal) return false;
   
   // Most legitimate scientific journals are peer-reviewed
@@ -569,10 +577,10 @@ function isProbablyPeerReviewed(journal?: string): boolean {
 }
 
 /**
- * Determine duration from application method
+ * Get duration from application method
  * @param application Application method
  */
-function determineApplicationDuration(application?: string): string {
+function getApplicationDuration(application?: string): string {
   if (!application) return '';
   
   const applicationLower = application.toLowerCase();
