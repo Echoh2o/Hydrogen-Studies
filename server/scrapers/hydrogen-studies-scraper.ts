@@ -13,7 +13,14 @@ import { initScraperStatus, updateScraperProgress, completeScraperStatus } from 
 // Base URL for the website
 const BASE_URL = 'https://hydrogenstudies.com/';
 // Use the optimized search URL that shows all studies at once 
-const SEARCH_URL = `${BASE_URL}search/?search=&sortBy=publish_year_desc&perPage=2000`;
+// Define multiple search URLs to ensure we capture all studies
+const SEARCH_URLS = [
+  `${BASE_URL}search/?search=&sortBy=publish_year_desc&perPage=2000`,
+  `${BASE_URL}search/?search=hydrogen&sortBy=publish_year_desc&perPage=2000`,
+  `${BASE_URL}search/?search=water&sortBy=publish_year_desc&perPage=2000`,
+  `${BASE_URL}page/1/?s=hydrogen`,  // WordPress search results
+  `${BASE_URL}page/1/?s=water`      // WordPress search results
+];
 
 /**
  * Database utility to get existing studies by URL or domain
@@ -56,15 +63,11 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
     updateScraperProgress(0, 0, 0, 0, 'Checking for existing studies');
     const existingStudyUrls = await getExistingStudiesFromDomain('hydrogenstudies.com');
     
-    // Step 1: Determine the total number of pages
-    updateScraperProgress(0, 0, 0, 0, 'Determining total number of pages');
-    const totalPages = await determineTotalPages();
+    // Step 1: Collect all study links from multiple search pages
+    updateScraperProgress(0, 0, 0, 0, 'Collecting study links from multiple search pages');
+    const allStudyLinks = await collectAllStudyLinks(1); // 1 is just a placeholder now
     
-    // Step 2: Collect all study links from the search pages
-    updateScraperProgress(0, 0, 0, 0, 'Collecting all study links');
-    const allStudyLinks = await collectAllStudyLinks(totalPages);
-    
-    // Step 3: Filter out studies that have already been scraped
+    // Step 2: Filter out studies that have already been scraped
     const newStudyLinks = allStudyLinks.filter(url => !existingStudyUrls.has(url));
     
     if (newStudyLinks.length === 0) {
@@ -76,11 +79,12 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
       };
     }
     
-    // Update status with total count of new studies
+    // Log and update status with total count of new studies
+    console.log(`Found ${newStudyLinks.length} new studies out of ${allStudyLinks.length} total unique study links`);
     updateScraperProgress(0, 0, 0, newStudyLinks.length, 
       `Found ${newStudyLinks.length} new studies out of ${allStudyLinks.length} total`);
     
-    // Step 4: Scrape each new study
+    // Step 3: Scrape each new study
     let processedCount = 0;
     let successCount = 0;
     let failedCount = 0;
@@ -92,9 +96,10 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
           successCount,
           failedCount,
           newStudyLinks.length,
-          `Scraping new study ${processedCount + 1} of ${newStudyLinks.length}`
+          `Scraping study ${processedCount + 1}/${newStudyLinks.length}: ${url.split('/').pop()}`
         );
         
+        console.log(`Scraping study ${processedCount + 1}/${newStudyLinks.length}: ${url}`);
         const studyData = await scrapeStudyPage(url);
         
         if (studyData) {
@@ -105,12 +110,14 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
             // Not a duplicate, save it
             await storage.createStudy(studyData);
             successCount++;
-            console.log(`Added new study: ${studyData.title}`);
+            console.log(`Successfully imported study: ${studyData.title}`);
           } else {
             console.log(`Skipping duplicate study: ${studyData.title}`);
             // Count as success but log that it was skipped
+            successCount++;
           }
         } else {
+          console.error(`Failed to extract study data from ${url}`);
           failedCount++;
         }
       } catch (error) {
@@ -123,13 +130,12 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
     }
     
     // Mark the scraper as complete
-    completeScraperStatus();
+    completeScraperStatus(`Scraping complete. Successfully imported ${successCount} studies.`);
     
     return {
       total: allStudyLinks.length,
-      success: successCount,
-      newStudies: newStudyLinks.length
-    } as any;
+      success: successCount
+    };
   } catch (error) {
     console.error('Error in hydrogen studies scraper:', error);
     completeScraperStatus(`Scraper failed: ${error.message}`);
@@ -158,53 +164,74 @@ async function determineTotalPages(): Promise<number> {
  * that shows all studies at once (up to 2000 studies).
  */
 async function collectAllStudyLinks(totalPages: number): Promise<string[]> {
-  const allLinks: string[] = [];
+  const allLinks: Set<string> = new Set(); // Use a Set to automatically deduplicate URLs
   
   updateScraperProgress(
-    0,
-    0,
-    0,
-    1,
-    `Collecting all study links from search page`
+    0, 0, 0, SEARCH_URLS.length,
+    `Collecting study links from ${SEARCH_URLS.length} search pages`
   );
   
-  try {
-    const response = await axios.get(SEARCH_URL);
-    const $ = cheerio.load(response.data);
+  // Process each search URL to maximize coverage
+  for (let i = 0; i < SEARCH_URLS.length; i++) {
+    const searchUrl = SEARCH_URLS[i];
     
-    // Extract study links from the page
-    // The search page has a different structure than the paginated results
-    // so we check multiple possible selectors
+    updateScraperProgress(
+      i, 0, 0, SEARCH_URLS.length,
+      `Searching page ${i + 1} of ${SEARCH_URLS.length}: ${searchUrl}`
+    );
     
-    // First check the standard search result selector
-    $('.search-results .entry-title a[href], .search-results h2 a[href]').each((_, element) => {
-      const href = $(element).attr('href');
-      if (href && href.includes('hydrogenstudies.com/study/')) {
-        allLinks.push(href);
-      }
-    });
-    
-    // If we didn't find any with the first selector, try some alternatives
-    if (allLinks.length === 0) {
-      $('article a[href], .post a[href], .study a[href]').each((_, element) => {
+    try {
+      console.log(`Fetching studies from: ${searchUrl}`);
+      const response = await axios.get(searchUrl);
+      const $ = cheerio.load(response.data);
+      
+      // Extract study links with more comprehensive selectors
+      
+      // 1. Try the standard search result selectors
+      $('.search-results .entry-title a[href], .search-results h2 a[href]').each((_, element) => {
         const href = $(element).attr('href');
         if (href && href.includes('hydrogenstudies.com/study/')) {
-          // Avoid duplicates
-          if (!allLinks.includes(href)) {
-            allLinks.push(href);
-          }
+          allLinks.add(href);
         }
       });
+      
+      // 2. Try broader article content selectors
+      $('article a[href], .post a[href], .study a[href], .content a[href]').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href && href.includes('hydrogenstudies.com/study/')) {
+          allLinks.add(href);
+        }
+      });
+      
+      // 3. Try even broader selectors that might catch links in other containers
+      $('a[href*="hydrogenstudies.com/study/"]').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href) {
+          allLinks.add(href);
+        }
+      });
+      
+      // 4. Look specifically for WordPress post listings
+      $('.post-title a, .entry-title a, h2.entry-title a, h3.entry-title a').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href && href.includes('hydrogenstudies.com/study/')) {
+          allLinks.add(href);
+        }
+      });
+      
+      console.log(`Found ${allLinks.size} total unique study links so far`);
+      
+      // Add a delay between requests to be polite to the server
+      await delay(1000);
+      
+    } catch (error) {
+      console.error(`Error collecting links from search page ${searchUrl}:`, error);
+      // Continue with the next URL rather than failing completely
     }
-    
-    console.log(`Found ${allLinks.length} study links on the search page`);
-  } catch (error) {
-    console.error(`Error collecting links from search page:`, error);
-    // This is a critical error, so we'll let it propagate
-    throw error;
   }
   
-  return allLinks;
+  console.log(`Found ${allLinks.size} total unique study links across all search pages`);
+  return Array.from(allLinks);
 }
 
 /**
