@@ -26,6 +26,7 @@ import importRoutes from "./routes/import-routes";
 import hydrogenImportRoutes from "./routes/hydrogen-import";
 import excelAnalysisRoutes from "./routes/excel-analysis";
 import minimalImportRoutes from "./routes/minimal-import";
+import researchRoutes from "./routes/research-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -123,6 +124,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register minimal import routes with PubMed enrichment
   app.use('/api', minimalImportRoutes);
+  
+  // Register research article search and discovery routes
+  app.use('/api', researchRoutes);
   // API routes
   
   // Studies routes
