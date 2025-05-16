@@ -3,6 +3,7 @@
  */
 import express from 'express';
 import { getScraperInfo, runAllScrapers, runScraperByName } from '../scrapers/scraper-manager';
+import { saveScrapedStudy } from '../direct-scraper';
 import { isAuthenticated } from '../auth';
 
 const router = express.Router();

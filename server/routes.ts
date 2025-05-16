@@ -22,6 +22,7 @@ import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 import educationalRoutes from "./routes/educational";
 import scraperRoutes from "./routes/scraper-routes";
+import importRoutes from "./routes/import-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -107,6 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register the scraper routes for multi-platform research monitoring
   app.use('/api', scraperRoutes);
+  
+  // Register import routes for Excel and other data sources
+  app.use('/api', importRoutes);
   // API routes
   
   // Studies routes
