@@ -27,6 +27,7 @@ import hydrogenImportRoutes from "./routes/hydrogen-import";
 import excelAnalysisRoutes from "./routes/excel-analysis";
 import minimalImportRoutes from "./routes/minimal-import";
 import researchRoutes from "./routes/research-routes";
+import studyDetailsRoutes from "./routes/study-details";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {

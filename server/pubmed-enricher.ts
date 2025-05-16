@@ -73,10 +73,18 @@ export async function enrichStudyFromPubMed(studyId: number): Promise<{ success:
 /**
  * Extract PMID from a URL or string
  */
-function extractPMID(url: string): string | null {
+export function extractPMID(url: string): string | null {
   // Check if the URL is a direct PMID
   if (/^\d+$/.test(url.trim())) {
     return url.trim();
+  }
+  
+  // Extract PMID from a PubMed URL
+  const pmidRegex = /pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)/;
+  const match = url.match(pmidRegex);
+  
+  if (match && match[1]) {
+    return match[1];
   }
   
   // Check for PMID in URL
@@ -85,6 +93,43 @@ function extractPMID(url: string): string | null {
                    url.match(/ncbi\.nlm\.nih\.gov\/pubmed\/(\d+)/i);
   
   return pmidMatch ? pmidMatch[1] : null;
+}
+
+/**
+ * Extract PMID from any identifier (DOI, URL, or PMID)
+ * This helper function is exported for use in the study details route
+ */
+export function extractPMIDFromIdentifier(identifier: string): string | null {
+  if (!identifier) return null;
+  
+  // Direct PMID (just digits)
+  if (/^\d+$/.test(identifier)) {
+    return identifier;
+  }
+  
+  // Extract from PubMed URL
+  const pmidRegex = /pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)/;
+  const pmidMatch = identifier.match(pmidRegex);
+  if (pmidMatch && pmidMatch[1]) {
+    return pmidMatch[1];
+  }
+  
+  // Check for PMID in URL
+  const otherPmidMatch = identifier.match(/PMID[=:]\s*(\d+)/i) || 
+                     identifier.match(/pubmed\/(\d+)/i) ||
+                     identifier.match(/ncbi\.nlm\.nih\.gov\/pubmed\/(\d+)/i);
+  
+  if (otherPmidMatch && otherPmidMatch[1]) {
+    return otherPmidMatch[1];
+  }
+  
+  // If it's a DOI, we'll use it directly
+  const doiRegex = /10\.\d{4,}\/[^\s]+/;
+  if (doiRegex.test(identifier)) {
+    return identifier; // Just pass the DOI through
+  }
+  
+  return null;
 }
 
 /**
