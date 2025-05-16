@@ -276,6 +276,9 @@ async function scrapeStudyPage(url: string): Promise<InsertStudy | null> {
     const applicationFrequency = determineApplicationFrequency($, title, abstract);
     const applicationDuration = determineApplicationDuration($, title, abstract);
     
+    // Extract keywords from the study content
+    const keywords = extractKeywords($, title, abstract, methods, results, conclusion);
+    
     // Build the study object
     const study: InsertStudy = {
       title,
@@ -311,7 +314,7 @@ async function scrapeStudyPage(url: string): Promise<InsertStudy | null> {
       participantGender: null, // Would require deeper analysis
       country: null, // Not easily extractable
       region: null, // Not easily extractable
-      keywords: []
+      keywords: keywords
     };
     
     return study;
@@ -625,4 +628,97 @@ function determineApplicationDuration($: cheerio.CheerioAPI, title: string, abst
  */
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Extract keywords from the study content
+ * @param $ Cheerio instance
+ * @param title Study title
+ * @param abstract Study abstract
+ * @param methods Study methods
+ * @param results Study results
+ * @param conclusion Study conclusion
+ * @returns Array of keywords
+ */
+function extractKeywords($: cheerio.CheerioAPI, title: string, abstract: string, methods: string, results: string, conclusion: string): string[] {
+  // Common hydrogen research related terms
+  const hydrogenTerms = [
+    'hydrogen', 'molecular hydrogen', 'H2', 'hydrogen water', 'hydrogen gas',
+    'hydrogen-rich', 'hydrogen-saturated', 'hydrogen inhalation', 'hydrogen bath'
+  ];
+  
+  // Helper function to extract text-based keywords
+  function extractTextKeywords(text: string): string[] {
+    if (!text) return [];
+    
+    // Convert to lowercase
+    const lowerText = text.toLowerCase();
+    
+    // Split by common separators and get words/phrases
+    const words = lowerText.split(/[\s,;:.!?()[\]{}""'']+/)
+      .map(word => word.trim())
+      .filter(word => 
+        // Filter out short words and common stop words
+        word.length > 3 && 
+        !['this', 'that', 'with', 'from', 'were', 'have', 'been', 'there', 'their', 'they', 'which'].includes(word)
+      );
+    
+    return words;
+  }
+  
+  // Combine all text content
+  const combinedText = `${title} ${abstract} ${methods} ${results} ${conclusion}`;
+  
+  // Get keywords from main content
+  const contentKeywords = extractTextKeywords(combinedText);
+  
+  // Extract any meta keywords from the page if available
+  const metaKeywords: string[] = [];
+  $('meta[name="keywords"]').each((_, el) => {
+    const content = $(el).attr('content');
+    if (content) {
+      metaKeywords.push(...content.split(',').map(k => k.trim().toLowerCase()));
+    }
+  });
+  
+  // Combine all keywords and remove duplicates
+  let allKeywords = [...hydrogenTerms, ...contentKeywords, ...metaKeywords];
+  
+  // Filter for more relevant keywords
+  const keywordSet = new Set<string>();
+  
+  // Add most relevant hydrogen terms
+  for (const term of hydrogenTerms) {
+    if (combinedText.toLowerCase().includes(term.toLowerCase())) {
+      keywordSet.add(term);
+    }
+  }
+  
+  // Add disease/condition terms if found in text
+  const conditionTerms = [
+    'diabetes', 'cancer', 'inflammation', 'oxidative stress', 'brain', 'heart',
+    'liver', 'kidney', 'lung', 'skin', 'intestine', 'blood', 'immune', 
+    'antioxidant', 'pain', 'stroke', 'disease', 'injury', 'damage'
+  ];
+  
+  for (const term of conditionTerms) {
+    if (combinedText.toLowerCase().includes(term)) {
+      keywordSet.add(term);
+    }
+  }
+  
+  // Add method-related terms if found
+  const methodTerms = [
+    'oral', 'inhalation', 'injection', 'topical', 'bath', 'water', 'saline',
+    'gas', 'drinking', 'tablets', 'dissolved', 'saturated', 'rich', 'therapy'
+  ];
+  
+  for (const term of methodTerms) {
+    if (combinedText.toLowerCase().includes(term)) {
+      keywordSet.add(term);
+    }
+  }
+  
+  // Convert set back to array, limit to 20 most relevant keywords
+  return Array.from(keywordSet).slice(0, 20);
 }
