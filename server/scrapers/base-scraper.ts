@@ -2,12 +2,11 @@
  * Base scraper class for research platforms
  * Provides common functionality for all research platform scrapers
  */
-import { InsertStudy } from '@shared/schema';
+import { InsertStudy, scrapedSources } from '@shared/schema';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { storage } from '../storage';
 import { db } from '../db';
-import { scrapedSources } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
 export interface ScraperSource {
@@ -58,7 +57,8 @@ export abstract class BaseScraper {
             successCount++;
             console.log(`Successfully imported study: ${study.title}`);
           }
-        } catch (error) {
+        } catch (err) {
+          const error = err as Error;
           console.error(`Error scraping study at ${link}: ${error.message}`);
         }
         
@@ -68,7 +68,8 @@ export abstract class BaseScraper {
       
       console.log(`Scraping complete for ${this.source.name}. Successfully imported ${successCount} studies.`);
       return { total: newLinks.length, success: successCount };
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       console.error(`Error executing scraper for ${this.source.name}:`, error);
       throw error;
     }
