@@ -35,16 +35,61 @@ let systemRole = "You are a scientific writer specializing in making complex res
 /**
  * Generate multiple blog articles for a study
  * @param study Study object to generate blog articles for
+ * @param options Optional configuration for article generation
  * @returns Array of created blog article objects
  */
-export async function generateBlogArticlesForStudy(study: Study): Promise<InsertBlogArticle[]> {
+export async function generateBlogArticlesForStudy(
+  study: Study, 
+  options: { 
+    count?: number; 
+    includeElonStyle?: boolean;
+    standardCount?: number;
+    elonCount?: number;
+  } = {}
+): Promise<InsertBlogArticle[]> {
   try {
     const articles: InsertBlogArticle[] = [];
     
-    // Generate different types of articles for the study
-    for (const type of BLOG_TYPES) {
-      const article = await generateSingleBlogArticle(study, type);
-      articles.push(article);
+    // Default options
+    const count = options.count || 5; // Default to 5 total articles
+    const includeElonStyle = options.includeElonStyle !== undefined ? options.includeElonStyle : true;
+    const standardCount = options.standardCount || 2; // Default to 2 standard articles
+    const elonCount = options.elonCount || 3; // Default to 3 Elon style articles
+    
+    // Separate the blog types
+    const standardTypes = BLOG_TYPES.filter(type => !type.startsWith('elon_'));
+    const elonTypes = BLOG_TYPES.filter(type => type.startsWith('elon_'));
+    
+    // Select random types based on the count
+    if (includeElonStyle) {
+      // Generate both standard and Elon style articles
+      const selectedStandardTypes = standardTypes
+        .sort(() => 0.5 - Math.random())
+        .slice(0, Math.min(standardCount, standardTypes.length));
+      
+      const selectedElonTypes = elonTypes
+        .sort(() => 0.5 - Math.random())
+        .slice(0, Math.min(elonCount, elonTypes.length));
+      
+      // Combine the selected types
+      const selectedTypes = [...selectedStandardTypes, ...selectedElonTypes];
+      
+      // Generate the articles
+      for (const type of selectedTypes) {
+        const article = await generateSingleBlogArticle(study, type);
+        articles.push(article);
+      }
+    } else {
+      // Only generate standard style articles
+      const selectedTypes = standardTypes
+        .sort(() => 0.5 - Math.random())
+        .slice(0, Math.min(count, standardTypes.length));
+      
+      // Generate the articles
+      for (const type of selectedTypes) {
+        const article = await generateSingleBlogArticle(study, type);
+        articles.push(article);
+      }
     }
     
     return articles;
