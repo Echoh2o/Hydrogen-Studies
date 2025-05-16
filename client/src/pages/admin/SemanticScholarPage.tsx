@@ -81,10 +81,7 @@ export default function SemanticScholarPage() {
   // Import paper mutation
   const importPaperMutation = useMutation({
     mutationFn: async (paperId: string) => {
-      return await apiRequest('/api/semanticscholar/import', {
-        method: 'POST',
-        data: { id: paperId }
-      });
+      return await apiRequest('POST', '/api/semanticscholar/import', { id: paperId });
     },
     onSuccess: (data) => {
       setImportedStudy(data.study);
@@ -108,10 +105,7 @@ export default function SemanticScholarPage() {
   // Preview paper mutation
   const previewPaperMutation = useMutation({
     mutationFn: async (paperId: string) => {
-      return await apiRequest('/api/semanticscholar/preview', {
-        method: 'POST',
-        data: { id: paperId }
-      });
+      return await apiRequest('POST', '/api/semanticscholar/preview', { id: paperId });
     },
     onSuccess: (data) => {
       setSelectedPaper(data.paperData);

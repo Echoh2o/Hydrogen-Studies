@@ -71,9 +71,7 @@ export default function CrossRefPage() {
   const importPaperMutation = useMutation({
     mutationFn: async () => {
       if (!selectedPaper?.doi) throw new Error('No paper selected');
-      return apiRequest(`/api/crossref/import/${encodeURIComponent(selectedPaper.doi)}`, {
-        method: 'POST'
-      });
+      return apiRequest('POST', `/api/crossref/import/${encodeURIComponent(selectedPaper.doi)}`);
     },
     onSuccess: (data) => {
       toast({
