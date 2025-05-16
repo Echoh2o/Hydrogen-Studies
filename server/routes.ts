@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertNewsletterSchema, insertStudySchema, insertCategorySchema } from "@shared/schema";
+import { insertNewsletterSchema, insertStudySchema, insertCategorySchema, insertContactSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -136,6 +136,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error subscribing to newsletter:", error);
       res.status(500).json({ message: "Failed to subscribe to newsletter" });
+    }
+  });
+  
+  // Contact form submission route
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const validatedData = insertContactSchema.parse(req.body);
+      const contactMessage = await storage.submitContactMessage(validatedData);
+      res.status(201).json({ message: "Your message has been sent successfully!" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error submitting contact form:", error);
+      res.status(500).json({ message: "Failed to submit contact form" });
     }
   });
   
