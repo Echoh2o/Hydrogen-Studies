@@ -1,282 +1,258 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { apiRequest } from '@/lib/queryClient';
+import { queryClient } from '@/lib/queryClient';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle2, AlertCircle, Globe } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, ExternalLink, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
-// Form schema
-const urlScraperSchema = z.object({
-  url: z.string().url('Please enter a valid URL')
-});
-
-type UrlScraperFormValues = z.infer<typeof urlScraperSchema>;
-
-interface StudyPreview {
-  title: string;
-  authors: string;
-  journal: string;
-  publishDate: string;
-  abstract: string;
-  doi?: string;
-  source: string;
-}
-
-export const UrlScraperForm = () => {
+const UrlScraperForm = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [studyPreview, setStudyPreview] = useState<StudyPreview | null>(null);
-  const [scrapeError, setScrapeError] = useState<string | null>(null);
+  const [url, setUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   
-  const form = useForm<UrlScraperFormValues>({
-    resolver: zodResolver(urlScraperSchema),
-    defaultValues: {
-      url: ''
-    }
-  });
+  const supportedPlatforms = [
+    { name: 'PubMed', url: 'pubmed.ncbi.nlm.nih.gov' },
+    { name: 'HydrogenStudies', url: 'hydrogenstudies.com' },
+    { name: 'Europe PMC', url: 'europepmc.org' },
+    { name: 'CrossRef / DOI', url: 'doi.org' },
+    { name: 'Semantic Scholar', url: 'semanticscholar.org' },
+    { name: 'CORE', url: 'core.ac.uk' },
+    { name: 'Dimensions', url: 'dimensions.ai' }
+  ];
 
-  // Mutation for scraping URL
-  const scrapeUrlMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const response = await fetch('/api/research/scrape-url', {
+  const handlePreview = async () => {
+    if (!url) {
+      setError('Please enter a URL');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiRequest('/api/research/preview-url', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ url })
       });
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to scrape URL');
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to extract study data');
       }
       
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setStudyPreview(data.study);
-      setScrapeError(null);
+      setPreviewData(response.study);
       toast({
-        title: 'URL scraped successfully',
-        description: 'Study details have been extracted and are ready for review.',
-        variant: 'default',
+        title: 'Preview successful',
+        description: 'Study data extracted successfully.'
       });
-    },
-    onError: (error: Error) => {
-      setScrapeError(error.message);
-      setStudyPreview(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to extract study data from the URL');
       toast({
-        title: 'Failed to scrape URL',
-        description: error.message,
         variant: 'destructive',
+        title: 'Error',
+        description: err.message || 'Failed to extract study data'
       });
+    } finally {
+      setIsLoading(false);
     }
-  });
-
-  // Mutation for importing study
-  const importStudyMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/research/approve', {
+  };
+  
+  const handleSave = async () => {
+    if (!previewData) {
+      setError('No data to save. Please preview the URL first.');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await apiRequest('/api/research/scrape-url', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ study: studyPreview })
+        body: JSON.stringify({ url })
       });
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to import study');
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to save study');
       }
       
-      return response.json();
-    },
-    onSuccess: () => {
+      // Reset form and show success message
+      setUrl('');
+      setPreviewData(null);
+      
+      // Invalidate studies query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
-      setStudyPreview(null);
-      form.reset();
+      
       toast({
-        title: 'Study imported successfully',
-        description: 'The study has been added to the database.',
-        variant: 'default',
+        title: 'Success',
+        description: 'Study successfully added to the database.'
       });
-    },
-    onError: (error: Error) => {
+    } catch (err: any) {
       toast({
-        title: 'Failed to import study',
-        description: error.message,
         variant: 'destructive',
+        title: 'Error',
+        description: err.message || 'Failed to save study'
       });
-    }
-  });
-
-  // Function to handle form submission
-  const onSubmit = (values: UrlScraperFormValues) => {
-    setStudyPreview(null);
-    setScrapeError(null);
-    scrapeUrlMutation.mutate(values.url);
-  };
-
-  // Function to determine supported platforms badge color
-  const getPlatformBadgeColor = (source: string): string => {
-    switch (source.toLowerCase()) {
-      case 'pubmed':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-      case 'hydrogen studies':
-        return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'crossref':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-      case 'europe pmc':
-        return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
-      case 'semantic scholar':
-        return 'bg-orange-100 text-orange-800 hover:bg-orange-200';
-      default:
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+    } finally {
+      setIsLoading(false);
     }
   };
-
+  
   return (
-    <Card className="w-full">
+    <Card className="w-full mb-8">
       <CardHeader>
-        <CardTitle>Import from URL</CardTitle>
+        <CardTitle>Extract Study from URL</CardTitle>
         <CardDescription>
-          Paste a URL from a supported platform to automatically extract study data
+          Automatically extract study data from research platforms like PubMed, CrossRef, Europe PMC, and more.
         </CardDescription>
-        <div className="flex flex-wrap gap-2 mt-2">
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 hover:bg-blue-200">PubMed</Badge>
-          <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-200">Hydrogen Studies</Badge>
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 hover:bg-purple-200">Europe PMC</Badge>
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">CrossRef</Badge>
-          <Badge variant="outline" className="bg-orange-100 text-orange-800 hover:bg-orange-200">Semantic Scholar</Badge>
-        </div>
       </CardHeader>
+      
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://pubmed.ncbi.nlm.nih.gov/12345678/" 
-                      {...field}
-                      disabled={scrapeUrlMutation.isPending || importStudyMutation.isPending}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Enter the full URL to the study page
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button 
-              type="submit" 
-              disabled={scrapeUrlMutation.isPending || importStudyMutation.isPending}
-              className="w-full"
-            >
-              {scrapeUrlMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Scraping...
-                </>
-              ) : (
-                <>
-                  <Globe className="mr-2 h-4 w-4" />
-                  Scrape URL
-                </>
-              )}
-            </Button>
-          </form>
-        </Form>
-
-        {scrapeError && (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{scrapeError}</AlertDescription>
-          </Alert>
-        )}
-
-        {studyPreview && (
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Study Preview</h3>
-              <Badge 
-                variant="outline"
-                className={getPlatformBadgeColor(studyPreview.source)}
+        <div className="space-y-4">
+          <div className="flex flex-col space-y-2">
+            <label htmlFor="url" className="text-sm font-medium">URL</label>
+            <div className="flex space-x-2">
+              <Input
+                id="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter URL to a research paper (e.g., https://pubmed.ncbi.nlm.nih.gov/12345678/)"
+                className="flex-1"
+              />
+              <Button 
+                onClick={handlePreview} 
+                disabled={isLoading || !url}
+                variant="secondary"
               >
-                {studyPreview.source}
-              </Badge>
+                {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Preview
+              </Button>
             </div>
-            
-            <div className="space-y-3 border rounded-md p-4">
-              <div>
-                <h4 className="text-sm font-medium text-gray-500">Title</h4>
-                <p className="font-medium">{studyPreview.title}</p>
-              </div>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
+          </div>
+          
+          <div className="mt-4">
+            <h3 className="font-medium text-sm mb-2">Supported Platforms</h3>
+            <div className="flex flex-wrap gap-2">
+              {supportedPlatforms.map((platform) => (
+                <TooltipProvider key={platform.name}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="cursor-help">
+                        {platform.name}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{platform.url}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+            </div>
+          </div>
+          
+          {previewData && (
+            <>
+              <Separator className="my-4" />
               
-              <div>
-                <h4 className="text-sm font-medium text-gray-500">Authors</h4>
-                <p>{studyPreview.authors}</p>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Journal</h4>
-                  <p>{studyPreview.journal}</p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Preview</h3>
+                  <div className="flex items-center space-x-1">
+                    <Badge variant="outline">
+                      {previewData.sourcePlatform || 'External Source'}
+                    </Badge>
+                  </div>
                 </div>
                 
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Publication Date</h4>
-                  <p>{studyPreview.publishDate}</p>
-                </div>
+                <Table>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium w-1/4">Title</TableCell>
+                      <TableCell>{previewData.title}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Authors</TableCell>
+                      <TableCell>{previewData.authors}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Journal</TableCell>
+                      <TableCell>{previewData.journal}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Publication Date</TableCell>
+                      <TableCell>{previewData.publishDate}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">DOI</TableCell>
+                      <TableCell>{previewData.doi || 'Not available'}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Peer Reviewed</TableCell>
+                      <TableCell>
+                        {previewData.peerReviewed ? 
+                          <CheckCircle2 className="h-5 w-5 text-green-500" /> : 
+                          <AlertTriangle className="h-5 w-5 text-amber-500" />}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Abstract</TableCell>
+                      <TableCell className="whitespace-normal">
+                        <div className="max-h-32 overflow-y-auto text-sm">
+                          {previewData.abstract}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </div>
-              
-              {studyPreview.doi && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">DOI</h4>
-                  <p>{studyPreview.doi}</p>
-                </div>
-              )}
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-500">Abstract</h4>
-                <p className="text-sm text-gray-700">{studyPreview.abstract}</p>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={() => importStudyMutation.mutate()} 
-              disabled={importStudyMutation.isPending} 
-              className="w-full"
-              variant="default"
-            >
-              {importStudyMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Import Study
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </CardContent>
+      
+      <CardFooter className="flex justify-between">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setUrl('');
+            setPreviewData(null);
+            setError(null);
+          }}
+        >
+          Clear
+        </Button>
+        
+        <Button
+          onClick={handleSave}
+          disabled={isLoading || !previewData}
+        >
+          {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Save to Database
+        </Button>
+      </CardFooter>
     </Card>
   );
 };
