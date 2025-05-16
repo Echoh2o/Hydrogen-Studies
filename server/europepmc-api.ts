@@ -10,11 +10,8 @@ import { InsertStudy } from '@shared/schema';
 
 const EUROPEPMC_API_BASE = 'https://www.ebi.ac.uk/europepmc/webservices/rest';
 
-// Set headers for Europe PMC API requests to identify our application
-const EUROPEPMC_HEADERS = {
-  'User-Agent': 'HydrogenStudies/1.0 (https://hydrogenstudies.com; info@hydrogenstudies.com)',
-  'Accept': 'application/json'
-};
+// Europe PMC API doesn't seem to work well with custom headers
+// so we'll use default headers
 
 // PubMed API key is also used for Europe PMC in some cases
 const PUBMED_API_KEY = process.env.PUBMED_API_KEY;
@@ -50,10 +47,19 @@ export async function searchEuropePMC(
       query,
       resultType: 'core',
       format: 'json',
-      cursorMark: '*',
-      pageSize,
-      sort
+      pageSize
     };
+    
+    // Add page parameter differently than the regular way
+    // Europe PMC API has page parameter
+    if (page > 1) {
+      params.page = page;
+    }
+    
+    // Add sort if specified
+    if (sort && sort !== 'RELEVANCE') {
+      params.sort = sort;
+    }
     
     // Add API key if available
     if (PUBMED_API_KEY) {
@@ -62,7 +68,6 @@ export async function searchEuropePMC(
     
     const response = await axios.get(url, {
       params,
-      headers: EUROPEPMC_HEADERS,
       timeout: 15000 // 15 second timeout
     });
     
