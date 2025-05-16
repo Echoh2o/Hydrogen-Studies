@@ -114,6 +114,9 @@ export const studies = pgTable("studies", {
   hasFullText: boolean("has_full_text").default(false),
   viewCount: integer("view_count").default(0),
   citationCount: integer("citation_count").default(0),
+  // Source tracking information
+  sourceUrl: text("source_url"),
+  sourcePlatform: text("source_platform"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -239,6 +242,15 @@ export const contactMessages = pgTable("contact_messages", {
   email: text("email").notNull(),
   message: text("message").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Table for tracking scraped sources to avoid duplicates
+export const scrapedSources = pgTable("scraped_sources", {
+  id: serial("id").primaryKey(),
+  sourceUrl: text("source_url").notNull(),
+  sourcePlatform: text("source_platform").notNull(),
+  studyId: integer("study_id").notNull().references(() => studies.id),
+  scrapedAt: timestamp("scraped_at").notNull().defaultNow(),
 });
 
 // Blog articles table schema
