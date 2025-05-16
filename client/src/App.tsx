@@ -32,6 +32,7 @@ import CrossRefPage from "@/pages/admin/CrossRefPage";
 // Admin pages - new layout
 import DashboardPage from "@/pages/admin/DashboardPage";
 import StudiesManagementPage from "@/pages/admin/StudiesManagementPage";
+import AddStudyPage from "@/pages/admin/AddStudyPage";
 import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
 import ResearchImportPage from "@/pages/admin/ResearchImportPage";
 import DataImportPage from "@/pages/admin/DataImportPage";
@@ -64,6 +65,7 @@ function Router() {
       {/* Admin Routes - new layout */}
       <Route path="/admin" component={DashboardPage} />
       <Route path="/admin/studies" component={StudiesManagementPage} />
+      <Route path="/admin/studies/add" component={AddStudyPage} />
       <Route path="/admin/blogs" component={BlogsManagementPage} />
       <Route path="/admin/research-import" component={ResearchImportPage} />
       <Route path="/admin/data-import" component={DataImportPage} />
