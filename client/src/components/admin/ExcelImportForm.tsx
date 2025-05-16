@@ -122,7 +122,7 @@ const ExcelImportForm = () => {
   // For the hydrogen research database file
   const handleImportHydrogenDatabase = () => {
     attachedFileMutation.mutate({
-      filePath: './attached_assets/Hydrogen Research Database_Timeline.xlsx',
+      filePath: 'attached_assets/Hydrogen Research Database_Timeline.xlsx',
       fileType: 'xlsx'
     });
   };
