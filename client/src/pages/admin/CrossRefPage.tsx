@@ -49,7 +49,8 @@ export default function CrossRefPage() {
     queryKey: ['/api/crossref/search', searchQuery, currentPage, pageSize],
     queryFn: async () => {
       if (!searchQuery) return { items: [], totalResults: 0, page: 1, pageSize };
-      return apiRequest(`/api/crossref/search?q=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}`);
+      const response = await apiRequest("GET", `/api/crossref/search?q=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}`);
+      return response.json();
     },
     enabled: !!searchQuery,
     keepPreviousData: true
@@ -60,7 +61,8 @@ export default function CrossRefPage() {
     queryKey: ['/api/crossref/article', selectedPaper?.doi],
     queryFn: async () => {
       if (!selectedPaper?.doi) return null;
-      return apiRequest(`/api/crossref/article/${encodeURIComponent(selectedPaper.doi)}`);
+      const response = await apiRequest("GET", `/api/crossref/article/${encodeURIComponent(selectedPaper.doi)}`);
+      return response.json();
     },
     enabled: !!selectedPaper?.doi
   });
