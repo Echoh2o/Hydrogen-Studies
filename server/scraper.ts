@@ -51,55 +51,175 @@ export async function scrapeHydrogenStudies() {
  */
 async function scrapeStudyLinks(): Promise<string[]> {
   const links: string[] = [];
-  let currentPage = 1;
-  let hasNextPage = true;
   
-  while (hasNextPage && currentPage <= 10) { // Limit to 10 pages for safety
-    try {
-      // The current site structure uses /search/ for the studies page
-      const url = currentPage === 1 
-        ? `${WEBSITE_URL}/search/` 
-        : `${WEBSITE_URL}/search/page/${currentPage}/`;
+  // First, check the main page for any featured studies
+  try {
+    console.log(`Scraping main page for featured studies`);
+    const response = await axios.get(WEBSITE_URL);
+    const $ = cheerio.load(response.data);
+    
+    // Extract any links that might be studies from the main page
+    $('a').each((_, element) => {
+      const link = $(element).attr('href');
+      const text = $(element).text().trim();
       
-      console.log(`Scraping study links from page ${currentPage}: ${url}`);
-      
-      const response = await axios.get(url);
-      const $ = cheerio.load(response.data);
-      
-      // Extract study links based on the current site's HTML structure
-      $('.study-item a, .card-study a, .card a, h4 a').each((_, element) => {
-        const link = $(element).attr('href');
-        if (link && (link.includes('/study/') || link.includes('/article/'))) {
-          links.push(link.startsWith('http') ? link : `${WEBSITE_URL}${link}`);
-        }
-      });
-      
-      console.log(`Found ${$('.study-item a, .card-study a, .card a, h4 a').length} potential links on page ${currentPage}`);
-      
-      // Check if there's a next page
-      const nextPageButton = $('.pagination .next, .pagination .next-page, a:contains("Next"), a.next');
-      hasNextPage = nextPageButton.length > 0;
-      
-      if (hasNextPage) {
-        console.log('Found next page button, continuing to next page');
-      } else {
-        console.log('No next page button found, stopping pagination');
+      // If link contains keywords that suggest it's a study
+      if (link && (
+          link.includes('/hydrogen') || 
+          link.includes('/study') || 
+          link.includes('/research') || 
+          link.includes('/article') ||
+          (text && text.length > 15 && (
+            text.toLowerCase().includes('study') || 
+            text.toLowerCase().includes('research') || 
+            text.toLowerCase().includes('clinical')
+          ))
+      )) {
+        const fullLink = link.startsWith('http') ? link : `${WEBSITE_URL}${link.startsWith('/') ? '' : '/'}${link}`;
+        links.push(fullLink);
       }
-      
-      currentPage++;
-      
-      // Wait briefly between page requests
-      await delay(2000);
-    } catch (error) {
-      console.error(`Error scraping page ${currentPage}:`, error.message);
-      hasNextPage = false;
+    });
+    
+    console.log(`Found ${links.length} potential study links on the main page`);
+  } catch (error) {
+    console.error(`Error scraping main page:`, error);
+  }
+  
+  // Try different paths that might contain studies
+  const pathsToTry = [
+    '/research',
+    '/studies',
+    '/clinical-studies',
+    '/search',
+    '/hydrogen-studies',
+    '/blog',
+    '/articles',
+    '/resources'
+  ];
+  
+  for (const basePath of pathsToTry) {
+    let currentPage = 1;
+    let hasNextPage = true;
+    
+    while (hasNextPage && currentPage <= 15) { // Scan up to 15 pages per section
+      try {
+        const url = currentPage === 1 
+          ? `${WEBSITE_URL}${basePath}` 
+          : `${WEBSITE_URL}${basePath}/page/${currentPage}`;
+        
+        console.log(`Scraping ${basePath} page ${currentPage}: ${url}`);
+        
+        const response = await axios.get(url);
+        const $ = cheerio.load(response.data);
+        
+        // Try many different selectors that could contain study links
+        const linkCount = extractLinksFromPage($, links);
+        
+        console.log(`Found ${linkCount} potential study links on ${basePath} page ${currentPage}`);
+        
+        // Check for pagination
+        const paginationSelectors = [
+          '.pagination a', 'a.next', '.nav-links a', 
+          'a:contains("Next")', '.next-posts a',
+          '.wp-block-query-pagination a'
+        ];
+        
+        let foundNextPageLink = false;
+        for (const selector of paginationSelectors) {
+          $(selector).each((_, element) => {
+            const href = $(element).attr('href');
+            const text = $(element).text().toLowerCase();
+            
+            if ((text.includes('next') || 
+                href?.includes(`page/${currentPage + 1}`)) && 
+                !href?.includes(`page/${currentPage}`)) {
+              foundNextPageLink = true;
+              return false; // Break each loop
+            }
+          });
+          
+          if (foundNextPageLink) break;
+        }
+        
+        hasNextPage = foundNextPageLink;
+        
+        if (hasNextPage) {
+          console.log(`Found next page link on ${basePath} page ${currentPage}`);
+        } else {
+          console.log(`No next page link found on ${basePath} page ${currentPage}`);
+        }
+        
+        currentPage++;
+        
+        // More gentle scraping
+        await delay(2000);
+        
+        // If no links found after first page, stop trying this path
+        if (linkCount === 0 && currentPage > 2) {
+          console.log(`No study links found on ${basePath} page ${currentPage-1}, skipping further pages`);
+          break;
+        }
+      } catch (error) {
+        console.error(`Error scraping ${basePath} page ${currentPage}:`, error);
+        hasNextPage = false;
+      }
     }
   }
   
-  console.log(`Total unique links found: ${new Set(links).size}`);
+  // Deduplicate the links
+  const uniqueLinks = [...new Set(links)];
+  console.log(`Total unique study links found: ${uniqueLinks.length}`);
   
-  // Return unique links
-  return [...new Set(links)];
+  return uniqueLinks;
+}
+
+// Helper function to extract links from a page
+function extractLinksFromPage($: cheerio.CheerioAPI, links: string[]): number {
+  let count = 0;
+  
+  // Title selectors that might indicate a study
+  const titleSelectors = [
+    'h1 a', 'h2 a', 'h3 a', 'h4 a', 'h5 a',
+    '.entry-title a', '.post-title a', '.title a',
+    '.card-title a', '.study-title a', '.article-title a',
+    'article a', '.post a', '.study a'
+  ];
+  
+  // Extract links from title elements
+  $(titleSelectors.join(', ')).each((_, element) => {
+    const link = $(element).attr('href');
+    if (link) {
+      const fullLink = link.startsWith('http') ? link : `${WEBSITE_URL}${link.startsWith('/') ? '' : '/'}${link}`;
+      links.push(fullLink);
+      count++;
+    }
+  });
+  
+  // Look for links containing relevant keywords in their text or href
+  $('a').each((_, element) => {
+    const link = $(element).attr('href');
+    const text = $(element).text().trim();
+    
+    if (link && !links.includes(link) && (
+        link.includes('study') || 
+        link.includes('research') || 
+        link.includes('article') ||
+        link.includes('clinical') ||
+        link.includes('hydrogen') ||
+        (text && text.length > 10 && (
+          text.toLowerCase().includes('study') || 
+          text.toLowerCase().includes('research') || 
+          text.toLowerCase().includes('clinical trial') ||
+          text.toLowerCase().includes('publication')
+        ))
+    )) {
+      const fullLink = link.startsWith('http') ? link : `${WEBSITE_URL}${link.startsWith('/') ? '' : '/'}${link}`;
+      links.push(fullLink);
+      count++;
+    }
+  });
+  
+  return count;
 }
 
 /**
