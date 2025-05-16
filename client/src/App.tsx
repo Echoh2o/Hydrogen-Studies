@@ -24,6 +24,7 @@ import ImportPage from "@/pages/admin/ImportPage";
 import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
 import EuropePmcPage from "@/pages/admin/EuropePmcPage";
 import SemanticScholarPage from "@/pages/admin/SemanticScholarPage";
+import CrossRefPage from "@/pages/admin/CrossRefPage";
 import BlogPage from "@/pages/BlogPage";
 
 function ScrollToTop() {
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/admin/articles" component={ArticleSearchPage} />
       <Route path="/admin/europepmc" component={EuropePmcPage} />
       <Route path="/admin/semanticscholar" component={SemanticScholarPage} />
+      <Route path="/admin/crossref" component={CrossRefPage} />
       <Route component={NotFound} />
     </Switch>
   );
