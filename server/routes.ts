@@ -47,6 +47,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ADD COLUMN IF NOT EXISTS summary_markdown TEXT
     `);
     
+    // Add fields to blog articles table for publication workflow
+    await db.execute(`
+      ALTER TABLE blog_articles
+      ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS editor_notes TEXT,
+      ADD COLUMN IF NOT EXISTS article_type TEXT
+    `);
+    
     // Create tables for educational resources if they don't exist
     await db.execute(`
       CREATE TABLE IF NOT EXISTS educational_resources (
@@ -707,18 +715,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if blog articles already exist for this study
       const existingBlogs = await getBlogArticlesForStudy(parseInt(id));
       
-      if (existingBlogs.length > 0) {
+      // If blogs exist and force regeneration is not requested, return existing blogs
+      if (existingBlogs.length > 0 && !req.body.force) {
         return res.status(409).json({ 
           message: "Blog articles already exist for this study",
           blogs: existingBlogs
         });
       }
       
-      // Generate blog articles
-      const articles = await generateBlogArticlesForStudy(study);
+      // Extract generation options from request
+      const options = {
+        count: req.body.count || 5,
+        includeElonStyle: req.body.includeElonStyle !== undefined ? req.body.includeElonStyle : true,
+        standardCount: req.body.standardCount || 2,
+        elonCount: req.body.elonCount || 3
+      };
+      
+      // Generate blog articles with specified options
+      const articles = await generateBlogArticlesForStudy(study, options);
+      
+      // Set all generated blogs to unpublished draft state initially
+      const articlesWithDraftStatus = articles.map(article => ({
+        ...article,
+        isPublished: false,
+        editorNotes: "AI-generated content. Please review before publishing."
+      }));
       
       // Save blog articles to database
-      const savedArticleIds = await saveBlogArticles(articles);
+      const savedArticleIds = await saveBlogArticles(articlesWithDraftStatus);
       
       // Fetch the saved articles
       const savedArticles = await Promise.all(
@@ -729,8 +753,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       res.status(201).json({
-        message: "Blog articles generated successfully",
-        articles: savedArticles
+        message: "Blog articles generated successfully. Please review and publish when ready.",
+        articles: savedArticles,
+        count: savedArticles.length,
+        status: "draft"
       });
     } catch (error) {
       console.error("Error generating blog articles:", error);
