@@ -142,13 +142,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', researchRoutes);
   
   // Register Europe PMC API routes
-  app.use('/', europePmcRoutes);
+  app.use('', europePmcRoutes);
   
   // Register Semantic Scholar API routes
-  app.use('/', semanticScholarRoutes);
+  app.use('', semanticScholarRoutes);
   
   // Register CrossRef API routes
-  app.use('/', crossrefRoutes);
+  app.use('/api/crossref', crossrefRoutes);
   
   // API routes
   
