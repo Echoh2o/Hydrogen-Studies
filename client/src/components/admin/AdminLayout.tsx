@@ -1,187 +1,131 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
-import { cn } from '@/lib/utils';
 import { Helmet } from 'react-helmet';
+import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  BookText,
-  Import,
   Database,
-  Search,
+  FileText,
+  Upload,
   Settings,
-  Menu,
-  X,
-  BarChart
+  UserCog,
+  Search,
+  BarChart2,
+  Home
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   title: string;
   description?: string;
 }
 
 export default function AdminLayout({ children, title, description }: AdminLayoutProps) {
   const [location] = useLocation();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
-
-  const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Studies Management', href: '/admin/studies', icon: BookText },
-    { name: 'Blog Management', href: '/admin/blogs', icon: BookText },
-    { name: 'Research Import', href: '/admin/research-import', icon: Database },
-    { name: 'Data Import', href: '/admin/data-import', icon: Import },
-    { name: 'Analytics', href: '/admin/analytics', icon: BarChart },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+  
+  const mainNavItems = [
+    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/studies", label: "Studies", icon: Database },
+    { href: "/admin/blogs", label: "Blogs", icon: FileText },
+    { href: "/admin/research-import", label: "Research Import", icon: Search },
+    { href: "/admin/data-import", label: "Data Import", icon: Upload },
+    { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/users", label: "Users", icon: UserCog },
   ];
   
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <Helmet>
-        <title>{title} - Admin Dashboard - Hydrogen Studies</title>
+        <title>{title} | HydrogenStudies Admin</title>
       </Helmet>
       
-      <div className="min-h-screen bg-gray-50">
-        {/* Mobile sidebar toggle */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-white border-b">
-          <h2 className="text-xl font-bold">{title}</h2>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-        
-        {/* Sidebar for desktop */}
-        <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-          <div className="flex flex-col grow overflow-y-auto border-r border-gray-200 bg-white">
-            <div className="flex items-center flex-shrink-0 px-4 py-5 border-b">
-              <h2 className="text-xl font-bold">Hydrogen Admin</h2>
-            </div>
-            <div className="mt-5 flex flex-col grow">
-              <nav className="flex-1 space-y-1 px-4">
-                {navigation.map((item) => {
-                  const isActive = location === item.href || location.startsWith(`${item.href}/`);
-                  return (
-                    <Link 
-                      key={item.name} 
-                      href={item.href}
-                    >
-                      <a className={cn(
-                        isActive 
-                          ? 'bg-gray-100 text-primary-600' 
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                        'group flex items-center px-3 py-2 text-sm font-medium rounded-md my-1'
-                      )}>
-                        <item.icon 
-                          className={cn(
-                            isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500',
-                            'mr-3 flex-shrink-0 h-5 w-5'
-                          )} 
-                          aria-hidden="true" 
-                        />
-                        {item.name}
-                      </a>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-            <div className="flex flex-shrink-0 p-4 border-t border-gray-200">
+      <div className="flex min-h-screen flex-col">
+        {/* Top navigation */}
+        <header className="sticky top-0 z-40 border-b bg-background">
+          <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+            <div className="flex items-center">
               <Link href="/">
-                <a className="text-sm text-primary-600 hover:text-primary-800">
-                  Back to website
+                <a className="flex items-center mr-8">
+                  <span className="font-semibold tracking-tight text-xl">HydrogenStudies</span>
+                  <span className="bg-primary text-primary-foreground ml-2 rounded-sm px-1.5 py-0.5 text-xs font-medium">Admin</span>
                 </a>
               </Link>
-            </div>
-          </div>
-        </div>
-        
-        {/* Mobile sidebar */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-            
-            <div className="fixed inset-y-0 left-0 flex flex-col w-64 max-w-xs bg-white">
-              <div className="flex items-center justify-between h-16 px-4 border-b">
-                <h2 className="text-xl font-bold">Hydrogen Admin</h2>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-                {navigation.map((item) => {
-                  const isActive = location === item.href || location.startsWith(`${item.href}/`);
-                  return (
-                    <Link 
-                      key={item.name} 
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <a className={cn(
-                        isActive 
-                          ? 'bg-gray-100 text-primary-600' 
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                        'group flex items-center px-3 py-2 text-sm font-medium rounded-md'
-                      )}>
-                        <item.icon 
-                          className={cn(
-                            isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500',
-                            'mr-3 flex-shrink-0 h-5 w-5'
-                          )} 
-                          aria-hidden="true" 
-                        />
-                        {item.name}
-                      </a>
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="flex-shrink-0 p-4 border-t">
+              
+              <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
                 <Link href="/">
-                  <a className="text-sm text-primary-600 hover:text-primary-800">
-                    Back to website
+                  <a className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                    <Home className="mr-2 h-4 w-4" />
+                    View Site
                   </a>
                 </Link>
-              </div>
+              </nav>
             </div>
-          </div>
-        )}
-        
-        {/* Main content */}
-        <div className="lg:pl-64 flex flex-col">
-          <main className="flex-1">
-            {/* Header with title and description */}
-            <div className="bg-white shadow">
-              <div className="px-4 py-6 sm:px-6 lg:px-8">
-                <div className="lg:flex lg:items-center lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate">
-                      {title}
-                    </h2>
-                    {description && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        {description}
-                      </p>
-                    )}
-                  </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
+                <span className="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full">
+                  <span className="flex h-full w-full items-center justify-center bg-muted text-sm">A</span>
+                </span>
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium">Admin User</p>
                 </div>
               </div>
             </div>
-            
-            {/* Page content */}
-            <div className="px-4 sm:px-6 lg:px-8 py-6">
+          </div>
+        </header>
+        
+        <div className="flex-1 flex">
+          {/* Sidebar */}
+          <aside className="hidden md:flex w-64 flex-col border-r bg-background">
+            <nav className="flex-1 overflow-y-auto p-4">
+              <ul className="space-y-2">
+                {mainNavItems.map(({ href, label, icon: Icon }) => (
+                  <li key={href}>
+                    <Link href={href}>
+                      <a
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                          location === href ? "bg-accent text-accent-foreground" : "transparent"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </a>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </aside>
+          
+          {/* Mobile navigation */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-background">
+            <nav className="flex h-16 items-center justify-around">
+              {mainNavItems.slice(0, 5).map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href}>
+                  <a
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                      location === href ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{label}</span>
+                  </a>
+                </Link>
+              ))}
+            </nav>
+          </div>
+          
+          {/* Main content */}
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
+            <div className="container mx-auto max-w-6xl">
               {children}
             </div>
           </main>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -19,13 +19,22 @@ import Resources from "@/pages/resources";
 import Learn from "@/pages/learn";
 import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
+import BlogPage from "@/pages/BlogPage";
+
+// Admin pages - old
 import AdminPage from "@/pages/admin/AdminPage";
 import ImportPage from "@/pages/admin/ImportPage";
 import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
 import EuropePmcPage from "@/pages/admin/EuropePmcPage";
 import SemanticScholarPage from "@/pages/admin/SemanticScholarPage";
 import CrossRefPage from "@/pages/admin/CrossRefPage";
-import BlogPage from "@/pages/BlogPage";
+
+// Admin pages - new layout
+import DashboardPage from "@/pages/admin/DashboardPage";
+import StudiesManagementPage from "@/pages/admin/StudiesManagementPage";
+import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
+import ResearchImportPage from "@/pages/admin/ResearchImportPage";
+import DataImportPage from "@/pages/admin/DataImportPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -40,6 +49,7 @@ function ScrollToTop() {
 function Router() {
   return (
     <Switch>
+      {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={StudyDetails} />
@@ -50,29 +60,47 @@ function Router() {
       <Route path="/resources" component={Resources} />
       <Route path="/learn" component={Learn} />
       <Route path="/contact" component={Contact} />
-      <Route path="/admin" component={AdminPage} />
+      
+      {/* Admin Routes - new layout */}
+      <Route path="/admin" component={DashboardPage} />
+      <Route path="/admin/studies" component={StudiesManagementPage} />
+      <Route path="/admin/blogs" component={BlogsManagementPage} />
+      <Route path="/admin/research-import" component={ResearchImportPage} />
+      <Route path="/admin/data-import" component={DataImportPage} />
+      
+      {/* Legacy Admin Routes - will be removed after transition */}
+      <Route path="/admin/legacy" component={AdminPage} />
       <Route path="/admin/import" component={ImportPage} />
       <Route path="/admin/articles" component={ArticleSearchPage} />
       <Route path="/admin/europepmc" component={EuropePmcPage} />
       <Route path="/admin/semanticscholar" component={SemanticScholarPage} />
       <Route path="/admin/crossref" component={CrossRefPage} />
+      
+      {/* 404 */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
+  const [location] = useLocation();
+  const isAdminRoute = location.startsWith('/admin');
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ScrollToTop />
         <div className="flex min-h-screen flex-col">
-          <CookieConsent />
-          <Header />
-          <main className="flex-1">
+          {!isAdminRoute && (
+            <>
+              <CookieConsent />
+              <Header />
+            </>
+          )}
+          <main className={`flex-1 ${isAdminRoute ? 'p-0' : ''}`}>
             <Router />
           </main>
-          <Footer />
+          {!isAdminRoute && <Footer />}
         </div>
         <Toaster />
       </TooltipProvider>
