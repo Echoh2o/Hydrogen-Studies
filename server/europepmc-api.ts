@@ -43,14 +43,20 @@ export async function searchEuropePMC(
         format: 'json',
         cursorMark: '*',
         pageSize,
-        page,
         sort
       },
       headers: EUROPEPMC_HEADERS,
       timeout: 15000 // 15 second timeout
     });
     
-    return response.data.resultList;
+    // The API response structure has hitCount and resultList
+    const resultList = response.data.resultList || { result: [] };
+    const hitCount = response.data.hitCount || 0;
+    
+    return {
+      resultList,
+      hitCount
+    };
   } catch (error: any) {
     console.error('Error searching Europe PMC:', error.message);
     if (error.response) {
