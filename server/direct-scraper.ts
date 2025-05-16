@@ -236,54 +236,118 @@ async function scrapeHydrogenStudies(url: string): Promise<InsertStudy | null> {
 }
 
 /**
- * Scrape a Europe PMC page
+ * Scrape a Europe PMC page using their REST API
  */
 async function scrapeEuropePMC(url: string): Promise<InsertStudy | null> {
   try {
-    // Extract ID from URL
-    const idMatch = url.match(/\/articles\/PMC(\d+)/i);
-    const id = idMatch ? idMatch[1] : null;
+    // Extract ID and ID type from URL
+    let id = '';
+    let idType = '';
+    
+    // Different URL patterns for Europe PMC
+    // Examples:
+    // - https://europepmc.org/article/MED/12345678
+    // - https://europepmc.org/article/PMC/PMC1234567
+    // - https://europepmc.org/article/DOI/10.1234/abc123
+    
+    const pmcMatch = url.match(/\/article\/PMC\/(PMC\d+)/i);
+    const pmidMatch = url.match(/\/article\/MED\/(\d+)/i);
+    const doiMatch = url.match(/\/article\/DOI\/([^\/&\?]+)/i);
+    
+    if (pmcMatch) {
+      id = pmcMatch[1];
+      idType = 'PMCID';
+    } else if (pmidMatch) {
+      id = pmidMatch[1];
+      idType = 'PMID';
+    } else if (doiMatch) {
+      id = doiMatch[1];
+      idType = 'DOI';
+    } else {
+      // Try to extract from URL path components
+      const urlParts = url.split('/');
+      const lastPart = urlParts[urlParts.length - 1];
+      
+      if (lastPart.startsWith('PMC')) {
+        id = lastPart;
+        idType = 'PMCID';
+      } else if (/^\d+$/.test(lastPart)) {
+        id = lastPart;
+        idType = 'PMID';
+      } else if (lastPart.includes('10.')) {
+        id = lastPart;
+        idType = 'DOI';
+      }
+    }
     
     if (!id) {
       throw new Error('Could not extract ID from Europe PMC URL');
     }
     
-    // Fetch HTML content
-    const response = await axios.get(url);
-    const html = response.data;
-    const $ = cheerio.load(html);
+    console.log(`Fetching Europe PMC article with ${idType}: ${id}`);
     
-    // Extract study data
-    const title = $('.abstract h1').text().trim();
+    // Use the Europe PMC REST API to fetch article data
+    const apiUrl = `https://www.ebi.ac.uk/europepmc/webservices/rest/article/${idType}/${id}?format=json`;
+    const response = await axios.get(apiUrl);
+    const data = response.data;
+    
+    if (!data || !data.result) {
+      throw new Error('No data returned from Europe PMC API');
+    }
+    
+    const article = data.result;
+    
+    // Extract title
+    const title = article.title || '';
     
     // Extract authors
-    const authorElements = $('.app-abstract-section .author-list li');
-    const authorNames: string[] = [];
-    authorElements.each((i, el) => {
-      authorNames.push($(el).text().trim());
-    });
-    const authors = authorNames.join(', ');
+    let authors = '';
+    if (article.authorList && article.authorList.author && article.authorList.author.length > 0) {
+      authors = article.authorList.author
+        .map((author: any) => `${author.firstName || ''} ${author.lastName || ''}`.trim())
+        .join(', ');
+    }
     
     // Extract abstract
-    const abstract = $('.abstract-content p').text().trim();
+    const abstract = article.abstractText || '';
     
     // Extract journal info
-    const journal = $('.journal a').text().trim();
+    const journal = article.journalInfo?.journal?.title || '';
     
     // Extract publication date
-    const publishDate = $('.citation-date').text().trim();
+    let publishDate = '';
+    if (article.journalInfo?.dateOfPublication) {
+      const pubDateStr = article.journalInfo.dateOfPublication;
+      const dateParts = pubDateStr.split(' ');
+      
+      if (dateParts.length >= 2) {
+        const year = dateParts[0];
+        const month = getMonthNumber(dateParts[1]);
+        const day = dateParts.length > 2 ? dateParts[2].padStart(2, '0') : '01';
+        publishDate = `${year}-${month}-${day}`;
+      } else {
+        publishDate = `${pubDateStr}-01-01`; // Default to January 1st if only year is provided
+      }
+    }
     
     // Extract DOI if available
-    let doi = '';
-    $('.identifiers div').each((i, el) => {
-      const text = $(el).text();
-      if (text.includes('DOI:')) {
-        doi = text.replace('DOI:', '').trim();
-      }
-    });
+    const doi = article.doi || '';
     
-    // Determine if peer-reviewed (most Europe PMC articles are)
-    const peerReviewed = true;
+    // Extract PDF URL if available
+    let pdfUrl = '';
+    if (article.fullTextUrlList && article.fullTextUrlList.fullTextUrl) {
+      const pdfLink = article.fullTextUrlList.fullTextUrl.find(
+        (url: any) => url.documentStyle === 'pdf'
+      );
+      if (pdfLink) {
+        pdfUrl = pdfLink.url;
+      }
+    }
+    
+    // Determine if peer-reviewed (most journal articles in Europe PMC are peer-reviewed)
+    const isPeerReviewed = article.pubTypeList?.pubType?.some(
+      (type: string) => !type.toLowerCase().includes('preprint')
+    ) ?? true;
     
     // Create study object
     const study: InsertStudy = {
@@ -291,11 +355,12 @@ async function scrapeEuropePMC(url: string): Promise<InsertStudy | null> {
       authors,
       abstract,
       journal,
-      publishDate: formatPublicationDate(publishDate),
+      publishDate,
       doi,
-      peerReviewed,
+      pdfUrl,
+      peerReviewed: isPeerReviewed,
       category: 'Hydrogen Research',
-      sourcePlatform: 'Europe PMC'
+      sourcePlatform: 'Europe PMC API'
     };
     
     return study;

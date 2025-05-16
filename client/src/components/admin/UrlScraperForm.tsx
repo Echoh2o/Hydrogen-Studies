@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ExternalLink, Loader2, AlertCircle, CheckCircle, Globe } from 'lucide-react';
+import { ExternalLink, Loader2, AlertCircle, CheckCircle, Globe, Search, Beaker, BookOpen } from 'lucide-react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,12 +29,12 @@ const UrlScraperForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const supportedPlatforms = [
-    { name: 'PubMed', url: 'pubmed.ncbi.nlm.nih.gov' },
-    { name: 'HydrogenStudies', url: 'hydrogenstudies.com' },
-    { name: 'Europe PMC', url: 'europepmc.org' },
-    { name: 'CrossRef / DOI', url: 'doi.org' },
-    { name: 'Semantic Scholar', url: 'semanticscholar.org' },
-    { name: 'CORE', url: 'core.ac.uk' }
+    { name: 'PubMed', url: 'pubmed.ncbi.nlm.nih.gov', icon: Search },
+    { name: 'Europe PMC API', url: 'europepmc.org', icon: BookOpen, featured: true },
+    { name: 'HydrogenStudies', url: 'hydrogenstudies.com', icon: Beaker },
+    { name: 'CrossRef / DOI', url: 'doi.org', icon: Globe },
+    { name: 'Semantic Scholar', url: 'semanticscholar.org', icon: Search },
+    { name: 'CORE', url: 'core.ac.uk', icon: Search }
   ];
 
   const handlePreview = async () => {
@@ -195,11 +195,23 @@ const UrlScraperForm: React.FC = () => {
                 <h4 className="text-sm font-medium mb-2">Supported Platforms:</h4>
                 <div className="flex flex-wrap gap-2">
                   {supportedPlatforms.map((platform) => (
-                    <Badge key={platform.name} variant="secondary">
+                    <Badge 
+                      key={platform.name} 
+                      variant={platform.featured ? "default" : "secondary"}
+                      className={platform.featured ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      {React.createElement(platform.icon, { 
+                        className: "w-3.5 h-3.5 mr-1 inline", 
+                        "aria-hidden": true 
+                      })}
                       {platform.name}
+                      {platform.featured && <span className="ml-1 text-xs">★</span>}
                     </Badge>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Europe PMC API provides direct access to over 40 million publications with enhanced metadata
+                </p>
               </div>
             </div>
           </Form>
