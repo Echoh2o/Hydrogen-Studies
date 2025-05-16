@@ -29,6 +29,7 @@ import minimalImportRoutes from "./routes/minimal-import";
 import researchRoutes from "./routes/research-routes";
 import studyDetailsRoutes from "./routes/study-details";
 import europePmcRoutes from "./routes/europepmc-routes";
+import semanticScholarRoutes from "./routes/semantic-scholar-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -132,6 +133,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Europe PMC API routes
   app.use('/api', europePmcRoutes);
+  
+  // Register Semantic Scholar API routes
+  app.use('/api', semanticScholarRoutes);
   
   // API routes
   
