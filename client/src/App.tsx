@@ -19,6 +19,7 @@ import Resources from "@/pages/resources";
 import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
 import AdminPage from "@/pages/admin/AdminPage";
+import BlogPage from "@/pages/BlogPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={StudyDetails} />
+      <Route path="/blog/:id/:slug?" component={BlogPage} />
       <Route path="/categories" component={Categories} />
       <Route path="/category/:id" component={CategoryDetails} />
       <Route path="/about" component={About} />
