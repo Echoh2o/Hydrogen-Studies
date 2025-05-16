@@ -43,9 +43,6 @@ export async function scrapeStudyFromUrl(url: string): Promise<InsertStudy | nul
       case 'core':
         study = await scrapeCoreAPI(url);
         break;
-      case 'rxivist':
-        study = await scrapeRxivist(url);
-        break;
       case 'dimensions':
         study = await scrapeDimensions(url);
         break;
@@ -618,74 +615,7 @@ async function scrapeCoreAPI(url: string): Promise<InsertStudy | null> {
   }
 }
 
-/**
- * Scrape a Rxivist preprint
- */
-async function scrapeRxivist(url: string): Promise<InsertStudy | null> {
-  try {
-    // Extract paper ID from URL
-    const idMatch = url.match(/\/papers\/(\d+)/);
-    const paperId = idMatch ? idMatch[1] : null;
-    
-    if (!paperId) {
-      throw new Error('Could not extract paper ID from Rxivist URL');
-    }
-    
-    // Fetch article data from Rxivist API
-    const response = await axios.get(`https://api.rxivist.org/v1/papers/${paperId}`);
-    const data = response.data;
-    
-    // Extract study data
-    const title = data.title || '';
-    
-    // Extract authors
-    const authorNames: string[] = [];
-    if (data.authors) {
-      data.authors.forEach((author: any) => {
-        const name = author.name || '';
-        if (name) authorNames.push(name);
-      });
-    }
-    const authors = authorNames.join(', ');
-    
-    // Extract abstract
-    const abstract = data.abstract || '';
-    
-    // Extract journal info (usually bioRxiv for Rxivist)
-    const journal = data.server || 'bioRxiv';
-    
-    // Extract publication date
-    let publishDate = data.first_posted || '';
-    
-    // Extract DOI if available
-    const doi = data.doi || '';
-    
-    // Extract PDF URL if available
-    const pdfUrl = data.biorxiv_url ? `${data.biorxiv_url}.full.pdf` : '';
-    
-    // Determine if peer-reviewed (preprints are not peer-reviewed)
-    const peerReviewed = false;
-    
-    // Create study object
-    const study: InsertStudy = {
-      title,
-      authors,
-      abstract,
-      journal,
-      publishDate: formatPublicationDate(publishDate),
-      doi,
-      pdfUrl,
-      peerReviewed,
-      category: 'Hydrogen Research',
-      sourcePlatform: 'Rxivist'
-    };
-    
-    return study;
-  } catch (error) {
-    console.error('Error scraping Rxivist:', error);
-    throw error;
-  }
-}
+// Rxivist platform has been discontinued
 
 /**
  * Scrape Dimensions.ai

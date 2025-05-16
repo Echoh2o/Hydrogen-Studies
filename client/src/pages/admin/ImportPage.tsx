@@ -2,6 +2,7 @@ import React from 'react';
 import { ImportForm } from '@/components/admin/ImportForm';
 import ExcelImportForm from '@/components/admin/ExcelImportForm';
 import SimpleImportForm from '@/components/admin/SimpleImportForm';
+import UrlScraperForm from '@/components/admin/UrlScraperForm';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,9 +26,10 @@ export default function ImportPage() {
 
       <div className="space-y-6">
         <Tabs defaultValue="simple" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="simple">Simple Import</TabsTrigger>
             <TabsTrigger value="excel">Excel Import</TabsTrigger>
+            <TabsTrigger value="url">URL Scraper</TabsTrigger>
             <TabsTrigger value="general">General Import</TabsTrigger>
           </TabsList>
           
@@ -37,6 +39,10 @@ export default function ImportPage() {
           
           <TabsContent value="excel" className="mt-4">
             <ExcelImportForm />
+          </TabsContent>
+          
+          <TabsContent value="url" className="mt-4">
+            <UrlScraperForm />
           </TabsContent>
           
           <TabsContent value="general" className="mt-4">
