@@ -54,19 +54,38 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Blog articles table schema
+export const blogArticles = pgTable("blog_articles", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull().references(() => studies.id),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  imageAlt: text("image_alt"),
+  readingLevel: text("reading_level").default("general"),
+  viewCount: integer("view_count").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Create insertion schemas and types
 export const insertStudySchema = createInsertSchema(studies).omit({ id: true, createdAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertNewsletterSchema = createInsertSchema(newsletters).omit({ id: true, createdAt: true });
 export const insertContactSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
+export const insertBlogArticleSchema = createInsertSchema(blogArticles).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
 
 // Types for insertion
 export type InsertStudy = z.infer<typeof insertStudySchema>;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
 export type InsertContact = z.infer<typeof insertContactSchema>;
+export type InsertBlogArticle = z.infer<typeof insertBlogArticleSchema>;
 
 // Types for selection
 export type Study = typeof studies.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Newsletter = typeof newsletters.$inferSelect;
+export type BlogArticle = typeof blogArticles.$inferSelect;
