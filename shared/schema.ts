@@ -1,6 +1,78 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Users table schema
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  name: text("name"),
+  profileImage: text("profile_image"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// User preferences table schema
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  categories: text("categories").array(),
+  keywords: text("keywords").array(),
+  authors: text("authors").array(),
+  emailNotifications: boolean("email_notifications").default(true),
+  notificationFrequency: text("notification_frequency").default("weekly"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Search history table schema
+export const searchHistory = pgTable("search_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  searchQuery: text("search_query").notNull(),
+  searchDate: timestamp("search_date").notNull().defaultNow(),
+});
+
+// User study interactions (saved/viewed studies)
+export const userStudyInteractions = pgTable("user_study_interactions", {
+  userId: integer("user_id").notNull().references(() => users.id),
+  studyId: integer("study_id").notNull().references(() => studies.id),
+  isSaved: boolean("is_saved").default(false),
+  viewCount: integer("view_count").default(0),
+  lastViewed: timestamp("last_viewed").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.userId, table.studyId] }),
+  }
+});
+
+// Notifications table schema
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull(), // "study", "blog", "system"
+  referenceId: integer("reference_id"), // Study or blog ID
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// User blog interactions (saved/viewed blogs)
+export const userBlogInteractions = pgTable("user_blog_interactions", {
+  userId: integer("user_id").notNull().references(() => users.id),
+  blogId: integer("blog_id").notNull().references(() => blogArticles.id),
+  isSaved: boolean("is_saved").default(false),
+  viewCount: integer("view_count").default(0),
+  lastViewed: timestamp("last_viewed").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.userId, table.blogId] }),
+  }
+});
 
 // Studies table schema
 export const studies = pgTable("studies", {
@@ -62,6 +134,7 @@ export const blogArticles = pgTable("blog_articles", {
   slug: text("slug").notNull().unique(),
   summary: text("summary").notNull(),
   content: text("content").notNull(),
+  quickInsights: text("quick_insights"),
   imageUrl: text("image_url"),
   imageAlt: text("image_alt"),
   readingLevel: text("reading_level").default("general"),
@@ -76,6 +149,12 @@ export const insertCategorySchema = createInsertSchema(categories).omit({ id: tr
 export const insertNewsletterSchema = createInsertSchema(newsletters).omit({ id: true, createdAt: true });
 export const insertContactSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
 export const insertBlogArticleSchema = createInsertSchema(blogArticles).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSearchHistorySchema = createInsertSchema(searchHistory).omit({ id: true, searchDate: true });
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export const insertUserStudyInteractionSchema = createInsertSchema(userStudyInteractions).omit({ createdAt: true });
+export const insertUserBlogInteractionSchema = createInsertSchema(userBlogInteractions).omit({ createdAt: true });
 
 // Types for insertion
 export type InsertStudy = z.infer<typeof insertStudySchema>;
@@ -83,9 +162,21 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
 export type InsertContact = z.infer<typeof insertContactSchema>;
 export type InsertBlogArticle = z.infer<typeof insertBlogArticleSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
+export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type InsertUserStudyInteraction = z.infer<typeof insertUserStudyInteractionSchema>;
+export type InsertUserBlogInteraction = z.infer<typeof insertUserBlogInteractionSchema>;
 
 // Types for selection
 export type Study = typeof studies.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Newsletter = typeof newsletters.$inferSelect;
 export type BlogArticle = typeof blogArticles.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type SearchHistory = typeof searchHistory.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
+export type UserStudyInteraction = typeof userStudyInteractions.$inferSelect;
+export type UserBlogInteraction = typeof userBlogInteractions.$inferSelect;
