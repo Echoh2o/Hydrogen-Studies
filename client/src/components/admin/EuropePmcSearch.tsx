@@ -89,12 +89,9 @@ const EuropePmcSearch: React.FC = () => {
     if (!selectedArticle) return;
     
     try {
-      const response = await apiRequest('/api/europepmc/save', {
-        method: 'POST',
-        data: { 
-          id: selectedArticle.id,
-          source: selectedArticle.source
-        }
+      const response = await apiRequest('POST', '/api/europepmc/save', { 
+        id: selectedArticle.id,
+        source: selectedArticle.source
       });
       
       if (response.success) {

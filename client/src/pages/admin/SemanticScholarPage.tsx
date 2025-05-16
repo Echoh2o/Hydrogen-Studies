@@ -57,8 +57,8 @@ export default function SemanticScholarPage() {
     queryKey: ['/api/semanticscholar/search', activeQuery, page, pageSize],
     queryFn: async () => {
       if (!activeQuery) return { total: 0, data: [] };
-      const response = await apiRequest(`/api/semanticscholar/search?query=${encodeURIComponent(activeQuery)}&page=${page}&pageSize=${pageSize}`);
-      return response;
+      const response = await apiRequest("GET", `/api/semanticscholar/search?query=${encodeURIComponent(activeQuery)}&page=${page}&pageSize=${pageSize}`);
+      return response.json();
     },
     enabled: !!activeQuery
   });
@@ -72,8 +72,8 @@ export default function SemanticScholarPage() {
     queryKey: ['/api/semanticscholar/paper', selectedPaper?.paperId],
     queryFn: async () => {
       if (!selectedPaper?.paperId) return null;
-      const response = await apiRequest(`/api/semanticscholar/paper/${selectedPaper.paperId}`);
-      return response;
+      const response = await apiRequest("GET", `/api/semanticscholar/paper/${selectedPaper.paperId}`);
+      return response.json();
     },
     enabled: !!selectedPaper?.paperId
   });
