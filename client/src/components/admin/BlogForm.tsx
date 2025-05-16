@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, Save } from "lucide-react";
@@ -22,7 +23,10 @@ const blogSchema = z.object({
   studyId: z.number().min(1, "Please select a study"),
   readingLevel: z.string().default("general"),
   slug: z.string().min(3, "Slug must be at least 3 characters")
-    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens")
+    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
+  isPublished: z.boolean().default(false),
+  editorNotes: z.string().optional(),
+  articleType: z.string().optional()
 });
 
 type BlogFormValues = z.infer<typeof blogSchema>;
@@ -59,7 +63,10 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
       content: blogData?.content || "",
       studyId: blogData?.studyId || 0,
       readingLevel: blogData?.readingLevel || "general",
-      slug: blogData?.slug || ""
+      slug: blogData?.slug || "",
+      isPublished: blogData?.isPublished || false,
+      editorNotes: blogData?.editorNotes || "",
+      articleType: blogData?.articleType || ""
     },
     values: blogData
   });
@@ -120,7 +127,10 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
           content: "",
           studyId: 0,
           readingLevel: "general",
-          slug: ""
+          slug: "",
+          isPublished: false,
+          editorNotes: "",
+          articleType: ""
         });
       }
       
@@ -282,6 +292,86 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                   />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Article Type */}
+          <FormField
+            control={form.control}
+            name="articleType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Article Type</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select article type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="overview">Overview</SelectItem>
+                    <SelectItem value="practical">Practical Application</SelectItem>
+                    <SelectItem value="comparison">Comparison</SelectItem>
+                    <SelectItem value="elon_overview">Elon-Style Overview</SelectItem>
+                    <SelectItem value="elon_practical">Elon-Style Practical</SelectItem>
+                    <SelectItem value="elon_comparison">Elon-Style Comparison</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  The type of article helps define its focus and style
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Editor Notes */}
+          <FormField
+            control={form.control}
+            name="editorNotes"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Editor Notes</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Notes for editors about this article" 
+                    className="min-h-[100px]" 
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Private notes about the article that won't be displayed publicly
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Published Status */}
+          <FormField
+            control={form.control}
+            name="isPublished"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>
+                    Published
+                  </FormLabel>
+                  <FormDescription>
+                    When checked, this article will be visible to the public
+                  </FormDescription>
+                </div>
               </FormItem>
             )}
           />
