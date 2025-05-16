@@ -1,12 +1,20 @@
 /**
  * CrossRef API Integration
  * Documentation: https://api.crossref.org/swagger-ui/index.html
+ * 
+ * Note: CrossRef recommends identifying your application with a proper User-Agent header
+ * to prevent being rate-limited as anonymous users.
  */
 import axios from 'axios';
 import { InsertStudy } from '@shared/schema';
 
 // CrossRef API URL
 const CROSSREF_API_URL = 'https://api.crossref.org/works';
+
+// Set headers for CrossRef API requests to avoid rate limiting
+const CROSSREF_HEADERS = {
+  'User-Agent': 'HydrogenStudies/1.0 (https://hydrogenstudies.com; info@hydrogenstudies.com)',
+};
 
 /**
  * Search CrossRef for articles
@@ -26,7 +34,7 @@ export async function searchCrossRef(
     // Formulate the query to focus on hydrogen-related studies
     const formattedQuery = `${query}+hydrogen`;
     
-    // Make API request to CrossRef
+    // Make API request to CrossRef with proper headers
     const response = await axios.get(`${CROSSREF_API_URL}`, {
       params: {
         query: formattedQuery,
@@ -34,7 +42,9 @@ export async function searchCrossRef(
         offset: offset,
         sort: 'relevance',
         order: 'desc'
-      }
+      },
+      headers: CROSSREF_HEADERS,
+      timeout: 10000 // 10 second timeout
     });
     
     return {
@@ -43,9 +53,13 @@ export async function searchCrossRef(
       page: page,
       pageSize: pageSize
     };
-  } catch (error) {
-    console.error('Error searching CrossRef:', error);
-    throw new Error('Failed to search CrossRef API');
+  } catch (error: any) {
+    console.error('Error searching CrossRef:', error.message);
+    if (error.response) {
+      console.error('CrossRef API response status:', error.response.status);
+      console.error('CrossRef API response data:', error.response.data);
+    }
+    throw new Error('Failed to search CrossRef');
   }
 }
 
@@ -58,12 +72,19 @@ export async function getCrossRefArticleByDOI(doi: string): Promise<any> {
   try {
     // CrossRef API accepts DOIs directly in the URL path
     const encodedDOI = encodeURIComponent(doi);
-    const response = await axios.get(`${CROSSREF_API_URL}/${encodedDOI}`);
+    const response = await axios.get(`${CROSSREF_API_URL}/${encodedDOI}`, {
+      headers: CROSSREF_HEADERS,
+      timeout: 10000 // 10 second timeout
+    });
     
     return response.data.message;
-  } catch (error) {
-    console.error('Error fetching article from CrossRef:', error);
-    throw new Error('Failed to fetch article from CrossRef API');
+  } catch (error: any) {
+    console.error('Error fetching article from CrossRef:', error.message);
+    if (error.response) {
+      console.error('CrossRef API response status:', error.response.status);
+      console.error('CrossRef API response data:', error.response.data);
+    }
+    throw new Error('Failed to fetch article from CrossRef');
   }
 }
 

@@ -1,6 +1,9 @@
 /**
  * Europe PMC API Integration
  * Documentation: https://europepmc.org/RestfulWebService
+ * 
+ * Note: The Europe PMC API endpoint has changed from previous versions.
+ * Current endpoint is https://www.ebi.ac.uk/europepmc/webservices/rest
  */
 import axios from 'axios';
 import { InsertStudy } from '@shared/schema';
@@ -61,15 +64,15 @@ export async function getEuropePMCArticle(id: string): Promise<any> {
       source = 'DOI';
     }
     
-    const url = `${EUROPEPMC_API_BASE}/${source}/${id}`;
+    // Europe PMC API has changed, now we use article endpoint
+    const url = `${EUROPEPMC_API_BASE}/article/${source}/${id}`;
     const response = await axios.get(url, {
       params: {
-        format: 'json',
-        resultType: 'core'
+        format: 'json'
       }
     });
     
-    return response.data.resultList.result[0];
+    return response.data.result;
   } catch (error) {
     console.error('Error fetching article from Europe PMC:', error);
     throw new Error('Failed to fetch article from Europe PMC');
