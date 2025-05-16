@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Search, FileImport, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Search, FileDown, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Pagination } from '@/components/ui/pagination';
@@ -335,7 +335,7 @@ export default function SemanticScholarPage() {
               {importPaperMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <FileImport className="mr-2 h-4 w-4" />
+                <FileDown className="mr-2 h-4 w-4" />
               )}
               Import Paper
             </Button>

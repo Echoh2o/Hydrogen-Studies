@@ -2,18 +2,97 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
+// Main pagination component
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   showPageNumbers?: boolean;
+  className?: string;
+}
+
+// Add pagination sub-components for compatibility with other components
+export function PaginationContent({ children, className }: React.HTMLAttributes<HTMLUListElement>) {
+  return (
+    <ul className={`flex flex-row items-center gap-1 ${className || ''}`}>
+      {children}
+    </ul>
+  );
+}
+
+export function PaginationItem({ children, className }: React.HTMLAttributes<HTMLLIElement>) {
+  return (
+    <li className={className}>{children}</li>
+  );
+}
+
+export function PaginationLink({ 
+  children, 
+  isActive = false,
+  className,
+  ...props
+}: React.ComponentProps<typeof Button> & { isActive?: boolean }) {
+  return (
+    <Button
+      variant={isActive ? "default" : "outline"}
+      size="icon"
+      className={`h-8 w-8 p-0 ${className || ''}`}
+      {...props}
+    >
+      {children}
+    </Button>
+  );
+}
+
+export function PaginationPrevious({ 
+  className, 
+  ...props 
+}: React.ComponentProps<typeof Button>) {
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      className={className}
+      {...props}
+    >
+      <ChevronLeft className="h-4 w-4" />
+      <span className="sr-only">Previous Page</span>
+    </Button>
+  );
+}
+
+export function PaginationNext({ 
+  className, 
+  ...props 
+}: React.ComponentProps<typeof Button>) {
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      className={className}
+      {...props}
+    >
+      <ChevronRight className="h-4 w-4" />
+      <span className="sr-only">Next Page</span>
+    </Button>
+  );
+}
+
+export function PaginationEllipsis({ className }: { className?: string }) {
+  return (
+    <div className={`flex h-8 w-8 items-center justify-center ${className || ''}`}>
+      <MoreHorizontal className="h-4 w-4" />
+      <span className="sr-only">More pages</span>
+    </div>
+  );
 }
 
 export function Pagination({
   currentPage,
   totalPages,
   onPageChange,
-  showPageNumbers = true
+  showPageNumbers = true,
+  className
 }: PaginationProps) {
   // Calculate visible page numbers
   const getVisiblePageNumbers = () => {
@@ -59,7 +138,7 @@ export function Pagination({
   const visiblePages = showPageNumbers ? getVisiblePageNumbers() : [];
   
   return (
-    <div className="flex items-center justify-center space-x-2 mt-6">
+    <div className={`flex items-center justify-center space-x-2 mt-6 ${className || ''}`}>
       <Button
         variant="outline"
         size="icon"

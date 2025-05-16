@@ -348,6 +348,16 @@ export default function AdminPage() {
                             <BookOpen className="h-4 w-4 mr-2" />
                             Europe PMC Search
                           </Button>
+                          
+                          <Button
+                            type="button"
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => window.location.href = '/admin/semanticscholar'}
+                          >
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            Semantic Scholar Search
+                          </Button>
                         </div>
                       </div>
                     </div>
