@@ -120,6 +120,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Excel analysis routes for field mapping
   app.use('/api', excelAnalysisRoutes);
+  
+  // Register minimal import routes with PubMed enrichment
+  app.use('/api', minimalImportRoutes);
   // API routes
   
   // Studies routes

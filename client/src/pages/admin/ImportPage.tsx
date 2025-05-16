@@ -1,6 +1,7 @@
 import React from 'react';
 import { ImportForm } from '@/components/admin/ImportForm';
 import ExcelImportForm from '@/components/admin/ExcelImportForm';
+import SimpleImportForm from '@/components/admin/SimpleImportForm';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,11 +24,16 @@ export default function ImportPage() {
       </div>
 
       <div className="space-y-6">
-        <Tabs defaultValue="excel" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="simple" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="simple">Simple Import</TabsTrigger>
             <TabsTrigger value="excel">Excel Import</TabsTrigger>
             <TabsTrigger value="general">General Import</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="simple" className="mt-4">
+            <SimpleImportForm />
+          </TabsContent>
           
           <TabsContent value="excel" className="mt-4">
             <ExcelImportForm />
