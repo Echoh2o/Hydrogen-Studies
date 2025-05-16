@@ -316,6 +316,33 @@ export default function AdminPage() {
                 
                 <Card>
                   <CardHeader>
+                    <CardTitle>PubMed Search & Import</CardTitle>
+                    <CardDescription>Import studies from PubMed and other research sources</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-sm text-neutral-600">
+                        Search for hydrogen-related research articles in PubMed and other academic sources.
+                        You can review and approve articles before adding them to your database.
+                      </p>
+                      
+                      <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6">
+                        <Search className="h-10 w-10 text-neutral-400 mb-2" />
+                        <p className="text-sm text-neutral-500 mb-4">Search for hydrogen research articles</p>
+                        <Button
+                          type="button"
+                          onClick={() => window.location.href = '/admin/articles'}
+                        >
+                          <Search className="h-4 w-4 mr-2" />
+                          Search PubMed Articles
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
                     <CardTitle>Scrape Website</CardTitle>
                     <CardDescription>Import studies from the original website</CardDescription>
                   </CardHeader>
