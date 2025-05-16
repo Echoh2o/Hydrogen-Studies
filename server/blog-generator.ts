@@ -4,9 +4,9 @@ import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
 import slugify from 'slugify';
-import { Study, InsertBlogArticle } from "@shared/schema";
+import { Study, InsertBlogArticle, blogArticles } from "@shared/schema";
 import { db } from "./db";
-import { blogArticles } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -356,9 +356,9 @@ export async function saveBlogArticles(articles: InsertBlogArticle[]): Promise<n
 /**
  * Get blog articles for a specific study
  */
-export async function getBlogArticlesForStudy(studyId: number): Promise<BlogArticle[]> {
+export async function getBlogArticlesForStudy(studyId: number): Promise<any[]> {
   try {
-    const articles = await db.select().from(blogArticles).where({ studyId: studyId });
+    const articles = await db.select().from(blogArticles).where(eq(blogArticles.studyId, studyId));
     return articles;
   } catch (error) {
     console.error("Error fetching blog articles for study:", error);

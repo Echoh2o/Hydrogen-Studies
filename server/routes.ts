@@ -3,11 +3,14 @@ import { createServer, type Server } from "http";
 import * as fs from "fs";
 import * as path from "path";
 import { storage } from "./storage";
-import { insertNewsletterSchema, insertStudySchema, insertCategorySchema, insertContactSchema } from "@shared/schema";
+import { insertNewsletterSchema, insertStudySchema, insertCategorySchema, insertContactSchema, blogArticles } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
 import { generateScientificImage } from "./image-generator";
+import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
@@ -320,6 +323,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting study:", error);
       res.status(500).json({ message: "Failed to delete study", error: error.message });
+    }
+  });
+  
+  // Blog article routes
+  
+  // Get all blog articles
+  app.get("/api/blogs", async (req, res) => {
+    try {
+      const blogs = await db.select().from(blogArticles).orderBy(desc(blogArticles.createdAt));
+      res.json(blogs);
+    } catch (error) {
+      console.error("Error fetching blogs:", error);
+      res.status(500).json({ message: "Failed to fetch blogs" });
+    }
+  });
+  
+  // Get blog article by ID
+  app.get("/api/blogs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      if (!blog) {
+        return res.status(404).json({ message: "Blog article not found" });
+      }
+      
+      // Increment view count
+      await db.update(blogArticles)
+        .set({ viewCount: blog.viewCount + 1 })
+        .where(eq(blogArticles.id, parseInt(id)));
+      
+      res.json(blog);
+    } catch (error) {
+      console.error("Error fetching blog:", error);
+      res.status(500).json({ message: "Failed to fetch blog article" });
+    }
+  });
+  
+  // Get blog articles for a specific study
+  app.get("/api/studies/:id/blogs", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const studyBlogs = await getBlogArticlesForStudy(parseInt(id));
+      res.json(studyBlogs);
+    } catch (error) {
+      console.error("Error fetching study blogs:", error);
+      res.status(500).json({ message: "Failed to fetch study blog articles" });
+    }
+  });
+  
+  // Generate blog articles for a study
+  app.post("/api/studies/:id/generate-blogs", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const study = await storage.getStudyById(parseInt(id));
+      
+      if (!study) {
+        return res.status(404).json({ message: "Study not found" });
+      }
+      
+      // Check if blog articles already exist for this study
+      const existingBlogs = await getBlogArticlesForStudy(parseInt(id));
+      
+      if (existingBlogs.length > 0) {
+        return res.status(409).json({ 
+          message: "Blog articles already exist for this study",
+          blogs: existingBlogs
+        });
+      }
+      
+      // Generate blog articles
+      const articles = await generateBlogArticlesForStudy(study);
+      
+      // Save blog articles to database
+      const savedArticleIds = await saveBlogArticles(articles);
+      
+      // Fetch the saved articles
+      const savedArticles = await Promise.all(
+        savedArticleIds.map(async (id) => {
+          const [article] = await db.select().from(blogArticles).where(eq(blogArticles.id, id));
+          return article;
+        })
+      );
+      
+      res.status(201).json({
+        message: "Blog articles generated successfully",
+        articles: savedArticles
+      });
+    } catch (error) {
+      console.error("Error generating blog articles:", error);
+      res.status(500).json({ message: "Failed to generate blog articles" });
     }
   });
   
