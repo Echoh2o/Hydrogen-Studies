@@ -37,13 +37,15 @@ export default function Resources() {
             </p>
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
-                <TabsTrigger value="researchers">For Researchers</TabsTrigger>
-                <TabsTrigger value="healthcare">Healthcare Providers</TabsTrigger>
-                <TabsTrigger value="bibliography">Bibliography Tools</TabsTrigger>
-                <TabsTrigger value="methodology">Methodology</TabsTrigger>
-                <TabsTrigger value="contact">Contact Us</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto pb-2">
+                <TabsList className="grid w-full min-w-[600px] grid-cols-5">
+                  <TabsTrigger value="researchers">For Researchers</TabsTrigger>
+                  <TabsTrigger value="healthcare">Healthcare Providers</TabsTrigger>
+                  <TabsTrigger value="bibliography">Bibliography Tools</TabsTrigger>
+                  <TabsTrigger value="methodology">Methodology</TabsTrigger>
+                  <TabsTrigger value="contact">Contact Us</TabsTrigger>
+                </TabsList>
+              </div>
               
               <TabsContent value="researchers" id="researchers">
                 <Card>
@@ -168,12 +170,12 @@ export default function Resources() {
                         Download citations in multiple formats:
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Button variant="outline">APA Format</Button>
-                        <Button variant="outline">MLA Format</Button>
-                        <Button variant="outline">Chicago Style</Button>
-                        <Button variant="outline">Harvard Style</Button>
-                        <Button variant="outline">BibTeX Format</Button>
-                        <Button variant="outline">RIS Format</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">APA Format</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">MLA Format</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">Chicago Style</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">Harvard Style</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">BibTeX Format</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">RIS Format</Button>
                       </div>
                     </section>
                     
@@ -185,10 +187,10 @@ export default function Resources() {
                         Integration with popular reference management software:
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Button variant="outline">Export to Mendeley</Button>
-                        <Button variant="outline">Export to Zotero</Button>
-                        <Button variant="outline">Export to EndNote</Button>
-                        <Button variant="outline">Export to RefWorks</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">Export to Mendeley</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">Export to Zotero</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">Export to EndNote</Button>
+                        <Button variant="outline" className="w-full justify-start px-4">Export to RefWorks</Button>
                       </div>
                     </section>
                     
@@ -200,7 +202,7 @@ export default function Resources() {
                         Tools for managing multiple citations:
                       </p>
                       <div className="space-y-4">
-                        <Button className="w-full sm:w-auto">Batch Export Citations</Button>
+                        <Button className="w-full sm:w-auto justify-start px-4">Batch Export Citations</Button>
                         <p className="text-sm text-neutral-600">
                           Create customized bibliographies by selecting multiple studies from our database and exporting them in your preferred format.
                         </p>
