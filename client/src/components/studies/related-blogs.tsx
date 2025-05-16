@@ -19,7 +19,7 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
   
   // Fetch blog articles for the study
   const { 
-    data: blogs, 
+    data: blogs = [], 
     isLoading, 
     error 
   } = useQuery({
@@ -29,10 +29,8 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
   
   // Mutation to generate blog articles
   const generateMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest(`/api/studies/${studyId}/generate-blogs`, {
-        method: "POST",
-      });
+    mutationFn: () => {
+      return apiRequest("POST", `/api/studies/${studyId}/generate-blogs`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/studies/${studyId}/blogs`] });
@@ -72,7 +70,7 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
   }
   
   // If no blogs exist yet, show generate button
-  if (!blogs || blogs.length === 0) {
+  if (!blogs || !Array.isArray(blogs) || blogs.length === 0) {
     return (
       <Card className="mb-8">
         <CardHeader>
@@ -111,14 +109,14 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
   }
   
   // Group blogs by type
-  const blogsByType = blogs.reduce((acc: Record<string, any>, blog: any) => {
+  const blogsByType = Array.isArray(blogs) ? blogs.reduce((acc: Record<string, any>, blog: any) => {
     const type = blog.readingLevel || "general";
     if (!acc[type]) {
       acc[type] = [];
     }
     acc[type].push(blog);
     return acc;
-  }, {});
+  }, {}) : {};
   
   return (
     <div className="mb-8 space-y-4">
@@ -127,23 +125,23 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
         Related Articles
       </h2>
       
-      {blogs.length > 0 && (
+      {Array.isArray(blogs) && blogs.length > 0 && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             {blogs.map((blog: any) => (
-              <TabsTrigger key={blog.id} value={blog.slug.split('-')[0]}>
-                {blog.title.split(':')[0]}
+              <TabsTrigger key={blog.id} value={blog.slug?.split('-')[0] || 'tab'}>
+                {blog.title?.split(':')[0] || 'Article'}
               </TabsTrigger>
             ))}
           </TabsList>
           
           {blogs.map((blog: any) => (
-            <TabsContent key={blog.id} value={blog.slug.split('-')[0]}>
+            <TabsContent key={blog.id} value={blog.slug?.split('-')[0] || 'tab'}>
               <Card>
                 <CardHeader>
-                  <CardTitle>{blog.title}</CardTitle>
+                  <CardTitle>{blog.title || 'Untitled Article'}</CardTitle>
                   <CardDescription>
-                    Posted {formatDate(blog.createdAt)} • {blog.viewCount || 0} views
+                    Posted {blog.createdAt ? formatDate(blog.createdAt) : 'recently'} • {blog.viewCount || 0} views
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -159,16 +157,16 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
                     )}
                     <div className={blog.imageUrl ? "md:w-2/3" : "w-full"}>
                       <p className="text-neutral-700 font-medium mb-2">
-                        {blog.summary}
+                        {blog.summary || 'A scientific explanation of this hydrogen study.'}
                       </p>
                       <div className="text-neutral-600 mb-4">
-                        {truncateText(blog.content.replace(/#|_|\*/g, ''), 300)}...
+                        {blog.content ? truncateText(blog.content.replace(/#|_|\*/g, ''), 300) + '...' : 'Read this article to learn more about the study and its implications for hydrogen research.'}
                       </div>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link to={`/blog/${blog.id}/${blog.slug}`}>
+                  <Link to={`/blog/${blog.id}/${blog.slug || 'article'}`}>
                     <Button variant="outline">
                       Read Full Article
                       <ArrowRight className="h-4 w-4 ml-2" />

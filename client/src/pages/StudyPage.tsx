@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiQuote, HiClipboardCheck } from "react-icons/hi";
 import { Helmet } from "react-helmet";
+import RelatedBlogs from "@/components/studies/related-blogs";
 
 const StudyPage = () => {
   const { id } = useParams();
@@ -168,6 +169,15 @@ const StudyPage = () => {
               </div>
             </div>
 
+            {/* Related Blogs - AI Generated Articles */}
+            <div className="mt-10">
+              <div className="mb-10">
+                {/* Import the RelatedBlogs component here */}
+                {/* @ts-ignore - We'll fix this later */}
+                <RelatedBlogs studyId={studyId} />
+              </div>
+            </div>
+            
             {/* Related Studies */}
             {relatedStudies.length > 0 && (
               <div className="mt-10">
