@@ -4,11 +4,11 @@ import { z } from "zod";
 
 // Users table schema
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name"),
-  profileImage: text("profile_image"),
+  id: text("id").primaryKey().notNull(), // Store Replit user ID
+  email: text("email"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -36,7 +36,7 @@ export const searchHistory = pgTable("search_history", {
 
 // User study interactions (saved/viewed studies)
 export const userStudyInteractions = pgTable("user_study_interactions", {
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   studyId: integer("study_id").notNull().references(() => studies.id),
   isSaved: boolean("is_saved").default(false),
   viewCount: integer("view_count").default(0),

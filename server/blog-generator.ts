@@ -21,7 +21,12 @@ const openai = new OpenAI({
 const BLOG_TYPES = [
   "overview", 
   "practical_application", 
-  "comparison"
+  "comparison",
+  "elon_simple", // Elon Musk's voice at a 6th grade level
+  "elon_benefits", // Benefits focused in Elon's voice at 6th grade level
+  "elon_future", // Future implications in Elon's voice at 6th grade level
+  "elon_faq", // FAQ style in Elon's voice at 6th grade level
+  "elon_howto" // How-to guide in Elon's voice at 6th grade level
 ];
 
 /**
