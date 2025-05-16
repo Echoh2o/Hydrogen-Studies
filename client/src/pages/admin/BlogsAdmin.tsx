@@ -18,6 +18,7 @@ export default function BlogsAdmin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("published");
   const [selectedBlogId, setSelectedBlogId] = useState<number | undefined>(undefined);
+  const [selectedStudyId, setSelectedStudyId] = useState<number | undefined>(undefined);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -25,6 +26,13 @@ export default function BlogsAdmin() {
   const { data: blogs = [], isLoading } = useQuery({
     queryKey: ['/api/blogs'],
     staleTime: 30000, // 30 seconds
+  });
+  
+  // Fetch studies for the filter dropdown
+  const { data: studies = [] } = useQuery({
+    queryKey: ['/api/studies'],
+    staleTime: 60000, // 1 minute
+    enabled: activeTab === 'byStudy', // Only fetch when byStudy tab is active
   });
 
   // Filter blogs based on search query and active tab
@@ -43,7 +51,10 @@ export default function BlogsAdmin() {
     } else if (activeTab === 'withoutImages') {
       return matchesSearch && !blog.imageUrl;
     } else if (activeTab === 'byStudy') {
-      // TODO: Implement study filter when needed
+      // Filter by selected study if one is selected
+      if (selectedStudyId) {
+        return matchesSearch && blog.studyId === selectedStudyId;
+      }
       return matchesSearch;
     } else {
       // 'all' tab or default
@@ -100,6 +111,14 @@ export default function BlogsAdmin() {
     }
   };
   
+  // Helper to reset search and filters
+  const clearFilters = () => {
+    setSearchQuery("");
+    if (activeTab === 'byStudy') {
+      setSelectedStudyId(undefined);
+    }
+  };
+  
   // Format article type for display
   const formatArticleType = (type: string) => {
     switch (type) {
@@ -146,15 +165,44 @@ export default function BlogsAdmin() {
               <CardDescription>Manage all blog articles</CardDescription>
             </div>
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search articles..."
-                  className="pl-8 w-full md:w-[300px]"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              <div className="flex gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search articles..."
+                    className="pl-8 w-full md:w-[300px]"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {(searchQuery || (activeTab === 'byStudy' && selectedStudyId)) && (
+                    <button 
+                      className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                      onClick={clearFilters}
+                      type="button"
+                      aria-label="Clear search"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                
+                {activeTab === 'byStudy' && (
+                  <select 
+                    className="h-10 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                    value={selectedStudyId || ""}
+                    onChange={(e) => setSelectedStudyId(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                  >
+                    <option value="">All Studies</option>
+                    {studies.map((study: any) => (
+                      <option key={study.id} value={study.id}>
+                        {study.title.substring(0, 40)}{study.title.length > 40 ? '...' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
