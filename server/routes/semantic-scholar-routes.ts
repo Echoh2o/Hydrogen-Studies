@@ -28,7 +28,16 @@ router.get('/api/semanticscholar/search', async (req: Request, res: Response) =>
       pageSizeNum
     );
     
-    res.json(results);
+    // Format the response to match the expected structure in the frontend
+    const totalResults = results?.total || 0;
+    const papers = results?.data || [];
+    
+    res.json({
+      total: totalResults,
+      data: papers,
+      offset: pageNum * pageSizeNum,
+      next: (pageNum + 1) * pageSizeNum < totalResults ? pageNum + 1 : null
+    });
   } catch (error) {
     console.error('Error searching Semantic Scholar:', error);
     res.status(500).json({ error: 'Failed to search Semantic Scholar' });
