@@ -9,6 +9,7 @@ import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
 import { generateScientificImage } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
+import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
@@ -210,7 +211,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contact", async (req, res) => {
     try {
       const validatedData = insertContactSchema.parse(req.body);
-      const contactMessage = await storage.submitContactMessage(validatedData);
+      
+      // Send email using SendGrid
+      const emailSuccess = await sendContactEmail({
+        name: validatedData.name,
+        email: validatedData.email,
+        subject: validatedData.subject,
+        message: validatedData.message
+      });
+      
+      if (!emailSuccess) {
+        return res.status(500).json({ message: "Failed to send email. Please try again later." });
+      }
+      
+      // Store contact message in database if available
+      try {
+        await storage.submitContactMessage(validatedData);
+      } catch (dbError) {
+        console.warn("Failed to store contact message in database, but email was sent:", dbError);
+        // Continue execution since the email was sent successfully
+      }
+      
       res.status(201).json({ message: "Your message has been sent successfully!" });
     } catch (error) {
       if (error instanceof ZodError) {
