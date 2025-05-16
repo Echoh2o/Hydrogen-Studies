@@ -1,0 +1,25 @@
+<svg width="250" height="200" viewBox="0 0 250 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="125" cy="100" r="70" fill="#0056b3" opacity="0.1"/>
+
+  <!-- Hydrogen Atom Representation -->
+  <circle cx="125" cy="100" r="25" fill="#0056b3"/>
+  
+  <!-- Electron Orbit 1 -->
+  <ellipse cx="125" cy="100" rx="60" ry="40" stroke="#0056b3" stroke-width="2" transform="rotate(30 125 100)"/>
+  
+  <!-- Electron Orbit 2 -->
+  <ellipse cx="125" cy="100" rx="55" ry="50" stroke="#0056b3" stroke-width="2" transform="rotate(-30 125 100)"/>
+  
+  <!-- Electron 1 -->
+  <circle cx="185" cy="100" r="6" fill="#2ecc71"/>
+  
+  <!-- Electron 2 -->
+  <circle cx="70" cy="85" r="6" fill="#3498db"/>
+  
+  <!-- H2 Text -->
+  <text x="117" y="105" font-family="Arial" font-weight="bold" font-size="24" fill="#ffffff">H₂</text>
+  
+  <!-- Subtitle "Hydrogen Studies" -->
+  <text x="125" y="160" font-family="Arial" font-weight="bold" font-size="18" fill="#0056b3" text-anchor="middle">Hydrogen Studies</text>
+</svg>
