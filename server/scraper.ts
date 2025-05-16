@@ -5,6 +5,12 @@ import { InsertStudy } from '@shared/schema';
 
 const WEBSITE_URL = 'https://hydrogenstudies.com';
 
+import { 
+  initScraperStatus, 
+  updateScraperProgress, 
+  completeScraperStatus 
+} from './scrapers/scraper-status';
+
 /**
  * Scrapes the hydrogen studies website and imports studies into the database
  */
@@ -12,13 +18,21 @@ export async function scrapeHydrogenStudies() {
   try {
     console.log('Starting hydrogen studies scraper...');
     
+    // Initialize scraper status
+    initScraperStatus('hydrogen-studies');
+    
     // First, scrape the main studies page to get all study links
     const studyLinks = await scrapeStudyLinks();
     
     console.log(`Found ${studyLinks.length} studies to scrape`);
     
+    // Update status with total number of studies
+    updateScraperProgress(0, 0, 0, studyLinks.length);
+    
     // Scrape each individual study page
     let successCount = 0;
+    let failedCount = 0;
+    
     for (let i = 0; i < studyLinks.length; i++) {
       const link = studyLinks[i];
       try {
@@ -29,19 +43,29 @@ export async function scrapeHydrogenStudies() {
           await storage.createStudy(study);
           successCount++;
           console.log(`Successfully imported study: ${study.title}`);
+        } else {
+          failedCount++;
         }
       } catch (error) {
         console.error(`Error scraping study at ${link}: ${error.message}`);
+        failedCount++;
       }
+      
+      // Update progress status
+      updateScraperProgress(i + 1, successCount, failedCount);
       
       // Wait briefly between requests to avoid overloading the server
       await delay(500);
     }
     
+    // Mark scraper as complete
+    completeScraperStatus();
+    
     console.log(`Scraping complete. Successfully imported ${successCount} studies.`);
     return { total: studyLinks.length, success: successCount };
   } catch (error) {
     console.error('Error scraping hydrogen studies:', error);
+    completeScraperStatus(error.message);
     throw error;
   }
 }

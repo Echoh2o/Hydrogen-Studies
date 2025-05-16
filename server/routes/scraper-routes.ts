@@ -1,6 +1,8 @@
 import express from 'express';
 import { ScraperSource } from '../scrapers/base-scraper';
 import { scraperManager } from '../scrapers/scraper-manager';
+import { scrapeHydrogenStudies } from '../scraper';
+import { getScraperStatus, getScraperProgressDescription } from '../scrapers/scraper-status';
 
 const router = express.Router();
 
