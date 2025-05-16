@@ -8,6 +8,7 @@ import { AlertCircle, CheckCircle, FileSpreadsheet, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import type { ImportResponse } from "@/types/import";
 
 const ExcelImportForm = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -17,17 +18,20 @@ const ExcelImportForm = () => {
   // Mutation for uploading Excel file
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await apiRequest('/api/import/excel', {
+      const response = await fetch('/api/import/excel', {
         method: 'POST',
         body: formData,
       });
-      return response;
+      if (!response.ok) {
+        throw new Error(`Import failed: ${response.statusText}`);
+      }
+      return response.json() as Promise<ImportResponse>;
     },
     onSuccess: (data) => {
       toast({
         title: "Import Successful",
-        description: `${data.success} out of ${data.total} studies were imported.`,
-        variant: "success",
+        description: `${data.imported || 0} out of ${data.total || 0} studies were imported.`,
+        duration: 5000,
       });
     },
     onError: (error: any) => {
@@ -42,20 +46,23 @@ const ExcelImportForm = () => {
   // Mutation for importing from attached file
   const attachedFileMutation = useMutation({
     mutationFn: async (data: { filePath: string; fileType: string }) => {
-      const response = await apiRequest('/api/import/attached', {
+      const response = await fetch('/api/import/attached', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
-      return response;
+      if (!response.ok) {
+        throw new Error(`Import failed: ${response.statusText}`);
+      }
+      return response.json() as Promise<ImportResponse>;
     },
     onSuccess: (data) => {
       toast({
         title: "Import Successful",
-        description: `${data.success} out of ${data.total} studies were imported.`,
-        variant: "success",
+        description: `${data.imported || 0} out of ${data.total || 0} studies were imported.`,
+        duration: 5000,
       });
     },
     onError: (error: any) => {
@@ -228,10 +235,10 @@ const ExcelImportForm = () => {
           <AlertTitle>Import Successful</AlertTitle>
           <AlertDescription>
             {uploadMutation.isSuccess && uploadMutation.data && (
-              <p>Successfully imported {uploadMutation.data.success} out of {uploadMutation.data.total} studies.</p>
+              <p>Successfully imported {uploadMutation.data.imported || 0} out of {uploadMutation.data.total || 0} studies.</p>
             )}
             {attachedFileMutation.isSuccess && attachedFileMutation.data && (
-              <p>Successfully imported {attachedFileMutation.data.success} out of {attachedFileMutation.data.total} studies.</p>
+              <p>Successfully imported {attachedFileMutation.data.imported || 0} out of {attachedFileMutation.data.total || 0} studies.</p>
             )}
           </AlertDescription>
         </Alert>
