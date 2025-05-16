@@ -18,7 +18,7 @@ export interface ScraperSource {
 
 export abstract class BaseScraper {
   public readonly source: ScraperSource;
-  protected userAgent: string = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+  protected userAgent: string = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
   
   constructor(source: ScraperSource) {
     this.source = source;
@@ -96,15 +96,35 @@ export abstract class BaseScraper {
   }
   
   /**
-   * Make an HTTP request with appropriate headers
+   * Make an HTTP request with appropriate headers that better simulate a real browser
    */
   protected async makeRequest(url: string): Promise<cheerio.CheerioAPI> {
+    // Add randomization to request timing to appear more human-like
+    const randomDelay = Math.floor(Math.random() * 1000) + 500;
+    await this.delay(randomDelay);
+    
+    // Use more complete browser headers to avoid detection
     const response = await axios.get(url, {
       headers: {
         'User-Agent': this.userAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="120", "Chromium";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'Priority': 'u=0, i',
+        'Cache-Control': 'max-age=0',
+        'Referer': 'https://www.google.com/'
+      },
+      timeout: 30000, // Increase timeout to 30 seconds
+      maxRedirects: 5
     });
     
     return cheerio.load(response.data);
