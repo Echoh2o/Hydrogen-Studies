@@ -32,7 +32,19 @@ router.get('/api/europepmc/search', async (req: Request, res: Response) => {
       sortBy as string
     );
     
-    res.json(results);
+    // Format the response properly
+    const totalResults = results?.hitCount || 0;
+    const totalPages = Math.ceil(totalResults / pageSizeNum);
+    
+    res.json({
+      data: results || { resultList: { result: [] } },
+      metadata: {
+        total: totalResults,
+        page: pageNum,
+        pageSize: pageSizeNum,
+        totalPages
+      }
+    });
   } catch (error) {
     console.error('Error searching Europe PMC:', error);
     res.status(500).json({ error: 'Failed to search Europe PMC' });
