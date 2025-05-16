@@ -1,11 +1,20 @@
 /**
  * Semantic Scholar API Integration
  * Documentation: https://www.semanticscholar.org/product/api
+ * 
+ * Note: Semantic Scholar recommends using a User-Agent header for identification
+ * and requests that heavy usage include contact information.
  */
 import axios from 'axios';
 import { InsertStudy } from '@shared/schema';
 
 const SEMANTIC_SCHOLAR_API_BASE = 'https://api.semanticscholar.org/graph/v1';
+
+// Set headers for Semantic Scholar API requests to identify our application
+const SEMANTIC_SCHOLAR_HEADERS = {
+  'User-Agent': 'HydrogenStudies/1.0 (https://hydrogenstudies.com; info@hydrogenstudies.com)',
+  'Accept': 'application/json'
+};
 
 /**
  * Search Semantic Scholar for papers
@@ -31,12 +40,20 @@ export async function searchSemanticScholar(
         offset: page * pageSize,
         limit: pageSize,
         fields: fields.join(',')
-      }
+      },
+      headers: SEMANTIC_SCHOLAR_HEADERS,
+      timeout: 15000 // 15 second timeout
     });
     
     return response.data;
-  } catch (error) {
-    console.error('Error searching Semantic Scholar:', error);
+  } catch (error: any) {
+    console.error('Error searching Semantic Scholar:', error.message);
+    if (error.response) {
+      console.error('Semantic Scholar API response status:', error.response.status);
+      console.error('Semantic Scholar API response data:', error.response.data);
+    } else if (error.request) {
+      console.error('Semantic Scholar API request failed to receive response');
+    }
     throw new Error('Failed to search Semantic Scholar');
   }
 }
@@ -86,10 +103,19 @@ export async function getSemanticScholarPaper(id: string): Promise<any> {
       url = `${SEMANTIC_SCHOLAR_API_BASE}/paper/${idType}:${id}?fields=${fields}`;
     }
     
-    const response = await axios.get(url);
+    const response = await axios.get(url, {
+      headers: SEMANTIC_SCHOLAR_HEADERS,
+      timeout: 15000 // 15 second timeout
+    });
     return response.data;
-  } catch (error) {
-    console.error('Error fetching paper from Semantic Scholar:', error);
+  } catch (error: any) {
+    console.error('Error fetching paper from Semantic Scholar:', error.message);
+    if (error.response) {
+      console.error('Semantic Scholar API response status:', error.response.status);
+      console.error('Semantic Scholar API response data:', error.response.data);
+    } else if (error.request) {
+      console.error('Semantic Scholar API request failed to receive response');
+    }
     throw new Error('Failed to fetch paper from Semantic Scholar');
   }
 }
