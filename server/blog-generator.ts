@@ -130,7 +130,10 @@ async function generateSingleBlogArticle(study: Study, articleType: string): Pro
       content: blogContent.mainContent,
       imageUrl: imageUrl,
       imageAlt: imageAlt,
-      readingLevel: "general"
+      readingLevel: "general",
+      articleType: articleType,
+      isPublished: false,
+      editorNotes: "AI-generated content. Please review before publishing."
     };
     
     return blogArticle;
