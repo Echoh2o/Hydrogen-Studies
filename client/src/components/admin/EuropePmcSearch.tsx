@@ -56,7 +56,19 @@ const EuropePmcSearch: React.FC = () => {
     error,
     refetch 
   } = useQuery({
-    queryKey: [`/api/europepmc/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}${sortBy ? `&sortBy=${sortBy}` : ''}`],
+    queryKey: ['/api/europepmc/search', searchQuery, currentPage, pageSize, sortBy],
+    queryFn: async () => {
+      if (!searchQuery) return { data: { resultList: { result: [] } }, metadata: { total: 0 } };
+      
+      const url = `/api/europepmc/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}${sortBy ? `&sortBy=${sortBy}` : ''}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to search Europe PMC');
+      }
+      
+      return response.json();
+    },
     enabled: searchQuery.length > 0,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
@@ -65,11 +77,19 @@ const EuropePmcSearch: React.FC = () => {
     data: articleDetails, 
     isLoading: isLoadingDetails 
   } = useQuery({
-    queryKey: [
-      selectedArticle ? 
-        `/api/europepmc/article?id=${selectedArticle.id}${selectedArticle.source ? `&source=${selectedArticle.source}` : ''}` 
-        : '/api/europepmc/article'
-    ],
+    queryKey: ['/api/europepmc/article', selectedArticle?.id, selectedArticle?.source],
+    queryFn: async () => {
+      if (!selectedArticle) return null;
+      
+      const url = `/api/europepmc/article/${selectedArticle.id}${selectedArticle.source ? `?source=${selectedArticle.source}` : ''}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch article details from Europe PMC');
+      }
+      
+      return response.json();
+    },
     enabled: !!selectedArticle,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
