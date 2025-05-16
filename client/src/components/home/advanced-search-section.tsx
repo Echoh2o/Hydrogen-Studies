@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Category } from "@/types";
 
 export default function AdvancedSearchSection() {
   const [, setLocation] = useLocation();
@@ -15,6 +17,12 @@ export default function AdvancedSearchSection() {
     yearTo: "",
     category: "",
     peerReviewed: false
+  });
+  
+  // Fetch categories from API
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+    staleTime: 300000, // 5 minutes
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,9 +47,15 @@ export default function AdvancedSearchSection() {
     if (searchParams.author) queryParams.append("author", searchParams.author);
     if (searchParams.yearFrom) queryParams.append("yearFrom", searchParams.yearFrom);
     if (searchParams.yearTo) queryParams.append("yearTo", searchParams.yearTo);
-    if (searchParams.category) queryParams.append("category", searchParams.category);
+    
+    // Only add category if it's not "all"
+    if (searchParams.category && searchParams.category !== "all") {
+      queryParams.append("category", searchParams.category);
+    }
+    
     if (searchParams.peerReviewed) queryParams.append("peerReviewed", "true");
     
+    // Navigate to studies page with filters
     setLocation(`/studies?${queryParams.toString()}`);
   };
 
@@ -109,12 +123,11 @@ export default function AdvancedSearchSection() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="neurodegenerative">Neurodegenerative Diseases</SelectItem>
-                      <SelectItem value="cardiovascular">Cardiovascular Health</SelectItem>
-                      <SelectItem value="metabolism">Metabolism & Diabetes</SelectItem>
-                      <SelectItem value="inflammation">Inflammation</SelectItem>
-                      <SelectItem value="cancer">Cancer Research</SelectItem>
-                      <SelectItem value="aging">Anti-Aging</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
