@@ -14,11 +14,7 @@ export default function AddStudyPage() {
   };
   
   return (
-    <AdminLayout>
-      <Helmet>
-        <title>Add New Study | Hydrogen Studies Admin</title>
-      </Helmet>
-      
+    <AdminLayout title="Add New Study" description="Create a new hydrogen research study">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Add New Study</h1>
