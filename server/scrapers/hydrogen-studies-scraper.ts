@@ -12,7 +12,8 @@ import { initScraperStatus, updateScraperProgress, completeScraperStatus } from 
 
 // Base URL for the website
 const BASE_URL = 'https://hydrogenstudies.com/';
-const SEARCH_URL = `${BASE_URL}?s=`;
+// Use the optimized search URL that shows all studies at once 
+const SEARCH_URL = `${BASE_URL}search/?search=&sortBy=publish_year_desc&perPage=2000`;
 
 /**
  * Database utility to get existing studies by URL or domain
@@ -142,64 +143,65 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
 
 /**
  * Determine the total number of pages in the search results
+ * 
+ * Note: With the new search URL, we're showing all studies on a single page,
+ * so this always returns 1.
  */
 async function determineTotalPages(): Promise<number> {
-  try {
-    const response = await axios.get(SEARCH_URL);
-    const $ = cheerio.load(response.data);
-    
-    // Find the navigation element that contains the pagination
-    const pageLinks = $('.nav-links a.page-numbers:not(.next)');
-    
-    if (pageLinks.length === 0) {
-      return 1; // If no pagination found, assume there's only one page
-    }
-    
-    // Get the text from the last pagination link
-    const lastPage = pageLinks.last().text();
-    return parseInt(lastPage) || 1;
-  } catch (error) {
-    console.error('Error determining total pages:', error);
-    throw error;
-  }
+  return 1; // Using the new URL that shows all studies at once
 }
 
 /**
- * Collect all study links from the search pages
+ * Collect all study links from the search page
+ * 
+ * This function retrieves all study links from the optimized search URL
+ * that shows all studies at once (up to 2000 studies).
  */
 async function collectAllStudyLinks(totalPages: number): Promise<string[]> {
   const allLinks: string[] = [];
   
-  for (let page = 1; page <= totalPages; page++) {
-    updateScraperProgress(
-      page - 1,
-      0,
-      0,
-      totalPages,
-      `Collecting study links from page ${page} of ${totalPages}`
-    );
+  updateScraperProgress(
+    0,
+    0,
+    0,
+    1,
+    `Collecting all study links from search page`
+  );
+  
+  try {
+    const response = await axios.get(SEARCH_URL);
+    const $ = cheerio.load(response.data);
     
-    try {
-      const pageUrl = page === 1 ? SEARCH_URL : `${SEARCH_URL}&paged=${page}`;
-      const response = await axios.get(pageUrl);
-      const $ = cheerio.load(response.data);
-      
-      // Extract study links from this page
-      $('.entry-title a[href]').each((_, element) => {
+    // Extract study links from the page
+    // The search page has a different structure than the paginated results
+    // so we check multiple possible selectors
+    
+    // First check the standard search result selector
+    $('.search-results .entry-title a[href], .search-results h2 a[href]').each((_, element) => {
+      const href = $(element).attr('href');
+      if (href && href.includes('hydrogenstudies.com/study/')) {
+        allLinks.push(href);
+      }
+    });
+    
+    // If we didn't find any with the first selector, try some alternatives
+    if (allLinks.length === 0) {
+      $('article a[href], .post a[href], .study a[href]').each((_, element) => {
         const href = $(element).attr('href');
-        if (href && href.startsWith(BASE_URL)) {
-          allLinks.push(href);
+        if (href && href.includes('hydrogenstudies.com/study/')) {
+          // Avoid duplicates
+          if (!allLinks.includes(href)) {
+            allLinks.push(href);
+          }
         }
       });
-      
-      // Be respectful with rate limiting
-      if (page < totalPages) {
-        await delay(2000);
-      }
-    } catch (error) {
-      console.error(`Error collecting links from page ${page}:`, error);
-      // Continue with the next page even if there's an error
     }
+    
+    console.log(`Found ${allLinks.length} study links on the search page`);
+  } catch (error) {
+    console.error(`Error collecting links from search page:`, error);
+    // This is a critical error, so we'll let it propagate
+    throw error;
   }
   
   return allLinks;
