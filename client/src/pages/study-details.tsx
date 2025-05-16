@@ -134,27 +134,27 @@ export default function StudyDetails() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-bold mb-3">Abstract</h2>
-                  <p className="text-neutral-700 leading-relaxed">{study.abstract}</p>
+                  <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.abstract}</div>
                 </div>
                 
                 {study.methods && (
                   <div>
                     <h2 className="text-xl font-bold mb-3">Methods</h2>
-                    <p className="text-neutral-700 leading-relaxed">{study.methods}</p>
+                    <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.methods}</div>
                   </div>
                 )}
                 
                 {study.results && (
                   <div>
                     <h2 className="text-xl font-bold mb-3">Results</h2>
-                    <p className="text-neutral-700 leading-relaxed">{study.results}</p>
+                    <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.results}</div>
                   </div>
                 )}
                 
                 {study.conclusion && (
                   <div>
                     <h2 className="text-xl font-bold mb-3">Conclusion</h2>
-                    <p className="text-neutral-700 leading-relaxed">{study.conclusion}</p>
+                    <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.conclusion}</div>
                   </div>
                 )}
                 

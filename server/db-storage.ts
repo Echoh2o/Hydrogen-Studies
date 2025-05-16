@@ -96,6 +96,51 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select().from(studies).where(eq(studies.id, id));
     return result[0];
   }
+  
+  async getStudiesByTitle(title: string): Promise<Study[]> {
+    // Find studies with similar titles to check for duplicates during import
+    if (!title) return [];
+    
+    const normalizedTitle = title.trim();
+    
+    // Split the title into keywords for better matching
+    const keywords = normalizedTitle
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length > 3) // Only use meaningful words
+      .map(word => `%${word}%`);
+    
+    if (keywords.length === 0) {
+      // If no meaningful keywords, just do a simple LIKE search
+      return await db
+        .select()
+        .from(studies)
+        .where(like(studies.title, `%${normalizedTitle}%`));
+    }
+    
+    // For each keyword, create a LIKE condition
+    const conditions = keywords.map(keyword => like(studies.title, keyword));
+    
+    // Studies that match at least 70% of the keywords are likely duplicates
+    const minMatchCount = Math.ceil(keywords.length * 0.7);
+    
+    // This is a simplified approach that checks if multiple keywords appear in the title
+    // A more sophisticated approach would be to use a text search extension like pg_trgm
+    const matchedStudies = await db
+      .select()
+      .from(studies)
+      .where(or(...conditions));
+    
+    // Filter studies that match enough keywords
+    return matchedStudies.filter(study => {
+      const studyTitle = study.title.toLowerCase();
+      const matchCount = keywords.filter(keyword => 
+        studyTitle.includes(keyword.replace(/%/g, ''))
+      ).length;
+      
+      return matchCount >= minMatchCount;
+    });
+  }
 
   async getLatestStudies(limit: number = 3): Promise<Study[]> {
     const result = await db.select()
