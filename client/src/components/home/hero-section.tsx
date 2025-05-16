@@ -2,10 +2,19 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
 
 export default function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
+
+  // Fetch total studies count for the counter
+  const { data: studies = [] } = useQuery<any[]>({
+    queryKey: ['/api/studies'],
+    staleTime: 60000, // 1 minute
+  });
+
+  const totalStudies = studies.length || 0;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,9 +31,20 @@ export default function HeroSection() {
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold font-heading leading-tight mb-4">
               The Complete Database for Hydrogen Research
             </h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8">
+            <p className="text-lg md:text-xl opacity-90 mb-4">
               Access peer-reviewed studies on molecular hydrogen gas and its health applications.
             </p>
+            
+            {/* Studies Counter */}
+            <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-8 shadow-inner">
+              <div className="bg-secondary rounded-xl px-4 py-3 mr-4">
+                <span className="text-2xl font-bold text-white">{totalStudies}</span>
+              </div>
+              <div>
+                <p className="font-semibold text-white">Published Studies</p>
+                <p className="text-sm text-white/80">Peer-reviewed research in our database</p>
+              </div>
+            </div>
             
             <form onSubmit={handleSearch} className="relative">
               <Input
