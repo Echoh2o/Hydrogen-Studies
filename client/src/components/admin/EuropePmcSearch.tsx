@@ -60,6 +60,7 @@ const EuropePmcSearch: React.FC = () => {
     queryFn: async () => {
       if (!searchQuery) return { data: { resultList: { result: [] } }, metadata: { total: 0 } };
       
+      // Important: The server expects 'query' parameter, not 'q'
       const url = `/api/europepmc/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}${sortBy ? `&sortBy=${sortBy}` : ''}`;
       const response = await fetch(url);
       
