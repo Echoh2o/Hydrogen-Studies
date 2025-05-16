@@ -401,6 +401,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Blog article routes
   
+  // Media upload endpoint for blog articles
+  app.post("/api/blogs/:id/media", upload.single('file'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      if (!blog) {
+        return res.status(404).json({ message: "Blog article not found" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Determine file type
+      const fileType = getFileType(req.file.mimetype);
+      
+      if (!fileType || fileType !== 'image') {
+        return res.status(400).json({ message: "Only image files are supported for blog articles" });
+      }
+      
+      // Generate the URL for the uploaded file
+      const publicUrl = `/uploads/${req.file.filename}`;
+      
+      // Update blog with the new image URL
+      await db.update(blogArticles)
+        .set({ 
+          imageUrl: publicUrl,
+          imageAlt: req.body.imageAlt || `Image for ${blog.title}`
+        })
+        .where(eq(blogArticles.id, parseInt(id)));
+      
+      // Get the updated blog
+      const [updatedBlog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      res.status(200).json({ 
+        message: "Media uploaded successfully", 
+        blog: updatedBlog,
+        mediaUrl: publicUrl
+      });
+    } catch (error) {
+      console.error("Error uploading media for blog:", error);
+      res.status(500).json({ message: "Failed to upload media", error: error.message });
+    }
+  });
+  
   // Get all blog articles
   app.get("/api/blogs", async (req, res) => {
     try {
