@@ -30,6 +30,7 @@ import researchRoutes from "./routes/research-routes";
 import studyDetailsRoutes from "./routes/study-details";
 import europePmcRoutes from "./routes/europepmc-routes";
 import semanticScholarRoutes from "./routes/semantic-scholar-routes";
+import crossrefRoutes from "./routes/crossref-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -136,6 +137,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Semantic Scholar API routes
   app.use('/api', semanticScholarRoutes);
+  
+  // Register CrossRef API routes
+  app.use('/api/crossref', crossrefRoutes);
   
   // API routes
   
