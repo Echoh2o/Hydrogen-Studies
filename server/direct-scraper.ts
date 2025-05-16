@@ -2,238 +2,52 @@
  * Direct scraper for a specific URL
  * This allows us to test scraping a known page that contains a hydrogen study
  */
+
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { InsertStudy } from '@shared/schema';
 import { storage } from './storage';
-
-// Modern browser user-agent
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+import { extractPMIDFromIdentifier } from './pubmed-enricher';
 
 /**
  * Extract study from a specific URL
  */
 export async function scrapeStudyFromUrl(url: string): Promise<InsertStudy | null> {
   try {
-    console.log(`Fetching study from URL: ${url}`);
+    // Try to detect the platform from the URL
+    const platform = detectPlatform(url);
     
-    // Add randomization to request timing
-    await delay(Math.floor(Math.random() * 1000) + 500);
+    if (!platform) {
+      throw new Error('Unsupported platform or URL format');
+    }
     
-    // Make request with full browser headers
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': USER_AGENT,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="120", "Chromium";v="120"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1',
-        'Cache-Control': 'max-age=0',
-        'Referer': 'https://www.google.com/'
-      },
-      timeout: 30000,
-      maxRedirects: 5
-    });
+    let study: InsertStudy | null = null;
     
-    const $ = cheerio.load(response.data);
-    console.log(`Successfully loaded page from ${url}`);
-    
-    // Log the page structure to understand what we're working with
-    console.log(`Page structure: ${$('body').children().length} top-level elements`);
-    
-    // Try to extract title from various possible elements
-    const titleSelectors = [
-      '.entry-title', 'h1.title', 'h1', '.post-title', 
-      'article h1', '.article-title', 'header h1'
-    ];
-    
-    let title = '';
-    for (const selector of titleSelectors) {
-      const element = $(selector).first();
-      if (element.length) {
-        title = element.text().trim();
-        console.log(`Found title using selector "${selector}": ${title}`);
+    // Choose scraping strategy based on platform
+    switch (platform) {
+      case 'pubmed':
+        study = await scrapePubMed(url);
         break;
-      }
+      case 'hydrogen-studies':
+        study = await scrapeHydrogenStudies(url);
+        break;
+      case 'europe-pmc':
+        study = await scrapeEuropePMC(url);
+        break;
+      case 'crossref':
+        study = await scrapeCrossRef(url);
+        break;
+      case 'semantic-scholar':
+        study = await scrapeSemanticScholar(url);
+        break;
+      default:
+        throw new Error('Unsupported platform');
     }
     
-    if (!title) {
-      console.log('Could not find title, trying alternative approach');
-      // If no title found, try any heading that might be a title
-      $('h1, h2, h3').each((_, element) => {
-        const text = $(element).text().trim();
-        if (text && text.length > 10 && text.length < 200) {
-          title = text;
-          console.log(`Found title in heading: ${title}`);
-          return false; // Break the each loop
-        }
-      });
-    }
-    
-    if (!title) {
-      console.log('Could not find any suitable title on the page');
-      return null;
-    }
-    
-    // Extract abstract - try content elements
-    let abstract = '';
-    const abstractSelectors = [
-      '.entry-content p:first-of-type', 
-      'article p:first-of-type',
-      '.post-content p:first-of-type',
-      '.study-abstract',
-      '.abstract'
-    ];
-    
-    for (const selector of abstractSelectors) {
-      const element = $(selector);
-      if (element.length) {
-        abstract = element.text().trim();
-        if (abstract && abstract.length > 50) {
-          console.log(`Found abstract using selector "${selector}"`);
-          break;
-        }
-      }
-    }
-    
-    // If still no abstract, try to concatenate first few paragraphs
-    if (!abstract || abstract.length < 100) {
-      let abstractText = '';
-      $('article p, .entry-content p, .content p').slice(0, 3).each((_, element) => {
-        abstractText += $(element).text().trim() + ' ';
-      });
-      
-      if (abstractText.length > abstract.length) {
-        abstract = abstractText.trim();
-        console.log('Created abstract from first few paragraphs');
-      }
-    }
-    
-    // Extract authors
-    let authors = '';
-    const authorSelectors = [
-      '.author', '.post-author', '.entry-author',
-      '.study-authors', '.byline', 'meta[name="author"]'
-    ];
-    
-    for (const selector of authorSelectors) {
-      const element = $(selector);
-      if (element.length) {
-        authors = element.text().trim();
-        if (authors) {
-          console.log(`Found authors using selector "${selector}": ${authors}`);
-          break;
-        }
-      }
-    }
-    
-    // Extract journal/source
-    let journal = '';
-    const journalSelectors = [
-      '.journal', '.source', '.study-journal',
-      '.publication-source', '.citation-source'
-    ];
-    
-    for (const selector of journalSelectors) {
-      const element = $(selector);
-      if (element.length) {
-        journal = element.text().trim();
-        if (journal) {
-          console.log(`Found journal using selector "${selector}": ${journal}`);
-          break;
-        }
-      }
-    }
-    
-    // Extract publication date
-    let publishDate = '';
-    const dateSelectors = [
-      '.date', '.published-date', '.post-date',
-      '.entry-date', 'time', '.study-date'
-    ];
-    
-    for (const selector of dateSelectors) {
-      const element = $(selector);
-      if (element.length) {
-        publishDate = element.text().trim();
-        if (publishDate) {
-          console.log(`Found publish date using selector "${selector}": ${publishDate}`);
-          break;
-        }
-      }
-    }
-    
-    // Format the date to ISO string
-    const formattedDate = formatPublicationDate(publishDate);
-    
-    // Look for DOI
-    let doi = '';
-    const doiSelectors = ['.doi', 'a[href*="doi.org"]'];
-    
-    for (const selector of doiSelectors) {
-      const element = $(selector);
-      if (element.length) {
-        const doiText = element.text().trim() || element.attr('href');
-        if (doiText) {
-          doi = doiText.replace('doi:', '').replace('https://doi.org/', '').trim();
-          console.log(`Found DOI: ${doi}`);
-          break;
-        }
-      }
-    }
-    
-    // Extract category
-    let category = '';
-    const categorySelectors = [
-      '.category', '.categories', '.post-categories',
-      '.entry-categories', '.tags'
-    ];
-    
-    for (const selector of categorySelectors) {
-      const element = $(selector);
-      if (element.length) {
-        category = element.text().trim();
-        if (category) {
-          console.log(`Found category using selector "${selector}": ${category}`);
-          break;
-        }
-      }
-    }
-    
-    if (!category) {
-      category = 'Hydrogen Research';
-    }
-    
-    // Determine if the study appears to be peer-reviewed
-    const peerReviewed = isPeerReviewed($);
-    
-    // Create study object
-    const study: InsertStudy = {
-      title,
-      abstract: abstract || `This study explores ${title.toLowerCase()}.`,
-      authors: authors || 'Various Researchers',
-      journal: journal || 'Scientific Journal',
-      publishDate: formattedDate,
-      category,
-      peerReviewed,
-      sourceUrl: url,
-      sourcePlatform: 'HydrogenStudies'
-    };
-    
-    console.log(`Successfully extracted study: ${title}`);
     return study;
-  } catch (err) {
-    const error = err as Error;
-    console.error(`Error scraping study from URL ${url}:`, error.message);
-    return null;
+  } catch (error: any) {
+    console.error(`Error scraping URL ${url}:`, error.message);
+    throw new Error(`Failed to scrape the URL: ${error.message}`);
   }
 }
 
@@ -245,27 +59,383 @@ export async function saveScrapedStudy(url: string): Promise<{ success: boolean,
     const study = await scrapeStudyFromUrl(url);
     
     if (!study) {
+      return { success: false, message: 'Failed to extract study data from the URL' };
+    }
+    
+    // Check if study already exists by title
+    const existingStudies = await storage.getStudies({ title: study.title });
+    
+    if (existingStudies && existingStudies.length > 0) {
       return { 
         success: false, 
-        message: 'Failed to extract study from the provided URL' 
+        message: 'Study with this title already exists in the database',
+        study
       };
     }
     
-    // Save the study to database
+    // Save the study
     const savedStudy = await storage.createStudy(study);
     
     return {
       success: true,
-      message: `Successfully extracted and saved study: ${study.title}`,
+      message: 'Study successfully imported',
       study: savedStudy
     };
-  } catch (err) {
-    const error = err as Error;
+  } catch (error: any) {
     console.error('Error saving scraped study:', error);
-    return {
-      success: false,
-      message: `Error saving scraped study: ${error.message}`
+    return { 
+      success: false, 
+      message: error.message || 'Failed to save scraped study' 
     };
+  }
+}
+
+/**
+ * Detect platform from URL
+ */
+function detectPlatform(url: string): string | null {
+  const lowerUrl = url.toLowerCase();
+  
+  if (lowerUrl.includes('pubmed.ncbi.nlm.nih.gov') || lowerUrl.includes('ncbi.nlm.nih.gov/pubmed')) {
+    return 'pubmed';
+  } else if (lowerUrl.includes('hydrogenstudies.com')) {
+    return 'hydrogen-studies';
+  } else if (lowerUrl.includes('europepmc.org')) {
+    return 'europe-pmc';
+  } else if (lowerUrl.includes('crossref.org') || lowerUrl.includes('doi.org')) {
+    return 'crossref';
+  } else if (lowerUrl.includes('semanticscholar.org')) {
+    return 'semantic-scholar';
+  }
+  
+  return null;
+}
+
+/**
+ * Scrape a PubMed page
+ */
+async function scrapePubMed(url: string): Promise<InsertStudy | null> {
+  try {
+    // Extract PMID from URL
+    const pmid = extractPMIDFromIdentifier(url);
+    
+    if (!pmid) {
+      throw new Error('Could not extract PMID from URL');
+    }
+    
+    // Fetch HTML content
+    const response = await axios.get(`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
+    const html = response.data;
+    const $ = cheerio.load(html);
+    
+    // Extract study data
+    const title = $('.heading-title').text().trim();
+    const authors = $('.authors-list').text().trim().replace(/,\s*$/, '');
+    const abstract = $('.abstract-content p').text().trim();
+    
+    // Extract journal info
+    const journalElement = $('.journal-actions-trigger');
+    const journal = journalElement.length ? journalElement.text().trim() : '';
+    
+    // Extract publication date
+    let publishDate = '';
+    const pubDateElement = $('.pubdate');
+    if (pubDateElement.length) {
+      publishDate = pubDateElement.text().trim();
+    }
+    
+    // Extract DOI if available
+    let doi = '';
+    const doiElement = $('.identifier.doi');
+    if (doiElement.length) {
+      doi = doiElement.text().replace('DOI:', '').trim();
+    }
+    
+    // Determine if peer-reviewed (most PubMed articles are)
+    const peerReviewed = true;
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate: formatPublicationDate(publishDate),
+      doi,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'PubMed'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping PubMed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Scrape a Hydrogen Studies page
+ */
+async function scrapeHydrogenStudies(url: string): Promise<InsertStudy | null> {
+  try {
+    // Fetch HTML content
+    const response = await axios.get(url);
+    const html = response.data;
+    const $ = cheerio.load(html);
+    
+    // Extract study data
+    const title = $('h1.entry-title').text().trim();
+    const authors = extractTextFromSelectors($, ['.study-authors', '.study-author']);
+    const abstract = extractTextFromSelectors($, ['.study-abstract', '.abstract']);
+    const journal = extractTextFromSelectors($, ['.study-journal', '.journal']);
+    const publishDate = extractTextFromSelectors($, ['.study-date', '.publication-date']);
+    
+    // Extract DOI if available
+    const doi = extractTextFromSelectors($, ['.study-doi', '.doi']);
+    
+    // Extract citation URL if available
+    const citationUrl = $('.citation-link a').attr('href') || '';
+    
+    // Extract PDF URL if available
+    const pdfUrl = $('.pdf-link a').attr('href') || '';
+    
+    // Determine if peer-reviewed
+    const peerReviewed = isPeerReviewed($);
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate: formatPublicationDate(publishDate),
+      doi,
+      pdfUrl,
+      citationUrl,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'Hydrogen Studies'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping HydrogenStudies.com:', error);
+    throw error;
+  }
+}
+
+/**
+ * Scrape a Europe PMC page
+ */
+async function scrapeEuropePMC(url: string): Promise<InsertStudy | null> {
+  try {
+    // Extract ID from URL
+    const idMatch = url.match(/\/articles\/PMC(\d+)/i);
+    const id = idMatch ? idMatch[1] : null;
+    
+    if (!id) {
+      throw new Error('Could not extract ID from Europe PMC URL');
+    }
+    
+    // Fetch HTML content
+    const response = await axios.get(url);
+    const html = response.data;
+    const $ = cheerio.load(html);
+    
+    // Extract study data
+    const title = $('.abstract h1').text().trim();
+    
+    // Extract authors
+    const authorElements = $('.app-abstract-section .author-list li');
+    const authorNames: string[] = [];
+    authorElements.each((i, el) => {
+      authorNames.push($(el).text().trim());
+    });
+    const authors = authorNames.join(', ');
+    
+    // Extract abstract
+    const abstract = $('.abstract-content p').text().trim();
+    
+    // Extract journal info
+    const journal = $('.journal a').text().trim();
+    
+    // Extract publication date
+    const publishDate = $('.citation-date').text().trim();
+    
+    // Extract DOI if available
+    let doi = '';
+    $('.identifiers div').each((i, el) => {
+      const text = $(el).text();
+      if (text.includes('DOI:')) {
+        doi = text.replace('DOI:', '').trim();
+      }
+    });
+    
+    // Determine if peer-reviewed (most Europe PMC articles are)
+    const peerReviewed = true;
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate: formatPublicationDate(publishDate),
+      doi,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'Europe PMC'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping Europe PMC:', error);
+    throw error;
+  }
+}
+
+/**
+ * Scrape a CrossRef DOI
+ */
+async function scrapeCrossRef(url: string): Promise<InsertStudy | null> {
+  try {
+    // Extract DOI from URL
+    let doi = '';
+    if (url.includes('doi.org/')) {
+      doi = url.split('doi.org/')[1];
+    } else {
+      const doiMatch = url.match(/\b(10\.\d{4,}\/[^\/\s]+)\b/);
+      doi = doiMatch ? doiMatch[1] : '';
+    }
+    
+    if (!doi) {
+      throw new Error('Could not extract DOI from URL');
+    }
+    
+    // Fetch metadata from CrossRef API
+    const response = await axios.get(`https://api.crossref.org/works/${doi}`);
+    const data = response.data.message;
+    
+    // Extract study data
+    const title = data.title ? data.title[0] : '';
+    
+    // Extract authors
+    const authorNames: string[] = [];
+    if (data.author) {
+      data.author.forEach((author: any) => {
+        const name = `${author.given || ''} ${author.family || ''}`.trim();
+        if (name) authorNames.push(name);
+      });
+    }
+    const authors = authorNames.join(', ');
+    
+    // Extract journal
+    const journal = data['container-title'] ? data['container-title'][0] : '';
+    
+    // Extract publish date
+    let publishDate = '';
+    if (data.published && data.published['date-parts'] && data.published['date-parts'][0]) {
+      const dateParts = data.published['date-parts'][0];
+      publishDate = dateParts.length === 3 
+        ? `${dateParts[0]}-${String(dateParts[1]).padStart(2, '0')}-${String(dateParts[2]).padStart(2, '0')}`
+        : dateParts[0].toString();
+    }
+    
+    // Extract abstract
+    const abstract = data.abstract || '';
+    
+    // Determine if peer-reviewed (based on type)
+    const peerReviewed = data.type === 'journal-article';
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate,
+      doi,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'CrossRef'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping CrossRef:', error);
+    throw error;
+  }
+}
+
+/**
+ * Scrape a Semantic Scholar page
+ */
+async function scrapeSemanticScholar(url: string): Promise<InsertStudy | null> {
+  try {
+    // Extract paper ID from URL
+    const idMatch = url.match(/\/paper\/([^\/]+)/);
+    const paperId = idMatch ? idMatch[1] : null;
+    
+    if (!paperId) {
+      throw new Error('Could not extract paper ID from Semantic Scholar URL');
+    }
+    
+    // Fetch HTML content
+    const response = await axios.get(url);
+    const html = response.data;
+    const $ = cheerio.load(html);
+    
+    // Extract study data
+    const title = $('h1').text().trim();
+    
+    // Extract authors
+    const authorElements = $('.paper-meta-item a[data-selenium-selector="author-link"]');
+    const authorNames: string[] = [];
+    authorElements.each((i, el) => {
+      authorNames.push($(el).text().trim());
+    });
+    const authors = authorNames.join(', ');
+    
+    // Extract abstract
+    const abstract = $('.text-truncator__text').text().trim();
+    
+    // Extract journal info
+    const journal = $('.slate-container > span:first').text().trim();
+    
+    // Extract publication date
+    const yearElement = $('.paper-year');
+    const publishDate = yearElement.length ? yearElement.text().trim() : '';
+    
+    // Extract DOI if available
+    let doi = '';
+    $('.badge__content').each((i, el) => {
+      const text = $(el).text();
+      if (text.includes('DOI:')) {
+        doi = text.replace('DOI:', '').trim();
+      }
+    });
+    
+    // Determine if peer-reviewed (based on venue type)
+    const peerReviewed = journal !== '';
+    
+    // Create study object
+    const study: InsertStudy = {
+      title,
+      authors,
+      abstract,
+      journal,
+      publishDate: formatPublicationDate(publishDate),
+      doi,
+      peerReviewed,
+      category: 'Hydrogen Research',
+      sourcePlatform: 'Semantic Scholar'
+    };
+    
+    return study;
+  } catch (error) {
+    console.error('Error scraping Semantic Scholar:', error);
+    throw error;
   }
 }
 
@@ -273,83 +443,88 @@ export async function saveScrapedStudy(url: string): Promise<{ success: boolean,
  * Format publication date to ISO string
  */
 function formatPublicationDate(dateText: string): string {
-  if (!dateText) return new Date().toISOString();
+  // Handle empty dates
+  if (!dateText) return '';
   
   try {
     // Try to parse various date formats
-    // Format: "2022 Jan 15"
-    const dateMatch = dateText.match(/(\d{4})\s+([A-Za-z]+)\s+(\d{1,2})/);
-    if (dateMatch) {
-      const year = dateMatch[1];
-      const month = getMonthNumber(dateMatch[2]);
-      const day = dateMatch[3].padStart(2, '0');
-      return new Date(`${year}-${month}-${day}`).toISOString();
+    
+    // Full date format (e.g., "2022 Jan 15")
+    const fullDateMatch = dateText.match(/(\d{4})\s+([A-Za-z]{3})\s+(\d{1,2})/);
+    if (fullDateMatch) {
+      const [, year, monthName, day] = fullDateMatch;
+      const month = getMonthNumber(monthName);
+      return `${year}-${month}-${day.padStart(2, '0')}`;
     }
     
-    // Format: "2022 Jan"
-    const monthYearMatch = dateText.match(/(\d{4})\s+([A-Za-z]+)/);
-    if (monthYearMatch) {
-      const year = monthYearMatch[1];
-      const month = getMonthNumber(monthYearMatch[2]);
-      return new Date(`${year}-${month}-01`).toISOString();
+    // Year and month format (e.g., "2022 Jan")
+    const yearMonthMatch = dateText.match(/(\d{4})\s+([A-Za-z]{3})/);
+    if (yearMonthMatch) {
+      const [, year, monthName] = yearMonthMatch;
+      const month = getMonthNumber(monthName);
+      return `${year}-${month}-01`;
     }
     
-    // Format: "Jan 15, 2022"
-    const americanDateMatch = dateText.match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/);
-    if (americanDateMatch) {
-      const month = getMonthNumber(americanDateMatch[1]);
-      const day = americanDateMatch[2].padStart(2, '0');
-      const year = americanDateMatch[3];
-      return new Date(`${year}-${month}-${day}`).toISOString();
+    // ISO date format (e.g., "2022-01-15")
+    const isoMatch = dateText.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      return dateText;
     }
     
-    // Format: "2022"
+    // Year only (e.g., "2022")
     const yearMatch = dateText.match(/(\d{4})/);
     if (yearMatch) {
-      return new Date(`${yearMatch[1]}-01-01`).toISOString();
+      return `${yearMatch[1]}-01-01`;
     }
-  } catch (e) {
-    console.log(`Error parsing date: ${dateText}`);
+    
+    // If all patterns fail, return original
+    return dateText;
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateText;
   }
-  
-  // Default to current date if parsing fails
-  return new Date().toISOString();
 }
 
 /**
  * Convert month name to month number
  */
 function getMonthNumber(monthName: string): string {
-  const months: Record<string, string> = {
-    'jan': '01', 'january': '01',
-    'feb': '02', 'february': '02',
-    'mar': '03', 'march': '03',
-    'apr': '04', 'april': '04',
-    'may': '05',
-    'jun': '06', 'june': '06',
-    'jul': '07', 'july': '07',
-    'aug': '08', 'august': '08',
-    'sep': '09', 'september': '09', 'sept': '09',
-    'oct': '10', 'october': '10',
-    'nov': '11', 'november': '11',
-    'dec': '12', 'december': '12'
+  const months: { [key: string]: string } = {
+    'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+    'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+    'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
   };
   
-  const monthLower = monthName.toLowerCase();
-  return months[monthLower] || '01';
+  const shortMonth = monthName.toLowerCase().substring(0, 3);
+  return months[shortMonth] || '01';
 }
 
 /**
  * Check if a study appears to be peer-reviewed based on page content
  */
 function isPeerReviewed($: cheerio.CheerioAPI): boolean {
-  const bodyText = $('body').text().toLowerCase();
-  const peerReviewKeywords = [
-    'peer reviewed', 'peer-reviewed', 'refereed', 'published in',
-    'journal of', 'journal article', 'scientific journal'
+  const pageText = $('body').text().toLowerCase();
+  
+  // Check for common terms that indicate peer review
+  const peerReviewTerms = [
+    'peer reviewed', 'peer-reviewed', 'journal', 'academic',
+    'published in', 'publication', 'doi:', 'pmid:'
   ];
   
-  return peerReviewKeywords.some(keyword => bodyText.includes(keyword));
+  return peerReviewTerms.some(term => pageText.includes(term));
+}
+
+/**
+ * Helper to extract text from multiple possible selectors
+ */
+function extractTextFromSelectors($: cheerio.CheerioAPI, selectors: string[]): string {
+  for (const selector of selectors) {
+    const element = $(selector);
+    if (element.length) {
+      return element.text().trim();
+    }
+  }
+  return '';
 }
 
 /**
