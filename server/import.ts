@@ -108,6 +108,7 @@ export async function importStudiesFromGoogleSheets(sheetUrl: string): Promise<{
 
 // Define a schema for hydrogen research database imports
 const hydrogernResearchSchema = z.object({
+  // Generic fields that could exist in different formats
   Study: z.string().optional(),
   Title: z.string().optional(),
   Abstract: z.string().optional(),
@@ -136,6 +137,24 @@ const hydrogernResearchSchema = z.object({
   Region: z.string().optional(),
   SampleSize: z.union([z.string(), z.number()]).optional(),
   Duration: z.string().optional(),
+  
+  // Fields specific to the Hydrogen Research Database
+  ID: z.union([z.string(), z.number()]).optional(),
+  "First Author": z.string().optional(),
+  "Other Authors": z.string().optional(),
+  "Last Author": z.string().optional(),
+  "Publish Year": z.union([z.string(), z.number()]).optional(),
+  "DOI/PMID/Link": z.string().optional(),
+  Rank: z.string().optional(),
+  Model: z.string().optional(),
+  "Primary Topic": z.string().optional(),
+  "Secondary Topic": z.string().optional(),
+  "Tertiary Topic": z.string().optional(),
+  Vehicle: z.string().optional(),
+  pH: z.string().optional(),
+  Application: z.string().optional(),
+  Comparison: z.string().optional(),
+  Complement: z.string().optional(),
 }).passthrough(); // Allow additional fields
 
 /**
@@ -154,32 +173,140 @@ async function importStudies(studies: any[]): Promise<{total: number, success: n
       const validatedData = hydrogernResearchSchema.parse(item);
       
       // Map fields from the Excel format to our database schema
+      // Handle different column formats (generic format or Hydrogen Research Database format)
+      
+      // Combine authors if present in separate fields
+      let authors = validatedData.Authors || '';
+      if (validatedData["First Author"] || validatedData["Other Authors"] || validatedData["Last Author"]) {
+        const firstAuthor = validatedData["First Author"] || '';
+        const otherAuthors = validatedData["Other Authors"] || '';
+        const lastAuthor = validatedData["Last Author"] || '';
+        
+        // Format: "First Author, Other Authors, Last Author"
+        authors = [firstAuthor, otherAuthors, lastAuthor]
+          .filter(a => a) // Remove empty authors
+          .join(', ');
+      }
+      
+      // Extract DOI from combined field if present
+      let doi = validatedData.DOI || '';
+      let citationUrl = validatedData.CitationUrl || '';
+      if (validatedData["DOI/PMID/Link"]) {
+        const doiPmidLink = validatedData["DOI/PMID/Link"] || '';
+        // If it looks like a DOI
+        if (doiPmidLink.includes('10.') || doiPmidLink.startsWith('doi:')) {
+          doi = doiPmidLink;
+        } else if (doiPmidLink.startsWith('http')) {
+          citationUrl = doiPmidLink;
+        }
+      }
+      
+      // Combine topics into keywords
+      let keywords = validatedData.Keywords || '';
+      if (validatedData["Primary Topic"] || validatedData["Secondary Topic"] || validatedData["Tertiary Topic"]) {
+        const primaryTopic = validatedData["Primary Topic"] || '';
+        const secondaryTopic = validatedData["Secondary Topic"] || '';
+        const tertiaryTopic = validatedData["Tertiary Topic"] || '';
+        
+        // Format: "Primary Topic, Secondary Topic, Tertiary Topic"
+        keywords = [primaryTopic, secondaryTopic, tertiaryTopic]
+          .filter(t => t) // Remove empty topics
+          .join(', ');
+      }
+      
+      // Extract study type from Model
+      let studyType = validatedData.StudyType || '';
+      if (validatedData.Model) {
+        studyType = validatedData.Model || '';
+      }
+      
+      // Determine health conditions from topics
+      let healthConditions = validatedData.HealthConditions || validatedData.Conditions || '';
+      if (validatedData["Primary Topic"]) {
+        const primaryTopic = validatedData["Primary Topic"] as string;
+        if (isHealthConditionTopic(primaryTopic)) {
+          healthConditions = primaryTopic;
+        }
+      } else if (validatedData["Secondary Topic"]) {
+        const secondaryTopic = validatedData["Secondary Topic"] as string;
+        if (isHealthConditionTopic(secondaryTopic)) {
+          healthConditions = secondaryTopic;
+        }
+      }
+      
+      // Determine body systems from topics
+      let bodySystems = validatedData.BodySystems || '';
+      if (validatedData["Primary Topic"]) {
+        const primaryTopic = validatedData["Primary Topic"] as string;
+        if (isBodySystemTopic(primaryTopic)) {
+          bodySystems = primaryTopic;
+        }
+      } else if (validatedData["Secondary Topic"]) {
+        const secondaryTopic = validatedData["Secondary Topic"] as string;
+        if (isBodySystemTopic(secondaryTopic)) {
+          bodySystems = secondaryTopic;
+        }
+      }
+      
+      // Generate a study object from the validated data
+      const title = validatedData.Title || '';
+      const publishYearValue = parseInt(String(validatedData.PublishYear || validatedData.Year || validatedData["Publish Year"] || 0)) || null;
+      
+      // Combine primary/secondary topics for category determination
+      const primaryTopic = validatedData["Primary Topic"] as string || '';
+      const secondaryTopic = validatedData["Secondary Topic"] as string || '';
+      const category = validatedData.Category || mapTopicToCategory(primaryTopic, secondaryTopic);
+      
+      // Get study type from Model field
+      const model = validatedData.Model as string || '';
+      const methods = validatedData.Methods || mapModelToMethods(model);
+      
+      // Determine if results were positive or negative
+      const rank = validatedData.Rank as string || '';
+      const results = validatedData.Results || (rank === 'Positive' ? 'Positive results reported.' : 'Results unclear or negative.');
+      
+      // Journal peer review status
+      const journal = validatedData.Journal || '';
+      const peerReviewed = parseBooleanValue(validatedData.PeerReviewed) || checkIfPeerReviewed(journal);
+      
+      // Handle application duration
+      const application = validatedData.Application as string || '';
+      const duration = validatedData.Duration || getApplicationDuration(application);
+      
       const study: InsertStudy = {
-        title: validatedData.Title || validatedData.Study || '',
+        title: title,
         abstract: validatedData.Abstract || '',
-        authors: validatedData.Authors || '',
-        journal: validatedData.Journal || '',
-        publishDate: formatDate(validatedData.PublishDate || validatedData.PublishedDate || ''),
-        publishYear: parseInt(String(validatedData.PublishYear || validatedData.Year || 0)) || null,
-        category: validatedData.Category || '',
-        methods: validatedData.Methods || '',
-        results: validatedData.Results || '',
+        authors: authors,
+        journal: journal,
+        publishDate: formatDate(validatedData.PublishDate || validatedData.PublishedDate || validatedData["Publish Year"]?.toString() || ''),
+        publishYear: publishYearValue,
+        category: category,
+        methods: methods,
+        results: results,
         conclusion: validatedData.Conclusion || '',
-        doi: validatedData.DOI || '',
+        doi: doi,
         pdfUrl: validatedData.PdfUrl || validatedData.PDF || '',
-        citationUrl: validatedData.CitationUrl || '',
-        peerReviewed: parseBooleanValue(validatedData.PeerReviewed),
+        citationUrl: citationUrl,
+        peerReviewed: peerReviewed,
         imageUrl: validatedData.ImageUrl || '',
-        // Handle additional fields for advanced filtering
-        keywords: validatedData.Keywords || '',
-        healthConditions: validatedData.HealthConditions || validatedData.Conditions || '',
-        bodySystems: validatedData.BodySystems || '',
-        studyType: validatedData.StudyType || '',
+        // Advanced filtering fields
+        keywords: keywords,
+        healthConditions: healthConditions,
+        bodySystems: bodySystems,
+        studyType: studyType,
         country: validatedData.Country || '',
         region: validatedData.Region || '',
-        sampleSize: parseInt(String(validatedData.SampleSize || 0)) || null,
-        duration: validatedData.Duration || ''
+        sampleSize: null, // We'll set this properly if available
+        duration: duration
       };
+      
+      // Handle sampleSize separately to avoid type issues
+      if (validatedData.SampleSize) {
+        const sampleSizeNum = parseInt(String(validatedData.SampleSize));
+        if (!isNaN(sampleSizeNum)) {
+          study.sampleSize = sampleSizeNum;
+        }
+      }
       
       // Check required fields
       if (!study.title) {
@@ -286,7 +413,179 @@ function parseBooleanValue(value: string | boolean | undefined): boolean {
     return value;
   }
   
-  const trueValues = ['true', 'yes', 'y', '1', 'on'];
+  const trueValues = ['true', 'yes', 'y', '1', 'on', 'positive'];
   
   return trueValues.includes(value.toString().toLowerCase());
+}
+
+/**
+ * Determine if a topic is a health condition
+ * @param topic Topic string
+ */
+function isHealthConditionTopic(topic: string): boolean {
+  const healthConditions = [
+    'cancer', 'diabetes', 'alzheimer', 'parkinson', 'stroke', 
+    'sepsis', 'injury', 'inflammation', 'oxidative stress',
+    'hypertension', 'asthma', 'arthritis', 'allergies',
+    'metabolic', 'wound', 'infection', 'autoimmune'
+  ];
+  
+  return healthConditions.some(condition => 
+    topic.toLowerCase().includes(condition)
+  );
+}
+
+/**
+ * Determine if a topic is a body system
+ * @param topic Topic string
+ */
+function isBodySystemTopic(topic: string): boolean {
+  const bodySystems = [
+    'brain', 'neuro', 'liver', 'kidney', 'lung', 'heart', 
+    'cardiac', 'cardiovascular', 'skin', 'muscle', 'bone',
+    'digestive', 'intestine', 'colon', 'gut', 'respiratory',
+    'immune', 'endocrine', 'reproductive', 'blood'
+  ];
+  
+  return bodySystems.some(system => 
+    topic.toLowerCase().includes(system)
+  );
+}
+
+/**
+ * Determine category from primary and secondary topics
+ * @param primaryTopic Primary topic
+ * @param secondaryTopic Secondary topic
+ */
+function determineCategory(primaryTopic?: string, secondaryTopic?: string): string {
+  // Default category
+  let category = 'General';
+  
+  // List of terms and their category mappings
+  const categoryMappings: Record<string, string> = {
+    'inflammation': 'Inflammation',
+    'oxidative stress': 'Inflammation',
+    'brain': 'Neurological',
+    'neuro': 'Neurological',
+    'heart': 'Cardiovascular',
+    'cardiac': 'Cardiovascular',
+    'cardiovascular': 'Cardiovascular',
+    'liver': 'Liver',
+    'kidney': 'Kidney',
+    'renal': 'Kidney',
+    'lung': 'Respiratory',
+    'respiratory': 'Respiratory',
+    'metabolic': 'Metabolic',
+    'diabetes': 'Metabolic',
+    'cancer': 'Cancer',
+    'tumor': 'Cancer',
+    'skin': 'Dermatology',
+    'aging': 'Aging',
+    'exercise': 'Fitness',
+    'muscle': 'Fitness',
+    'athletic': 'Fitness',
+    'immune': 'Immunology',
+    'gut': 'Gastrointestinal',
+    'intestine': 'Gastrointestinal',
+    'gastrointestinal': 'Gastrointestinal',
+  };
+  
+  // Check primary topic first
+  if (primaryTopic) {
+    for (const [term, mappedCategory] of Object.entries(categoryMappings)) {
+      if (primaryTopic.toLowerCase().includes(term)) {
+        category = mappedCategory;
+        break;
+      }
+    }
+  }
+  
+  // If no category found, check secondary topic
+  if (category === 'General' && secondaryTopic) {
+    for (const [term, mappedCategory] of Object.entries(categoryMappings)) {
+      if (secondaryTopic.toLowerCase().includes(term)) {
+        category = mappedCategory;
+        break;
+      }
+    }
+  }
+  
+  return category;
+}
+
+/**
+ * Determine methods from model
+ * @param model Model name (Human, Animal, In Vitro, etc.)
+ */
+function determineMethodsFromModel(model?: string): string {
+  if (!model) return '';
+  
+  const modelLower = model.toLowerCase();
+  
+  if (modelLower.includes('human')) {
+    return 'Human clinical trial';
+  } else if (modelLower.includes('animal')) {
+    return 'Animal study';
+  } else if (modelLower.includes('vitro') || modelLower.includes('cell')) {
+    return 'In vitro cell culture study';
+  } else if (modelLower.includes('silico') || modelLower.includes('computational')) {
+    return 'Computational modeling study';
+  } else if (modelLower.includes('review')) {
+    return 'Literature review and meta-analysis';
+  }
+  
+  return model;
+}
+
+/**
+ * Determine if a journal is likely peer-reviewed
+ * @param journal Journal name
+ */
+function isProbablyPeerReviewed(journal?: string): boolean {
+  if (!journal) return false;
+  
+  // Most legitimate scientific journals are peer-reviewed
+  // Look for indicators in journal name
+  const journalLower = journal.toLowerCase();
+  
+  // Non-peer-reviewed indicators
+  const nonPeerReviewedTerms = [
+    'preprint', 'blog', 'magazine', 'newsletter', 'proceeding'
+  ];
+  
+  // Check for non-peer-reviewed indicators
+  if (nonPeerReviewedTerms.some(term => journalLower.includes(term))) {
+    return false;
+  }
+  
+  // Peer-reviewed indicators
+  const peerReviewedTerms = [
+    'journal', 'transactions', 'review', 'science', 'medicine',
+    'medical', 'research', 'reports', 'letters', 'proceedings'
+  ];
+  
+  // Check for peer-reviewed indicators
+  return peerReviewedTerms.some(term => journalLower.includes(term));
+}
+
+/**
+ * Determine duration from application method
+ * @param application Application method
+ */
+function determineApplicationDuration(application?: string): string {
+  if (!application) return '';
+  
+  const applicationLower = application.toLowerCase();
+  
+  if (applicationLower.includes('acute')) {
+    return 'Acute (single dose)';
+  } else if (applicationLower.includes('chronic')) {
+    return 'Chronic (multiple doses)';
+  } else if (applicationLower.includes('intermittent')) {
+    return 'Intermittent dosing';
+  } else if (applicationLower.includes('continuous')) {
+    return 'Continuous administration';
+  }
+  
+  return '';
 }
