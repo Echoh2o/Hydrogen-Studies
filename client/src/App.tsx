@@ -21,6 +21,7 @@ import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
 import AdminPage from "@/pages/admin/AdminPage";
 import ImportPage from "@/pages/admin/ImportPage";
+import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
 import BlogPage from "@/pages/BlogPage";
 
 function ScrollToTop() {
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/admin/import" component={ImportPage} />
+      <Route path="/admin/articles" component={ArticleSearchPage} />
       <Route component={NotFound} />
     </Switch>
   );

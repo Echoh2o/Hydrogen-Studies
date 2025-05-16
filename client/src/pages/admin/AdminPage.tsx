@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -154,12 +155,15 @@ export default function AdminPage() {
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid grid-cols-5 gap-2">
+            <TabsList className="grid grid-cols-6 gap-2">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="studies">Manage Studies</TabsTrigger>
               <TabsTrigger value="blogs">Manage Blogs</TabsTrigger>
               <TabsTrigger value="import">Import Data</TabsTrigger>
               <TabsTrigger value="add">Add Study</TabsTrigger>
+              <TabsTrigger asChild>
+                <Link href="/admin/articles">Research Search</Link>
+              </TabsTrigger>
             </TabsList>
             
             {/* Dashboard Tab */}

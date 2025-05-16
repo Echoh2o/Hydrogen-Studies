@@ -1,73 +1,177 @@
-/**
- * API routes for triggering and managing scrapers
- */
 import express from 'express';
-import { getScraperInfo, runAllScrapers, runScraperByName } from '../scrapers/scraper-manager';
-import { saveScrapedStudy } from '../direct-scraper';
-import { isAuthenticated } from '../auth';
+import { ScraperSource } from '../scrapers/base-scraper';
+import { scraperManager } from '../scrapers/scraper-manager';
 
 const router = express.Router();
 
 /**
- * Get list of available scrapers
- * 
- * GET /api/scrapers
+ * Search for articles from a specific source
+ * GET /api/research/search
  */
-router.get('/scrapers', async (req, res) => {
+router.get('/research/search', async (req, res) => {
   try {
-    const scrapers = getScraperInfo();
-    res.json({ scrapers });
-  } catch (error) {
-    console.error('Error fetching scraper info:', error);
-    res.status(500).json({ message: 'Failed to fetch scraper information' });
-  }
-});
-
-/**
- * Run a specific scraper by name
- * 
- * POST /api/scrapers/:name/run
- */
-router.post('/scrapers/:name/run', async (req, res) => {
-  try {
-    const scraperName = req.params.name;
+    const { 
+      source = 'pubmed', 
+      query, 
+      max = 10, 
+      startIndex = 0,
+      sort = 'relevance'
+    } = req.query;
     
-    // Run the scraper
-    const result = await runScraperByName(scraperName);
-    
-    if (result.success) {
-      res.json({
-        message: result.message,
-        results: result.results
-      });
-    } else {
-      res.status(400).json({
-        message: result.message
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: 'Query parameter is required'
       });
     }
+    
+    // Validate source
+    if (!['pubmed', 'google-scholar', 'hydrogen-studies'].includes(source as string)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid source. Valid options: pubmed, google-scholar, hydrogen-studies'
+      });
+    }
+    
+    const results = await scraperManager.searchArticles(
+      source as ScraperSource,
+      query as string,
+      {
+        max: parseInt(max as string),
+        startIndex: parseInt(startIndex as string),
+        sort: sort as 'relevance' | 'pub_date'
+      }
+    );
+    
+    return res.status(200).json({
+      success: true,
+      source,
+      query,
+      ...results
+    });
+    
   } catch (error: any) {
-    console.error('Error running scraper:', error);
-    res.status(500).json({ message: `Failed to run scraper: ${error.message}` });
+    console.error('Error searching articles:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to search articles'
+    });
   }
 });
 
 /**
- * Run all enabled scrapers
- * 
- * POST /api/scrapers/run-all
+ * Search for articles from all sources
+ * GET /api/research/search-all
  */
-router.post('/scrapers/run-all', async (req, res) => {
+router.get('/research/search-all', async (req, res) => {
   try {
-    // Run all scrapers
-    const result = await runAllScrapers();
+    const { query, max = 10 } = req.query;
     
-    res.json({
-      message: result.message,
-      results: result.results
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: 'Query parameter is required'
+      });
+    }
+    
+    const results = await scraperManager.searchAllSources(
+      query as string,
+      { max: parseInt(max as string) }
+    );
+    
+    return res.status(200).json({
+      success: true,
+      query,
+      results
     });
+    
   } catch (error: any) {
-    console.error('Error running scrapers:', error);
-    res.status(500).json({ message: `Failed to run scrapers: ${error.message}` });
+    console.error('Error searching all sources:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to search all sources'
+    });
+  }
+});
+
+/**
+ * Approve an article to be added to the database
+ * POST /api/research/approve
+ */
+router.post('/research/approve', async (req, res) => {
+  try {
+    const { source, article } = req.body;
+    
+    if (!source || !article) {
+      return res.status(400).json({
+        success: false,
+        message: 'Source and article are required'
+      });
+    }
+    
+    // Validate source
+    if (!['pubmed', 'google-scholar', 'hydrogen-studies'].includes(source)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid source. Valid options: pubmed, google-scholar, hydrogen-studies'
+      });
+    }
+    
+    const result = await scraperManager.approveAndSaveArticle(
+      source as ScraperSource,
+      article
+    );
+    
+    return res.status(result.success ? 200 : 400).json(result);
+    
+  } catch (error: any) {
+    console.error('Error approving article:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to approve article'
+    });
+  }
+});
+
+/**
+ * Bulk approve multiple articles
+ * POST /api/research/bulk-approve
+ */
+router.post('/research/bulk-approve', async (req, res) => {
+  try {
+    const { source, articles } = req.body;
+    
+    if (!source || !articles || !Array.isArray(articles)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Source and articles array are required'
+      });
+    }
+    
+    // Validate source
+    if (!['pubmed', 'google-scholar', 'hydrogen-studies'].includes(source)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid source. Valid options: pubmed, google-scholar, hydrogen-studies'
+      });
+    }
+    
+    const results = await scraperManager.bulkApproveArticles(
+      source as ScraperSource,
+      articles
+    );
+    
+    return res.status(200).json({
+      success: true,
+      ...results
+    });
+    
+  } catch (error: any) {
+    console.error('Error bulk approving articles:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to bulk approve articles'
+    });
   }
 });
 
