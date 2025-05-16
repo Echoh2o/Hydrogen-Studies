@@ -245,11 +245,9 @@ export default function BlogsManagementPage() {
                   </CardTitle>
                   <div className="flex items-center space-x-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href="/admin/analytics/blogs">
-                        <a className="flex items-center space-x-2">
+                      <Link href="/admin/analytics/blogs" className="flex items-center space-x-2">
                           <BarChart2 className="h-4 w-4" />
                           <span>Analytics</span>
-                        </a>
                       </Link>
                     </Button>
                     <Button variant="outline" size="sm">
@@ -282,13 +280,13 @@ export default function BlogsManagementPage() {
                     </p>
                     <div className="mt-6 flex space-x-4">
                       <Button asChild>
-                        <Link href="/admin/blogs/generate">
-                          <a>Generate Blogs</a>
+                        <Link href="/admin/blogs/generate" className="w-full">
+                          Generate Blogs
                         </Link>
                       </Button>
                       <Button variant="outline" asChild>
-                        <Link href="/admin/blogs/add">
-                          <a>Create Manual Blog</a>
+                        <Link href="/admin/blogs/add" className="w-full">
+                          Create Manual Blog
                         </Link>
                       </Button>
                     </div>
@@ -354,10 +352,8 @@ export default function BlogsManagementPage() {
                             <TableRow key={blog.id}>
                               <TableCell className="font-medium">
                                 <div className="flex flex-col">
-                                  <Link href={`/admin/blogs/edit/${blog.id}`}>
-                                    <a className="hover:underline truncate max-w-xs">
+                                  <Link href={`/admin/blogs/edit/${blog.id}`} className="hover:underline truncate max-w-xs block">
                                       {blog.title}
-                                    </a>
                                   </Link>
                                   <span className="text-xs text-muted-foreground truncate max-w-xs">
                                     {truncateText(blog.summary, 60)}
@@ -365,11 +361,9 @@ export default function BlogsManagementPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Link href={`/admin/studies/edit/${blog.studyId}`}>
-                                  <a className="text-sm hover:underline flex items-center">
-                                    <span className="truncate max-w-[150px]">{blog.studyTitle}</span>
-                                    <MoveRight className="ml-1 h-3 w-3" />
-                                  </a>
+                                <Link href={`/admin/studies/edit/${blog.studyId}`} className="text-sm hover:underline flex items-center">
+                                  <span className="truncate max-w-[150px]">{blog.studyTitle}</span>
+                                  <MoveRight className="ml-1 h-3 w-3" />
                                 </Link>
                               </TableCell>
                               <TableCell>
@@ -414,19 +408,15 @@ export default function BlogsManagementPage() {
                                   {!blog.imageUrl && (
                                     <Button variant="ghost" size="icon" asChild>
                                       <Link href={`/admin/blogs/generate-image/${blog.id}`}>
-                                        <a>
                                           <Image className="h-4 w-4" />
                                           <span className="sr-only">Generate Image</span>
-                                        </a>
                                       </Link>
                                     </Button>
                                   )}
                                   <Button variant="ghost" size="icon" asChild>
                                     <Link href={`/admin/blogs/edit/${blog.id}`}>
-                                      <a>
-                                        <Pencil className="h-4 w-4" />
-                                        <span className="sr-only">Edit</span>
-                                      </a>
+                                      <Pencil className="h-4 w-4" />
+                                      <span className="sr-only">Edit</span>
                                     </Link>
                                   </Button>
                                   <Button 
