@@ -1,172 +1,152 @@
-import type { Express, Request, Response } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertContactSchema, insertSubscriptionSchema } from "@shared/schema";
-import { z } from "zod";
+import { insertNewsletterSchema, insertStudySchema, insertCategorySchema } from "@shared/schema";
+import { ZodError } from "zod";
+import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Prefix all routes with /api - commented out for now as it's causing an issue
-  // const apiRouter = app.use('/api');
-
-  // Get all studies
-  app.get('/api/studies', async (req: Request, res: Response) => {
+  // API routes
+  
+  // Studies routes
+  app.get("/api/studies", async (req, res) => {
     try {
-      const studies = await storage.getStudies();
+      const { 
+        query, 
+        keyword, 
+        author, 
+        yearFrom, 
+        yearTo, 
+        category,
+        peerReviewed,
+        sortBy 
+      } = req.query;
+      
+      const studies = await storage.getStudies({
+        query: query as string,
+        keyword: keyword as string,
+        author: author as string,
+        yearFrom: yearFrom as string,
+        yearTo: yearTo as string,
+        category: category as string,
+        peerReviewed: peerReviewed === "true",
+        sortBy: sortBy as string
+      });
+      
       res.json(studies);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch studies' });
+      console.error("Error fetching studies:", error);
+      res.status(500).json({ message: "Failed to fetch studies" });
     }
   });
-
-  // Get a specific study by ID
-  app.get('/api/studies/:id', async (req: Request, res: Response) => {
+  
+  app.get("/api/studies/latest", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: 'Invalid study ID' });
-      }
-
-      const study = await storage.getStudyById(id);
+      const studies = await storage.getLatestStudies();
+      res.json(studies);
+    } catch (error) {
+      console.error("Error fetching latest studies:", error);
+      res.status(500).json({ message: "Failed to fetch latest studies" });
+    }
+  });
+  
+  app.get("/api/studies/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const study = await storage.getStudyById(parseInt(id));
+      
       if (!study) {
-        return res.status(404).json({ message: 'Study not found' });
+        return res.status(404).json({ message: "Study not found" });
       }
-
+      
       res.json(study);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch study' });
+      console.error("Error fetching study:", error);
+      res.status(500).json({ message: "Failed to fetch study" });
     }
   });
-
-  // Search studies
-  app.get('/api/search', async (req: Request, res: Response) => {
+  
+  app.post("/api/studies", async (req, res) => {
     try {
-      const query = req.query.query as string || '';
-      const category = req.query.category as string;
-      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
-      const sort = req.query.sort as 'relevance' | 'date-desc' | 'date-asc' | 'citations';
-      const studyType = req.query.studyType as string;
-      const fullTextOnly = req.query.fullTextOnly === 'true';
-      const author = req.query.author as string;
-      const journal = req.query.journal as string;
-
-      const filters = {
-        category,
-        year,
-        sort,
-        studyType,
-        fullTextOnly,
-        author,
-        journal
-      };
-
-      const studies = await storage.searchStudies(query, filters);
-      res.json(studies);
+      const validatedData = insertStudySchema.parse(req.body);
+      const study = await storage.createStudy(validatedData);
+      res.status(201).json(study);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to search studies' });
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating study:", error);
+      res.status(500).json({ message: "Failed to create study" });
     }
   });
-
-  // Get recent studies
-  app.get('/api/recent-studies', async (req: Request, res: Response) => {
-    try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
-      const recentStudies = await storage.getRecentStudies(limit);
-      res.json(recentStudies);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch recent studies' });
-    }
-  });
-
-  // Get studies by category
-  app.get('/api/categories/:name/studies', async (req: Request, res: Response) => {
-    try {
-      const categoryName = req.params.name;
-      const studies = await storage.getStudiesByCategory(categoryName);
-      res.json(studies);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch studies by category' });
-    }
-  });
-
-  // Get all categories
-  app.get('/api/categories', async (req: Request, res: Response) => {
+  
+  // Categories routes
+  app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();
       res.json(categories);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch categories' });
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
     }
   });
-
-  // Get a specific category by name
-  app.get('/api/categories/:name', async (req: Request, res: Response) => {
+  
+  app.get("/api/categories/:id", async (req, res) => {
     try {
-      const categoryName = req.params.name;
-      const category = await storage.getCategoryByName(categoryName);
+      const { id } = req.params;
+      const category = await storage.getCategoryById(parseInt(id));
       
       if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+        return res.status(404).json({ message: "Category not found" });
       }
       
       res.json(category);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch category' });
+      console.error("Error fetching category:", error);
+      res.status(500).json({ message: "Failed to fetch category" });
     }
   });
-
-  // Get all resources
-  app.get('/api/resources', async (req: Request, res: Response) => {
+  
+  app.post("/api/categories", async (req, res) => {
     try {
-      const resources = await storage.getResources();
-      res.json(resources);
+      const validatedData = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(validatedData);
+      res.status(201).json(category);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch resources' });
-    }
-  });
-
-  // Get a specific resource by slug
-  app.get('/api/resources/:slug', async (req: Request, res: Response) => {
-    try {
-      const slug = req.params.slug;
-      const resource = await storage.getResourceBySlug(slug);
-      
-      if (!resource) {
-        return res.status(404).json({ message: 'Resource not found' });
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
       }
-      
-      res.json(resource);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch resource' });
+      console.error("Error creating category:", error);
+      res.status(500).json({ message: "Failed to create category" });
     }
   });
-
-  // Subscribe to newsletter
-  app.post('/api/subscribe', async (req: Request, res: Response) => {
+  
+  // Newsletter subscription route
+  app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
-      const validatedData = insertSubscriptionSchema.parse(req.body);
-      const subscription = await storage.createSubscription(validatedData);
-      res.status(201).json({ message: 'Successfully subscribed to the newsletter', subscription });
+      const validatedData = insertNewsletterSchema.parse(req.body);
+      const subscription = await storage.subscribeNewsletter(validatedData);
+      res.status(201).json(subscription);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid subscription data', errors: error.errors });
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
       }
-      res.status(500).json({ message: 'Failed to subscribe to the newsletter' });
+      console.error("Error subscribing to newsletter:", error);
+      res.status(500).json({ message: "Failed to subscribe to newsletter" });
     }
   });
-
-  // Submit contact form
-  app.post('/api/contact', async (req: Request, res: Response) => {
+  
+  // Initialize sample data (only in development)
+  if (process.env.NODE_ENV === 'development') {
     try {
-      const validatedData = insertContactSchema.parse(req.body);
-      const contact = await storage.createContact(validatedData);
-      res.status(201).json({ message: 'Message sent successfully', contact });
+      await storage.initializeSampleData();
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid contact data', errors: error.errors });
-      }
-      res.status(500).json({ message: 'Failed to send message' });
+      console.error("Error initializing sample data:", error);
     }
-  });
+  }
 
   const httpServer = createServer(app);
   return httpServer;
