@@ -1,212 +1,138 @@
 import { useState } from 'react';
-import { Tab } from '@headlessui/react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { Helmet } from 'react-helmet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import AdminLayout from '@/components/admin/AdminLayout';
+import UrlScraperForm from '@/components/admin/UrlScraperForm';
+import PubMedSearch from '@/components/admin/PubMedSearch';
 import EuropePmcSearch from '@/components/admin/EuropePmcSearch';
 import CrossRefSearch from '@/components/admin/CrossRefSearch';
 import SemanticScholarSearch from '@/components/admin/SemanticScholarSearch';
-import PubMedSearch from '@/components/admin/PubMedSearch';
-import { Loader2, Search, Database, AlertCircle, RotateCw } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
+import { AlertCircle, Link as LinkIcon, FileSearch } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ResearchImportPage() {
-  const { toast } = useToast();
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [urlToScrape, setUrlToScrape] = useState('');
-  const [isScrapingUrl, setIsScrapingUrl] = useState(false);
+  const [activeTab, setActiveTab] = useState('url');
   
-  // Direct URL scraping mutation
-  const scrapeUrlMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const response = await apiRequest('POST', '/api/scraper/url', { url });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Study imported successfully",
-          description: `${data.study.title} has been added to your database.`,
-        });
-      } else {
-        toast({
-          title: "Import failed",
-          description: data.message || "Failed to scrape study from URL",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Import failed",
-        description: error.message || "Failed to scrape study from URL",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsScrapingUrl(false);
-    }
-  });
-
-  const handleScrapeUrl = () => {
-    if (!urlToScrape) {
-      toast({
-        title: "URL required",
-        description: "Please enter a URL to scrape",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsScrapingUrl(true);
-    scrapeUrlMutation.mutate(urlToScrape);
-  };
-
   return (
-    <AdminLayout 
-      title="Research Import" 
-      description="Search and import research from multiple academic databases"
-    >
+    <AdminLayout title="Research Import" description="Import research from various sources">
+      <Helmet>
+        <title>Research Import | HydrogenStudies Admin</title>
+      </Helmet>
+      
       <div className="space-y-6">
-        {/* URL Scraper */}
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="text-lg font-medium mb-4">Direct URL Import</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Enter a URL from a supported source (PubMed, Europe PMC, CrossRef DOI, Semantic Scholar)
-              to directly import that study.
-            </p>
-            
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Enter article URL (https://pubmed.ncbi.nlm.nih.gov/12345678/)"
-                value={urlToScrape}
-                onChange={(e) => setUrlToScrape(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleScrapeUrl} disabled={isScrapingUrl}>
-                {isScrapingUrl ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Database className="mr-2 h-4 w-4" />
-                    Import
-                  </>
-                )}
-              </Button>
-            </div>
-            
-            <div className="mt-3 flex items-center text-sm text-amber-700">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              <span>Supported URLs: PubMed, Europe PMC, CrossRef DOI, Semantic Scholar</span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Database Search Tabs */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-            <Tab.List className="flex border-b">
-              <Tab 
-                className={({ selected }) =>
-                  classNames(
-                    'py-4 px-6 text-sm font-medium focus:outline-none',
-                    selected
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )
-                }
-              >
-                PubMed
-              </Tab>
-              <Tab 
-                className={({ selected }) =>
-                  classNames(
-                    'py-4 px-6 text-sm font-medium focus:outline-none',
-                    selected
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )
-                }
-              >
-                Europe PMC
-              </Tab>
-              <Tab 
-                className={({ selected }) =>
-                  classNames(
-                    'py-4 px-6 text-sm font-medium focus:outline-none',
-                    selected
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )
-                }
-              >
-                Semantic Scholar
-              </Tab>
-              <Tab 
-                className={({ selected }) =>
-                  classNames(
-                    'py-4 px-6 text-sm font-medium focus:outline-none',
-                    selected
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )
-                }
-              >
-                CrossRef DOI
-              </Tab>
-            </Tab.List>
-            <Tab.Panels>
-              {/* PubMed Search Panel */}
-              <Tab.Panel className="p-6">
-                <PubMedSearch />
-              </Tab.Panel>
-              
-              {/* Europe PMC Search Panel */}
-              <Tab.Panel className="p-6">
-                <EuropePmcSearch />
-              </Tab.Panel>
-              
-              {/* Semantic Scholar Search Panel */}
-              <Tab.Panel className="p-6">
-                <SemanticScholarSearch />
-              </Tab.Panel>
-              
-              {/* CrossRef DOI Search Panel */}
-              <Tab.Panel className="p-6">
-                <CrossRefSearch />
-              </Tab.Panel>
-            </Tab.Panels>
-          </Tab.Group>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Research Import</h2>
+          <p className="text-muted-foreground">
+            Import hydrogen research studies from external sources
+          </p>
         </div>
         
-        {/* Recent Imports - Placeholder for future enhancement */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Recent Imports</h3>
-              <Button variant="outline" size="sm">
-                <RotateCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Importing research</AlertTitle>
+          <AlertDescription>
+            Use any of these methods to search and import hydrogen studies from external databases.
+            All imported studies will be automatically categorized and tagged based on their content.
+          </AlertDescription>
+        </Alert>
+        
+        <Tabs defaultValue="url" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 lg:w-auto">
+            <TabsTrigger value="url" className="flex items-center gap-2">
+              <LinkIcon className="h-4 w-4" />
+              <span>URL Scraper</span>
+            </TabsTrigger>
+            <TabsTrigger value="pubmed" className="flex items-center gap-2">
+              <FileSearch className="h-4 w-4" />
+              <span>PubMed</span>
+            </TabsTrigger>
+            <TabsTrigger value="europepmc" className="flex items-center gap-2">
+              <FileSearch className="h-4 w-4" />
+              <span>Europe PMC</span>
+            </TabsTrigger>
+            <TabsTrigger value="crossref" className="flex items-center gap-2">
+              <FileSearch className="h-4 w-4" />
+              <span>CrossRef</span>
+            </TabsTrigger>
+            <TabsTrigger value="semanticscholar" className="flex items-center gap-2">
+              <FileSearch className="h-4 w-4" />
+              <span>Semantic Scholar</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {activeTab === 'url' && 'URL Scraper'}
+                {activeTab === 'pubmed' && 'PubMed Search'}
+                {activeTab === 'europepmc' && 'Europe PMC Search'}
+                {activeTab === 'crossref' && 'CrossRef Search'}
+                {activeTab === 'semanticscholar' && 'Semantic Scholar Search'}
+              </CardTitle>
+              <CardDescription>
+                {activeTab === 'url' && 'Import a study by pasting its URL from any supported platform'}
+                {activeTab === 'pubmed' && 'Search and import studies from PubMed database'}
+                {activeTab === 'europepmc' && 'Search and import studies from Europe PMC database'}
+                {activeTab === 'crossref' && 'Search and import studies from CrossRef database'}
+                {activeTab === 'semanticscholar' && 'Search and import studies from Semantic Scholar database'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TabsContent value="url" className="mt-0">
+                <UrlScraperForm />
+              </TabsContent>
+              
+              <TabsContent value="pubmed" className="mt-0">
+                <PubMedSearch />
+              </TabsContent>
+              
+              <TabsContent value="europepmc" className="mt-0">
+                <EuropePmcSearch />
+              </TabsContent>
+              
+              <TabsContent value="crossref" className="mt-0">
+                <CrossRefSearch />
+              </TabsContent>
+              
+              <TabsContent value="semanticscholar" className="mt-0">
+                <SemanticScholarSearch />
+              </TabsContent>
+            </CardContent>
+          </Card>
+        </Tabs>
+        
+        <div className="space-y-4">
+          <Separator />
+          <h3 className="text-lg font-medium">Supported Platforms</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium">PubMed</h4>
+              <p className="text-sm text-muted-foreground">Biomedical literature, citations, abstracts</p>
             </div>
-            
-            <div className="text-center py-8 text-gray-500">
-              <Database className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-              <p>Your recent imports will appear here</p>
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium">Europe PMC</h4>
+              <p className="text-sm text-muted-foreground">Life sciences research and literature</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium">CrossRef</h4>
+              <p className="text-sm text-muted-foreground">DOI-registered academic publications</p>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium">Semantic Scholar</h4>
+              <p className="text-sm text-muted-foreground">AI-powered scientific research papers</p>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium">CORE API</h4>
+              <p className="text-sm text-muted-foreground">Open access research papers</p>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium">arXiv</h4>
+              <p className="text-sm text-muted-foreground">Pre-print archive for scientific papers</p>
+            </div>
+          </div>
+        </div>
       </div>
     </AdminLayout>
   );
