@@ -298,9 +298,8 @@ async function importStudies(studies: any[]): Promise<{total: number, success: n
         citationUrl: citationUrl,
         peerReviewed: peerReviewed,
         imageUrl: validatedData.ImageUrl || '',
-        // Advanced filtering fields
-        healthConditions: healthConditions,
-        bodySystems: bodySystems,
+        // Store health conditions and body systems in comments for now
+        // We'll properly map these to the related tables later
         studyType: studyType,
         country: validatedData.Country || '',
         region: validatedData.Region || '',
