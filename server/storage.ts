@@ -3,13 +3,33 @@ import {
   categories, 
   newsletters, 
   contactMessages,
+  users,
+  userPreferences,
+  notifications,
+  searchHistory,
+  userStudyInteractions,
+  userBlogInteractions,
+  blogArticles,
   type Study, 
   type Category, 
   type Newsletter, 
   type InsertStudy, 
   type InsertCategory, 
   type InsertNewsletter,
-  type InsertContact
+  type InsertContact,
+  type User,
+  type UserPreferences,
+  type InsertUser,
+  type InsertUserPreferences,
+  type Notification,
+  type InsertNotification,
+  type SearchHistory,
+  type InsertSearchHistory,
+  type UserStudyInteraction,
+  type InsertUserStudyInteraction,
+  type UserBlogInteraction,
+  type InsertUserBlogInteraction,
+  type BlogArticle
 } from "@shared/schema";
 
 export interface StudyFilters {
@@ -21,6 +41,16 @@ export interface StudyFilters {
   category?: string;
   peerReviewed?: boolean;
   sortBy?: string;
+  
+  // Advanced filters
+  healthConditions?: string[];
+  bodySystems?: string[];
+  studyType?: string[];
+  country?: string[];
+  region?: string[];
+  journal?: string[];
+  hasFullText?: boolean;
+  hasMedia?: boolean;
 }
 
 export interface IStorage {
@@ -43,6 +73,47 @@ export interface IStorage {
   
   // Contact operations
   submitContactMessage(message: InsertContact): Promise<any>;
+  
+  // User account operations
+  getUserById(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
+  authenticateUser(email: string, password: string): Promise<User | null>;
+  
+  // User preferences operations
+  getUserPreferences(userId: number): Promise<UserPreferences | undefined>;
+  createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences>;
+  updateUserPreferences(id: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences>;
+  
+  // Search history operations
+  addSearchHistory(searchHistory: InsertSearchHistory): Promise<SearchHistory>;
+  getUserSearchHistory(userId: number, limit?: number): Promise<SearchHistory[]>;
+  
+  // User study interactions
+  saveStudy(userId: number, studyId: number): Promise<UserStudyInteraction>;
+  unsaveStudy(userId: number, studyId: number): Promise<void>;
+  recordStudyView(userId: number, studyId: number): Promise<void>;
+  getSavedStudies(userId: number): Promise<Study[]>;
+  getRecentlyViewedStudies(userId: number, limit?: number): Promise<Study[]>;
+  
+  // User blog interactions
+  saveBlog(userId: number, blogId: number): Promise<UserBlogInteraction>;
+  unsaveBlog(userId: number, blogId: number): Promise<void>;
+  recordBlogView(userId: number, blogId: number): Promise<void>;
+  getSavedBlogs(userId: number): Promise<BlogArticle[]>;
+  getRecentlyViewedBlogs(userId: number, limit?: number): Promise<BlogArticle[]>;
+  
+  // Recommendation system
+  getRecommendedStudies(userId: number, limit?: number): Promise<Study[]>;
+  getRecommendedBlogs(userId: number, limit?: number): Promise<BlogArticle[]>;
+  
+  // Notification system
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]>;
+  markNotificationAsRead(id: number): Promise<void>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
   
   // Sample data initialization
   initializeSampleData(): Promise<void>;
