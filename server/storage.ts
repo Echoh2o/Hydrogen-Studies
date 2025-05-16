@@ -29,10 +29,13 @@ export interface IStorage {
   getStudyById(id: number): Promise<Study | undefined>;
   getLatestStudies(limit?: number): Promise<Study[]>;
   createStudy(study: InsertStudy): Promise<Study>;
+  updateStudy(id: number, study: Partial<InsertStudy>): Promise<Study>;
+  deleteStudy(id: number): Promise<void>;
   
   // Categories operations
   getCategories(): Promise<Category[]>;
   getCategoryById(id: number): Promise<Category | undefined>;
+  getCategoryByName(name: string): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
   
   // Newsletter operations
