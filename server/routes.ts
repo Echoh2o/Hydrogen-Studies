@@ -68,6 +68,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get related studies
+  app.get("/api/studies/:id/related", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const study = await storage.getStudyById(parseInt(id));
+      
+      if (!study) {
+        return res.status(404).json({ message: "Study not found" });
+      }
+      
+      // Get studies in the same category
+      const relatedStudies = await storage.getStudies({
+        category: study.category
+      });
+      
+      // Remove the current study from the results
+      const filteredStudies = relatedStudies.filter(s => s.id !== parseInt(id));
+      
+      // Sort based on relevance to the current study (using title and abstract similarity)
+      const scoredStudies = filteredStudies.map(relatedStudy => {
+        let score = 0;
+        
+        // Give points for matching keywords in title
+        const titleWords = study.title.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+        for (const word of titleWords) {
+          if (relatedStudy.title.toLowerCase().includes(word)) {
+            score += 2;
+          }
+          if (relatedStudy.abstract.toLowerCase().includes(word)) {
+            score += 1;
+          }
+        }
+        
+        // Give points for matching authors
+        if (study.authors === relatedStudy.authors) {
+          score += 3;
+        }
+        
+        // Give points for similar publication date (same year)
+        const studyYear = new Date(study.publishDate).getFullYear();
+        const relatedYear = new Date(relatedStudy.publishDate).getFullYear();
+        if (studyYear === relatedYear) {
+          score += 1;
+        }
+        
+        return { ...relatedStudy, relevanceScore: score };
+      });
+      
+      // Sort by relevance score (highest first) and return top 5
+      const sortedRelated = scoredStudies
+        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .slice(0, 5);
+      
+      res.json(sortedRelated);
+    } catch (error) {
+      console.error("Error fetching related studies:", error);
+      res.status(500).json({ message: "Failed to fetch related studies" });
+    }
+  });
+  
   app.post("/api/studies", async (req, res) => {
     try {
       const validatedData = insertStudySchema.parse(req.body);
