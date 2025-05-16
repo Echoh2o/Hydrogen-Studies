@@ -1,5 +1,5 @@
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import { storage } from './storage';
 import { InsertStudy } from '@shared/schema';
 
