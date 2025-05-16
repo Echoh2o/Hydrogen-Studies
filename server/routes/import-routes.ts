@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { importStudiesFromExcel, importStudiesFromCsv, importStudiesFromJson } from '../import';
+import { importStudiesFromExcel, importStudiesFromCsv, importStudiesFromJson, importStudiesFromGoogleSheets } from '../import';
 import excelImportRoutes from './excel-import-route';
 
 const router = Router();
@@ -184,6 +184,34 @@ router.post('/import/attached', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'An error occurred during import'
+    });
+  }
+});
+
+// Import from Google Sheets
+router.post('/import/googlesheet', async (req, res) => {
+  try {
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'No Google Sheet URL provided' });
+    }
+    
+    console.log(`Importing from Google Sheet: ${url}`);
+    
+    const result = await importStudiesFromGoogleSheets(url);
+    
+    return res.status(200).json({
+      success: true,
+      message: `Successfully imported ${result.success} out of ${result.total} studies`,
+      total: result.total,
+      success: result.success
+    });
+  } catch (error: any) {
+    console.error('Error importing from Google Sheets:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'An error occurred during import from Google Sheets'
     });
   }
 });
