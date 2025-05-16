@@ -80,6 +80,15 @@ export default function BlogsAdmin() {
         : b[sortField] - a[sortField];
     }
     
+    // Handle special case for articleType field
+    if (sortField === 'articleType') {
+      const valueA = a.type?.toString().toLowerCase() || '';
+      const valueB = b.type?.toString().toLowerCase() || '';
+      return sortOrder === 'asc'
+        ? valueA.localeCompare(valueB)
+        : valueB.localeCompare(valueA);
+    }
+    
     // Default string comparison for other fields like title
     const valueA = a[sortField]?.toString().toLowerCase() || '';
     const valueB = b[sortField]?.toString().toLowerCase() || '';
@@ -266,6 +275,48 @@ export default function BlogsAdmin() {
               <TabsTrigger value="byStudy">By Study</TabsTrigger>
             </TabsList>
             
+            <div className="flex flex-col md:flex-row gap-2 mb-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">Sort by:</span>
+                <select 
+                  className="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm shadow-sm"
+                  value={sortField}
+                  onChange={(e) => setSortField(e.target.value)}
+                >
+                  <option value="createdAt">Created Date</option>
+                  <option value="title">Title</option>
+                  <option value="studyId">Study ID</option>
+                  <option value="articleType">Article Type</option>
+                </select>
+                <button
+                  className="p-1 rounded-md border border-input bg-background"
+                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  aria-label={sortOrder === "asc" ? "Sort descending" : "Sort ascending"}
+                  title={sortOrder === "asc" ? "Sort descending" : "Sort ascending"}
+                >
+                  {sortOrder === "asc" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m3 8 4-4 4 4"/>
+                      <path d="M7 4v16"/>
+                      <path d="M11 12h10"/>
+                      <path d="M11 16h7"/>
+                      <path d="M11 20h4"/>
+                      <path d="M11 8h10"/>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m3 16 4 4 4-4"/>
+                      <path d="M7 20V4"/>
+                      <path d="M11 12h10"/>
+                      <path d="M11 16h7"/>
+                      <path d="M11 20h4"/>
+                      <path d="M11 8h10"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+            
             {isLoading ? (
               <div className="flex justify-center p-4">Loading blog articles...</div>
             ) : sortedBlogs.length === 0 ? (
@@ -281,11 +332,87 @@ export default function BlogsAdmin() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50 border-b">
-                      <th className="text-left p-3 font-medium">Title</th>
-                      <th className="text-left p-3 font-medium">Study</th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell">Type</th>
+                      <th className="text-left p-3 font-medium">
+                        <button 
+                          className="font-medium flex items-center gap-1"
+                          onClick={() => {
+                            if (sortField === 'title') {
+                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setSortField('title');
+                              setSortOrder('asc');
+                            }
+                          }}
+                        >
+                          Title
+                          {sortField === 'title' && (
+                            <span className="text-xs">
+                              {sortOrder === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </button>
+                      </th>
+                      <th className="text-left p-3 font-medium">
+                        <button 
+                          className="font-medium flex items-center gap-1"
+                          onClick={() => {
+                            if (sortField === 'studyId') {
+                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setSortField('studyId');
+                              setSortOrder('asc');
+                            }
+                          }}
+                        >
+                          Study
+                          {sortField === 'studyId' && (
+                            <span className="text-xs">
+                              {sortOrder === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </button>
+                      </th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell">
+                        <button 
+                          className="font-medium flex items-center gap-1"
+                          onClick={() => {
+                            if (sortField === 'articleType') {
+                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setSortField('articleType');
+                              setSortOrder('asc');
+                            }
+                          }}
+                        >
+                          Type
+                          {sortField === 'articleType' && (
+                            <span className="text-xs">
+                              {sortOrder === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </button>
+                      </th>
                       <th className="text-left p-3 font-medium hidden md:table-cell">Status</th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell">Created</th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell">
+                        <button 
+                          className="font-medium flex items-center gap-1"
+                          onClick={() => {
+                            if (sortField === 'createdAt') {
+                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            } else {
+                              setSortField('createdAt');
+                              setSortOrder('desc');
+                            }
+                          }}
+                        >
+                          Created
+                          {sortField === 'createdAt' && (
+                            <span className="text-xs">
+                              {sortOrder === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </button>
+                      </th>
                       <th className="text-left p-3 font-medium">Image</th>
                       <th className="text-right p-3 font-medium">Actions</th>
                     </tr>
