@@ -25,7 +25,31 @@ export class HydrogenStudiesScraper extends BaseScraper {
     // First, check the main page for any featured studies
     try {
       console.log(`Scraping main page for featured studies`);
+      
+      // First visit the homepage to establish cookies and session
       const $ = await this.makeRequest(this.source.baseUrl);
+      console.log(`Connected to main page, analyzing content`);
+      
+      // Look for specific patterns of hydrogenstudies.com
+      // Check for main navigation menus that might lead to studies
+      const navigationLinks: string[] = [];
+      $('.navbar a, .nav a, .menu a, .main-menu a, #menu a, header a').each((_, element) => {
+        const href = $(element).attr('href');
+        const text = $(element).text().trim().toLowerCase();
+        
+        if (href && (
+          text.includes('research') || 
+          text.includes('studies') || 
+          text.includes('science') || 
+          text.includes('publications') || 
+          text.includes('resources') ||
+          text.includes('evidence')
+        )) {
+          const fullLink = href.startsWith('http') ? href : `${this.source.baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
+          navigationLinks.push(fullLink);
+          console.log(`Found navigation link: ${text} -> ${fullLink}`);
+        }
+      });
       
       // Extract any links that might be studies from the main page
       $('a').each((_, element) => {
@@ -41,7 +65,9 @@ export class HydrogenStudiesScraper extends BaseScraper {
             (text && text.length > 15 && (
               text.toLowerCase().includes('study') || 
               text.toLowerCase().includes('research') || 
-              text.toLowerCase().includes('clinical')
+              text.toLowerCase().includes('clinical') ||
+              text.toLowerCase().includes('scientific') ||
+              text.toLowerCase().includes('hydrogen')
             ))
         )) {
           const fullLink = link.startsWith('http') ? link : `${this.source.baseUrl}${link.startsWith('/') ? '' : '/'}${link}`;
@@ -50,6 +76,44 @@ export class HydrogenStudiesScraper extends BaseScraper {
       });
       
       console.log(`Found ${links.length} potential study links on the main page`);
+      
+      // Also follow navigation links
+      for (const navLink of navigationLinks) {
+        try {
+          console.log(`Following navigation link: ${navLink}`);
+          const $navPage = await this.makeRequest(navLink);
+          
+          // Extract links from this section
+          $navPage('a').each((_, element) => {
+            const href = $navPage(element).attr('href');
+            const text = $navPage(element).text().trim();
+            
+            if (href && (
+              href.includes('/hydrogen') || 
+              href.includes('/study') || 
+              href.includes('/research') || 
+              href.includes('/article') ||
+              (text && text.length > 15 && (
+                text.toLowerCase().includes('study') || 
+                text.toLowerCase().includes('research') || 
+                text.toLowerCase().includes('clinical') ||
+                text.toLowerCase().includes('scientific') ||
+                text.toLowerCase().includes('hydrogen')
+              ))
+            )) {
+              const fullLink = href.startsWith('http') ? href : `${this.source.baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
+              links.push(fullLink);
+            }
+          });
+          
+          // More gentle scraping
+          await this.delay(this.getRequestDelay() * 2);
+          
+        } catch (err) {
+          console.log(`Error following navigation link ${navLink}: ${err}`);
+        }
+      }
+      
     } catch (error) {
       console.error(`Error scraping main page:`, error);
     }
@@ -63,7 +127,10 @@ export class HydrogenStudiesScraper extends BaseScraper {
       '/hydrogen-studies',
       '/blog',
       '/articles',
-      '/resources'
+      '/resources',
+      '/evidence',
+      '/science',
+      '/publications'
     ];
     
     for (const basePath of pathsToTry) {
