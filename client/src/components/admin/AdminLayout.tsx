@@ -45,19 +45,15 @@ export default function AdminLayout({ children, title, description }: AdminLayou
         <header className="sticky top-0 z-40 border-b bg-background">
           <div className="container flex h-16 items-center justify-between px-4 md:px-6">
             <div className="flex items-center">
-              <Link href="/">
-                <a className="flex items-center mr-8">
-                  <span className="font-semibold tracking-tight text-xl">HydrogenStudies</span>
-                  <span className="bg-primary text-primary-foreground ml-2 rounded-sm px-1.5 py-0.5 text-xs font-medium">Admin</span>
-                </a>
+              <Link href="/" className="flex items-center mr-8">
+                <span className="font-semibold tracking-tight text-xl">HydrogenStudies</span>
+                <span className="bg-primary text-primary-foreground ml-2 rounded-sm px-1.5 py-0.5 text-xs font-medium">Admin</span>
               </Link>
               
               <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
-                <Link href="/">
-                  <a className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                    <Home className="mr-2 h-4 w-4" />
-                    View Site
-                  </a>
+                <Link href="/" className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                  <Home className="mr-2 h-4 w-4" />
+                  View Site
                 </Link>
               </nav>
             </div>
@@ -82,16 +78,15 @@ export default function AdminLayout({ children, title, description }: AdminLayou
               <ul className="space-y-2">
                 {mainNavItems.map(({ href, label, icon: Icon }) => (
                   <li key={href}>
-                    <Link href={href}>
-                      <a
-                        className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                          location === href ? "bg-accent text-accent-foreground" : "transparent"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </a>
+                    <Link 
+                      href={href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                        location === href ? "bg-accent text-accent-foreground" : "transparent"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
                     </Link>
                   </li>
                 ))}
@@ -103,16 +98,16 @@ export default function AdminLayout({ children, title, description }: AdminLayou
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-background">
             <nav className="flex h-16 items-center justify-around">
               {mainNavItems.slice(0, 5).map(({ href, label, icon: Icon }) => (
-                <Link key={href} href={href}>
-                  <a
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                      location === href ? "text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{label}</span>
-                  </a>
+                <Link 
+                  key={href} 
+                  href={href}
+                  className={cn(
+                    "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                    location === href ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{label}</span>
                 </Link>
               ))}
             </nav>
