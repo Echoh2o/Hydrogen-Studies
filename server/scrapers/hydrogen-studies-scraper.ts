@@ -15,8 +15,35 @@ const BASE_URL = 'https://hydrogenstudies.com/';
 const SEARCH_URL = `${BASE_URL}?s=`;
 
 /**
+ * Database utility to get existing studies by URL or domain
+ */
+async function getExistingStudiesFromDomain(domain: string): Promise<Set<string>> {
+  try {
+    // Get all studies that come from hydrogenstudies.com
+    const existingStudies = await storage.getStudiesBySourcePlatform('HydrogenStudies');
+    
+    // Create a set of URLs for fast lookup
+    const existingUrls = new Set<string>();
+    for (const study of existingStudies) {
+      if (study.sourceUrl) {
+        existingUrls.add(study.sourceUrl);
+      }
+    }
+    
+    console.log(`Found ${existingUrls.size} existing studies from ${domain}`);
+    return existingUrls;
+  } catch (error) {
+    console.error('Error getting existing studies:', error);
+    return new Set<string>();
+  }
+}
+
+/**
  * Main function to scrape all studies from hydrogenstudies.com
  * Uses the known paginated search URL structure
+ * 
+ * When this is run, it checks for new articles that haven't been scraped yet,
+ * rather than scraping everything each time.
  */
 export async function scrapeAllHydrogenStudies(): Promise<{ total: number, success: number }> {
   // Initialize a unique scraper job ID
@@ -24,42 +51,60 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
   initScraperStatus(scraperId);
   
   try {
+    // Get the set of existing study URLs to avoid duplicates
+    updateScraperProgress(0, 0, 0, 0, 'Checking for existing studies');
+    const existingStudyUrls = await getExistingStudiesFromDomain('hydrogenstudies.com');
+    
     // Step 1: Determine the total number of pages
     updateScraperProgress(0, 0, 0, 0, 'Determining total number of pages');
     const totalPages = await determineTotalPages();
     
     // Step 2: Collect all study links from the search pages
     updateScraperProgress(0, 0, 0, 0, 'Collecting all study links');
-    const studyLinks = await collectAllStudyLinks(totalPages);
+    const allStudyLinks = await collectAllStudyLinks(totalPages);
     
-    // Update status with total count
-    updateScraperProgress(0, 0, 0, studyLinks.length, 'Beginning to scrape individual studies');
+    // Step 3: Filter out studies that have already been scraped
+    const newStudyLinks = allStudyLinks.filter(url => !existingStudyUrls.has(url));
     
-    // Step 3: Scrape each individual study
+    if (newStudyLinks.length === 0) {
+      updateScraperProgress(0, 0, 0, 0, 'No new studies found');
+      completeScraperStatus('No new studies found');
+      return {
+        total: allStudyLinks.length,
+        success: 0
+      };
+    }
+    
+    // Update status with total count of new studies
+    updateScraperProgress(0, 0, 0, newStudyLinks.length, 
+      `Found ${newStudyLinks.length} new studies out of ${allStudyLinks.length} total`);
+    
+    // Step 4: Scrape each new study
     let processedCount = 0;
     let successCount = 0;
     let failedCount = 0;
     
-    for (const url of studyLinks) {
+    for (const url of newStudyLinks) {
       try {
         updateScraperProgress(
           processedCount,
           successCount,
           failedCount,
-          studyLinks.length,
-          `Scraping study ${processedCount + 1} of ${studyLinks.length}`
+          newStudyLinks.length,
+          `Scraping new study ${processedCount + 1} of ${newStudyLinks.length}`
         );
         
         const studyData = await scrapeStudyPage(url);
         
         if (studyData) {
-          // Check for duplicates by title
+          // Double-check for duplicates by title as an extra precaution
           const similarStudies = await storage.getStudiesByTitle(studyData.title);
           
           if (similarStudies.length === 0) {
             // Not a duplicate, save it
             await storage.createStudy(studyData);
             successCount++;
+            console.log(`Added new study: ${studyData.title}`);
           } else {
             console.log(`Skipping duplicate study: ${studyData.title}`);
             // Count as success but log that it was skipped
@@ -80,9 +125,10 @@ export async function scrapeAllHydrogenStudies(): Promise<{ total: number, succe
     completeScraperStatus();
     
     return {
-      total: studyLinks.length,
-      success: successCount
-    };
+      total: allStudyLinks.length,
+      success: successCount,
+      newStudies: newStudyLinks.length
+    } as any;
   } catch (error) {
     console.error('Error in hydrogen studies scraper:', error);
     completeScraperStatus(`Scraper failed: ${error.message}`);
