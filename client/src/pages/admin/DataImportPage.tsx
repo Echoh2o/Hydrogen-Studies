@@ -79,10 +79,17 @@ export default function DataImportPage() {
         throw new Error('Unsupported file format. Please use .xlsx, .csv, or .json files.');
       }
 
-      const response = await apiRequest(endpoint, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Import failed: ${response.status} ${errorText || response.statusText}`);
+      }
+      
+      const data = await response.json();
 
       setImportStats({
         total: response.total || 0,
