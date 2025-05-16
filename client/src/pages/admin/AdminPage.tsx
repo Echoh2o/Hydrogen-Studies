@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Study } from "@/types";
-import { Loader2, Upload, RefreshCw, Database, FileText, Search } from "lucide-react";
+import { Loader2, Upload, RefreshCw, Database, FileText, Search, BookOpen } from "lucide-react";
 import StudyForm from "@/components/admin/StudyForm";
 import StudyTable from "@/components/admin/StudyTable";
 import BlogsAdmin from "@/pages/admin/BlogsAdmin";
