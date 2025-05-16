@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import * as fs from "fs";
 import * as path from "path";
 import { storage } from "./storage";
-import { insertNewsletterSchema, insertStudySchema, insertCategorySchema, insertContactSchema, blogArticles } from "@shared/schema";
+import { insertNewsletterSchema, insertStudySchema, insertCategorySchema, insertContactSchema, blogArticles, insertBlogArticleSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
@@ -400,6 +400,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Blog article routes
+  
+  // Create new blog article
+  app.post("/api/blogs", async (req, res) => {
+    try {
+      const validatedData = insertBlogArticleSchema.parse(req.body);
+      
+      // Create the blog article
+      const [newBlog] = await db.insert(blogArticles)
+        .values({
+          ...validatedData,
+          updatedAt: new Date(),
+          viewCount: 0
+        })
+        .returning();
+      
+      res.status(201).json(newBlog);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating blog article:", error);
+      res.status(500).json({ message: "Failed to create blog article", error: error.message });
+    }
+  });
+  
+  // Update existing blog article
+  app.put("/api/blogs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      if (!blog) {
+        return res.status(404).json({ message: "Blog article not found" });
+      }
+      
+      // Validate the request data
+      const validatedData = req.body;
+      
+      // Update the blog article
+      const [updatedBlog] = await db.update(blogArticles)
+        .set({
+          ...validatedData,
+          updatedAt: new Date()
+        })
+        .where(eq(blogArticles.id, parseInt(id)))
+        .returning();
+      
+      res.status(200).json(updatedBlog);
+    } catch (error) {
+      console.error("Error updating blog article:", error);
+      res.status(500).json({ message: "Failed to update blog article", error: error.message });
+    }
+  });
+  
+  // Delete blog article
+  app.delete("/api/blogs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      if (!blog) {
+        return res.status(404).json({ message: "Blog article not found" });
+      }
+      
+      // Delete the blog article
+      await db.delete(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      res.status(200).json({ message: "Blog article deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting blog article:", error);
+      res.status(500).json({ message: "Failed to delete blog article", error: error.message });
+    }
+  });
   
   // Media upload endpoint for blog articles
   app.post("/api/blogs/:id/media", upload.single('file'), async (req, res) => {
