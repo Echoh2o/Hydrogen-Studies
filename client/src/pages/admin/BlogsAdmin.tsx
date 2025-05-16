@@ -99,6 +99,35 @@ export default function BlogsAdmin() {
       default: return level;
     }
   };
+  
+  // Format article type for display
+  const formatArticleType = (type: string) => {
+    switch (type) {
+      case "overview": return "Overview";
+      case "practical_application": return "Practical App";
+      case "comparison": return "Comparison";
+      case "elon_simple": return "Elon Overview";
+      case "elon_benefits": return "Elon Benefits";
+      case "elon_future": return "Elon Future";
+      default: return type || "Standard";
+    }
+  };
+  
+  // Get color class for article type
+  const getArticleTypeColor = (type: string) => {
+    if (!type) return "bg-blue-100 text-blue-700";
+    
+    if (type.startsWith("elon_")) {
+      return "bg-purple-100 text-purple-700";
+    }
+    
+    switch (type) {
+      case "overview": return "bg-blue-100 text-blue-700";
+      case "practical_application": return "bg-emerald-100 text-emerald-700";
+      case "comparison": return "bg-indigo-100 text-indigo-700";
+      default: return "bg-blue-100 text-blue-700";
+    }
+  };
 
   return (
     <div className="container py-6">
@@ -173,7 +202,8 @@ export default function BlogsAdmin() {
                     <tr className="bg-muted/50 border-b">
                       <th className="text-left p-3 font-medium">Title</th>
                       <th className="text-left p-3 font-medium">Study</th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell">Reading Level</th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell">Type</th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell">Status</th>
                       <th className="text-left p-3 font-medium hidden md:table-cell">Created</th>
                       <th className="text-left p-3 font-medium">Image</th>
                       <th className="text-right p-3 font-medium">Actions</th>
@@ -194,7 +224,20 @@ export default function BlogsAdmin() {
                           </span>
                         </td>
                         <td className="p-3 hidden md:table-cell">
-                          {formatReadingLevel(blog.readingLevel)}
+                          <span className={`text-xs ${getArticleTypeColor(blog.articleType)} px-2 py-1 rounded-full`}>
+                            {formatArticleType(blog.articleType)}
+                          </span>
+                        </td>
+                        <td className="p-3 hidden md:table-cell">
+                          {blog.isPublished ? (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                              Published
+                            </span>
+                          ) : (
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                              Draft
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 hidden md:table-cell">
                           {formatDate(blog.createdAt)}

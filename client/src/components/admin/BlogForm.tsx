@@ -315,11 +315,12 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="overview">Overview</SelectItem>
-                    <SelectItem value="practical">Practical Application</SelectItem>
+                    <SelectItem value="practical_application">Practical Application</SelectItem>
                     <SelectItem value="comparison">Comparison</SelectItem>
-                    <SelectItem value="elon_overview">Elon-Style Overview</SelectItem>
-                    <SelectItem value="elon_practical">Elon-Style Practical</SelectItem>
-                    <SelectItem value="elon_comparison">Elon-Style Comparison</SelectItem>
+                    <SelectItem value="elon_simple">Elon-Style Overview</SelectItem>
+                    <SelectItem value="elon_benefits">Elon-Style Benefits</SelectItem>
+                    <SelectItem value="elon_future">Elon-Style Future Impact</SelectItem>
+                    <SelectItem value="elon_faq">Elon-Style FAQ</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
