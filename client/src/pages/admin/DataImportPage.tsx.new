@@ -102,13 +102,13 @@ export default function DataImportPage() {
       const data = await response.json();
 
       setImportStats({
-        total: response.total || 0,
-        success: response.success || 0,
+        total: data.total || 0,
+        success: data.success || 0,
       });
 
       toast({
         title: "Import successful",
-        description: `Successfully imported ${response.success} out of ${response.total} studies.`,
+        description: `Successfully imported ${data.success} out of ${data.total} studies.`,
       });
     } catch (error) {
       console.error('Import error:', error);
@@ -142,7 +142,7 @@ export default function DataImportPage() {
     setImportStats(null);
 
     try {
-      const response = await apiRequest('/api/import/googlesheet', {
+      const response = await fetch('/api/import/googlesheet', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,14 +150,21 @@ export default function DataImportPage() {
         body: JSON.stringify({ url: googleSheetUrl }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Import failed: ${response.status} ${errorText || response.statusText}`);
+      }
+      
+      const data = await response.json();
+
       setImportStats({
-        total: response.total || 0,
-        success: response.success || 0,
+        total: data.total || 0,
+        success: data.success || 0,
       });
 
       toast({
         title: "Import successful",
-        description: `Successfully imported ${response.success} out of ${response.total} studies.`,
+        description: `Successfully imported ${data.success} out of ${data.total} studies.`,
       });
     } catch (error) {
       console.error('Google Sheet import error:', error);
@@ -443,42 +450,52 @@ export default function DataImportPage() {
               
               <TabsContent value="export" className="mt-0">
                 <div className="space-y-4">
-                  <p className="text-sm">
-                    Export your research database to use elsewhere or create backups.
+                  <p className="text-sm text-muted-foreground">
+                    Export your research database in various formats. All exports include complete study details.
                   </p>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button variant="outline" className="flex items-center space-x-2 justify-start h-auto py-4">
-                      <FileSpreadsheet className="h-5 w-5" />
-                      <div className="flex flex-col items-start">
-                        <span>Export to Excel</span>
-                        <span className="text-xs text-muted-foreground">Download as .xlsx file</span>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <Card className="p-4">
+                      <div className="flex flex-col items-center space-y-2 text-center">
+                        <FileSpreadsheet className="h-8 w-8 text-primary" />
+                        <h3 className="font-semibold">Excel Export</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Download the complete database as an Excel (.xlsx) file
+                        </p>
+                        <Button className="mt-2 w-full" onClick={downloadTemplate}>
+                          <FileSpreadsheet className="mr-2 h-4 w-4" />
+                          Export to Excel
+                        </Button>
                       </div>
-                    </Button>
+                    </Card>
                     
-                    <Button variant="outline" className="flex items-center space-x-2 justify-start h-auto py-4">
-                      <FileUp className="h-5 w-5" />
-                      <div className="flex flex-col items-start">
-                        <span>Export to CSV</span>
-                        <span className="text-xs text-muted-foreground">Download as .csv file</span>
+                    <Card className="p-4">
+                      <div className="flex flex-col items-center space-y-2 text-center">
+                        <Database className="h-8 w-8 text-primary" />
+                        <h3 className="font-semibold">CSV Export</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Download the database as a CSV file for import into other systems
+                        </p>
+                        <Button className="mt-2 w-full" onClick={downloadTemplate}>
+                          <FileUp className="mr-2 h-4 w-4" />
+                          Export to CSV
+                        </Button>
                       </div>
-                    </Button>
+                    </Card>
                     
-                    <Button variant="outline" className="flex items-center space-x-2 justify-start h-auto py-4">
-                      <FileJson className="h-5 w-5" />
-                      <div className="flex flex-col items-start">
-                        <span>Export to JSON</span>
-                        <span className="text-xs text-muted-foreground">Download as .json file</span>
+                    <Card className="p-4">
+                      <div className="flex flex-col items-center space-y-2 text-center">
+                        <FileJson className="h-8 w-8 text-primary" />
+                        <h3 className="font-semibold">JSON Export</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Download the database as a structured JSON file
+                        </p>
+                        <Button className="mt-2 w-full" onClick={downloadTemplate}>
+                          <FileJson className="mr-2 h-4 w-4" />
+                          Export to JSON
+                        </Button>
                       </div>
-                    </Button>
-                    
-                    <Button variant="outline" className="flex items-center space-x-2 justify-start h-auto py-4">
-                      <Database className="h-5 w-5" />
-                      <div className="flex flex-col items-start">
-                        <span>Full Database Backup</span>
-                        <span className="text-xs text-muted-foreground">Complete database export</span>
-                      </div>
-                    </Button>
+                    </Card>
                   </div>
                 </div>
               </TabsContent>
@@ -486,73 +503,57 @@ export default function DataImportPage() {
           </Card>
         </Tabs>
         
+        {/* Recent imports */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Imports</CardTitle>
             <CardDescription>
-              History of recent data imports
+              History of recent data imports and their statistics
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-8">
+              <div className="flex justify-center py-6">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : !recentImports || recentImports.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <AlertCircle className="h-8 w-8 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-medium">No recent imports</h3>
-                <p className="text-xs text-muted-foreground mt-1">Import data to see history here</p>
+            ) : recentImports && recentImports.length > 0 ? (
+              <div className="space-y-4">
+                <div className="rounded-md border">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="p-2 text-left font-medium">Date</th>
+                        <th className="p-2 text-left font-medium">File Type</th>
+                        <th className="p-2 text-left font-medium">Status</th>
+                        <th className="p-2 text-right font-medium">Records</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentImports.map((importRecord: any, index: number) => (
+                        <tr key={index} className="border-b">
+                          <td className="p-2 text-sm">
+                            {new Date(importRecord.date).toLocaleString()}
+                          </td>
+                          <td className="p-2 text-sm">{importRecord.fileType}</td>
+                          <td className="p-2 text-sm">
+                            <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              importRecord.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                            }`}>
+                              {importRecord.success ? 'Success' : 'Failed'}
+                            </span>
+                          </td>
+                          <td className="p-2 text-right text-sm">
+                            {importRecord.totalRecords} imported
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="pb-2 font-medium">Date</th>
-                      <th className="pb-2 font-medium">File</th>
-                      <th className="pb-2 font-medium">Type</th>
-                      <th className="pb-2 font-medium">Status</th>
-                      <th className="pb-2 font-medium text-right">Studies</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Placeholder for recent imports - in reality, this would map over recentImports */}
-                    <tr className="border-b">
-                      <td className="py-3 text-sm">May 14, 2024</td>
-                      <td className="py-3 text-sm">hydrogen_studies.xlsx</td>
-                      <td className="py-3 text-sm">Excel</td>
-                      <td className="py-3 text-sm">
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                          <CheckCircle2 className="mr-1 h-3 w-3" /> Success
-                        </span>
-                      </td>
-                      <td className="py-3 text-sm text-right">42</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-3 text-sm">May 12, 2024</td>
-                      <td className="py-3 text-sm">pubmed_export.csv</td>
-                      <td className="py-3 text-sm">CSV</td>
-                      <td className="py-3 text-sm">
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                          <CheckCircle2 className="mr-1 h-3 w-3" /> Success
-                        </span>
-                      </td>
-                      <td className="py-3 text-sm text-right">18</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 text-sm">May 10, 2024</td>
-                      <td className="py-3 text-sm">research_data.json</td>
-                      <td className="py-3 text-sm">JSON</td>
-                      <td className="py-3 text-sm">
-                        <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700">
-                          <AlertCircle className="mr-1 h-3 w-3" /> Failed
-                        </span>
-                      </td>
-                      <td className="py-3 text-sm text-right">0</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="py-6 text-center text-muted-foreground">
+                No recent imports found
               </div>
             )}
           </CardContent>
