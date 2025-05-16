@@ -1,33 +1,29 @@
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { queryClient } from '@/lib/queryClient';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, ExternalLink, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ExternalLink, Loader2, AlertCircle, CheckCircle, Globe } from 'lucide-react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { apiRequest } from '@/lib/queryClient';
+import { queryClient } from '@/lib/queryClient';
 
-const UrlScraperForm = () => {
+const urlFormSchema = z.object({
+  url: z.string().url('Please enter a valid URL')
+});
+
+type UrlFormValues = z.infer<typeof urlFormSchema>;
+
+const UrlScraperForm: React.FC = () => {
   const { toast } = useToast();
   const [url, setUrl] = useState('');
+  const [detectedPlatform, setDetectedPlatform] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +34,7 @@ const UrlScraperForm = () => {
     { name: 'Europe PMC', url: 'europepmc.org' },
     { name: 'CrossRef / DOI', url: 'doi.org' },
     { name: 'Semantic Scholar', url: 'semanticscholar.org' },
-    { name: 'CORE', url: 'core.ac.uk' },
-    { name: 'Dimensions', url: 'dimensions.ai' }
+    { name: 'CORE', url: 'core.ac.uk' }
   ];
 
   const handlePreview = async () => {
@@ -48,26 +43,30 @@ const UrlScraperForm = () => {
       return;
     }
     
-    setIsLoading(true);
-    setError(null);
-    
     try {
-      const response = await apiRequest('/api/research/preview-url', {
+      setIsLoading(true);
+      setError(null);
+      setPreviewData(null);
+      
+      // Check platform
+      detectPlatform(url);
+      
+      const response = await apiRequest('/api/scraper/preview-url', {
         method: 'POST',
-        body: JSON.stringify({ url })
+        data: { url }
       });
       
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to extract study data');
+      if (response.success && response.study) {
+        setPreviewData(response.study);
+        toast({
+          title: 'Study preview loaded',
+          description: 'The study data was successfully extracted from the URL.',
+        });
+      } else {
+        setError(response.message || 'Failed to extract study data from the URL');
       }
-      
-      setPreviewData(response.study);
-      toast({
-        title: 'Preview successful',
-        description: 'Study data extracted successfully.'
-      });
     } catch (err: any) {
-      setError(err.message || 'Failed to extract study data from the URL');
+      setError(err.message || 'An error occurred while fetching the study data');
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -80,34 +79,36 @@ const UrlScraperForm = () => {
   
   const handleSave = async () => {
     if (!previewData) {
-      setError('No data to save. Please preview the URL first.');
+      setError('No study data to save. Please preview a URL first.');
       return;
     }
     
-    setIsLoading(true);
-    
     try {
-      const response = await apiRequest('/api/research/scrape-url', {
+      setIsLoading(true);
+      
+      const response = await apiRequest('/api/scraper/save-url', {
         method: 'POST',
-        body: JSON.stringify({ url })
+        data: { url }
       });
       
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to save study');
+      if (response.success && response.study) {
+        toast({
+          title: 'Study saved',
+          description: 'The study was successfully saved to the database.',
+        });
+        
+        // Reset form
+        setUrl('');
+        setPreviewData(null);
+        setDetectedPlatform(null);
+        
+        // Invalidate studies cache
+        queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
+      } else {
+        setError(response.message || 'Failed to save the study');
       }
-      
-      // Reset form and show success message
-      setUrl('');
-      setPreviewData(null);
-      
-      // Invalidate studies query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
-      
-      toast({
-        title: 'Success',
-        description: 'Study successfully added to the database.'
-      });
     } catch (err: any) {
+      setError(err.message || 'An error occurred while saving the study');
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -118,142 +119,194 @@ const UrlScraperForm = () => {
     }
   };
   
+  const detectPlatform = (inputUrl: string) => {
+    const lowerCaseUrl = inputUrl.toLowerCase();
+    
+    for (const platform of supportedPlatforms) {
+      if (lowerCaseUrl.includes(platform.url)) {
+        setDetectedPlatform(platform.name);
+        return;
+      }
+    }
+    
+    setDetectedPlatform(null);
+  };
+  
+  const form = useForm<UrlFormValues>({
+    resolver: zodResolver(urlFormSchema),
+    defaultValues: {
+      url: ''
+    }
+  });
+
   return (
-    <Card className="w-full mb-8">
-      <CardHeader>
-        <CardTitle>Extract Study from URL</CardTitle>
-        <CardDescription>
-          Automatically extract study data from research platforms like PubMed, CrossRef, Europe PMC, and more.
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex flex-col space-y-2">
-            <label htmlFor="url" className="text-sm font-medium">URL</label>
-            <div className="flex space-x-2">
-              <Input
-                id="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="Enter URL to a research paper (e.g., https://pubmed.ncbi.nlm.nih.gov/12345678/)"
-                className="flex-1"
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>URL Scraper</CardTitle>
+          <CardDescription>
+            Extract study data directly from supported research platforms
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Study URL</FormLabel>
+                    <FormControl>
+                      <div className="flex space-x-2">
+                        <Input 
+                          placeholder="Enter URL from a supported platform" 
+                          value={url}
+                          onChange={(e) => {
+                            setUrl(e.target.value);
+                            field.onChange(e);
+                            detectPlatform(e.target.value);
+                          }}
+                        />
+                        <Button 
+                          type="button" 
+                          onClick={handlePreview}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Preview
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Button 
-                onClick={handlePreview} 
-                disabled={isLoading || !url}
-                variant="secondary"
-              >
-                {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Preview
-              </Button>
-            </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-          </div>
-          
-          <div className="mt-4">
-            <h3 className="font-medium text-sm mb-2">Supported Platforms</h3>
-            <div className="flex flex-wrap gap-2">
-              {supportedPlatforms.map((platform) => (
-                <TooltipProvider key={platform.name}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="cursor-help">
-                        {platform.name}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{platform.url}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
-            </div>
-          </div>
-          
-          {previewData && (
-            <>
-              <Separator className="my-4" />
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Preview</h3>
-                  <div className="flex items-center space-x-1">
-                    <Badge variant="outline">
-                      {previewData.sourcePlatform || 'External Source'}
+              {detectedPlatform && (
+                <div className="flex items-center mt-2">
+                  <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Detected platform: </span>
+                  <Badge variant="outline" className="ml-2">{detectedPlatform}</Badge>
+                </div>
+              )}
+              
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">Supported Platforms:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {supportedPlatforms.map((platform) => (
+                    <Badge key={platform.name} variant="secondary">
+                      {platform.name}
                     </Badge>
-                  </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Form>
+        </CardContent>
+      </Card>
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {previewData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Study Preview</CardTitle>
+            <CardDescription>
+              Review the extracted study data before saving
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium text-lg">{previewData.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">Authors: {previewData.authors}</p>
+                <div className="flex items-center mt-2">
+                  <span className="text-sm">{previewData.journal}</span>
+                  <span className="mx-2">•</span>
+                  <span className="text-sm">{previewData.publishDate}</span>
+                  {previewData.peerReviewed && (
+                    <>
+                      <span className="mx-2">•</span>
+                      <Badge variant="outline" className="text-xs">Peer Reviewed</Badge>
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h4 className="font-medium mb-1">Abstract</h4>
+                <p className="text-sm">{previewData.abstract}</p>
+              </div>
+              
+              {(previewData.methods || previewData.results || previewData.conclusion) && (
+                <>
+                  <Separator />
+                  
+                  {previewData.methods && (
+                    <div>
+                      <h4 className="font-medium mb-1">Methods</h4>
+                      <p className="text-sm">{previewData.methods}</p>
+                    </div>
+                  )}
+                  
+                  {previewData.results && (
+                    <div>
+                      <h4 className="font-medium mb-1">Results</h4>
+                      <p className="text-sm">{previewData.results}</p>
+                    </div>
+                  )}
+                  
+                  {previewData.conclusion && (
+                    <div>
+                      <h4 className="font-medium mb-1">Conclusion</h4>
+                      <p className="text-sm">{previewData.conclusion}</p>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              <Separator />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col space-y-1">
+                  {previewData.doi && (
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium mr-2">DOI:</span>
+                      <span className="text-sm">{previewData.doi}</span>
+                    </div>
+                  )}
+                  {previewData.pdfUrl && (
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium mr-2">PDF:</span>
+                      <a href={previewData.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary flex items-center">
+                        View PDF <ExternalLink className="ml-1 h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                 </div>
                 
-                <Table>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium w-1/4">Title</TableCell>
-                      <TableCell>{previewData.title}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Authors</TableCell>
-                      <TableCell>{previewData.authors}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Journal</TableCell>
-                      <TableCell>{previewData.journal}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Publication Date</TableCell>
-                      <TableCell>{previewData.publishDate}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">DOI</TableCell>
-                      <TableCell>{previewData.doi || 'Not available'}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Peer Reviewed</TableCell>
-                      <TableCell>
-                        {previewData.peerReviewed ? 
-                          <CheckCircle2 className="h-5 w-5 text-green-500" /> : 
-                          <AlertTriangle className="h-5 w-5 text-amber-500" />}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Abstract</TableCell>
-                      <TableCell className="whitespace-normal">
-                        <div className="max-h-32 overflow-y-auto text-sm">
-                          {previewData.abstract}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                <Button 
+                  onClick={handleSave}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                  Save Study
+                </Button>
               </div>
-            </>
-          )}
-        </div>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setUrl('');
-            setPreviewData(null);
-            setError(null);
-          }}
-        >
-          Clear
-        </Button>
-        
-        <Button
-          onClick={handleSave}
-          disabled={isLoading || !previewData}
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Save to Database
-        </Button>
-      </CardFooter>
-    </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 
