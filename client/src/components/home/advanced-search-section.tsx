@@ -108,7 +108,7 @@ export default function AdvancedSearchSection() {
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       <SelectItem value="neurodegenerative">Neurodegenerative Diseases</SelectItem>
                       <SelectItem value="cardiovascular">Cardiovascular Health</SelectItem>
                       <SelectItem value="metabolism">Metabolism & Diabetes</SelectItem>
