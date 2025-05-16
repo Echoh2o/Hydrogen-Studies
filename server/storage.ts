@@ -181,6 +181,86 @@ export class MemStorage implements IStorage {
     
     return study;
   }
+  
+  async updateStudy(id: number, partialStudy: Partial<InsertStudy>): Promise<Study> {
+    const existingStudy = this.studiesData.get(id);
+    
+    if (!existingStudy) {
+      throw new Error(`Study with id ${id} not found`);
+    }
+    
+    // Handle category change
+    if (partialStudy.category && partialStudy.category !== existingStudy.category) {
+      // Decrease count for old category
+      const oldCategoryName = existingStudy.category;
+      for (const [catId, category] of this.categoriesData.entries()) {
+        if (category.name.toLowerCase() === oldCategoryName.toLowerCase()) {
+          const updatedCategory = { 
+            ...category, 
+            studyCount: Math.max(0, category.studyCount - 1) 
+          };
+          this.categoriesData.set(catId, updatedCategory);
+          break;
+        }
+      }
+      
+      // Increase count for new category
+      const newCategoryName = partialStudy.category;
+      for (const [catId, category] of this.categoriesData.entries()) {
+        if (category.name.toLowerCase() === newCategoryName.toLowerCase()) {
+          const updatedCategory = { 
+            ...category, 
+            studyCount: category.studyCount + 1 
+          };
+          this.categoriesData.set(catId, updatedCategory);
+          break;
+        }
+      }
+    }
+    
+    // Update the study
+    const updatedStudy: Study = {
+      ...existingStudy,
+      ...partialStudy
+    };
+    
+    this.studiesData.set(id, updatedStudy);
+    
+    return updatedStudy;
+  }
+  
+  async deleteStudy(id: number): Promise<void> {
+    const existingStudy = this.studiesData.get(id);
+    
+    if (!existingStudy) {
+      throw new Error(`Study with id ${id} not found`);
+    }
+    
+    // Decrease count for category
+    const categoryName = existingStudy.category;
+    for (const [catId, category] of this.categoriesData.entries()) {
+      if (category.name.toLowerCase() === categoryName.toLowerCase()) {
+        const updatedCategory = { 
+          ...category, 
+          studyCount: Math.max(0, category.studyCount - 1) 
+        };
+        this.categoriesData.set(catId, updatedCategory);
+        break;
+      }
+    }
+    
+    // Delete the study
+    this.studiesData.delete(id);
+  }
+  
+  async getCategoryByName(name: string): Promise<Category | undefined> {
+    for (const category of this.categoriesData.values()) {
+      if (category.name.toLowerCase() === name.toLowerCase()) {
+        return category;
+      }
+    }
+    return undefined;
+  }
 
   // Categories methods
   async getCategories(): Promise<Category[]> {

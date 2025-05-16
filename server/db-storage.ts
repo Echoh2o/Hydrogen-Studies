@@ -120,6 +120,61 @@ export class DatabaseStorage implements IStorage {
     
     return study;
   }
+  
+  async updateStudy(id: number, partialStudy: Partial<InsertStudy>): Promise<Study> {
+    // Get the current study to check for category changes
+    const currentStudy = await this.getStudyById(id);
+    if (!currentStudy) {
+      throw new Error(`Study with id ${id} not found`);
+    }
+    
+    // Update the study
+    const [updatedStudy] = await db.update(studies)
+      .set(partialStudy)
+      .where(eq(studies.id, id))
+      .returning();
+    
+    // If category changed, update category counts
+    if (partialStudy.category && partialStudy.category !== currentStudy.category) {
+      // Decrement count for old category
+      const oldCategory = await this.getCategoryByName(currentStudy.category);
+      if (oldCategory && oldCategory.studyCount > 0) {
+        await db.update(categories)
+          .set({ studyCount: oldCategory.studyCount - 1 })
+          .where(eq(categories.id, oldCategory.id));
+      }
+      
+      // Increment count for new category
+      const newCategory = await this.getCategoryByName(partialStudy.category);
+      if (newCategory) {
+        await db.update(categories)
+          .set({ studyCount: newCategory.studyCount + 1 })
+          .where(eq(categories.id, newCategory.id));
+      }
+    }
+    
+    return updatedStudy;
+  }
+  
+  async deleteStudy(id: number): Promise<void> {
+    // Get the current study to update category count
+    const study = await this.getStudyById(id);
+    if (!study) {
+      throw new Error(`Study with id ${id} not found`);
+    }
+    
+    // Delete the study
+    await db.delete(studies)
+      .where(eq(studies.id, id));
+    
+    // Update the category count
+    const category = await this.getCategoryByName(study.category);
+    if (category && category.studyCount > 0) {
+      await db.update(categories)
+        .set({ studyCount: category.studyCount - 1 })
+        .where(eq(categories.id, category.id));
+    }
+  }
 
   // Categories methods
   async getCategories(): Promise<Category[]> {

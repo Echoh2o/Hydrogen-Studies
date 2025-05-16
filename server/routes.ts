@@ -1,5 +1,7 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import * as fs from "fs";
+import * as path from "path";
 import { storage } from "./storage";
 import { insertNewsletterSchema, insertStudySchema, insertCategorySchema, insertContactSchema } from "@shared/schema";
 import { ZodError } from "zod";
