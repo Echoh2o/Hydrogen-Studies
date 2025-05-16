@@ -270,6 +270,11 @@ export const insertSearchHistorySchema = createInsertSchema(searchHistory).omit(
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertUserStudyInteractionSchema = createInsertSchema(userStudyInteractions).omit({ createdAt: true });
 export const insertUserBlogInteractionSchema = createInsertSchema(userBlogInteractions).omit({ createdAt: true });
+export const insertEducationalResourceSchema = createInsertSchema(educationalResources).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export const insertGlossaryTermSchema = createInsertSchema(glossaryTerms).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertFaqItemSchema = createInsertSchema(faqItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertStudyCollectionSchema = createInsertSchema(studyCollections).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCollectionStudySchema = createInsertSchema(collectionStudies).omit({ addedAt: true });
 
 // Types for insertion
 export type InsertStudy = z.infer<typeof insertStudySchema>;
@@ -283,6 +288,11 @@ export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type InsertUserStudyInteraction = z.infer<typeof insertUserStudyInteractionSchema>;
 export type InsertUserBlogInteraction = z.infer<typeof insertUserBlogInteractionSchema>;
+export type InsertEducationalResource = z.infer<typeof insertEducationalResourceSchema>;
+export type InsertGlossaryTerm = z.infer<typeof insertGlossaryTermSchema>;
+export type InsertFaqItem = z.infer<typeof insertFaqItemSchema>;
+export type InsertStudyCollection = z.infer<typeof insertStudyCollectionSchema>;
+export type InsertCollectionStudy = z.infer<typeof insertCollectionStudySchema>;
 
 // Types for selection
 export type Study = typeof studies.$inferSelect;
@@ -295,3 +305,8 @@ export type SearchHistory = typeof searchHistory.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type UserStudyInteraction = typeof userStudyInteractions.$inferSelect;
 export type UserBlogInteraction = typeof userBlogInteractions.$inferSelect;
+export type EducationalResource = typeof educationalResources.$inferSelect;
+export type GlossaryTerm = typeof glossaryTerms.$inferSelect;
+export type FaqItem = typeof faqItems.$inferSelect;
+export type StudyCollection = typeof studyCollections.$inferSelect;
+export type CollectionStudy = typeof collectionStudies.$inferSelect;

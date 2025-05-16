@@ -3,7 +3,15 @@ import { createServer, type Server } from "http";
 import * as fs from "fs";
 import * as path from "path";
 import { storage } from "./storage";
-import { insertNewsletterSchema, insertStudySchema, insertCategorySchema, insertContactSchema, blogArticles, insertBlogArticleSchema } from "@shared/schema";
+import { 
+  insertNewsletterSchema, 
+  insertStudySchema, 
+  insertCategorySchema, 
+  insertContactSchema, 
+  blogArticles, 
+  insertBlogArticleSchema,
+  studies 
+} from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
@@ -12,6 +20,8 @@ import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy
 import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
+import educationalRoutes from "./routes/educational";
+import { generateStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
