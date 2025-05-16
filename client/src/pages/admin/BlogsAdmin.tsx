@@ -109,6 +109,7 @@ export default function BlogsAdmin() {
       case "elon_simple": return "Elon Overview";
       case "elon_benefits": return "Elon Benefits";
       case "elon_future": return "Elon Future";
+      case "elon_faq": return "Elon FAQ";
       default: return type || "Standard";
     }
   };
@@ -118,7 +119,13 @@ export default function BlogsAdmin() {
     if (!type) return "bg-blue-100 text-blue-700";
     
     if (type.startsWith("elon_")) {
-      return "bg-purple-100 text-purple-700";
+      switch (type) {
+        case "elon_simple": return "bg-purple-100 text-purple-700";
+        case "elon_benefits": return "bg-fuchsia-100 text-fuchsia-700";
+        case "elon_future": return "bg-violet-100 text-violet-700";
+        case "elon_faq": return "bg-pink-100 text-pink-700";
+        default: return "bg-purple-100 text-purple-700";
+      }
     }
     
     switch (type) {
@@ -216,6 +223,11 @@ export default function BlogsAdmin() {
                           <div>
                             <p className="font-medium text-foreground">{blog.title}</p>
                             <p className="text-xs text-muted-foreground max-w-[300px] truncate">{blog.summary}</p>
+                            {blog.editorNotes && (
+                              <div className="mt-1 text-xs bg-amber-50 border border-amber-200 p-1 rounded text-amber-700">
+                                <span className="font-semibold">Editor Notes:</span> {truncateText(blog.editorNotes, 100)}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="p-3">

@@ -121,6 +121,33 @@ async function generateSingleBlogArticle(study: Study, articleType: string): Pro
     // 4. Generate an image for the article
     const { imageUrl, imageAlt } = await generateArticleImage(study, blogTitle, articleType);
     
+    // Generate appropriate editor notes based on article type
+    let editorNotes = "AI-generated content. Please review before publishing.";
+    
+    if (articleType.startsWith("elon_")) {
+      editorNotes += " This is an Elon Musk style article written at a 6th grade reading level."
+      
+      if (articleType === "elon_simple") {
+        editorNotes += " Overview article focusing on making research accessible.";
+      } else if (articleType === "elon_benefits") {
+        editorNotes += " Focuses on practical benefits and applications of the research.";
+      } else if (articleType === "elon_future") {
+        editorNotes += " Discusses future implications and potential of the research.";
+      } else if (articleType === "elon_faq") {
+        editorNotes += " FAQ format addressing common questions about the research.";
+      }
+    } else {
+      editorNotes += " This is a standard scientific article written at a 6th grade reading level."
+      
+      if (articleType === "overview") {
+        editorNotes += " General overview of the research findings.";
+      } else if (articleType === "practical_application") {
+        editorNotes += " Focuses on real-world applications of the research.";
+      } else if (articleType === "comparison") {
+        editorNotes += " Compares hydrogen approaches with conventional treatments.";
+      }
+    }
+    
     // 5. Create the blog article object
     const blogArticle: InsertBlogArticle = {
       studyId: study.id,
@@ -133,7 +160,7 @@ async function generateSingleBlogArticle(study: Study, articleType: string): Pro
       readingLevel: "general",
       articleType: articleType,
       isPublished: false,
-      editorNotes: "AI-generated content. Please review before publishing."
+      editorNotes: editorNotes
     };
     
     return blogArticle;
