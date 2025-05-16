@@ -57,6 +57,7 @@ export interface IStorage {
   // Studies operations
   getStudies(filters: StudyFilters): Promise<Study[]>;
   getStudyById(id: number): Promise<Study | undefined>;
+  getStudyByIdentifier(identifier: string): Promise<Study | undefined>;
   getLatestStudies(limit?: number): Promise<Study[]>;
   createStudy(study: InsertStudy): Promise<Study>;
   updateStudy(id: number, study: Partial<InsertStudy>): Promise<Study>;
@@ -260,6 +261,29 @@ export class MemStorage implements IStorage {
 
   async getStudyById(id: number): Promise<Study | undefined> {
     return this.studiesData.get(id);
+  }
+  
+  async getStudyByIdentifier(identifier: string): Promise<Study | undefined> {
+    // Look for study with matching DOI or PMID
+    const normalizedIdentifier = identifier.trim().toLowerCase();
+    for (const study of this.studiesData.values()) {
+      // Check DOI
+      if (study.doi && study.doi.toLowerCase() === normalizedIdentifier) {
+        return study;
+      }
+      
+      // Check PMID
+      if (study.pmid && study.pmid.toLowerCase() === normalizedIdentifier) {
+        return study;
+      }
+      
+      // Check PMCID
+      if (study.pmcid && study.pmcid.toLowerCase() === normalizedIdentifier) {
+        return study;
+      }
+    }
+    
+    return undefined;
   }
 
   async getLatestStudies(limit: number = 3): Promise<Study[]> {

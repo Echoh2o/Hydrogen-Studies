@@ -22,6 +22,7 @@ import NotFound from "@/pages/not-found";
 import AdminPage from "@/pages/admin/AdminPage";
 import ImportPage from "@/pages/admin/ImportPage";
 import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
+import EuropePmcPage from "@/pages/admin/EuropePmcPage";
 import BlogPage from "@/pages/BlogPage";
 
 function ScrollToTop() {
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/admin" component={AdminPage} />
       <Route path="/admin/import" component={ImportPage} />
       <Route path="/admin/articles" component={ArticleSearchPage} />
+      <Route path="/admin/europepmc" component={EuropePmcPage} />
       <Route component={NotFound} />
     </Switch>
   );

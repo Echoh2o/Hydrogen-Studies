@@ -5,7 +5,7 @@
 import axios from 'axios';
 import { InsertStudy } from '@shared/schema';
 
-const BASE_URL = 'https://www.ebi.ac.uk/europepmc/webservices/rest';
+const EUROPEPMC_API_BASE = 'https://www.ebi.ac.uk/europepmc/webservices/rest';
 
 /**
  * Search Europe PMC for articles
@@ -14,21 +14,35 @@ const BASE_URL = 'https://www.ebi.ac.uk/europepmc/webservices/rest';
  * @param pageSize Number of results per page
  * @returns Search results
  */
-export async function searchEuropePMC(query: string, page: number = 1, pageSize: number = 10): Promise<any> {
+export async function searchEuropePMC(
+  query: string, 
+  page: number = 1, 
+  pageSize: number = 10, 
+  sortBy: string = 'relevance'
+): Promise<any> {
   try {
-    const response = await axios.get(`${BASE_URL}/search`, {
+    // Convert sortBy to Europe PMC format
+    let sort = 'RELEVANCE';
+    if (sortBy === 'date') sort = 'DATE';
+    else if (sortBy === 'cited') sort = 'CITED';
+    
+    const url = `${EUROPEPMC_API_BASE}/search`;
+    const response = await axios.get(url, {
       params: {
         query,
+        resultType: 'core',
         format: 'json',
+        cursorMark: '*',
         pageSize,
-        page
+        page,
+        sort
       }
     });
     
-    return response.data;
+    return response.data.resultList;
   } catch (error) {
     console.error('Error searching Europe PMC:', error);
-    throw error;
+    throw new Error('Failed to search Europe PMC');
   }
 }
 
@@ -39,26 +53,26 @@ export async function searchEuropePMC(query: string, page: number = 1, pageSize:
  */
 export async function getEuropePMCArticle(id: string): Promise<any> {
   try {
-    // Determine ID type
-    let idType = 'ext_id';
+    // Determine the source type
+    let source = 'MED';
     if (id.startsWith('PMC')) {
-      idType = 'PMCID';
-    } else if (!isNaN(Number(id))) {
-      idType = 'PMID';
+      source = 'PMC';
     } else if (id.includes('/')) {
-      idType = 'DOI';
+      source = 'DOI';
     }
     
-    const response = await axios.get(`${BASE_URL}/article/${idType}/${id}`, {
+    const url = `${EUROPEPMC_API_BASE}/${source}/${id}`;
+    const response = await axios.get(url, {
       params: {
-        format: 'json'
+        format: 'json',
+        resultType: 'core'
       }
     });
     
-    return response.data;
+    return response.data.resultList.result[0];
   } catch (error) {
-    console.error(`Error fetching Europe PMC article ${id}:`, error);
-    throw error;
+    console.error('Error fetching article from Europe PMC:', error);
+    throw new Error('Failed to fetch article from Europe PMC');
   }
 }
 
@@ -68,84 +82,115 @@ export async function getEuropePMCArticle(id: string): Promise<any> {
  * @returns Formatted study data for insertion
  */
 export function extractStudyFromEuropePMC(articleData: any): InsertStudy | null {
+  if (!articleData) return null;
+  
   try {
-    if (!articleData || !articleData.result) {
-      return null;
-    }
+    // Format authors
+    const authors = articleData.authorString || 'Unknown Authors';
     
-    const article = articleData.result;
+    // Format publication date
+    const publishDate = formatEuropePMCDate(
+      articleData.journalInfo?.dateOfPublication ||
+      `${articleData.pubYear || new Date().getFullYear()} Jan 01`
+    );
     
-    // Extract basic fields
-    const title = article.title || '';
+    // Determine if peer reviewed
+    const isPeerReviewed = 
+      articleData.pubTypeList?.pubType?.some((type: string) => 
+        type.toLowerCase().includes('journal article')
+      ) || false;
     
-    // Extract authors
-    let authors = '';
-    if (article.authorList && article.authorList.author && article.authorList.author.length > 0) {
-      authors = article.authorList.author.map((author: any) => 
-        `${author.firstName || ''} ${author.lastName || ''}`
-      ).join(', ');
-    }
+    // Extract identifiers
+    const doi = articleData.doi || '';
+    const pmid = articleData.pmid || '';
+    const pmcid = articleData.pmcid || '';
     
-    // Extract abstract
-    let abstract = '';
-    if (article.abstractText) {
-      abstract = article.abstractText;
-    }
-    
-    // Extract journal info
-    const journal = article.journalInfo?.journal?.title || '';
-    
-    // Extract publication date
-    let publishDate = '';
-    if (article.journalInfo?.dateOfPublication) {
-      const pubDateStr = article.journalInfo.dateOfPublication;
-      publishDate = formatEuropePMCDate(pubDateStr);
-    }
-    
-    // Extract DOI if available
-    const doi = article.doi || '';
-    
-    // Extract PDF URL if available
+    // Create base URL for PDF and citation if available
     let pdfUrl = '';
-    if (article.fullTextUrlList && article.fullTextUrlList.fullTextUrl) {
-      const pdfLink = article.fullTextUrlList.fullTextUrl.find(
+    let citationUrl = '';
+    
+    if (pmid) {
+      pdfUrl = `https://www.ncbi.nlm.nih.gov/pubmed/${pmid}`;
+      citationUrl = `https://www.ncbi.nlm.nih.gov/pubmed/${pmid}`;
+    } else if (pmcid) {
+      pdfUrl = `https://www.ncbi.nlm.nih.gov/pmc/articles/${pmcid}/pdf/`;
+      citationUrl = `https://www.ncbi.nlm.nih.gov/pmc/articles/${pmcid}/`;
+    } else if (doi) {
+      pdfUrl = `https://doi.org/${doi}`;
+      citationUrl = `https://doi.org/${doi}`;
+    }
+    
+    // If fullTextUrlList is available, prioritize it for PDF URL
+    if (articleData.fullTextUrlList?.fullTextUrl) {
+      const pdfLinks = articleData.fullTextUrlList.fullTextUrl.filter(
         (url: any) => url.documentStyle === 'pdf'
       );
-      if (pdfLink) {
-        pdfUrl = pdfLink.url;
+      
+      if (pdfLinks.length > 0) {
+        pdfUrl = pdfLinks[0].url;
       }
     }
     
-    // Determine if peer-reviewed (most journal articles in Europe PMC are peer-reviewed)
-    // This is an assumption; more accurate determination would require additional data
-    const isPeerReviewed = article.pubTypeList?.pubType?.some(
-      (type: string) => !type.toLowerCase().includes('preprint')
-    ) ?? true;
+    // Extract journal information
+    const journal = articleData.journalInfo?.journal?.title || 
+                   articleData.journalTitle || 
+                   'Unknown Journal';
     
-    // Create study object
+    // Default to "Inflammation" category for hydrogen studies
+    // This can be refined with more specific logic later
+    const category = "Inflammation";
+    
     const study: InsertStudy = {
-      title,
+      title: articleData.title || 'Untitled Study',
+      abstract: articleData.abstractText || '',
       authors,
-      abstract,
       journal,
       publishDate,
-      doi,
-      pdfUrl,
       peerReviewed: isPeerReviewed,
-      category: 'Hydrogen Research',
-      sourcePlatform: 'Europe PMC API'
+      doi,
+      pmid,
+      pmcid,
+      pdfUrl,
+      citationUrl,
+      category,
+      // Additional fields with default values
+      methods: null,
+      results: null,
+      conclusion: null,
+      keywords: articleData.keywordList?.keyword || [],
+      imageUrl: null,
+      imageAlt: null,
+      featured: false,
+      sourcePlatform: 'EuropePMC',
+      // Hydrogen-specific fields
+      hydrogenAdministration: null,
+      dosingRegimen: null,
+      healthCondition: null,
+      bodySystem: null,
+      hasPositiveEffect: null,
+      hasNegativeEffect: null,
+      hasNeutralEffect: null,
+      firstAuthor: extractFirstAuthor(authors),
+      lastAuthor: extractLastAuthor(authors),
+      otherAuthors: extractOtherAuthors(authors),
+      region: null,
+      country: null,
+      pH: null,
+      concentration: null,
+      duration: null,
+      primaryTopic: null,
+      secondaryTopic: null,
+      tertiaryTopic: null,
+      vehicleType: null,
+      applicationMethod: null,
+      comparisonGroup: null,
+      complementaryTherapy: null,
+      studyModel: null
     };
-    
-    // Extract methods, results, and conclusions if available
-    if (article.fullTextXML) {
-      // If full text XML is available, we could parse it to extract sections
-      // This would require XML parsing, which is more complex
-      // For now, we'll leave these fields empty
-    }
     
     return study;
   } catch (error) {
-    console.error('Error extracting Europe PMC study data:', error);
+    console.error('Error extracting study from Europe PMC data:', error);
     return null;
   }
 }
@@ -157,38 +202,17 @@ export function extractStudyFromEuropePMC(articleData: any): InsertStudy | null 
  */
 function formatEuropePMCDate(dateStr: string): string {
   try {
-    // Handle various date formats from Europe PMC
-    let year, month, day;
+    // Common formats: "2022 Jan 01" or "2022" or "2022 Jan"
+    const parts = dateStr.trim().split(' ');
+    const year = parts[0];
+    const month = parts.length > 1 ? getMonthNumber(parts[1]) : '01';
+    const day = parts.length > 2 ? parts[2].padStart(2, '0') : '01';
     
-    // Format: YYYY MMM DD or YYYY-MM-DD or YYYY
-    const parts = dateStr.split(/[\s-]+/);
-    
-    if (parts.length === 1) {
-      // Just year
-      year = parts[0];
-      return `${year}-01-01`;
-    } else if (parts.length === 2) {
-      // Year and month
-      year = parts[0];
-      month = getMonthNumber(parts[1]);
-      return `${year}-${month}-01`;
-    } else {
-      // Full date
-      year = parts[0];
-      
-      // Check if second part is a month name or a month number
-      if (isNaN(Number(parts[1]))) {
-        month = getMonthNumber(parts[1]);
-      } else {
-        month = parts[1].padStart(2, '0');
-      }
-      
-      day = parts[2].padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
+    return `${year}-${month}-${day}`;
   } catch (error) {
     console.error('Error formatting date:', error);
-    return new Date().toISOString().split('T')[0]; // Default to today's date
+    // Return current date if parsing fails
+    return new Date().toISOString().split('T')[0];
   }
 }
 
@@ -199,20 +223,72 @@ function formatEuropePMCDate(dateStr: string): string {
  */
 function getMonthNumber(monthName: string): string {
   const months: Record<string, string> = {
-    'jan': '01', 'january': '01',
-    'feb': '02', 'february': '02',
-    'mar': '03', 'march': '03',
-    'apr': '04', 'april': '04',
-    'may': '05',
-    'jun': '06', 'june': '06',
-    'jul': '07', 'july': '07',
-    'aug': '08', 'august': '08',
-    'sep': '09', 'september': '09',
-    'oct': '10', 'october': '10',
-    'nov': '11', 'november': '11',
-    'dec': '12', 'december': '12'
+    'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+    'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+    'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
   };
   
-  const key = monthName.toLowerCase().substring(0, 3);
-  return months[key] || '01';
+  const shortName = monthName.toLowerCase().substring(0, 3);
+  return months[shortName] || '01';
+}
+
+/**
+ * Extract the first author from the authors string
+ */
+function extractFirstAuthor(authors: string): string {
+  if (!authors) return '';
+  
+  // Handle comma-separated author lists
+  if (authors.includes(',')) {
+    return authors.split(',')[0].trim();
+  }
+  
+  // Handle "et al." format
+  if (authors.includes('et al.')) {
+    return authors.split('et al.')[0].trim();
+  }
+  
+  return authors;
+}
+
+/**
+ * Extract the last author from the authors string
+ */
+function extractLastAuthor(authors: string): string {
+  if (!authors) return '';
+  
+  // Handle comma-separated author lists
+  if (authors.includes(',')) {
+    const authorList = authors.split(',');
+    return authorList[authorList.length - 1].trim();
+  }
+  
+  // For "et al." format, we don't know the last author
+  return '';
+}
+
+/**
+ * Extract other authors (excluding first and last) from the authors string
+ */
+function extractOtherAuthors(authors: string): string {
+  if (!authors) return '';
+  
+  // Handle comma-separated author lists
+  if (authors.includes(',')) {
+    const authorList = authors.split(',');
+    if (authorList.length <= 2) return '';
+    
+    // Remove first and last authors
+    authorList.shift();
+    authorList.pop();
+    
+    return authorList.join(',').trim();
+  }
+  
+  // For "et al." format, we represent other authors as "et al."
+  if (authors.includes('et al.')) {
+    return 'et al.';
+  }
+  
+  return '';
 }
