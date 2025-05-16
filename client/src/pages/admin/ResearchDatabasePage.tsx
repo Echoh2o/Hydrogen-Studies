@@ -53,7 +53,12 @@ import {
   Clock, 
   AlertCircle, 
   CheckCircle2,
-  FileDown 
+  FileDown,
+  Upload,
+  FileSpreadsheet,
+  Table as TableIcon,
+  FilePlus2,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -231,10 +236,14 @@ export default function ResearchDatabasePage() {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="search">
             <Search className="mr-2 h-4 w-4" />
             Search
+          </TabsTrigger>
+          <TabsTrigger value="excel">
+            <FileDown className="mr-2 h-4 w-4" />
+            Excel Import
           </TabsTrigger>
           <TabsTrigger value="scheduled">
             <Clock className="mr-2 h-4 w-4" />
@@ -462,6 +471,168 @@ export default function ResearchDatabasePage() {
           ) : null}
         </TabsContent>
         
+        <TabsContent value="excel">
+          <Card>
+            <CardHeader>
+              <CardTitle>Excel & Spreadsheet Import</CardTitle>
+              <CardDescription>
+                Import hydrogen studies from Excel, CSV, or Google Sheets
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="flex flex-col space-y-4 border rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <FileSpreadsheet className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-medium">Upload Excel File</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Upload Excel (.xlsx) or CSV files containing research data
+                  </p>
+                  <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <Label htmlFor="file-upload">File</Label>
+                    <Input
+                      id="file-upload"
+                      type="file"
+                      accept=".xlsx,.csv"
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Max file size: 10MB
+                    </p>
+                  </div>
+                  <Button className="w-full mt-2">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload & Analyze
+                  </Button>
+                </div>
+
+                <div className="flex flex-col space-y-4 border rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <TableIcon className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-medium">Google Sheets Import</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Import studies directly from a Google Sheets document
+                  </p>
+                  <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <Label htmlFor="sheets-url">Google Sheets URL</Label>
+                    <Input
+                      id="sheets-url"
+                      type="url"
+                      placeholder="https://docs.google.com/spreadsheets/d/..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Spreadsheet must be publicly accessible or shared
+                    </p>
+                  </div>
+                  <Button className="w-full mt-2">
+                    <TableIcon className="mr-2 h-4 w-4" />
+                    Connect & Import
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center space-x-2">
+                  <FilePlus2 className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-medium">Column Mapping & Advanced Options</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Configure how your spreadsheet data maps to study fields
+                </p>
+                
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label className="text-sm">Required Fields</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="flex items-center space-x-2 text-sm">
+                        <span className="font-medium">Title</span>
+                        <Select defaultValue="title">
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Map to column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="title">Title</SelectItem>
+                            <SelectItem value="study_title">Study Title</SelectItem>
+                            <SelectItem value="paper_title">Paper Title</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm">
+                        <span className="font-medium">Authors</span>
+                        <Select defaultValue="authors">
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Map to column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="authors">Authors</SelectItem>
+                            <SelectItem value="researcher">Researcher</SelectItem>
+                            <SelectItem value="author_list">Author List</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm">Optional Fields</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="flex items-center space-x-2 text-sm">
+                        <span className="font-medium">DOI</span>
+                        <Select defaultValue="doi">
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Map to column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="doi">DOI</SelectItem>
+                            <SelectItem value="digital_id">Digital ID</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm">
+                        <span className="font-medium">PMID</span>
+                        <Select defaultValue="pmid">
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Map to column" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pmid">PMID</SelectItem>
+                            <SelectItem value="pubmed_id">PubMed ID</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-4 mt-4">
+                  <Checkbox id="auto-enrich" />
+                  <div className="grid gap-1.5 leading-none">
+                    <Label
+                      htmlFor="auto-enrich"
+                      className="text-sm font-medium leading-none"
+                    >
+                      Auto-enrich from multiple sources
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically fetch missing study data from PubMed, Europe PMC, and other sources
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2 mt-4">
+                  <Button variant="outline">Reset</Button>
+                  <Button>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Update Mapping
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         <TabsContent value="scheduled">
           <Card>
             <CardHeader>
@@ -491,12 +662,149 @@ export default function ResearchDatabasePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Recently Imported Studies</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  This tab will show a list of studies recently imported from various research databases.
-                </p>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-2">
+                    <Select defaultValue="all">
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        <SelectItem value="pubmed">PubMed</SelectItem>
+                        <SelectItem value="europepmc">Europe PMC</SelectItem>
+                        <SelectItem value="semanticscholar">Semantic Scholar</SelectItem>
+                        <SelectItem value="crossref">CrossRef</SelectItem>
+                        <SelectItem value="excel">Excel Import</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select defaultValue="recent">
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="recent">Most Recent</SelectItem>
+                        <SelectItem value="title">Title (A-Z)</SelectItem>
+                        <SelectItem value="date">Publication Date</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh
+                  </Button>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40%]">Title</TableHead>
+                      <TableHead className="w-[20%]">Authors</TableHead>
+                      <TableHead className="w-[15%]">Source</TableHead>
+                      <TableHead className="w-[15%]">Imported Date</TableHead>
+                      <TableHead className="w-[10%]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        Hydrogen-rich saline alleviates early brain injury via reducing oxidative stress and brain edema
+                      </TableCell>
+                      <TableCell>Wang C, Li J, Liu Q, et al.</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">PubMed</Badge>
+                      </TableCell>
+                      <TableCell>5 min ago</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <BookOpen className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        Molecular hydrogen reduces LPS-induced neuroinflammation
+                      </TableCell>
+                      <TableCell>Chen H, Xie K, Han H</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">CrossRef</Badge>
+                      </TableCell>
+                      <TableCell>10 min ago</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <BookOpen className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        Hydrogen as a novel therapeutic agent in Cerebral Vascular Disease
+                      </TableCell>
+                      <TableCell>Yang M, Dong Y, He Q, et al.</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Excel Import</Badge>
+                      </TableCell>
+                      <TableCell>25 min ago</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <BookOpen className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+                
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Showing 3 of 48 recent imports
+                  </div>
+                  <div className="flex">
+                    <Button variant="outline" size="sm" disabled>
+                      Previous
+                    </Button>
+                    <Button variant="outline" size="sm" className="ml-2">
+                      Next
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="mt-6 border rounded-lg p-4">
+                  <div className="flex items-center space-x-2">
+                    <RefreshCw className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-medium">Multi-Source Enrichment</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Enhance existing studies by pulling in missing data from all available research databases
+                  </p>
+                  
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="enrich-pubmed" defaultChecked />
+                      <Label htmlFor="enrich-pubmed">PubMed</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="enrich-europepmc" defaultChecked />
+                      <Label htmlFor="enrich-europepmc">Europe PMC</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="enrich-semantic" defaultChecked />
+                      <Label htmlFor="enrich-semantic">Semantic Scholar</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="enrich-crossref" defaultChecked />
+                      <Label htmlFor="enrich-crossref">CrossRef</Label>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <Button className="w-full">
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Start Multi-Source Enrichment
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
