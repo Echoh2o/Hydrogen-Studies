@@ -56,7 +56,7 @@ const EuropePmcSearch: React.FC = () => {
     error,
     refetch 
   } = useQuery({
-    queryKey: ['/api/europepmc/search', searchQuery, currentPage, pageSize, sortBy],
+    queryKey: [`/api/europepmc/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}${sortBy ? `&sortBy=${sortBy}` : ''}`],
     enabled: searchQuery.length > 0,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
@@ -65,7 +65,11 @@ const EuropePmcSearch: React.FC = () => {
     data: articleDetails, 
     isLoading: isLoadingDetails 
   } = useQuery({
-    queryKey: ['/api/europepmc/article', selectedArticle?.id, selectedArticle?.source],
+    queryKey: [
+      selectedArticle ? 
+        `/api/europepmc/article?id=${selectedArticle.id}${selectedArticle.source ? `&source=${selectedArticle.source}` : ''}` 
+        : '/api/europepmc/article'
+    ],
     enabled: !!selectedArticle,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
