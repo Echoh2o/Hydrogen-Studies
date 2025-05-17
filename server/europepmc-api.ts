@@ -16,9 +16,9 @@ export async function searchEuropePMC(
   try {
     console.log(`Searching EuropePMC for: "${query}", page ${page}, size ${pageSize}`);
     
-    // Use the original query without enhancement to avoid overly restrictive results
-    // This helps ensure we're getting results from this source
-    const enhancedQuery = query;
+    // For consistent results, we'll use a simple hydrogen-specific terms approach
+    // but make it much less restrictive than before
+    const enhancedQuery = `${query} AND hydrogen`;
     
     console.log(`Sending request to EuropePMC with query: ${enhancedQuery}`);
     
