@@ -1695,33 +1695,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Validate that the query is about hydrogen health research
-      const validation = await validateQuery(query);
-      if (!validation.isValid) {
-        return res.status(400).json({
-          success: false,
-          message: 'Your question does not appear to be related to hydrogen health and wellness. Please ask a question about health applications of hydrogen like hydrogen water, inhalation therapy, or hydrogen baths. We don\'t provide information about hydrogen energy, fuel cells, or industrial applications.',
-          reason: validation.reason
+      try {
+        // Validate that the query is about hydrogen health research
+        const validation = await validateQuery(query);
+        if (!validation.isValid) {
+          return res.status(400).json({
+            success: false,
+            message: 'Your question does not appear to be related to hydrogen health and wellness. Please ask a question about health applications of hydrogen like hydrogen water, inhalation therapy, or hydrogen baths. We don\'t provide information about hydrogen energy, fuel cells, or industrial applications.',
+            reason: validation.reason
+          });
+        }
+        
+        // Get conversation history if conversation ID is provided
+        let conversationHistory = [];
+        if (conversationId) {
+          conversationHistory = await getConversationHistory(conversationId);
+        }
+        
+        // Generate and return chat response with conversation context
+        const response = await generateChatResponse(
+          query,
+          conversationId,
+          userId
+        );
+        
+        res.json({
+          success: true,
+          data: response
+        });
+      } catch (apiError) {
+        console.error('API Error in chat processing:', apiError);
+        
+        // Fallback response with Echo Water product recommendations for health-related queries
+        const lowerQuery = query.toLowerCase();
+        
+        // Simple keyword detection to provide relevant products when AI service is unavailable
+        let productRecommendations = [];
+        
+        if (lowerQuery.includes('skin') || lowerQuery.includes('derma') || lowerQuery.includes('psoriasis') || 
+            lowerQuery.includes('eczema') || lowerQuery.includes('acne')) {
+          // Recommend bath system for skin conditions
+          productRecommendations = [{
+            name: "Echo H2 Bath System",
+            description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
+            url: "https://echowater.com/products/echo-h2-bath",
+            imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg"
+          }];
+        } else if (lowerQuery.includes('breath') || lowerQuery.includes('lung') || lowerQuery.includes('inhal') || 
+                  lowerQuery.includes('respiratory') || lowerQuery.includes('asthma')) {
+          // Recommend inhaler for respiratory conditions
+          productRecommendations = [{
+            name: "Echo H2 Inhaler",
+            description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
+            url: "https://echowater.com/products/echo-h2-inhaler",
+            imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg"
+          }];
+        } else if (lowerQuery.includes('travel') || lowerQuery.includes('portable') || lowerQuery.includes('tablet')) {
+          // Recommend tablet maker for portable use
+          productRecommendations = [{
+            name: "Echo H2 Tablet Maker",
+            description: "Convenient and portable hydrogen tablet maker for creating hydrogen-rich water on the go",
+            url: "https://echowater.com/products/echo-h2-tablets-1",
+            imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg"
+          }];
+        } else {
+          // Default to water machine for general queries
+          productRecommendations = [{
+            name: "Echo H2 Machine",
+            description: "Premium hydrogen water generator with advanced PEM technology for maximum hydrogen concentration",
+            url: "https://echowater.com/products/echo-h2-machine",
+            imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg"
+          }];
+        }
+        
+        res.json({
+          success: true,
+          data: {
+            answer: "I'm sorry, but I'm having trouble accessing my knowledge base at the moment. Your question about hydrogen health appears to be related to " + 
+                   (lowerQuery.includes('skin') ? "skin health and topical applications." : 
+                    lowerQuery.includes('breath') ? "respiratory health and breathing applications." : 
+                    lowerQuery.includes('travel') ? "portable hydrogen therapy solutions." : 
+                    "general hydrogen health applications.") + 
+                   " While I work to resolve this issue, I've included some product recommendations that might be helpful for your specific needs.",
+            sources: [],
+            relatedQuestions: [
+              "What are the benefits of hydrogen water for inflammation?",
+              "How does molecular hydrogen help with oxidative stress?",
+              "What conditions can hydrogen therapy help with?",
+              "How often should I use hydrogen therapy for best results?"
+            ],
+            conversationId,
+            productRecommendations
+          }
         });
       }
-      
-      // Get conversation history if conversation ID is provided
-      let conversationHistory = [];
-      if (conversationId) {
-        conversationHistory = await getConversationHistory(conversationId);
-      }
-      
-      // Generate and return chat response with conversation context
-      const response = await generateChatResponse(
-        query,
-        conversationId,
-        userId
-      );
-      
-      res.json({
-        success: true,
-        data: response
-      });
     } catch (error) {
       console.error('Error in chat endpoint:', error);
       res.status(500).json({
