@@ -389,6 +389,20 @@ export const ChatWidget: React.FC = () => {
                     <Button 
                       variant="outline" 
                       className="justify-start" 
+                      onClick={() => setInput("Can hydrogen baths improve skin conditions?")}
+                    >
+                      Can hydrogen baths improve skin conditions?
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start" 
+                      onClick={() => setInput("What's the scientific evidence for hydrogen therapy in athletic recovery?")}
+                    >
+                      What's the scientific evidence for hydrogen therapy in athletic recovery?
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start" 
                       onClick={() => setInput("Is hydrogen-enriched bath water beneficial for skin conditions?")}
                     >
                       Is hydrogen-enriched bath water beneficial for skin conditions?
