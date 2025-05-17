@@ -121,7 +121,234 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
 });
 
 /**
- * Import a paper from any of the supported research databases
+ * Add a paper to the review queue from any of the supported research databases
+ * This implements the first tier of the two-tier review system
+ */
+router.post('/api/research/review-queue', async (req: Request, res: Response) => {
+  try {
+    const { source, userId, ...paperData } = req.body;
+    
+    if (!source) {
+      return res.status(400).json({ error: 'Source is required' });
+    }
+    
+    // Create an external ID based on source and paper ID
+    let externalId = '';
+    let doi = '';
+    
+    // Extract ID and DOI based on source
+    if (source === 'pubmed' && paperData.pmid) {
+      externalId = `pubmed:${paperData.pmid}`;
+      doi = paperData.doi || '';
+    } else if (source === 'europepmc' && paperData.id) {
+      externalId = `europepmc:${paperData.id}`;
+      doi = paperData.doi || '';
+    } else if (source === 'semanticscholar' && paperData.paperId) {
+      externalId = `semanticscholar:${paperData.paperId}`;
+      doi = paperData.doi || '';
+    } else if (source === 'crossref' && paperData.DOI) {
+      externalId = `crossref:${paperData.DOI}`;
+      doi = paperData.DOI || '';
+    } else {
+      return res.status(400).json({ error: 'Missing required identifier for this source' });
+    }
+    
+    // Check for duplicate DOI in existing studies
+    if (doi) {
+      const duplicateCheck = await storage.checkStudyExists(doi);
+      if (duplicateCheck.exists) {
+        return res.status(409).json({
+          success: false,
+          isDuplicate: true,
+          message: 'This study already exists in the database',
+          studyId: duplicateCheck.studyId
+        });
+      }
+    }
+    
+    // Extract study data based on source
+    let studyData;
+    switch (source.toLowerCase()) {
+      case 'pubmed':
+        studyData = await extractStudyFromPubMed(paperData);
+        break;
+      case 'europepmc':
+        studyData = extractStudyFromEuropePMC(paperData);
+        break;
+      case 'semanticscholar':
+        studyData = extractStudyFromSemanticScholar(paperData);
+        break;
+      case 'crossref':
+        studyData = extractStudyFromCrossRef(paperData);
+        break;
+      default:
+        return res.status(400).json({ error: 'Unsupported source' });
+    }
+    
+    if (!studyData) {
+      return res.status(404).json({ error: 'Failed to extract study data from paper' });
+    }
+    
+    // Create review queue item
+    const reviewItem = {
+      externalId,
+      doi,
+      title: studyData.title,
+      abstract: studyData.abstract,
+      authors: studyData.authors,
+      journal: studyData.journal,
+      publishDate: studyData.publishDate,
+      journalPublishDate: studyData.journalPublishDate || null,
+      category: studyData.category,
+      sourceUrl: studyData.sourceUrl || '',
+      sourcePlatform: source.toLowerCase(),
+      status: 'pending',
+      savedByUserId: userId || null,
+      // Store additional data as JSON in reviewNotes for later use when approving
+      reviewNotes: JSON.stringify({ 
+        originalData: paperData,
+        extractedStudy: studyData
+      })
+    };
+    
+    // Save to review queue
+    const savedReviewItem = await storage.saveStudyForReview(reviewItem);
+    
+    res.json({
+      success: true,
+      message: 'Study added to review queue successfully',
+      reviewItem: savedReviewItem
+    });
+  } catch (error: any) {
+    console.error('Error adding paper to review queue:', error);
+    res.status(500).json({ error: error.message || 'Failed to add paper to review queue' });
+  }
+});
+
+/**
+ * Get items from the study review queue
+ */
+router.get('/api/research/review-queue', async (req: Request, res: Response) => {
+  try {
+    const { status, userId } = req.query;
+    
+    const filters: {status?: string, userId?: string} = {};
+    if (status && typeof status === 'string') {
+      filters.status = status;
+    }
+    if (userId && typeof userId === 'string') {
+      filters.userId = userId;
+    }
+    
+    const reviewItems = await storage.getStudyReviewQueue(filters);
+    
+    res.json({
+      success: true,
+      data: reviewItems
+    });
+  } catch (error: any) {
+    console.error('Error fetching review queue:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch review queue' });
+  }
+});
+
+/**
+ * Update the status of a study in the review queue (approve or reject)
+ * This implements the second tier of the two-tier review system
+ */
+router.put('/api/research/review-queue/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, userId, notes } = req.body;
+    
+    if (!id || !status || !userId) {
+      return res.status(400).json({ error: 'ID, status, and userId are required' });
+    }
+    
+    if (status !== 'approved' && status !== 'rejected') {
+      return res.status(400).json({ error: 'Status must be either "approved" or "rejected"' });
+    }
+    
+    // Get the review item
+    const reviewItem = await storage.getStudyReviewQueueById(parseInt(id));
+    if (!reviewItem) {
+      return res.status(404).json({ error: 'Review item not found' });
+    }
+    
+    // Update the review status
+    const updatedItem = await storage.updateStudyReviewStatus(
+      parseInt(id),
+      status,
+      userId,
+      notes
+    );
+    
+    // If approved, create the actual study
+    if (status === 'approved') {
+      try {
+        // Parse the stored study data from reviewNotes
+        const storedData = JSON.parse(reviewItem.reviewNotes || '{}');
+        const studyData = storedData.extractedStudy;
+        
+        if (!studyData) {
+          return res.status(400).json({ error: 'No valid study data found in review item' });
+        }
+        
+        // Save the study to the database
+        const savedStudy = await storage.createStudy(studyData);
+        
+        res.json({
+          success: true,
+          message: 'Study approved and imported successfully',
+          reviewItem: updatedItem,
+          study: savedStudy
+        });
+      } catch (importError: any) {
+        console.error('Error importing approved study:', importError);
+        res.status(500).json({ 
+          error: importError.message || 'Failed to import approved study',
+          reviewItem: updatedItem  // Still return the updated review item
+        });
+      }
+    } else {
+      // If rejected, just return the updated review item
+      res.json({
+        success: true,
+        message: 'Study rejected successfully',
+        reviewItem: updatedItem
+      });
+    }
+  } catch (error: any) {
+    console.error('Error updating review queue item:', error);
+    res.status(500).json({ error: error.message || 'Failed to update review queue item' });
+  }
+});
+
+/**
+ * Delete an item from the review queue
+ */
+router.delete('/api/research/review-queue/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'ID is required' });
+    }
+    
+    await storage.deleteStudyFromReviewQueue(parseInt(id));
+    
+    res.json({
+      success: true,
+      message: 'Study removed from review queue'
+    });
+  } catch (error: any) {
+    console.error('Error deleting review queue item:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete review queue item' });
+  }
+});
+
+/**
+ * Import a paper directly from any of the supported research databases (legacy method)
  */
 router.post('/api/research/import', async (req: Request, res: Response) => {
   try {
