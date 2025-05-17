@@ -120,7 +120,7 @@ export class DatabaseStorage implements IStorage {
           // Using simpler comparison for now - we'll check if any of the values match
           const firstSystem = filters.bodySystems[0];
           conditions.push(
-            sql`${studies.bodySystems}::text LIKE ${`%${firstSystem}%`}`
+            sql`${studies.bodySystems}::text LIKE ${'%' + firstSystem + '%'}`
           );
         }
       } catch (error) {

@@ -18,6 +18,8 @@ import { upload, getFileType } from "./upload";
 import { generateScientificImage, generateBlogImage } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
 import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
+import { generateChatResponse, validateQuery } from "./chat-bot";
+import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB } from "./vector-database";
 import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
