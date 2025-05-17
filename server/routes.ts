@@ -70,13 +70,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register research article search and discovery routes
   app.use('/api', researchRoutes);
   
-  // Register Europe PMC API routes
+  // External API routes for journal date functionality
   app.use('', europePmcRoutes);
-  
-  // Register Semantic Scholar API routes
   app.use('', semanticScholarRoutes);
-  
-  // Register CrossRef API routes
   app.use('/api/crossref', crossrefRoutes);
   
   // Register DOI enhancement routes for improving study data quality

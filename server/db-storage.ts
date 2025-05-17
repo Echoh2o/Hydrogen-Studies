@@ -1,588 +1,1251 @@
+import { db } from './db';
+import { IStorage, StudyFilters } from './storage';
 import { 
   studies, 
   categories, 
   newsletters, 
+  users,
+  userPreferences,
+  notifications,
+  searchHistory,
+  userStudyInteractions,
+  blogArticles,
   type Study, 
   type Category, 
   type Newsletter, 
   type InsertStudy, 
   type InsertCategory, 
-  type InsertNewsletter 
+  type InsertNewsletter,
+  type InsertContact,
+  type User,
+  type UserPreferences,
+  type InsertUser,
+  type InsertUserPreferences,
+  type Notification,
+  type InsertNotification,
+  type SearchHistory,
+  type InsertSearchHistory,
+  type UserStudyInteraction,
+  type InsertUserStudyInteraction,
+  type UserBlogInteraction,
+  type InsertUserBlogInteraction,
+  type BlogArticle,
+  type InsertBlogArticle,
 } from "@shared/schema";
-import { IStorage, StudyFilters } from "./storage";
-import { db } from "./db";
-import { eq, and, or, like, gte, lte, desc, asc, sql, ilike } from "drizzle-orm";
+import { eq, like, and, or, desc, asc, sql, not, isNull, between } from 'drizzle-orm';
 
 export class DatabaseStorage implements IStorage {
-  // Studies methods
-  async getStudies(filters: StudyFilters = {}): Promise<any> {
-    // Build filter conditions
-    const conditions = [];
-    
-    // Basic search
-    if (filters.query) {
-      const searchTerm = `%${filters.query}%`;
-      conditions.push(
-        or(
-          like(studies.title, searchTerm),
-          like(studies.abstract, searchTerm),
-          like(studies.authors, searchTerm),
-          like(studies.journal, searchTerm),
-          like(studies.methods, searchTerm),
-          like(studies.results, searchTerm),
-          like(studies.conclusion, searchTerm)
-        )
-      );
-    }
-    
-    // Journal filter
-    if (filters.journal && filters.journal.length > 0) {
-      const journalName = filters.journal[0];
-      if (journalName && journalName.trim() !== '') {
-        conditions.push(ilike(studies.journal, `%${journalName}%`));
+  private categoryCache: Map<string, Category> = new Map();
+  private categoryCacheLastUpdate: number = 0;
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
+  async getStudies(filters: StudyFilters = {}): Promise<Study[]> {
+    try {
+      let query = db.select().from(studies);
+
+      // Apply filters
+      const conditions = [];
+
+      if (filters.query) {
+        const queryLower = `%${filters.query.toLowerCase()}%`;
+        conditions.push(
+          or(
+            sql`LOWER(${studies.title}) LIKE ${queryLower}`,
+            sql`LOWER(${studies.abstract}) LIKE ${queryLower}`,
+            sql`LOWER(${studies.authors}) LIKE ${queryLower}`,
+            sql`LOWER(${studies.journal}) LIKE ${queryLower}`,
+            sql`LOWER(${studies.category}) LIKE ${queryLower}`
+          )
+        );
       }
-    }
-    
-    // Study type filter
-    if (filters.studyType && filters.studyType.length > 0) {
-      const studyTypeValue = filters.studyType[0];
-      if (studyTypeValue && studyTypeValue.trim() !== '') {
-        conditions.push(ilike(studies.studyType, `%${studyTypeValue}%`));
+
+      if (filters.keyword) {
+        const keywordLower = `%${filters.keyword.toLowerCase()}%`;
+        conditions.push(
+          or(
+            sql`LOWER(${studies.title}) LIKE ${keywordLower}`,
+            sql`LOWER(${studies.abstract}) LIKE ${keywordLower}`
+          )
+        );
       }
-    }
-    
-    // Country filter
-    if (filters.country && filters.country.length > 0) {
-      const countryValue = filters.country[0];
-      if (countryValue && countryValue.trim() !== '') {
-        conditions.push(ilike(studies.country, `%${countryValue}%`));
+
+      if (filters.author) {
+        const authorLower = `%${filters.author.toLowerCase()}%`;
+        conditions.push(sql`LOWER(${studies.authors}) LIKE ${authorLower}`);
       }
-    }
-    
-    // Region filter
-    if (filters.region && filters.region.length > 0) {
-      const regionValue = filters.region[0];
-      if (regionValue && regionValue.trim() !== '') {
-        conditions.push(ilike(studies.region, `%${regionValue}%`));
-      }
-    }
-    
-    // Keyword search
-    if (filters.keyword) {
-      const keyword = `%${filters.keyword}%`;
-      conditions.push(
-        or(
-          ilike(studies.title, keyword),
-          ilike(studies.abstract, keyword)
-        )
-      );
-    }
-    
-    // Author filter
-    if (filters.author) {
-      conditions.push(ilike(studies.authors, `%${filters.author}%`));
-    }
-    
-    // Date range filters
-    if (filters.yearFrom) {
-      // This is simplified, in a real app we'd need to handle date parsing better
-      conditions.push(gte(studies.publishDate, `${filters.yearFrom}-01-01`));
-    }
-    
-    if (filters.yearTo) {
-      // This is simplified, in a real app we'd need to handle date parsing better
-      conditions.push(lte(studies.publishDate, `${filters.yearTo}-12-31`));
-    }
-    
-    // More specific date range for the new UI
-    if (filters.dateFrom) {
-      conditions.push(gte(studies.publishDate, filters.dateFrom));
-    }
-    
-    if (filters.dateTo) {
-      conditions.push(lte(studies.publishDate, filters.dateTo));
-    }
-    
-    // Category filter
-    if (filters.category && filters.category !== 'all' && filters.category !== '') {
-      conditions.push(eq(studies.category, filters.category));
-    }
-    
-    // Boolean filters for the enhanced UI
-    if (filters.isPeerReviewed === true) {
-      conditions.push(eq(studies.peerReviewed, true));
-    } else if (filters.isPeerReviewed === false) {
-      conditions.push(eq(studies.peerReviewed, false));
-    }
-    
-    if (filters.hasHealthImplications === true) {
-      conditions.push(eq(studies.healthImplications, true));
-    } else if (filters.hasHealthImplications === false) {
-      conditions.push(eq(studies.healthImplications, false));
-    }
-    
-    if (filters.hasMedia === true) {
-      conditions.push(eq(studies.hasMedia, true));
-    } else if (filters.hasMedia === false) {
-      conditions.push(eq(studies.hasMedia, false));
-    }
-    
-    // Advanced filters for health conditions and body systems
-    if (filters.healthConditions && Array.isArray(filters.healthConditions) && filters.healthConditions.length > 0) {
-      try {
-        // Create OR conditions for each health condition
-        const healthConditionsConditions = [];
-        
-        for (const condition of filters.healthConditions) {
-          if (condition && typeof condition === 'string' && condition.trim() !== '') {
-            // Using ilike for case insensitive text search
-            healthConditionsConditions.push(
-              ilike(studies.healthConditions, `%${condition.trim()}%`)
-            );
-          }
+
+      if (filters.yearFrom) {
+        const yearFrom = parseInt(filters.yearFrom.toString());
+        if (!isNaN(yearFrom)) {
+          conditions.push(sql`${studies.publishYear} >= ${yearFrom}`);
         }
-        
-        // Only add the conditions if we have valid ones
-        if (healthConditionsConditions.length > 0) {
-          conditions.push(or(...healthConditionsConditions));
-        }
-      } catch (error) {
-        console.error("Error applying health conditions filter:", error);
       }
-    }
-    
-    if (filters.bodySystems && Array.isArray(filters.bodySystems) && filters.bodySystems.length > 0) {
-      try {
-        // Create OR conditions for each body system
-        const bodySystemsConditions = [];
-        
-        for (const system of filters.bodySystems) {
-          if (system && typeof system === 'string' && system.trim() !== '') {
-            // Using ilike for case insensitive text search
-            bodySystemsConditions.push(
-              ilike(studies.bodySystems, `%${system.trim()}%`)
-            );
-          }
+
+      if (filters.yearTo) {
+        const yearTo = parseInt(filters.yearTo.toString());
+        if (!isNaN(yearTo)) {
+          conditions.push(sql`${studies.publishYear} <= ${yearTo}`);
         }
-        
-        // Only add the conditions if we have valid ones
-        if (bodySystemsConditions.length > 0) {
-          conditions.push(or(...bodySystemsConditions));
-        }
-      } catch (error) {
-        console.error("Error applying body systems filter:", error);
       }
-    }
-    
-    // Pagination parameters with validation
-    let page = 1;
-    let pageSize = 10;
-    
-    // Validate page parameter
-    if (filters.page) {
-      const parsedPage = parseInt(filters.page as string);
-      page = !isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-    }
-    
-    // Validate pageSize parameter
-    if (filters.pageSize) {
-      const parsedPageSize = parseInt(filters.pageSize as string);
-      pageSize = !isNaN(parsedPageSize) && parsedPageSize > 0 ? 
-                 Math.min(parsedPageSize, 100) : 10; // Limit to 100 max
-    }
-    
-    const offset = (page - 1) * pageSize;
-    
-    // Determine sort field and direction with validation
-    let sortField = studies.publishDate;
-    let sortDirection = desc;
-    
-    // Validate sort field
-    if (filters.sortField && typeof filters.sortField === 'string') {
-      // Whitelist of allowed sort fields
-      const allowedSortFields = ['title', 'journal', 'category', 'publishDate', 'authors', 'createdAt'];
-      
-      // Only use sortField if it's in the allowed list
-      if (allowedSortFields.includes(filters.sortField)) {
+
+      if (filters.category && filters.category !== 'all') {
+        conditions.push(sql`LOWER(${studies.category}) = ${filters.category.toLowerCase()}`);
+      }
+
+      if (filters.peerReviewed || filters.isPeerReviewed) {
+        conditions.push(eq(studies.peerReviewed, true));
+      }
+
+      if (filters.hasMedia) {
+        conditions.push(
+          or(
+            not(isNull(studies.imageUrl)),
+            not(isNull(studies.videoUrl)),
+            not(isNull(studies.audioUrl))
+          )
+        );
+      }
+
+      if (filters.dateFrom) {
+        try {
+          const dateFrom = new Date(filters.dateFrom);
+          conditions.push(sql`${studies.publishDate} >= ${dateFrom.toISOString().substring(0, 10)}`);
+        } catch (e) {
+          console.error('Invalid dateFrom filter:', e);
+        }
+      }
+
+      if (filters.dateTo) {
+        try {
+          const dateTo = new Date(filters.dateTo);
+          conditions.push(sql`${studies.publishDate} <= ${dateTo.toISOString().substring(0, 10)}`);
+        } catch (e) {
+          console.error('Invalid dateTo filter:', e);
+        }
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      // Apply sorting
+      if (filters.sortField && filters.sortOrder) {
         switch (filters.sortField) {
+          case 'publishDate':
+            query = query.orderBy(filters.sortOrder === 'asc' ? asc(studies.publishDate) : desc(studies.publishDate));
+            break;
           case 'title':
-            sortField = studies.title;
+            query = query.orderBy(filters.sortOrder === 'asc' ? asc(studies.title) : desc(studies.title));
+            break;
+          case 'journalPublishDate':
+            query = query.orderBy(filters.sortOrder === 'asc' ? asc(studies.journalPublishDate) : desc(studies.journalPublishDate));
             break;
           case 'journal':
-            sortField = studies.journal;
-            break;
-          case 'category':
-            sortField = studies.category;
-            break;
-          case 'authors':
-            sortField = studies.authors;
-            break;
-          case 'createdAt':
-            sortField = studies.createdAt;
-            break;
-          case 'publishDate':
-          default:
-            sortField = studies.publishDate;
+            query = query.orderBy(filters.sortOrder === 'asc' ? asc(studies.journal) : desc(studies.journal));
             break;
         }
+      } else if (filters.sortBy) {
+        switch (filters.sortBy) {
+          case 'date':
+            query = query.orderBy(desc(studies.publishDate));
+            break;
+          case 'title':
+            query = query.orderBy(asc(studies.title));
+            break;
+          case 'journalDate':
+            query = query.orderBy(desc(studies.journalPublishDate));
+            break;
+          default:
+            query = query.orderBy(desc(studies.publishDate));
+        }
+      } else {
+        // Default sort by date (newest first)
+        query = query.orderBy(desc(studies.publishDate));
       }
-    }
-    
-    // Validate sort order
-    if (filters.sortOrder && typeof filters.sortOrder === 'string') {
-      // Only accept 'asc' or 'desc' values
-      if (filters.sortOrder.toLowerCase() === 'asc') {
-        sortDirection = asc;
+
+      // Apply pagination
+      if (filters.page && filters.pageSize) {
+        const page = parseInt(filters.page.toString());
+        const pageSize = parseInt(filters.pageSize.toString());
+        
+        if (!isNaN(page) && !isNaN(pageSize)) {
+          const offset = (page - 1) * pageSize;
+          query = query.limit(pageSize).offset(offset);
+        }
       }
+
+      return await query;
+    } catch (error) {
+      console.error('Error fetching studies:', error);
+      throw error;
     }
-    
-    // Get total count first (for pagination)
-    const countResult = await db.select({ count: sql<number>`count(*)` })
-      .from(studies)
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
-    
-    const totalCount = countResult[0]?.count || 0;
-    const totalPages = Math.ceil(totalCount / pageSize);
-    
-    // Get the actual data with pagination
-    let query = db.select().from(studies);
-    
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-    
-    // Apply sorting
-    query = query.orderBy(sortDirection(sortField));
-    
-    // Apply pagination
-    query = query.limit(pageSize).offset(offset);
-    
-    // Execute query
-    const result = await query;
-    
-    // Get additional counts for the UI metrics
-    const peerReviewedCount = await db.select({ count: sql<number>`count(*)` })
-      .from(studies)
-      .where(
-        conditions.length > 0 
-          ? and(eq(studies.peerReviewed, true), ...conditions) 
-          : eq(studies.peerReviewed, true)
-      );
-      
-    // Health implications count - temporarily using peer-reviewed count
-    // since healthImplications field doesn't exist yet
-    const healthImplicationsCount = await db.select({ count: sql<number>`count(*)` })
-      .from(studies)
-      .where(
-        conditions.length > 0 
-          ? and(...conditions) 
-          : undefined
-      );
-      
-    // Use a conditional query to count studies with media (image_url or video_url not null)
-    const withMediaCount = await db.select({ count: sql<number>`count(*)` })
-      .from(studies)
-      .where(
-        conditions.length > 0 
-          ? and(
-              or(
-                sql`${studies.imageUrl} IS NOT NULL`, 
-                sql`${studies.videoUrl} IS NOT NULL`
-              ), 
-              ...conditions
-            ) 
-          : or(
-              sql`${studies.imageUrl} IS NOT NULL`, 
-              sql`${studies.videoUrl} IS NOT NULL`
-            )
-      );
-    
-    // Return enhanced response with pagination metadata
-    return {
-      data: result,
-      totalCount,
-      totalPages,
-      page,
-      pageSize,
-      peerReviewedCount: peerReviewedCount[0]?.count || 0,
-      healthImplicationsCount: healthImplicationsCount[0]?.count || 0,
-      withMediaCount: withMediaCount[0]?.count || 0
-    };
   }
 
   async getStudyById(id: number): Promise<Study | undefined> {
-    const result = await db.select().from(studies).where(eq(studies.id, id));
-    return result[0];
+    try {
+      const [study] = await db.select().from(studies).where(eq(studies.id, id));
+      return study;
+    } catch (error) {
+      console.error(`Error fetching study with id ${id}:`, error);
+      throw error;
+    }
   }
-  
+
+  async getStudyByIdentifier(identifier: string): Promise<Study | undefined> {
+    try {
+      // Look for study with matching DOI
+      const normalizedIdentifier = identifier.trim().toLowerCase();
+      const [study] = await db
+        .select()
+        .from(studies)
+        .where(
+          or(
+            sql`LOWER(${studies.doi}) = ${normalizedIdentifier}`,
+            sql`LOWER(${studies.pmid}) = ${normalizedIdentifier}`,
+            sql`LOWER(${studies.pmcid}) = ${normalizedIdentifier}`
+          )
+        );
+      
+      return study;
+    } catch (error) {
+      console.error(`Error fetching study by identifier ${identifier}:`, error);
+      throw error;
+    }
+  }
+
   async getStudiesByTitle(title: string): Promise<Study[]> {
-    // Find studies with similar titles to check for duplicates during import
-    if (!title) return [];
-    
-    const normalizedTitle = title.trim();
-    
-    // Split the title into keywords for better matching
-    const keywords = normalizedTitle
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(word => word.length > 3) // Only use meaningful words
-      .map(word => `%${word}%`);
-    
-    if (keywords.length === 0) {
-      // If no meaningful keywords, just do a simple LIKE search
+    try {
+      const normalizedTitle = title.trim().toLowerCase();
       return await db
         .select()
         .from(studies)
-        .where(like(studies.title, `%${normalizedTitle}%`));
+        .where(sql`LOWER(${studies.title}) LIKE ${`%${normalizedTitle}%`}`);
+    } catch (error) {
+      console.error(`Error fetching studies by title ${title}:`, error);
+      throw error;
     }
-    
-    // For each keyword, create a LIKE condition
-    const conditions = keywords.map(keyword => like(studies.title, keyword));
-    
-    // Studies that match at least 70% of the keywords are likely duplicates
-    const minMatchCount = Math.ceil(keywords.length * 0.7);
-    
-    // This is a simplified approach that checks if multiple keywords appear in the title
-    // A more sophisticated approach would be to use a text search extension like pg_trgm
-    const matchedStudies = await db
-      .select()
-      .from(studies)
-      .where(or(...conditions));
-    
-    // Filter studies that match enough keywords
-    return matchedStudies.filter(study => {
-      const studyTitle = study.title.toLowerCase();
-      const matchCount = keywords.filter(keyword => 
-        studyTitle.includes(keyword.replace(/%/g, ''))
-      ).length;
-      
-      return matchCount >= minMatchCount;
-    });
+  }
+
+  async getStudiesBySourcePlatform(platform: string): Promise<Study[]> {
+    try {
+      const normalizedPlatform = platform.trim().toLowerCase();
+      return await db
+        .select()
+        .from(studies)
+        .where(sql`LOWER(${studies.sourcePlatform}) = ${normalizedPlatform}`);
+    } catch (error) {
+      console.error(`Error fetching studies by platform ${platform}:`, error);
+      throw error;
+    }
   }
 
   async getLatestStudies(limit: number = 3): Promise<Study[]> {
-    const result = await db.select()
-      .from(studies)
-      .orderBy(desc(studies.publishDate))
-      .limit(limit);
-    return result;
+    try {
+      return await db
+        .select()
+        .from(studies)
+        .orderBy(desc(studies.publishDate))
+        .limit(limit);
+    } catch (error) {
+      console.error('Error fetching latest studies:', error);
+      throw error;
+    }
   }
 
   async createStudy(insertStudy: InsertStudy): Promise<Study> {
-    const [study] = await db.insert(studies)
-      .values(insertStudy)
-      .returning();
-    
-    // Update the study count for the category
-    const category = await this.getCategoryByName(insertStudy.category);
-    if (category) {
-      await db.update(categories)
-        .set({ studyCount: category.studyCount + 1 })
-        .where(eq(categories.id, category.id));
-    }
-    
-    return study;
-  }
-  
-  async updateStudy(id: number, partialStudy: Partial<InsertStudy>): Promise<Study> {
-    // Get the current study to check for category changes
-    const currentStudy = await this.getStudyById(id);
-    if (!currentStudy) {
-      throw new Error(`Study with id ${id} not found`);
-    }
-    
-    // Update the study
-    const [updatedStudy] = await db.update(studies)
-      .set(partialStudy)
-      .where(eq(studies.id, id))
-      .returning();
-    
-    // If category changed, update category counts
-    if (partialStudy.category && partialStudy.category !== currentStudy.category) {
-      // Decrement count for old category
-      const oldCategory = await this.getCategoryByName(currentStudy.category);
-      if (oldCategory && oldCategory.studyCount > 0) {
-        await db.update(categories)
-          .set({ studyCount: oldCategory.studyCount - 1 })
-          .where(eq(categories.id, oldCategory.id));
-      }
+    try {
+      const [study] = await db
+        .insert(studies)
+        .values(insertStudy)
+        .returning();
       
-      // Increment count for new category
-      const newCategory = await this.getCategoryByName(partialStudy.category);
-      if (newCategory) {
-        await db.update(categories)
-          .set({ studyCount: newCategory.studyCount + 1 })
-          .where(eq(categories.id, newCategory.id));
-      }
-    }
-    
-    return updatedStudy;
-  }
-  
-  async deleteStudy(id: number): Promise<void> {
-    // Get the current study to update category count
-    const study = await this.getStudyById(id);
-    if (!study) {
-      throw new Error(`Study with id ${id} not found`);
-    }
-    
-    // Delete the study
-    await db.delete(studies)
-      .where(eq(studies.id, id));
-    
-    // Update the category count
-    const category = await this.getCategoryByName(study.category);
-    if (category && category.studyCount > 0) {
-      await db.update(categories)
-        .set({ studyCount: category.studyCount - 1 })
-        .where(eq(categories.id, category.id));
+      return study;
+    } catch (error) {
+      console.error('Error creating study:', error);
+      throw error;
     }
   }
 
-  // Categories methods
+  async updateStudy(id: number, partialStudy: Partial<InsertStudy>): Promise<Study> {
+    try {
+      const [updatedStudy] = await db
+        .update(studies)
+        .set(partialStudy)
+        .where(eq(studies.id, id))
+        .returning();
+      
+      if (!updatedStudy) {
+        throw new Error(`Study with id ${id} not found`);
+      }
+      
+      return updatedStudy;
+    } catch (error) {
+      console.error(`Error updating study with id ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteStudy(id: number): Promise<void> {
+    try {
+      await db.delete(studies).where(eq(studies.id, id));
+    } catch (error) {
+      console.error(`Error deleting study with id ${id}:`, error);
+      throw error;
+    }
+  }
+
   async getCategories(): Promise<Category[]> {
-    const result = await db.select().from(categories);
-    return result;
+    try {
+      // Check if we have a valid cache
+      const now = Date.now();
+      if (this.categoryCache.size > 0 && now - this.categoryCacheLastUpdate < this.CACHE_TTL) {
+        return Array.from(this.categoryCache.values());
+      }
+      
+      // Fetch fresh data
+      const categoriesData = await db.select().from(categories);
+      
+      // Update cache
+      this.categoryCache.clear();
+      for (const category of categoriesData) {
+        this.categoryCache.set(category.id.toString(), category);
+      }
+      this.categoryCacheLastUpdate = now;
+      
+      return categoriesData;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
   }
 
   async getCategoryById(id: number): Promise<Category | undefined> {
-    const result = await db.select().from(categories).where(eq(categories.id, id));
-    return result[0];
+    try {
+      // Check cache first
+      const cachedCategory = this.categoryCache.get(id.toString());
+      if (cachedCategory) {
+        return cachedCategory;
+      }
+      
+      const [category] = await db.select().from(categories).where(eq(categories.id, id));
+      
+      // Update cache if found
+      if (category) {
+        this.categoryCache.set(id.toString(), category);
+      }
+      
+      return category;
+    } catch (error) {
+      console.error(`Error fetching category with id ${id}:`, error);
+      throw error;
+    }
   }
 
   async getCategoryByName(name: string): Promise<Category | undefined> {
-    const result = await db.select()
-      .from(categories)
-      .where(eq(categories.name, name));
-    return result[0];
+    try {
+      const normalizedName = name.trim().toLowerCase();
+      
+      // Check cache first
+      for (const category of this.categoryCache.values()) {
+        if (category.name.toLowerCase() === normalizedName) {
+          return category;
+        }
+      }
+      
+      const [category] = await db
+        .select()
+        .from(categories)
+        .where(sql`LOWER(${categories.name}) = ${normalizedName}`);
+      
+      // Update cache if found
+      if (category) {
+        this.categoryCache.set(category.id.toString(), category);
+      }
+      
+      return category;
+    } catch (error) {
+      console.error(`Error fetching category with name ${name}:`, error);
+      throw error;
+    }
   }
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const [category] = await db.insert(categories)
-      .values(insertCategory)
-      .returning();
-    return category;
-  }
-
-  // Newsletter methods
-  async subscribeNewsletter(insertNewsletter: InsertNewsletter): Promise<Newsletter> {
-    // Check if email already exists
-    const existingEmails = await db.select({ email: newsletters.email })
-      .from(newsletters)
-      .where(eq(newsletters.email, insertNewsletter.email));
-    
-    if (existingEmails.length > 0) {
-      throw new Error("Email already subscribed");
+    try {
+      const [category] = await db
+        .insert(categories)
+        .values(insertCategory)
+        .returning();
+      
+      // Update cache
+      this.categoryCache.set(category.id.toString(), category);
+      
+      return category;
+    } catch (error) {
+      console.error('Error creating category:', error);
+      throw error;
     }
-    
-    const [newsletter] = await db.insert(newsletters)
-      .values(insertNewsletter)
-      .returning();
-    return newsletter;
   }
 
-  // Initialize sample data
+  async subscribeNewsletter(insertNewsletter: InsertNewsletter): Promise<Newsletter> {
+    try {
+      const [newsletter] = await db
+        .insert(newsletters)
+        .values(insertNewsletter)
+        .returning();
+      
+      return newsletter;
+    } catch (error) {
+      console.error('Error subscribing to newsletter:', error);
+      throw error;
+    }
+  }
+
+  async submitContactMessage(message: InsertContact): Promise<any> {
+    try {
+      const [contactMessage] = await db
+        .insert(contactMessages)
+        .values(message)
+        .returning();
+      
+      return contactMessage;
+    } catch (error) {
+      console.error('Error submitting contact message:', error);
+      throw error;
+    }
+  }
+
+  async getUserById(id: number): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error(`Error fetching user with id ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users.email}) = ${email.toLowerCase()}`);
+      
+      return user;
+    } catch (error) {
+      console.error(`Error fetching user with email ${email}:`, error);
+      throw error;
+    }
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    try {
+      const [newUser] = await db
+        .insert(users)
+        .values(user)
+        .returning();
+      
+      return newUser;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set(user)
+        .where(eq(users.id, id))
+        .returning();
+      
+      if (!updatedUser) {
+        throw new Error(`User with id ${id} not found`);
+      }
+      
+      return updatedUser;
+    } catch (error) {
+      console.error(`Error updating user with id ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    try {
+      await db.delete(users).where(eq(users.id, id));
+    } catch (error) {
+      console.error(`Error deleting user with id ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async authenticateUser(email: string, password: string): Promise<User | null> {
+    // This is just a stub - actual implementation would verify password hash
+    try {
+      const user = await this.getUserByEmail(email);
+      if (!user) return null;
+      
+      // Password verification would happen here
+      
+      return user;
+    } catch (error) {
+      console.error(`Error authenticating user with email ${email}:`, error);
+      return null;
+    }
+  }
+
+  async getUserPreferences(userId: number): Promise<UserPreferences | undefined> {
+    try {
+      const [preferences] = await db
+        .select()
+        .from(userPreferences)
+        .where(eq(userPreferences.userId, userId));
+      
+      return preferences;
+    } catch (error) {
+      console.error(`Error fetching preferences for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences> {
+    try {
+      const [newPreferences] = await db
+        .insert(userPreferences)
+        .values(preferences)
+        .returning();
+      
+      return newPreferences;
+    } catch (error) {
+      console.error('Error creating user preferences:', error);
+      throw error;
+    }
+  }
+
+  async updateUserPreferences(id: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
+    try {
+      const [updatedPreferences] = await db
+        .update(userPreferences)
+        .set(preferences)
+        .where(eq(userPreferences.id, id))
+        .returning();
+      
+      if (!updatedPreferences) {
+        throw new Error(`User preferences with id ${id} not found`);
+      }
+      
+      return updatedPreferences;
+    } catch (error) {
+      console.error(`Error updating user preferences with id ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async addSearchHistory(searchHistory: InsertSearchHistory): Promise<SearchHistory> {
+    try {
+      const [newSearch] = await db
+        .insert(searchHistory)
+        .values(searchHistory)
+        .returning();
+      
+      return newSearch;
+    } catch (error) {
+      console.error('Error adding search history:', error);
+      throw error;
+    }
+  }
+
+  async getUserSearchHistory(userId: number, limit: number = 20): Promise<SearchHistory[]> {
+    try {
+      return await db
+        .select()
+        .from(searchHistory)
+        .where(eq(searchHistory.userId, userId))
+        .orderBy(desc(searchHistory.searchDate))
+        .limit(limit);
+    } catch (error) {
+      console.error(`Error fetching search history for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async saveStudy(userId: number, studyId: number): Promise<UserStudyInteraction> {
+    try {
+      // Check if interaction exists
+      const [existingInteraction] = await db
+        .select()
+        .from(userStudyInteractions)
+        .where(
+          and(
+            eq(userStudyInteractions.userId, userId),
+            eq(userStudyInteractions.studyId, studyId)
+          )
+        );
+      
+      if (existingInteraction) {
+        // Update existing interaction
+        const [updatedInteraction] = await db
+          .update(userStudyInteractions)
+          .set({ 
+            isSaved: true,
+            lastViewed: new Date().toISOString()
+          })
+          .where(
+            and(
+              eq(userStudyInteractions.userId, userId),
+              eq(userStudyInteractions.studyId, studyId)
+            )
+          )
+          .returning();
+        
+        return updatedInteraction;
+      } else {
+        // Create new interaction
+        const [newInteraction] = await db
+          .insert(userStudyInteractions)
+          .values({
+            userId: userId.toString(),
+            studyId,
+            isSaved: true,
+            viewCount: 1,
+            lastViewed: new Date().toISOString()
+          })
+          .returning();
+        
+        return newInteraction;
+      }
+    } catch (error) {
+      console.error(`Error saving study ${studyId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async unsaveStudy(userId: number, studyId: number): Promise<void> {
+    try {
+      await db
+        .update(userStudyInteractions)
+        .set({ isSaved: false })
+        .where(
+          and(
+            eq(userStudyInteractions.userId, userId),
+            eq(userStudyInteractions.studyId, studyId)
+          )
+        );
+    } catch (error) {
+      console.error(`Error unsaving study ${studyId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async recordStudyView(userId: number, studyId: number): Promise<void> {
+    try {
+      // Check if interaction exists
+      const [existingInteraction] = await db
+        .select()
+        .from(userStudyInteractions)
+        .where(
+          and(
+            eq(userStudyInteractions.userId, userId),
+            eq(userStudyInteractions.studyId, studyId)
+          )
+        );
+      
+      if (existingInteraction) {
+        // Update existing interaction
+        await db
+          .update(userStudyInteractions)
+          .set({ 
+            viewCount: existingInteraction.viewCount + 1,
+            lastViewed: new Date().toISOString()
+          })
+          .where(
+            and(
+              eq(userStudyInteractions.userId, userId),
+              eq(userStudyInteractions.studyId, studyId)
+            )
+          );
+      } else {
+        // Create new interaction
+        await db
+          .insert(userStudyInteractions)
+          .values({
+            userId: userId.toString(),
+            studyId,
+            isSaved: false,
+            viewCount: 1,
+            lastViewed: new Date().toISOString()
+          });
+      }
+    } catch (error) {
+      console.error(`Error recording study view ${studyId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async getSavedStudies(userId: number): Promise<Study[]> {
+    try {
+      // Join userStudyInteractions with studies table
+      return await db
+        .select({
+          id: studies.id,
+          title: studies.title,
+          abstract: studies.abstract,
+          authors: studies.authors,
+          journal: studies.journal,
+          publishDate: studies.publishDate,
+          journalPublishDate: studies.journalPublishDate,
+          category: studies.category,
+          methods: studies.methods,
+          results: studies.results,
+          conclusion: studies.conclusion,
+          doi: studies.doi,
+          pdfUrl: studies.pdfUrl,
+          citationUrl: studies.citationUrl,
+          peerReviewed: studies.peerReviewed,
+          imageUrl: studies.imageUrl,
+          imageAlt: studies.imageAlt,
+          videoUrl: studies.videoUrl,
+          audioUrl: studies.audioUrl,
+          autoGeneratedImage: studies.autoGeneratedImage,
+          objective: studies.objective,
+          methodsShort: studies.methodsShort,
+          resultsShort: studies.resultsShort,
+          conclusionShort: studies.conclusionShort,
+          summaryMarkdown: studies.summaryMarkdown,
+          publishYear: studies.publishYear,
+          country: studies.country,
+          region: studies.region,
+          createdAt: studies.createdAt
+        })
+        .from(studies)
+        .innerJoin(
+          userStudyInteractions,
+          and(
+            eq(studies.id, userStudyInteractions.studyId),
+            eq(userStudyInteractions.userId, userId),
+            eq(userStudyInteractions.isSaved, true)
+          )
+        )
+        .orderBy(desc(userStudyInteractions.lastViewed));
+    } catch (error) {
+      console.error(`Error fetching saved studies for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async getRecentlyViewedStudies(userId: number, limit: number = 10): Promise<Study[]> {
+    try {
+      // Join userStudyInteractions with studies table
+      return await db
+        .select({
+          id: studies.id,
+          title: studies.title,
+          abstract: studies.abstract,
+          authors: studies.authors,
+          journal: studies.journal,
+          publishDate: studies.publishDate,
+          journalPublishDate: studies.journalPublishDate,
+          category: studies.category,
+          methods: studies.methods,
+          results: studies.results,
+          conclusion: studies.conclusion,
+          doi: studies.doi,
+          pdfUrl: studies.pdfUrl,
+          citationUrl: studies.citationUrl,
+          peerReviewed: studies.peerReviewed,
+          imageUrl: studies.imageUrl,
+          imageAlt: studies.imageAlt,
+          videoUrl: studies.videoUrl,
+          audioUrl: studies.audioUrl,
+          autoGeneratedImage: studies.autoGeneratedImage,
+          objective: studies.objective,
+          methodsShort: studies.methodsShort,
+          resultsShort: studies.resultsShort,
+          conclusionShort: studies.conclusionShort,
+          summaryMarkdown: studies.summaryMarkdown,
+          publishYear: studies.publishYear,
+          country: studies.country,
+          region: studies.region,
+          createdAt: studies.createdAt
+        })
+        .from(studies)
+        .innerJoin(
+          userStudyInteractions,
+          and(
+            eq(studies.id, userStudyInteractions.studyId),
+            eq(userStudyInteractions.userId, userId)
+          )
+        )
+        .orderBy(desc(userStudyInteractions.lastViewed))
+        .limit(limit);
+    } catch (error) {
+      console.error(`Error fetching recently viewed studies for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async saveBlog(userId: number, blogId: number): Promise<UserBlogInteraction> {
+    try {
+      // Check if interaction exists
+      const [existingInteraction] = await db
+        .select()
+        .from(userBlogInteractions)
+        .where(
+          and(
+            eq(userBlogInteractions.userId, userId),
+            eq(userBlogInteractions.blogId, blogId)
+          )
+        );
+      
+      if (existingInteraction) {
+        // Update existing interaction
+        const [updatedInteraction] = await db
+          .update(userBlogInteractions)
+          .set({ 
+            isSaved: true,
+            lastViewed: new Date().toISOString()
+          })
+          .where(
+            and(
+              eq(userBlogInteractions.userId, userId),
+              eq(userBlogInteractions.blogId, blogId)
+            )
+          )
+          .returning();
+        
+        return updatedInteraction;
+      } else {
+        // Create new interaction
+        const [newInteraction] = await db
+          .insert(userBlogInteractions)
+          .values({
+            userId,
+            blogId,
+            isSaved: true,
+            viewCount: 1,
+            lastViewed: new Date().toISOString()
+          })
+          .returning();
+        
+        return newInteraction;
+      }
+    } catch (error) {
+      console.error(`Error saving blog ${blogId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async unsaveBlog(userId: number, blogId: number): Promise<void> {
+    try {
+      await db
+        .update(userBlogInteractions)
+        .set({ isSaved: false })
+        .where(
+          and(
+            eq(userBlogInteractions.userId, userId),
+            eq(userBlogInteractions.blogId, blogId)
+          )
+        );
+    } catch (error) {
+      console.error(`Error unsaving blog ${blogId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async recordBlogView(userId: number, blogId: number): Promise<void> {
+    try {
+      // Check if interaction exists
+      const [existingInteraction] = await db
+        .select()
+        .from(userBlogInteractions)
+        .where(
+          and(
+            eq(userBlogInteractions.userId, userId),
+            eq(userBlogInteractions.blogId, blogId)
+          )
+        );
+      
+      if (existingInteraction) {
+        // Update existing interaction
+        await db
+          .update(userBlogInteractions)
+          .set({ 
+            viewCount: existingInteraction.viewCount + 1,
+            lastViewed: new Date().toISOString()
+          })
+          .where(
+            and(
+              eq(userBlogInteractions.userId, userId),
+              eq(userBlogInteractions.blogId, blogId)
+            )
+          );
+      } else {
+        // Create new interaction
+        await db
+          .insert(userBlogInteractions)
+          .values({
+            userId,
+            blogId,
+            isSaved: false,
+            viewCount: 1,
+            lastViewed: new Date().toISOString()
+          });
+      }
+    } catch (error) {
+      console.error(`Error recording blog view ${blogId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async getSavedBlogs(userId: number): Promise<BlogArticle[]> {
+    try {
+      // Join userBlogInteractions with blogArticles table
+      return await db
+        .select()
+        .from(blogArticles)
+        .innerJoin(
+          userBlogInteractions,
+          and(
+            eq(blogArticles.id, userBlogInteractions.blogId),
+            eq(userBlogInteractions.userId, userId),
+            eq(userBlogInteractions.isSaved, true)
+          )
+        )
+        .orderBy(desc(userBlogInteractions.lastViewed));
+    } catch (error) {
+      console.error(`Error fetching saved blogs for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async getRecentlyViewedBlogs(userId: number, limit: number = 10): Promise<BlogArticle[]> {
+    try {
+      // Join userBlogInteractions with blogArticles table
+      return await db
+        .select()
+        .from(blogArticles)
+        .innerJoin(
+          userBlogInteractions,
+          and(
+            eq(blogArticles.id, userBlogInteractions.blogId),
+            eq(userBlogInteractions.userId, userId)
+          )
+        )
+        .orderBy(desc(userBlogInteractions.lastViewed))
+        .limit(limit);
+    } catch (error) {
+      console.error(`Error fetching recently viewed blogs for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Basic implementation of recommendation system
+  async getRecommendedStudies(userId: number, limit: number = 5): Promise<Study[]> {
+    try {
+      // Get user's recently viewed studies to find categories of interest
+      const recentStudies = await this.getRecentlyViewedStudies(userId, 10);
+      
+      if (recentStudies.length === 0) {
+        // If no viewing history, return latest studies
+        return this.getLatestStudies(limit);
+      }
+      
+      // Extract categories of interest
+      const categories = recentStudies.map(study => study.category);
+      const uniqueCategories = [...new Set(categories)];
+      
+      // Find studies in those categories, excluding recently viewed ones
+      const recentIds = recentStudies.map(study => study.id);
+      
+      const recommendedStudies = await db
+        .select()
+        .from(studies)
+        .where(
+          and(
+            sql`${studies.category} IN (${uniqueCategories.join(',')})`,
+            sql`${studies.id} NOT IN (${recentIds.join(',')})`
+          )
+        )
+        .orderBy(desc(studies.publishDate))
+        .limit(limit);
+      
+      return recommendedStudies;
+    } catch (error) {
+      console.error(`Error getting recommended studies for user ${userId}:`, error);
+      // Fallback to latest studies on error
+      return this.getLatestStudies(limit);
+    }
+  }
+
+  // Basic implementation of blog recommendations
+  async getRecommendedBlogs(userId: number, limit: number = 5): Promise<BlogArticle[]> {
+    try {
+      // Get user's recently viewed blogs
+      const recentBlogs = await this.getRecentlyViewedBlogs(userId, 10);
+      
+      if (recentBlogs.length === 0) {
+        // If no viewing history, return latest blogs
+        return db
+          .select()
+          .from(blogArticles)
+          .orderBy(desc(blogArticles.createdAt))
+          .limit(limit);
+      }
+      
+      // Extract types of interest
+      const types = recentBlogs.map(blog => blog.type);
+      const uniqueTypes = [...new Set(types)];
+      
+      // Find blogs of those types, excluding recently viewed ones
+      const recentIds = recentBlogs.map(blog => blog.id);
+      
+      const recommendedBlogs = await db
+        .select()
+        .from(blogArticles)
+        .where(
+          and(
+            sql`${blogArticles.type} IN (${uniqueTypes.join(',')})`,
+            sql`${blogArticles.id} NOT IN (${recentIds.join(',')})`
+          )
+        )
+        .orderBy(desc(blogArticles.createdAt))
+        .limit(limit);
+      
+      return recommendedBlogs;
+    } catch (error) {
+      console.error(`Error getting recommended blogs for user ${userId}:`, error);
+      // Fallback to latest blogs on error
+      return db
+        .select()
+        .from(blogArticles)
+        .orderBy(desc(blogArticles.createdAt))
+        .limit(limit);
+    }
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    try {
+      const [newNotification] = await db
+        .insert(notifications)
+        .values(notification)
+        .returning();
+      
+      return newNotification;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
+  }
+
+  async getUserNotifications(userId: number, unreadOnly: boolean = false): Promise<Notification[]> {
+    try {
+      let query = db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt));
+      
+      if (unreadOnly) {
+        query = query.where(eq(notifications.isRead, false));
+      }
+      
+      return await query;
+    } catch (error) {
+      console.error(`Error fetching notifications for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async markNotificationAsRead(id: number): Promise<void> {
+    try {
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.id, id));
+    } catch (error) {
+      console.error(`Error marking notification ${id} as read:`, error);
+      throw error;
+    }
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    try {
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.userId, userId));
+    } catch (error) {
+      console.error(`Error marking all notifications as read for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
   async initializeSampleData(): Promise<void> {
-    // Check if there's already data in the database
-    const existingCategories = await db.select().from(categories);
-    const existingStudies = await db.select().from(studies);
+    console.log('Initializing sample data in database...');
     
-    if (existingCategories.length === 0 && existingStudies.length === 0) {
+    try {
       await this.initializeSampleCategories();
       await this.initializeSampleStudies();
+      console.log('Sample data initialized successfully');
+    } catch (error) {
+      console.error('Error initializing sample data:', error);
+      throw error;
     }
   }
 
   private async initializeSampleCategories(): Promise<void> {
+    // Check if categories already exist
+    const existingCategories = await db.select().from(categories);
+    if (existingCategories.length > 0) {
+      console.log('Categories already exist, skipping initialization');
+      return;
+    }
+    
+    // Create sample categories
     const sampleCategories: InsertCategory[] = [
       {
-        name: "Neurodegenerative Diseases",
-        description: "Studies on hydrogen therapy for Alzheimer's, Parkinson's, and other neurodegenerative conditions.",
-        studyCount: 0,
-        icon: "M12 2a4 4 0 0 1 4 4c0 1.26-.48 2.4-1.27 3.27A4 4 0 0 1 16 12a4 4 0 0 1-1.27 2.73A4 4 0 0 1 16 18a4 4 0 0 1-4 4h-2a4 4 0 0 1-3.27-1.73A4 4 0 0 1 5 18a4 4 0 0 1 1.27-2.73A4 4 0 0 1 5 12a4 4 0 0 1 1.27-2.73A4 4 0 0 1 5 6a4 4 0 0 1 4-4h3Z",
+        name: 'General',
+        description: 'General research on molecular hydrogen and its health effects',
+        iconName: 'flask',
+        color: '#3498db',
+        studyCount: 0
       },
       {
-        name: "Cardiovascular Health",
-        description: "Research on how hydrogen affects heart health, blood pressure, and vascular function.",
-        studyCount: 0,
-        icon: "M19.5 12.572 12 20.072l-7.5-7.5a7 7 0 1 1 15 0Z",
+        name: 'Neurological',
+        description: 'Research focusing on hydrogen effects on brain and nervous system',
+        iconName: 'brain',
+        color: '#9b59b6',
+        studyCount: 0
       },
       {
-        name: "Metabolism & Diabetes",
-        description: "Studies examining hydrogen's effects on metabolic disorders and diabetes management.",
-        studyCount: 0,
-        icon: "M4 6.889v10.222A2 2 0 0 0 6.05 19h12.9a2 2 0 0 0 2.05-1.889V6.89A2 2 0 0 0 18.95 5H6.05A2 2 0 0 0 4 6.889ZM12 16v-4",
+        name: 'Cardiovascular',
+        description: 'Studies on hydrogen benefits for heart and circulatory system',
+        iconName: 'heart',
+        color: '#e74c3c',
+        studyCount: 0
       },
       {
-        name: "Inflammation",
-        description: "Research investigating hydrogen's anti-inflammatory properties and applications.",
-        studyCount: 0,
-        icon: "M8 16H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2m-6 12h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2Z",
+        name: 'Metabolic',
+        description: 'Research on hydrogen effects on metabolism and metabolic disorders',
+        iconName: 'microscope',
+        color: '#2ecc71',
+        studyCount: 0
       },
       {
-        name: "Cancer Research",
-        description: "Studies focused on hydrogen's potential role in cancer prevention and treatment support.",
-        studyCount: 0,
-        icon: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z",
+        name: 'Inflammation',
+        description: 'Studies focusing on anti-inflammatory properties of hydrogen',
+        iconName: 'fire',
+        color: '#e67e22',
+        studyCount: 0
       },
       {
-        name: "Anti-Aging",
-        description: "Research on hydrogen's effects on aging processes and longevity markers.",
-        studyCount: 0,
-        icon: "M9 21h6m-6-4h6m-6-4h6M9 5h6M7 9h10a4 4 0 0 1 4 4 4 4 0 0 1-4 4H7a4 4 0 0 1-4-4 4 4 0 0 1 4-4Z",
+        name: 'Athletic Performance',
+        description: 'Research on hydrogen benefits for exercise and recovery',
+        iconName: 'running',
+        color: '#1abc9c',
+        studyCount: 0
+      },
+      {
+        name: 'Dermatological',
+        description: 'Studies on hydrogen effects on skin health and conditions',
+        iconName: 'user',
+        color: '#f1c40f',
+        studyCount: 0
+      },
+      {
+        name: 'Gastrointestinal',
+        description: 'Research on hydrogen benefits for digestive system',
+        iconName: 'utensils',
+        color: '#d35400',
+        studyCount: 0
       }
     ];
-
-    for (const category of sampleCategories) {
-      await this.createCategory(category);
-    }
+    
+    // Insert categories
+    await db.insert(categories).values(sampleCategories);
   }
 
   private async initializeSampleStudies(): Promise<void> {
+    // Check if studies already exist
+    const existingStudies = await db.select().from(studies);
+    if (existingStudies.length > 0) {
+      console.log('Studies already exist, skipping initialization');
+      return;
+    }
+    
+    // Sample studies will be added here
+    // For brevity, we'll add just a few sample studies
     const sampleStudies: InsertStudy[] = [
       {
-        title: "Hydrogen-Rich Water Reduces Inflammatory Responses and Prevents Apoptosis of Cardiomyocytes",
-        abstract: "This study examined the effects of hydrogen-rich water on inflammation markers in patients with cardiovascular disease, showing significant reductions in oxidative stress. The researchers observed decreased levels of pro-inflammatory cytokines and improved cardiac function in the treatment group compared to controls.",
-        authors: "Chen et al.",
-        journal: "Journal of Cardiology",
-        publishDate: "2023-06-15",
-        category: "Cardiovascular Health",
-        methods: "A randomized, double-blind, placebo-controlled trial involving 80 patients with diagnosed cardiovascular disease. Participants consumed either hydrogen-rich water (1.5L daily) or placebo water for 12 weeks. Blood samples were collected at baseline, 6 weeks, and 12 weeks to assess inflammatory markers and oxidative stress parameters.",
-        results: "After 12 weeks, the hydrogen-rich water group showed significant reductions in C-reactive protein (-15.2%, p<0.01), TNF-alpha (-8.5%, p<0.05), and IL-6 (-12.7%, p<0.01) compared to the placebo group. Oxidative stress markers, including MDA and 8-OHdG, were also significantly reduced. Echocardiography revealed improved left ventricular ejection fraction in the treatment group (4.2% increase, p<0.05).",
-        conclusion: "Hydrogen-rich water demonstrated significant anti-inflammatory and antioxidant effects in patients with cardiovascular disease, suggesting potential therapeutic applications as an adjunct treatment for cardiovascular conditions. The cardioprotective effects appear to be mediated through suppression of inflammatory pathways and reduction of oxidative damage.",
-        doi: "10.1016/j.cardjour.2023.06.005",
-        peerReviewed: true
+        title: 'Molecular hydrogen improves obesity and diabetes by inducing hepatic FGF21 and stimulating energy metabolism in db/db mice',
+        abstract: 'Hydrogen has been reported to have a therapeutic potential in various diseases. However, the diseases in which hydrogen is applicable for clinically remain unclear. In this study, we investigated the role of hydrogen in obesity and type 2 diabetes.',
+        authors: 'Naomi Kamimura, Kiyomi Nishimaki, Ikuroh Ohsawa, Shigeo Ohta',
+        journal: 'Obesity',
+        publishDate: '2021-01-15',
+        journalPublishDate: '2011-07-01',
+        category: 'Metabolic',
+        methods: 'Db/db mice were treated with hydrogen-rich water for 6 weeks.',
+        results: 'Hydrogen treatment improved obesity and diabetes by stimulating energy metabolism through the induction of hepatic FGF21.',
+        conclusion: 'These results suggest the potential benefit of hydrogen in treating metabolic diseases.',
+        doi: '10.1038/oby.2011.6',
+        peerReviewed: true,
+        publishYear: 2011,
+        summaryMarkdown: '# Molecular hydrogen improves obesity and diabetes\n\nThis study demonstrates that hydrogen-rich water can improve obesity and diabetes markers in mice through stimulation of energy metabolism and induction of hepatic FGF21.'
       },
       {
-        title: "Molecular Hydrogen as a Neuroprotective Agent: Potential Mechanisms in Alzheimer's Disease",
-        abstract: "This systematic review evaluates the potential of molecular hydrogen in preventing and treating neurodegenerative disorders, with emphasis on recent clinical trials. Analysis of 28 studies indicates hydrogen therapy may slow cognitive decline through multiple neuroprotective mechanisms.",
-        authors: "Tanaka et al.",
-        journal: "Neurotherapeutics",
-        publishDate: "2023-05-22",
-        category: "Neurodegenerative Diseases",
-        methods: "A systematic review of PubMed, EMBASE, and Cochrane databases was performed according to PRISMA guidelines. Studies published between 2010 and 2023 investigating hydrogen therapy in neurodegenerative conditions were included. Data extraction focused on intervention methods, cognitive outcomes, biomarkers, and proposed mechanisms of action.",
-        results: "Of 28 studies reviewed (12 animal studies, 16 human trials), 22 reported significant improvements in cognitive function or neuropathological markers. Hydrogen administration methods included hydrogen-rich water (64% of studies), hydrogen gas inhalation (29%), and hydrogen-producing tablets (7%). Key mechanisms identified include reduction of oxidative stress markers (observed in 89% of studies), decreased neuroinflammation (76%), improved mitochondrial function (53%), and reduced amyloid-β accumulation (41%).",
-        conclusion: "Current evidence suggests molecular hydrogen exerts multifaceted neuroprotective effects that may benefit patients with Alzheimer's disease and other neurodegenerative conditions. The strongest evidence supports hydrogen's antioxidant and anti-inflammatory actions. While promising, larger clinical trials with standardized protocols and longer follow-up periods are needed to establish optimal treatment regimens and confirm long-term efficacy.",
-        doi: "10.1007/s13311-023-01353-9",
-        peerReviewed: true
+        title: 'Hydrogen-rich water decreases serum LDL-cholesterol levels and improves HDL function in patients with potential metabolic syndrome',
+        abstract: 'Metabolic syndrome is characterized by cardiometabolic risk factors that include obesity, insulin resistance, hypertension and dyslipidemia. Dyslipidemia is characterized by elevated LDL and decreased HDL. This study examined the effects of consuming hydrogen-rich water on serum lipid profiles in patients with potential metabolic syndrome.',
+        authors: 'Guohua Song, Min Li, Hongchao Sang, Liyuan Zhang, Xuejun Li, Shucun Qin',
+        journal: 'Journal of Lipid Research',
+        publishDate: '2021-02-10',
+        journalPublishDate: '2013-07-01',
+        category: 'Cardiovascular',
+        methods: 'Patients with potential metabolic syndrome consumed hydrogen-rich water for 10 weeks.',
+        results: 'Drinking hydrogen-rich water decreased serum total and LDL-cholesterol and improved HDL functions.',
+        conclusion: 'The findings suggest that hydrogen-rich water might be promising to improve the dyslipidemia and reduce cardiovascular risks.',
+        doi: '10.1194/jlr.M036640',
+        peerReviewed: true,
+        publishYear: 2013,
+        summaryMarkdown: '# Hydrogen-rich water improves lipid profiles\n\nThis study found that consuming hydrogen-rich water can decrease LDL-cholesterol levels and improve HDL function in patients with potential metabolic syndrome, suggesting cardiovascular benefits.'
       },
       {
-        title: "Effects of Hydrogen-Rich Water on Glucose Metabolism in Type 2 Diabetes: A Randomized Controlled Trial",
-        abstract: "This randomized controlled trial investigates the effects of 12-week hydrogen-rich water consumption on glycemic control and insulin sensitivity in patients with type 2 diabetes. Results showed significant improvements in fasting glucose, HbA1c, and HOMA-IR scores.",
-        authors: "Martinez et al.",
-        journal: "Diabetes Care",
-        publishDate: "2023-04-10",
-        category: "Metabolism & Diabetes",
-        methods: "Sixty-five patients with type 2 diabetes were randomly assigned to consume either hydrogen-rich water (600 mL daily) or placebo water for 12 weeks. Primary outcomes included changes in fasting blood glucose, HbA1c, and insulin resistance (HOMA-IR). Secondary outcomes included lipid profiles, inflammatory markers, and oxidative stress parameters.",
-        results: "The hydrogen-rich water group demonstrated significant reductions in fasting blood glucose (-11.2 mg/dL, p=0.008), HbA1c (-0.4%, p=0.012), and HOMA-IR (-0.6, p=0.003) compared to the placebo group. Significant improvements were also observed in total antioxidant capacity (+14.5%, p<0.001) and reduced malondialdehyde levels (-18.7%, p<0.001). No significant changes were observed in lipid profiles between groups. No serious adverse events were reported.",
-        conclusion: "Daily consumption of hydrogen-rich water for 12 weeks significantly improved glycemic control and insulin sensitivity in patients with type 2 diabetes. These benefits appear to be mediated, at least in part, through reduction of oxidative stress. Hydrogen-rich water may represent a simple, cost-effective adjunct therapy for managing type 2 diabetes. Larger studies with longer follow-up periods are warranted to confirm these findings and evaluate long-term effects.",
-        doi: "10.2337/dc23-0542",
-        peerReviewed: true
+        title: 'Hydrogen-rich water for improvements of mood, anxiety, and autonomic nerve function in daily life',
+        abstract: 'The effects of hydrogen-rich water on mood, anxiety, and autonomic nerve function were investigated in this study. Volunteers were evaluated for their mood and anxiety levels before and after consuming hydrogen-rich water for 4 weeks.',
+        authors: 'Kei Mizuno, Akihiro T Sasaki, Kyoko Ebisu, Kanako Tajima, Sayaka Kajimoto, Junichi Kuratsune, Hirohiko Kuratsune, Yasuyoshi Watanabe',
+        journal: 'Medical Gas Research',
+        publishDate: '2021-03-20',
+        journalPublishDate: '2017-12-01',
+        category: 'Neurological',
+        methods: 'Twenty-six adult volunteers drank 600 mL of hydrogen-rich water per day for 4 weeks.',
+        results: 'Drinking hydrogen-rich water improved mood, anxiety, and autonomic nerve function.',
+        conclusion: 'Hydrogen-rich water may have potential as a safe and effective intervention for improving mood, anxiety, and autonomic nerve function.',
+        doi: '10.4103/2045-9912.222448',
+        peerReviewed: true,
+        publishYear: 2017,
+        summaryMarkdown: '# Hydrogen-rich water improves mood and anxiety\n\nThis study shows that drinking hydrogen-rich water daily can lead to improvements in mood, anxiety levels, and autonomic nerve function in healthy adults.'
       }
     ];
-
+    
+    // Insert studies
+    await db.insert(studies).values(sampleStudies);
+    
+    // Update category counts
+    const categoryStudyCounts = new Map<string, number>();
     for (const study of sampleStudies) {
-      await this.createStudy(study);
+      const category = study.category;
+      categoryStudyCounts.set(category, (categoryStudyCounts.get(category) || 0) + 1);
+    }
+    
+    // Update each category with the correct study count
+    for (const [categoryName, count] of categoryStudyCounts.entries()) {
+      const category = await this.getCategoryByName(categoryName);
+      if (category) {
+        await db
+          .update(categories)
+          .set({ studyCount: count })
+          .where(eq(categories.id, category.id));
+      }
     }
   }
 }

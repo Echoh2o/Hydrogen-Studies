@@ -6,15 +6,9 @@
  * to prevent being rate-limited as anonymous users.
  */
 import axios from 'axios';
-import { InsertStudy } from '@shared/schema';
 
-// CrossRef API URL
-const CROSSREF_API_URL = 'https://api.crossref.org/works';
-
-// Set headers for CrossRef API requests to avoid rate limiting
-const CROSSREF_HEADERS = {
-  'User-Agent': 'HydrogenStudies/1.0 (https://hydrogenstudies.com; info@hydrogenstudies.com)',
-};
+// Base URL for CrossRef API
+const CROSSREF_API_BASE_URL = 'https://api.crossref.org';
 
 /**
  * Search CrossRef for articles
@@ -24,42 +18,26 @@ const CROSSREF_HEADERS = {
  * @returns Search results
  */
 export async function searchCrossRef(
-  query: string,
-  page: number = 1,
-  pageSize: number = 10
+  query: string, 
+  page: number = 1, 
+  pageSize: number = 20
 ): Promise<any> {
   try {
-    const offset = (page - 1) * pageSize;
-    
-    // Formulate the query to focus on hydrogen-related studies
-    const formattedQuery = `${query}+hydrogen`;
-    
-    // Make API request to CrossRef with proper headers
-    const response = await axios.get(`${CROSSREF_API_URL}`, {
+    const response = await axios.get(`${CROSSREF_API_BASE_URL}/works`, {
       params: {
-        query: formattedQuery,
+        query,
         rows: pageSize,
-        offset: offset,
-        sort: 'relevance',
-        order: 'desc'
+        offset: (page - 1) * pageSize
       },
-      headers: CROSSREF_HEADERS,
-      timeout: 10000 // 10 second timeout
+      headers: {
+        'User-Agent': 'HydrogenStudies.com Research Database/1.0 (https://hydrogenstudies.com; mailto:info@hydrogenstudies.com)'
+      }
     });
-    
-    return {
-      items: response.data.message.items || [],
-      totalResults: response.data.message['total-results'] || 0,
-      page: page,
-      pageSize: pageSize
-    };
-  } catch (error: any) {
-    console.error('Error searching CrossRef:', error.message);
-    if (error.response) {
-      console.error('CrossRef API response status:', error.response.status);
-      console.error('CrossRef API response data:', error.response.data);
-    }
-    throw new Error('Failed to search CrossRef');
+
+    return response.data;
+  } catch (error) {
+    console.error(`Error searching CrossRef for query "${query}":`, error);
+    throw error;
   }
 }
 
@@ -70,21 +48,19 @@ export async function searchCrossRef(
  */
 export async function getCrossRefArticleByDOI(doi: string): Promise<any> {
   try {
-    // CrossRef API accepts DOIs directly in the URL path
+    // Encode the DOI to handle special characters
     const encodedDOI = encodeURIComponent(doi);
-    const response = await axios.get(`${CROSSREF_API_URL}/${encodedDOI}`, {
-      headers: CROSSREF_HEADERS,
-      timeout: 10000 // 10 second timeout
-    });
     
-    return response.data.message;
-  } catch (error: any) {
-    console.error('Error fetching article from CrossRef:', error.message);
-    if (error.response) {
-      console.error('CrossRef API response status:', error.response.status);
-      console.error('CrossRef API response data:', error.response.data);
-    }
-    throw new Error('Failed to fetch article from CrossRef');
+    const response = await axios.get(`${CROSSREF_API_BASE_URL}/works/${encodedDOI}`, {
+      headers: {
+        'User-Agent': 'HydrogenStudies.com Research Database/1.0 (https://hydrogenstudies.com; mailto:info@hydrogenstudies.com)'
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching CrossRef data for DOI ${doi}:`, error);
+    throw error;
   }
 }
 
@@ -93,94 +69,78 @@ export async function getCrossRefArticleByDOI(doi: string): Promise<any> {
  * @param articleData Article data from CrossRef API
  * @returns Formatted study data for insertion
  */
-export function extractStudyFromCrossRef(articleData: any): InsertStudy | null {
+export function extractStudyFromCrossRef(articleData: any): any {
   try {
-    if (!articleData || !articleData.title || articleData.title.length === 0) {
+    if (!articleData?.message) {
       return null;
     }
+
+    const data = articleData.message;
     
+    // Extract publish year from publication date
+    let publishYear = null;
+    if (data['published-print'] && data['published-print']['date-parts'] && data['published-print']['date-parts'][0]) {
+      publishYear = data['published-print']['date-parts'][0][0];
+    } else if (data['published-online'] && data['published-online']['date-parts'] && data['published-online']['date-parts'][0]) {
+      publishYear = data['published-online']['date-parts'][0][0];
+    } else if (data.created && data.created['date-parts'] && data.created['date-parts'][0]) {
+      publishYear = data.created['date-parts'][0][0];
+    }
+    
+    // Extract journal publication date
+    let journalPublishDate = null;
+    if (data['published-print'] && data['published-print']['date-parts'] && data['published-print']['date-parts'][0]) {
+      journalPublishDate = formatDateParts(data['published-print']['date-parts'][0]);
+    } else if (data['published-online'] && data['published-online']['date-parts'] && data['published-online']['date-parts'][0]) {
+      journalPublishDate = formatDateParts(data['published-online']['date-parts'][0]);
+    } else if (data.created && data.created['date-parts'] && data.created['date-parts'][0]) {
+      journalPublishDate = formatDateParts(data.created['date-parts'][0]);
+    }
+
     // Extract authors
-    const authors = articleData.author?.map((author: any) => {
-      return `${author.given || ''} ${author.family || ''}`.trim();
-    }).join(', ') || '';
-    
-    // Extract publication date
-    let publishDate = '';
-    if (articleData.published) {
-      const date = articleData.published['date-parts']?.[0];
-      if (date && date.length >= 1) {
-        // Format: YYYY-MM-DD
-        const year = date[0];
-        const month = date.length >= 2 ? String(date[1]).padStart(2, '0') : '01';
-        const day = date.length >= 3 ? String(date[2]).padStart(2, '0') : '01';
-        publishDate = `${year}-${month}-${day}`;
-      }
+    let authors = 'Unknown Authors';
+    if (data.author && data.author.length > 0) {
+      authors = data.author.map((author: any) => {
+        return `${author.given || ''} ${author.family || ''}`.trim();
+      }).join(', ');
     }
-    
-    // Default to publication date if available, otherwise use created date
-    if (!publishDate && articleData.created) {
-      const date = articleData.created['date-parts']?.[0];
-      if (date && date.length >= 1) {
-        const year = date[0];
-        const month = date.length >= 2 ? String(date[1]).padStart(2, '0') : '01';
-        const day = date.length >= 3 ? String(date[2]).padStart(2, '0') : '01';
-        publishDate = `${year}-${month}-${day}`;
-      }
-    }
-    
-    // Extract first and other authors
-    let firstAuthor = '';
-    let otherAuthors = '';
-    let lastAuthor = '';
-    
-    if (authors) {
-      const authorArray = authors.split(', ');
-      if (authorArray.length > 0) {
-        firstAuthor = authorArray[0];
-        if (authorArray.length > 1) {
-          lastAuthor = authorArray[authorArray.length - 1];
-          otherAuthors = authorArray.slice(1, -1).join(', ');
-        }
-      }
-    }
-    
-    // Create study object for insertion
-    const study: InsertStudy = {
-      title: Array.isArray(articleData.title) ? articleData.title[0] : articleData.title,
-      abstract: articleData.abstract || '',
+
+    // Determine if paper is peer-reviewed based on type
+    const isPeerReviewed = !!(data.type && (
+      data.type === 'journal-article' || 
+      data.type === 'proceedings-article' || 
+      data.type === 'journal-issue'
+    ));
+
+    // Extract journal title
+    const journal = data['container-title'] && data['container-title'].length > 0 
+      ? data['container-title'][0] 
+      : 'Scientific Journal';
+
+    const study = {
+      title: data.title && data.title.length > 0 ? data.title[0] : 'Untitled Study',
+      abstract: data.abstract || 'No abstract available',
       authors: authors,
-      firstAuthor: firstAuthor,
-      otherAuthors: otherAuthors,
-      lastAuthor: lastAuthor,
-      journal: articleData['container-title']?.[0] || '',
-      publishDate: publishDate,
-      category: 'Uncategorized',
-      peerReviewed: isPeerReviewed(articleData),
-      methods: null,
-      results: null,
-      conclusion: null,
-      doi: articleData.DOI || null,
-      pdfUrl: articleData.link?.find((l: any) => l.content_type?.includes('pdf'))?.URL || null,
-      citationUrl: `https://doi.org/${articleData.DOI}`,
-      keywords: extractKeywords(articleData),
-      sourcePlatform: 'CrossRef',
-      healthConditions: [],
-      bodySystems: [],
-      // Hydrogen research specific fields with default values
-      rank: null,
-      model: null,
-      primaryTopic: null,
-      secondaryTopic: null,
-      tertiaryTopic: null,
-      vehicle: null,
-      pH: null,
-      application: null,
-      duration: null,
-      comparison: null,
-      complement: null,
-      country: null
+      journal: journal,
+      publishDate: new Date().toISOString().substring(0, 10), // Today's date for website publish date
+      journalPublishDate: journalPublishDate || new Date().toISOString().substring(0, 10),
+      category: 'General', // Default category - can be updated later
+      methods: '',
+      results: '',
+      conclusion: '',
+      doi: data.DOI || '',
+      pdfUrl: data.link && data.link.length > 0 ? data.link[0].URL : '',
+      citationUrl: `https://doi.org/${data.DOI}`,
+      peerReviewed: isPeerReviewed,
+      publishYear: publishYear || new Date().getFullYear(),
+      country: data.institution ? data.institution : '',
+      methodsShort: '',
+      resultsShort: '',
+      conclusionShort: '',
+      objective: '',
+      summaryMarkdown: generateSummaryMarkdown(data),
     };
-    
+
     return study;
   } catch (error) {
     console.error('Error extracting study from CrossRef data:', error);
@@ -189,47 +149,60 @@ export function extractStudyFromCrossRef(articleData: any): InsertStudy | null {
 }
 
 /**
- * Determine if an article is peer-reviewed based on CrossRef metadata
+ * Format date parts from CrossRef into YYYY-MM-DD
  */
-function isPeerReviewed(articleData: any): boolean {
-  // Check if the article has a DOI (most peer-reviewed articles do)
-  if (!articleData.DOI) {
-    return false;
+function formatDateParts(dateParts: number[]): string {
+  try {
+    const year = dateParts[0];
+    const month = dateParts.length > 1 ? (dateParts[1] < 10 ? `0${dateParts[1]}` : `${dateParts[1]}`) : '01';
+    const day = dateParts.length > 2 ? (dateParts[2] < 10 ? `0${dateParts[2]}` : `${dateParts[2]}`) : '01';
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error('Error formatting date parts:', error);
+    return new Date().toISOString().substring(0, 10); // Return current date as fallback
   }
-  
-  // Check the type of publication
-  const type = articleData.type?.toLowerCase();
-  if (['journal-article', 'journal_article'].includes(type)) {
-    return true;
-  }
-  
-  // Check if the container title (journal) exists
-  if (articleData['container-title'] && articleData['container-title'].length > 0) {
-    return true;
-  }
-  
-  return false;
 }
 
 /**
- * Extract keywords from CrossRef data
+ * Generate a markdown summary from the article data
  */
-function extractKeywords(articleData: any): string[] {
-  const keywords: string[] = [];
-  
-  // Extract subject keywords if available
-  if (articleData.subject && Array.isArray(articleData.subject)) {
-    keywords.push(...articleData.subject);
+function generateSummaryMarkdown(data: any): string {
+  try {
+    let markdown = '';
+    
+    if (data.title && data.title.length > 0) {
+      markdown += `# ${data.title[0]}\n\n`;
+    }
+    
+    if (data.author && data.author.length > 0) {
+      const authorNames = data.author.map((author: any) => {
+        return `${author.given || ''} ${author.family || ''}`.trim();
+      }).join(', ');
+      
+      markdown += `**Authors:** ${authorNames}\n\n`;
+    }
+    
+    if (data['container-title'] && data['container-title'].length > 0) {
+      let publishedInfo = `**Published in:** ${data['container-title'][0]}`;
+      
+      if (data['published-print'] && data['published-print']['date-parts'] && data['published-print']['date-parts'][0]) {
+        publishedInfo += ` (${data['published-print']['date-parts'][0][0]})`;
+      }
+      
+      markdown += `${publishedInfo}\n\n`;
+    }
+    
+    if (data.abstract) {
+      markdown += `## Abstract\n\n${data.abstract}\n\n`;
+    }
+    
+    if (data.DOI) {
+      markdown += `**DOI:** [${data.DOI}](https://doi.org/${data.DOI})\n\n`;
+    }
+    
+    return markdown;
+  } catch (error) {
+    console.error('Error generating summary markdown:', error);
+    return '';
   }
-  
-  // Add keywords from title
-  if (articleData.title && Array.isArray(articleData.title) && articleData.title.length > 0) {
-    const titleWords = articleData.title[0]
-      .split(/\s+/)
-      .filter((word: string) => word.length > 3 && !['with', 'from', 'that', 'this', 'through'].includes(word.toLowerCase()))
-      .slice(0, 5);
-    keywords.push(...titleWords);
-  }
-  
-  return Array.from(new Set(keywords));
 }

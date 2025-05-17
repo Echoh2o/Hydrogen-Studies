@@ -1,194 +1,205 @@
-/**
- * CrossRef API routes
- */
-import { Router, Request, Response } from 'express';
+import express from 'express';
 import { searchCrossRef, getCrossRefArticleByDOI, extractStudyFromCrossRef } from '../crossref-api';
-import { db } from '../db';
-import { studies } from '@shared/schema';
+import { storage } from '../storage';
 
-const router = Router();
+const router = express.Router();
 
 /**
- * Search CrossRef for articles
- * GET /api/crossref/search?q=query&page=1&pageSize=10
+ * Search CrossRef for studies
  */
-router.get('/search', async (req: Request, res: Response) => {
+router.get('/search', async (req, res) => {
   try {
-    const { q, page = '1', pageSize = '10' } = req.query;
+    const { query, page = '1', pageSize = '10' } = req.query;
     
-    if (!q || typeof q !== 'string') {
-      return res.status(400).json({ error: 'Search query is required' });
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query is required'
+      });
     }
     
-    const pageNum = parseInt(page as string, 10);
-    const pageSizeNum = parseInt(pageSize as string, 10);
+    const results = await searchCrossRef(
+      query as string, 
+      parseInt(page as string), 
+      parseInt(pageSize as string)
+    );
     
-    // Search CrossRef API
-    const results = await searchCrossRef(q, pageNum, pageSizeNum);
-    
-    // Format the response for the frontend
-    return res.json({
-      items: results.items.map((item: any) => ({
-        id: item.DOI,
-        title: Array.isArray(item.title) ? item.title[0] : item.title,
-        authors: item.author?.map((author: any) => {
-          return `${author.given || ''} ${author.family || ''}`.trim();
-        }).join(', ') || 'Unknown',
-        journal: Array.isArray(item['container-title']) ? item['container-title'][0] : item['container-title'] || 'Unknown',
-        year: item.published?.['date-parts']?.[0]?.[0] || 'Unknown',
-        doi: item.DOI,
-        url: `https://doi.org/${item.DOI}`,
-        abstract: item.abstract || ''
-      })),
-      page: results.page,
-      pageSize: results.pageSize,
-      totalResults: results.totalResults
+    res.json({
+      success: true,
+      data: results
     });
   } catch (error) {
-    console.error('Error searching CrossRef:', error);
-    return res.status(500).json({ error: 'Failed to search CrossRef' });
+    console.error('CrossRef search error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search CrossRef API'
+    });
   }
 });
 
 /**
- * Get article details by DOI
- * GET /api/crossref/article/:doi
+ * Get article details by DOI from CrossRef
  */
-router.get('/article/:doi', async (req: Request, res: Response) => {
+router.get('/doi/:doi', async (req, res) => {
   try {
     const { doi } = req.params;
     
     if (!doi) {
-      return res.status(400).json({ error: 'DOI is required' });
+      return res.status(400).json({
+        success: false,
+        message: 'DOI is required'
+      });
     }
     
-    // Get article from CrossRef API
-    const articleData = await getCrossRefArticleByDOI(doi);
+    const article = await getCrossRefArticleByDOI(doi);
     
-    // Format the article for the frontend
-    return res.json({
-      id: articleData.DOI,
-      title: Array.isArray(articleData.title) ? articleData.title[0] : articleData.title,
-      authors: articleData.author?.map((author: any) => {
-        return `${author.given || ''} ${author.family || ''}`.trim();
-      }).join(', ') || 'Unknown',
-      journal: Array.isArray(articleData['container-title']) ? articleData['container-title'][0] : articleData['container-title'] || 'Unknown',
-      year: articleData.published?.['date-parts']?.[0]?.[0] || 'Unknown',
-      doi: articleData.DOI,
-      url: `https://doi.org/${articleData.DOI}`,
-      abstract: articleData.abstract || '',
-      pdfUrl: articleData.link?.find((l: any) => l.content_type?.includes('pdf'))?.URL || null,
-      citationUrl: `https://doi.org/${articleData.DOI}`
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: 'Article not found with provided DOI'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: article
     });
   } catch (error) {
-    console.error('Error getting article from CrossRef:', error);
-    return res.status(500).json({ error: 'Failed to get article from CrossRef' });
+    console.error('CrossRef DOI lookup error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch article from CrossRef API'
+    });
   }
 });
 
 /**
- * Import article to database
- * POST /api/crossref/import/:doi
+ * Import article from CrossRef by DOI
  */
-router.post('/import/:doi', async (req: Request, res: Response) => {
+router.post('/import/:doi', async (req, res) => {
   try {
     const { doi } = req.params;
     
     if (!doi) {
-      return res.status(400).json({ error: 'DOI is required' });
+      return res.status(400).json({
+        success: false,
+        message: 'DOI is required'
+      });
     }
     
     // Check if study with this DOI already exists
-    const existingStudy = await db.query.studies.findFirst({
-      where: (studies, { eq }) => eq(studies.doi, doi)
-    });
+    const existingStudy = await storage.getStudyByIdentifier(doi);
     
     if (existingStudy) {
-      return res.status(409).json({ 
-        error: 'Study with this DOI already exists', 
-        studyId: existingStudy.id 
+      return res.status(409).json({
+        success: false,
+        message: 'Study with this DOI already exists',
+        studyId: existingStudy.id
       });
     }
     
-    // Get article from CrossRef API
+    // Get article data from CrossRef
     const articleData = await getCrossRefArticleByDOI(doi);
     
-    // Extract study data
-    const studyData = extractStudyFromCrossRef(articleData);
-    
-    if (!studyData) {
-      return res.status(400).json({ error: 'Failed to extract study data from CrossRef' });
+    if (!articleData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Article not found with provided DOI'
+      });
     }
     
-    // Insert study into database
-    const [insertedStudy] = await db.insert(studies).values(studyData).returning();
+    // Extract study data from article
+    const studyData = extractStudyFromCrossRef(articleData);
     
-    return res.status(201).json({
+    // Create study in database
+    const createdStudy = await storage.createStudy(studyData);
+    
+    res.status(201).json({
       success: true,
-      message: 'Study imported successfully',
-      study: insertedStudy
+      message: 'Study successfully imported from CrossRef',
+      study: createdStudy
     });
   } catch (error) {
-    console.error('Error importing article from CrossRef:', error);
-    return res.status(500).json({ error: 'Failed to import article from CrossRef' });
+    console.error('CrossRef import error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to import study from CrossRef API'
+    });
   }
 });
 
 /**
- * Auto-complete missing study data using DOI
- * POST /api/crossref/autocomplete
+ * Update journal publication date by DOI
  */
-router.post('/autocomplete', async (req: Request, res: Response) => {
+router.put('/update-journal-date/:doi', async (req, res) => {
   try {
-    const { doi, studyId } = req.body;
+    const { doi } = req.params;
     
     if (!doi) {
-      return res.status(400).json({ error: 'DOI is required' });
-    }
-    
-    // Get article from CrossRef API
-    const articleData = await getCrossRefArticleByDOI(doi);
-    
-    // Extract study data
-    const studyData = extractStudyFromCrossRef(articleData);
-    
-    if (!studyData) {
-      return res.status(400).json({ error: 'Failed to extract study data from CrossRef' });
-    }
-    
-    // If studyId is provided, update the existing study
-    if (studyId) {
-      await db.update(studies)
-        .set({
-          title: studyData.title,
-          abstract: studyData.abstract,
-          authors: studyData.authors,
-          firstAuthor: studyData.firstAuthor,
-          otherAuthors: studyData.otherAuthors,
-          lastAuthor: studyData.lastAuthor,
-          journal: studyData.journal,
-          publishDate: studyData.publishDate,
-          pdfUrl: studyData.pdfUrl,
-          citationUrl: studyData.citationUrl,
-          keywords: studyData.keywords
-        })
-        .where(studies.id, '=', studyId);
-      
-      return res.json({
-        success: true,
-        message: 'Study updated successfully with CrossRef data',
-        study: studyData
+      return res.status(400).json({
+        success: false,
+        message: 'DOI is required'
       });
     }
     
-    // Return the extracted data
-    return res.json({
+    // Check if study with this DOI exists
+    const existingStudy = await storage.getStudyByIdentifier(doi);
+    
+    if (!existingStudy) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study with this DOI not found'
+      });
+    }
+    
+    // Get article data from CrossRef
+    const articleData = await getCrossRefArticleByDOI(doi);
+    
+    if (!articleData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Article not found in CrossRef with provided DOI'
+      });
+    }
+    
+    // Extract publication date data
+    let journalPublishDate = null;
+    
+    // Try to get the publication date from various fields
+    if (articleData.published) {
+      const dateParts = articleData.published["date-parts"]?.[0];
+      if (dateParts && dateParts.length >= 1) {
+        // Format: YYYY-MM-DD or as much as we have
+        const year = dateParts[0];
+        const month = dateParts.length > 1 ? String(dateParts[1]).padStart(2, '0') : '01';
+        const day = dateParts.length > 2 ? String(dateParts[2]).padStart(2, '0') : '01';
+        journalPublishDate = `${year}-${month}-${day}`;
+      }
+    }
+    
+    if (!journalPublishDate) {
+      return res.status(404).json({
+        success: false,
+        message: 'Could not find publication date in CrossRef data'
+      });
+    }
+    
+    // Update study in database
+    const updatedStudy = await storage.updateStudy(existingStudy.id, { 
+      journalPublishDate
+    });
+    
+    res.json({
       success: true,
-      studyData
+      message: 'Journal publication date successfully updated',
+      study: updatedStudy
     });
   } catch (error) {
-    console.error('Error auto-completing with CrossRef:', error);
-    return res.status(500).json({ error: 'Failed to auto-complete with CrossRef' });
+    console.error('CrossRef date update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update journal publication date from CrossRef'
+    });
   }
 });
 
