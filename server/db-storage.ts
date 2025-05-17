@@ -11,7 +11,7 @@ import {
 } from "@shared/schema";
 import { IStorage, StudyFilters } from "./storage";
 import { db } from "./db";
-import { eq, and, or, like, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, or, like, gte, lte, desc, asc, sql } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   // Studies methods

@@ -157,25 +157,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/studies", async (req, res) => {
     try {
       const { 
+        // Basic filters
         query, 
         keyword, 
         author, 
         yearFrom, 
         yearTo, 
         category,
-        peerReviewed,
-        sortBy 
+        
+        // Enhanced UI filters
+        isPeerReviewed,
+        hasHealthImplications,
+        hasMedia,
+        dateFrom,
+        dateTo,
+        
+        // Pagination and sorting
+        page,
+        pageSize,
+        sortField,
+        sortOrder,
+        sortBy, // Legacy support
+        
+        // Advanced filters
+        healthConditions,
+        bodySystems,
+        studyType,
+        country,
+        region,
+        journal,
+        hasFullText,
+        
+        // Legacy support
+        peerReviewed
       } = req.query;
       
+      // Process array fields that come as strings
+      let processedHealthConditions: string[] | undefined;
+      let processedBodySystems: string[] | undefined;
+      let processedStudyType: string[] | undefined;
+      let processedCountry: string[] | undefined;
+      let processedRegion: string[] | undefined;
+      
+      if (healthConditions) {
+        try {
+          if (typeof healthConditions === 'string') {
+            processedHealthConditions = JSON.parse(healthConditions);
+          }
+        } catch (e) {
+          console.error("Error parsing healthConditions:", e);
+        }
+      }
+      
+      if (bodySystems) {
+        try {
+          if (typeof bodySystems === 'string') {
+            processedBodySystems = JSON.parse(bodySystems);
+          }
+        } catch (e) {
+          console.error("Error parsing bodySystems:", e);
+        }
+      }
+      
+      if (studyType) {
+        try {
+          if (typeof studyType === 'string') {
+            processedStudyType = JSON.parse(studyType);
+          }
+        } catch (e) {
+          console.error("Error parsing studyType:", e);
+        }
+      }
+      
+      if (country) {
+        try {
+          if (typeof country === 'string') {
+            processedCountry = JSON.parse(country);
+          }
+        } catch (e) {
+          console.error("Error parsing country:", e);
+        }
+      }
+      
+      if (region) {
+        try {
+          if (typeof region === 'string') {
+            processedRegion = JSON.parse(region);
+          }
+        } catch (e) {
+          console.error("Error parsing region:", e);
+        }
+      }
+      
+      // Process boolean values that come as strings
+      const processedIsPeerReviewed = isPeerReviewed === undefined 
+        ? undefined 
+        : isPeerReviewed === "true" 
+          ? true 
+          : isPeerReviewed === "false" 
+            ? false 
+            : null;
+            
+      const processedHasHealthImplications = hasHealthImplications === undefined 
+        ? undefined 
+        : hasHealthImplications === "true" 
+          ? true 
+          : hasHealthImplications === "false" 
+            ? false 
+            : null;
+            
+      const processedHasMedia = hasMedia === undefined 
+        ? undefined 
+        : hasMedia === "true" 
+          ? true 
+          : hasMedia === "false" 
+            ? false 
+            : null;
+            
+      const processedHasFullText = hasFullText === "true";
+      
+      // For backward compatibility
+      const processedPeerReviewed = peerReviewed === "true";
+      
       const studies = await storage.getStudies({
+        // Basic filters
         query: query as string,
         keyword: keyword as string,
         author: author as string,
         yearFrom: yearFrom as string,
         yearTo: yearTo as string,
         category: category as string,
-        peerReviewed: peerReviewed === "true",
-        sortBy: sortBy as string
+        
+        // Enhanced UI filters
+        isPeerReviewed: processedIsPeerReviewed,
+        hasHealthImplications: processedHasHealthImplications,
+        hasMedia: processedHasMedia,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+        
+        // Pagination and sorting
+        page: page as string,
+        pageSize: pageSize as string,
+        sortField: sortField as string,
+        sortOrder: sortOrder as 'asc' | 'desc',
+        sortBy: sortBy as string, // Legacy support
+        
+        // Advanced filters
+        healthConditions: processedHealthConditions,
+        bodySystems: processedBodySystems,
+        studyType: processedStudyType,
+        country: processedCountry,
+        region: processedRegion,
+        journal: journal as string,
+        hasFullText: processedHasFullText,
+        
+        // Legacy support
+        peerReviewed: processedPeerReviewed
       });
       
       res.json(studies);
