@@ -85,12 +85,18 @@ export async function processStudyForVectorDB(studyId: number) {
       // Create embedding
       const embedding = await createEmbedding(chunk.text);
       
-      // Store in vector database
-      await pool.query(
-        `INSERT INTO studies_vectors (study_id, chunk_text, embedding, metadata)
-         VALUES ($1, $2, $3, $4)`,
-        [studyId, chunk.text, embedding, JSON.stringify(chunk.metadata)]
-      );
+      // Store in vector database with proper vector format
+      // We need to make sure the vector is formatted properly for PostgreSQL
+      try {
+        await pool.query(
+          `INSERT INTO studies_vectors (study_id, chunk_text, embedding, metadata)
+           VALUES ($1, $2, ARRAY[$3]::float[]::vector, $4)`,
+          [studyId, chunk.text, embedding.join(','), JSON.stringify(chunk.metadata)]
+        );
+      } catch (insertError) {
+        console.error("Error inserting vector:", insertError);
+        throw insertError;
+      }
     }
 
     return true;
