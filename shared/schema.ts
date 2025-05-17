@@ -329,7 +329,7 @@ export type CollectionStudy = typeof collectionStudies.$inferSelect;
 // Chat conversations table schema
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").references(() => users.id),
+  userId: integer("user_id").references(() => users.id),
   title: text("title").default("New Conversation"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -348,7 +348,7 @@ export const chatMessages = pgTable("chat_messages", {
 export const chatFeedback = pgTable("chat_feedback", {
   id: serial("id").primaryKey(),
   messageId: integer("message_id").notNull().references(() => chatMessages.id),
-  userId: text("user_id").references(() => users.id),
+  userId: integer("user_id").references(() => users.id),
   rating: integer("rating").notNull(), // 1 (thumbs down) or 5 (thumbs up)
   comment: text("comment"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
