@@ -154,6 +154,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register CrossRef API routes
   app.use('/api/crossref', crossrefRoutes);
   
+  // Register DOI enhancement routes for improving study data quality
+  app.use('/api/doi', doiEnhancementRoutes);
+  
   // API routes
   
   // Studies routes
