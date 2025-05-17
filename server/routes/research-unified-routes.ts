@@ -189,10 +189,9 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     
     // Always use "unified" as the source when we have multiple sources requested
     // Use the specific source name when it's the only source explicitly requested
-    const finalSource = 
-      selectedSources.length === 1 
-        ? selectedSources[0].toLowerCase()
-        : 'unified';
+    // IMPORTANT: When multiple sources are requested, we must use 'unified'
+    // This ensures the frontend knows to handle the combined results properly
+    const finalSource = selectedSources.length === 1 ? selectedSources[0].toLowerCase() : 'unified';
         
     console.log(`Request details: query="${query}", sources=${JSON.stringify(selectedSources)}, page=${pageNum}, pageSize=${pageSizeNum}`);
     console.log(`Using response source: ${finalSource}`);
@@ -204,17 +203,23 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     }
     
     // Format response based on available results
-    res.json({
+    // Create response with unified source when multiple sources are requested
+    // This is critical for the frontend to handle combined results
+    const responseObj = {
       success: true,
-      source: finalSource,
+      source: selectedSources.length > 1 ? 'unified' : finalSource,
       query: query,
       total: totalResults,
       startIndex: (pageNum - 1) * pageSizeNum,
       nextIndex: pageNum * pageSizeNum,
-      articles: uniqueResults, // Use de-duped results
+      articles: uniqueResults.slice(0, pageSizeNum), // Use de-duped results and respect page size
       sourceCounts: sourceCounts, // Include source counts for debugging
       errors: errors.length > 0 ? errors : undefined
-    });
+    };
+    
+    console.log(`Responding with source: ${responseObj.source}, total articles: ${responseObj.articles.length}`);
+    
+    res.json(responseObj);
   } catch (error: any) {
     console.error('Error in unified research search:', error);
     res.status(500).json({ error: error.message || 'Failed to search research databases' });
