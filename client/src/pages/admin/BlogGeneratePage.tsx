@@ -141,8 +141,6 @@ export default function BlogGeneratePage() {
       } catch (error) {
         throw error; // Re-throw for the error handler
       }
-      
-      return data;
     },
     onSuccess: (data) => {
       // Update the progress state with the final count
@@ -180,6 +178,14 @@ export default function BlogGeneratePage() {
         try {
           // Parse the error response to get existing blogs
           const data = await error.response.json();
+          
+          // Update progress with the count of existing blogs
+          setGenerationProgress(prev => ({
+            ...prev,
+            step: 'Blog articles already exist for this study',
+            completed: false,
+            blogCount: data.blogs?.length || 0
+          }));
           
           toast({
             title: 'Blog articles already exist',
