@@ -837,10 +837,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           imageUrl: publicUrl,
           imageAlt: req.body.imageAlt || `Image for ${blog.title}`
         })
-        .where(eq(blogArticles.id, parseInt(id)));
+        .where(eq(blogArticles.id, blogId));
       
       // Get the updated blog
-      const [updatedBlog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      const [updatedBlog] = await db.select().from(blogArticles).where(eq(blogArticles.id, blogId));
       
       res.status(200).json({ 
         message: "Media uploaded successfully", 
