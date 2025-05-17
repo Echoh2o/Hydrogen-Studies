@@ -40,6 +40,7 @@ import BlogAddPage from "@/pages/admin/BlogAddPage";
 import BlogEditPage from "@/pages/admin/BlogEditPage";
 import ResearchImportPage from "@/pages/admin/ResearchImportPage";
 import DataImportPage from "@/pages/admin/DataImportPage";
+import ResearchDatabasePage from "@/pages/admin/ResearchDatabasePage";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -77,6 +78,7 @@ function Router() {
       <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
       <Route path="/admin/research-import" component={ResearchImportPage} />
       <Route path="/admin/data-import" component={DataImportPage} />
+      <Route path="/admin/research-database" component={ResearchDatabasePage} />
       
       {/* Legacy Admin Routes - will be removed after transition */}
       <Route path="/admin/legacy" component={AdminPage} />
