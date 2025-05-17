@@ -23,27 +23,91 @@ const responseCache = new Map<string, {
 const CACHE_TIMEOUT = 24 * 60 * 60 * 1000;
 
 /**
+ * Interface for conversation history with database storage
+ */
+export interface ConversationHistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: Date;
+  id?: number;
+}
+
+/**
  * Function to generate a chat response based on user query
  * This uses a RAG (Retrieval Augmented Generation) approach
  * to ensure answers are based only on the hydrogen studies
  */
 export async function generateChatResponse(
   userQuery: string,
-  conversationHistory: { role: "user" | "assistant"; content: string }[] = []
+  conversationHistory: ConversationHistoryItem[] = [],
+  userId?: number,
+  conversationId?: number
 ): Promise<{ 
   answer: string; 
   sources: { title: string; doi: string; authors: string; publishDate: string }[];
   relatedQuestions: string[];
+  conversationId?: number;
 }> {
   try {
+    // Check cache for recent identical query
+    const cacheKey = userQuery.toLowerCase().trim();
+    if (responseCache.has(cacheKey)) {
+      const cachedResponse = responseCache.get(cacheKey);
+      if (cachedResponse && (Date.now() - cachedResponse.timestamp < CACHE_TIMEOUT)) {
+        console.log('Using cached response for query:', cacheKey);
+        
+        // Still record the conversation even when using cached response
+        if (userId && conversationId) {
+          await saveMessage(conversationId, 'user', userQuery);
+          await saveMessage(conversationId, 'assistant', cachedResponse.answer);
+        }
+        
+        return {
+          ...cachedResponse,
+          conversationId
+        };
+      }
+    }
+    
+    // If no conversation exists yet and we have a user, create one
+    if (!conversationId && userId) {
+      try {
+        const defaultTitle = userQuery.length > 30 
+          ? `${userQuery.substring(0, 30)}...` 
+          : userQuery;
+        
+        const [newConversation] = await db
+          .insert(conversations)
+          .values({
+            userId,
+            title: defaultTitle,
+            updatedAt: new Date()
+          })
+          .returning();
+        
+        conversationId = newConversation.id;
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+      }
+    }
+    
     // 1. Retrieve relevant content from vector DB
     const relevantResults = await semanticSearch(userQuery, 5);
     
     if (!relevantResults || relevantResults.length === 0) {
+      const noResultsAnswer = "I couldn't find any relevant information about that in our hydrogen research database. Could you try rephrasing your question or asking about a different aspect of hydrogen research?";
+      
+      // Save the conversation even when no results
+      if (userId && conversationId) {
+        await saveMessage(conversationId, 'user', userQuery);
+        await saveMessage(conversationId, 'assistant', noResultsAnswer);
+      }
+      
       return {
-        answer: "I couldn't find any relevant information about that in our hydrogen research database. Could you try rephrasing your question or asking about a different aspect of hydrogen research?",
+        answer: noResultsAnswer,
         sources: [],
-        relatedQuestions: generateDefaultRelatedQuestions()
+        relatedQuestions: generateDefaultRelatedQuestions(),
+        conversationId
       };
     }
     
@@ -51,6 +115,11 @@ export async function generateChatResponse(
     const context = formatSearchResultsToContext(relevantResults);
     
     // 3. Create messages array with conversation history
+    const formattedHistory = conversationHistory.map(item => ({
+      role: item.role as "user" | "assistant",
+      content: item.content
+    }));
+    
     const messages = [
       {
         role: "system" as const,
@@ -70,7 +139,7 @@ Here is the context from peer-reviewed studies on hydrogen research:
 
 ${context}`
       },
-      ...conversationHistory,
+      ...formattedHistory,
       {
         role: "user" as const,
         content: userQuery
@@ -112,11 +181,32 @@ ${context}`
     const uniqueSources = sources.filter((source, index, self) =>
       index === self.findIndex((s) => s.doi === source.doi)
     );
+    
+    // 8. Save messages to database if we have a conversation
+    if (userId && conversationId) {
+      await saveMessage(conversationId, 'user', userQuery);
+      await saveMessage(conversationId, 'assistant', answer);
+      
+      // Update conversation timestamp
+      await db
+        .update(conversations)
+        .set({ updatedAt: new Date() })
+        .where(eq(conversations.id, conversationId));
+    }
+    
+    // 9. Cache the response
+    responseCache.set(cacheKey, {
+      answer,
+      sources: uniqueSources,
+      relatedQuestions,
+      timestamp: Date.now()
+    });
 
     return {
       answer,
       sources: uniqueSources,
-      relatedQuestions
+      relatedQuestions,
+      conversationId
     };
   } catch (error) {
     console.error('Error generating chat response:', error);
@@ -205,6 +295,106 @@ function generateDefaultRelatedQuestions(): string[] {
     "How does hydrogen storage affect its viability as a renewable energy source?",
     "What health benefits are associated with molecular hydrogen therapy?"
   ];
+}
+
+/**
+ * Save a message to the database
+ */
+async function saveMessage(conversationId: number, role: 'user' | 'assistant', content: string): Promise<number> {
+  try {
+    const [message] = await db
+      .insert(chatMessages)
+      .values({
+        conversationId,
+        role,
+        content
+      })
+      .returning();
+    
+    return message.id;
+  } catch (error) {
+    console.error('Error saving message:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get conversation history from the database
+ */
+export async function getConversationHistory(conversationId: number): Promise<ConversationHistoryItem[]> {
+  try {
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.conversationId, conversationId))
+      .orderBy(chatMessages.timestamp);
+    
+    return messages.map(msg => ({
+      id: msg.id,
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+      timestamp: msg.timestamp
+    }));
+  } catch (error) {
+    console.error('Error retrieving conversation history:', error);
+    return [];
+  }
+}
+
+/**
+ * Get user's conversations
+ */
+export async function getUserConversations(userId: number): Promise<any[]> {
+  try {
+    return await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.userId, userId))
+      .orderBy(conversations.updatedAt, 'desc');
+  } catch (error) {
+    console.error('Error retrieving user conversations:', error);
+    return [];
+  }
+}
+
+/**
+ * Save feedback for a message
+ */
+export async function saveFeedback(
+  messageId: number, 
+  userId: number, 
+  rating: number, 
+  comment?: string
+): Promise<boolean> {
+  try {
+    await db
+      .insert(chatFeedback)
+      .values({
+        messageId,
+        userId,
+        rating,
+        comment: comment || null
+      });
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving feedback:', error);
+    return false;
+  }
+}
+
+/**
+ * Get popular questions from the database
+ */
+export async function getPopularQuestions(category?: string, limit: number = 5): Promise<string[]> {
+  try {
+    // Implement this once we have the popular_questions table populated
+    // For now, return default questions
+    return generateDefaultRelatedQuestions();
+  } catch (error) {
+    console.error('Error retrieving popular questions:', error);
+    return generateDefaultRelatedQuestions();
+  }
 }
 
 /**
