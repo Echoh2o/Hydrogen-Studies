@@ -337,23 +337,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/studies/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Validate ID format with regex before parsing
+      if (!id || !/^\d+$/.test(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid study ID format. Please provide a numeric ID." 
+        });
+      }
+      
       const studyId = parseInt(id);
       
-      // Validate that id is a valid number
-      if (isNaN(studyId)) {
-        return res.status(400).json({ message: "Invalid study ID" });
+      // Additional validation after parsing
+      if (isNaN(studyId) || studyId <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid study ID value. Please provide a positive integer." 
+        });
       }
       
       const study = await storage.getStudyById(studyId);
       
       if (!study) {
-        return res.status(404).json({ message: "Study not found" });
+        return res.status(404).json({ 
+          success: false, 
+          message: "Study not found" 
+        });
       }
       
       res.json(study);
     } catch (error) {
       console.error("Error fetching study:", error);
-      res.status(500).json({ message: "Failed to fetch study" });
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch study" 
+      });
     }
   });
   
@@ -361,52 +379,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/studies/:id/related", async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Validate ID format with regex before parsing
+      if (!id || !/^\d+$/.test(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid study ID format. Please provide a numeric ID." 
+        });
+      }
+      
       const studyId = parseInt(id);
       
-      // Validate that id is a valid number
-      if (isNaN(studyId)) {
-        return res.status(400).json({ message: "Invalid study ID" });
+      // Additional validation after parsing
+      if (isNaN(studyId) || studyId <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid study ID value. Please provide a positive integer." 
+        });
       }
       
       const study = await storage.getStudyById(studyId);
       
       if (!study) {
-        return res.status(404).json({ message: "Study not found" });
+        return res.status(404).json({ 
+          success: false, 
+          message: "Study not found" 
+        });
       }
       
-      // Get studies in the same category
+      // Get studies in the same category with validation
       const relatedStudies = await storage.getStudies({
-        category: study.category
+        category: study.category || 'general' // Provide fallback if category is missing
       });
       
+      // Ensure relatedStudies.data exists and is an array before filtering
+      const studiesData = relatedStudies.data || [];
+      
       // Remove the current study from the results
-      const filteredStudies = relatedStudies.filter(s => s.id !== studyId);
+      const filteredStudies = Array.isArray(studiesData) 
+        ? studiesData.filter((s: any) => s && s.id !== studyId)
+        : [];
       
       // Sort based on relevance to the current study (using title and abstract similarity)
-      const scoredStudies = filteredStudies.map(relatedStudy => {
+      const scoredStudies = filteredStudies.map((relatedStudy: any) => {
         let score = 0;
         
+        // Safely access properties with validation
+        const studyTitle = (study.title || '').toLowerCase();
+        const relatedTitle = (relatedStudy.title || '').toLowerCase();
+        const relatedAbstract = (relatedStudy.abstract || '').toLowerCase();
+        
         // Give points for matching keywords in title
-        const titleWords = study.title.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+        const titleWords = studyTitle.split(/\s+/).filter(word => word.length > 3);
         for (const word of titleWords) {
-          if (relatedStudy.title.toLowerCase().includes(word)) {
+          if (relatedTitle.includes(word)) {
             score += 2;
           }
-          if (relatedStudy.abstract.toLowerCase().includes(word)) {
+          if (relatedAbstract.includes(word)) {
             score += 1;
           }
         }
         
         // Give points for matching authors
-        if (study.authors === relatedStudy.authors) {
+        if (study.authors && relatedStudy.authors && study.authors === relatedStudy.authors) {
           score += 3;
         }
         
         // Give points for similar publication date (same year)
-        const studyYear = new Date(study.publishDate).getFullYear();
-        const relatedYear = new Date(relatedStudy.publishDate).getFullYear();
-        if (studyYear === relatedYear) {
-          score += 1;
+        try {
+          const studyYear = new Date(study.publishDate).getFullYear();
+          const relatedYear = new Date(relatedStudy.publishDate).getFullYear();
+          
+          if (!isNaN(studyYear) && !isNaN(relatedYear) && studyYear === relatedYear) {
+            score += 1;
+          }
+        } catch (dateError) {
+          // Silently ignore date parsing errors
         }
         
         return { ...relatedStudy, relevanceScore: score };
@@ -414,13 +462,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Sort by relevance score (highest first) and return top 5
       const sortedRelated = scoredStudies
-        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
         .slice(0, 5);
       
       res.json(sortedRelated);
     } catch (error) {
       console.error("Error fetching related studies:", error);
-      res.status(500).json({ message: "Failed to fetch related studies" });
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch related studies" 
+      });
     }
   });
   
@@ -491,52 +542,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Newsletter subscription route
   app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
-      const validatedData = insertNewsletterSchema.parse(req.body);
-      const subscription = await storage.subscribeNewsletter(validatedData);
-      res.status(201).json(subscription);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ message: validationError.message });
+      // Initial validation of request body
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid request format. Please provide a valid subscription request."
+        });
       }
+      
+      // Validate email format first for clearer errors
+      if (!req.body.email || typeof req.body.email !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required for newsletter subscription"
+        });
+      }
+      
+      // Email format validation
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(req.body.email)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide a valid email address"
+        });
+      }
+      
+      // Full schema validation
+      try {
+        const validatedData = insertNewsletterSchema.parse(req.body);
+        const subscription = await storage.subscribeNewsletter(validatedData);
+        
+        res.status(201).json({
+          success: true,
+          data: subscription,
+          message: "Successfully subscribed to newsletter"
+        });
+      } catch (zodError) {
+        if (zodError instanceof ZodError) {
+          const validationError = fromZodError(zodError);
+          return res.status(400).json({
+            success: false,
+            message: validationError.message
+          });
+        }
+        throw zodError; // Re-throw if it's not a ZodError
+      }
+    } catch (error) {
       console.error("Error subscribing to newsletter:", error);
-      res.status(500).json({ message: "Failed to subscribe to newsletter" });
+      res.status(500).json({
+        success: false,
+        message: "Failed to subscribe to newsletter"
+      });
     }
   });
   
   // Contact form submission route
   app.post("/api/contact", async (req, res) => {
     try {
-      const validatedData = insertContactSchema.parse(req.body);
-      
-      // Send email using SendGrid
-      const emailSuccess = await sendContactEmail({
-        name: validatedData.name,
-        email: validatedData.email,
-        subject: validatedData.subject,
-        message: validatedData.message
-      });
-      
-      if (!emailSuccess) {
-        return res.status(500).json({ message: "Failed to send email. Please try again later." });
+      // Initial validation of request body
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid request format. Please provide a valid contact form."
+        });
       }
-      
-      // Store contact message in database if available
+
+      // Schema validation with detailed error handling
       try {
-        await storage.submitContactMessage(validatedData);
-      } catch (dbError) {
-        console.warn("Failed to store contact message in database, but email was sent:", dbError);
-        // Continue execution since the email was sent successfully
+        const validatedData = insertContactSchema.parse(req.body);
+        
+        // Additional email format validation
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(validatedData.email)) {
+          return res.status(400).json({
+            success: false,
+            message: "Please provide a valid email address"
+          });
+        }
+        
+        // Send email using SendGrid
+        const emailSent = await sendContactEmail({
+          name: validatedData.name,
+          email: validatedData.email,
+          subject: req.body.subject || "Contact Form Submission", // Handle missing subject
+          message: validatedData.message
+        });
+        
+        if (!emailSent) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to send email. Please try again later."
+          });
+        }
+        
+        // Store in database if that function exists
+        if (typeof storage.submitContactMessage === 'function') {
+          try {
+            await storage.submitContactMessage({
+              name: validatedData.name,
+              email: validatedData.email,
+              message: validatedData.message,
+              subject: req.body.subject || "Contact Form Submission"
+            });
+          } catch (dbError) {
+            console.warn("Failed to store contact message in database, but email was sent:", dbError);
+            // Continue execution since the email was sent successfully
+          }
+        }
+        
+        res.status(201).json({
+          success: true,
+          message: "Your message has been sent successfully!"
+        });
+      } catch (zodError) {
+        if (zodError instanceof ZodError) {
+          const validationError = fromZodError(zodError);
+          return res.status(400).json({
+            success: false,
+            message: validationError.message
+          });
+        }
+        throw zodError; // Re-throw if it's not a ZodError
       }
-      
-      res.status(201).json({ message: "Your message has been sent successfully!" });
     } catch (error) {
-      if (error instanceof ZodError) {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ message: validationError.message });
-      }
       console.error("Error submitting contact form:", error);
-      res.status(500).json({ message: "Failed to submit contact form" });
+      res.status(500).json({
+        success: false,
+        message: "Failed to submit contact form"
+      });
     }
   });
   
