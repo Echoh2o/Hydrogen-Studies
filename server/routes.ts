@@ -1713,10 +1713,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate and return chat response with conversation context
       const response = await generateChatResponse(
-        query, 
-        conversationHistory,
-        userId,
-        conversationId
+        query,
+        conversationId,
+        userId
       );
       
       res.json({
@@ -1826,9 +1825,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save feedback (userId can be null for anonymous feedback)
       const success = await saveFeedback(
         messageId,
-        userId || 0,
         rating,
-        comment
+        comment,
+        userId
       );
       
       if (success) {
