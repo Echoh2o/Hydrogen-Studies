@@ -15,6 +15,9 @@ import {
 import { db } from '../db';
 import { studies } from '@shared/schema';
 import { eq, ne, isNull, or, and, like, asc } from 'drizzle-orm';
+import { storage } from '../storage';
+import { getCrossRefArticleByDOI } from '../crossref-api';
+import { getSemanticScholarPaper } from '../semantic-scholar-api';
 
 const router = Router();
 
@@ -270,14 +273,8 @@ router.post('/enhance/batch', async (req: Request, res: Response) => {
             // Add a delay to avoid rate limiting
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Use the single study enhancement endpoint
-            const enhanceResponse = await fetch(`http://localhost:5000/api/doi/enhance`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ studyId: study.id })
-            });
-            
-            const enhanceResult = await enhanceResponse.json();
+            // Directly call the enhance function instead of making an HTTP request
+            const enhanceResult = await enhanceStudyWithDoi(study.id);
             
             details.push({
               studyId: study.id,
