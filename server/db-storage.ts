@@ -11,7 +11,7 @@ import {
 } from "@shared/schema";
 import { IStorage, StudyFilters } from "./storage";
 import { db } from "./db";
-import { eq, and, or, like, gte, lte, desc, asc, sql } from "drizzle-orm";
+import { eq, and, or, like, gte, lte, desc, asc, sql, ilike } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   // Studies methods
@@ -37,10 +37,33 @@ export class DatabaseStorage implements IStorage {
     
     // Journal filter
     if (filters.journal && filters.journal.length > 0) {
-      // Using a simple LIKE query for the journal name
       const journalName = filters.journal[0];
       if (journalName && journalName.trim() !== '') {
-        conditions.push(like(studies.journal, `%${journalName}%`));
+        conditions.push(ilike(studies.journal, `%${journalName}%`));
+      }
+    }
+    
+    // Study type filter
+    if (filters.studyType && filters.studyType.length > 0) {
+      const studyTypeValue = filters.studyType[0];
+      if (studyTypeValue && studyTypeValue.trim() !== '') {
+        conditions.push(ilike(studies.studyType, `%${studyTypeValue}%`));
+      }
+    }
+    
+    // Country filter
+    if (filters.country && filters.country.length > 0) {
+      const countryValue = filters.country[0];
+      if (countryValue && countryValue.trim() !== '') {
+        conditions.push(ilike(studies.country, `%${countryValue}%`));
+      }
+    }
+    
+    // Region filter
+    if (filters.region && filters.region.length > 0) {
+      const regionValue = filters.region[0];
+      if (regionValue && regionValue.trim() !== '') {
+        conditions.push(ilike(studies.region, `%${regionValue}%`));
       }
     }
     
@@ -107,14 +130,11 @@ export class DatabaseStorage implements IStorage {
     // Advanced filters for health conditions and body systems
     if (filters.healthConditions && filters.healthConditions.length > 0) {
       try {
-        // Using PostgreSQL array contains operator
-        // For safety, only apply this filter if we have valid health conditions
-        if (filters.healthConditions.length > 0) {
-          // Using simpler comparison for now - we'll check if any of the values match
-          // We need to handle this more carefully with proper array operations
-          const firstCondition = filters.healthConditions[0];
+        const firstCondition = filters.healthConditions[0];
+        if (firstCondition && firstCondition.trim() !== '') {
+          // Using ilike for case insensitive text search
           conditions.push(
-            sql`${studies.healthConditions}::text LIKE ${'%' + firstCondition + '%'}`
+            ilike(studies.healthConditions, `%${firstCondition}%`)
           );
         }
       } catch (error) {
@@ -124,12 +144,11 @@ export class DatabaseStorage implements IStorage {
     
     if (filters.bodySystems && filters.bodySystems.length > 0) {
       try {
-        // For safety, only apply this filter if we have valid body systems
-        if (filters.bodySystems.length > 0) {
-          // Using simpler comparison for now - we'll check if any of the values match
-          const firstSystem = filters.bodySystems[0];
+        const firstSystem = filters.bodySystems[0];
+        if (firstSystem && firstSystem.trim() !== '') {
+          // Using ilike for case insensitive text search
           conditions.push(
-            sql`${studies.bodySystems}::text LIKE ${'%' + firstSystem + '%'}`
+            ilike(studies.bodySystems, `%${firstSystem}%`)
           );
         }
       } catch (error) {
