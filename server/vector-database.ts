@@ -6,9 +6,20 @@ import OpenAI from 'openai';
 // Initialize OpenAI client for embeddings
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Check if vector extension exists, if not create it
-export async function setupVectorExtension() {
+// Flag to track if setup has been completed in this session
+let vectorExtensionSetupComplete = false;
+
+// Check if vector extension exists, if not create it - optimized to run only once per session
+export async function setupVectorExtension(forceSetup = false) {
+  // Skip if already set up in this session, unless forced
+  if (vectorExtensionSetupComplete && !forceSetup) {
+    return true;
+  }
+  
   try {
+    // Use a single transaction for all operations
+    await pool.query('BEGIN');
+    
     // Check if pgvector extension exists
     const extensionExists = await pool.query(`
       SELECT EXISTS (
@@ -43,9 +54,16 @@ export async function setupVectorExtension() {
       `);
       console.log('studies_vectors table created successfully');
     }
-
+    
+    // Commit the transaction
+    await pool.query('COMMIT');
+    
+    // Mark setup as complete
+    vectorExtensionSetupComplete = true;
     return true;
   } catch (error) {
+    // Rollback on error
+    await pool.query('ROLLBACK');
     console.error('Error setting up vector extension:', error);
     return false;
   }
