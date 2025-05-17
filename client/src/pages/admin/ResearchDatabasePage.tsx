@@ -59,7 +59,8 @@ import {
   FileSpreadsheet,
   Table as TableIcon,
   FilePlus2,
-  RefreshCw
+  RefreshCw,
+  FileCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
