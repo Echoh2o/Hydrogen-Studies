@@ -64,11 +64,24 @@ export default function BlogsManagementPage() {
   const [publishedFilter, setPublishedFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState('all');
-  const pageSize = 10;
+  
+  // Track items per page
+  const [pageSize, setPageSize] = useState(10);
+  const [sortField, setSortField] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
   
   // Fetch blogs
   const { data: blogs, isLoading: isLoadingBlogs } = useQuery({
-    queryKey: ['/api/blogs', { page: currentPage, searchQuery, articleTypeFilter, publishedFilter, status: activeTab }],
+    queryKey: ['/api/blogs', { 
+      page: currentPage, 
+      pageSize, 
+      searchQuery, 
+      articleTypeFilter, 
+      publishedFilter, 
+      status: activeTab,
+      sortField,
+      sortOrder
+    }],
     retry: false,
   });
   
