@@ -81,7 +81,8 @@ export const studies = pgTable("studies", {
   abstract: text("abstract").notNull(),
   authors: text("authors").notNull(),
   journal: text("journal").notNull(),
-  publishDate: text("publish_date").notNull(),
+  publishDate: text("publish_date").notNull(), // Date when study was added to our site
+  journalPublishDate: text("journal_publish_date"), // Original publication date in the journal
   category: text("category").notNull(),
   methods: text("methods"),
   results: text("results"),
