@@ -38,11 +38,19 @@ interface ChatSource {
   publishDate: string;
 }
 
+interface ProductRecommendation {
+  name: string;
+  description: string;
+  url: string;
+  imageUrl?: string;
+}
+
 interface ChatResponse {
   answer: string;
   sources: ChatSource[];
   relatedQuestions: string[];
   conversationId?: number;
+  productRecommendations?: ProductRecommendation[];
 }
 
 interface Conversation {
@@ -60,6 +68,7 @@ export const ChatWidget: React.FC = () => {
   const [currentSources, setCurrentSources] = useState<ChatSource[]>([]);
   const [relatedQuestions, setRelatedQuestions] = useState<string[]>([]);
   const [popularQuestions, setPopularQuestions] = useState<string[]>([]);
+  const [productRecommendations, setProductRecommendations] = useState<ProductRecommendation[]>([]);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -207,9 +216,10 @@ export const ChatWidget: React.FC = () => {
         setMessages([...newMessages, assistantMessage]);
         setLastMessageId(assistantMessage.id || null);
         
-        // Update sources and related questions
+        // Update sources, related questions, and product recommendations
         setCurrentSources(response.data.sources || []);
         setRelatedQuestions(response.data.relatedQuestions || []);
+        setProductRecommendations(response.data.productRecommendations || []);
         
         console.log('Chat response received with sources:', response.data.sources?.length);
       } else {
@@ -231,6 +241,7 @@ export const ChatWidget: React.FC = () => {
     setMessages([]);
     setCurrentSources([]);
     setRelatedQuestions([]);
+    setProductRecommendations([]);
     setError(null);
     setConversationId(null);
     setLastMessageId(null);
