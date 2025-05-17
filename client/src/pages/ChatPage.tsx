@@ -6,46 +6,54 @@ export const ChatPage: React.FC = () => {
   return (
     <div className="container mx-auto py-8 px-4">
       <Helmet>
-        <title>AI Research Assistant | Hydrogen Studies</title>
-        <meta name="description" content="Ask questions about hydrogen research and get scientifically-backed answers from our AI assistant, powered by a database of peer-reviewed studies." />
+        <title>Hydrogen Health & Wellness Assistant | HydrogenStudies.com</title>
+        <meta name="description" content="Ask questions about hydrogen-rich water, hydrogen inhalation therapy, and hydrogen baths for health and wellness. Get evidence-based answers from peer-reviewed studies." />
+        <meta property="og:title" content="Hydrogen Health & Wellness Assistant" />
+        <meta property="og:description" content="Get answers about hydrogen water, inhalation therapy, and baths for your health and wellness, backed by scientific research." />
+        <meta property="og:type" content="website" />
       </Helmet>
 
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-            Hydrogen Research AI Assistant
+            Hydrogen Health & Wellness Assistant
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Get answers to your hydrogen research questions, powered by our database of peer-reviewed studies. 
-            All responses are sourced from scientific literature with proper citations.
+            Get answers to your hydrogen health questions about hydrogen-rich water, inhalation therapy, and hydrogen baths. 
+            All responses are sourced from peer-reviewed studies with proper citations.
           </p>
         </div>
         
         <ChatWidget />
         
         <div className="mt-10 bg-muted/30 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">About This AI Assistant</h2>
+          <h2 className="text-xl font-semibold mb-4">About This Health & Wellness Assistant</h2>
           <div className="space-y-4 text-sm">
             <p>
-              This AI research assistant uses a Retrieval-Augmented Generation (RAG) approach to ensure that all answers 
-              are backed by peer-reviewed hydrogen research studies in our database.
+              This hydrogen health assistant uses a specialized knowledge base to provide answers 
+              backed by peer-reviewed scientific studies on hydrogen's health and wellness applications.
             </p>
             <p>
-              Unlike general AI chatbots that may hallucinate or provide unreliable information, our assistant only provides 
-              information that is directly supported by scientific studies in our collection, with proper citations.
+              Unlike general health chatbots, our assistant focuses exclusively on the therapeutic benefits 
+              of hydrogen-rich water, hydrogen inhalation therapy, and hydrogen baths - with proper citations to scientific studies.
             </p>
             <p>
-              This makes it an ideal tool for researchers, students, and industry professionals who need reliable, 
-              evidence-based answers to their hydrogen research questions.
+              This makes it an ideal resource for health-conscious individuals, wellness practitioners, and medical professionals
+              looking for evidence-based information about hydrogen's potential benefits for various health conditions.
+            </p>
+            <p>
+              <a href="https://echowater.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-medium">
+                Visit Echo Water
+              </a> to explore hydrogen-rich water systems and wellness products that can help you experience these benefits.
             </p>
             <div className="pt-4 border-t border-border">
-              <h3 className="font-medium mb-2">Best practices for getting accurate answers:</h3>
+              <h3 className="font-medium mb-2">Best practices for getting accurate health information:</h3>
               <ul className="list-disc pl-5 space-y-1">
-                <li>Be specific in your questions</li>
-                <li>Ask about one topic at a time</li>
-                <li>If an answer seems incomplete, try rephrasing your question</li>
-                <li>Check the sources provided to verify information</li>
-                <li>Use the suggested related questions to explore a topic further</li>
+                <li>Be specific about your health interests or concerns</li>
+                <li>Ask about specific hydrogen administration methods (water, inhalation, baths)</li>
+                <li>Inquire about particular health conditions you're interested in</li>
+                <li>Check the scientific studies cited to verify information</li>
+                <li>Use the suggested related questions to explore health topics further</li>
               </ul>
             </div>
           </div>
