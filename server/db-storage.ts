@@ -1253,4 +1253,171 @@ export class DatabaseStorage implements IStorage {
       }
     }
   }
+
+  // Study review queue methods for two-tier approval system
+  async saveStudyForReview(reviewItem: InsertStudyReviewQueue): Promise<StudyReviewQueue> {
+    try {
+      const [savedItem] = await db
+        .insert(studyReviewQueue)
+        .values({
+          ...reviewItem,
+          savedAt: new Date(),
+          reviewedAt: null
+        })
+        .returning();
+      
+      return savedItem;
+    } catch (error) {
+      console.error('Error saving study for review:', error);
+      throw error;
+    }
+  }
+  
+  async getStudyReviewQueue(filters: {status?: string, userId?: string} = {}): Promise<StudyReviewQueue[]> {
+    try {
+      let query = db.select().from(studyReviewQueue);
+      
+      const conditions = [];
+      
+      if (filters.status) {
+        conditions.push(eq(studyReviewQueue.status, filters.status));
+      }
+      
+      if (filters.userId) {
+        conditions.push(
+          or(
+            eq(studyReviewQueue.savedByUserId, filters.userId),
+            eq(studyReviewQueue.reviewedByUserId, filters.userId)
+          )
+        );
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      // Sort by newest first
+      query = query.orderBy(desc(studyReviewQueue.savedAt));
+      
+      return await query;
+    } catch (error) {
+      console.error('Error fetching study review queue:', error);
+      throw error;
+    }
+  }
+  
+  async getStudyReviewQueueById(id: number): Promise<StudyReviewQueue | undefined> {
+    try {
+      const [reviewItem] = await db
+        .select()
+        .from(studyReviewQueue)
+        .where(eq(studyReviewQueue.id, id));
+      
+      return reviewItem;
+    } catch (error) {
+      console.error(`Error fetching review item with id ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async updateStudyReviewStatus(
+    id: number, 
+    status: string, 
+    reviewedByUserId: string, 
+    notes?: string
+  ): Promise<StudyReviewQueue> {
+    try {
+      // Get the existing review item first to preserve reviewNotes
+      const [existingItem] = await db
+        .select()
+        .from(studyReviewQueue)
+        .where(eq(studyReviewQueue.id, id));
+      
+      if (!existingItem) {
+        throw new Error(`Review item with id ${id} not found`);
+      }
+      
+      const reviewedAt = new Date();
+      
+      // Prepare the updated notes field
+      let updatedNotes = existingItem.reviewNotes || '';
+      if (notes) {
+        updatedNotes = updatedNotes 
+          ? `${updatedNotes}\n\nREVIEW NOTES (${reviewedAt.toISOString()}):\n${notes}` 
+          : `REVIEW NOTES (${reviewedAt.toISOString()}):\n${notes}`;
+      }
+      
+      // Update the item
+      const [updatedItem] = await db
+        .update(studyReviewQueue)
+        .set({
+          status,
+          reviewedByUserId,
+          reviewedAt,
+          reviewNotes: updatedNotes
+        })
+        .where(eq(studyReviewQueue.id, id))
+        .returning();
+      
+      if (!updatedItem) {
+        throw new Error(`Failed to update review item with id ${id}`);
+      }
+      
+      return updatedItem;
+    } catch (error) {
+      console.error(`Error updating review status for item ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteStudyFromReviewQueue(id: number): Promise<void> {
+    try {
+      await db
+        .delete(studyReviewQueue)
+        .where(eq(studyReviewQueue.id, id));
+    } catch (error) {
+      console.error(`Error deleting review item with id ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async checkStudyExists(doi: string): Promise<{exists: boolean, studyId?: number}> {
+    try {
+      if (!doi) {
+        return { exists: false };
+      }
+      
+      const normalizedDoi = doi.toLowerCase().trim();
+      
+      // Check if the study exists in the main studies table
+      const [existingStudy] = await db
+        .select({ id: studies.id })
+        .from(studies)
+        .where(sql`LOWER(TRIM(${studies.doi})) = ${normalizedDoi}`);
+      
+      if (existingStudy) {
+        return { exists: true, studyId: existingStudy.id };
+      }
+      
+      // Also check the review queue for pending studies with the same DOI
+      const [pendingStudy] = await db
+        .select({ id: studyReviewQueue.id })
+        .from(studyReviewQueue)
+        .where(
+          and(
+            sql`LOWER(TRIM(${studyReviewQueue.doi})) = ${normalizedDoi}`,
+            eq(studyReviewQueue.status, 'pending')
+          )
+        );
+      
+      if (pendingStudy) {
+        return { exists: true };
+      }
+      
+      return { exists: false };
+    } catch (error) {
+      console.error(`Error checking if study with DOI ${doi} exists:`, error);
+      throw error;
+    }
+  }
 }
