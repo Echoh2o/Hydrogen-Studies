@@ -58,14 +58,13 @@ router.get('/journal-date-stats', async (req, res) => {
       ? Math.round((studiesWithDate / totalStudies) * 100) 
       : 0;
     
-    // Get recent studies that were updated
+    // Get recent studies that were updated with journal publication dates
     const recentlyUpdated = await db
       .select()
       .from(studies)
       .where(
         isNull(studies.journalPublishDate).not()
       )
-      .orderBy(studies.updatedAt || studies.createdAt, 'desc')
       .limit(5);
 
     res.json({

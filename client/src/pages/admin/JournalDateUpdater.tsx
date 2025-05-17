@@ -26,6 +26,15 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
   const [result, setResult] = useState<any>(null);
   const [progress, setProgress] = useState<number>(0);
   const { toast } = useToast();
+  
+  // Fetch journal date statistics
+  const { 
+    data: statsData,
+    isLoading: isLoadingStats,
+    refetch: refetchStats
+  } = useQuery({
+    queryKey: ['/api/admin/journal-date-stats']
+  });
 
   const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
@@ -33,6 +42,13 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
       setLimit(value);
     }
   };
+
+  // Trigger update when finished processing
+  useEffect(() => {
+    if (!isProcessing && result?.success) {
+      refetchStats();
+    }
+  }, [isProcessing, result, refetchStats]);
 
   const processJournalDates = async () => {
     try {
@@ -48,12 +64,7 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
         });
       }, 1000);
 
-      const response = await apiRequest<{
-        success: boolean;
-        totalUpdated: number;
-        failedDois: string[];
-        message: string;
-      }>('/api/admin/update-journal-dates', {
+      const response = await apiRequest('/api/admin/update-journal-dates', {
         method: 'POST',
         body: { limit },
       });
@@ -92,6 +103,93 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
       <h1 className="text-3xl font-bold mb-8">Journal Publication Date Updater</h1>
       
       <div className="grid gap-6">
+        {/* Statistics Dashboard */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Database Statistics</CardTitle>
+            <CardDescription>
+              Overview of journal publication date completeness in the database
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingStats ? (
+              <div className="flex justify-center items-center p-6">
+                <RotateCw className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : statsData?.stats ? (
+              <div className="grid md:grid-cols-3 gap-4">
+                {/* Stats Summary */}
+                <div className="space-y-4">
+                  <div className="bg-slate-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-medium">Total Studies</h3>
+                    </div>
+                    <p className="text-3xl font-bold mt-2">{statsData.stats.totalStudies.toLocaleString()}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <h3 className="text-sm font-medium">Has Journal Date</h3>
+                      <p className="text-2xl font-bold mt-2">{statsData.stats.studiesWithDate.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-amber-50 p-4 rounded-lg">
+                      <h3 className="text-sm font-medium">Needs Journal Date</h3>
+                      <p className="text-2xl font-bold mt-2">{statsData.stats.studiesNeedingDate.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Completion Progress */}
+                <div className="md:col-span-2 bg-slate-50 p-4 rounded-lg">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <h3 className="text-lg font-medium">Completion Progress</h3>
+                      <span className="text-lg font-bold">{statsData.stats.percentComplete}%</span>
+                    </div>
+                    <Progress value={statsData.stats.percentComplete} className="h-4" />
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>0%</span>
+                      <span>50%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                  
+                  {/* Recently Updated */}
+                  <div className="mt-6">
+                    <h3 className="text-md font-medium mb-2">Recently Updated Studies</h3>
+                    <div className="text-sm">
+                      {statsData.stats.recentlyUpdated.length > 0 ? (
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {statsData.stats.recentlyUpdated.map((study: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-2 p-2 bg-white rounded border">
+                              <Calendar className="h-4 w-4 text-primary mt-0.5" />
+                              <div>
+                                <p className="font-medium line-clamp-1">{study.title}</p>
+                                <div className="flex gap-2 text-xs text-muted-foreground">
+                                  <span>Journal: {study.journalPublishDate}</span>
+                                  <span>DOI: {study.doi || 'N/A'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground italic">No recent updates</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Alert variant="destructive">
+                <p>Could not load statistics</p>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Update Tool */}
         <Card>
           <CardHeader>
             <CardTitle>Update Journal Publication Dates</CardTitle>
