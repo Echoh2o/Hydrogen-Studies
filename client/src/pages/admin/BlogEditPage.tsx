@@ -242,6 +242,34 @@ export default function BlogEditPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* AI Content Suggestions Component */}
+                <BlogContentSuggestions 
+                  blogId={blogId}
+                  onSuggestionApply={(suggestion) => {
+                    if (suggestion.length < 50) {
+                      // Likely a title suggestion
+                      setBlogData({
+                        ...blogData,
+                        title: suggestion
+                      });
+                      toast({
+                        title: 'Title Updated',
+                        description: 'The AI-suggested title has been applied to your blog.'
+                      });
+                    } else {
+                      // Content suggestion
+                      setBlogData({
+                        ...blogData,
+                        content: suggestion
+                      });
+                      toast({
+                        title: 'Content Updated',
+                        description: 'The AI-suggested content has been applied to your blog.'
+                      });
+                    }
+                  }}
+                />
+
                 <div className="space-y-2">
                   <Label htmlFor="title">Title <span className="text-red-500">*</span></Label>
                   <Input

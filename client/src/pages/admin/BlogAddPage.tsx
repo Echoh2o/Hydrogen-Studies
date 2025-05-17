@@ -23,6 +23,7 @@ import { ArrowLeft, Loader2, FileText, ImagePlus, Tag, Calendar, Link2, ArrowUpR
 import { apiRequest } from '@/lib/queryClient';
 import { MediaUpload } from '@/components/common/MediaUpload';
 import { BlogImageGenerator } from '@/components/admin/BlogImageGenerator';
+import { BlogContentSuggestions } from '@/components/admin/BlogContentSuggestions';
 
 export default function BlogAddPage() {
   const { toast } = useToast();
