@@ -33,15 +33,49 @@ router.post('/update-journal-dates', async (req, res) => {
  */
 router.get('/journal-date-stats', async (req, res) => {
   try {
-    // This will be implemented in the future
-    // For now, return a placeholder
+    const db = (await import('../db')).db;
+    const studies = (await import('@shared/schema')).studies;
+    const { count, isNull } = await import('drizzle-orm');
+    
+    // Count total studies
+    const [totalResult] = await db.select({ value: count() }).from(studies);
+    const totalStudies = totalResult?.value || 0;
+    
+    // Count studies with DOIs but missing journal dates
+    const [needingDatesResult] = await db
+      .select({ value: count() })
+      .from(studies)
+      .where(
+        isNull(studies.journalPublishDate)
+      );
+    const studiesNeedingDate = needingDatesResult?.value || 0;
+    
+    // Count studies with journal dates
+    const studiesWithDate = totalStudies - studiesNeedingDate;
+    
+    // Calculate percentage complete
+    const percentComplete = totalStudies > 0 
+      ? Math.round((studiesWithDate / totalStudies) * 100) 
+      : 0;
+    
+    // Get recent studies that were updated
+    const recentlyUpdated = await db
+      .select()
+      .from(studies)
+      .where(
+        isNull(studies.journalPublishDate).not()
+      )
+      .orderBy(studies.updatedAt || studies.createdAt, 'desc')
+      .limit(5);
+
     res.json({
       success: true,
       stats: {
-        totalStudies: 0,
-        studiesWithDate: 0,
-        studiesNeedingDate: 0,
-        percentComplete: 0
+        totalStudies,
+        studiesWithDate,
+        studiesNeedingDate,
+        percentComplete,
+        recentlyUpdated
       }
     });
   } catch (error) {
