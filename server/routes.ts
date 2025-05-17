@@ -72,6 +72,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register research article search and discovery routes
   app.use('/api', researchRoutes);
   
+  // Register unified search routes for multi-source searches
+  app.use('/api', unifiedResearchRoutes);
+  
   // External API routes for journal date functionality
   app.use('', europePmcRoutes);
   app.use('', semanticScholarRoutes);
