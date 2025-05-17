@@ -1026,7 +1026,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/studies/:id/blogs", async (req, res) => {
     try {
       const { id } = req.params;
-      const studyBlogs = await getBlogArticlesForStudy(parseInt(id));
+      const studyId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const studyBlogs = await getBlogArticlesForStudy(studyId);
       res.json(studyBlogs);
     } catch (error) {
       console.error("Error fetching study blogs:", error);
@@ -1038,6 +1045,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/blogs/:id/generate-suggestion", async (req, res) => {
     try {
       const { id } = req.params;
+      const blogId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(blogId)) {
+        return res.status(400).json({ message: "Invalid blog ID" });
+      }
+      
       const { suggestionType, selectedContent } = req.body;
       
       const validSuggestionTypes = ['improve', 'expand', 'simplify', 'add_examples', 'add_research_context', 'elon_style', 'add_conclusion'];
@@ -1046,7 +1060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get the blog article
-      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, blogId));
       
       if (!blog) {
         return res.status(404).json({ message: "Blog article not found" });
