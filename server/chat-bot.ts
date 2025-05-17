@@ -4,6 +4,38 @@ import { db } from './db';
 import { eq } from 'drizzle-orm';
 import { conversations, chatMessages, chatFeedback } from '../shared/schema';
 
+// Sample products database - Can be replaced with a real database or API call to Echo Water
+const ECHO_WATER_PRODUCTS = [
+  {
+    name: "Echo H2 Machine",
+    description: "Premium hydrogen water generator with advanced PEM technology for maximum hydrogen concentration",
+    url: "https://echowater.com/products/echo-h2-machine",
+    imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
+    keywords: ["water", "drink", "hydrogen water", "molecular hydrogen", "h2"]
+  },
+  {
+    name: "Echo H2 Tablet Maker",
+    description: "Convenient and portable hydrogen tablet maker for creating hydrogen-rich water on the go",
+    url: "https://echowater.com/products/echo-h2-tablets-1",
+    imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
+    keywords: ["tablets", "portable", "travel", "hydrogen water", "supplements"]
+  },
+  {
+    name: "Echo H2 Inhaler",
+    description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
+    url: "https://echowater.com/products/echo-h2-inhaler",
+    imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
+    keywords: ["inhale", "inhalation", "breathing", "respiratory", "molecular hydrogen", "lungs"]
+  },
+  {
+    name: "Echo H2 Bath System",
+    description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
+    url: "https://echowater.com/products/echo-h2-bath",
+    imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
+    keywords: ["bath", "skin", "topical", "bathing", "hydrogen bath", "skin health"]
+  }
+];
+
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -128,6 +160,7 @@ IMPORTANT RULES:
 1. Only provide information that is directly supported by the peer-reviewed hydrogen health studies in the context.
 2. If you cannot answer a question based on the context provided, clearly state that the information is not available in the current research database.
 3. Never make up or infer information that is not explicitly stated in the context.
+4. When appropriate, suggest Echo Water products that might help with the user's health goals. Echo Water (echowater.com) offers hydrogen-rich water systems and wellness products.
 4. Always cite your sources using [Author et al., Year] format when providing information.
 5. Maintain a scientific tone but explain concepts in a clear way that is understandable to non-experts.
 6. If there are conflicting findings in different studies, mention both perspectives and cite both sources.
@@ -209,14 +242,42 @@ ${context}`
       relatedQuestions,
       conversationId
     };
+    // Generate product recommendations based on query and answer
+    const productRecommendations = getRelevantProducts(userQuery, answer);
+    
+    return {
+      answer,
+      sources: uniqueSources,
+      relatedQuestions,
+      conversationId,
+      productRecommendations
+    };
   } catch (error) {
     console.error('Error generating chat response:', error);
     return {
       answer: "I'm sorry, I encountered an error processing your question. Please try again later.",
       sources: [],
-      relatedQuestions: generateDefaultRelatedQuestions()
+      relatedQuestions: generateDefaultRelatedQuestions(),
+      productRecommendations: []
     };
   }
+}
+
+/**
+ * Match relevant Echo Water products to a user query and answer
+ * @param query User's original query
+ * @param answer Generated answer from AI
+ * @returns Array of relevant product recommendations
+ */
+function getRelevantProducts(query: string, answer: string) {
+  const combinedText = (query + ' ' + answer).toLowerCase();
+  
+  return ECHO_WATER_PRODUCTS.filter(product => {
+    // Check if any of the product keywords appear in either the query or answer
+    return product.keywords.some(keyword => 
+      combinedText.includes(keyword.toLowerCase())
+    );
+  }).slice(0, 2); // Limit to max 2 products to avoid overwhelming the user
 }
 
 /**

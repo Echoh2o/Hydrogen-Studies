@@ -557,23 +557,47 @@ export const ChatWidget: React.FC = () => {
               ))}
             </div>
             
-            {/* Product recommendation for health-related hydrogen queries */}
-            {messages.length > 0 && 
-             messages[messages.length - 1].role === 'assistant' && 
-             (messages[messages.length - 1].content.toLowerCase().includes('water') || 
-              messages[messages.length - 1].content.toLowerCase().includes('drink') ||
-              messages[messages.length - 1].content.toLowerCase().includes('bath') ||
-              messages[messages.length - 1].content.toLowerCase().includes('inhale') ||
-              messages[messages.length - 1].content.toLowerCase().includes('device')) && (
+            {/* Product recommendations for hydrogen health-related queries */}
+            {productRecommendations.length > 0 && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
-                <h4 className="text-sm font-medium flex items-center gap-2">
-                  <ShoppingBag className="h-4 w-4" /> 
-                  Looking for hydrogen products?
+                <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
+                  <ShoppingBag className="h-4 w-4" /> Recommended Products for Hydrogen Health
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {productRecommendations.map((product, index) => (
+                    <a 
+                      key={index}
+                      href={product.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex gap-3 p-2 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                    >
+                      {product.imageUrl && (
+                        <div className="w-16 h-16 shrink-0 rounded overflow-hidden border border-gray-200 dark:border-gray-700">
+                          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h5 className="font-medium text-blue-600 dark:text-blue-400">{product.name}</h5>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{product.description}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Default Echo Water promotion when no specific product recommendations */}
+            {productRecommendations.length === 0 && messages.length > 0 && 
+             messages[messages.length - 1].role === 'assistant' && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+                <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
+                  <ShoppingBag className="h-4 w-4" /> Looking for hydrogen products?
                 </h4>
                 <p className="text-xs mt-1 mb-2 text-muted-foreground">
                   Visit <a href="https://echowater.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-medium">Echo Water</a> for hydrogen-rich water systems and wellness products.
                 </p>
-                <Button 
+                <Button
                   variant="default" 
                   size="sm" 
                   className="w-full text-xs"
