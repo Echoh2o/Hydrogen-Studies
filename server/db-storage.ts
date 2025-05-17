@@ -128,63 +128,112 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Advanced filters for health conditions and body systems
-    if (filters.healthConditions && filters.healthConditions.length > 0) {
+    if (filters.healthConditions && Array.isArray(filters.healthConditions) && filters.healthConditions.length > 0) {
       try {
-        const firstCondition = filters.healthConditions[0];
-        if (firstCondition && firstCondition.trim() !== '') {
-          // Using ilike for case insensitive text search
-          conditions.push(
-            ilike(studies.healthConditions, `%${firstCondition}%`)
-          );
+        // Create OR conditions for each health condition
+        const healthConditionsConditions = [];
+        
+        for (const condition of filters.healthConditions) {
+          if (condition && typeof condition === 'string' && condition.trim() !== '') {
+            // Using ilike for case insensitive text search
+            healthConditionsConditions.push(
+              ilike(studies.healthConditions, `%${condition.trim()}%`)
+            );
+          }
+        }
+        
+        // Only add the conditions if we have valid ones
+        if (healthConditionsConditions.length > 0) {
+          conditions.push(or(...healthConditionsConditions));
         }
       } catch (error) {
         console.error("Error applying health conditions filter:", error);
       }
     }
     
-    if (filters.bodySystems && filters.bodySystems.length > 0) {
+    if (filters.bodySystems && Array.isArray(filters.bodySystems) && filters.bodySystems.length > 0) {
       try {
-        const firstSystem = filters.bodySystems[0];
-        if (firstSystem && firstSystem.trim() !== '') {
-          // Using ilike for case insensitive text search
-          conditions.push(
-            ilike(studies.bodySystems, `%${firstSystem}%`)
-          );
+        // Create OR conditions for each body system
+        const bodySystemsConditions = [];
+        
+        for (const system of filters.bodySystems) {
+          if (system && typeof system === 'string' && system.trim() !== '') {
+            // Using ilike for case insensitive text search
+            bodySystemsConditions.push(
+              ilike(studies.bodySystems, `%${system.trim()}%`)
+            );
+          }
+        }
+        
+        // Only add the conditions if we have valid ones
+        if (bodySystemsConditions.length > 0) {
+          conditions.push(or(...bodySystemsConditions));
         }
       } catch (error) {
         console.error("Error applying body systems filter:", error);
       }
     }
     
-    // Pagination parameters
-    const page = filters.page ? parseInt(filters.page as string) : 1;
-    const pageSize = filters.pageSize ? parseInt(filters.pageSize as string) : 10;
+    // Pagination parameters with validation
+    let page = 1;
+    let pageSize = 10;
+    
+    // Validate page parameter
+    if (filters.page) {
+      const parsedPage = parseInt(filters.page as string);
+      page = !isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    }
+    
+    // Validate pageSize parameter
+    if (filters.pageSize) {
+      const parsedPageSize = parseInt(filters.pageSize as string);
+      pageSize = !isNaN(parsedPageSize) && parsedPageSize > 0 ? 
+                 Math.min(parsedPageSize, 100) : 10; // Limit to 100 max
+    }
+    
     const offset = (page - 1) * pageSize;
     
-    // Determine sort field and direction
+    // Determine sort field and direction with validation
     let sortField = studies.publishDate;
     let sortDirection = desc;
     
-    if (filters.sortField) {
-      switch (filters.sortField) {
-        case 'title':
-          sortField = studies.title;
-          break;
-        case 'journal':
-          sortField = studies.journal;
-          break;
-        case 'category':
-          sortField = studies.category;
-          break;
-        case 'publishDate':
-        default:
-          sortField = studies.publishDate;
-          break;
+    // Validate sort field
+    if (filters.sortField && typeof filters.sortField === 'string') {
+      // Whitelist of allowed sort fields
+      const allowedSortFields = ['title', 'journal', 'category', 'publishDate', 'authors', 'createdAt'];
+      
+      // Only use sortField if it's in the allowed list
+      if (allowedSortFields.includes(filters.sortField)) {
+        switch (filters.sortField) {
+          case 'title':
+            sortField = studies.title;
+            break;
+          case 'journal':
+            sortField = studies.journal;
+            break;
+          case 'category':
+            sortField = studies.category;
+            break;
+          case 'authors':
+            sortField = studies.authors;
+            break;
+          case 'createdAt':
+            sortField = studies.createdAt;
+            break;
+          case 'publishDate':
+          default:
+            sortField = studies.publishDate;
+            break;
+        }
       }
     }
     
-    if (filters.sortOrder === 'asc') {
-      sortDirection = asc;
+    // Validate sort order
+    if (filters.sortOrder && typeof filters.sortOrder === 'string') {
+      // Only accept 'asc' or 'desc' values
+      if (filters.sortOrder.toLowerCase() === 'asc') {
+        sortDirection = asc;
+      }
     }
     
     // Get total count first (for pagination)
