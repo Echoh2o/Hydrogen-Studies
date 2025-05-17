@@ -17,6 +17,7 @@ import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
 import { generateScientificImage, generateBlogImage } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
+import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
 import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -737,6 +738,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate content suggestions for a blog article
+  app.post("/api/blogs/:id/generate-suggestion", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { suggestionType, selectedContent } = req.body;
+      
+      const validSuggestionTypes = ['improve', 'expand', 'simplify', 'add_examples', 'add_research_context', 'elon_style', 'add_conclusion'];
+      if (!suggestionType || !validSuggestionTypes.includes(suggestionType)) {
+        return res.status(400).json({ message: "Invalid suggestion type" });
+      }
+      
+      // Get the blog article
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      if (!blog) {
+        return res.status(404).json({ message: "Blog article not found" });
+      }
+      
+      // Get related study if available
+      let relatedStudy = null;
+      if (blog.studyId) {
+        relatedStudy = await storage.getStudyById(blog.studyId);
+      }
+      
+      // Generate content suggestion
+      const suggestion = await generateContentSuggestion(
+        blog,
+        suggestionType as SuggestionType,
+        selectedContent,
+        relatedStudy || undefined
+      );
+      
+      res.json({
+        message: "Content suggestion generated successfully",
+        suggestion
+      });
+    } catch (error) {
+      console.error("Error generating content suggestion:", error);
+      res.status(500).json({ 
+        message: "Failed to generate content suggestion", 
+        error: error.message 
+      });
+    }
+  });
+  
+  // Generate title suggestions for a blog article
+  app.post("/api/blogs/:id/generate-titles", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get the blog article
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      if (!blog) {
+        return res.status(404).json({ message: "Blog article not found" });
+      }
+      
+      // Generate title suggestions
+      const suggestions = await generateTitleSuggestions(blog);
+      
+      res.json({
+        message: "Title suggestions generated successfully",
+        suggestions
+      });
+    } catch (error) {
+      console.error("Error generating title suggestions:", error);
+      res.status(500).json({ 
+        message: "Failed to generate title suggestions", 
+        error: error.message 
+      });
+    }
+  });
+
   // Generate blog articles for a study
   app.post("/api/studies/:id/generate-blogs", async (req, res) => {
     try {
