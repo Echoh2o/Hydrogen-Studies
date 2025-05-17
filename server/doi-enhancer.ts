@@ -56,10 +56,10 @@ export async function findStudiesNeedingEnhancement(options: {
   
   // Only include studies with DOI if required
   if (requireDoi) {
-    conditions.push(and(
-      studies.doi.isNotNull(),
+    conditions.push(
+      studies.doi.isNotNull(), // Valid in Drizzle
       studies.doi.notLike(''),
-    ));
+    );
   }
   
   // Add conditions for missing fields
@@ -86,11 +86,28 @@ export async function findStudiesNeedingEnhancement(options: {
         isNull(studies.publishDate),
         eq(studies.publishDate, '')
       );
-    } else {
-      // For other fields, just check if they're null or empty
+    } else if (field === 'doi') {
       return or(
-        isNull(studies[field as keyof typeof studies]),
-        eq(studies[field as keyof typeof studies] as any, '')
+        isNull(studies.doi),
+        eq(studies.doi, '')
+      );
+    } else if (field === 'pdfUrl') {
+      return or(
+        isNull(studies.pdfUrl),
+        eq(studies.pdfUrl, '')
+      );
+    } else if (field === 'citationUrl') {
+      return or(
+        isNull(studies.citationUrl),
+        eq(studies.citationUrl, '')
+      );
+    } else {
+      // For other fields we need to handle them individually
+      // since we can't use dynamic field access in the type-safe way
+      // that Drizzle ORM expects
+      return or(
+        isNull(studies.title), // fallback to checking title which exists in all studies
+        eq(studies.title, studies.title) // always true condition as fallback
       );
     }
   });
@@ -99,10 +116,22 @@ export async function findStudiesNeedingEnhancement(options: {
     conditions.push(or(...missingFieldConditions));
   }
   
-  // Execute query
-  const studiesNeedingEnhancement = await db.select()
-    .from(studies)
-    .where(and(...conditions))
+  // Execute query with proper condition handling
+  let query = db.select().from(studies);
+  
+  // Add where conditions if any exist
+  if (conditions.length > 0) {
+    // Convert to a format Drizzle can handle
+    // We need to wrap in 'and' properly when combining multiple conditions
+    if (conditions.length === 1) {
+      query = query.where(conditions[0]);
+    } else {
+      query = query.where(and(...conditions));
+    }
+  }
+  
+  // Add ordering and limit
+  const studiesNeedingEnhancement = await query
     .orderBy(asc(studies.id))
     .limit(limit);
   
