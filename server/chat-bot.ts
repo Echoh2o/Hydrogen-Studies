@@ -173,11 +173,17 @@ export async function generateChatResponse(
     // 2. Format the retrieved content into context
     const context = formatSearchResultsToContext(relevantResults);
     
-    // 3. Create messages array with conversation history
-    const formattedHistory = conversationHistory.map(item => ({
-      role: item.role as "user" | "assistant",
-      content: item.content
-    }));
+    // 3. Create messages array with conversation history if available
+    let formattedHistory: { role: "user" | "assistant", content: string }[] = [];
+    
+    if (conversationId) {
+      // Get conversation history from database if a conversation ID is provided
+      const historyItems = await getConversationHistory(conversationId);
+      formattedHistory = historyItems.map(item => ({
+        role: item.role as "user" | "assistant",
+        content: item.content
+      }));
+    }
     
     const messages = [
       {

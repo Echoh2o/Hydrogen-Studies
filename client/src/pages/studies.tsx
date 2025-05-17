@@ -9,7 +9,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import StudyCard from "@/components/studies/study-card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { StudyListSkeleton, ErrorDisplay, EmptyState } from "@/components/ui/loading-states";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { FileSearch } from "lucide-react";
 import { Study } from "@/types";
 
 export default function Studies() {
@@ -48,7 +50,7 @@ export default function Studies() {
     }
   }, [filters]);
   
-  const { data: studies, isLoading } = useQuery<Study[]>({
+  const { data: studies, isLoading, isError, error, refetch } = useQuery<Study[]>({
     queryKey: [`/api/studies`, queryParams.toString()],
   });
   
