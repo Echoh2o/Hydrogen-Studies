@@ -55,10 +55,19 @@ export default function BlogGeneratePage() {
   });
   
   // If a study is selected, get more details
-  const { data: selectedStudy, isLoading: loadingSelectedStudy } = useQuery({
-    queryKey: ['/api/studies', selectedStudyId],
-    enabled: !!selectedStudyId,
+  const { data: selectedStudy, isLoading: loadingSelectedStudy, error: studyError } = useQuery({
+    queryKey: [`/api/studies/${selectedStudyId}`],
+    enabled: !!selectedStudyId && !isNaN(selectedStudyId),
     retry: false,
+  });
+  
+  // Track generation progress states
+  const [generationProgress, setGenerationProgress] = useState({
+    step: '',
+    completed: false,
+    blogCount: 0,
+    totalSteps: 0,
+    currentStep: 0
   });
   
   // Generate blog articles mutation
@@ -68,6 +77,36 @@ export default function BlogGeneratePage() {
         throw new Error('No study selected');
       }
       
+      // Reset progress
+      setGenerationProgress({
+        step: 'Starting generation process...',
+        completed: false,
+        blogCount: 0,
+        totalSteps: blogOptions.standardCount + blogOptions.elonCount + 1, // +1 for initialization
+        currentStep: 1
+      });
+      
+      // Wait briefly to show initial step
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Update progress
+      setGenerationProgress(prev => ({
+        ...prev,
+        step: 'Analyzing study content...',
+        currentStep: 2
+      }));
+      
+      // Wait briefly to show analysis step
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      // Update progress for generation
+      setGenerationProgress(prev => ({
+        ...prev,
+        step: 'Generating blog articles...',
+        currentStep: 3
+      }));
+      
+      // Call API
       const response = await apiRequest('POST', `/api/studies/${selectedStudyId}/generate-blogs`, {
         count: blogOptions.standardCount + blogOptions.elonCount,
         includeElonStyle: blogOptions.includeElonStyle,
@@ -80,7 +119,18 @@ export default function BlogGeneratePage() {
         includeImages: blogOptions.includeImages,
       });
       
-      return response.json();
+      const data = await response.json();
+      
+      // Set final progress state
+      setGenerationProgress(prev => ({
+        ...prev,
+        step: 'Blog generation complete!',
+        completed: true,
+        blogCount: data.blogs ? data.blogs.length : 0,
+        currentStep: prev.totalSteps
+      }));
+      
+      return data;
     },
     onSuccess: (data) => {
       toast({
@@ -92,10 +142,18 @@ export default function BlogGeneratePage() {
       queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/studies', selectedStudyId, 'blogs'] });
       
-      // Navigate to blog management
-      navigate('/admin/blogs');
+      // Wait briefly to show completion, then navigate
+      setTimeout(() => {
+        navigate('/admin/blogs');
+      }, 1000);
     },
     onError: (error: any) => {
+      setGenerationProgress(prev => ({
+        ...prev,
+        step: 'Error generating articles',
+        completed: false
+      }));
+      
       toast({
         title: 'Failed to generate blog articles',
         description: error.message || 'An error occurred. Please try again.',
@@ -272,30 +330,34 @@ export default function BlogGeneratePage() {
               ) : selectedStudy ? (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-medium">{selectedStudy.title}</h3>
+                    <h3 className="text-lg font-medium">{selectedStudy?.title || 'No title available'}</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {selectedStudy.authors} • {selectedStudy.journal} • {new Date(selectedStudy.publishDate).getFullYear()}
+                      {selectedStudy?.authors ? (selectedStudy.authors) : 'Unknown authors'} 
+                      {selectedStudy?.journal ? ` • ${selectedStudy.journal}` : ''} 
+                      {selectedStudy?.publishDate ? ` • ${new Date(selectedStudy.publishDate).getFullYear()}` : ''}
                     </p>
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-medium mb-2">Abstract</h4>
-                    <p className="text-sm text-muted-foreground">{selectedStudy.abstract}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedStudy?.abstract || 'No abstract available'}
+                    </p>
                   </div>
                   
-                  <div className="flex space-x-4">
+                  <div className="flex flex-wrap gap-4">
                     <div>
                       <span className="text-xs font-medium">Category:</span>
-                      <span className="text-xs ml-1">{selectedStudy.category}</span>
+                      <span className="text-xs ml-1">{selectedStudy?.category || 'Uncategorized'}</span>
                     </div>
                     
-                    {selectedStudy.peerReviewed && (
+                    {selectedStudy?.peerReviewed && (
                       <div>
                         <span className="text-xs font-medium">Peer-reviewed</span>
                       </div>
                     )}
                     
-                    {selectedStudy.methods && (
+                    {selectedStudy?.methods && (
                       <div>
                         <span className="text-xs font-medium">Methods:</span>
                         <span className="text-xs ml-1">{selectedStudy.methods}</span>
@@ -399,28 +461,61 @@ export default function BlogGeneratePage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <Label htmlFor="standardCount">Standard Articles: {blogOptions.standardCount}</Label>
+                      <div className="flex justify-between">
+                        <Label htmlFor="standardCount">Standard Articles</Label>
+                        <span className="text-sm font-medium">{blogOptions.standardCount}</span>
+                      </div>
                       <Slider
                         id="standardCount"
                         min={1}
                         max={5}
                         step={1}
                         value={[blogOptions.standardCount]}
-                        onValueChange={([val]) => setBlogOptions({...blogOptions, standardCount: val})}
+                        onValueChange={(values) => {
+                          if (values.length > 0) {
+                            const val = values[0];
+                            setBlogOptions(prev => ({...prev, standardCount: val}));
+                          }
+                        }}
+                        aria-label="Standard Article Count"
+                        className="cursor-pointer"
                       />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+                        <span>5</span>
+                      </div>
                     </div>
                     
                     {blogOptions.includeElonStyle && (
                       <div className="space-y-4">
-                        <Label htmlFor="elonCount">Elon Musk Style Articles: {blogOptions.elonCount}</Label>
+                        <div className="flex justify-between">
+                          <Label htmlFor="elonCount">Elon Musk Style Articles</Label>
+                          <span className="text-sm font-medium">{blogOptions.elonCount}</span>
+                        </div>
                         <Slider
                           id="elonCount"
                           min={0}
                           max={3}
                           step={1}
                           value={[blogOptions.elonCount]}
-                          onValueChange={([val]) => setBlogOptions({...blogOptions, elonCount: val})}
+                          onValueChange={(values) => {
+                            if (values.length > 0) {
+                              const val = values[0];
+                              setBlogOptions(prev => ({...prev, elonCount: val}));
+                            }
+                          }}
+                          aria-label="Elon Style Article Count"
+                          className="cursor-pointer"
                         />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>0</span>
+                          <span>1</span>
+                          <span>2</span>
+                          <span>3</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -453,22 +548,34 @@ export default function BlogGeneratePage() {
               <Button variant="outline" onClick={() => setSelectedStudyId(null)}>
                 Select Different Study
               </Button>
-              <Button 
-                onClick={handleGenerateBlogs}
-                disabled={generateMutation.isPending}
-              >
-                {generateMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generate Blog Articles
-                  </>
-                )}
-              </Button>
+              {generateMutation.isPending ? (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="font-medium">{generationProgress.step}</span>
+                  </div>
+                  <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-primary h-full transition-all duration-300" 
+                      style={{ 
+                        width: `${(generationProgress.currentStep / generationProgress.totalSteps) * 100}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This may take a minute or two. We're generating high-quality content based on the research study.
+                  </p>
+                </div>
+              ) : (
+                <Button 
+                  onClick={handleGenerateBlogs}
+                  disabled={generateMutation.isPending}
+                  className="w-full md:w-auto"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Blog Articles
+                </Button>
+              )}
             </CardFooter>
           </Card>
         )}
