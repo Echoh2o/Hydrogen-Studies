@@ -10,6 +10,8 @@ import {
   userStudyInteractions,
   userBlogInteractions,
   blogArticles,
+  studyReviewQueue,
+  ReviewStatus,
   type Study, 
   type Category, 
   type Newsletter, 
@@ -29,7 +31,9 @@ import {
   type InsertUserStudyInteraction,
   type UserBlogInteraction,
   type InsertUserBlogInteraction,
-  type BlogArticle
+  type BlogArticle,
+  type StudyReviewQueue,
+  type InsertStudyReviewQueue
 } from "@shared/schema";
 
 export interface StudyFilters {
@@ -132,6 +136,14 @@ export interface IStorage {
   getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]>;
   markNotificationAsRead(id: number): Promise<void>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
+  
+  // Study review queue
+  saveStudyForReview(reviewItem: InsertStudyReviewQueue): Promise<StudyReviewQueue>;
+  getStudyReviewQueue(filters?: {status?: string, userId?: string}): Promise<StudyReviewQueue[]>;
+  getStudyReviewQueueById(id: number): Promise<StudyReviewQueue | undefined>;
+  updateStudyReviewStatus(id: number, status: string, reviewedByUserId: string, notes?: string): Promise<StudyReviewQueue>;
+  deleteStudyFromReviewQueue(id: number): Promise<void>;
+  checkStudyExists(doi: string): Promise<{exists: boolean, studyId?: number}>;
   
   // Sample data initialization
   initializeSampleData(): Promise<void>;

@@ -254,6 +254,47 @@ export const scrapedSources = pgTable("scraped_sources", {
   scrapedAt: timestamp("scraped_at").notNull().defaultNow(),
 });
 
+// Study review status enum values
+export const ReviewStatus = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected'
+} as const;
+
+// Study review queue table for managing the study approval process
+export const studyReviewQueue = pgTable("study_review_queue", {
+  id: serial("id").primaryKey(),
+  // External study ID (from source database like PubMed, CrossRef, etc.)
+  externalId: text("external_id").notNull(),
+  // DOI for duplicate checking
+  doi: text("doi"),
+  title: text("title").notNull(),
+  abstract: text("abstract").notNull(),
+  authors: text("authors").notNull(),
+  journal: text("journal").notNull(),
+  publishDate: text("publish_date"),
+  journalPublishDate: text("journal_publish_date"),
+  category: text("category").notNull(),
+  // Source information 
+  sourceUrl: text("source_url"),
+  sourcePlatform: text("source_platform").notNull(),
+  // Review status
+  status: text("status").notNull().default('pending'),
+  // Who saved the study for review and who approved/rejected it
+  savedByUserId: text("saved_by_user_id").references(() => users.id),
+  reviewedByUserId: text("reviewed_by_user_id").references(() => users.id),
+  // Notes added during the review process
+  reviewNotes: text("review_notes"),
+  // Whether this entry is a duplicate of an existing study
+  isDuplicate: boolean("is_duplicate").default(false),
+  // If it's a duplicate, this references the original study
+  duplicateOfStudyId: integer("duplicate_of_study_id").references(() => studies.id),
+  // Timestamps
+  savedAt: timestamp("saved_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Blog articles table schema
 export const blogArticles = pgTable("blog_articles", {
   id: serial("id").primaryKey(),
@@ -291,6 +332,12 @@ export const insertGlossaryTermSchema = createInsertSchema(glossaryTerms).omit({
 export const insertFaqItemSchema = createInsertSchema(faqItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertStudyCollectionSchema = createInsertSchema(studyCollections).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCollectionStudySchema = createInsertSchema(collectionStudies).omit({ addedAt: true });
+export const insertStudyReviewQueueSchema = createInsertSchema(studyReviewQueue).omit({ 
+  id: true, 
+  savedAt: true, 
+  reviewedAt: true, 
+  createdAt: true 
+});
 
 // Types for insertion
 export type InsertStudy = z.infer<typeof insertStudySchema>;
@@ -309,6 +356,7 @@ export type InsertGlossaryTerm = z.infer<typeof insertGlossaryTermSchema>;
 export type InsertFaqItem = z.infer<typeof insertFaqItemSchema>;
 export type InsertStudyCollection = z.infer<typeof insertStudyCollectionSchema>;
 export type InsertCollectionStudy = z.infer<typeof insertCollectionStudySchema>;
+export type InsertStudyReviewQueue = z.infer<typeof insertStudyReviewQueueSchema>;
 
 // Types for selection
 export type Study = typeof studies.$inferSelect;
@@ -326,6 +374,7 @@ export type GlossaryTerm = typeof glossaryTerms.$inferSelect;
 export type FaqItem = typeof faqItems.$inferSelect;
 export type StudyCollection = typeof studyCollections.$inferSelect;
 export type CollectionStudy = typeof collectionStudies.$inferSelect;
+export type StudyReviewQueue = typeof studyReviewQueue.$inferSelect;
 
 // Chat conversations table schema
 export const conversations = pgTable("conversations", {
