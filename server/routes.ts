@@ -35,6 +35,7 @@ import europePmcRoutes from "./routes/europepmc-routes";
 import semanticScholarRoutes from "./routes/semantic-scholar-routes";
 import crossrefRoutes from "./routes/crossref-routes";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
+import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
