@@ -374,9 +374,18 @@ router.post('/blogs/:id/save', isAuthenticated, async (req, res) => {
 router.delete('/blogs/:id/save', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const blogId = parseInt(req.params.id);
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    await userService.unsaveBlog(userId!, blogId);
+    const blogId = parseInt(req.params.id);
+    // Ensure blogId is a valid number
+    if (isNaN(blogId)) {
+      return res.status(400).json({ message: 'Invalid blog ID' });
+    }
+    
+    await userService.unsaveBlog(Number(userId), blogId);
     res.json({ message: 'Blog unsaved successfully', isSaved: false });
   } catch (error) {
     console.error('Unsave blog error:', error);
@@ -387,9 +396,18 @@ router.delete('/blogs/:id/save', isAuthenticated, async (req, res) => {
 router.post('/blogs/:id/view', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const blogId = parseInt(req.params.id);
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    await userService.recordBlogView(userId!, blogId);
+    const blogId = parseInt(req.params.id);
+    // Ensure blogId is a valid number
+    if (isNaN(blogId)) {
+      return res.status(400).json({ message: 'Invalid blog ID' });
+    }
+    
+    await userService.recordBlogView(Number(userId), blogId);
     res.json({ message: 'Blog view recorded' });
   } catch (error) {
     console.error('Record blog view error:', error);
