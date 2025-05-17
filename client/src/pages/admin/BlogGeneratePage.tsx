@@ -30,6 +30,7 @@ export default function BlogGeneratePage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
+  const [forceRegeneration, setForceRegeneration] = useState(false);
   const [blogOptions, setBlogOptions] = useState({
     standardCount: 2,
     elonCount: 1,
@@ -117,6 +118,7 @@ export default function BlogGeneratePage() {
         includeHistorical: blogOptions.includeHistorical,
         readingLevel: blogOptions.readingLevel,
         includeImages: blogOptions.includeImages,
+        force: forceRegeneration
       });
       
       const data = await response.json();
