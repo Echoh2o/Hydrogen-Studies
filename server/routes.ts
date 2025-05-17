@@ -690,6 +690,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate image for blog article
+  app.post("/api/blogs/:id/generate-image", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      
+      if (!blog) {
+        return res.status(404).json({ message: "Blog article not found" });
+      }
+      
+      // Generate image using AI
+      const imageResult = await generateBlogImage(blog);
+      
+      // Update blog with image data
+      const updatedBlog = await db.update(blogArticles)
+        .set({
+          imageUrl: imageResult.imageUrl,
+          imageAlt: imageResult.imageAlt,
+          updatedAt: new Date()
+        })
+        .where(eq(blogArticles.id, parseInt(id)))
+        .returning();
+      
+      res.json({
+        message: "Blog image generated successfully",
+        imageUrl: imageResult.imageUrl,
+        imageAlt: imageResult.imageAlt,
+        blog: updatedBlog[0]
+      });
+    } catch (error) {
+      console.error("Error generating blog image:", error);
+      res.status(500).json({ message: "Failed to generate blog image", error: error.message });
+    }
+  });
+  
   // Get blog articles for a specific study
   app.get("/api/studies/:id/blogs", async (req, res) => {
     try {
