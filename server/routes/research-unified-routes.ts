@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { searchPubMed } from '../routes/research-routes';
+import { searchPubMedWithPagination } from '../routes/research-routes';
 import { searchEuropePMC, extractStudyFromEuropePMC } from '../europepmc-api';
 import { searchSemanticScholar, extractStudyFromSemanticScholar } from '../semantic-scholar-api';
 import { searchCrossRef, extractStudyFromCrossRef } from '../crossref-api';
@@ -41,13 +41,17 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
       try {
         switch (source.toLowerCase()) {
           case 'pubmed':
-            const pubmedResults = await searchPubMed(query, pageNum, pageSizeNum);
-            const pubmedData = pubmedResults.results.map((item: any) => ({
+            // For PubMed, use the searchPubMedWithPagination function
+            const pubmedData = await searchPubMedWithPagination(query, pageNum - 1, pageSizeNum);
+            const totalPubmedResults = pubmedData.length > 0 ? pubmedData[0]?.totalResults || pubmedData.length : 0;
+            
+            const formattedPubmedData = pubmedData.map((item: any) => ({
               ...item,
               source: 'pubmed'
             }));
-            allResults = [...allResults, ...pubmedData];
-            totalResults += pubmedResults.total;
+            
+            allResults = [...allResults, ...formattedPubmedData];
+            totalResults += totalPubmedResults;
             break;
             
           case 'europepmc':
