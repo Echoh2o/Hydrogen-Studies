@@ -35,7 +35,7 @@ router.get('/journal-date-stats', async (req, res) => {
   try {
     const db = (await import('../db')).db;
     const studies = (await import('@shared/schema')).studies;
-    const { count, isNull } = await import('drizzle-orm');
+    const { count, isNull, sql } = await import('drizzle-orm');
     
     // Count total studies
     const [totalResult] = await db.select({ value: count() }).from(studies);
@@ -63,7 +63,7 @@ router.get('/journal-date-stats', async (req, res) => {
       .select()
       .from(studies)
       .where(
-        isNull(studies.journalPublishDate).not()
+        sql`${studies.journalPublishDate} IS NOT NULL`
       )
       .limit(5);
 

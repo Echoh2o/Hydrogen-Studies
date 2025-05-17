@@ -33,7 +33,14 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
     isLoading: isLoadingStats,
     refetch: refetchStats
   } = useQuery({
-    queryKey: ['/api/admin/journal-date-stats']
+    queryKey: ['/api/admin/journal-date-stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/journal-date-stats');
+      if (!response.ok) {
+        throw new Error('Failed to fetch journal date statistics');
+      }
+      return response.json();
+    }
   });
 
   const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,25 +71,32 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
         });
       }, 1000);
 
-      const response = await apiRequest('/api/admin/update-journal-dates', {
+      const response = await fetch('/api/admin/update-journal-dates', {
         method: 'POST',
-        body: { limit },
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ limit })
       });
+      
+      const data = await response.json();
 
       clearInterval(progressInterval);
       setProgress(100);
-      setResult(response);
+      setResult(data);
 
-      if (response.success) {
+      if (data.success) {
         toast({
           title: 'Journal Dates Updated',
-          description: `Successfully updated ${response.totalUpdated} studies.`,
+          description: `Successfully updated ${data.totalUpdated} studies.`,
           variant: 'default',
         });
+        // Refresh the statistics
+        refetchStats();
       } else {
         toast({
           title: 'Error',
-          description: response.message || 'Failed to update journal dates',
+          description: data.message || 'Failed to update journal dates',
           variant: 'destructive',
         });
       }
@@ -116,7 +130,7 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
               <div className="flex justify-center items-center p-6">
                 <RotateCw className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : statsData?.stats ? (
+            ) : statsData && statsData.stats ? (
               <div className="grid md:grid-cols-3 gap-4">
                 {/* Stats Summary */}
                 <div className="space-y-4">
