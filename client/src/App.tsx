@@ -37,6 +37,7 @@ import StudyEditPage from "@/pages/admin/StudyEditPage";
 import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
 import BlogGeneratePage from "@/pages/admin/BlogGeneratePage";
 import BlogAddPage from "@/pages/admin/BlogAddPage";
+import BlogEditPage from "@/pages/admin/BlogEditPage";
 import ResearchImportPage from "@/pages/admin/ResearchImportPage";
 import DataImportPage from "@/pages/admin/DataImportPage";
 
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/admin/blogs" component={BlogsManagementPage} />
       <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
+      <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
       <Route path="/admin/research-import" component={ResearchImportPage} />
       <Route path="/admin/data-import" component={DataImportPage} />
       
