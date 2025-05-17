@@ -612,7 +612,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/studies/:id/media", upload.single('file'), async (req, res) => {
     try {
       const { id } = req.params;
-      const study = await storage.getStudyById(parseInt(id));
+      const studyId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const study = await storage.getStudyById(studyId);
       
       if (!study) {
         return res.status(404).json({ message: "Study not found" });
@@ -647,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData = { audioUrl: publicUrl };
       }
       
-      const updatedStudy = await storage.updateStudy(parseInt(id), updateData);
+      const updatedStudy = await storage.updateStudy(studyId, updateData);
       res.status(200).json({ 
         message: "Media uploaded successfully", 
         study: updatedStudy,
@@ -664,14 +671,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/studies/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const study = await storage.getStudyById(parseInt(id));
+      const studyId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const study = await storage.getStudyById(studyId);
       
       if (!study) {
         return res.status(404).json({ message: "Study not found" });
       }
       
       const validatedData = req.body; // We could add validation here
-      const updatedStudy = await storage.updateStudy(parseInt(id), validatedData);
+      const updatedStudy = await storage.updateStudy(studyId, validatedData);
       res.status(200).json(updatedStudy);
     } catch (error) {
       console.error("Error updating study:", error);
@@ -682,13 +696,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/studies/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const study = await storage.getStudyById(parseInt(id));
+      const studyId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const study = await storage.getStudyById(studyId);
       
       if (!study) {
         return res.status(404).json({ message: "Study not found" });
       }
       
-      await storage.deleteStudy(parseInt(id));
+      await storage.deleteStudy(studyId);
       res.status(200).json({ message: "Study deleted successfully" });
     } catch (error) {
       console.error("Error deleting study:", error);
