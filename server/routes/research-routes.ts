@@ -3,6 +3,7 @@ import { z } from 'zod';
 import axios from 'axios';
 import { db } from '../db';
 import { studies } from '../../shared/schema';
+import { sql } from 'drizzle-orm';
 import { enrichStudyFromPubMed } from '../pubmed-enricher';
 import { scrapeStudyFromUrl, saveScrapedStudy } from '../direct-scraper';
 
@@ -351,17 +352,20 @@ async function checkArticlesInDatabase(pmids: string[]): Promise<string[]> {
   }
   
   try {
-    // Find studies with URLs containing the PMIDs
-    const existingStudies = await Promise.all(
-      pmids.map(async (pmid) => {
-        const study = await db.query.studies.findFirst({
-          where: (studies, { like }) => like(studies.url, `%${pmid}%`)
-        });
-        return study ? pmid : null;
-      })
-    );
+    // Find studies with URLs containing the PMIDs - using a simpler approach to avoid SQL errors
+    const existingIds = [];
     
-    return existingStudies.filter(Boolean) as string[];
+    for (const pmid of pmids) {
+      const result = await db.select().from(studies).where(
+        sql`studies.url LIKE ${'%' + pmid + '%'}`
+      );
+      
+      if (result && result.length > 0) {
+        existingIds.push(pmid);
+      }
+    }
+    
+    return existingIds;
   } catch (error) {
     console.error('Error checking database for articles:', error);
     return [];
