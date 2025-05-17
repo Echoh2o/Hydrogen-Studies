@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import StudyCard from "@/components/studies/study-card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CardSkeleton, EmptyState, ErrorDisplay } from "@/components/ui/loading-states";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { FileSearch } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Study } from "@/types";
 
 export default function LatestStudiesSection() {
-  const { data: studies, isLoading } = useQuery<Study[]>({
+  const { data: studies, isLoading, isError, error, refetch } = useQuery<Study[]>({
     queryKey: ['/api/studies/latest'],
   });
 
@@ -22,37 +25,41 @@ export default function LatestStudiesSection() {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading ? (
-            // Skeleton loading state
-            Array(3).fill(0).map((_, i) => (
-              <div key={i} className="bg-neutral-50 rounded-xl p-6 shadow-sm">
-                <div className="flex items-start justify-between mb-4">
-                  <Skeleton className="h-6 w-24 rounded-full" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-6 w-full mb-2" />
-                <Skeleton className="h-6 w-3/4 mb-3" />
-                <Skeleton className="h-4 w-full mb-1" />
-                <Skeleton className="h-4 w-full mb-1" />
-                <Skeleton className="h-4 w-3/4 mb-4" />
-                <div className="flex items-center space-x-4 mb-4">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-                <Skeleton className="h-4 w-28" />
+        <ErrorBoundary>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoading ? (
+              // Skeleton loading state
+              Array(3).fill(0).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))
+            ) : isError ? (
+              <div className="col-span-3">
+                <ErrorDisplay
+                  title="Error loading latest studies"
+                  message="We're having trouble loading the latest studies. Please try again later."
+                  onRetry={() => refetch()}
+                />
               </div>
-            ))
-          ) : studies && studies.length > 0 ? (
-            studies.map(study => (
-              <StudyCard key={study.id} study={study} />
-            ))
-          ) : (
-            <div className="col-span-3 text-center py-8">
-              <p>No studies found.</p>
-            </div>
-          )}
-        </div>
+            ) : studies && studies.length > 0 ? (
+              studies.map(study => (
+                <StudyCard key={study.id} study={study} />
+              ))
+            ) : (
+              <div className="col-span-3">
+                <EmptyState
+                  title="No studies available"
+                  description="We couldn't find any recent studies in our database."
+                  icon={<FileSearch className="w-12 h-12" />}
+                  action={
+                    <Link href="/studies">
+                      <Button>Browse all studies</Button>
+                    </Link>
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </ErrorBoundary>
         
         <div className="text-center mt-8 md:hidden">
           <Link href="/studies" className="text-primary font-medium hover:underline">
