@@ -254,7 +254,7 @@ async function generateRelatedQuestions(
       messages: [
         {
           role: "system",
-          content: "You are an AI specialized in hydrogen research. Generate related questions that users might want to ask next based on their current question and the answer provided. Make sure these questions are specific, relevant to hydrogen research, and would help the user explore the topic further. Provide exactly 3 questions in JSON format."
+          content: "You are an AI specialized in hydrogen health and wellness applications. Generate related questions that users might want to ask next based on their current question and the answer provided. Make sure these questions are specific, relevant to health applications of hydrogen (drinking hydrogen water, inhaling hydrogen gas, or hydrogen baths), and would help the user explore the topic further. Focus exclusively on health topics, not energy or fuel cell applications. Provide exactly 3 questions in JSON format."
         },
         {
           role: "user",
@@ -290,9 +290,11 @@ async function generateRelatedQuestions(
  */
 function generateDefaultRelatedQuestions(): string[] {
   return [
-    "What are the latest advances in hydrogen fuel cell technology?",
-    "How does hydrogen storage affect its viability as a renewable energy source?",
-    "What health benefits are associated with molecular hydrogen therapy?"
+    "What health benefits does hydrogen-rich water have for inflammation?",
+    "How effective is hydrogen inhalation therapy for respiratory conditions?",
+    "Can hydrogen baths help with skin conditions?",
+    "What's the recommended dosage of hydrogen water for health benefits?",
+    "Are there any studies on hydrogen therapy for athletic recovery?"
   ];
 }
 
@@ -387,8 +389,35 @@ export async function saveFeedback(
  */
 export async function getPopularQuestions(category?: string, limit: number = 5): Promise<string[]> {
   try {
-    // Implement this once we have the popular_questions table populated
-    // For now, return default questions
+    // Check if we have popular questions in the database
+    const popularQuestionsFromDB = await db
+      .select()
+      .from(popularQuestions)
+      .orderBy(popularQuestions.clickCount, 'desc')
+      .limit(limit);
+    
+    // If we have questions in the database, return those
+    if (popularQuestionsFromDB.length > 0) {
+      return popularQuestionsFromDB.map(q => q.question);
+    }
+    
+    // If no category is provided or category is health/general, use these health-focused questions
+    if (!category || category === 'health' || category === 'general') {
+      return [
+        "What are the benefits of hydrogen water for inflammation?",
+        "How does molecular hydrogen help with oxidative stress?",
+        "Is hydrogen therapy effective for athletic recovery?",
+        "What conditions can hydrogen inhalation therapy help with?",
+        "Are there any side effects of drinking hydrogen-rich water?",
+        "How does hydrogen therapy compare to antioxidant supplements?",
+        "What's the science behind hydrogen's effect on mitochondria?",
+        "Can hydrogen therapy help with autoimmune conditions?",
+        "What dosage of hydrogen is recommended for health benefits?",
+        "How does hydrogen water help with skin conditions?"
+      ].slice(0, limit);
+    }
+    
+    // For other categories, fall back to default questions
     return generateDefaultRelatedQuestions();
   } catch (error) {
     console.error('Error retrieving popular questions:', error);
