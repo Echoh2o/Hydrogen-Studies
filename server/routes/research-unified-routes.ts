@@ -188,10 +188,10 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     console.log(`Combined results: ${allResults.length} total studies found`);
     
     // Always use "unified" as the source when we have multiple sources requested
-    // Only use "pubmed" when it's the only source explicitly requested
+    // Use the specific source name when it's the only source explicitly requested
     const finalSource = 
-      selectedSources.length === 1 && selectedSources[0].toLowerCase() === 'pubmed' 
-        ? 'pubmed' 
+      selectedSources.length === 1 
+        ? selectedSources[0].toLowerCase()
         : 'unified';
         
     console.log(`Request details: query="${query}", sources=${JSON.stringify(selectedSources)}, page=${pageNum}, pageSize=${pageSizeNum}`);
