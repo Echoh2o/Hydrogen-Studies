@@ -110,17 +110,49 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     // Check for DOI duplicates to avoid showing the same study from multiple sources
     const uniqueResults = [];
     const seenDOIs = new Set();
+    const seenPMIDs = new Set();
+    
+    // Debug in detail what we have in allResults
+    console.log(`All results before deduplication: ${allResults.length}`);
+    
+    // Count per source before deduplication
+    const preDedupeSourceCounts = {};
+    allResults.forEach(item => {
+      const source = item.source || 'unknown';
+      preDedupeSourceCounts[source] = (preDedupeSourceCounts[source] || 0) + 1;
+    });
+    console.log(`Source counts before deduplication: ${JSON.stringify(preDedupeSourceCounts)}`);
     
     for (const result of allResults) {
       const doi = result.doi || '';
-      // If no DOI or not seen before, add to unique results
-      if (!doi || !seenDOIs.has(doi.toLowerCase())) {
+      const pmid = result.pmid || '';
+      
+      // If no identifiers or not seen before, add to unique results
+      if ((!doi && !pmid) || 
+          (doi && !seenDOIs.has(doi.toLowerCase())) || 
+          (pmid && !seenPMIDs.has(pmid))) {
+        
+        // Add to tracking sets
         if (doi) {
           seenDOIs.add(doi.toLowerCase());
         }
+        if (pmid) {
+          seenPMIDs.add(pmid);
+        }
+        
         uniqueResults.push(result);
       }
     }
+    
+    console.log(`After deduplication: ${uniqueResults.length} unique results`);
+    
+    // Count per source after deduplication 
+    const postDedupeSourceCounts = {};
+    uniqueResults.forEach(item => {
+      const source = item.source || 'unknown';
+      postDedupeSourceCounts[source] = (postDedupeSourceCounts[source] || 0) + 1;
+    });
+    console.log(`Source counts after deduplication: ${JSON.stringify(postDedupeSourceCounts)}`);
     
     // Sort results by year (newest first) if available
     uniqueResults.sort((a, b) => {
@@ -164,10 +196,18 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
         
     console.log(`Using response source: ${responseSource}, selected sources: ${selectedSources.join(',')}`);
     
+    // For debugging, add request details to the logs
+    console.log(`Request details: query="${query}", sources=${JSON.stringify(selectedSources)}, page=${pageNum}, pageSize=${pageSizeNum}`);
+    
+    // Override the source to always be "unified" when we have multiple sources selected
+    // This ensures the frontend handles it correctly
+    const finalSource = selectedSources.length > 1 ? 'unified' : responseSource;
+    console.log(`Using final response source: ${finalSource}`);
+    
     // Format response based on available results
     res.json({
       success: true,
-      source: responseSource,
+      source: finalSource,
       query: query,
       total: totalResults,
       startIndex: (pageNum - 1) * pageSizeNum,
