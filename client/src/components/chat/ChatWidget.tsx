@@ -179,57 +179,174 @@ export const ChatWidget: React.FC = () => {
       
       console.log('Sending chat request with conversation ID:', conversationId);
       
-      const response = await apiRequest<{ success: boolean; data: ChatResponse }>('/api/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          query: userMessage,
-          conversationId: conversationId
-        })
-      });
-
-      if (response.success && response.data) {
-        // Update conversation ID if this is a new conversation
-        if (response.data.conversationId && !conversationId) {
-          setConversationId(response.data.conversationId);
-          console.log('New conversation created with ID:', response.data.conversationId);
-          
-          // Add this new conversation to the list if it's not already there
-          if (!conversations.some(c => c.id === response.data.conversationId)) {
-            const newConversation: Conversation = {
-              id: response.data.conversationId!,
-              title: userMessage.substring(0, 30) + (userMessage.length > 30 ? '...' : ''),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-            
-            setConversations(prev => [newConversation, ...prev]);
-          }
+      // Use the API with a timeout to prevent long-hanging requests
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: userMessage,
+            conversationId: conversationId
+          }),
+          signal: controller.signal
+        });
+        
+        // Clear the timeout
+        clearTimeout(timeout);
+        
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
         }
         
-        // Add assistant response to chat
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          // Update conversation ID if this is a new conversation
+          if (data.data.conversationId && !conversationId) {
+            setConversationId(data.data.conversationId);
+            console.log('New conversation created with ID:', data.data.conversationId);
+            
+            // Add this new conversation to the list if it's not already there
+            if (!conversations.some(c => c.id === data.data.conversationId)) {
+              const newConversation: Conversation = {
+                id: data.data.conversationId!,
+                title: userMessage.substring(0, 30) + (userMessage.length > 30 ? '...' : ''),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              
+              setConversations(prev => [newConversation, ...prev]);
+            }
+          }
+          
+          // Add assistant response to chat
+          const assistantMessage: ChatMessage = { 
+            role: 'assistant', 
+            content: data.data.answer,
+            id: Math.floor(Math.random() * 10000) // Temporary ID for testing feedback
+          };
+          
+          setMessages([...newMessages, assistantMessage]);
+          setLastMessageId(assistantMessage.id || null);
+          
+          // Update sources, related questions, and product recommendations
+          setCurrentSources(data.data.sources || []);
+          setRelatedQuestions(data.data.relatedQuestions || []);
+          setProductRecommendations(data.data.productRecommendations || []);
+          
+          console.log('Chat response received with sources:', data.data.sources?.length);
+        } else {
+          throw new Error('Invalid response format from server');
+        }
+      } catch (fetchError) {
+        // Generate fallback product recommendations based on the query
+        generateFallbackProductRecommendations(userMessage);
+        
+        // Create a graceful fallback response for the user
         const assistantMessage: ChatMessage = { 
           role: 'assistant', 
-          content: response.data.answer,
-          id: Math.floor(Math.random() * 10000) // Temporary ID for testing feedback
+          content: `I'm sorry, but I'm having temporary difficulty accessing the research database. Your question about ${identifyQueryTopic(userMessage)} is important, and while I work to resolve this issue, I've included some product recommendations that might be helpful for your specific needs.`,
+          id: Math.floor(Math.random() * 10000)
         };
         
         setMessages([...newMessages, assistantMessage]);
         setLastMessageId(assistantMessage.id || null);
         
-        // Update sources, related questions, and product recommendations
-        setCurrentSources(response.data.sources || []);
-        setRelatedQuestions(response.data.relatedQuestions || []);
-        setProductRecommendations(response.data.productRecommendations || []);
+        // Set related questions for continued engagement
+        setRelatedQuestions([
+          "What are the benefits of hydrogen water for inflammation?",
+          "How does molecular hydrogen help with oxidative stress?",
+          "What conditions can hydrogen therapy help with?",
+          "How often should I use hydrogen therapy for best results?"
+        ]);
         
-        console.log('Chat response received with sources:', response.data.sources?.length);
-      } else {
-        setError('Failed to get a response. Please try again.');
+        console.error('Error fetching chat response:', fetchError);
       }
     } catch (err) {
       console.error('Error in chat request:', err);
       setError('An error occurred while communicating with the AI. Please try again later.');
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Helper function to identify the topic of a query
+  const identifyQueryTopic = (query: string): string => {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('skin') || lowerQuery.includes('derma') || 
+        lowerQuery.includes('psoriasis') || lowerQuery.includes('eczema') || 
+        lowerQuery.includes('acne')) {
+      return 'skin health and topical applications';
+    } else if (lowerQuery.includes('breath') || lowerQuery.includes('lung') || 
+               lowerQuery.includes('inhal') || lowerQuery.includes('respiratory')) {
+      return 'respiratory health and breathing applications';
+    } else if (lowerQuery.includes('athletic') || lowerQuery.includes('workout') || 
+               lowerQuery.includes('exercise') || lowerQuery.includes('recovery')) {
+      return 'athletic performance and recovery';
+    } else if (lowerQuery.includes('travel') || lowerQuery.includes('portable')) {
+      return 'portable hydrogen therapy options';
+    } else {
+      return 'hydrogen health applications';
+    }
+  };
+  
+  // Helper function to generate fallback product recommendations
+  const generateFallbackProductRecommendations = (query: string) => {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('skin') || lowerQuery.includes('derma') || 
+        lowerQuery.includes('psoriasis') || lowerQuery.includes('eczema') || 
+        lowerQuery.includes('acne')) {
+      // Recommend bath system for skin conditions
+      setProductRecommendations([{
+        name: "Echo H2 Bath System",
+        description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
+        url: "https://echowater.com/products/echo-h2-bath",
+        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
+        relevanceScore: 95
+      }]);
+    } else if (lowerQuery.includes('breath') || lowerQuery.includes('lung') || 
+              lowerQuery.includes('inhal') || lowerQuery.includes('respiratory')) {
+      // Recommend inhaler for respiratory conditions
+      setProductRecommendations([{
+        name: "Echo H2 Inhaler",
+        description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
+        url: "https://echowater.com/products/echo-h2-inhaler",
+        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
+        relevanceScore: 95
+      }]);
+    } else if (lowerQuery.includes('athletic') || lowerQuery.includes('workout') || 
+              lowerQuery.includes('exercise') || lowerQuery.includes('recovery')) {
+      // Recommend both water and tablets for athletic performance
+      setProductRecommendations([
+        {
+          name: "Echo H2 Machine",
+          description: "Premium hydrogen water generator with advanced PEM technology for optimal athletic recovery",
+          url: "https://echowater.com/products/echo-h2-machine",
+          imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
+          relevanceScore: 90
+        },
+        {
+          name: "Echo H2 Tablet Maker",
+          description: "Portable hydrogen tablets for training sessions and competitions",
+          url: "https://echowater.com/products/echo-h2-tablets-1",
+          imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
+          relevanceScore: 85
+        }
+      ]);
+    } else {
+      // Default to water machine for general queries
+      setProductRecommendations([{
+        name: "Echo H2 Machine",
+        description: "Premium hydrogen water generator with advanced PEM technology for maximum hydrogen concentration",
+        url: "https://echowater.com/products/echo-h2-machine",
+        imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
+        relevanceScore: 90
+      }]);
     }
   };
 
