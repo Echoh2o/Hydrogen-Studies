@@ -36,12 +36,15 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     let totalResults = 0;
     let errors: string[] = [];
     
-    // Parallel search across all selected databases
-    const searchPromises = selectedSources.map(async (source) => {
+    // Perform searches sequentially for more reliable results
+    for (const source of selectedSources) {
       try {
+        console.log(`Processing source: ${source}`);
+        
         switch (source.toLowerCase()) {
           case 'pubmed':
             // For PubMed, use the searchPubMedWithPagination function
+            console.log('Searching PubMed...');
             const pubmedData = await searchPubMedWithPagination(query, pageNum - 1, pageSizeNum);
             const totalPubmedResults = pubmedData.length > 0 ? pubmedData[0]?.totalResults || pubmedData.length : 0;
             
@@ -50,38 +53,47 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
               source: 'pubmed'
             }));
             
+            console.log(`Found ${formattedPubmedData.length} results from PubMed`);
             allResults = [...allResults, ...formattedPubmedData];
             totalResults += totalPubmedResults;
             break;
             
           case 'europepmc':
+            console.log('Searching EuropePMC...');
             const europepmcResults = await searchEuropePMC(query, pageNum, pageSizeNum);
             if (europepmcResults && europepmcResults.results) {
               // Results are already formatted in the searchEuropePMC function
+              console.log(`Found ${europepmcResults.results.length} results from EuropePMC`);
               allResults = [...allResults, ...europepmcResults.results];
               totalResults += europepmcResults.total || 0;
+            } else {
+              console.log('No results from EuropePMC or unexpected format', europepmcResults);
             }
             break;
             
           case 'semanticscholar':
+            console.log('Searching Semantic Scholar...');
             const semanticScholarResults = await searchSemanticScholar(query, pageNum - 1, pageSizeNum);
             if (semanticScholarResults && semanticScholarResults.data) {
               const semanticScholarData = semanticScholarResults.data.map((item: any) => ({
                 ...item,
                 source: 'semanticscholar'
               }));
+              console.log(`Found ${semanticScholarData.length} results from Semantic Scholar`);
               allResults = [...allResults, ...semanticScholarData];
               totalResults += semanticScholarResults.total || 0;
             }
             break;
             
           case 'crossref':
+            console.log('Searching CrossRef...');
             const crossrefResults = await searchCrossRef(query, pageNum, pageSizeNum);
             if (crossrefResults && crossrefResults.items) {
               const crossrefData = crossrefResults.items.map((item: any) => ({
                 ...item,
                 source: 'crossref'
               }));
+              console.log(`Found ${crossrefData.length} results from CrossRef`);
               allResults = [...allResults, ...crossrefData];
               totalResults += crossrefResults.totalResults || 0;
             }
@@ -91,10 +103,7 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
         console.error(`Error searching ${source}:`, error);
         errors.push(`${source}: ${error.message || 'Unknown error'}`);
       }
-    });
-    
-    // Run all search promises in parallel and collect results
-    await Promise.allSettled(searchPromises);
+    }
     
     console.log(`Unified search returned: ${allResults.length} results`);
     
