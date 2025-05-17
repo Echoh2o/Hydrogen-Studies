@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { WysiwygEditor } from '@/components/ui/wysiwyg-editor';
 import { Separator } from '@/components/ui/separator';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -178,10 +179,14 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 <FormItem>
                   <FormLabel>Abstract*</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Study abstract" 
-                      className="min-h-[120px]" 
-                      {...field} 
+                    <WysiwygEditor
+                      id="abstract"
+                      name="abstract"
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Study abstract"
+                      height="200px"
+                      required
                     />
                   </FormControl>
                   <FormMessage />
@@ -304,10 +309,13 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 <FormItem>
                   <FormLabel>Methods</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Study methods" 
-                      className="min-h-[100px]" 
-                      {...field} 
+                    <WysiwygEditor
+                      id="methods"
+                      name="methods"
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      placeholder="Study methods"
+                      height="180px"
                     />
                   </FormControl>
                   <FormMessage />
@@ -322,10 +330,13 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 <FormItem>
                   <FormLabel>Results</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Study results" 
-                      className="min-h-[100px]" 
-                      {...field} 
+                    <WysiwygEditor
+                      id="results"
+                      name="results"
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      placeholder="Study results"
+                      height="180px"
                     />
                   </FormControl>
                   <FormMessage />
@@ -340,10 +351,13 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 <FormItem>
                   <FormLabel>Conclusion</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Study conclusion" 
-                      className="min-h-[100px]" 
-                      {...field} 
+                    <WysiwygEditor
+                      id="conclusion"
+                      name="conclusion"
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      placeholder="Study conclusion"
+                      height="180px"
                     />
                   </FormControl>
                   <FormMessage />
