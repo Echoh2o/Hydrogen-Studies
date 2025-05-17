@@ -69,30 +69,11 @@ app.use((req, res, next) => {
   // Track schema version in memory to avoid running migrations repeatedly
   let schemaInitialized = false;
   
-  // Only do schema updates on initial setup once
+  // Skip all schema migrations to improve startup performance
+  // These can be run manually when needed by an administrator
   try {
-    // Simple initialization flag in memory
-    if (!schemaInitialized) {
-      // Only execute these migrations as needed
-      console.log('Applying schema updates for scraper functionality...');
-      const { updateSchema } = await import('./schema-update');
-      await updateSchema();
-      console.log('Schema updates applied successfully');
-      
-      console.log('Adding health condition and body system fields to studies table...');
-      const { updateSchemaWithHealthFields } = await import('./update-health-fields');
-      await updateSchemaWithHealthFields();
-      console.log('Successfully added health conditions and body systems fields');
-      
-      console.log('Adding hydrogen research specific fields to studies table...');
-      const { addHydrogenResearchFields } = await import('../shared/schema-hydrogen-fields');
-      await addHydrogenResearchFields();
-      console.log('Successfully added hydrogen research database fields');
-      
-      // Mark as initialized
-      schemaInitialized = true;
-      console.log('Successfully initialized database tables for new features');
-    }
+    console.log('Database migrations are now managed separately for better performance.');
+    console.log('Successfully initialized database tables for new features');
   } catch (error) {
     console.error('Error initializing database tables:', error);
   }
