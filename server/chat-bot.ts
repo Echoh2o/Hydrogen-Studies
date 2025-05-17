@@ -48,6 +48,7 @@ const responseCache = new Map<string, {
   answer: string;
   sources: any[];
   relatedQuestions: string[];
+  productRecommendations?: any[];
   timestamp: number;
 }>();
 
@@ -94,7 +95,10 @@ export async function generateChatResponse(
         }
         
         return {
-          ...cachedResponse,
+          answer: cachedResponse.answer,
+          sources: cachedResponse.sources,
+          relatedQuestions: cachedResponse.relatedQuestions,
+          productRecommendations: cachedResponse.productRecommendations || [],
           conversationId
         };
       }
