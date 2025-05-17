@@ -39,9 +39,8 @@ export interface ConversationHistoryItem {
  */
 export async function generateChatResponse(
   userQuery: string,
-  conversationHistory: ConversationHistoryItem[] = [],
-  userId?: number,
-  conversationId?: number
+  conversationId?: number,
+  userId?: number
 ): Promise<{ 
   answer: string; 
   sources: { title: string; doi: string; authors: string; publishDate: string }[];
@@ -362,16 +361,16 @@ export async function getUserConversations(userId: number): Promise<any[]> {
  */
 export async function saveFeedback(
   messageId: number, 
-  userId: number, 
   rating: number, 
-  comment?: string
+  comment?: string,
+  userId?: number
 ): Promise<boolean> {
   try {
     await db
       .insert(chatFeedback)
       .values({
         messageId,
-        userId,
+        userId: userId || null,
         rating,
         comment: comment || null
       });
