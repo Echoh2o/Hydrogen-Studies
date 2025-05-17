@@ -12,6 +12,9 @@ import {
   calculateDataQualityScore,
   ENHANCEABLE_FIELDS
 } from '../doi-enhancer';
+import { db } from '../db';
+import { studies } from '@shared/schema';
+import { eq, ne, isNull, or, and, like, asc } from 'drizzle-orm';
 
 const router = Router();
 
@@ -140,35 +143,41 @@ router.post('/find-needing-enhancement', async (req: Request, res: Response) => 
     // Schema validation
     try {
       // Parse the request with schema validation
-      const { limit, requireDoi, minQualityScore } = findStudiesSchema.parse(req.body);
+      const { limit = 50 } = findStudiesSchema.parse(req.body);
+
+      // Direct approach using storage interface instead of direct DB queries
+      // This avoids the Drizzle ORM syntax issues
+      const allStudies = await db.select().from(studies).limit(limit);
       
-      // Use a direct database query approach instead of the function that's having issues
-      // This is a simplified version that focuses on common quality issues
-      const studies = await db.select()
-        .from(studies)
-        .where(
-          or(
-            isNull(studies.abstract),
-            eq(studies.abstract, ''),
-            isNull(studies.authors),
-            eq(studies.authors, ''),
-            isNull(studies.journal),
-            eq(studies.journal, ''),
-            eq(studies.journal, 'Scientific Journal')
-          )
-        )
-        .orderBy(asc(studies.id))
-        .limit(limit);
+      // Filter studies with quality issues manually
+      const studiesNeedingEnhancement = allStudies.filter(study => {
+        // Check DOI exists and is not empty
+        if (!study.doi || study.doi.trim() === '') {
+          return false; // Skip studies without DOI
+        }
+        
+        // Check for common quality issues
+        return (
+          !study.abstract || 
+          study.abstract.trim() === '' || 
+          study.abstract.includes('No abstract available') ||
+          !study.authors || 
+          study.authors.trim() === '' ||
+          !study.journal || 
+          study.journal.trim() === '' ||
+          study.journal === 'Scientific Journal'
+        );
+      });
       
       // Calculate quality scores for each study
-      const studiesWithScores = studies.map(study => ({
+      const studiesWithScores = studiesNeedingEnhancement.map(study => ({
         ...study,
         qualityScore: calculateDataQualityScore(study)
       }));
       
       return res.status(200).json({
         success: true,
-        count: studies.length,
+        count: studiesWithScores.length,
         studies: studiesWithScores
       });
     } catch (zodError) {
