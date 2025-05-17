@@ -90,17 +90,49 @@ export const ChatWidget: React.FC = () => {
     const loadInitialData = async () => {
       try {
         // Load conversations (if authenticated)
-        const conversationsResponse = await apiRequest<{ success: boolean; data: Conversation[] }>('/api/chat/conversations');
-        if (conversationsResponse.success && conversationsResponse.data) {
-          setConversations(conversationsResponse.data);
-          console.log('Loaded user conversations:', conversationsResponse.data.length);
+        try {
+          const conversationsResponse = await fetch('/api/chat/conversations');
+          if (conversationsResponse.ok) {
+            const data = await conversationsResponse.json();
+            if (data.data && Array.isArray(data.data)) {
+              setConversations(data.data);
+              console.log('Loaded user conversations:', data.data.length);
+            }
+          }
+        } catch (convErr) {
+          console.log('Error loading conversations:', convErr);
+          // Non-critical, continue to load popular questions
         }
         
         // Load popular questions for all users (regardless of authentication)
-        const questionsResponse = await apiRequest<{ success: boolean; data: string[] }>('/api/chat/popular-questions?limit=5');
-        if (questionsResponse.success && questionsResponse.data) {
-          setPopularQuestions(questionsResponse.data);
-          console.log('Loaded popular questions:', questionsResponse.data.length);
+        try {
+          const questionsResponse = await fetch('/api/chat/popular-questions?limit=5');
+          if (questionsResponse.ok) {
+            const data = await questionsResponse.json();
+            if (data.data && Array.isArray(data.data)) {
+              setPopularQuestions(data.data);
+              console.log('Loaded popular questions:', data.data.length);
+            } else {
+              // Set default popular questions as fallback
+              setPopularQuestions([
+                "What are the benefits of hydrogen water?",
+                "How does molecular hydrogen help with inflammation?",
+                "Can hydrogen therapy help with diabetes?",
+                "What does research say about hydrogen for athletes?",
+                "Is hydrogen water safe for daily consumption?"
+              ]);
+            }
+          }
+        } catch (questionsErr) {
+          console.log('Error loading popular questions:', questionsErr);
+          // Set default popular questions as fallback
+          setPopularQuestions([
+            "What are the benefits of hydrogen water?",
+            "How does molecular hydrogen help with inflammation?",
+            "Can hydrogen therapy help with diabetes?",
+            "What does research say about hydrogen for athletes?",
+            "Is hydrogen water safe for daily consumption?"
+          ]);
         }
       } catch (err) {
         // Error handling - non-critical, so we log but don't show error to user
