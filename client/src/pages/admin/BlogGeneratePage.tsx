@@ -107,30 +107,40 @@ export default function BlogGeneratePage() {
         currentStep: 3
       }));
       
-      // Call API
-      const response = await apiRequest('POST', `/api/studies/${selectedStudyId}/generate-blogs`, {
-        count: blogOptions.standardCount + blogOptions.elonCount,
-        includeElonStyle: blogOptions.includeElonStyle,
-        standardCount: blogOptions.standardCount,
-        elonCount: blogOptions.elonCount,
-        includeExplainer: blogOptions.includeExplainer,
-        includeImplications: blogOptions.includeImplications, 
-        includeHistorical: blogOptions.includeHistorical,
-        readingLevel: blogOptions.readingLevel,
-        includeImages: blogOptions.includeImages,
-        force: forceRegeneration
-      });
-      
-      const data = await response.json();
-      
-      // Set final progress state
-      setGenerationProgress(prev => ({
-        ...prev,
-        step: 'Blog generation complete!',
-        completed: true,
-        blogCount: data.blogs ? data.blogs.length : 0,
-        currentStep: prev.totalSteps
-      }));
+      // Call API - don't throw on non-2xx responses so we can handle them in the error handler
+      try {
+        const response = await apiRequest('POST', `/api/studies/${selectedStudyId}/generate-blogs`, {
+          count: blogOptions.standardCount + blogOptions.elonCount,
+          includeElonStyle: blogOptions.includeElonStyle,
+          standardCount: blogOptions.standardCount,
+          elonCount: blogOptions.elonCount,
+          includeExplainer: blogOptions.includeExplainer,
+          includeImplications: blogOptions.includeImplications, 
+          includeHistorical: blogOptions.includeHistorical,
+          readingLevel: blogOptions.readingLevel,
+          includeImages: blogOptions.includeImages,
+          force: forceRegeneration
+        }, false); // false = don't throw on error responses
+        
+        // If we got a 409 Conflict (blogs already exist), provide helpful message
+        if (response.status === 409) {
+          const data = await response.json();
+          throw { 
+            response,
+            message: "Blog articles already exist for this study"
+          };
+        }
+        
+        // For any other non-2xx response, throw a generic error
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        throw error; // Re-throw for the error handler
+      }
       
       return data;
     },
@@ -149,12 +159,33 @@ export default function BlogGeneratePage() {
         navigate('/admin/blogs');
       }, 1000);
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
       setGenerationProgress(prev => ({
         ...prev,
         step: 'Error generating articles',
         completed: false
       }));
+      
+      // Check if this is a 409 conflict (blogs exist) error
+      if (error.response && error.response.status === 409) {
+        try {
+          // Parse the error response to get existing blogs
+          const data = await error.response.json();
+          
+          toast({
+            title: 'Blog articles already exist',
+            description: 'This study already has blog articles. Enable "Force regeneration" to replace them.',
+            variant: 'destructive',
+          });
+          
+          // Show the "force regeneration" option more prominently
+          setForceRegeneration(true);
+          
+          return;
+        } catch (parseError) {
+          // If we can't parse the response, fall through to general error
+        }
+      }
       
       toast({
         title: 'Failed to generate blog articles',
@@ -451,6 +482,17 @@ export default function BlogGeneratePage() {
                           }
                         />
                         <Label htmlFor="includeImages">Auto-generate images for articles</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2 mt-4">
+                        <Checkbox 
+                          id="forceRegeneration" 
+                          checked={forceRegeneration}
+                          onCheckedChange={(checked) => 
+                            setForceRegeneration(!!checked)
+                          }
+                        />
+                        <Label htmlFor="forceRegeneration">Force regeneration (override existing blog articles)</Label>
                       </div>
                     </div>
                   </div>
