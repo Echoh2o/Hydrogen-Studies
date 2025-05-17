@@ -20,6 +20,7 @@ import Learn from "@/pages/learn";
 import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
 import BlogPage from "@/pages/BlogPage";
+import ChatPage from "@/pages/ChatPage";
 
 // Admin pages - old
 import AdminPage from "@/pages/admin/AdminPage";
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/resources" component={Resources} />
       <Route path="/learn" component={Learn} />
       <Route path="/contact" component={Contact} />
+      <Route path="/chat" component={ChatPage} />
       
       {/* Admin Routes - new layout */}
       <Route path="/admin" component={DashboardPage} />
