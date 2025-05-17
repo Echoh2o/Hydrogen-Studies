@@ -41,6 +41,7 @@ import studyDetailsRoutes from "./routes/study-details";
 import europePmcRoutes from "./routes/europepmc-routes";
 import semanticScholarRoutes from "./routes/semantic-scholar-routes";
 import crossrefRoutes from "./routes/crossref-routes";
+import journalDateRoutes from "./routes/journal-date-routes";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
@@ -74,6 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('', europePmcRoutes);
   app.use('', semanticScholarRoutes);
   app.use('/api/crossref', crossrefRoutes);
+  app.use('/api/admin', journalDateRoutes);
   
   // Register DOI enhancement routes for improving study data quality
   app.use('/api/doi', doiEnhancementRoutes);
