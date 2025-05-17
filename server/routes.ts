@@ -337,7 +337,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/studies/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const study = await storage.getStudyById(parseInt(id));
+      const studyId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const study = await storage.getStudyById(studyId);
       
       if (!study) {
         return res.status(404).json({ message: "Study not found" });
@@ -354,7 +361,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/studies/:id/related", async (req, res) => {
     try {
       const { id } = req.params;
-      const study = await storage.getStudyById(parseInt(id));
+      const studyId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const study = await storage.getStudyById(studyId);
       
       if (!study) {
         return res.status(404).json({ message: "Study not found" });
@@ -366,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Remove the current study from the results
-      const filteredStudies = relatedStudies.filter(s => s.id !== parseInt(id));
+      const filteredStudies = relatedStudies.filter(s => s.id !== studyId);
       
       // Sort based on relevance to the current study (using title and abstract similarity)
       const scoredStudies = filteredStudies.map(relatedStudy => {
@@ -941,7 +955,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/blogs/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      const blogId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(blogId)) {
+        return res.status(400).json({ message: "Invalid blog ID" });
+      }
+      
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, blogId));
       
       if (!blog) {
         return res.status(404).json({ message: "Blog article not found" });
@@ -950,7 +971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Increment view count
       await db.update(blogArticles)
         .set({ viewCount: blog.viewCount + 1 })
-        .where(eq(blogArticles.id, parseInt(id)));
+        .where(eq(blogArticles.id, blogId));
       
       res.json(blog);
     } catch (error) {
@@ -963,7 +984,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/blogs/:id/generate-image", async (req, res) => {
     try {
       const { id } = req.params;
-      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      const blogId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(blogId)) {
+        return res.status(400).json({ message: "Invalid blog ID" });
+      }
+      
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, blogId));
       
       if (!blog) {
         return res.status(404).json({ message: "Blog article not found" });
@@ -979,7 +1007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           imageAlt: imageResult.imageAlt,
           updatedAt: new Date()
         })
-        .where(eq(blogArticles.id, parseInt(id)))
+        .where(eq(blogArticles.id, blogId))
         .returning();
       
       res.json({
