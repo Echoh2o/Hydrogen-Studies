@@ -93,8 +93,10 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
       }
     });
     
-    // Wait for all searches to complete
-    await Promise.all(searchPromises);
+    // Run all search promises in parallel and collect results
+    await Promise.allSettled(searchPromises);
+    
+    console.log(`Unified search returned: ${allResults.length} results`);
     
     // Check for DOI duplicates to avoid showing the same study from multiple sources
     const uniqueResults = [];
@@ -111,7 +113,13 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
       }
     }
     
-    // Sort results by relevance (could be enhanced with more sophisticated relevance scoring)
+    // Sort results by year (newest first) if available
+    uniqueResults.sort((a, b) => {
+      const yearA = a.year ? parseInt(a.year) : 0;
+      const yearB = b.year ? parseInt(b.year) : 0;
+      return yearB - yearA; // Newest first
+    });
+    
     // For now, just limit to requested page size
     allResults = uniqueResults.slice(0, pageSizeNum);
     
@@ -127,6 +135,15 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
         articles: []
       });
     }
+    
+    // For debugging, log the source counts
+    const sourceCounts = allResults.reduce((acc, item) => {
+      const source = item.source || 'unknown';
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {});
+    
+    console.log(`Source counts in unified search: ${JSON.stringify(sourceCounts)}`);
     
     // If we have results, format to match the PubMed API format for compatibility with existing frontend
     res.json({
