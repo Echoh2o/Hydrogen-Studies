@@ -105,7 +105,7 @@ export class DatabaseStorage implements IStorage {
           // We need to handle this more carefully with proper array operations
           const firstCondition = filters.healthConditions[0];
           conditions.push(
-            sql`${studies.healthConditions}::text LIKE ${`%${firstCondition}%`}`
+            sql`${studies.healthConditions}::text LIKE ${'%' + firstCondition + '%'}`
           );
         }
       } catch (error) {
