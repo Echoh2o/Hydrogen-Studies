@@ -1,5 +1,8 @@
 import OpenAI from "openai";
 import { semanticSearch } from './vector-database';
+import { db } from './db';
+import { eq } from 'drizzle-orm';
+import { conversations, chatMessages, chatFeedback } from '../shared/schema';
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -7,6 +10,17 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // The newest OpenAI model is "gpt-4o" which was released May 13, 2024
 // Do not change this unless explicitly requested by the user
 const MODEL = "gpt-4o";
+
+// In-memory cache for frequently asked questions
+const responseCache = new Map<string, {
+  answer: string;
+  sources: any[];
+  relatedQuestions: string[];
+  timestamp: number;
+}>();
+
+// Cache timeout - 24 hours
+const CACHE_TIMEOUT = 24 * 60 * 60 * 1000;
 
 /**
  * Function to generate a chat response based on user query

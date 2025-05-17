@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -325,3 +325,57 @@ export type GlossaryTerm = typeof glossaryTerms.$inferSelect;
 export type FaqItem = typeof faqItems.$inferSelect;
 export type StudyCollection = typeof studyCollections.$inferSelect;
 export type CollectionStudy = typeof collectionStudies.$inferSelect;
+
+// Chat conversations table schema
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id),
+  title: text("title").default("New Conversation"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Chat messages table schema
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  role: varchar("role", { length: 20 }).notNull(), // 'user' or 'assistant'
+  content: text("content").notNull(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+});
+
+// Chat feedback table schema
+export const chatFeedback = pgTable("chat_feedback", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").notNull().references(() => chatMessages.id),
+  userId: text("user_id").references(() => users.id),
+  rating: integer("rating").notNull(), // 1 (thumbs down) or 5 (thumbs up)
+  comment: text("comment"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Popular questions table schema
+export const popularQuestions = pgTable("popular_questions", {
+  id: serial("id").primaryKey(),
+  question: text("question").notNull().unique(),
+  category: text("category").notNull(),
+  displayOrder: integer("display_order").default(0),
+  clickCount: integer("click_count").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Create insertion schemas for chat tables
+export const insertConversationSchema = createInsertSchema(conversations).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, timestamp: true });
+export const insertChatFeedbackSchema = createInsertSchema(chatFeedback).omit({ id: true, createdAt: true });
+export const insertPopularQuestionSchema = createInsertSchema(popularQuestions).omit({ id: true, clickCount: true, createdAt: true });
+
+// Types for chat tables
+export type Conversation = typeof conversations.$inferSelect;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type ChatFeedback = typeof chatFeedback.$inferSelect;
+export type PopularQuestion = typeof popularQuestions.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type InsertChatFeedback = z.infer<typeof insertChatFeedbackSchema>;
+export type InsertPopularQuestion = z.infer<typeof insertPopularQuestionSchema>;
