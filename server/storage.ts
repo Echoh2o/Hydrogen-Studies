@@ -154,20 +154,24 @@ export class MemStorage implements IStorage {
   private categoriesData: Map<number, Category>;
   private newslettersData: Map<number, Newsletter>;
   private contactMessagesData: Map<number, any>;
+  private reviewQueueData: Map<number, StudyReviewQueue>;
   private studyCurrentId: number;
   private categoryCurrentId: number;
   private newsletterCurrentId: number;
   private contactMessageCurrentId: number;
+  private reviewQueueCurrentId: number;
 
   constructor() {
     this.studiesData = new Map();
     this.categoriesData = new Map();
     this.newslettersData = new Map();
     this.contactMessagesData = new Map();
+    this.reviewQueueData = new Map();
     this.studyCurrentId = 1;
     this.categoryCurrentId = 1;
     this.newsletterCurrentId = 1;
     this.contactMessageCurrentId = 1;
+    this.reviewQueueCurrentId = 1;
   }
 
   // Studies methods

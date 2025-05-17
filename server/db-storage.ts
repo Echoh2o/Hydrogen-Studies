@@ -10,6 +10,9 @@ import {
   searchHistory,
   userStudyInteractions,
   blogArticles,
+  studyReviewQueue,
+  contactMessages,
+  ReviewStatus,
   type Study, 
   type Category, 
   type Newsletter, 
@@ -31,6 +34,8 @@ import {
   type InsertUserBlogInteraction,
   type BlogArticle,
   type InsertBlogArticle,
+  type StudyReviewQueue,
+  type InsertStudyReviewQueue,
 } from "@shared/schema";
 import { eq, like, and, or, desc, asc, sql, not, isNull, between } from 'drizzle-orm';
 
