@@ -64,7 +64,7 @@ export default function FieldMappingDialog({
                       <SelectValue placeholder="Do not import this column" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Do not import this column</SelectItem>
+                      <SelectItem value="__SKIP__">Do not import this column</SelectItem>
                       {dbFields.map((field) => (
                         <SelectItem key={field.value} value={field.value}>
                           {field.label}
