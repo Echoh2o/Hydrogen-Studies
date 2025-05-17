@@ -41,6 +41,7 @@ export default function BlogAddPage() {
   });
   
   const [activeTab, setActiveTab] = useState('content');
+  const [createdBlogId, setCreatedBlogId] = useState<number | null>(null);
   
   // Function to generate slug from title
   const generateSlug = (title: string): string => {
@@ -96,14 +97,14 @@ export default function BlogAddPage() {
     onSuccess: (data) => {
       toast({
         title: 'Blog article created',
-        description: 'The blog article was successfully created.',
+        description: 'The blog article was successfully created. You can now add a featured image.',
       });
+      
+      // Store the created blog ID to enable image upload section
+      setCreatedBlogId(data.id);
       
       // Invalidate blogs queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
-      
-      // Navigate to blog edit page for the new blog
-      navigate(`/admin/blogs/edit/${data.id}`);
     },
     onError: (error: any) => {
       toast({
@@ -287,6 +288,31 @@ export default function BlogAddPage() {
               </CardContent>
             </Card>
             
+            {createdBlogId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Featured Image</CardTitle>
+                  <CardDescription>
+                    Upload a featured image for your blog article
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MediaUpload 
+                    entityId={createdBlogId} 
+                    entityType="blog"
+                    onSuccess={(mediaUrl) => {
+                      toast({
+                        title: 'Image uploaded',
+                        description: 'Featured image has been successfully uploaded.',
+                      });
+                      // Refresh data
+                      queryClient.invalidateQueries({ queryKey: [`/api/blogs/${createdBlogId}`] });
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+            
             <Card>
               <CardHeader>
                 <CardTitle>Save Blog Article</CardTitle>
@@ -296,7 +322,7 @@ export default function BlogAddPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm">
-                  Images can be added after the blog article is created.
+                  {createdBlogId ? "Your blog has been created. You can now upload a featured image." : "Images can be added after the blog article is created."}
                 </p>
               </CardContent>
               <CardFooter className="flex justify-between">

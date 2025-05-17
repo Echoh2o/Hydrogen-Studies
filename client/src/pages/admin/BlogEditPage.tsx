@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { ArrowLeft, FileEdit, Image, Loader } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaUpload } from '@/components/common/MediaUpload';
 import { WysiwygEditor } from '@/components/ui/wysiwyg-editor';
