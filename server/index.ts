@@ -44,26 +44,19 @@ app.use(session({
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
+  
+  // Skip capturing full response bodies to improve performance
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
+      // Only log essential information: method, path, status code, and duration
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      
+      // Only log detailed response in development mode
+      if (process.env.NODE_ENV === 'development' && duration > 500) {
+        logLine += ` (SLOW)`;
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      
       log(logLine);
     }
   });
@@ -72,24 +65,82 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Apply schema updates for new scraper functionality
-  try {
-    const { updateSchema } = await import('./schema-update');
-    await updateSchema();
-    console.log('Successfully initialized database tables for new features');
+  // Track schema version in memory to avoid running migrations repeatedly
+  let schemaInitialized = false;
+  
+  // Check if DB schema needs initialization (one-time operation per process)
+  const initializeDbSchema = async () => {
+    if (schemaInitialized) {
+      return;
+    }
     
-    // Add health conditions and body systems fields support
-    const { updateSchemaWithHealthFields } = await import('./update-health-fields');
-    await updateSchemaWithHealthFields();
-    console.log('Successfully initialized health conditions and body systems fields');
-    
-    // Add hydrogen research database specific fields
-    const { addHydrogenResearchFields } = await import('../shared/schema-hydrogen-fields');
-    await addHydrogenResearchFields();
-    console.log('Successfully initialized hydrogen research database fields');
-  } catch (error) {
-    console.error('Error initializing database tables:', error);
-  }
+    try {
+      // Check for version tracking table first
+      const versionTableExists = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_name = 'schema_version'
+        );
+      `);
+      
+      if (!versionTableExists.rows?.[0]?.exists) {
+        // Create version tracking table if it doesn't exist
+        await db.execute(sql`
+          CREATE TABLE schema_version (
+            id SERIAL PRIMARY KEY,
+            version INTEGER NOT NULL,
+            migration_name TEXT NOT NULL,
+            applied_at TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+          INSERT INTO schema_version (version, migration_name) 
+          VALUES (1, 'initial_schema_version');
+        `);
+        
+        console.log('Applying schema updates for scraper functionality...');
+        const { updateSchema } = await import('./schema-update');
+        await updateSchema();
+        console.log('Schema updates applied successfully');
+        
+        console.log('Adding health condition and body system fields to studies table...');
+        const { updateSchemaWithHealthFields } = await import('./update-health-fields');
+        await updateSchemaWithHealthFields();
+        console.log('Successfully added health conditions and body systems fields');
+        
+        console.log('Adding hydrogen research specific fields to studies table...');
+        const { addHydrogenResearchFields } = await import('../shared/schema-hydrogen-fields');
+        await addHydrogenResearchFields();
+        console.log('Successfully added hydrogen research database fields');
+        
+        console.log('Setting up vector database extension for AI chatbot...');
+        const { setupVectorExtension } = await import('./vector-database');
+        const vectorExtensionResult = await setupVectorExtension();
+        if (vectorExtensionResult) {
+          console.log('Vector database extension setup successful');
+        } else {
+          console.error('Vector database extension setup failed');
+        }
+        
+        // Update version after all migrations
+        await db.execute(sql`
+          UPDATE schema_version 
+          SET version = 2, 
+              migration_name = 'complete_setup',
+              applied_at = NOW()
+          WHERE id = 1
+        `);
+      } else {
+        console.log('Database schema already initialized. Skipping migrations.');
+      }
+      
+      schemaInitialized = true;
+      console.log('Successfully initialized database tables for new features');
+    } catch (error) {
+      console.error('Error initializing database tables:', error);
+    }
+  };
+  
+  // Run schema initialization
+  await initializeDbSchema();
 
   const server = await registerRoutes(app);
 
