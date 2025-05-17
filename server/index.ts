@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { Pool } from "@neondatabase/serverless";
 import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
@@ -68,79 +69,33 @@ app.use((req, res, next) => {
   // Track schema version in memory to avoid running migrations repeatedly
   let schemaInitialized = false;
   
-  // Check if DB schema needs initialization (one-time operation per process)
-  const initializeDbSchema = async () => {
-    if (schemaInitialized) {
-      return;
-    }
-    
-    try {
-      // Check for version tracking table first
-      const versionTableExists = await db.execute(sql`
-        SELECT EXISTS (
-          SELECT 1 FROM information_schema.tables 
-          WHERE table_name = 'schema_version'
-        );
-      `);
+  // Only do schema updates on initial setup once
+  try {
+    // Simple initialization flag in memory
+    if (!schemaInitialized) {
+      // Only execute these migrations as needed
+      console.log('Applying schema updates for scraper functionality...');
+      const { updateSchema } = await import('./schema-update');
+      await updateSchema();
+      console.log('Schema updates applied successfully');
       
-      if (!versionTableExists.rows?.[0]?.exists) {
-        // Create version tracking table if it doesn't exist
-        await db.execute(sql`
-          CREATE TABLE schema_version (
-            id SERIAL PRIMARY KEY,
-            version INTEGER NOT NULL,
-            migration_name TEXT NOT NULL,
-            applied_at TIMESTAMP NOT NULL DEFAULT NOW()
-          );
-          INSERT INTO schema_version (version, migration_name) 
-          VALUES (1, 'initial_schema_version');
-        `);
-        
-        console.log('Applying schema updates for scraper functionality...');
-        const { updateSchema } = await import('./schema-update');
-        await updateSchema();
-        console.log('Schema updates applied successfully');
-        
-        console.log('Adding health condition and body system fields to studies table...');
-        const { updateSchemaWithHealthFields } = await import('./update-health-fields');
-        await updateSchemaWithHealthFields();
-        console.log('Successfully added health conditions and body systems fields');
-        
-        console.log('Adding hydrogen research specific fields to studies table...');
-        const { addHydrogenResearchFields } = await import('../shared/schema-hydrogen-fields');
-        await addHydrogenResearchFields();
-        console.log('Successfully added hydrogen research database fields');
-        
-        console.log('Setting up vector database extension for AI chatbot...');
-        const { setupVectorExtension } = await import('./vector-database');
-        const vectorExtensionResult = await setupVectorExtension();
-        if (vectorExtensionResult) {
-          console.log('Vector database extension setup successful');
-        } else {
-          console.error('Vector database extension setup failed');
-        }
-        
-        // Update version after all migrations
-        await db.execute(sql`
-          UPDATE schema_version 
-          SET version = 2, 
-              migration_name = 'complete_setup',
-              applied_at = NOW()
-          WHERE id = 1
-        `);
-      } else {
-        console.log('Database schema already initialized. Skipping migrations.');
-      }
+      console.log('Adding health condition and body system fields to studies table...');
+      const { updateSchemaWithHealthFields } = await import('./update-health-fields');
+      await updateSchemaWithHealthFields();
+      console.log('Successfully added health conditions and body systems fields');
       
+      console.log('Adding hydrogen research specific fields to studies table...');
+      const { addHydrogenResearchFields } = await import('../shared/schema-hydrogen-fields');
+      await addHydrogenResearchFields();
+      console.log('Successfully added hydrogen research database fields');
+      
+      // Mark as initialized
       schemaInitialized = true;
       console.log('Successfully initialized database tables for new features');
-    } catch (error) {
-      console.error('Error initializing database tables:', error);
     }
-  };
-  
-  // Run schema initialization
-  await initializeDbSchema();
+  } catch (error) {
+    console.error('Error initializing database tables:', error);
+  }
 
   const server = await registerRoutes(app);
 
