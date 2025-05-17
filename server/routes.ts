@@ -20,7 +20,7 @@ import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy
 import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
 import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
 import educationalRoutes from "./routes/educational";
 import scraperRoutes from "./routes/scraper-routes";
 import importRoutes from "./routes/import-routes";
@@ -661,8 +661,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all blog articles
   app.get("/api/blogs", async (req, res) => {
     try {
-      const blogs = await db.select().from(blogArticles).orderBy(desc(blogArticles.createdAt));
-      res.json(blogs);
+      // Extract query parameters with defaults
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 10;
+      const searchQuery = (req.query.searchQuery as string) || '';
+      const articleType = (req.query.articleTypeFilter as string) || '';
+      const publishedFilter = (req.query.publishedFilter as string) || '';
+      const status = (req.query.status as string) || 'all';
+      const sortField = (req.query.sortField as string) || 'createdAt';
+      const sortOrder = (req.query.sortOrder as string) || 'desc';
+
+      // Calculate offset based on pagination
+      const offset = (page - 1) * pageSize;
+      
+      // Start building the base query
+      let query = db.select({
+        id: blogArticles.id,
+        title: blogArticles.title,
+        summary: blogArticles.summary,
+        studyId: blogArticles.studyId,
+        imageUrl: blogArticles.imageUrl,
+        imageAlt: blogArticles.imageAlt,
+        isPublished: blogArticles.isPublished,
+        readingLevel: blogArticles.readingLevel,
+        articleType: blogArticles.articleType,
+        viewCount: blogArticles.viewCount,
+        createdAt: blogArticles.createdAt,
+        updatedAt: blogArticles.updatedAt,
+        content: blogArticles.content,
+        slug: blogArticles.slug
+      }).from(blogArticles);
+      
+      // Add search filter if provided
+      if (searchQuery) {
+        query = query.where(
+          or(
+            ilike(blogArticles.title, `%${searchQuery}%`),
+            ilike(blogArticles.summary, `%${searchQuery}%`),
+            ilike(blogArticles.content, `%${searchQuery}%`)
+          )
+        );
+      }
+      
+      // Filter by article type if provided
+      if (articleType && articleType !== 'all') {
+        query = query.where(
+          ilike(blogArticles.articleType, `%${articleType}%`)
+        );
+      }
+      
+      // Filter by published status
+      if (publishedFilter === 'published') {
+        query = query.where(eq(blogArticles.isPublished, true));
+      } else if (publishedFilter === 'unpublished') {
+        query = query.where(eq(blogArticles.isPublished, false));
+      }
+      
+      // Filter by status tab
+      if (status === 'published') {
+        query = query.where(eq(blogArticles.isPublished, true));
+      } else if (status === 'unpublished') {
+        query = query.where(eq(blogArticles.isPublished, false));
+      } else if (status === 'draft') {
+        // For drafts, we could have a specific field in the future
+        // For now, just show unpublished
+        query = query.where(eq(blogArticles.isPublished, false));
+      }
+      
+      // Count total matching rows for pagination
+      const countQuery = db.select({ count: sql<number>`count(*)` }).from(blogArticles);
+      
+      // Apply the same filters to the count query
+      if (searchQuery) {
+        countQuery.where(
+          or(
+            ilike(blogArticles.title, `%${searchQuery}%`),
+            ilike(blogArticles.summary, `%${searchQuery}%`),
+            ilike(blogArticles.content, `%${searchQuery}%`)
+          )
+        );
+      }
+      
+      if (articleType && articleType !== 'all') {
+        countQuery.where(
+          ilike(blogArticles.articleType, `%${articleType}%`)
+        );
+      }
+      
+      if (publishedFilter === 'published') {
+        countQuery.where(eq(blogArticles.isPublished, true));
+      } else if (publishedFilter === 'unpublished') {
+        countQuery.where(eq(blogArticles.isPublished, false));
+      }
+      
+      if (status === 'published') {
+        countQuery.where(eq(blogArticles.isPublished, true));
+      } else if (status === 'unpublished') {
+        countQuery.where(eq(blogArticles.isPublished, false));
+      } else if (status === 'draft') {
+        countQuery.where(eq(blogArticles.isPublished, false));
+      }
+      
+      const [{ count }] = await countQuery;
+      
+      // Apply sorting
+      if (sortField === 'createdAt') {
+        query = query.orderBy(sortOrder === 'asc' ? asc(blogArticles.createdAt) : desc(blogArticles.createdAt));
+      } else if (sortField === 'updatedAt') {
+        query = query.orderBy(sortOrder === 'asc' ? asc(blogArticles.updatedAt) : desc(blogArticles.updatedAt));
+      } else if (sortField === 'title') {
+        query = query.orderBy(sortOrder === 'asc' ? asc(blogArticles.title) : desc(blogArticles.title));
+      } else if (sortField === 'viewCount') {
+        query = query.orderBy(sortOrder === 'asc' ? asc(blogArticles.viewCount) : desc(blogArticles.viewCount));
+      } else {
+        // Default sort by createdAt desc
+        query = query.orderBy(desc(blogArticles.createdAt));
+      }
+      
+      // Apply pagination
+      query = query.limit(pageSize).offset(offset);
+      
+      // Execute the query
+      const blogs = await query;
+      
+      // Return paginated results with metadata
+      res.json({
+        data: blogs,
+        totalCount: count,
+        currentPage: page,
+        pageSize: pageSize,
+        totalPages: Math.ceil(count / pageSize)
+      });
     } catch (error) {
       console.error("Error fetching blogs:", error);
       res.status(500).json({ message: "Failed to fetch blogs" });
