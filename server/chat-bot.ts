@@ -11,28 +11,32 @@ const ECHO_WATER_PRODUCTS = [
     description: "Premium hydrogen water generator with advanced PEM technology for maximum hydrogen concentration",
     url: "https://echowater.com/products/echo-h2-machine",
     imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
-    keywords: ["water", "drink", "hydrogen water", "molecular hydrogen", "h2"]
+    keywords: ["water", "drink", "hydrogen water", "molecular hydrogen", "h2"],
+    healthConditions: ["inflammation", "metabolic", "diabetes", "oxidative stress", "antioxidant", "weight", "energy"]
   },
   {
     name: "Echo H2 Tablet Maker",
     description: "Convenient and portable hydrogen tablet maker for creating hydrogen-rich water on the go",
     url: "https://echowater.com/products/echo-h2-tablets-1",
     imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
-    keywords: ["tablets", "portable", "travel", "hydrogen water", "supplements"]
+    keywords: ["tablets", "portable", "travel", "hydrogen water", "supplements"],
+    healthConditions: ["inflammation", "travel", "athletes", "workout", "recovery", "sports", "convenience"]
   },
   {
     name: "Echo H2 Inhaler",
     description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
     url: "https://echowater.com/products/echo-h2-inhaler",
     imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
-    keywords: ["inhale", "inhalation", "breathing", "respiratory", "molecular hydrogen", "lungs"]
+    keywords: ["inhale", "inhalation", "breathing", "respiratory", "molecular hydrogen", "lungs"],
+    healthConditions: ["respiratory", "asthma", "copd", "lung", "breathing", "allergy", "covid", "pneumonia", "pulmonary"]
   },
   {
     name: "Echo H2 Bath System",
     description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
     url: "https://echowater.com/products/echo-h2-bath",
     imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
-    keywords: ["bath", "skin", "topical", "bathing", "hydrogen bath", "skin health"]
+    keywords: ["bath", "skin", "topical", "bathing", "hydrogen bath", "skin health"],
+    healthConditions: ["skin", "psoriasis", "eczema", "dermatitis", "acne", "wound", "healing", "beauty", "anti-aging", "wrinkles"]
   }
 ];
 
@@ -276,12 +280,58 @@ ${context}`
 function getRelevantProducts(query: string, answer: string) {
   const combinedText = (query + ' ' + answer).toLowerCase();
   
-  return ECHO_WATER_PRODUCTS.filter(product => {
-    // Check if any of the product keywords appear in either the query or answer
-    return product.keywords.some(keyword => 
-      combinedText.includes(keyword.toLowerCase())
-    );
-  }).slice(0, 2); // Limit to max 2 products to avoid overwhelming the user
+  // Calculate relevance score for each product
+  const productsWithScores = ECHO_WATER_PRODUCTS.map(product => {
+    let score = 0;
+    
+    // Score based on keywords matching (0-5 points)
+    product.keywords.forEach(keyword => {
+      if (combinedText.includes(keyword.toLowerCase())) {
+        // Exact matches are weighted more heavily
+        score += combinedText.includes(` ${keyword.toLowerCase()} `) ? 2 : 1;
+      }
+    });
+    
+    // Score based on health conditions matching (0-10 points)
+    if (product.healthConditions) {
+      product.healthConditions.forEach(condition => {
+        if (combinedText.includes(condition.toLowerCase())) {
+          // Health condition matches are weighted most heavily
+          score += 3;
+        }
+      });
+    }
+    
+    // Method of delivery scoring based on context
+    if ((product.name.includes('Inhaler') && 
+        (combinedText.includes('breath') || 
+         combinedText.includes('lung') || 
+         combinedText.includes('respir'))) ||
+        (product.name.includes('Bath') && 
+        (combinedText.includes('skin') || 
+         combinedText.includes('topical') || 
+         combinedText.includes('external'))) ||
+        (product.name.includes('Machine') && 
+        (combinedText.includes('drink') || 
+         combinedText.includes('water') || 
+         combinedText.includes('oral'))) ||
+        (product.name.includes('Tablet') && 
+        (combinedText.includes('travel') || 
+         combinedText.includes('portable') || 
+         combinedText.includes('supplement')))
+    ) {
+      score += 5; // Substantial boost for matching the right delivery method
+    }
+    
+    return { product, score };
+  });
+  
+  // Filter out products with no relevance and sort by score (highest first)
+  return productsWithScores
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.product)
+    .slice(0, 2); // Limit to max 2 products to avoid overwhelming the user
 }
 
 /**
