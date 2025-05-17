@@ -35,6 +35,15 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
+    // Journal filter
+    if (filters.journal && filters.journal.length > 0) {
+      // Using a simple LIKE query for the journal name
+      const journalName = filters.journal[0];
+      if (journalName && journalName.trim() !== '') {
+        conditions.push(like(studies.journal, `%${journalName}%`));
+      }
+    }
+    
     // Keyword search
     if (filters.keyword) {
       const keyword = `%${filters.keyword}%`;
