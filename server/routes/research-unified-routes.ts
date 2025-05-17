@@ -153,8 +153,10 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     }, {});
     
     console.log(`Source counts in unified search: ${JSON.stringify(sourceCounts)}`);
+    console.log(`Combined results: ${allResults.length} total studies found`);
     
-    // If we have results, format to match the PubMed API format for compatibility with existing frontend
+    // If we have results, format to match the expected API format for the frontend
+    // But use 'unified' source to indicate combined results
     res.json({
       success: true,
       source: 'unified',  // Mark as unified search
@@ -163,6 +165,7 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
       startIndex: (pageNum - 1) * pageSizeNum,
       nextIndex: pageNum * pageSizeNum,
       articles: allResults,
+      sourceCounts: sourceCounts, // Include source counts for debugging
       errors: errors.length > 0 ? errors : undefined
     });
   } catch (error: any) {
