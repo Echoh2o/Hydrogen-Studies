@@ -387,98 +387,71 @@ export default function BlogsManagementPage() {
                             </TableRow>
                           ) : (
                             currentBlogs.map((blog: BlogArticle) => (
-                              viewCount: 187,
-                              imageUrl: "https://example.com/image3.jpg"
-                            }
-                          ].map((blog: BlogArticle) => (
-                            <TableRow key={blog.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex flex-col">
-                                  <Link href={`/admin/blogs/edit/${blog.id}`} className="hover:underline truncate max-w-xs block">
-                                      {blog.title}
-                                  </Link>
-                                  <span className="text-xs text-muted-foreground truncate max-w-xs">
-                                    {truncateText(blog.summary, 60)}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Link href={`/admin/studies/edit/${blog.studyId}`} className="text-sm hover:underline flex items-center">
-                                  <span className="truncate max-w-[150px]">{blog.studyTitle}</span>
-                                  <MoveRight className="ml-1 h-3 w-3" />
-                                </Link>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className={
-                                  blog.articleType === 'summary' ? 'bg-blue-50 text-blue-700' :
-                                  blog.articleType === 'elon' ? 'bg-purple-50 text-purple-700' :
-                                  blog.articleType === 'explainer' ? 'bg-green-50 text-green-700' :
-                                  blog.articleType === 'implications' ? 'bg-amber-50 text-amber-700' :
-                                  'bg-gray-50 text-gray-700'
-                                }>
-                                  {blog.articleType === 'summary' ? 'Summary' :
-                                   blog.articleType === 'elon' ? 'Elon Style' :
-                                   blog.articleType === 'explainer' ? 'Explainer' :
-                                   blog.articleType === 'implications' ? 'Health' :
-                                   blog.articleType}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{blog.readingLevel}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-2">
-                                  <Switch 
-                                    checked={blog.isPublished}
-                                    onCheckedChange={() => togglePublishStatus(blog.id, blog.isPublished)}
-                                  />
-                                  <span className="text-xs">
-                                    {blog.isPublished ? formatDate(blog.publishDate) : 'Draft'}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end space-x-2">
-                                  {blog.isPublished && (
-                                    <Button variant="ghost" size="icon" asChild>
-                                      <Link href={`/blog/${blog.id}`}>
-                                        <a>
-                                          <Eye className="h-4 w-4" />
-                                          <span className="sr-only">View</span>
-                                        </a>
-                                      </Link>
-                                    </Button>
-                                  )}
-                                  {!blog.imageUrl && (
-                                    <Button variant="ghost" size="icon" asChild>
-                                      <Link href={`/admin/blogs/generate-image/${blog.id}`}>
-                                          <Image className="h-4 w-4" />
-                                          <span className="sr-only">Generate Image</span>
-                                      </Link>
-                                    </Button>
-                                  )}
-                                  <Button variant="ghost" size="icon" asChild>
-                                    <Link href={`/admin/blogs/edit/${blog.id}`}>
-                                      <Pencil className="h-4 w-4" />
-                                      <span className="sr-only">Edit</span>
+                              <TableRow key={blog.id}>
+                                <TableCell className="font-medium">
+                                  <div className="flex flex-col">
+                                    <Link href={`/admin/blogs/edit/${blog.id}`} className="hover:underline truncate max-w-xs block">
+                                        {blog.title}
                                     </Link>
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => handleDelete(blog.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Delete</span>
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                    <span className="text-xs text-muted-foreground truncate max-w-xs">
+                                      {truncateText(blog.summary, 60)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Link href={`/admin/studies/edit/${blog.studyId}`} className="text-sm hover:underline flex items-center">
+                                    <span className="truncate max-w-[150px]">{blog.studyTitle}</span>
+                                    <MoveRight className="ml-1 h-3 w-3" />
+                                  </Link>
+                                </TableCell>
+                                <TableCell>
+                                  {blog.articleType === 'elon' && <Badge>Elon Style</Badge>}
+                                  {blog.articleType === 'summary' && <Badge variant="outline">Summary</Badge>}
+                                  {blog.articleType === 'explainer' && <Badge variant="secondary">Explainer</Badge>}
+                                  {blog.articleType === 'implications' && <Badge variant="destructive">Health</Badge>}
+                                  {blog.articleType === 'timeline' && <Badge variant="outline" className="border-blue-500 text-blue-700">Timeline</Badge>}
+                                </TableCell>
+                                <TableCell>{blog.readingLevel || 'General'}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Switch 
+                                      checked={blog.isPublished} 
+                                      onCheckedChange={() => togglePublishStatus(blog.id, blog.isPublished)}
+                                    />
+                                    <span className="text-xs text-muted-foreground">
+                                      {blog.isPublished ? formatDate(blog.publishDate) : 'Draft'}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end space-x-2">
+                                    <Button variant="ghost" size="icon" asChild>
+                                      <Link href={`/admin/blogs/edit/${blog.id}`}>
+                                        <Pencil className="h-4 w-4" />
+                                        <span className="sr-only">Edit</span>
+                                      </Link>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" asChild>
+                                      <Link href={`/blog/${blog.id}`} target="_blank">
+                                        <Eye className="h-4 w-4" />
+                                        <span className="sr-only">View</span>
+                                      </Link>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(blog.id)}>
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                      <span className="sr-only">Delete</span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
                         </TableBody>
                       </Table>
                     </div>
                     
                     {/* Pagination */}
-                    {totalPages > 1 && (
+                    {totalItems > 0 && (
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">
                           Page {currentPage} of {totalPages}
@@ -511,45 +484,6 @@ export default function BlogsManagementPage() {
             </Card>
           </TabsContent>
         </Tabs>
-        
-        {/* Blog generation from studies */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Generate Blogs from Studies</CardTitle>
-            <CardDescription>
-              Automatically generate blog articles from hydrogen research studies
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm">
-                Select a research study to generate multiple blog articles with different styles and reading levels.
-                Once generated, you can review and publish them.
-              </p>
-              
-              <div className="flex items-end space-x-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-1 block">Select Research Study</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a study..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="123">Effects of Hydrogen-Rich Saline on Cancer Cells</SelectItem>
-                      <SelectItem value="456">Molecular Hydrogen as a Novel Antioxidant</SelectItem>
-                      <SelectItem value="789">Hydrogen Gas Reduces Inflammatory Cytokine Production</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button onClick={() => handleGenerateBlog(123)}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Generate Blog Articles
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   );
