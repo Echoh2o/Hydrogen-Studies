@@ -70,13 +70,13 @@ app.use((req, res, next) => {
   // Track schema version in memory to avoid running migrations repeatedly
   let schemaInitialized = false;
   
-  // Skip all schema migrations to improve startup performance
-  // These can be run manually when needed by an administrator
+  // Run database migrations to ensure schema is up to date
   try {
-    console.log('Database migrations are now managed separately for better performance.');
-    console.log('Successfully initialized database tables for new features');
+    console.log('Running database migrations...');
+    await runMigrations();
+    console.log('Successfully ran database migrations');
   } catch (error) {
-    console.error('Error initializing database tables:', error);
+    console.error('Error running database migrations:', error);
   }
 
   const server = await registerRoutes(app);
