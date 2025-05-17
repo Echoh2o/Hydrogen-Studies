@@ -63,8 +63,18 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
             const europepmcResults = await searchEuropePMC(query, pageNum, pageSizeNum);
             if (europepmcResults && europepmcResults.results) {
               // Results are already formatted in the searchEuropePMC function
-              console.log(`Found ${europepmcResults.results.length} results from EuropePMC`);
-              allResults = [...allResults, ...europepmcResults.results];
+              const formattedEpmcData = europepmcResults.results.map((item: any) => ({
+                ...item,
+                source: 'europepmc' // Explicitly ensure source is set
+              }));
+              
+              console.log(`Found ${formattedEpmcData.length} results from EuropePMC`);
+              // Log a sample result to check the format
+              if (formattedEpmcData.length > 0) {
+                console.log('Sample EuropePMC result:', JSON.stringify(formattedEpmcData[0]).substring(0, 200) + '...');
+              }
+              
+              allResults = [...allResults, ...formattedEpmcData];
               totalResults += europepmcResults.total || 0;
             } else {
               console.log('No results from EuropePMC or unexpected format', europepmcResults);
@@ -203,11 +213,15 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     }
     
     // Format response based on available results
-    // Create response with unified source when multiple sources are requested
-    // This is critical for the frontend to handle combined results
+    // CRITICAL: Set the correct source identifier for the combined results
+    // The source must be explicitly set to 'unified' when multiple sources are selected
+    const responseSource = selectedSources.length > 1 ? 'unified' : finalSource;
+    
+    console.log(`Selected sources: ${JSON.stringify(selectedSources)}, setting response source to: ${responseSource}`);
+    
     const responseObj = {
       success: true,
-      source: selectedSources.length > 1 ? 'unified' : finalSource,
+      source: responseSource,
       query: query,
       total: totalResults,
       startIndex: (pageNum - 1) * pageSizeNum,
