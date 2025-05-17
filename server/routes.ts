@@ -756,14 +756,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/blogs/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      const blogId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(blogId)) {
+        return res.status(400).json({ message: "Invalid blog ID" });
+      }
+      
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, blogId));
       
       if (!blog) {
         return res.status(404).json({ message: "Blog article not found" });
       }
       
       // Delete the blog article
-      await db.delete(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      await db.delete(blogArticles).where(eq(blogArticles.id, blogId));
       
       res.status(200).json({ message: "Blog article deleted successfully" });
     } catch (error) {
@@ -776,7 +783,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/blogs/:id/media", upload.single('file'), async (req, res) => {
     try {
       const { id } = req.params;
-      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      const blogId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(blogId)) {
+        return res.status(400).json({ message: "Invalid blog ID" });
+      }
+      
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, blogId));
       
       if (!blog) {
         return res.status(404).json({ message: "Blog article not found" });
@@ -1104,9 +1118,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/blogs/:id/generate-titles", async (req, res) => {
     try {
       const { id } = req.params;
+      const blogId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(blogId)) {
+        return res.status(400).json({ message: "Invalid blog ID" });
+      }
       
       // Get the blog article
-      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(id)));
+      const [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, blogId));
       
       if (!blog) {
         return res.status(404).json({ message: "Blog article not found" });
