@@ -375,23 +375,23 @@ export const ChatWidget: React.FC = () => {
                     <Button 
                       variant="outline" 
                       className="justify-start" 
-                      onClick={() => setInput("What are the latest developments in hydrogen fuel cell technology?")}
+                      onClick={() => setInput("How does hydrogen water help with inflammation?")}
                     >
-                      What are the latest developments in hydrogen fuel cell technology?
+                      How does hydrogen water help with inflammation?
                     </Button>
                     <Button 
                       variant="outline" 
                       className="justify-start" 
-                      onClick={() => setInput("How does molecular hydrogen affect inflammation in the body?")}
+                      onClick={() => setInput("What benefits can I expect from inhaling molecular hydrogen gas?")}
                     >
-                      How does molecular hydrogen affect inflammation in the body?
+                      What benefits can I expect from inhaling molecular hydrogen gas?
                     </Button>
                     <Button 
                       variant="outline" 
                       className="justify-start" 
-                      onClick={() => setInput("What are the challenges in hydrogen storage for transportation?")}
+                      onClick={() => setInput("Is hydrogen-enriched bath water beneficial for skin conditions?")}
                     >
-                      What are the challenges in hydrogen storage for transportation?
+                      Is hydrogen-enriched bath water beneficial for skin conditions?
                     </Button>
                   </>
                 )}
@@ -531,6 +531,33 @@ export const ChatWidget: React.FC = () => {
                 </Badge>
               ))}
             </div>
+            
+            {/* Product recommendation for health-related hydrogen queries */}
+            {messages.length > 0 && 
+             messages[messages.length - 1].role === 'assistant' && 
+             (messages[messages.length - 1].content.toLowerCase().includes('water') || 
+              messages[messages.length - 1].content.toLowerCase().includes('drink') ||
+              messages[messages.length - 1].content.toLowerCase().includes('bath') ||
+              messages[messages.length - 1].content.toLowerCase().includes('inhale') ||
+              messages[messages.length - 1].content.toLowerCase().includes('device')) && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4" /> 
+                  Looking for hydrogen products?
+                </h4>
+                <p className="text-xs mt-1 mb-2 text-muted-foreground">
+                  Visit <a href="https://echowater.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-medium">Echo Water</a> for hydrogen-rich water systems and wellness products.
+                </p>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="w-full text-xs"
+                  onClick={() => window.open('https://echowater.com', '_blank')}
+                >
+                  View Products
+                </Button>
+              </div>
+            )}
           </div>
         )}
         
