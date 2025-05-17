@@ -197,9 +197,18 @@ router.put('/preferences', isAuthenticated, async (req, res) => {
 router.get('/recommended/studies', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    const studies = await recommendationService.getRecommendedStudies(userId!, limit);
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure limit is a valid number
+    if (isNaN(limit)) {
+      return res.status(400).json({ message: 'Invalid limit parameter' });
+    }
+    
+    const studies = await recommendationService.getRecommendedStudies(Number(userId), limit);
     res.json(studies);
   } catch (error) {
     console.error('Get recommended studies error:', error);
@@ -211,9 +220,18 @@ router.get('/recommended/studies', isAuthenticated, async (req, res) => {
 router.get('/recommended/blogs', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    const blogs = await recommendationService.getRecommendedBlogs(userId!, limit);
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure limit is a valid number
+    if (isNaN(limit)) {
+      return res.status(400).json({ message: 'Invalid limit parameter' });
+    }
+    
+    const blogs = await recommendationService.getRecommendedBlogs(Number(userId), limit);
     res.json(blogs);
   } catch (error) {
     console.error('Get recommended blogs error:', error);
@@ -225,9 +243,18 @@ router.get('/recommended/blogs', isAuthenticated, async (req, res) => {
 router.post('/studies/:id/save', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const studyId = parseInt(req.params.id);
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    const interaction = await userService.saveStudy(userId!, studyId);
+    const studyId = parseInt(req.params.id);
+    // Ensure studyId is a valid number
+    if (isNaN(studyId)) {
+      return res.status(400).json({ message: 'Invalid study ID' });
+    }
+    
+    const interaction = await userService.saveStudy(Number(userId), studyId);
     res.json({ message: 'Study saved successfully', isSaved: true });
   } catch (error) {
     console.error('Save study error:', error);
@@ -239,9 +266,18 @@ router.post('/studies/:id/save', isAuthenticated, async (req, res) => {
 router.delete('/studies/:id/save', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const studyId = parseInt(req.params.id);
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    await userService.unsaveStudy(userId!, studyId);
+    const studyId = parseInt(req.params.id);
+    // Ensure studyId is a valid number
+    if (isNaN(studyId)) {
+      return res.status(400).json({ message: 'Invalid study ID' });
+    }
+    
+    await userService.unsaveStudy(Number(userId), studyId);
     res.json({ message: 'Study unsaved successfully', isSaved: false });
   } catch (error) {
     console.error('Unsave study error:', error);
@@ -253,9 +289,18 @@ router.delete('/studies/:id/save', isAuthenticated, async (req, res) => {
 router.post('/studies/:id/view', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const studyId = parseInt(req.params.id);
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    await userService.recordStudyView(userId!, studyId);
+    const studyId = parseInt(req.params.id);
+    // Ensure studyId is a valid number
+    if (isNaN(studyId)) {
+      return res.status(400).json({ message: 'Invalid study ID' });
+    }
+    
+    await userService.recordStudyView(Number(userId), studyId);
     res.json({ message: 'Study view recorded' });
   } catch (error) {
     console.error('Record study view error:', error);
@@ -267,7 +312,12 @@ router.post('/studies/:id/view', isAuthenticated, async (req, res) => {
 router.get('/studies/saved', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const studies = await userService.getSavedStudies(userId!);
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    
+    const studies = await userService.getSavedStudies(Number(userId));
     res.json(studies);
   } catch (error) {
     console.error('Get saved studies error:', error);
@@ -302,9 +352,18 @@ router.get('/studies/recent', isAuthenticated, async (req, res) => {
 router.post('/blogs/:id/save', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const blogId = parseInt(req.params.id);
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    const interaction = await userService.saveBlog(userId!, blogId);
+    const blogId = parseInt(req.params.id);
+    // Ensure blogId is a valid number
+    if (isNaN(blogId)) {
+      return res.status(400).json({ message: 'Invalid blog ID' });
+    }
+    
+    const interaction = await userService.saveBlog(Number(userId), blogId);
     res.json({ message: 'Blog saved successfully', isSaved: true });
   } catch (error) {
     console.error('Save blog error:', error);
@@ -352,9 +411,18 @@ router.get('/blogs/saved', isAuthenticated, async (req, res) => {
 router.get('/blogs/recent', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    const blogs = await userService.getRecentlyViewedBlogs(userId!, limit);
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure limit is a valid number
+    if (isNaN(limit)) {
+      return res.status(400).json({ message: 'Invalid limit parameter' });
+    }
+    
+    const blogs = await userService.getRecentlyViewedBlogs(Number(userId), limit);
     res.json(blogs);
   } catch (error) {
     console.error('Get recent blogs error:', error);
