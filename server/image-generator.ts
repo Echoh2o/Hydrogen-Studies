@@ -229,7 +229,7 @@ function generateBlogImageAltText(blog: BlogArticle): string {
 async function downloadAndSaveImage(imageUrl: string, entityId: number, entityType: 'study' | 'blog' = 'study'): Promise<string> {
   try {
     // Create directory if it doesn't exist
-    const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+    const uploadDir = path.join(__dirname, '..', 'uploads');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
