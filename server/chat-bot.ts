@@ -40,8 +40,21 @@ const ECHO_WATER_PRODUCTS = [
   }
 ];
 
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI client with error handling
+let openai;
+let openaiInitialized = false;
+
+try {
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn('Warning: OPENAI_API_KEY is not set or empty. AI functionality will be limited.');
+  } else {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    openaiInitialized = true;
+    console.log('OpenAI client initialized successfully');
+  }
+} catch (error) {
+  console.error('Failed to initialize OpenAI client:', error);
+}
 
 // The newest OpenAI model is "gpt-4o" which was released May 13, 2024
 // Do not change this unless explicitly requested by the user
@@ -82,8 +95,15 @@ export async function generateChatResponse(
   answer: string; 
   sources: { title: string; doi: string; authors: string; publishDate: string }[];
   relatedQuestions: string[];
+  productRecommendations?: any[];
   conversationId?: number;
 }> {
+  // Check if OpenAI is properly initialized
+  if (!openaiInitialized) {
+    console.warn("OpenAI client not initialized - using fallback response");
+    return generateFallbackResponse(userQuery, conversationId);
+  }
+  
   try {
     // Check cache for recent identical query
     const cacheKey = userQuery.toLowerCase().trim();
@@ -550,6 +570,46 @@ export async function validateQuery(query: string): Promise<{
   isValid: boolean;
   reason?: string;
 }> {
+  // Quick keyword-based pre-validation to work even if OpenAI is unavailable
+  const lowerQuery = query.toLowerCase();
+    
+  // If clearly about hydrogen health, approve immediately
+  if (lowerQuery.includes('hydrogen water') || 
+      lowerQuery.includes('h2 water') ||
+      lowerQuery.includes('hydrogen inhalation') ||
+      lowerQuery.includes('hydrogen therapy') ||
+      lowerQuery.includes('hydrogen bath') ||
+      (lowerQuery.includes('molecular hydrogen') && 
+       (lowerQuery.includes('health') || 
+        lowerQuery.includes('wellness') || 
+        lowerQuery.includes('medical') || 
+        lowerQuery.includes('treatment')))) {
+    return { isValid: true, reason: "Directly relevant to hydrogen health applications" };
+  }
+    
+  // If clearly about energy/fuel cells, reject immediately
+  if ((lowerQuery.includes('fuel cell') || 
+       lowerQuery.includes('energy storage') ||
+       lowerQuery.includes('power generation')) && 
+      !lowerQuery.includes('health') && 
+      !lowerQuery.includes('medical') && 
+      !lowerQuery.includes('drinking')) {
+    return { 
+      isValid: false, 
+      reason: "Query appears to be about hydrogen energy or fuel cells, not health applications" 
+    };
+  }
+
+  // Check if OpenAI is available
+  if (!openaiInitialized) {
+    console.warn("OpenAI validation skipped - client not initialized");
+    // Default to accepting health-related queries when we can't validate with AI
+    return { 
+      isValid: true, 
+      reason: "Query accepted (validation service unavailable)" 
+    };
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: MODEL,
