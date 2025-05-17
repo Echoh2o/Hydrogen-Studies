@@ -18,11 +18,11 @@ router.post('/update-journal-dates', async (req, res) => {
     const result = await updateJournalPublicationDates(processLimit);
     
     res.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error running journal date update:', error);
     res.status(500).json({
       success: false,
-      message: `Failed to update journal dates: ${error.message}`
+      message: `Failed to update journal dates: ${error.message || 'Unknown error'}`
     });
   }
 });
@@ -77,11 +77,11 @@ router.get('/journal-date-stats', async (req, res) => {
         recentlyUpdated
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting journal date stats:', error);
     res.status(500).json({
       success: false,
-      message: `Failed to get journal date stats: ${error.message}`
+      message: `Failed to get journal date stats: ${error.message || 'Unknown error'}`
     });
   }
 });
