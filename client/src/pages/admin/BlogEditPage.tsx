@@ -9,6 +9,7 @@ import { ArrowLeft, FileEdit, Image, Loader } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { MediaUpload } from '@/components/common/MediaUpload';
+import { BlogImageGenerator } from '@/components/admin/BlogImageGenerator';
 import { WysiwygEditor } from '@/components/ui/wysiwyg-editor';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

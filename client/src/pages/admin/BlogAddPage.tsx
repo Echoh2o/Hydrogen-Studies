@@ -22,6 +22,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { ArrowLeft, Loader2, FileText, ImagePlus, Tag, Calendar, Link2, ArrowUpRight } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { MediaUpload } from '@/components/common/MediaUpload';
+import { BlogImageGenerator } from '@/components/admin/BlogImageGenerator';
 
 export default function BlogAddPage() {
   const { toast } = useToast();
@@ -293,22 +294,45 @@ export default function BlogAddPage() {
                 <CardHeader>
                   <CardTitle>Featured Image</CardTitle>
                   <CardDescription>
-                    Upload a featured image for your blog article
+                    Upload or generate a featured image for your blog article
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <MediaUpload 
-                    entityId={createdBlogId} 
-                    entityType="blog"
-                    onSuccess={(mediaUrl) => {
-                      toast({
-                        title: 'Image uploaded',
-                        description: 'Featured image has been successfully uploaded.',
-                      });
-                      // Refresh data
-                      queryClient.invalidateQueries({ queryKey: [`/api/blogs/${createdBlogId}`] });
-                    }}
-                  />
+                  <Tabs defaultValue="upload" className="w-full mb-6">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="upload">Upload Image</TabsTrigger>
+                      <TabsTrigger value="generate">Generate with AI</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="upload" className="space-y-4 pt-4">
+                      <MediaUpload 
+                        entityId={createdBlogId} 
+                        entityType="blog"
+                        onSuccess={(mediaUrl) => {
+                          toast({
+                            title: 'Image uploaded',
+                            description: 'Featured image has been successfully uploaded.',
+                          });
+                          // Refresh data
+                          queryClient.invalidateQueries({ queryKey: [`/api/blogs/${createdBlogId}`] });
+                        }}
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="generate" className="space-y-4 pt-4">
+                      <BlogImageGenerator 
+                        blogId={createdBlogId}
+                        onSuccess={(imageUrl, imageAlt) => {
+                          toast({
+                            title: 'Image generated',
+                            description: 'AI has created a featured image based on your blog content.',
+                          });
+                          // Refresh data
+                          queryClient.invalidateQueries({ queryKey: [`/api/blogs/${createdBlogId}`] });
+                        }}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             )}
