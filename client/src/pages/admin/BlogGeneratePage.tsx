@@ -43,7 +43,7 @@ export default function BlogGeneratePage() {
   
   // Get the 20 most recent studies
   const { data: recentStudies, isLoading: loadingStudies } = useQuery({
-    queryKey: ['/api/studies', { limit: 20, sort: 'latest' }],
+    queryKey: ['/api/studies/latest', { limit: 20 }],
     retry: false,
   });
   
