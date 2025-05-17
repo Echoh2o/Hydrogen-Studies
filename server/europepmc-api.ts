@@ -14,13 +14,19 @@ export async function searchEuropePMC(
   pageSize: number = 10
 ): Promise<{results: any[], total: number}> {
   try {
+    console.log(`Searching EuropePMC for: "${query}", page ${page}, size ${pageSize}`);
+    
+    // Add hydrogen-specific terms to increase relevance
+    const enhancedQuery = `(${query}) AND (hydrogen OR "molecular hydrogen" OR "hydrogen water" OR "hydrogen therapy" OR "hydrogen gas" OR H2)`;
+    
     const response = await axios.get('https://www.ebi.ac.uk/europepmc/webservices/rest/search', {
       params: {
-        query: query,
+        query: enhancedQuery,
         resultType: 'core',
         format: 'json',
         pageSize: pageSize,
-        page: page
+        page: page,
+        sort: 'RELEVANCE'
       }
     });
 
@@ -28,7 +34,9 @@ export async function searchEuropePMC(
     const total = response.data.hitCount || 0;
     const results = response.data.resultList?.result || [];
     
-    // Transform each article into our standardized format
+    console.log(`EuropePMC returned ${results.length} results of ${total} total hits`);
+    
+    // Transform each article into our standardized format to match PubMed format
     const formattedResults = results.map((article: any) => ({
       id: article.id,
       pmid: article.pmid,
@@ -41,7 +49,8 @@ export async function searchEuropePMC(
       abstract: article.abstractText || '',
       url: `https://europepmc.org/article/${article.source}/${article.id}`,
       totalResults: total,
-      source: 'europepmc'
+      source: 'europepmc',
+      inDatabase: false
     }));
 
     return {
