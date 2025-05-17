@@ -352,15 +352,22 @@ async function checkArticlesInDatabase(pmids: string[]): Promise<string[]> {
   }
   
   try {
-    // Find studies with URLs containing the PMIDs - using a simpler approach to avoid SQL errors
+    // Find studies with sourceUrl or DOI containing the PMIDs
     const existingIds = [];
     
     for (const pmid of pmids) {
-      const result = await db.select().from(studies).where(
-        sql`studies.url LIKE ${'%' + pmid + '%'}`
+      // Check if pmid is in sourceUrl field
+      const sourceUrlResult = await db.select().from(studies).where(
+        sql`studies.source_url LIKE ${'%' + pmid + '%'}`
       );
       
-      if (result && result.length > 0) {
+      // Check if study exists with this PMID in the DOI field
+      const doiResult = await db.select().from(studies).where(
+        sql`studies.doi LIKE ${'%' + pmid + '%'}`
+      );
+      
+      if ((sourceUrlResult && sourceUrlResult.length > 0) || 
+          (doiResult && doiResult.length > 0)) {
         existingIds.push(pmid);
       }
     }
