@@ -350,8 +350,8 @@ export const ChatWidget: React.FC = () => {
         <CardContent className="p-4 min-h-[400px] max-h-[600px] overflow-y-auto flex-grow">
           {messages.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
-              <h3 className="text-lg font-semibold mb-2">Welcome to the Hydrogen Health Research Assistant</h3>
-              <p className="mb-6">Ask any question about hydrogen and health - including hydrogen-rich water, hydrogen gas inhalation, and hydrogen baths. I'll provide scientifically-backed answers from peer-reviewed studies on how hydrogen can improve your wellness.</p>
+              <h3 className="text-lg font-semibold mb-2">Welcome to the Hydrogen Health & Wellness Assistant</h3>
+              <p className="mb-6">Ask any question about hydrogen and health - including hydrogen-rich water, hydrogen gas inhalation, and hydrogen baths. I'll provide scientifically-backed answers from peer-reviewed studies on how hydrogen can improve your wellness, support various health conditions, and aid in recovery.</p>
               
               <div className="grid grid-cols-1 gap-2 max-w-md mx-auto text-sm">
                 {/* Show popular questions if available */}
