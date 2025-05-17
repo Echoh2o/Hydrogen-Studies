@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import { fileURLToPath } from 'url';
-import { Study } from "@shared/schema";
+import { Study, BlogArticle } from "@shared/schema";
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -132,9 +132,101 @@ function generateImageAltText(study: Study, keywords: string[]): string {
 }
 
 /**
+ * Generate an image for a blog article based on its content
+ * @param blog Blog article to generate image for
+ * @returns Object containing image URL and alt text
+ */
+export async function generateBlogImage(blog: BlogArticle): Promise<{ imageUrl: string, imageAlt: string }> {
+  try {
+    // Generate prompt based on blog content
+    const prompt = generateBlogImagePrompt(blog);
+    
+    // Create image using DALL-E
+    const response = await openai.images.generate({
+      model: "dall-e-3", // the newest model
+      prompt: prompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+    });
+    
+    // Get image URL
+    const imageUrl = response.data?.[0]?.url;
+    
+    if (!imageUrl) {
+      throw new Error("Failed to generate blog image: No URL returned from API");
+    }
+    
+    // Download and save the image
+    const savedImagePath = await downloadAndSaveImage(imageUrl, blog.id, 'blog');
+    
+    // Generate alt text
+    const imageAlt = generateBlogImageAltText(blog);
+    
+    return {
+      imageUrl: savedImagePath,
+      imageAlt
+    };
+  } catch (error) {
+    console.error("Error generating blog image:", error);
+    throw error;
+  }
+}
+
+/**
+ * Generate a prompt for blog image creation
+ */
+function generateBlogImagePrompt(blog: BlogArticle): string {
+  // Extract a short snippet from content for context
+  // Strip HTML tags and get the first 200 characters
+  const contentText = blog.content
+    .replace(/<[^>]*>?/gm, '')
+    .substring(0, 200)
+    .trim();
+  
+  const titleText = blog.title;
+  
+  // Base style for blog images
+  const basePrompt = "Create a professional featured image for a science blog article";
+  
+  // Add article context
+  const context = `titled "${titleText}" about hydrogen research and its applications`;
+  
+  // Add visual elements
+  const elements = [
+    "modern scientific visualization",
+    "hydrogen-themed imagery",
+    "professional science background",
+    "clean medical visualization",
+    "futuristic health technology",
+    "scientific innovation concept",
+    "molecular design elements"
+  ];
+  
+  // Select random elements to make each image unique
+  const selectedElements = elements
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 3)
+    .join(", ");
+  
+  // Add some article context
+  const contentContext = contentText ? `The article discusses: ${contentText}...` : "";
+  
+  // Create final prompt
+  return `${basePrompt} ${context}. ${contentContext} The image should include ${selectedElements}. Make it look professional, eye-catching, and suitable for a science blog. The style should be clean, modern, with a light color scheme incorporating blues and whites. No text should be included in the image. Create an abstract, conceptual visualization that represents the topic while being visually appealing to readers interested in scientific research.`;
+}
+
+/**
+ * Generate alt text for the blog image
+ */
+function generateBlogImageAltText(blog: BlogArticle): string {
+  return `Featured image for article "${blog.title}" about hydrogen research and applications in health and science`;
+}
+
+/**
  * Download and save an image from a URL
  */
-async function downloadAndSaveImage(imageUrl: string, studyId: number): Promise<string> {
+async function downloadAndSaveImage(imageUrl: string, entityId: number, entityType: 'study' | 'blog' = 'study'): Promise<string> {
   try {
     // Create directory if it doesn't exist
     const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
@@ -151,7 +243,7 @@ async function downloadAndSaveImage(imageUrl: string, studyId: number): Promise<
     
     // Create filename and path
     const timestamp = Date.now();
-    const filename = `study-${studyId}-${timestamp}.png`;
+    const filename = `${entityType}-${entityId}-${timestamp}.png`;
     const filepath = path.join(uploadDir, filename);
     
     // Save the image
@@ -161,7 +253,7 @@ async function downloadAndSaveImage(imageUrl: string, studyId: number): Promise<
     // Return the relative path to the image
     return `/uploads/${filename}`;
   } catch (error) {
-    console.error('Error downloading and saving image:', error);
+    console.error(`Error downloading and saving ${entityType} image:`, error);
     throw error;
   }
 }

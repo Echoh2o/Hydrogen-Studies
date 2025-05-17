@@ -15,7 +15,7 @@ import {
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
-import { generateScientificImage } from "./image-generator";
+import { generateScientificImage, generateBlogImage } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
 import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
