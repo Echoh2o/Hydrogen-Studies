@@ -145,9 +145,18 @@ export default function BlogGeneratePage() {
       return data;
     },
     onSuccess: (data) => {
+      // Update the progress state with the final count
+      setGenerationProgress(prev => ({
+        ...prev,
+        step: 'Blog generation complete!',
+        completed: true,
+        blogCount: data.articles?.length || 0,
+        currentStep: prev.totalSteps
+      }));
+      
       toast({
         title: 'Blog articles generated successfully',
-        description: `Created ${data.blogs ? data.blogs.length : 0} blog articles based on the selected study.`,
+        description: `Created ${data.articles?.length || 0} blog articles based on the selected study.`,
       });
       
       // Invalidate related queries
@@ -157,7 +166,7 @@ export default function BlogGeneratePage() {
       // Wait briefly to show completion, then navigate
       setTimeout(() => {
         navigate('/admin/blogs');
-      }, 1000);
+      }, 2000); // Give user a bit more time to see the success state
     },
     onError: async (error: any) => {
       setGenerationProgress(prev => ({
