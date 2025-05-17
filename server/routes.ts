@@ -1152,14 +1152,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/studies/:id/generate-blogs", async (req, res) => {
     try {
       const { id } = req.params;
-      const study = await storage.getStudyById(parseInt(id));
+      const studyId = parseInt(id);
+      
+      // Validate that id is a valid number
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: "Invalid study ID" });
+      }
+      
+      const study = await storage.getStudyById(studyId);
       
       if (!study) {
         return res.status(404).json({ message: "Study not found" });
       }
       
       // Check if blog articles already exist for this study
-      const existingBlogs = await getBlogArticlesForStudy(parseInt(id));
+      const existingBlogs = await getBlogArticlesForStudy(studyId);
       
       // If blogs exist and force regeneration is not requested, return existing blogs
       if (existingBlogs.length > 0 && !req.body.force) {
