@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         studyType: processedStudyType,
         country: processedCountry,
         region: processedRegion,
-        journal: journal as string,
+        journal: journal ? [journal as string] : undefined,
         hasFullText: processedHasFullText,
         
         // Legacy support
