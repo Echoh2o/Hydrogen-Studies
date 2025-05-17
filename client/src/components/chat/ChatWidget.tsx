@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, RefreshCw, ThumbsUp, ThumbsDown, Clock, MessageSquare, X, FileText, Menu } from 'lucide-react';
+import { Send, RefreshCw, ThumbsUp, ThumbsDown, Clock, MessageSquare, X, FileText, Menu, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -330,7 +330,7 @@ export const ChatWidget: React.FC = () => {
       <Card className="flex-1 shadow-lg border-muted min-h-[600px] flex flex-col">
         <CardHeader className="bg-gradient-to-r from-blue-600 to-teal-600 text-white">
           <CardTitle className="flex items-center justify-between">
-            <span>Hydrogen Research AI Assistant</span>
+            <span>Hydrogen Health & Wellness Assistant</span>
             <div className="flex items-center gap-2">
               {messages.length > 0 && (
                 <Button 
@@ -350,8 +350,8 @@ export const ChatWidget: React.FC = () => {
         <CardContent className="p-4 min-h-[400px] max-h-[600px] overflow-y-auto flex-grow">
           {messages.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
-              <h3 className="text-lg font-semibold mb-2">Welcome to the Hydrogen Research Assistant</h3>
-              <p className="mb-6">Ask any question about hydrogen research, and I'll provide scientifically-backed answers from peer-reviewed studies.</p>
+              <h3 className="text-lg font-semibold mb-2">Welcome to the Hydrogen Health Research Assistant</h3>
+              <p className="mb-6">Ask any question about hydrogen and health - including hydrogen-rich water, hydrogen gas inhalation, and hydrogen baths. I'll provide scientifically-backed answers from peer-reviewed studies on how hydrogen can improve your wellness.</p>
               
               <div className="grid grid-cols-1 gap-2 max-w-md mx-auto text-sm">
                 {/* Show popular questions if available */}
