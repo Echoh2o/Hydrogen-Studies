@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { ArrowLeft, Loader2, FileText, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, ImagePlus, Tag, Calendar, Link2, ArrowUpRight } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { MediaUpload } from '@/components/common/MediaUpload';
 
 export default function BlogAddPage() {
   const { toast } = useToast();

@@ -33,6 +33,7 @@ import CrossRefPage from "@/pages/admin/CrossRefPage";
 import DashboardPage from "@/pages/admin/DashboardPage";
 import StudiesManagementPage from "@/pages/admin/StudiesManagementPage";
 import AddStudyPage from "@/pages/admin/AddStudyPage";
+import StudyEditPage from "@/pages/admin/StudyEditPage";
 import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
 import BlogGeneratePage from "@/pages/admin/BlogGeneratePage";
 import BlogAddPage from "@/pages/admin/BlogAddPage";
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/admin" component={DashboardPage} />
       <Route path="/admin/studies" component={StudiesManagementPage} />
       <Route path="/admin/studies/add" component={AddStudyPage} />
+      <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
       <Route path="/admin/blogs" component={BlogsManagementPage} />
       <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
