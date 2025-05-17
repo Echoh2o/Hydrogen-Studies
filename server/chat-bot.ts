@@ -563,6 +563,157 @@ export async function getPopularQuestions(category?: string, limit: number = 5):
 }
 
 /**
+ * Generate a fallback response when OpenAI API is unavailable
+ * This ensures users still get relevant product recommendations
+ * even when the AI service is down or experiencing issues
+ */
+function generateFallbackResponse(query: string, conversationId?: number): {
+  answer: string;
+  sources: any[];
+  relatedQuestions: string[];
+  productRecommendations: any[];
+  conversationId?: number;
+} {
+  const lowerQuery = query.toLowerCase();
+  
+  // Determine relevant products based on keywords in the query
+  let productRecommendations = [];
+  let responseCategory = "general";
+  
+  if (lowerQuery.includes('skin') || lowerQuery.includes('derma') || 
+      lowerQuery.includes('psoriasis') || lowerQuery.includes('eczema') || 
+      lowerQuery.includes('acne') || lowerQuery.includes('rash')) {
+    // Recommend bath system for skin conditions
+    productRecommendations = [{
+      name: "Echo H2 Bath System",
+      description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
+      url: "https://echowater.com/products/echo-h2-bath",
+      imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
+      relevanceScore: 95
+    }];
+    responseCategory = "skin";
+  } else if (lowerQuery.includes('breath') || lowerQuery.includes('lung') || 
+             lowerQuery.includes('inhal') || lowerQuery.includes('respiratory') || 
+             lowerQuery.includes('asthma') || lowerQuery.includes('covid')) {
+    // Recommend inhaler for respiratory conditions
+    productRecommendations = [{
+      name: "Echo H2 Inhaler",
+      description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
+      url: "https://echowater.com/products/echo-h2-inhaler",
+      imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
+      relevanceScore: 95
+    }];
+    responseCategory = "respiratory";
+  } else if (lowerQuery.includes('travel') || lowerQuery.includes('portable') || 
+             lowerQuery.includes('tablet') || lowerQuery.includes('convenient') || 
+             lowerQuery.includes('on the go')) {
+    // Recommend tablet maker for portable use
+    productRecommendations = [{
+      name: "Echo H2 Tablet Maker",
+      description: "Convenient and portable hydrogen tablet maker for creating hydrogen-rich water on the go",
+      url: "https://echowater.com/products/echo-h2-tablets-1",
+      imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
+      relevanceScore: 95
+    }];
+    responseCategory = "portable";
+  } else if (lowerQuery.includes('athletic') || lowerQuery.includes('workout') || 
+             lowerQuery.includes('exercise') || lowerQuery.includes('recovery') || 
+             lowerQuery.includes('performance') || lowerQuery.includes('sport')) {
+    // Recommend both water and tablets for athletic performance
+    productRecommendations = [
+      {
+        name: "Echo H2 Machine",
+        description: "Premium hydrogen water generator with advanced PEM technology for optimal athletic recovery",
+        url: "https://echowater.com/products/echo-h2-machine",
+        imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
+        relevanceScore: 90
+      },
+      {
+        name: "Echo H2 Tablet Maker",
+        description: "Portable hydrogen tablets for training sessions and competitions",
+        url: "https://echowater.com/products/echo-h2-tablets-1",
+        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
+        relevanceScore: 85
+      }
+    ];
+    responseCategory = "athletic";
+  } else {
+    // Default to water machine for general queries
+    productRecommendations = [{
+      name: "Echo H2 Machine",
+      description: "Premium hydrogen water generator with advanced PEM technology for maximum hydrogen concentration",
+      url: "https://echowater.com/products/echo-h2-machine",
+      imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
+      relevanceScore: 90
+    }];
+    responseCategory = "general";
+  }
+  
+  // Create category-specific response
+  let answer = "";
+  let relatedQuestions = [];
+  
+  switch (responseCategory) {
+    case "skin":
+      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about hydrogen therapy for skin conditions. While I can't provide specific research citations right now, hydrogen bath therapy is generally considered beneficial for various skin conditions due to its anti-inflammatory and antioxidant properties. Echo Water's H2 Bath System is designed specifically for topical hydrogen application.";
+      relatedQuestions = [
+        "How does hydrogen therapy help with psoriasis?",
+        "Can hydrogen baths improve eczema symptoms?",
+        "What skin conditions can hydrogen therapy help with?",
+        "How often should I use hydrogen baths for skin health?"
+      ];
+      break;
+      
+    case "respiratory":
+      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about hydrogen therapy for respiratory health. While I can't provide specific research citations right now, hydrogen inhalation therapy has been studied for its potential benefits for lung health and respiratory conditions due to its anti-inflammatory properties. Echo Water's H2 Inhaler is designed specifically for respiratory hydrogen application.";
+      relatedQuestions = [
+        "How does hydrogen inhalation help with respiratory conditions?",
+        "Can hydrogen therapy benefit asthma symptoms?",
+        "What is the recommended duration for hydrogen inhalation therapy?",
+        "Is hydrogen inhalation safe for long-term use?"
+      ];
+      break;
+      
+    case "portable":
+      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about portable hydrogen therapy options. While I can't provide specific research citations right now, hydrogen tablets are a convenient way to create hydrogen-rich water when traveling or away from home. Echo Water's H2 Tablet Maker provides a portable solution for maintaining your hydrogen therapy regimen on the go.";
+      relatedQuestions = [
+        "How effective are hydrogen tablets compared to hydrogen machines?",
+        "What's the best way to use hydrogen tablets while traveling?",
+        "How long does hydrogen water from tablets remain effective?",
+        "Can I take hydrogen tablets on an airplane?"
+      ];
+      break;
+      
+    case "athletic":
+      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about hydrogen therapy for athletic performance and recovery. While I can't provide specific research citations right now, hydrogen has been studied for its potential to reduce exercise-induced fatigue and improve recovery times. Echo Water offers both the H2 Machine for home use and portable H2 tablets that athletes can use during training or competition.";
+      relatedQuestions = [
+        "When should athletes drink hydrogen water for best results?",
+        "How can hydrogen therapy improve athletic recovery?",
+        "What sports performance benefits does hydrogen provide?",
+        "Can hydrogen water reduce muscle soreness after workouts?"
+      ];
+      break;
+      
+    default:
+      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question about hydrogen health appears to be of general interest. While I can't provide specific research citations right now, hydrogen-rich water is being studied for various health benefits due to its antioxidant properties and selective free radical scavenging. Echo Water's H2 Machine provides a convenient way to create hydrogen-rich water at home.";
+      relatedQuestions = [
+        "What are the general health benefits of hydrogen water?",
+        "How much hydrogen water should I drink daily?",
+        "How does molecular hydrogen work as an antioxidant?",
+        "What health conditions can hydrogen therapy help with?"
+      ];
+  }
+  
+  return {
+    answer,
+    sources: [],
+    relatedQuestions,
+    productRecommendations,
+    conversationId
+  };
+}
+
+/**
  * Function to validate if a user query is appropriate
  * Helps prevent queries unrelated to hydrogen research
  */
