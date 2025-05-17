@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { Pool } from "@neondatabase/serverless";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { runMigrations } from "./schema-migrator";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
