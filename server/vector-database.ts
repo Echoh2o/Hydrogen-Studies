@@ -186,7 +186,7 @@ export async function semanticSearch(query: string, limit: number = 5) {
     
     // Search for similar content using cosine distance
     const result = await pool.query(
-      `SELECT sv.chunk_text, sv.metadata, s.title, s.authors, s.doi, s.publishDate,
+      `SELECT sv.chunk_text, sv.metadata, s.title, s.authors, s.doi, s.publish_date as "publishDate",
         (sv.embedding <-> $1::vector) AS distance
        FROM studies_vectors sv
        JOIN studies s ON sv.study_id = s.id
