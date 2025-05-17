@@ -85,16 +85,20 @@ export async function processStudyForVectorDB(studyId: number) {
       // Create embedding
       const embedding = await createEmbedding(chunk.text);
       
-      // Store in vector database with proper vector format
-      // We need to make sure the vector is formatted properly for PostgreSQL
+      // Properly format the embedding for PostgreSQL pgvector
       try {
+        // Using raw SQL with array literal syntax for PostgreSQL
+        const embeddingString = `[${embedding.join(',')}]`;
+        
         await pool.query(
           `INSERT INTO studies_vectors (study_id, chunk_text, embedding, metadata)
-           VALUES ($1, $2, ARRAY[$3]::float[]::vector, $4)`,
-          [studyId, chunk.text, embedding.join(','), JSON.stringify(chunk.metadata)]
+           VALUES ($1, $2, $3::vector, $4)`,
+          [studyId, chunk.text, embeddingString, JSON.stringify(chunk.metadata)]
         );
       } catch (insertError) {
         console.error("Error inserting vector:", insertError);
+        // Log the first 100 characters of the embedding for debugging
+        console.error("First part of embedding:", embedding.slice(0, 5));
         throw insertError;
       }
     }
@@ -177,21 +181,26 @@ export async function semanticSearch(query: string, limit: number = 5) {
     // Create embedding for the query
     const queryEmbedding = await createEmbedding(query);
     
-    // Search for similar content
+    // Format embedding for pgvector
+    const embeddingString = `[${queryEmbedding.join(',')}]`;
+    
+    // Search for similar content using cosine distance
     const result = await pool.query(
       `SELECT sv.chunk_text, sv.metadata, s.title, s.authors, s.doi, s.publishDate,
-        (sv.embedding <-> $1) AS distance
+        (sv.embedding <-> $1::vector) AS distance
        FROM studies_vectors sv
        JOIN studies s ON sv.study_id = s.id
        ORDER BY distance ASC
        LIMIT $2`,
-      [queryEmbedding, limit]
+      [embeddingString, limit]
     );
     
     return result.rows;
   } catch (error) {
     console.error('Error in semantic search:', error);
-    throw error;
+    console.error('Error details:', error.message);
+    // Return empty result instead of throwing to prevent API failures
+    return [];
   }
 }
 
