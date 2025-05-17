@@ -237,26 +237,29 @@ export default function ResearchDatabasePage() {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5">
           <TabsTrigger value="search">
             <Search className="mr-2 h-4 w-4" />
-            Search
+            <span className="hidden md:inline">Search</span>
+            <span className="md:hidden">Search</span>
           </TabsTrigger>
           <TabsTrigger value="excel">
             <FileDown className="mr-2 h-4 w-4" />
-            Excel Import
-          </TabsTrigger>
-          <TabsTrigger value="scheduled">
-            <Clock className="mr-2 h-4 w-4" />
-            Scheduled Searches
-          </TabsTrigger>
-          <TabsTrigger value="imported">
-            <Database className="mr-2 h-4 w-4" />
-            Imported Studies
+            <span className="hidden md:inline">Excel Import</span>
+            <span className="md:hidden">Excel</span>
           </TabsTrigger>
           <TabsTrigger value="data-quality">
             <FileCheck className="mr-2 h-4 w-4" />
-            Data Quality
+            <span className="hidden md:inline">Data Quality</span>
+            <span className="md:hidden">Quality</span>
+          </TabsTrigger>
+          <TabsTrigger value="scheduled" className="hidden md:flex">
+            <Clock className="mr-2 h-4 w-4" />
+            Scheduled Searches
+          </TabsTrigger>
+          <TabsTrigger value="imported" className="hidden md:flex">
+            <Database className="mr-2 h-4 w-4" />
+            Imported Studies
           </TabsTrigger>
         </TabsList>
         
