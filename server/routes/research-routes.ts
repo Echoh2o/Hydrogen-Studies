@@ -120,7 +120,7 @@ router.post('/research/import', async (req, res) => {
 /**
  * Search PubMed for articles
  */
-async function searchPubMed(query: string, limit: number = 10): Promise<any[]> {
+export async function searchPubMed(query: string, page: number = 1, pageSize: number = 10): Promise<{results: any[], total: number}> {
   try {
     const apiKey = process.env.PUBMED_API_KEY;
     
@@ -280,7 +280,7 @@ router.get('/research/search', async (req, res) => {
 /**
  * Search PubMed with pagination support
  */
-async function searchPubMedWithPagination(query: string, start: number = 0, max: number = 10, sortBy: string = 'relevance'): Promise<any[]> {
+export async function searchPubMedWithPagination(query: string, start: number = 0, max: number = 10, sortBy: string = 'relevance'): Promise<any[]> {
   try {
     // First, search for article IDs
     const searchUrl = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
