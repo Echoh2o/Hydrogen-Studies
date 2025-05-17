@@ -12,7 +12,7 @@ export async function searchEuropePMC(
   query: string,
   page: number = 1,
   pageSize: number = 10
-): Promise<any> {
+): Promise<{results: any[], total: number}> {
   try {
     const response = await axios.get('https://www.ebi.ac.uk/europepmc/webservices/rest/search', {
       params: {
@@ -24,10 +24,36 @@ export async function searchEuropePMC(
       }
     });
 
-    return response.data;
+    // Format the response to match our unified structure
+    const total = response.data.hitCount || 0;
+    const results = response.data.resultList?.result || [];
+    
+    // Transform each article into our standardized format
+    const formattedResults = results.map((article: any) => ({
+      id: article.id,
+      pmid: article.pmid,
+      doi: article.doi,
+      title: article.title,
+      authors: article.authorString || 'Unknown',
+      journal: article.journalTitle || 'Unknown Journal',
+      publicationDate: article.firstPublicationDate || article.pubYear,
+      year: article.pubYear,
+      abstract: article.abstractText || '',
+      url: `https://europepmc.org/article/${article.source}/${article.id}`,
+      totalResults: total,
+      source: 'europepmc'
+    }));
+
+    return {
+      results: formattedResults,
+      total
+    };
   } catch (error) {
     console.error('Error searching Europe PMC:', error);
-    throw error;
+    return {
+      results: [],
+      total: 0
+    };
   }
 }
 

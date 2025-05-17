@@ -56,13 +56,10 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
             
           case 'europepmc':
             const europepmcResults = await searchEuropePMC(query, pageNum, pageSizeNum);
-            if (europepmcResults && europepmcResults.resultList && europepmcResults.resultList.result) {
-              const europepmcData = europepmcResults.resultList.result.map((item: any) => ({
-                ...item,
-                source: 'europepmc'
-              }));
-              allResults = [...allResults, ...europepmcData];
-              totalResults += europepmcResults.hitCount || 0;
+            if (europepmcResults && europepmcResults.results) {
+              // Results are already formatted in the searchEuropePMC function
+              allResults = [...allResults, ...europepmcResults.results];
+              totalResults += europepmcResults.total || 0;
             }
             break;
             
