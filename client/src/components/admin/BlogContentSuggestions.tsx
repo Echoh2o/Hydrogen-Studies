@@ -44,15 +44,17 @@ export function BlogContentSuggestions({ blogId, onSuggestionApply }: BlogConten
   // Generate content suggestion
   const { mutate: generateSuggestion, isPending: isGeneratingSuggestion } = useMutation({
     mutationFn: async ({ type, content }: { type: string, content?: string }) => {
-      return apiRequest(`/api/blogs/${blogId}/generate-suggestion`, {
-        method: 'POST',
-        data: {
+      return apiRequest(
+        'POST',
+        `/api/blogs/${blogId}/generate-suggestion`, 
+        {
           suggestionType: type,
           selectedContent: content,
-        },
-      });
+        }
+      );
     },
-    onSuccess: (data) => {
+    onSuccess: async (response) => {
+      const data = await response.json();
       toast({
         title: 'Suggestion Generated',
         description: 'AI has created a content suggestion based on your blog.',
@@ -71,11 +73,13 @@ export function BlogContentSuggestions({ blogId, onSuggestionApply }: BlogConten
   // Generate title suggestions
   const { mutate: generateTitles, isPending: isGeneratingTitles } = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/blogs/${blogId}/generate-titles`, {
-        method: 'POST',
-      });
+      return apiRequest(
+        'POST',
+        `/api/blogs/${blogId}/generate-titles`
+      );
     },
-    onSuccess: (data) => {
+    onSuccess: async (response) => {
+      const data = await response.json();
       setTitleSuggestions(data.suggestions);
       setShowTitleDialog(true);
     },
