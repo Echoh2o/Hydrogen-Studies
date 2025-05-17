@@ -123,7 +123,7 @@ export const ChatWidget: React.FC = () => {
           method: 'POST',
           body: JSON.stringify({
             messageId,
-            rating: rating === 'helpful' ? 1 : 0,
+            rating: rating === 'helpful' ? 5 : 1, // 5-star rating for helpful, 1-star for unhelpful
             comment
           })
         }
