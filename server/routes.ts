@@ -19,7 +19,7 @@ import { generateScientificImage, generateBlogImage } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
 import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
 import { generateChatResponse, validateQuery } from "./chat-bot";
-import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB } from "./vector-database";
+import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB, semanticSearch } from "./vector-database";
 import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
@@ -41,6 +41,15 @@ import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize database tables for new features
   try {
+    // Setup vector database extension for AI chatbot
+    console.log("Setting up vector database extension for AI chatbot...");
+    const vectorExtensionResult = await setupVectorExtension();
+    if (vectorExtensionResult) {
+      console.log("Vector database extension setup successful");
+    } else {
+      console.error("Vector database extension setup failed");
+    }
+    
     // Add standardized summary fields to studies table
     await db.execute(`
       ALTER TABLE studies 
@@ -1552,6 +1561,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to generate standardized summaries"
+      });
+    }
+  });
+
+  // Process studies for vector database (Admin only)
+  app.post('/api/chat/process-studies', async (req, res) => {
+    try {
+      const { batchSize = 10 } = req.body;
+      
+      // Validate batch size
+      if (isNaN(batchSize) || batchSize < 1 || batchSize > 50) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid batch size. Must be between 1 and 50.'
+        });
+      }
+      
+      // Process studies in batches
+      const result = await processAllStudiesForVectorDB(batchSize);
+      
+      res.json({
+        success: true,
+        message: `Processed ${result.processed} of ${result.total} studies`,
+        data: result
+      });
+    } catch (error) {
+      console.error('Error processing studies for vector database:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while processing studies for vector database'
+      });
+    }
+  });
+  
+  // Test semantic search functionality (Admin only)
+  app.post('/api/chat/test-search', async (req, res) => {
+    try {
+      const { query, limit = 5 } = req.body;
+      
+      // Validate input
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Query is required and must be a string'
+        });
+      }
+      
+      // Perform semantic search
+      const searchResults = await semanticSearch(query, limit);
+      
+      res.json({
+        success: true,
+        message: `Found ${searchResults.length} results for query "${query}"`,
+        data: searchResults
+      });
+    } catch (error) {
+      console.error('Error testing semantic search:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while testing semantic search'
+      });
+    }
+  });
+  
+  // Process a single study for vector database (Admin only)
+  app.post('/api/chat/process-study/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const studyId = parseInt(id);
+      
+      // Validate study ID
+      if (isNaN(studyId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid study ID'
+        });
+      }
+      
+      // Check if study exists
+      const study = await storage.getStudyById(studyId);
+      if (!study) {
+        return res.status(404).json({
+          success: false,
+          message: `Study with ID ${studyId} not found`
+        });
+      }
+      
+      // Process the study
+      const result = await processStudyForVectorDB(studyId);
+      
+      if (result) {
+        res.json({
+          success: true,
+          message: `Successfully processed study ID ${studyId} for vector database`
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: `Failed to process study ID ${studyId} for vector database`
+        });
+      }
+    } catch (error) {
+      console.error(`Error processing study for vector database:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while processing the study for vector database'
       });
     }
   });
