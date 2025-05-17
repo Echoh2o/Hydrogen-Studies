@@ -279,9 +279,18 @@ router.get('/studies/saved', isAuthenticated, async (req, res) => {
 router.get('/studies/recent', isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure userId is a valid number
+    if (!userId || isNaN(Number(userId))) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     
-    const studies = await userService.getRecentlyViewedStudies(userId!, limit);
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    // Ensure limit is a valid number
+    if (isNaN(limit)) {
+      return res.status(400).json({ message: 'Invalid limit parameter' });
+    }
+    
+    const studies = await userService.getRecentlyViewedStudies(Number(userId), limit);
     res.json(studies);
   } catch (error) {
     console.error('Get recent studies error:', error);

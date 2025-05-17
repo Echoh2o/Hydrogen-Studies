@@ -82,7 +82,7 @@ const SearchSection = () => {
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       <SelectItem value="neurology">Neurology</SelectItem>
                       <SelectItem value="cardiology">Cardiology</SelectItem>
                       <SelectItem value="immunology">Immunology</SelectItem>
@@ -102,7 +102,7 @@ const SearchSection = () => {
                       <SelectValue placeholder="All Years" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Years</SelectItem>
+                      <SelectItem value="all">All Years</SelectItem>
                       <SelectItem value="2023">2023</SelectItem>
                       <SelectItem value="2022">2022</SelectItem>
                       <SelectItem value="2021">2021</SelectItem>
@@ -182,7 +182,7 @@ const SearchSection = () => {
                           <SelectValue placeholder="All Types" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Types</SelectItem>
+                          <SelectItem value="all">All Types</SelectItem>
                           <SelectItem value="clinical-trial">Clinical Trial</SelectItem>
                           <SelectItem value="meta-analysis">Meta-Analysis</SelectItem>
                           <SelectItem value="review">Review</SelectItem>
