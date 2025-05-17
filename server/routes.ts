@@ -18,7 +18,14 @@ import { upload, getFileType } from "./upload";
 import { generateScientificImage, generateBlogImage } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
 import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
-import { generateChatResponse, validateQuery } from "./chat-bot";
+import { 
+  generateChatResponse, 
+  validateQuery, 
+  getConversationHistory, 
+  getUserConversations, 
+  saveFeedback, 
+  getPopularQuestions 
+} from "./chat-bot";
 import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB, semanticSearch } from "./vector-database";
 import { sendContactEmail } from "./sendgrid";
 import { db } from "./db";
@@ -1674,26 +1681,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat API endpoint with validation
   app.post('/api/chat', async (req, res) => {
     try {
+      // Get user ID from session if authenticated
+      const userId = req.session?.user?.id; 
+      
       // Validate input
-      const { query, conversationHistory } = req.body;
+      const { query, conversationId } = req.body;
       
       // Check if query is provided and is a string
       if (!query || typeof query !== 'string' || query.trim() === '') {
         return res.status(400).json({
           success: false,
           message: 'Please provide a valid query string'
-        });
-      }
-      
-      // Validate conversation history if provided
-      if (conversationHistory && (!Array.isArray(conversationHistory) || 
-          !conversationHistory.every(msg => 
-            typeof msg === 'object' && 
-            (msg.role === 'user' || msg.role === 'assistant') && 
-            typeof msg.content === 'string'))) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid conversation history format'
         });
       }
       
@@ -1707,10 +1705,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Generate and return chat response
+      // Get conversation history if conversation ID is provided
+      let conversationHistory = [];
+      if (conversationId) {
+        conversationHistory = await getConversationHistory(conversationId);
+      }
+      
+      // Generate and return chat response with conversation context
       const response = await generateChatResponse(
         query, 
-        conversationHistory || []
+        conversationHistory,
+        userId,
+        conversationId
       );
       
       res.json({
@@ -1722,6 +1728,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: 'An error occurred while processing your query'
+      });
+    }
+  });
+  
+  // Get conversation history
+  app.get('/api/chat/conversation/:conversationId', async (req, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      const userId = req.session?.user?.id;
+      
+      if (!conversationId || isNaN(conversationId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid conversation ID'
+        });
+      }
+      
+      // Check if user is authenticated and owns this conversation (if user is logged in)
+      if (userId) {
+        const conversation = await db
+          .select()
+          .from(conversations)
+          .where(eq(conversations.id, conversationId))
+          .limit(1);
+          
+        if (conversation.length > 0 && conversation[0].userId !== userId) {
+          return res.status(403).json({
+            success: false,
+            message: 'You do not have permission to access this conversation'
+          });
+        }
+      }
+      
+      const history = await getConversationHistory(conversationId);
+      
+      res.json({
+        success: true,
+        data: history
+      });
+    } catch (error) {
+      console.error('Error retrieving conversation history:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while retrieving conversation history'
+      });
+    }
+  });
+  
+  // Get all user conversations
+  app.get('/api/chat/conversations', async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required to access conversations'
+        });
+      }
+      
+      const userConversations = await getUserConversations(userId);
+      
+      res.json({
+        success: true,
+        data: userConversations
+      });
+    } catch (error) {
+      console.error('Error retrieving user conversations:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while retrieving your conversations'
+      });
+    }
+  });
+  
+  // Submit feedback for a chat response
+  app.post('/api/chat/feedback', async (req, res) => {
+    try {
+      const { messageId, rating, comment } = req.body;
+      const userId = req.session?.user?.id;
+      
+      if (!messageId || isNaN(messageId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid message ID'
+        });
+      }
+      
+      if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+        return res.status(400).json({
+          success: false, 
+          message: 'Rating must be a number between 1 and 5'
+        });
+      }
+      
+      // Save feedback (userId can be null for anonymous feedback)
+      const success = await saveFeedback(
+        messageId,
+        userId || 0,
+        rating,
+        comment
+      );
+      
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Feedback submitted successfully'
+        });
+      } else {
+        throw new Error('Failed to save feedback');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while submitting feedback'
+      });
+    }
+  });
+  
+  // Get suggested/popular questions
+  app.get('/api/chat/popular-questions', async (req, res) => {
+    try {
+      const { category } = req.query;
+      const limit = parseInt(req.query.limit as string) || 5;
+      
+      const questions = await getPopularQuestions(
+        category as string, 
+        Math.min(limit, 10) // Cap at 10 questions max
+      );
+      
+      res.json({
+        success: true,
+        data: questions
+      });
+    } catch (error) {
+      console.error('Error retrieving popular questions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while retrieving popular questions'
       });
     }
   });
