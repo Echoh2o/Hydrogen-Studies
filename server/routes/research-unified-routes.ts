@@ -1,13 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { searchPubMed } from '../routes/research-routes';
-import { searchEuropePMC } from '../europepmc-api';
-import { searchSemanticScholar } from '../semantic-scholar-api';
-import { searchCrossRef } from '../crossref-api';
+import { searchEuropePMC, extractStudyFromEuropePMC } from '../europepmc-api';
+import { searchSemanticScholar, extractStudyFromSemanticScholar } from '../semantic-scholar-api';
+import { searchCrossRef, extractStudyFromCrossRef } from '../crossref-api';
 import { storage } from '../storage';
-import { extractStudyFromPubMed } from '../pubmed-enricher';
-import { extractStudyFromEuropePMC } from '../europepmc-api';
-import { extractStudyFromSemanticScholar } from '../semantic-scholar-api';
-import { extractStudyFromCrossRef } from '../crossref-api';
+import { enrichStudyFromPubMed as extractStudyFromPubMed } from '../pubmed-enricher';
 
 const router = Router();
 
