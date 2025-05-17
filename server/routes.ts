@@ -1695,12 +1695,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Validate that the query is about hydrogen research
+      // Validate that the query is about hydrogen health research
       const validation = await validateQuery(query);
       if (!validation.isValid) {
         return res.status(400).json({
           success: false,
-          message: 'Your question does not appear to be related to hydrogen research. Please ask a question about hydrogen studies, research, or applications.',
+          message: 'Your question does not appear to be related to hydrogen health and wellness. Please ask a question about health applications of hydrogen like hydrogen water, inhalation therapy, or hydrogen baths. We don\'t provide information about hydrogen energy, fuel cells, or industrial applications.',
           reason: validation.reason
         });
       }
