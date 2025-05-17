@@ -422,7 +422,7 @@ export default function BlogEditPage() {
               <CardHeader>
                 <CardTitle>Featured Image</CardTitle>
                 <CardDescription>
-                  Update the featured image for this blog article
+                  Update or generate a featured image for this blog article
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -442,15 +442,38 @@ export default function BlogEditPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground mb-4">
-                    This blog article doesn't have a featured image yet. Upload one below.
+                    This blog article doesn't have a featured image yet. Upload or generate one below.
                   </p>
                 )}
                 
-                <MediaUpload 
-                  entityId={blogId} 
-                  entityType="blog"
-                  onSuccess={handleImageUploadSuccess}
-                />
+                <Tabs defaultValue="upload" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload">Upload Image</TabsTrigger>
+                    <TabsTrigger value="generate">Generate with AI</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="upload" className="space-y-4 pt-4">
+                    <MediaUpload 
+                      entityId={blogId} 
+                      entityType="blog"
+                      onSuccess={handleImageUploadSuccess}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="generate" className="space-y-4 pt-4">
+                    <BlogImageGenerator 
+                      blogId={blogId}
+                      onSuccess={(imageUrl, imageAlt) => {
+                        toast({
+                          title: 'Image generated',
+                          description: 'AI has created a featured image based on your blog content.',
+                        });
+                        // Refresh blog data
+                        queryClient.invalidateQueries({ queryKey: [`/api/blogs/${blogId}`] });
+                      }}
+                    />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
             
