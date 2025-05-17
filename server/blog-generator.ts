@@ -488,6 +488,10 @@ async function generateArticleImage(study: Study, blogTitle: string, articleType
     // Create a prompt based on the article type and title
     let imagePrompt = "";
     
+    // Default prompt in case no specific type matches (prevents empty prompt errors)
+    const defaultPrompt = `Create a scientific illustration related to this blog title: "${blogTitle}" about hydrogen research. Clean, professional style suitable for a health blog. No text in the image.`;
+    
+    // Standard article types
     if (articleType === "overview") {
       imagePrompt = `Create a scientific illustration related to this blog title: "${blogTitle}" about hydrogen research. Show hydrogen molecules (small white spheres) in a medical/scientific context. Clean, professional style suitable for a health blog. No text in the image.`;
     }
@@ -496,6 +500,25 @@ async function generateArticleImage(study: Study, blogTitle: string, articleType
     }
     else if (articleType === "comparison") {
       imagePrompt = `Create a side-by-side comparison illustration related to this blog title: "${blogTitle}". Show traditional treatment on one side and hydrogen-based approach on the other. Use visual metaphors to highlight differences. Clean, professional style. No text in the image.`;
+    }
+    // Elon-style article types
+    else if (articleType === "elon_simple") {
+      imagePrompt = `Create a visually stunning, simplified illustration for this blog title: "${blogTitle}" about hydrogen health benefits. A futuristic yet accessible image showing hydrogen molecules in a human body. Vibrant colors, clean design, inspirational feel. No text in the image.`;
+    }
+    else if (articleType === "elon_benefits") {
+      imagePrompt = `Create a benefits-focused illustration for this blog title: "${blogTitle}" about hydrogen health applications. Show a person experiencing improved health with visual indicators of hydrogen benefits like energy, reduced inflammation, or cell repair. Optimistic, bright style. No text in the image.`;
+    }
+    else if (articleType === "elon_future") {
+      imagePrompt = `Create a futuristic illustration for this blog title: "${blogTitle}" about the future of hydrogen health technology. Show advanced hydrogen therapy devices or futuristic medical applications. Advanced, sleek, optimistic aesthetic. No text in the image.`;
+    }
+    else if (articleType === "elon_faq") {
+      imagePrompt = `Create an explanatory illustration for this blog title: "${blogTitle}" about common questions on hydrogen therapy. Show a simplified diagram of hydrogen's effects on the human body with visual indicators of different benefits. Clear, educational style. No text in the image.`;
+    }
+    
+    // If no prompt was set, use the default
+    if (!imagePrompt) {
+      console.log(`No specific image prompt found for article type: ${articleType}, using default`);
+      imagePrompt = defaultPrompt;
     }
     
     // Generate the image
