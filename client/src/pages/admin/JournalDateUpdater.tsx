@@ -39,9 +39,14 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
         });
       }, 1000);
 
-      const response = await apiRequest('/api/admin/update-journal-dates', {
+      const response = await apiRequest<{
+        success: boolean;
+        totalUpdated: number;
+        failedDois: string[];
+        message: string;
+      }>('/api/admin/update-journal-dates', {
         method: 'POST',
-        body: JSON.stringify({ limit }),
+        body: { limit },
       });
 
       clearInterval(progressInterval);
