@@ -83,11 +83,14 @@ ${context}`
         ? JSON.parse(result.metadata) 
         : result.metadata;
       
+      // Handle different possible date column formats
+      const publishDate = result.publish_date ? new Date(result.publish_date).toISOString().split('T')[0] : 'Unknown date';
+      
       return {
-        title: result.title,
+        title: result.title || 'Untitled study',
         doi: metadata?.doi || "No DOI available",
-        authors: result.authors,
-        publishDate: result.publishDate
+        authors: result.authors || 'Unknown authors',
+        publishDate: publishDate
       };
     });
     
