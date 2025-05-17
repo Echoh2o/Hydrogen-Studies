@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { DoiEnhancer } from '@/components/admin/DoiEnhancer';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -236,7 +237,7 @@ export default function ResearchDatabasePage() {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="search">
             <Search className="mr-2 h-4 w-4" />
             Search
@@ -252,6 +253,10 @@ export default function ResearchDatabasePage() {
           <TabsTrigger value="imported">
             <Database className="mr-2 h-4 w-4" />
             Imported Studies
+          </TabsTrigger>
+          <TabsTrigger value="data-quality">
+            <FileCheck className="mr-2 h-4 w-4" />
+            Data Quality
           </TabsTrigger>
         </TabsList>
         
@@ -651,6 +656,10 @@ export default function ResearchDatabasePage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="data-quality">
+          <DoiEnhancer />
         </TabsContent>
         
         <TabsContent value="imported">
