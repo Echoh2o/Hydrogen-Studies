@@ -2,11 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import CategoryCard from "@/components/studies/category-card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CardSkeleton, EmptyState, ErrorDisplay } from "@/components/ui/loading-states";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { FolderTree } from "lucide-react";
 import { Category } from "@/types";
 
 export default function CategorySection() {
-  const { data: categories, isLoading } = useQuery<Category[]>({
+  const { data: categories, isLoading, isError, error, refetch } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
 
@@ -20,34 +22,36 @@ export default function CategorySection() {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading ? (
-            // Skeleton loading state
-            Array(3).fill(0).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <Skeleton className="h-40 w-full" />
-                <div className="p-6">
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-full mb-1" />
-                  <Skeleton className="h-4 w-full mb-1" />
-                  <Skeleton className="h-4 w-3/4 mb-4" />
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                </div>
+        <ErrorBoundary>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoading ? (
+              // Skeleton loading state
+              Array(3).fill(0).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))
+            ) : isError ? (
+              <div className="col-span-3">
+                <ErrorDisplay
+                  title="Error loading categories"
+                  message="We're having trouble loading research categories. Please try again later."
+                  onRetry={() => refetch()}
+                />
               </div>
-            ))
-          ) : categories && categories.length > 0 ? (
-            categories.slice(0, 3).map(category => (
-              <CategoryCard key={category.id} category={category} />
-            ))
-          ) : (
-            <div className="col-span-3 text-center py-8">
-              <p>No categories found.</p>
-            </div>
-          )}
-        </div>
+            ) : categories && categories.length > 0 ? (
+              categories.slice(0, 3).map(category => (
+                <CategoryCard key={category.id} category={category} />
+              ))
+            ) : (
+              <div className="col-span-3">
+                <EmptyState
+                  title="No categories available"
+                  description="We couldn't find any research categories in our database."
+                  icon={<FolderTree className="w-12 h-12" />}
+                />
+              </div>
+            )}
+          </div>
+        </ErrorBoundary>
         
         <div className="text-center mt-10">
           <Button 
