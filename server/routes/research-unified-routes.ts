@@ -155,16 +155,24 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     console.log(`Source counts in unified search: ${JSON.stringify(sourceCounts)}`);
     console.log(`Combined results: ${allResults.length} total studies found`);
     
-    // If we have results, format to match the expected API format for the frontend
-    // But use 'unified' source to indicate combined results
+    // If we only have one source and it's pubmed, keep the response format as pubmed
+    // Otherwise, use unified format
+    const responseSource = 
+      selectedSources.length === 1 && selectedSources[0].toLowerCase() === 'pubmed' 
+        ? 'pubmed' 
+        : 'unified';
+        
+    console.log(`Using response source: ${responseSource}, selected sources: ${selectedSources.join(',')}`);
+    
+    // Format response based on available results
     res.json({
       success: true,
-      source: 'unified',  // Mark as unified search
+      source: responseSource,
       query: query,
       total: totalResults,
       startIndex: (pageNum - 1) * pageSizeNum,
       nextIndex: pageNum * pageSizeNum,
-      articles: allResults,
+      articles: uniqueResults, // Use de-duped results
       sourceCounts: sourceCounts, // Include source counts for debugging
       errors: errors.length > 0 ? errors : undefined
     });
