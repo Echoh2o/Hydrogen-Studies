@@ -42,7 +42,8 @@ interface ProductRecommendation {
   name: string;
   description: string;
   url: string;
-  imageUrl?: string;
+  imageUrl: string;
+  relevanceScore?: number;
 }
 
 interface ChatResponse {
@@ -298,55 +299,80 @@ export const ChatWidget: React.FC = () => {
   const generateFallbackProductRecommendations = (query: string) => {
     const lowerQuery = query.toLowerCase();
     
+    // Always include the Echo Flask as a primary recommendation for every query
+    const echoFlask = {
+      name: "Echo H2 Flask",
+      description: "Portable hydrogen-infusing water bottle for on-the-go hydrogen therapy with premium quality materials",
+      url: "https://echowater.com/products/echo-h2-flask",
+      imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-flask.jpg",
+      relevanceScore: 98
+    };
+    
     if (lowerQuery.includes('skin') || lowerQuery.includes('derma') || 
         lowerQuery.includes('psoriasis') || lowerQuery.includes('eczema') || 
         lowerQuery.includes('acne')) {
-      // Recommend bath system for skin conditions
-      setProductRecommendations([{
-        name: "Echo H2 Bath System",
-        description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
-        url: "https://echowater.com/products/echo-h2-bath",
-        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
-        relevanceScore: 95
-      }]);
+      // Recommend bath system for skin conditions and Flask for drinking water benefits
+      setProductRecommendations([
+        echoFlask,
+        {
+          name: "Echo H2 Bath System",
+          description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
+          url: "https://echowater.com/products/echo-h2-bath",
+          imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
+          relevanceScore: 95
+        }
+      ]);
     } else if (lowerQuery.includes('breath') || lowerQuery.includes('lung') || 
               lowerQuery.includes('inhal') || lowerQuery.includes('respiratory')) {
-      // Recommend inhaler for respiratory conditions
-      setProductRecommendations([{
-        name: "Echo H2 Inhaler",
-        description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
-        url: "https://echowater.com/products/echo-h2-inhaler",
-        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
-        relevanceScore: 95
-      }]);
-    } else if (lowerQuery.includes('athletic') || lowerQuery.includes('workout') || 
-              lowerQuery.includes('exercise') || lowerQuery.includes('recovery')) {
-      // Recommend both water and tablets for athletic performance
+      // Recommend inhaler for respiratory conditions and Flask for drinking water benefits
       setProductRecommendations([
+        echoFlask,
         {
-          name: "Echo H2 Machine",
-          description: "Premium hydrogen water generator with advanced PEM technology for optimal athletic recovery",
-          url: "https://echowater.com/products/echo-h2-machine",
-          imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
-          relevanceScore: 90
-        },
+          name: "Echo H2 Inhaler",
+          description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
+          url: "https://echowater.com/products/echo-h2-inhaler",
+          imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
+          relevanceScore: 95
+        }
+      ]);
+    } else if (lowerQuery.includes('athletic') || lowerQuery.includes('workout') || 
+              lowerQuery.includes('exercise') || lowerQuery.includes('recovery') ||
+              lowerQuery.includes('sport')) {
+      // Recommend Flask and tablets for athletic performance
+      setProductRecommendations([
+        echoFlask,
         {
           name: "Echo H2 Tablet Maker",
-          description: "Portable hydrogen tablets for training sessions and competitions",
+          description: "Portable hydrogen tablets for creating hydrogen-rich water during training sessions and competitions",
           url: "https://echowater.com/products/echo-h2-tablets-1",
           imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
-          relevanceScore: 85
+          relevanceScore: 90
+        }
+      ]);
+    } else if (lowerQuery.includes('travel') || lowerQuery.includes('portable') || 
+              lowerQuery.includes('on the go') || lowerQuery.includes('convenient')) {
+      // Flask is perfect for travel and portable use
+      setProductRecommendations([
+        {
+          name: "Echo H2 Flask",
+          description: "The ultimate portable hydrogen water solution for travel and on-the-go hydrogen therapy",
+          url: "https://echowater.com/products/echo-h2-flask",
+          imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-flask.jpg",
+          relevanceScore: 100
         }
       ]);
     } else {
-      // Default to water machine for general queries
-      setProductRecommendations([{
-        name: "Echo H2 Machine",
-        description: "Premium hydrogen water generator with advanced PEM technology for maximum hydrogen concentration",
-        url: "https://echowater.com/products/echo-h2-machine",
-        imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
-        relevanceScore: 90
-      }]);
+      // Default to Flask and water machine for general queries
+      setProductRecommendations([
+        echoFlask,
+        {
+          name: "Echo H2 Machine",
+          description: "Premium hydrogen water generator for home use - great companion to your Echo Flask for maximum benefits",
+          url: "https://echowater.com/products/echo-h2-machine",
+          imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
+          relevanceScore: 85
+        }
+      ]);
     }
   };
 
