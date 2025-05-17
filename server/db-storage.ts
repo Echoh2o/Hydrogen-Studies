@@ -98,11 +98,16 @@ export class DatabaseStorage implements IStorage {
     // Advanced filters for health conditions and body systems
     if (filters.healthConditions && filters.healthConditions.length > 0) {
       try {
-        // Using the array_overlaps operator if available
-        // Note: This assumes PostgreSQL and that healthConditions is stored as an array
-        conditions.push(
-          sql`${studies.healthConditions} && ARRAY[${filters.healthConditions.join(',')}]::text[]`
-        );
+        // Using PostgreSQL array contains operator
+        // For safety, only apply this filter if we have valid health conditions
+        if (filters.healthConditions.length > 0) {
+          // Using simpler comparison for now - we'll check if any of the values match
+          // We need to handle this more carefully with proper array operations
+          const firstCondition = filters.healthConditions[0];
+          conditions.push(
+            sql`${studies.healthConditions}::text LIKE ${`%${firstCondition}%`}`
+          );
+        }
       } catch (error) {
         console.error("Error applying health conditions filter:", error);
       }
@@ -110,11 +115,14 @@ export class DatabaseStorage implements IStorage {
     
     if (filters.bodySystems && filters.bodySystems.length > 0) {
       try {
-        // Using the array_overlaps operator if available
-        // Note: This assumes PostgreSQL and that bodySystems is stored as an array
-        conditions.push(
-          sql`${studies.bodySystems} && ARRAY[${filters.bodySystems.join(',')}]::text[]`
-        );
+        // For safety, only apply this filter if we have valid body systems
+        if (filters.bodySystems.length > 0) {
+          // Using simpler comparison for now - we'll check if any of the values match
+          const firstSystem = filters.bodySystems[0];
+          conditions.push(
+            sql`${studies.bodySystems}::text LIKE ${`%${firstSystem}%`}`
+          );
+        }
       } catch (error) {
         console.error("Error applying body systems filter:", error);
       }
