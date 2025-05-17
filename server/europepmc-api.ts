@@ -16,8 +16,11 @@ export async function searchEuropePMC(
   try {
     console.log(`Searching EuropePMC for: "${query}", page ${page}, size ${pageSize}`);
     
-    // Add hydrogen-specific terms to increase relevance
-    const enhancedQuery = `(${query}) AND (hydrogen OR "molecular hydrogen" OR "hydrogen water" OR "hydrogen therapy" OR "hydrogen gas" OR H2)`;
+    // Use the original query without enhancement to avoid overly restrictive results
+    // This helps ensure we're getting results from this source
+    const enhancedQuery = query;
+    
+    console.log(`Sending request to EuropePMC with query: ${enhancedQuery}`);
     
     const response = await axios.get('https://www.ebi.ac.uk/europepmc/webservices/rest/search', {
       params: {
@@ -27,7 +30,8 @@ export async function searchEuropePMC(
         pageSize: pageSize,
         page: page,
         sort: 'RELEVANCE'
-      }
+      },
+      timeout: 10000 // 10 second timeout
     });
 
     // Format the response to match our unified structure
@@ -37,21 +41,29 @@ export async function searchEuropePMC(
     console.log(`EuropePMC returned ${results.length} results of ${total} total hits`);
     
     // Transform each article into our standardized format to match PubMed format
-    const formattedResults = results.map((article: any) => ({
-      id: article.id,
-      pmid: article.pmid,
-      doi: article.doi,
-      title: article.title,
-      authors: article.authorString || 'Unknown',
-      journal: article.journalTitle || 'Unknown Journal',
-      publicationDate: article.firstPublicationDate || article.pubYear,
-      year: article.pubYear,
-      abstract: article.abstractText || '',
-      url: `https://europepmc.org/article/${article.source}/${article.id}`,
-      totalResults: total,
-      source: 'europepmc',
-      inDatabase: false
-    }));
+    const formattedResults = results.map((article: any) => {
+      // Extract year from publication date if available
+      const pubYear = article.pubYear || 
+                     (article.firstPublicationDate ? article.firstPublicationDate.substring(0, 4) : null);
+
+      return {
+        id: article.id || `europepmc-${Math.random().toString(36).substr(2, 9)}`,
+        pmid: article.pmid || '',
+        doi: article.doi || '',
+        title: article.title || 'No Title Available',
+        authors: article.authorString || 'Unknown Authors',
+        journal: article.journalTitle || 'Scientific Journal',
+        publicationDate: article.firstPublicationDate || (pubYear ? pubYear.toString() : 'Unknown Date'),
+        year: pubYear,
+        abstract: article.abstractText || '',
+        url: article.doi 
+             ? `https://doi.org/${article.doi}` 
+             : `https://europepmc.org/article/${article.source || 'MED'}/${article.id}`,
+        totalResults: total,
+        source: 'europepmc',
+        inDatabase: false
+      };
+    });
 
     return {
       results: formattedResults,

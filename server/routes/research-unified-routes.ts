@@ -187,22 +187,21 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     console.log(`Source counts in unified search: ${JSON.stringify(sourceCounts)}`);
     console.log(`Combined results: ${allResults.length} total studies found`);
     
-    // If we only have one source and it's pubmed, keep the response format as pubmed
-    // Otherwise, use unified format
-    const responseSource = 
+    // Always use "unified" as the source when we have multiple sources requested
+    // Only use "pubmed" when it's the only source explicitly requested
+    const finalSource = 
       selectedSources.length === 1 && selectedSources[0].toLowerCase() === 'pubmed' 
         ? 'pubmed' 
         : 'unified';
         
-    console.log(`Using response source: ${responseSource}, selected sources: ${selectedSources.join(',')}`);
-    
-    // For debugging, add request details to the logs
     console.log(`Request details: query="${query}", sources=${JSON.stringify(selectedSources)}, page=${pageNum}, pageSize=${pageSizeNum}`);
+    console.log(`Using response source: ${finalSource}`);
     
-    // Override the source to always be "unified" when we have multiple sources selected
-    // This ensures the frontend handles it correctly
-    const finalSource = selectedSources.length > 1 ? 'unified' : responseSource;
-    console.log(`Using final response source: ${finalSource}`);
+    // If we've requested europepmc but got no results specifically from there, log that
+    if (selectedSources.includes('europepmc') && 
+        (!preDedupeSourceCounts['europepmc'] || preDedupeSourceCounts['europepmc'] === 0)) {
+      console.log('WARNING: EuropePMC was requested but returned no results');
+    }
     
     // Format response based on available results
     res.json({
