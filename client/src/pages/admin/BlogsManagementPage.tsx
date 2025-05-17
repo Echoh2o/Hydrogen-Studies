@@ -39,7 +39,11 @@ import {
   MoveRight,
   FileText,
   Image,
-  BarChart2
+  BarChart2,
+  ListFilter,
+  FileQuestion,
+  ArrowUp as ArrowUpIcon,
+  ArrowDown as ArrowDownIcon
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
@@ -134,9 +138,10 @@ export default function BlogsManagementPage() {
     });
   };
   
-  // Total pages calculation
+  // Get pagination data from API response
   const totalItems = blogs?.totalCount || 0;
-  const totalPages = Math.ceil(totalItems / pageSize);
+  const totalPages = blogs?.totalPages || Math.ceil(totalItems / pageSize);
+  const currentBlogs = blogs?.data || [];
   
   return (
     <AdminLayout title="Blogs Management" description="Manage blog articles">
@@ -257,15 +262,28 @@ export default function BlogsManagementPage() {
                     {activeTab === 'draft' && 'Draft Articles'}
                   </CardTitle>
                   <div className="flex items-center space-x-2">
+                    <Select value={pageSize.toString()} onValueChange={(value) => {
+                      setPageSize(parseInt(value));
+                      setCurrentPage(1); // Reset to first page when changing page size
+                    }}>
+                      <SelectTrigger className="w-[130px]">
+                        <span className="flex items-center">
+                          <ListFilter className="mr-2 h-4 w-4" />
+                          <span>{pageSize} per page</span>
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 per page</SelectItem>
+                        <SelectItem value="25">25 per page</SelectItem>
+                        <SelectItem value="50">50 per page</SelectItem>
+                        <SelectItem value="100">100 per page</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/admin/analytics/blogs" className="flex items-center space-x-2">
                           <BarChart2 className="h-4 w-4" />
                           <span>Analytics</span>
                       </Link>
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <ArrowUpDown className="mr-2 h-4 w-4" />
-                      Sort
                     </Button>
                   </div>
                 </div>
@@ -310,54 +328,65 @@ export default function BlogsManagementPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[300px]">Title</TableHead>
+                            <TableHead className="w-[300px]">
+                              <div className="flex items-center space-x-1 cursor-pointer" 
+                                   onClick={() => {
+                                     setSortField('title');
+                                     setSortOrder(sortOrder === 'asc' && sortField === 'title' ? 'desc' : 'asc');
+                                   }}>
+                                <span>Title</span>
+                                {sortField === 'title' && (
+                                  sortOrder === 'asc' ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />
+                                )}
+                              </div>
+                            </TableHead>
                             <TableHead>Based On</TableHead>
-                            <TableHead>Type</TableHead>
+                            <TableHead>
+                              <div className="flex items-center space-x-1 cursor-pointer"
+                                   onClick={() => {
+                                     setSortField('articleType');
+                                     setSortOrder(sortOrder === 'asc' && sortField === 'articleType' ? 'desc' : 'asc');
+                                   }}>
+                                <span>Type</span>
+                                {sortField === 'articleType' && (
+                                  sortOrder === 'asc' ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />
+                                )}
+                              </div>
+                            </TableHead>
                             <TableHead>Reading Level</TableHead>
-                            <TableHead className="w-[120px]">Published</TableHead>
+                            <TableHead className="w-[120px]">
+                              <div className="flex items-center space-x-1 cursor-pointer"
+                                   onClick={() => {
+                                     setSortField('isPublished');
+                                     setSortOrder(sortOrder === 'asc' && sortField === 'isPublished' ? 'desc' : 'asc');
+                                   }}>
+                                <span>Published</span>
+                                {sortField === 'isPublished' && (
+                                  sortOrder === 'asc' ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />
+                                )}
+                              </div>
+                            </TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {/* This would map over blogs.data in a real app */}
-                          {/* Using placeholder data for development */}
-                          {[
-                            {
-                              id: 1,
-                              title: "Hydrogen May Help Combat Cancer Cell Growth According to New Study",
-                              studyId: 123,
-                              studyTitle: "Effects of Hydrogen-Rich Saline on Cancer Cells",
-                              summary: "Recent research suggests hydrogen therapy may inhibit cancer cell growth through antioxidant pathways.",
-                              publishDate: "2024-04-15",
-                              readingLevel: "6th Grade",
-                              articleType: "explainer",
-                              isPublished: true,
-                              viewCount: 254,
-                              imageUrl: "https://example.com/image1.jpg"
-                            },
-                            {
-                              id: 2,
-                              title: "Why Hydrogen Therapy Might Be The Next Big Thing In Disease Prevention",
-                              studyId: 456,
-                              studyTitle: "Molecular Hydrogen as a Novel Antioxidant",
-                              summary: "Examining the evidence behind hydrogen's potential role in preventing oxidative stress-related diseases.",
-                              publishDate: "",
-                              readingLevel: "8th Grade",
-                              articleType: "elon",
-                              isPublished: false,
-                              viewCount: 0,
-                              imageUrl: ""
-                            },
-                            {
-                              id: 3,
-                              title: "The Science Behind Hydrogen's Anti-Inflammatory Properties",
-                              studyId: 789,
-                              studyTitle: "Hydrogen Gas Reduces Inflammatory Cytokine Production",
-                              summary: "A detailed look at how molecular hydrogen reduces inflammatory markers in clinical studies.",
-                              publishDate: "2024-05-02",
-                              readingLevel: "6th Grade",
-                              articleType: "summary",
-                              isPublished: true,
+                          {currentBlogs.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8">
+                                <div className="flex flex-col items-center justify-center py-6 text-center">
+                                  <FileQuestion className="h-10 w-10 text-muted-foreground mb-3" />
+                                  <h3 className="text-base font-medium">No blog articles found</h3>
+                                  <p className="mt-1 text-sm text-muted-foreground max-w-md">
+                                    {searchQuery || articleTypeFilter || publishedFilter ? 
+                                      'Try changing your search terms or filters.' : 
+                                      'Generate blog articles from research studies to get started.'
+                                    }
+                                  </p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            currentBlogs.map((blog: BlogArticle) => (
                               viewCount: 187,
                               imageUrl: "https://example.com/image3.jpg"
                             }
