@@ -59,6 +59,7 @@ export const ChatWidget: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentSources, setCurrentSources] = useState<ChatSource[]>([]);
   const [relatedQuestions, setRelatedQuestions] = useState<string[]>([]);
+  const [popularQuestions, setPopularQuestions] = useState<string[]>([]);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -74,22 +75,30 @@ export const ChatWidget: React.FC = () => {
     }
   }, [messages]);
 
-  // Load user's conversation history on mount (if authenticated)
+  // Load user's conversation history and popular questions on mount
   useEffect(() => {
-    const loadUserConversations = async () => {
+    const loadInitialData = async () => {
       try {
-        const response = await apiRequest<{ success: boolean; data: Conversation[] }>('/api/chat/conversations');
-        if (response.success && response.data) {
-          setConversations(response.data);
-          console.log('Loaded user conversations:', response.data.length);
+        // Load conversations (if authenticated)
+        const conversationsResponse = await apiRequest<{ success: boolean; data: Conversation[] }>('/api/chat/conversations');
+        if (conversationsResponse.success && conversationsResponse.data) {
+          setConversations(conversationsResponse.data);
+          console.log('Loaded user conversations:', conversationsResponse.data.length);
+        }
+        
+        // Load popular questions for all users (regardless of authentication)
+        const questionsResponse = await apiRequest<{ success: boolean; data: string[] }>('/api/chat/popular-questions?limit=5');
+        if (questionsResponse.success && questionsResponse.data) {
+          setPopularQuestions(questionsResponse.data);
+          console.log('Loaded popular questions:', questionsResponse.data.length);
         }
       } catch (err) {
-        // User might not be authenticated, which is fine
-        console.log('No saved conversations or user not authenticated');
+        // Error handling - non-critical, so we log but don't show error to user
+        console.log('Error loading initial data:', err);
       }
     };
     
-    loadUserConversations();
+    loadInitialData();
   }, []);
   
   // Load conversation history when a conversation is selected
@@ -343,28 +352,49 @@ export const ChatWidget: React.FC = () => {
             <div className="text-center py-10 text-muted-foreground">
               <h3 className="text-lg font-semibold mb-2">Welcome to the Hydrogen Research Assistant</h3>
               <p className="mb-6">Ask any question about hydrogen research, and I'll provide scientifically-backed answers from peer-reviewed studies.</p>
+              
               <div className="grid grid-cols-1 gap-2 max-w-md mx-auto text-sm">
-                <Button 
-                  variant="outline" 
-                  className="justify-start" 
-                  onClick={() => setInput("What are the latest developments in hydrogen fuel cell technology?")}
-                >
-                  What are the latest developments in hydrogen fuel cell technology?
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="justify-start" 
-                  onClick={() => setInput("How does molecular hydrogen affect inflammation in the body?")}
-                >
-                  How does molecular hydrogen affect inflammation in the body?
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="justify-start" 
-                  onClick={() => setInput("What are the challenges in hydrogen storage for transportation?")}
-                >
-                  What are the challenges in hydrogen storage for transportation?
-                </Button>
+                {/* Show popular questions if available */}
+                {popularQuestions.length > 0 ? (
+                  <>
+                    <div className="text-sm font-medium text-left mb-1 text-muted-foreground">Popular Questions:</div>
+                    {popularQuestions.map((question, index) => (
+                      <Button 
+                        key={index}
+                        variant="outline" 
+                        className="justify-start" 
+                        onClick={() => setInput(question)}
+                      >
+                        {question}
+                      </Button>
+                    ))}
+                  </>
+                ) : (
+                  // Default questions if no popular questions available
+                  <>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start" 
+                      onClick={() => setInput("What are the latest developments in hydrogen fuel cell technology?")}
+                    >
+                      What are the latest developments in hydrogen fuel cell technology?
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start" 
+                      onClick={() => setInput("How does molecular hydrogen affect inflammation in the body?")}
+                    >
+                      How does molecular hydrogen affect inflammation in the body?
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start" 
+                      onClick={() => setInput("What are the challenges in hydrogen storage for transportation?")}
+                    >
+                      What are the challenges in hydrogen storage for transportation?
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           ) : (
