@@ -33,14 +33,27 @@ import {
 } from "@shared/schema";
 
 export interface StudyFilters {
+  // Basic search filters
   query?: string;
   keyword?: string;
   author?: string;
   yearFrom?: string;
   yearTo?: string;
   category?: string;
-  peerReviewed?: boolean;
-  sortBy?: string;
+  
+  // Enhanced UI filters
+  isPeerReviewed?: boolean | null;
+  hasHealthImplications?: boolean | null;
+  hasMedia?: boolean | null;
+  dateFrom?: string;
+  dateTo?: string;
+  
+  // Pagination and sorting
+  page?: number | string;
+  pageSize?: number | string;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
+  sortBy?: string; // Legacy support
   
   // Advanced filters
   healthConditions?: string[];
@@ -50,7 +63,9 @@ export interface StudyFilters {
   region?: string[];
   journal?: string[];
   hasFullText?: boolean;
-  hasMedia?: boolean;
+  
+  // For compatibility with existing code
+  peerReviewed?: boolean;
 }
 
 export interface IStorage {

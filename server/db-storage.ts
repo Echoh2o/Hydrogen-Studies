@@ -15,10 +15,11 @@ import { eq, and, or, like, gte, lte, desc, asc } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   // Studies methods
-  async getStudies(filters: StudyFilters = {}): Promise<Study[]> {
+  async getStudies(filters: StudyFilters = {}): Promise<any> {
     // Build filter conditions
     const conditions = [];
     
+    // Basic search
     if (filters.query) {
       const searchTerm = `%${filters.query}%`;
       conditions.push(
@@ -26,11 +27,15 @@ export class DatabaseStorage implements IStorage {
           like(studies.title, searchTerm),
           like(studies.abstract, searchTerm),
           like(studies.authors, searchTerm),
-          like(studies.journal, searchTerm)
+          like(studies.journal, searchTerm),
+          like(studies.methods, searchTerm),
+          like(studies.results, searchTerm),
+          like(studies.conclusion, searchTerm)
         )
       );
     }
     
+    // Keyword search
     if (filters.keyword) {
       const keyword = `%${filters.keyword}%`;
       conditions.push(
@@ -41,10 +46,12 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
+    // Author filter
     if (filters.author) {
       conditions.push(like(studies.authors, `%${filters.author}%`));
     }
     
+    // Date range filters
     if (filters.yearFrom) {
       // This is simplified, in a real app we'd need to handle date parsing better
       conditions.push(gte(studies.publishDate, `${filters.yearFrom}-01-01`));
@@ -55,41 +62,155 @@ export class DatabaseStorage implements IStorage {
       conditions.push(lte(studies.publishDate, `${filters.yearTo}-12-31`));
     }
     
-    if (filters.category) {
+    // More specific date range for the new UI
+    if (filters.dateFrom) {
+      conditions.push(gte(studies.publishDate, filters.dateFrom));
+    }
+    
+    if (filters.dateTo) {
+      conditions.push(lte(studies.publishDate, filters.dateTo));
+    }
+    
+    // Category filter
+    if (filters.category && filters.category !== 'all' && filters.category !== '') {
       conditions.push(eq(studies.category, filters.category));
     }
     
-    if (filters.peerReviewed) {
+    // Boolean filters for the enhanced UI
+    if (filters.isPeerReviewed === true) {
       conditions.push(eq(studies.peerReviewed, true));
+    } else if (filters.isPeerReviewed === false) {
+      conditions.push(eq(studies.peerReviewed, false));
     }
     
-    let result;
+    if (filters.hasHealthImplications === true) {
+      conditions.push(eq(studies.healthImplications, true));
+    } else if (filters.hasHealthImplications === false) {
+      conditions.push(eq(studies.healthImplications, false));
+    }
     
-    // Apply filters and sorting
+    if (filters.hasMedia === true) {
+      conditions.push(eq(studies.hasMedia, true));
+    } else if (filters.hasMedia === false) {
+      conditions.push(eq(studies.hasMedia, false));
+    }
+    
+    // Advanced filters for health conditions and body systems
+    if (filters.healthConditions && filters.healthConditions.length > 0) {
+      try {
+        // Using the array_overlaps operator if available
+        // Note: This assumes PostgreSQL and that healthConditions is stored as an array
+        conditions.push(
+          sql`${studies.healthConditions} && ARRAY[${filters.healthConditions.join(',')}]::text[]`
+        );
+      } catch (error) {
+        console.error("Error applying health conditions filter:", error);
+      }
+    }
+    
+    if (filters.bodySystems && filters.bodySystems.length > 0) {
+      try {
+        // Using the array_overlaps operator if available
+        // Note: This assumes PostgreSQL and that bodySystems is stored as an array
+        conditions.push(
+          sql`${studies.bodySystems} && ARRAY[${filters.bodySystems.join(',')}]::text[]`
+        );
+      } catch (error) {
+        console.error("Error applying body systems filter:", error);
+      }
+    }
+    
+    // Pagination parameters
+    const page = filters.page ? parseInt(filters.page as string) : 1;
+    const pageSize = filters.pageSize ? parseInt(filters.pageSize as string) : 10;
+    const offset = (page - 1) * pageSize;
+    
+    // Determine sort field and direction
+    let sortField = studies.publishDate;
+    let sortDirection = desc;
+    
+    if (filters.sortField) {
+      switch (filters.sortField) {
+        case 'title':
+          sortField = studies.title;
+          break;
+        case 'journal':
+          sortField = studies.journal;
+          break;
+        case 'category':
+          sortField = studies.category;
+          break;
+        case 'publishDate':
+        default:
+          sortField = studies.publishDate;
+          break;
+      }
+    }
+    
+    if (filters.sortOrder === 'asc') {
+      sortDirection = asc;
+    }
+    
+    // Get total count first (for pagination)
+    const countResult = await db.select({ count: sql<number>`count(*)` })
+      .from(studies)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    
+    const totalCount = countResult[0]?.count || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    
+    // Get the actual data with pagination
+    let query = db.select().from(studies);
+    
     if (conditions.length > 0) {
-      if (filters.sortBy === 'title') {
-        result = await db.select().from(studies)
-          .where(and(...conditions))
-          .orderBy(asc(studies.title));
-      } else {
-        // Default to date sorting or explicit date sorting
-        result = await db.select().from(studies)
-          .where(and(...conditions))
-          .orderBy(desc(studies.publishDate));
-      }
-    } else {
-      // No filters
-      if (filters.sortBy === 'title') {
-        result = await db.select().from(studies)
-          .orderBy(asc(studies.title));
-      } else {
-        // Default to date sorting or explicit date sorting
-        result = await db.select().from(studies)
-          .orderBy(desc(studies.publishDate));
-      }
+      query = query.where(and(...conditions));
     }
     
-    return result;
+    // Apply sorting
+    query = query.orderBy(sortDirection(sortField));
+    
+    // Apply pagination
+    query = query.limit(pageSize).offset(offset);
+    
+    // Execute query
+    const result = await query;
+    
+    // Get additional counts for the UI metrics
+    const peerReviewedCount = await db.select({ count: sql<number>`count(*)` })
+      .from(studies)
+      .where(
+        conditions.length > 0 
+          ? and(eq(studies.peerReviewed, true), ...conditions) 
+          : eq(studies.peerReviewed, true)
+      );
+      
+    const healthImplicationsCount = await db.select({ count: sql<number>`count(*)` })
+      .from(studies)
+      .where(
+        conditions.length > 0 
+          ? and(eq(studies.healthImplications, true), ...conditions) 
+          : eq(studies.healthImplications, true)
+      );
+      
+    const withMediaCount = await db.select({ count: sql<number>`count(*)` })
+      .from(studies)
+      .where(
+        conditions.length > 0 
+          ? and(eq(studies.hasMedia, true), ...conditions) 
+          : eq(studies.hasMedia, true)
+      );
+    
+    // Return enhanced response with pagination metadata
+    return {
+      data: result,
+      totalCount,
+      totalPages,
+      page,
+      pageSize,
+      peerReviewedCount: peerReviewedCount[0]?.count || 0,
+      healthImplicationsCount: healthImplicationsCount[0]?.count || 0,
+      withMediaCount: withMediaCount[0]?.count || 0
+    };
   }
 
   async getStudyById(id: number): Promise<Study | undefined> {
