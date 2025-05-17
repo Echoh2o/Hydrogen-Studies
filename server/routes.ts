@@ -1419,6 +1419,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chat API endpoint with validation
+  app.post('/api/chat', async (req, res) => {
+    try {
+      // Validate input
+      const { query, conversationHistory } = req.body;
+      
+      // Check if query is provided and is a string
+      if (!query || typeof query !== 'string' || query.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid query string'
+        });
+      }
+      
+      // Validate conversation history if provided
+      if (conversationHistory && (!Array.isArray(conversationHistory) || 
+          !conversationHistory.every(msg => 
+            typeof msg === 'object' && 
+            (msg.role === 'user' || msg.role === 'assistant') && 
+            typeof msg.content === 'string'))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid conversation history format'
+        });
+      }
+      
+      // Validate that the query is about hydrogen research
+      const validation = await validateQuery(query);
+      if (!validation.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Your question does not appear to be related to hydrogen research. Please ask a question about hydrogen studies, research, or applications.',
+          reason: validation.reason
+        });
+      }
+      
+      // Generate and return chat response
+      const response = await generateChatResponse(
+        query, 
+        conversationHistory || []
+      );
+      
+      res.json({
+        success: true,
+        data: response
+      });
+    } catch (error) {
+      console.error('Error in chat endpoint:', error);
+      res.status(500).json({
+        success: false,
+        message: 'An error occurred while processing your query'
+      });
+    }
+  });
+
   // Initialize sample data (only in development)
   if (process.env.NODE_ENV === 'development') {
     try {
