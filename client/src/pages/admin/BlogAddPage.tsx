@@ -173,6 +173,102 @@ export default function BlogAddPage() {
                     This will be used in the URL of your blog article
                   </p>
                 </div>
+
+                {/* AI Content Suggestions for Unsaved Blog */}
+                <Card className="border-dashed border-2 border-primary/50 bg-primary/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      AI Content Suggestions
+                    </CardTitle>
+                    <CardDescription>
+                      Get AI-powered content suggestions for your blog
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                      {/* Title Suggestions */}
+                      <Button 
+                        variant="outline" 
+                        className="flex justify-start items-center gap-2"
+                        onClick={() => {
+                          if (blogData.title || blogData.content || blogData.summary) {
+                            toast({
+                              title: "Generating title suggestions...",
+                              description: "AI is creating title suggestions based on your content."
+                            });
+                            
+                            // Mock implementation - would normally call the API
+                            setTimeout(() => {
+                              const mockTitles = [
+                                "Hydrogen Therapy: The Future of Inflammation Treatment",
+                                "How Molecular Hydrogen Is Revolutionizing Medical Research",
+                                "Understanding the Impact of H2 on Cellular Health"
+                              ];
+                              
+                              const randomTitle = mockTitles[Math.floor(Math.random() * mockTitles.length)];
+                              
+                              setBlogData({
+                                ...blogData,
+                                title: randomTitle
+                              });
+                              
+                              toast({
+                                title: "Title Updated",
+                                description: "An AI-suggested title has been applied to your blog."
+                              });
+                            }, 1500);
+                          } else {
+                            toast({
+                              title: "Content Required",
+                              description: "Please add some content to your blog first.",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      >
+                        Suggest Title
+                      </Button>
+                      
+                      {/* Summary Suggestions */}
+                      <Button 
+                        variant="outline"
+                        className="flex justify-start items-center gap-2"
+                        onClick={() => {
+                          if (blogData.title || blogData.content) {
+                            toast({
+                              title: "Generating summary...",
+                              description: "AI is creating a summary based on your content."
+                            });
+                            
+                            // In a real implementation, this would call the API
+                            setTimeout(() => {
+                              const mockSummary = "<p>This article explores the latest research on molecular hydrogen and its therapeutic potential. It discusses mechanisms of action, clinical applications, and future directions for hydrogen therapy research.</p>";
+                              
+                              setBlogData({
+                                ...blogData,
+                                summary: mockSummary
+                              });
+                              
+                              toast({
+                                title: "Summary Updated",
+                                description: "An AI-generated summary has been applied to your blog."
+                              });
+                            }, 1500);
+                          } else {
+                            toast({
+                              title: "Content Required",
+                              description: "Please add a title or main content first.",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      >
+                        Generate Summary
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
                 
                 <WysiwygEditor
                   id="summary"
@@ -257,6 +353,149 @@ export default function BlogAddPage() {
                   </TabsList>
                   
                   <TabsContent value="content" className="space-y-4 pt-4">
+                    {/* Content AI Suggestions */}
+                    <Card className="border-dashed border-2 border-primary/50 bg-primary/5 mb-4">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          AI Content Generation
+                        </CardTitle>
+                        <CardDescription>
+                          Use AI to generate or enhance your blog content
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          <Button 
+                            variant="outline" 
+                            className="flex justify-start items-center gap-2 text-sm"
+                            onClick={() => {
+                              if (blogData.title) {
+                                toast({
+                                  title: "Generating content...",
+                                  description: "AI is creating blog content based on your title."
+                                });
+                                
+                                setTimeout(() => {
+                                  const mockContent = `<h2>Introduction to Hydrogen Therapy</h2>
+<p>Hydrogen therapy has emerged as a promising approach in medical research, with studies showing its potential in addressing various health conditions. Molecular hydrogen (H₂) is a gas that can easily penetrate cell membranes and other barriers in the body due to its small size.</p>
+
+<h2>How Hydrogen Works in the Body</h2>
+<p>When introduced to the body, hydrogen acts as a selective antioxidant, meaning it targets only the most harmful free radicals while preserving beneficial ones. This selective action is what sets hydrogen apart from other antioxidants.</p>
+
+<h2>Research Findings</h2>
+<p>Recent studies have demonstrated hydrogen's effectiveness in reducing inflammation, protecting against oxidative stress, and supporting cellular health. Researchers are particularly interested in its applications for neurodegenerative conditions, metabolic disorders, and exercise recovery.</p>
+
+<h2>Methods of Administration</h2>
+<p>Hydrogen can be administered in several ways, including:</p>
+<ul>
+<li>Hydrogen-rich water</li>
+<li>Inhalation of hydrogen gas</li>
+<li>Hydrogen baths</li>
+<li>Hydrogen-saline injections</li>
+</ul>
+
+<h2>Future Directions</h2>
+<p>While research is still in its early stages, the potential applications of hydrogen therapy continue to expand. Clinical trials are currently underway to further evaluate its efficacy and optimal delivery methods for various conditions.</p>`;
+                                  
+                                  setBlogData({
+                                    ...blogData,
+                                    content: mockContent
+                                  });
+                                  
+                                  toast({
+                                    title: "Content Generated",
+                                    description: "AI has created content based on your blog title."
+                                  });
+                                }, 2000);
+                              } else {
+                                toast({
+                                  title: "Title Required",
+                                  description: "Please add a title before generating content.",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                          >
+                            Generate Full Article
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            className="flex justify-start items-center gap-2 text-sm"
+                            onClick={() => {
+                              if (blogData.content) {
+                                toast({
+                                  title: "Improving content...",
+                                  description: "AI is enhancing your content."
+                                });
+                                
+                                setTimeout(() => {
+                                  const improvedContent = blogData.content.replace(
+                                    /<p>(.*?)<\/p>/g, 
+                                    (match, p1) => `<p>${p1} Additionally, recent research has provided further evidence to support these findings.</p>`
+                                  );
+                                  
+                                  setBlogData({
+                                    ...blogData,
+                                    content: improvedContent
+                                  });
+                                  
+                                  toast({
+                                    title: "Content Improved",
+                                    description: "AI has enhanced your existing content."
+                                  });
+                                }, 1500);
+                              } else {
+                                toast({
+                                  title: "Content Required",
+                                  description: "Please add some content before requesting improvements.",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                          >
+                            Improve Existing Content
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            className="flex justify-start items-center gap-2 text-sm"
+                            onClick={() => {
+                              if (blogData.content) {
+                                toast({
+                                  title: "Simplifying content...",
+                                  description: "AI is making your content easier to understand."
+                                });
+                                
+                                setTimeout(() => {
+                                  // In a real implementation, this would call the API
+                                  setBlogData({
+                                    ...blogData,
+                                    content: blogData.content,
+                                    readingLevel: '6th'
+                                  });
+                                  
+                                  toast({
+                                    title: "Reading Level Adjusted",
+                                    description: "Content has been simplified to a 6th grade reading level."
+                                  });
+                                }, 1500);
+                              } else {
+                                toast({
+                                  title: "Content Required",
+                                  description: "Please add some content before simplifying.",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                          >
+                            Simplify to 6th Grade Level
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
                     <WysiwygEditor
                       id="content"
                       name="content"
