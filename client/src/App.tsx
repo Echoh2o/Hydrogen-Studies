@@ -42,6 +42,7 @@ import BlogEditPage from "@/pages/admin/BlogEditPage";
 import ResearchImportPage from "@/pages/admin/ResearchImportPage";
 import DataImportPage from "@/pages/admin/DataImportPage";
 import ResearchDatabasePage from "@/pages/admin/ResearchDatabasePage";
+import JournalDateUpdater from "@/pages/admin/JournalDateUpdater";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -81,6 +82,7 @@ function Router() {
       <Route path="/admin/research-import" component={ResearchImportPage} />
       <Route path="/admin/data-import" component={DataImportPage} />
       <Route path="/admin/research-database" component={ResearchDatabasePage} />
+      <Route path="/admin/journal-dates" component={JournalDateUpdater} />
       
       {/* Legacy Admin Routes - will be removed after transition */}
       <Route path="/admin/legacy" component={AdminPage} />
