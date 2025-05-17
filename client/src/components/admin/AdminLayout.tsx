@@ -28,6 +28,7 @@ export default function AdminLayout({ children, title, description }: AdminLayou
     { href: "/admin/studies", label: "Studies", icon: Database },
     { href: "/admin/blogs", label: "Blogs", icon: FileText },
     { href: "/admin/research-import", label: "Research Import", icon: Search },
+    { href: "/admin/research-database", label: "Research Database", icon: Database },
     { href: "/admin/data-import", label: "Data Import", icon: Upload },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
     { href: "/admin/settings", label: "Settings", icon: Settings },
