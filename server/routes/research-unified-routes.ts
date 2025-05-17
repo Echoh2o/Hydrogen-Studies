@@ -96,21 +96,48 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     // Wait for all searches to complete
     await Promise.all(searchPromises);
     
-    // Sort results by relevance (could be enhanced with more sophisticated relevance scoring)
-    allResults = allResults.slice(0, pageSizeNum);
+    // Check for DOI duplicates to avoid showing the same study from multiple sources
+    const uniqueResults = [];
+    const seenDOIs = new Set();
     
-    // Calculate pagination
-    const totalPages = Math.ceil(totalResults / pageSizeNum);
-    
-    res.json({
-      data: allResults,
-      metadata: {
-        total: totalResults,
-        page: pageNum,
-        pageSize: pageSizeNum,
-        totalPages,
-        errors: errors.length > 0 ? errors : undefined
+    for (const result of allResults) {
+      const doi = result.doi || '';
+      // If no DOI or not seen before, add to unique results
+      if (!doi || !seenDOIs.has(doi.toLowerCase())) {
+        if (doi) {
+          seenDOIs.add(doi.toLowerCase());
+        }
+        uniqueResults.push(result);
       }
+    }
+    
+    // Sort results by relevance (could be enhanced with more sophisticated relevance scoring)
+    // For now, just limit to requested page size
+    allResults = uniqueResults.slice(0, pageSizeNum);
+    
+    // Check for empty results, if no results from multiple sources, default to PubMed-like format
+    if (allResults.length === 0) {
+      return res.json({
+        success: true,
+        source: selectedSources[0],
+        query: query,
+        total: 0,
+        startIndex: 0,
+        nextIndex: 0,
+        articles: []
+      });
+    }
+    
+    // If we have results, format to match the PubMed API format for compatibility with existing frontend
+    res.json({
+      success: true,
+      source: 'unified',  // Mark as unified search
+      query: query,
+      total: totalResults,
+      startIndex: (pageNum - 1) * pageSizeNum,
+      nextIndex: pageNum * pageSizeNum,
+      articles: allResults,
+      errors: errors.length > 0 ? errors : undefined
     });
   } catch (error: any) {
     console.error('Error in unified research search:', error);
