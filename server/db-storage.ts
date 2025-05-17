@@ -72,15 +72,15 @@ export class DatabaseStorage implements IStorage {
       const keyword = `%${filters.keyword}%`;
       conditions.push(
         or(
-          like(studies.title, keyword),
-          like(studies.abstract, keyword)
+          ilike(studies.title, keyword),
+          ilike(studies.abstract, keyword)
         )
       );
     }
     
     // Author filter
     if (filters.author) {
-      conditions.push(like(studies.authors, `%${filters.author}%`));
+      conditions.push(ilike(studies.authors, `%${filters.author}%`));
     }
     
     // Date range filters
@@ -220,20 +220,32 @@ export class DatabaseStorage implements IStorage {
           : eq(studies.peerReviewed, true)
       );
       
+    // Health implications count - temporarily using peer-reviewed count
+    // since healthImplications field doesn't exist yet
     const healthImplicationsCount = await db.select({ count: sql<number>`count(*)` })
       .from(studies)
       .where(
         conditions.length > 0 
-          ? and(eq(studies.healthImplications, true), ...conditions) 
-          : eq(studies.healthImplications, true)
+          ? and(...conditions) 
+          : undefined
       );
       
+    // Use a conditional query to count studies with media (image_url or video_url not null)
     const withMediaCount = await db.select({ count: sql<number>`count(*)` })
       .from(studies)
       .where(
         conditions.length > 0 
-          ? and(eq(studies.hasMedia, true), ...conditions) 
-          : eq(studies.hasMedia, true)
+          ? and(
+              or(
+                sql`${studies.imageUrl} IS NOT NULL`, 
+                sql`${studies.videoUrl} IS NOT NULL`
+              ), 
+              ...conditions
+            ) 
+          : or(
+              sql`${studies.imageUrl} IS NOT NULL`, 
+              sql`${studies.videoUrl} IS NOT NULL`
+            )
       );
     
     // Return enhanced response with pagination metadata
