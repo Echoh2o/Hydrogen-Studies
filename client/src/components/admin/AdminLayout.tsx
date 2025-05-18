@@ -11,7 +11,9 @@ import {
   UserCog,
   Search,
   BarChart2,
-  Home
+  Home,
+  RefreshCw,
+  Calendar
 } from 'lucide-react';
 
 interface AdminLayoutProps {

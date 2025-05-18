@@ -8,7 +8,7 @@
 import axios from 'axios';
 import { db } from './db';
 import { studies } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getCrossRefArticleByDOI } from './crossref-api';
 import { getArticleByDOI } from './europepmc-api';
 import { getSemanticScholarPaper } from './semantic-scholar-api';
@@ -286,8 +286,8 @@ export async function findStudiesForEnhancement(limit: number = 50): Promise<num
     .select({ id: studies.id })
     .from(studies)
     .where(
-      // Using a proper filter - studies with DOIs that exist
-      eq(studies.doi !== null, true)
+      // Using a proper filter - studies with DOIs that exist and abstracts that need enhancement
+      sql`${studies.doi} IS NOT NULL AND (${studies.abstract} IS NULL OR LENGTH(${studies.abstract}) < 100)`
     )
     .limit(limit);
   
