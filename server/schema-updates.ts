@@ -179,7 +179,7 @@ async function createDurationCategoriesTable() {
     }
     
     console.log('Creating duration categories table...');
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS duration_categories (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
@@ -189,7 +189,7 @@ async function createDurationCategoriesTable() {
         display_order INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
-    `.execute(db);
+    `);
     console.log('Duration categories table created successfully');
   } catch (error) {
     console.error('Error creating duration categories table:', error);
@@ -210,7 +210,7 @@ async function createStudyOutcomesTable() {
     }
     
     console.log('Creating study outcomes table...');
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS study_outcomes (
         id SERIAL PRIMARY KEY,
         study_id INTEGER NOT NULL UNIQUE REFERENCES studies(id),
@@ -224,7 +224,7 @@ async function createStudyOutcomesTable() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
-    `.execute(db);
+    `);
     console.log('Study outcomes table created successfully');
   } catch (error) {
     console.error('Error creating study outcomes table:', error);
@@ -270,13 +270,13 @@ async function createMappingTable(tableName: string, studyColumn: string, entity
     }
     
     console.log(`Creating ${tableName} table...`);
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS ${sql.identifier(tableName)} (
         ${sql.identifier(studyColumn)} INTEGER NOT NULL REFERENCES studies(id),
         ${sql.identifier(entityColumn)} INTEGER NOT NULL REFERENCES ${sql.identifier(entityTable)}(id),
         PRIMARY KEY (${sql.identifier(studyColumn)}, ${sql.identifier(entityColumn)})
       );
-    `.execute(db);
+    `);
     console.log(`${tableName} table created successfully`);
   } catch (error) {
     console.error(`Error creating ${tableName} table:`, error);
@@ -297,7 +297,14 @@ async function checkTableExists(tableName: string): Promise<boolean> {
       );
     `);
     
-    return result[0]?.exists || false;
+    // The result is an array with the first element containing a record with the exists property
+    if (result && result.length > 0) {
+      // Convert the first result row object to an array and get the first value
+      const existsValue = Object.values(result[0])[0];
+      return !!existsValue;
+    }
+    
+    return false;
   } catch (error) {
     console.error(`Error checking if ${tableName} table exists:`, error);
     throw error;

@@ -45,6 +45,7 @@ import crossrefRoutes from "./routes/crossref-routes";
 import journalDateRoutes from "./routes/journal-date-routes";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
+import hydrogenRoutes from "./routes/hydrogen-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
