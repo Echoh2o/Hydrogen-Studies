@@ -150,13 +150,36 @@ const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void })
     const journal = study.journal || 'Unknown Journal';
     const doi = study.doi || '';
     
+    // Create a sanitized ID for BibTeX
+    const sanitizedId = `${authors[0]?.split(' ').pop() || 'Unknown'}${year}${title.split(' ')[0] || ''}`.replace(/[^a-zA-Z0-9]/g, '');
+    
     switch (format) {
       case 'apa':
         return `${authors.join(', ')}. (${year}). ${title}. ${journal}. ${doi ? `https://doi.org/${doi}` : ''}`;
+      
       case 'mla':
         return `${authors[0].split(' ').pop()}, ${authors[0].split(' ').slice(0, -1).join(' ')}${authors.length > 1 ? ', et al' : ''}. "${title}." ${journal}, ${year}. ${doi ? `DOI: ${doi}` : ''}`;
+      
       case 'chicago':
         return `${authors.join(', ')}. "${title}." ${journal} (${year}). ${doi ? `https://doi.org/${doi}` : ''}`;
+      
+      case 'bibtex':
+        return `@article{${sanitizedId},
+  author = {${authors.join(' and ')}},
+  title = {${title}},
+  journal = {${journal}},
+  year = {${year}}${doi ? `,
+  doi = {${doi}}` : ''}
+}`;
+      
+      case 'ris':
+        return `TY  - JOUR
+${authors.map(author => `AU  - ${author}`).join('\n')}
+TI  - ${title}
+JO  - ${journal}
+PY  - ${year}${doi ? `\nDO  - ${doi}` : ''}
+ER  - `;
+      
       default:
         return `${authors.join(', ')}. (${year}). ${title}. ${journal}. ${doi ? `https://doi.org/${doi}` : ''}`;
     }
@@ -360,9 +383,88 @@ const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void })
           </div>
         </section>
         
-        {/* Table of contents for navigation */}
+        {/* Study section navigation - mobile version (shows only on small screens) */}
+        <div className="md:hidden print:hidden mb-6">
+          <ScrollArea className="w-full py-2" orientation="horizontal">
+            <div className="flex space-x-2 min-w-max">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => scrollToSection('abstract')}
+                className={activeSection === 'abstract' ? 'bg-primary/10 border-primary/20 text-primary' : ''}
+              >
+                Abstract
+              </Button>
+              
+              {study.methods && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => scrollToSection('methods')}
+                  className={activeSection === 'methods' ? 'bg-primary/10 border-primary/20 text-primary' : ''}
+                >
+                  Methods
+                </Button>
+              )}
+              
+              {study.results && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => scrollToSection('results')}
+                  className={activeSection === 'results' ? 'bg-primary/10 border-primary/20 text-primary' : ''}
+                >
+                  Results
+                </Button>
+              )}
+              
+              {study.conclusion && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => scrollToSection('conclusion')}
+                  className={activeSection === 'conclusion' ? 'bg-primary/10 border-primary/20 text-primary' : ''}
+                >
+                  Conclusion
+                </Button>
+              )}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => scrollToSection('simplified')}
+                className={activeSection === 'simplified' ? 'bg-primary/10 border-primary/20 text-primary' : ''}
+              >
+                Simplified
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => scrollToSection('links')}
+                className={activeSection === 'links' ? 'bg-primary/10 border-primary/20 text-primary' : ''}
+              >
+                Links
+              </Button>
+            </div>
+          </ScrollArea>
+          
+          {/* Mobile Keywords/Tags */}
+          {keyStudyTags.length > 0 && (
+            <div className="mt-3">
+              <h3 className="font-medium text-xs text-neutral-600 mb-1">KEYWORDS</h3>
+              <div className="flex flex-wrap gap-1">
+                {keyStudyTags.map((tag: string, index: number) => (
+                  <Badge key={index} variant="secondary" className="text-xs">{tag}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Table of contents for navigation - desktop version */}
         <div className="print:hidden flex flex-col md:flex-row md:items-start gap-8 mb-8">
-          <ScrollArea className="h-auto max-h-80 w-full md:w-1/4 rounded-md border p-4">
+          <ScrollArea className="hidden md:block h-auto max-h-80 w-full md:w-1/4 rounded-md border p-4">
             <div className="mb-4">
               <h3 className="font-medium text-sm text-neutral-600 mb-2 flex items-center">
                 <PanelTop className="w-4 h-4 mr-2" />
@@ -420,7 +522,7 @@ const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void })
               </nav>
             </div>
             
-            {/* Keywords/Tags section */}
+            {/* Keywords/Tags section - desktop */}
             {keyStudyTags.length > 0 && (
               <div className="pt-2 border-t">
                 <h3 className="font-medium text-sm text-neutral-600 mb-2">KEYWORDS</h3>
@@ -550,10 +652,12 @@ const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void })
                           </DialogHeader>
                           <div className="py-4">
                             <Tabs defaultValue="apa" onValueChange={setSelectedCitationFormat}>
-                              <TabsList className="grid grid-cols-3 mb-4">
+                              <TabsList className="grid grid-cols-5 mb-4">
                                 <TabsTrigger value="apa">APA</TabsTrigger>
                                 <TabsTrigger value="mla">MLA</TabsTrigger>
                                 <TabsTrigger value="chicago">Chicago</TabsTrigger>
+                                <TabsTrigger value="bibtex">BibTeX</TabsTrigger>
+                                <TabsTrigger value="ris">RIS</TabsTrigger>
                               </TabsList>
                               <TabsContent value="apa" className="text-sm p-4 bg-muted rounded-md">
                                 {generateCitation('apa')}
@@ -563,6 +667,12 @@ const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void })
                               </TabsContent>
                               <TabsContent value="chicago" className="text-sm p-4 bg-muted rounded-md">
                                 {generateCitation('chicago')}
+                              </TabsContent>
+                              <TabsContent value="bibtex" className="text-sm p-4 bg-muted rounded-md font-mono">
+                                {generateCitation('bibtex')}
+                              </TabsContent>
+                              <TabsContent value="ris" className="text-sm p-4 bg-muted rounded-md font-mono">
+                                {generateCitation('ris')}
                               </TabsContent>
                             </Tabs>
                           </div>
