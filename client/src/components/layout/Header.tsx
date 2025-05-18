@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { HiMenu, HiX } from "react-icons/hi";
+import { Brain, Droplet, Users, Zap, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import logoPath from "../../assets/hydrogen-studies-logo.svg";
 
 const Header = () => {
@@ -61,11 +68,49 @@ const Header = () => {
                 Home
               </a>
             </Link>
-            <Link href="/benefits">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/benefits') || location.startsWith('/benefits/') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                Benefits
-              </a>
-            </Link>
+            
+            {/* Explore Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <a className={`px-3 py-2 font-medium rounded-md flex items-center cursor-pointer ${
+                  location.startsWith('/benefits') || 
+                  location.startsWith('/demographics') || 
+                  location.startsWith('/mechanisms') || 
+                  location.startsWith('/delivery-methods') 
+                  ? 'text-primary' 
+                  : 'text-neutral-800 hover:text-primary'
+                }`}>
+                  Explore <ChevronDown className="ml-1 h-4 w-4" />
+                </a>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <Link href="/benefits">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Brain className="mr-2 h-4 w-4" />
+                    <span>By Health Benefit</span>
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/demographics">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>By Demographic</span>
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/mechanisms">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Zap className="mr-2 h-4 w-4" />
+                    <span>By Mechanism</span>
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/delivery-methods">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Droplet className="mr-2 h-4 w-4" />
+                    <span>By Delivery Method</span>
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <Link href="/studies">
               <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/studies') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
                 All Studies
@@ -103,14 +148,49 @@ const Header = () => {
                   Home
                 </a>
               </Link>
-              <Link href="/benefits">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/benefits') || location.startsWith('/benefits/') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  Benefits
-                </a>
-              </Link>
+              
+              <div className="px-3 py-2 font-medium text-neutral-800">
+                <div className="mb-1 font-semibold">Explore Studies By:</div>
+                <div className="ml-2 space-y-2 mt-2">
+                  <Link href="/benefits">
+                    <a 
+                      className={`flex items-center ${isActiveLink('/benefits') || location.startsWith('/benefits/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
+                      onClick={closeMobileMenu}
+                    >
+                      <Brain className="mr-2 h-4 w-4" />
+                      Health Benefits
+                    </a>
+                  </Link>
+                  <Link href="/demographics">
+                    <a 
+                      className={`flex items-center ${isActiveLink('/demographics') || location.startsWith('/demographics/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
+                      onClick={closeMobileMenu}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      Demographics
+                    </a>
+                  </Link>
+                  <Link href="/mechanisms">
+                    <a 
+                      className={`flex items-center ${isActiveLink('/mechanisms') || location.startsWith('/mechanisms/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
+                      onClick={closeMobileMenu}
+                    >
+                      <Zap className="mr-2 h-4 w-4" />
+                      Mechanisms
+                    </a>
+                  </Link>
+                  <Link href="/delivery-methods">
+                    <a 
+                      className={`flex items-center ${isActiveLink('/delivery-methods') || location.startsWith('/delivery-methods/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
+                      onClick={closeMobileMenu}
+                    >
+                      <Droplet className="mr-2 h-4 w-4" />
+                      Delivery Methods
+                    </a>
+                  </Link>
+                </div>
+              </div>
+              
               <Link href="/studies">
                 <a 
                   className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/studies') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
