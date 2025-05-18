@@ -68,6 +68,16 @@ export interface StudyFilters {
   journal?: string[];
   hasFullText?: boolean;
   
+  // New enhanced search filters
+  tags?: string[];
+  enrichmentStatus?: 'basic' | 'partial' | 'complete';
+  useFuzzyMatch?: boolean;
+  searchInMethods?: boolean;
+  searchInResults?: boolean;
+  searchInConclusion?: boolean;
+  searchInSimplified?: boolean;
+  excludeTerms?: string[];
+  
   // For compatibility with existing code
   peerReviewed?: boolean;
 }
@@ -178,35 +188,160 @@ export class MemStorage implements IStorage {
   // Studies methods
   async getStudies(filters: StudyFilters = {}): Promise<Study[]> {
     let results = Array.from(this.studiesData.values());
-
-    // Apply filters with enhanced search
+    
+    // Apply filters with advanced search capabilities
     if (filters.query) {
       const query = filters.query.toLowerCase();
       
+      // Check if the query has explicit exclusion terms (using minus sign)
+      const excludeTermsFromQuery: string[] = [];
+      const cleanQuery = query.replace(/-(\w+)/g, (match, term) => {
+        excludeTermsFromQuery.push(term.toLowerCase());
+        return '';
+      }).trim();
+      
+      // Combine explicit excludeTerms with those parsed from the query
+      const excludeTerms = [...(filters.excludeTerms || []), ...excludeTermsFromQuery];
+      
+      // Process operators ("AND", "OR") if present
+      const queryOperator = cleanQuery.includes(' AND ') ? 'AND' 
+                          : cleanQuery.includes(' OR ') ? 'OR' 
+                          : 'default';
+      
       // Split the query into words for more flexible matching
-      const queryWords = query.split(/\s+/).filter(word => word.length > 2);
+      let queryWords: string[];
+      if (queryOperator === 'AND' || queryOperator === 'OR') {
+        queryWords = queryOperator === 'AND' 
+          ? cleanQuery.split(' AND ').map(part => part.trim())
+          : cleanQuery.split(' OR ').map(part => part.trim());
+      } else {
+        queryWords = cleanQuery.split(/\s+/).filter(word => word.length > 2);
+      }
       
       results = results.filter(study => {
-        // Check for exact matches first (highest priority)
-        if (study.title.toLowerCase().includes(query) || 
-            study.abstract.toLowerCase().includes(query) ||
-            study.authors.toLowerCase().includes(query) ||
-            study.journal.toLowerCase().includes(query) ||
-            study.category.toLowerCase().includes(query)) {
-          return true;
+        // Function to determine if study has basic/partial/complete enrichment
+        const getEnrichmentStatus = (s: Study): 'basic' | 'partial' | 'complete' => {
+          const hasEnrichedContent = Boolean(
+            s.methods || s.results || s.conclusion || s.simplifiedExplanation ||
+            (s.tags && s.tags.length > 0)
+          );
+          
+          const hasCompleteEnrichment = Boolean(
+            s.methods && s.results && s.conclusion && s.simplifiedExplanation &&
+            (s.tags && s.tags.length > 0)
+          );
+          
+          if (hasCompleteEnrichment) return 'complete';
+          if (hasEnrichedContent) return 'partial';
+          return 'basic';
+        };
+        
+        // Apply enrichment status filter if specified
+        if (filters.enrichmentStatus) {
+          const studyEnrichmentStatus = getEnrichmentStatus(study);
+          if (studyEnrichmentStatus !== filters.enrichmentStatus) {
+            return false;
+          }
         }
         
-        // If there are query words, check if multiple words match across different fields
-        if (queryWords.length > 0) {
+        // First filter out studies with excluded terms
+        if (excludeTerms.length > 0) {
           const titleLower = study.title.toLowerCase();
           const abstractLower = study.abstract.toLowerCase();
-          const authorsLower = study.authors.toLowerCase();
-          const journalLower = study.journal.toLowerCase();
           const methodsLower = (study.methods || '').toLowerCase();
           const resultsLower = (study.results || '').toLowerCase();
           const conclusionLower = (study.conclusion || '').toLowerCase();
+          const simplifiedLower = (study.simplifiedExplanation || '').toLowerCase();
           
-          // Count how many query words appear in the study
+          for (const term of excludeTerms) {
+            if (titleLower.includes(term) || 
+                abstractLower.includes(term) || 
+                methodsLower.includes(term) || 
+                resultsLower.includes(term) || 
+                conclusionLower.includes(term) || 
+                simplifiedLower.includes(term)) {
+              return false;
+            }
+          }
+        }
+        
+        // Apply tags filter if specified
+        if (filters.tags && filters.tags.length > 0) {
+          if (!study.tags || study.tags.length === 0) {
+            return false;
+          }
+          
+          const studyTagsLower = study.tags.map(tag => tag.toLowerCase());
+          const filterTagsLower = filters.tags.map(tag => tag.toLowerCase());
+          
+          // Check if any of the filter tags match study tags
+          const hasMatchingTag = filterTagsLower.some(tag => 
+            studyTagsLower.includes(tag)
+          );
+          
+          if (!hasMatchingTag) {
+            return false;
+          }
+        }
+        
+        // Check for exact matches first (highest priority)
+        if (cleanQuery && (
+            study.title.toLowerCase().includes(cleanQuery) || 
+            study.abstract.toLowerCase().includes(cleanQuery) ||
+            study.authors.toLowerCase().includes(cleanQuery) ||
+            study.journal.toLowerCase().includes(cleanQuery) ||
+            study.category.toLowerCase().includes(cleanQuery))) {
+          return true;
+        }
+        
+        // Prepare all fields for word matching
+        const titleLower = study.title.toLowerCase();
+        const abstractLower = study.abstract.toLowerCase();
+        const authorsLower = study.authors.toLowerCase();
+        const journalLower = study.journal.toLowerCase();
+        
+        // Only include these fields if search in these areas is requested or defaulted
+        const methodsLower = (filters.searchInMethods !== false && study.methods) 
+          ? study.methods.toLowerCase() : '';
+        const resultsLower = (filters.searchInResults !== false && study.results) 
+          ? study.results.toLowerCase() : '';
+        const conclusionLower = (filters.searchInConclusion !== false && study.conclusion) 
+          ? study.conclusion.toLowerCase() : '';
+        const simplifiedLower = (filters.searchInSimplified !== false && study.simplifiedExplanation) 
+          ? study.simplifiedExplanation.toLowerCase() : '';
+        
+        // Include tags in search
+        const tagsLower = study.tags ? study.tags.join(' ').toLowerCase() : '';
+        
+        // Handle different query operators
+        if (queryOperator === 'AND') {
+          // All query parts must match across any field
+          return queryWords.every(part => 
+            titleLower.includes(part) || 
+            abstractLower.includes(part) || 
+            authorsLower.includes(part) || 
+            journalLower.includes(part) ||
+            methodsLower.includes(part) ||
+            resultsLower.includes(part) ||
+            conclusionLower.includes(part) ||
+            simplifiedLower.includes(part) ||
+            tagsLower.includes(part)
+          );
+        } else if (queryOperator === 'OR') {
+          // Any query part may match any field
+          return queryWords.some(part => 
+            titleLower.includes(part) || 
+            abstractLower.includes(part) || 
+            authorsLower.includes(part) || 
+            journalLower.includes(part) ||
+            methodsLower.includes(part) ||
+            resultsLower.includes(part) ||
+            conclusionLower.includes(part) ||
+            simplifiedLower.includes(part) ||
+            tagsLower.includes(part)
+          );
+        } else if (queryWords.length > 0) {
+          // Default: Count how many query words appear in the study (partial match)
           const matchCount = queryWords.filter(word => 
             titleLower.includes(word) || 
             abstractLower.includes(word) || 
@@ -214,14 +349,78 @@ export class MemStorage implements IStorage {
             journalLower.includes(word) ||
             methodsLower.includes(word) ||
             resultsLower.includes(word) ||
-            conclusionLower.includes(word)
+            conclusionLower.includes(word) ||
+            simplifiedLower.includes(word) ||
+            tagsLower.includes(word)
           ).length;
           
-          // Return true if at least 50% of query words are found
-          return matchCount >= Math.ceil(queryWords.length * 0.5);
+          // Fuzzy matching for common typos if enabled
+          if (filters.useFuzzyMatch && matchCount === 0) {
+            for (const word of queryWords) {
+              if (word.length <= 3) continue; // Skip very short words
+              
+              // Check for common typos (one character off)
+              const allowOneCharacterOff = (field: string, term: string): boolean => {
+                if (!field || !term || term.length < 4) return false;
+                
+                const words = field.split(/\s+/);
+                for (const fieldWord of words) {
+                  if (fieldWord.length < 4) continue;
+                  
+                  // Check if words are similar (one character difference)
+                  let differences = 0;
+                  const maxLength = Math.max(fieldWord.length, term.length);
+                  const minLength = Math.min(fieldWord.length, term.length);
+                  
+                  if (maxLength - minLength > 1) continue; // Length difference too big
+                  
+                  for (let i = 0; i < minLength; i++) {
+                    if (fieldWord[i] !== term[i]) differences++;
+                    if (differences > 1) break; // Too many differences
+                  }
+                  
+                  if (differences <= 1) return true;
+                }
+                return false;
+              };
+              
+              if (allowOneCharacterOff(titleLower, word) ||
+                  allowOneCharacterOff(abstractLower, word) ||
+                  allowOneCharacterOff(methodsLower, word) ||
+                  allowOneCharacterOff(resultsLower, word) ||
+                  allowOneCharacterOff(conclusionLower, word) ||
+                  allowOneCharacterOff(simplifiedLower, word) ||
+                  allowOneCharacterOff(tagsLower, word)) {
+                matchCount++;
+              }
+            }
+          }
+          
+          // Return true if at least 40% of query words are found (more lenient than before)
+          return matchCount >= Math.ceil(queryWords.length * 0.4);
         }
         
         return false;
+      });
+      
+      // Store metadata about matched terms in each study for highlighting (not used yet, but will be useful later)
+      results = results.map(study => {
+        if (queryWords.length === 0) return study;
+        
+        const matchedTerms: string[] = [];
+        const titleLower = study.title.toLowerCase();
+        const abstractLower = study.abstract.toLowerCase();
+        
+        for (const word of queryWords) {
+          if (titleLower.includes(word) || abstractLower.includes(word)) {
+            matchedTerms.push(word);
+          }
+        }
+        
+        return {
+          ...study,
+          _matchedTerms: matchedTerms // Additional metadata field
+        };
       });
     }
 

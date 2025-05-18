@@ -27,6 +27,14 @@ export default function Studies() {
     category: urlParams.get("category") || "",
     peerReviewed: urlParams.get("peerReviewed") === "true",
     sortBy: "date",
+    // Advanced search features
+    useFuzzyMatch: urlParams.get("useFuzzyMatch") === "true",
+    searchInMethods: urlParams.get("searchInMethods") !== "false",
+    searchInResults: urlParams.get("searchInResults") !== "false",
+    searchInConclusion: urlParams.get("searchInConclusion") !== "false",
+    searchInSimplified: urlParams.get("searchInSimplified") !== "false",
+    enrichmentStatus: (urlParams.get("enrichmentStatus") as "basic" | "partial" | "complete" | "") || "",
+    tags: urlParams.get("tags")?.split(",") || [],
   });
   
   // Create query parameters for API request
@@ -75,6 +83,14 @@ export default function Studies() {
       category: "",
       peerReviewed: false,
       sortBy: "date",
+      // Reset advanced options
+      useFuzzyMatch: true,
+      searchInMethods: true,
+      searchInResults: true,
+      searchInConclusion: true,
+      searchInSimplified: true,
+      enrichmentStatus: "",
+      tags: [],
     });
   };
   
@@ -194,6 +210,88 @@ export default function Studies() {
                     </div>
                     
                     <Separator />
+                    
+                    <div className="space-y-4">
+                      <details className="text-sm">
+                        <summary className="font-medium cursor-pointer">Advanced Search Options</summary>
+                        <div className="pl-2 pt-3 space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="fuzzy-match"
+                              checked={filters.useFuzzyMatch}
+                              onCheckedChange={(checked) => 
+                                handleFilterChange("useFuzzyMatch", Boolean(checked))
+                              }
+                            />
+                            <Label htmlFor="fuzzy-match">Enable fuzzy matching for typos</Label>
+                          </div>
+                          
+                          <div>
+                            <p className="text-sm font-medium mb-2">Search within sections:</p>
+                            <div className="grid grid-cols-2 gap-2 pl-2">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="search-methods"
+                                  checked={filters.searchInMethods}
+                                  onCheckedChange={(checked) => 
+                                    handleFilterChange("searchInMethods", Boolean(checked))
+                                  }
+                                />
+                                <Label htmlFor="search-methods">Methods</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="search-results"
+                                  checked={filters.searchInResults}
+                                  onCheckedChange={(checked) => 
+                                    handleFilterChange("searchInResults", Boolean(checked))
+                                  }
+                                />
+                                <Label htmlFor="search-results">Results</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="search-conclusion"
+                                  checked={filters.searchInConclusion}
+                                  onCheckedChange={(checked) => 
+                                    handleFilterChange("searchInConclusion", Boolean(checked))
+                                  }
+                                />
+                                <Label htmlFor="search-conclusion">Conclusion</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="search-simplified"
+                                  checked={filters.searchInSimplified}
+                                  onCheckedChange={(checked) => 
+                                    handleFilterChange("searchInSimplified", Boolean(checked))
+                                  }
+                                />
+                                <Label htmlFor="search-simplified">Simplified text</Label>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="enrichment-status">Content Enrichment Level</Label>
+                            <Select
+                              value={filters.enrichmentStatus}
+                              onValueChange={(value) => handleFilterChange("enrichmentStatus", value)}
+                            >
+                              <SelectTrigger id="enrichment-status" className="mt-1">
+                                <SelectValue placeholder="Any enrichment level" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Any enrichment level</SelectItem>
+                                <SelectItem value="complete">Complete (all sections)</SelectItem>
+                                <SelectItem value="partial">Partial (some sections)</SelectItem>
+                                <SelectItem value="basic">Basic (title/abstract only)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
                     
                     <div>
                       <Label htmlFor="sort-by">Sort By</Label>
