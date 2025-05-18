@@ -116,23 +116,42 @@ export function getBatchEnrichmentStatus(): BatchProcessingStats | null {
  */
 async function processBatches(studyIds: number[], batchSize: number): Promise<void> {
   try {
-    // Process in batches
-    for (let i = 0; i < studyIds.length; i += batchSize) {
-      const batchIds = studyIds.slice(i, i + batchSize);
-      await processBatch(batchIds);
+    console.log(`Starting batch processing of ${studyIds.length} studies with batch size ${batchSize}`);
+    
+    // Process studies one at a time to avoid rate limits
+    // We'll use a smaller effective batch size to update the UI more frequently
+    const effectiveBatchSize = 1;
+    
+    for (let i = 0; i < studyIds.length; i += effectiveBatchSize) {
+      const batchIds = studyIds.slice(i, i + effectiveBatchSize);
+      
+      try {
+        await processBatch(batchIds);
+      } catch (error) {
+        console.error(`Error processing batch ${i / effectiveBatchSize + 1}:`, error);
+        
+        // Continue with the next batch even if this one failed
+        if (error.toString().includes('rate_limit_exceeded')) {
+          console.log('Hit rate limit, pausing for 10 seconds before continuing...');
+          // If rate limited, wait longer before trying the next study
+          await new Promise(resolve => setTimeout(resolve, 10000));
+        }
+      }
       
       // Update the progress after each batch
       if (processingStats) {
-        processingStats.processed = i + batchIds.length;
+        // Let the individual process increment this now
+        // processingStats.processed = i + effectiveBatchSize;
+        console.log(`Progress: ${processingStats.processed}/${processingStats.totalToProcess} studies processed`);
       }
     }
   } catch (error) {
-    console.error('Error in batch processing:', error);
-    throw error;
+    console.error('Error in overall batch processing:', error);
   } finally {
     if (processingStats) {
       processingStats.inProgress = false;
       processingStats.completedAt = new Date();
+      console.log(`Batch processing complete. Final stats: ${JSON.stringify(processingStats)}`);
     }
   }
 }
@@ -142,44 +161,108 @@ async function processBatches(studyIds: number[], batchSize: number): Promise<vo
  * @param batchIds Array of study IDs to process in this batch
  */
 async function processBatch(batchIds: number[]): Promise<void> {
-  // Process each study in parallel
-  const promises = batchIds.map(async (studyId) => {
+  console.log(`Processing batch of ${batchIds.length} studies: ${batchIds.join(', ')}`);
+  
+  // To avoid OpenAI rate limits, process studies sequentially instead of in parallel
+  // with a significant delay between studies
+  for (const studyId of batchIds) {
     try {
-      const result = await enhanceStudyContent(studyId);
-
+      console.log(`Starting to process study ${studyId}`);
+      
+      // Always increment processed count at the start
+      // This ensures the UI shows progress even if we hit errors
       if (processingStats) {
-        if (result.success) {
-          processingStats.success++;
+        processingStats.processed++;
+      }
+      
+      // Try to process the study with built-in retry for rate limits
+      try {
+        const result = await enhanceStudyContent(studyId);
+        
+        if (processingStats) {
+          if (result.success) {
+            processingStats.success++;
+            console.log(`Successfully enhanced study ${studyId}`);
+          } else {
+            processingStats.failed++;
+            processingStats.errors.push({
+              studyId,
+              error: result.message
+            });
+            console.log(`Failed to enhance study ${studyId}: ${result.message}`);
+          }
+        }
+      } catch (processingError) {
+        // Check if it's a rate limit error
+        if (processingError.toString().includes('rate_limit_exceeded')) {
+          console.log(`Rate limit hit for study ${studyId}. Waiting 15 seconds before continuing...`);
+          await new Promise(resolve => setTimeout(resolve, 15000)); // 15 second pause
+          
+          // Try once more after the pause
+          try {
+            const retryResult = await enhanceStudyContent(studyId);
+            if (processingStats) {
+              if (retryResult.success) {
+                processingStats.success++;
+                console.log(`Successfully enhanced study ${studyId} on retry`);
+              } else {
+                processingStats.failed++;
+                processingStats.errors.push({
+                  studyId,
+                  error: retryResult.message
+                });
+              }
+            }
+          } catch (retryError) {
+            // If retry also fails, count as a failure but continue batch
+            console.error(`Retry failed for study ${studyId}:`, retryError);
+            if (processingStats) {
+              processingStats.failed++;
+              processingStats.errors.push({
+                studyId,
+                error: `Retry failed: ${retryError instanceof Error ? retryError.message : 'Unknown error'}`
+              });
+            }
+          }
         } else {
-          processingStats.failed++;
-          processingStats.errors.push({
-            studyId,
-            error: result.message
-          });
+          // Not a rate limit error
+          console.error(`Error processing study ${studyId}:`, processingError);
+          if (processingStats) {
+            processingStats.failed++;
+            processingStats.errors.push({
+              studyId,
+              error: processingError instanceof Error ? processingError.message : 'Unknown error'
+            });
+          }
         }
       }
-
-      return result;
-    } catch (error) {
-      console.error(`Error processing study ${studyId}:`, error);
+    } catch (outerError) {
+      // This catches any errors in the outer try block
+      console.error(`Unexpected error processing study ${studyId}:`, outerError);
       
       if (processingStats) {
+        // Even on error, we count this as processed
         processingStats.failed++;
         processingStats.errors.push({
           studyId,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: outerError instanceof Error ? outerError.message : 'Unknown error'
         });
       }
-      
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        studyId
-      };
     }
-  });
-
-  await Promise.all(promises);
+    
+    // Always add a significant delay between studies to avoid rate limits
+    // This delay happens even if the batch is marked as not in progress
+    console.log(`Waiting 5 seconds before processing next study...`);
+    await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second pause
+    
+    // Check if we should stop processing
+    if (!processingStats?.inProgress) {
+      console.log(`Batch processing was cancelled, stopping after study ${studyId}`);
+      break;
+    }
+  }
+  
+  console.log(`Completed batch processing. Stats: ${JSON.stringify(processingStats)}`);
 }
 
 /**
