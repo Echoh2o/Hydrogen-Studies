@@ -189,22 +189,40 @@ async function processBatch(batchIds: number[]): Promise<void> {
  */
 async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> {
   try {
-    // Find studies that lack full abstract, full text, or have no simplified explanation
+    // Find studies that need content enrichment
+    // We'll look for studies that have missing or empty:
+    // - methods
+    // - results 
+    // - conclusion
+    // These fields exist in our schema and can be enhanced with AI
     const incompleteStudies = await db.select({ id: studiesTable.id })
       .from(studiesTable)
       .where(
         or(
-          isNull(studiesTable.abstract),
+          // Missing or empty fields that we know exist in the schema
           eq(studiesTable.abstract, ''),
-          isNull(studiesTable.fullText),
-          eq(studiesTable.fullText, ''),
-          isNull(studiesTable.simplifiedExplanation),
-          eq(studiesTable.simplifiedExplanation, ''),
-          isNull(studiesTable.tags),
-          eq(studiesTable.tags, '')
+          eq(studiesTable.methods, ''),
+          eq(studiesTable.results, ''),
+          eq(studiesTable.conclusion, '')
         )
       )
       .limit(limit);
+
+    // If no studies with empty content, look for null content
+    if (incompleteStudies.length === 0) {
+      const nullValueStudies = await db.select({ id: studiesTable.id })
+        .from(studiesTable)
+        .where(
+          or(
+            isNull(studiesTable.methods),
+            isNull(studiesTable.results),
+            isNull(studiesTable.conclusion)
+          )
+        )
+        .limit(limit);
+        
+      return nullValueStudies.map(study => study.id);
+    }
 
     return incompleteStudies.map(study => study.id);
   } catch (error) {
