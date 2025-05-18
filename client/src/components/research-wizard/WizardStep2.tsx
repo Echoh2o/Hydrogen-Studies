@@ -136,11 +136,11 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
             <SelectContent>
               {options.researchTypes.map((type) => (
                 <SelectItem key={type} value={type}>
-                  {type === 'clinical' && 'Clinical Trials'}
-                  {type === 'experimental' && 'Experimental Studies'}
-                  {type === 'review' && 'Literature Reviews'}
-                  {type === 'case-study' && 'Case Studies'}
-                  {type === 'any' && 'Any Research Type'}
+                  {type === 'clinical' ? 'Clinical Trials' : 
+                   type === 'experimental' ? 'Experimental Studies' : 
+                   type === 'review' ? 'Literature Reviews' : 
+                   type === 'case-study' ? 'Case Studies' : 
+                   type === 'any' ? 'Any Research Type' : type}
                 </SelectItem>
               ))}
             </SelectContent>
