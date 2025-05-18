@@ -414,7 +414,7 @@ export default function ResearchDatabasePage() {
                   <div>
                     <CardTitle>Search Results</CardTitle>
                     <CardDescription>
-                      Found {searchResults.metadata?.total || 0} results for "{activeQuery}"
+                      Found {searchResults.total || 0} results for "{activeQuery}"
                     </CardDescription>
                   </div>
                   
@@ -437,7 +437,7 @@ export default function ResearchDatabasePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {searchResults.data?.length === 0 ? (
+                {!searchResults.articles || searchResults.articles.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     No results found for your search query
                   </div>
