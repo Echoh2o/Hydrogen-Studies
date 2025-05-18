@@ -24,6 +24,9 @@ import ChatPage from "@/pages/ChatPage";
 
 // New organization structure pages
 import ExploreByBenefitPage, { BenefitDetailPage } from "@/pages/ExploreByBenefit";
+import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/ExploreByDemographic";
+import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
+import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
 
 // Admin pages - old
 import AdminPage from "@/pages/admin/AdminPage";
@@ -76,6 +79,12 @@ function Router() {
       {/* New Organization Structure Routes */}
       <Route path="/benefits" component={ExploreByBenefitPage} />
       <Route path="/benefits/:slug" component={BenefitDetailPage} />
+      <Route path="/demographics" component={ExploreByDemographicPage} />
+      <Route path="/demographics/:slug" component={DemographicDetailPage} />
+      <Route path="/mechanisms" component={ExploreByMechanismPage} />
+      <Route path="/mechanisms/:slug" component={MechanismDetailPage} />
+      <Route path="/delivery-methods" component={ExploreByDeliveryMethodPage} />
+      <Route path="/delivery-methods/:slug" component={DeliveryMethodDetailPage} />
       
       {/* Admin Routes - new layout */}
       <Route path="/admin" component={DashboardPage} />
