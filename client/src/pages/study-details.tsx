@@ -11,20 +11,68 @@ import { Study } from "@/types";
 import { 
   ArrowLeft, Calendar, User, BookOpen, FileText, 
   Link as LinkIcon, Download, FileQuestion, Share2,
-  ExternalLink
+  ExternalLink, RefreshCcw, AlertCircle
 } from "lucide-react";
 import ResearchInsightCard from "@/components/sharing/ResearchInsightCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // StudyContent component to display the study details
-const StudyContent = ({ study }: { study: Study }) => {
+const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void }) => {
+  const [enhancingContent, setEnhancingContent] = useState(false);
+  const { toast } = useToast();
+
+  // Function to enrich study content with our direct API
+  const enrichStudyContent = async () => {
+    if (!study.doi) {
+      toast({
+        title: "Error",
+        description: "This study doesn't have a DOI, which is required for content enrichment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setEnhancingContent(true);
+    try {
+      const response = await apiRequest("POST", `/direct-enhance/${study.id}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Content Enriched",
+          description: `Successfully enhanced study content with data from external sources.`,
+        });
+        // Refetch the study to show updated content
+        refetch();
+      } else {
+        toast({
+          title: "Enrichment Failed",
+          description: result.message || "Unable to enrich study content.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to communicate with enrichment service.",
+        variant: "destructive",
+      });
+      console.error("Content enrichment error:", error);
+    } finally {
+      setEnhancingContent(false);
+    }
+  };
+  
   return (
     <>
       <Helmet>
         <title>{study.title} | Hydrogen Studies</title>
-        <meta name="description" content={study.abstract.substring(0, 160)} />
+        <meta name="description" content={study.abstract?.substring(0, 160) || ""} />
         <meta property="og:title" content={study.title} />
-        <meta property="og:description" content={study.abstract.substring(0, 160)} />
+        <meta property="og:description" content={study.abstract?.substring(0, 160) || ""} />
         <meta property="og:type" content="article" />
       </Helmet>
 
@@ -93,15 +141,28 @@ const StudyContent = ({ study }: { study: Study }) => {
                 <h2 className="text-xl font-bold mb-3">Links & Resources</h2>
                 <div className="flex flex-wrap gap-3">
                   {study.doi && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-2"
-                      onClick={() => window.open(`https://doi.org/${study.doi}`, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      View Original Paper
-                    </Button>
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                        onClick={() => window.open(`https://doi.org/${study.doi}`, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        View Original Paper
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                        onClick={enrichStudyContent}
+                        disabled={enhancingContent}
+                      >
+                        <RefreshCcw className={`h-4 w-4 ${enhancingContent ? 'animate-spin' : ''}`} />
+                        {enhancingContent ? 'Enriching...' : 'Enhance Content'}
+                      </Button>
+                    </>
                   )}
                   
                   {study.pdfUrl && (
@@ -214,7 +275,7 @@ export default function StudyDetails() {
                 />
               </div>
             ) : (
-              <StudyContent study={study} />
+              <StudyContent study={study} refetch={refetch} />
             )}
           </ErrorBoundary>
         </div>
