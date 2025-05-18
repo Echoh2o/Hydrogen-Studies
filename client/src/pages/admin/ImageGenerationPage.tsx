@@ -100,9 +100,7 @@ const ImageGenerationPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Image Generation</h1>
-      
+    <AdminLayout title="Image Generation" description="Generate scientific images for studies without media">      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -270,7 +268,7 @@ const ImageGenerationPage: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 };
 

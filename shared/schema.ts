@@ -94,6 +94,9 @@ export const studies = pgTable("studies", {
   // Media fields
   imageUrl: text("image_url"),
   imageAlt: text("image_alt"),
+  // Support for multiple images and captions
+  images: text("images").array(),
+  imageCaptions: text("image_captions").array(),
   videoUrl: text("video_url"),
   audioUrl: text("audio_url"),
   // Automatically generated image information
