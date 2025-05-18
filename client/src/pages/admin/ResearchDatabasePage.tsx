@@ -235,7 +235,7 @@ export default function ResearchDatabasePage() {
   const renderPagination = () => {
     if (!searchResults) return null;
     
-    const totalResults = searchResults.metadata?.total || 0;
+    const totalResults = searchResults.total || 0;
     const totalPages = Math.ceil(totalResults / pageSize);
     
     if (totalPages <= 1) return null;
