@@ -1,13 +1,16 @@
-import { cn } from "@/lib/utils";
+import React from "react";
 
-interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ContainerProps {
+  className?: string;
   children: React.ReactNode;
 }
 
-export function Container({ children, className, ...props }: ContainerProps) {
+const Container = ({ className = "", children }: ContainerProps) => {
   return (
-    <div className={cn("container px-4 mx-auto", className)} {...props}>
+    <div className={`container mx-auto px-4 py-8 ${className}`}>
       {children}
     </div>
   );
-}
+};
+
+export default Container;

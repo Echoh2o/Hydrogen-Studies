@@ -1,58 +1,48 @@
-import { Helmet } from "react-helmet";
-import { Container } from "@/components/ui/container";
+import React from "react";
+import Container from "@/components/ui/container";
 import ResearchWizard from "@/components/research-wizard/ResearchWizard";
-import { Lightbulb, BookOpen, Search } from "lucide-react";
+import { Helmet } from "react-helmet";
+import { Lightbulb, Sparkles } from "lucide-react";
 
-export default function ResearchSuggestionsPage() {
+const ResearchSuggestionsPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Research Suggestion Wizard | Hydrogen Studies</title>
-        <meta
-          name="description"
-          content="Get personalized hydrogen research suggestions based on your interests and health conditions."
+        <title>Research Suggestions Wizard | HydrogenStudies.com</title>
+        <meta 
+          name="description" 
+          content="Get personalized hydrogen research suggestions based on your health interests, conditions, and preferences. Our AI-powered wizard helps you discover the most relevant hydrogen studies for your needs."
         />
       </Helmet>
       
-      <Container className="py-8 md:py-12">
-        <div className="mx-auto max-w-3xl text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Research Suggestion Wizard
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Let our AI help you discover relevant hydrogen research topics tailored to your interests
-          </p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-6 mb-10">
-          <div className="flex flex-col items-center text-center p-4 border rounded-lg">
-            <div className="bg-primary/10 p-3 rounded-full mb-3">
-              <Lightbulb className="h-6 w-6 text-primary" />
+      <Container>
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute -inset-1 rounded-full blur-md bg-gradient-to-r from-blue-400 to-cyan-300 opacity-70"></div>
+                <div className="relative bg-white rounded-full p-3">
+                  <Lightbulb size={36} className="text-primary" />
+                </div>
+              </div>
             </div>
-            <h3 className="font-medium mb-1">Personalized Suggestions</h3>
-            <p className="text-sm text-muted-foreground">
-              Get research topics tailored to your specific interests and health conditions
+            
+            <h1 className="text-3xl font-bold mb-2">Research Suggestions Wizard</h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Get personalized hydrogen research suggestions based on your interests and preferences
             </p>
           </div>
           
-          <div className="flex flex-col items-center text-center p-4 border rounded-lg">
-            <div className="bg-primary/10 p-3 rounded-full mb-3">
-              <Search className="h-6 w-6 text-primary" />
+          <div className="bg-muted/30 rounded-lg p-4 mb-8 border flex items-start gap-3">
+            <Sparkles className="text-blue-500 mt-1 flex-shrink-0" size={20} />
+            <div>
+              <h3 className="font-medium mb-1">How it works</h3>
+              <p className="text-sm text-muted-foreground">
+                Our AI-powered wizard analyzes thousands of hydrogen studies to recommend the most relevant
+                research based on your health interests, demographic information, and delivery method preferences.
+                Just follow the simple steps below to get tailored research suggestions.
+              </p>
             </div>
-            <h3 className="font-medium mb-1">Optimized Search Terms</h3>
-            <p className="text-sm text-muted-foreground">
-              Discover the most effective search terms to find relevant studies
-            </p>
-          </div>
-          
-          <div className="flex flex-col items-center text-center p-4 border rounded-lg">
-            <div className="bg-primary/10 p-3 rounded-full mb-3">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="font-medium mb-1">Research Gap Analysis</h3>
-            <p className="text-sm text-muted-foreground">
-              Identify areas where more hydrogen research is needed
-            </p>
           </div>
         </div>
         
@@ -60,4 +50,6 @@ export default function ResearchSuggestionsPage() {
       </Container>
     </>
   );
-}
+};
+
+export default ResearchSuggestionsPage;
