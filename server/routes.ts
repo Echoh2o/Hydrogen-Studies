@@ -49,7 +49,7 @@ import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
 import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
-import researchSuggestionsRoutes from "./routes/research-suggestions-routes";
+
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -98,8 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register hydrogen organization routes for the new structure
   app.use('', hydrogenRoutes);
   
-  // Register research suggestions routes
-  app.use('/api', researchSuggestionsRoutes);
+  // Research suggestions routes are implemented directly in this file
   
   // API routes
   
