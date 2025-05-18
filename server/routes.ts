@@ -28,7 +28,6 @@ import {
 } from "./chat-bot";
 import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB, semanticSearch } from "./vector-database";
 import { sendContactEmail } from "./sendgrid";
-import registerResearchSuggestionsRoutes from "./routes/research-suggestions-routes";
 import { getSuggestionOptions, generateResearchSuggestions } from "./research-suggestions";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
@@ -1932,8 +1931,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register research suggestions routes
-  app.get("/api/research-suggestions/options", async (req: Request, res: Response) => {
+  // Research Suggestions API routes
+  app.get("/api/research-suggestions/options", async (req, res) => {
     try {
       const options = await getSuggestionOptions();
       res.json({
@@ -1949,7 +1948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/research-suggestions/generate", async (req: Request, res: Response) => {
+  app.post("/api/research-suggestions/generate", async (req, res) => {
     try {
       const selections = req.body;
       
@@ -1960,6 +1959,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Missing selection data"
         });
       }
+      
+      console.log("Generating research suggestions with selections:", JSON.stringify(selections));
       
       // Generate research suggestions
       const suggestions = await generateResearchSuggestions(selections);
