@@ -13,11 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Helmet } from 'react-helmet';
+import { Benefit, BenefitWithStudies, Study } from '@/types/hydrogen';
 
 // Icons for benefits
 import { Brain, Activity, Heart, Leaf, Shield, Lightbulb, FlameIcon, Sparkles } from 'lucide-react';
 
-const getBenefitIcon = (slug: string, className: string = '') => {
+const getBenefitIcon = (slug: string | undefined, className: string = '') => {
+  if (!slug) return <Leaf className={className} />;
+  
   switch (slug) {
     case 'brain-health':
       return <Brain className={className} />;
@@ -42,7 +45,7 @@ const getBenefitIcon = (slug: string, className: string = '') => {
 
 const ExploreByBenefitPage: React.FC = () => {
   // Fetch all benefits
-  const { data: benefits, isLoading: benefitsLoading } = useQuery({
+  const { data: benefits = [], isLoading: benefitsLoading } = useQuery<Benefit[]>({
     queryKey: ['/api/benefits'],
   });
 
@@ -76,7 +79,7 @@ const ExploreByBenefitPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits?.map((benefit: any) => (
+            {benefits.map((benefit) => (
               <Link key={benefit.id} href={`/benefits/${benefit.slug}`}>
                 <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader className="p-4 pb-2 flex flex-row items-start space-x-4">
@@ -86,7 +89,7 @@ const ExploreByBenefitPage: React.FC = () => {
                     <div>
                       <CardTitle className="text-xl">{benefit.name}</CardTitle>
                       <Badge variant="outline" className="mt-1">
-                        {benefit.studyCount} studies
+                        {benefit.studyCount || 0} studies
                       </Badge>
                     </div>
                   </CardHeader>
@@ -113,20 +116,18 @@ export const BenefitDetailPage: React.FC = () => {
   const slug = params?.slug || '';
 
   // Fetch benefit details
-  const { data: benefitData, isLoading: benefitLoading } = useQuery({
+  const { data: benefit, isLoading: benefitLoading } = useQuery<Benefit>({
     queryKey: [`/api/benefits/${slug}`],
     enabled: !!slug,
   });
 
   // Fetch studies for this benefit
-  const { data: studiesData, isLoading: studiesLoading } = useQuery({
+  const { data: benefitWithStudies, isLoading: studiesLoading } = useQuery<BenefitWithStudies>({
     queryKey: [`/api/benefits/${slug}/studies`],
     enabled: !!slug,
   });
 
-  const benefit = benefitData;
-  const studies = studiesData?.studies || [];
-
+  const studies = benefitWithStudies?.studies || [];
   const isLoading = benefitLoading || studiesLoading;
 
   return (
@@ -144,8 +145,11 @@ export const BenefitDetailPage: React.FC = () => {
       ) : (
         <>
           <Helmet>
-            <title>{benefit?.name} | Hydrogen Research | HydrogenStudies.com</title>
-            <meta name="description" content={`Explore hydrogen research studies on ${benefit?.name.toLowerCase()} - ${benefit?.description}`} />
+            <title>{benefit?.name || 'Benefit'} | Hydrogen Research | HydrogenStudies.com</title>
+            <meta 
+              name="description" 
+              content={`Explore hydrogen research studies on ${benefit?.name?.toLowerCase() || 'health benefits'} - ${benefit?.description || ''}`} 
+            />
           </Helmet>
           
           <div className="mb-8 flex items-center space-x-4">
@@ -164,14 +168,14 @@ export const BenefitDetailPage: React.FC = () => {
             <Tabs defaultValue="all" className="w-full">
               <TabsList className="mb-4">
                 <TabsTrigger value="all">All Studies ({studies.length})</TabsTrigger>
-                <TabsTrigger value="clinical">Clinical Studies ({studies.filter((s: any) => s.studyType === 'human').length})</TabsTrigger>
-                <TabsTrigger value="preclinical">Preclinical ({studies.filter((s: any) => s.studyType === 'animal' || s.studyType === 'in vitro').length})</TabsTrigger>
+                <TabsTrigger value="clinical">Clinical Studies ({studies.filter((s) => s.studyType === 'human').length})</TabsTrigger>
+                <TabsTrigger value="preclinical">Preclinical ({studies.filter((s) => s.studyType === 'animal' || s.studyType === 'in vitro').length})</TabsTrigger>
               </TabsList>
               
               <TabsContent value="all">
                 <div className="space-y-4">
                   {studies.length > 0 ? (
-                    studies.map((study: any) => (
+                    studies.map((study) => (
                       <StudyCard key={study.id} study={study} />
                     ))
                   ) : (
@@ -184,10 +188,10 @@ export const BenefitDetailPage: React.FC = () => {
               
               <TabsContent value="clinical">
                 <div className="space-y-4">
-                  {studies.filter((s: any) => s.studyType === 'human').length > 0 ? (
+                  {studies.filter((s) => s.studyType === 'human').length > 0 ? (
                     studies
-                      .filter((s: any) => s.studyType === 'human')
-                      .map((study: any) => (
+                      .filter((s) => s.studyType === 'human')
+                      .map((study) => (
                         <StudyCard key={study.id} study={study} />
                       ))
                   ) : (
@@ -200,10 +204,10 @@ export const BenefitDetailPage: React.FC = () => {
               
               <TabsContent value="preclinical">
                 <div className="space-y-4">
-                  {studies.filter((s: any) => s.studyType === 'animal' || s.studyType === 'in vitro').length > 0 ? (
+                  {studies.filter((s) => s.studyType === 'animal' || s.studyType === 'in vitro').length > 0 ? (
                     studies
-                      .filter((s: any) => s.studyType === 'animal' || s.studyType === 'in vitro')
-                      .map((study: any) => (
+                      .filter((s) => s.studyType === 'animal' || s.studyType === 'in vitro')
+                      .map((study) => (
                         <StudyCard key={study.id} study={study} />
                       ))
                   ) : (
@@ -222,7 +226,7 @@ export const BenefitDetailPage: React.FC = () => {
 };
 
 // Study card component for displaying study info
-const StudyCard: React.FC<{ study: any }> = ({ study }) => {
+const StudyCard: React.FC<{ study: Study }> = ({ study }) => {
   return (
     <Link href={`/studies/${study.id}`}>
       <Card className="hover:shadow-md transition-shadow">
@@ -236,7 +240,7 @@ const StudyCard: React.FC<{ study: any }> = ({ study }) => {
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
             <span>{new Date(study.publishDate).getFullYear()}</span>
             <span>•</span>
-            <span>{study.journal}</span>
+            <span>{study.journal || 'Journal N/A'}</span>
             {study.studyType && (
               <>
                 <span>•</span>
