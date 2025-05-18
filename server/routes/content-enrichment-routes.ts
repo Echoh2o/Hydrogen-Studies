@@ -8,7 +8,7 @@ import { Router } from "express";
 import { db } from "../db";
 import { studies } from "@shared/schema";
 import { enhanceStudyContent, batchEnhanceStudies, findStudiesForEnhancement } from "../content-enrichment";
-import { eq, desc, and, or, isNull, lt } from "drizzle-orm";
+import { eq, desc, and, or, isNull, lt, gt, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -42,24 +42,21 @@ router.get("/recent", async (req, res) => {
   try {
     // Limit to 20 most recent studies that have non-empty fields
     // and were recently updated
-    const recentlyEnriched = await db.query.studies.findMany({
-      where: and(
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const recentlyEnriched = await db.select().from(studies)
+      .where(
         or(
-          and(
-            or(
-              gt(studies.abstract.length, 500),
-              gt(studies.methods.length, 200),
-              gt(studies.results.length, 200),
-              gt(studies.conclusion.length, 200),
-              studies.imageUrl.isNotNull
-            ),
-            gt(studies.updatedAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) // Updated in the last week
-          )
+          sql`length(${studies.abstract}) > 500`,
+          sql`length(${studies.methods}) > 200`,
+          sql`length(${studies.results}) > 200`, 
+          sql`length(${studies.conclusion}) > 200`,
+          sql`${studies.imageUrl} IS NOT NULL`
         )
-      ),
-      orderBy: [desc(studies.updatedAt)],
-      limit: 20
-    });
+      )
+      .where(sql`${studies.updatedAt} > ${oneWeekAgo}`)
+      .orderBy(desc(studies.updatedAt))
+      .limit(20);
     
     // Add enhanced fields information
     const studiesWithEnhancedFields = recentlyEnriched.map(study => ({
@@ -156,11 +153,6 @@ function getEnhancedFields(study: any): string[] {
 // Helper for the IN operator since TypeScript complains about the raw usage
 function inArray(column: any, values: any[]) {
   return values.length > 0 ? column.in(values) : undefined;
-}
-
-// Helper for the GT operator
-function gt(column: any, value: any) {
-  return column.gt(value);
 }
 
 export default router;
