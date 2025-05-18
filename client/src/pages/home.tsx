@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet";
 import HeroSection from "@/components/home/hero-section";
 import AdvancedSearchSection from "@/components/home/advanced-search-section";
+import BrowseOptionsSection from "@/components/home/browse-options-section";
 import CategorySection from "@/components/home/category-section";
 import LatestStudiesSection from "@/components/home/latest-studies-section";
 import InfoSection from "@/components/home/info-section";
@@ -23,8 +24,9 @@ export default function Home() {
       
       <HeroSection />
       <AdvancedSearchSection />
-      <CategorySection />
+      <BrowseOptionsSection />
       <LatestStudiesSection />
+      <CategorySection />
       <InfoSection />
       <NewsletterSection />
     </>
