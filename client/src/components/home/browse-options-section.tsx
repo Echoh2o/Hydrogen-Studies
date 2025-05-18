@@ -8,28 +8,28 @@ const browseOptions = [
     title: "Health Benefits",
     description: "Explore research by specific health benefits like improved cognitive function, reduced inflammation, enhanced athletic performance, and more.",
     icon: <Heart className="h-8 w-8 text-primary" />,
-    href: "/explore/benefits",
+    href: "/benefits",
     color: "bg-red-50"
   },
   {
     title: "Demographics",
     description: "Find studies focused on specific groups such as athletes, elderly, children, those with specific conditions, and more.",
     icon: <Users className="h-8 w-8 text-primary" />,
-    href: "/explore/demographics",
+    href: "/demographics",
     color: "bg-blue-50"
   },
   {
     title: "Mechanisms of Action",
     description: "Understand how hydrogen works in the body through various pathways such as antioxidant effects, cell signaling, gene expression, and more.",
     icon: <Brain className="h-8 w-8 text-primary" />,
-    href: "/explore/mechanisms",
+    href: "/mechanisms",
     color: "bg-green-50"
   },
   {
     title: "Delivery Methods",
     description: "Compare research using different hydrogen delivery methods including hydrogen water, gas inhalation, saline injection, and our Echo Flask.",
     icon: <Droplet className="h-8 w-8 text-primary" />,
-    href: "/explore/delivery-methods",
+    href: "/delivery-methods",
     color: "bg-purple-50"
   }
 ];
