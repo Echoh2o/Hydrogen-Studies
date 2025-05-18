@@ -61,19 +61,24 @@ const Header = () => {
                 Home
               </a>
             </Link>
+            <Link href="/benefits">
+              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/benefits') || location.startsWith('/benefits/') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
+                Benefits
+              </a>
+            </Link>
+            <Link href="/studies">
+              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/studies') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
+                All Studies
+              </a>
+            </Link>
             <Link href="/about">
               <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/about') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
                 About
               </a>
             </Link>
-            <Link href="/categories">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/categories') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                Categories
-              </a>
-            </Link>
-            <Link href="/recent">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/recent') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                Recent Studies
+            <Link href="/chat">
+              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/chat') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
+                Ask AI
               </a>
             </Link>
             <Link href="/contact">
@@ -98,6 +103,22 @@ const Header = () => {
                   Home
                 </a>
               </Link>
+              <Link href="/benefits">
+                <a 
+                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/benefits') || location.startsWith('/benefits/') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
+                  onClick={closeMobileMenu}
+                >
+                  Benefits
+                </a>
+              </Link>
+              <Link href="/studies">
+                <a 
+                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/studies') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
+                  onClick={closeMobileMenu}
+                >
+                  All Studies
+                </a>
+              </Link>
               <Link href="/about">
                 <a 
                   className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/about') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
@@ -106,20 +127,12 @@ const Header = () => {
                   About
                 </a>
               </Link>
-              <Link href="/categories">
+              <Link href="/chat">
                 <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/categories') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
+                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/chat') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
                   onClick={closeMobileMenu}
                 >
-                  Categories
-                </a>
-              </Link>
-              <Link href="/recent">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/recent') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  Recent Studies
+                  Ask AI
                 </a>
               </Link>
               <Link href="/contact">
