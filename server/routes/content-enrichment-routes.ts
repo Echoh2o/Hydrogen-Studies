@@ -12,6 +12,12 @@ import { eq, desc, and, or, isNull, lt, gt, sql } from "drizzle-orm";
 
 const router = Router();
 
+// Set content-type for all content enrichment routes
+router.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
 /**
  * Get studies that need content enrichment (missing or truncated abstracts)
  */
@@ -165,5 +171,12 @@ interface StudyModel {
   fullText?: string;
   [key: string]: any;
 }
+
+
+
+// Test route to ensure JSON response is working
+router.get("/content-enrichment/test", (req, res) => {
+  res.json({ success: true, message: "Content enrichment API is working" });
+});
 
 export default router;
