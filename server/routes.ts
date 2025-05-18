@@ -137,6 +137,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         peerReviewed
       } = req.query;
       
+      console.log("Search query parameters:", { 
+        query, keyword, author, yearFrom, yearTo, category, sortBy
+      });
+      
       // Process array fields that come as strings
       let processedHealthConditions: string[] | undefined;
       let processedBodySystems: string[] | undefined;

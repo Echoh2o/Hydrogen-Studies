@@ -385,7 +385,7 @@ ER  - `;
         
         {/* Study section navigation - mobile version (shows only on small screens) */}
         <div className="md:hidden print:hidden mb-6">
-          <ScrollArea className="w-full py-2" orientation="horizontal">
+          <div className="w-full overflow-x-auto py-2">
             <div className="flex space-x-2 min-w-max">
               <Button 
                 variant="outline" 
