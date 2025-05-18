@@ -175,7 +175,7 @@ interface StudyModel {
 
 
 // Test route to ensure JSON response is working
-router.get("/content-enrichment/test", (req, res) => {
+router.get("/test", (req, res) => {
   res.json({ success: true, message: "Content enrichment API is working" });
 });
 
