@@ -4,19 +4,17 @@
  * Enhances study data by fetching full abstracts, text, and images from DOI sources,
  * then comparing them with existing database content to provide the most complete information.
  */
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { getCrossRefArticleByDOI } from "./crossref-api";
+import { getEuropePmcArticleByDOI } from "./europepmc-api";
+import { getSemanticScholarArticleByDOI } from "./semantic-scholar-api";
+import { eq, and, or, isNull, lt } from "drizzle-orm";
+import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { load } from "cheerio";
 
-import axios from 'axios';
-import { db } from './db';
-import { studies } from '@shared/schema';
-import { eq, sql } from 'drizzle-orm';
-import { getCrossRefArticleByDOI } from './crossref-api';
-import { getArticleByDOI } from './europepmc-api';
-import { getSemanticScholarPaper } from './semantic-scholar-api';
-import * as fs from 'fs';
-import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-
-// Interfaces
 interface EnhancementResult {
   success: boolean;
   message: string;
@@ -37,153 +35,199 @@ interface EnhancementResult {
  */
 export async function enhanceStudyContent(studyId: number): Promise<EnhancementResult> {
   try {
-    // Get the study from database
-    const [study] = await db.select().from(studies).where(eq(studies.id, studyId));
-    
+    // Get the current study
+    const study = await db.query.studies.findFirst({
+      where: eq(studies.id, studyId)
+    });
+
     if (!study) {
-      return { 
-        success: false, 
-        message: `Study with ID ${studyId} not found` 
+      return {
+        success: false,
+        message: `Study with ID ${studyId} not found`,
       };
     }
-    
-    // If no DOI, can't enhance
+
     if (!study.doi) {
-      return { 
-        success: false, 
-        message: `Study ${studyId} has no DOI, cannot fetch additional content` 
+      return {
+        success: false,
+        message: `Study #${studyId} doesn't have a DOI for enrichment`,
       };
     }
+
+    // Initialize updates tracker
+    const updates: EnhancementResult["updates"] = {
+      abstract: false,
+      fullText: false,
+      images: false,
+      methods: false,
+      results: false,
+      conclusion: false,
+    };
+
+    // Store initial lengths to check if content was enhanced
+    const initialAbstractLength = study.abstract?.length || 0;
+    const initialMethodsLength = study.methods?.length || 0;
+    const initialResultsLength = study.results?.length || 0;
+    const initialConclusionLength = study.conclusion?.length || 0;
     
-    const doi = study.doi;
-    const updates: EnhancementResult['updates'] = {};
-    
-    // Get data from multiple sources to ensure completeness
-    const [crossrefData, europmcData, semanticScholarData] = await Promise.allSettled([
-      getCrossRefArticleByDOI(doi),
-      getArticleByDOI(doi),
-      getSemanticScholarPaper(doi)
-    ]);
-    
-    let enhancedAbstract = study.abstract || '';
-    let enhancedMethods = study.methods || '';
-    let enhancedResults = study.results || '';
-    let enhancedConclusion = study.conclusion || '';
-    let imageUrls: string[] = [];
-    
-    // Process CrossRef data
-    if (crossrefData.status === 'fulfilled' && crossrefData.value) {
-      const data = crossrefData.value;
+    // Try to get content from multiple sources
+    let fullTextContent = "";
+    let imageSrc = "";
+    let improvedAbstract = study.abstract || "";
+    let improvedMethods = study.methods || "";
+    let improvedResults = study.results || "";
+    let improvedConclusion = study.conclusion || "";
+
+    // Try CrossRef first
+    try {
+      console.log(`Fetching CrossRef data for DOI: ${study.doi}`);
+      const crossRefData = await getCrossRefArticleByDOI(study.doi);
       
-      if (data.abstract && data.abstract.length > enhancedAbstract.length) {
-        enhancedAbstract = data.abstract;
-        updates.abstract = true;
-      }
-    }
-    
-    // Process EuropePMC data
-    if (europmcData.status === 'fulfilled' && europmcData.value) {
-      const result = europmcData.value;
-      
-      if (result.abstractText && result.abstractText.length > enhancedAbstract.length) {
-        enhancedAbstract = result.abstractText;
-        updates.abstract = true;
-      }
-      
-      if (result.fullTextUrlList?.fullTextUrl) {
-        for (const urlData of result.fullTextUrlList.fullTextUrl) {
-          if (urlData.availability === 'Open access' && urlData.url) {
-            try {
-              // For HTML links, we can try to extract content
-              if (urlData.url.endsWith('.html')) {
-                const htmlContent = await fetchHtmlContent(urlData.url);
-                if (htmlContent && htmlContent.length > 0) {
-                  updates.fullText = true;
-                }
-              }
-            } catch (error: any) {
-              console.error(`Error fetching full text from ${urlData.url}:`, error);
-            }
-          }
+      if (crossRefData && crossRefData.abstract) {
+        if (!improvedAbstract || crossRefData.abstract.length > improvedAbstract.length) {
+          improvedAbstract = crossRefData.abstract;
+          updates.abstract = true;
         }
       }
+      
+      // Extract URL to try for full text or image
+      if (crossRefData && crossRefData.URL) {
+        // Try to download the content from the publisher URL
+        try {
+          const htmlContent = await fetchHtmlContent(crossRefData.URL);
+          if (htmlContent && htmlContent.length > 500) {
+            fullTextContent = htmlContent;
+            updates.fullText = true;
+            
+            // Extract potential methods, results, conclusions
+            const sections = extractSectionsFromFullText(htmlContent);
+            if (sections.methods && sections.methods.length > initialMethodsLength) {
+              improvedMethods = sections.methods;
+              updates.methods = true;
+            }
+            
+            if (sections.results && sections.results.length > initialResultsLength) {
+              improvedResults = sections.results;
+              updates.results = true;
+            }
+            
+            if (sections.conclusion && sections.conclusion.length > initialConclusionLength) {
+              improvedConclusion = sections.conclusion;
+              updates.conclusion = true;
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching HTML content from ${crossRefData.URL}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching CrossRef data for DOI ${study.doi}:`, error);
     }
-    
-    // Process Semantic Scholar data
-    if (semanticScholarData.status === 'fulfilled' && semanticScholarData.value) {
-      const data = semanticScholarData.value;
+
+    // Try Europe PMC next
+    try {
+      console.log(`Fetching Europe PMC data for DOI: ${study.doi}`);
+      const europePmcData = await getEuropePmcArticleByDOI(study.doi);
       
-      if (data.abstract && data.abstract.length > enhancedAbstract.length) {
-        enhancedAbstract = data.abstract;
-        updates.abstract = true;
-      }
-      
-      // Handle figures/images if available
-      if (data.paperId && data.figures && data.figures.length > 0) {
-        imageUrls = data.figures.map((fig: any) => fig.url);
-        updates.images = true;
-      }
-      
-      // Sometimes Semantic Scholar has sections data
-      if (data.sections) {
-        for (const section of data.sections) {
-          const sectionHeading = section.heading?.toLowerCase() || '';
-          const sectionText = section.text || '';
+      if (europePmcData) {
+        // Check for better abstract
+        if (europePmcData.abstractText && 
+           (!improvedAbstract || europePmcData.abstractText.length > improvedAbstract.length)) {
+          improvedAbstract = europePmcData.abstractText;
+          updates.abstract = true;
+        }
+        
+        // Check for better methods, results, conclusions
+        if (europePmcData.fullTextXML) {
+          const sections = extractSectionsFromXml(europePmcData.fullTextXML);
           
-          if (sectionHeading.includes('method') && sectionText.length > enhancedMethods.length) {
-            enhancedMethods = sectionText;
+          if (sections.methods && sections.methods.length > improvedMethods.length) {
+            improvedMethods = sections.methods;
             updates.methods = true;
           }
-          else if (sectionHeading.includes('result') && sectionText.length > enhancedResults.length) {
-            enhancedResults = sectionText;
+          
+          if (sections.results && sections.results.length > improvedResults.length) {
+            improvedResults = sections.results;
             updates.results = true;
           }
-          else if (sectionHeading.includes('conclusion') && sectionText.length > enhancedConclusion.length) {
-            enhancedConclusion = sectionText;
+          
+          if (sections.conclusion && sections.conclusion.length > improvedConclusion.length) {
+            improvedConclusion = sections.conclusion;
             updates.conclusion = true;
           }
         }
-      }
-    }
-    
-    // Download and store images if found
-    const downloadedImages: string[] = [];
-    if (imageUrls.length > 0) {
-      for (const url of imageUrls) {
-        try {
-          const imagePath = await downloadImage(url, studyId);
-          if (imagePath) {
-            downloadedImages.push(imagePath);
-          }
-        } catch (error: any) {
-          console.error(`Error downloading image from ${url}:`, error);
+        
+        // Check for images
+        if (!imageSrc && europePmcData.firstFigureUrl) {
+          imageSrc = europePmcData.firstFigureUrl;
         }
       }
+    } catch (error) {
+      console.error(`Error fetching Europe PMC data for DOI ${study.doi}:`, error);
     }
-    
+
+    // Try Semantic Scholar last
+    try {
+      console.log(`Fetching Semantic Scholar data for DOI: ${study.doi}`);
+      const semanticScholarData = await getSemanticScholarArticleByDOI(study.doi);
+      
+      if (semanticScholarData) {
+        // Check for better abstract
+        if (semanticScholarData.abstract && 
+           (!improvedAbstract || semanticScholarData.abstract.length > improvedAbstract.length)) {
+          improvedAbstract = semanticScholarData.abstract;
+          updates.abstract = true;
+        }
+        
+        // Look for image in Semantic Scholar
+        if (!imageSrc && semanticScholarData.imageUrl) {
+          imageSrc = semanticScholarData.imageUrl;
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching Semantic Scholar data for DOI ${study.doi}:`, error);
+    }
+
+    // Process image if one was found
+    let imageUrl = study.imageUrl;
+    if (imageSrc && !study.imageUrl) {
+      try {
+        imageUrl = await downloadImage(imageSrc, studyId);
+        updates.images = !!imageUrl;
+      } catch (error) {
+        console.error(`Error downloading image from ${imageSrc}:`, error);
+      }
+    }
+
     // Update the study in the database with enhanced content
-    const [updatedStudy] = await db.update(studies)
+    await db.update(studies)
       .set({
-        abstract: enhancedAbstract,
-        methods: enhancedMethods || undefined,
-        results: enhancedResults || undefined,
-        conclusion: enhancedConclusion || undefined,
-        imageUrl: downloadedImages.length > 0 ? downloadedImages[0] : study.imageUrl
+        abstract: improvedAbstract,
+        methods: improvedMethods,
+        results: improvedResults,
+        conclusion: improvedConclusion,
+        imageUrl: imageUrl
       })
-      .where(eq(studies.id, studyId))
-      .returning();
-    
+      .where(eq(studies.id, studyId));
+
+    // Determine how many sections were enhanced
+    const totalUpdates = Object.values(updates).filter(Boolean).length;
+    const successMessage = totalUpdates > 0
+      ? `Enhanced ${totalUpdates} sections of study #${studyId}`
+      : `No new content found for study #${studyId}`;
+
     return {
       success: true,
-      message: `Study ${studyId} content enhanced successfully`,
+      message: successMessage,
       updates,
       studyId
     };
-  } catch (error: any) {
-    console.error(`Error enhancing study content:`, error);
+  } catch (error) {
+    console.error(`Error enhancing study #${studyId}:`, error);
     return {
       success: false,
-      message: `Failed to enhance study content: ${error.message}`
+      message: `Error: ${error.message}`,
+      studyId
     };
   }
 }
@@ -192,34 +236,43 @@ export async function enhanceStudyContent(studyId: number): Promise<EnhancementR
  * Batch process multiple studies for content enhancement
  */
 export async function batchEnhanceStudies(studyIds: number[]): Promise<{
-  overall: boolean;
-  results: EnhancementResult[];
+  processed: number,
+  success: number,
+  failed: number,
+  message: string
 }> {
-  const results: EnhancementResult[] = [];
-  let overallSuccess = true;
-  
+  const results = {
+    processed: 0,
+    success: 0,
+    failed: 0,
+    message: ""
+  };
+
+  console.log(`Starting batch enhancement for ${studyIds.length} studies`);
+
   for (const studyId of studyIds) {
     try {
-      const result = await enhanceStudyContent(studyId);
-      results.push(result);
-      if (!result.success) {
-        overallSuccess = false;
+      results.processed++;
+      const enhancementResult = await enhanceStudyContent(studyId);
+      
+      if (enhancementResult.success) {
+        results.success++;
+      } else {
+        results.failed++;
       }
-    } catch (error: any) {
-      console.error(`Error enhancing study ${studyId}:`, error);
-      results.push({
-        success: false,
-        message: `Exception during enhancement: ${error.message}`,
-        studyId
-      });
-      overallSuccess = false;
+      
+      // Small delay to avoid hammering external APIs
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
+    } catch (error) {
+      results.failed++;
+      console.error(`Error processing study #${studyId}:`, error);
     }
   }
+
+  results.message = `Processed ${results.processed} studies. Successfully enhanced: ${results.success}, Failed: ${results.failed}`;
+  console.log(results.message);
   
-  return {
-    overall: overallSuccess,
-    results
-  };
+  return results;
 }
 
 /**
@@ -229,24 +282,142 @@ async function fetchHtmlContent(url: string): Promise<string> {
   try {
     const response = await axios.get(url);
     const html = response.data;
+    const $ = load(html);
     
-    // Basic HTML content extraction (would use better HTML parsing in production)
-    // This is a simplified version - in a real app, use a proper HTML parser
-    const strippedHtml = html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '')
-      .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '')
-      .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '')
-      .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    // Remove unnecessary elements
+    $('script, style, nav, header, footer, .header, .footer, .nav, .sidebar, .menu, .ad, .advertisement').remove();
     
-    return strippedHtml;
-  } catch (error: any) {
-    console.error(`Error fetching HTML content from ${url}:`, error);
+    // Extract main content
+    const mainContent = $('.main, .content, .article, article, main, #content, #main')
+      .map((_, el) => $(el).text().trim())
+      .get()
+      .join('\n\n');
+    
+    return mainContent || $('body').text().trim();
+  } catch (error) {
+    console.error(`Error fetching URL ${url}:`, error);
     return '';
+  }
+}
+
+/**
+ * Extract sections from HTML full text
+ */
+function extractSectionsFromFullText(htmlText: string): {
+  methods?: string;
+  results?: string;
+  conclusion?: string;
+} {
+  const $ = load(htmlText);
+  const sections: any = {};
+  
+  // Common section header selectors
+  const methodsSelectors = [
+    '#methods', '.methods', 'h2:contains("Methods")', 'h3:contains("Methods")', 
+    'h2:contains("Materials and Methods")', 'h3:contains("Materials and Methods")',
+    'section:contains("Methods")'
+  ];
+  
+  const resultsSelectors = [
+    '#results', '.results', 'h2:contains("Results")', 'h3:contains("Results")',
+    'section:contains("Results")'
+  ];
+  
+  const conclusionSelectors = [
+    '#conclusion', '.conclusion', 'h2:contains("Conclusion")', 'h3:contains("Conclusions")',
+    'h2:contains("Discussion")', 'h3:contains("Discussion")',
+    'section:contains("Conclusion")', 'section:contains("Discussion")'
+  ];
+  
+  // Extract methods
+  for (const selector of methodsSelectors) {
+    const methodsText = extractSectionText($, selector);
+    if (methodsText && methodsText.length > 100) {
+      sections.methods = methodsText;
+      break;
+    }
+  }
+  
+  // Extract results
+  for (const selector of resultsSelectors) {
+    const resultsText = extractSectionText($, selector);
+    if (resultsText && resultsText.length > 100) {
+      sections.results = resultsText;
+      break;
+    }
+  }
+  
+  // Extract conclusion/discussion
+  for (const selector of conclusionSelectors) {
+    const conclusionText = extractSectionText($, selector);
+    if (conclusionText && conclusionText.length > 100) {
+      sections.conclusion = conclusionText;
+      break;
+    }
+  }
+  
+  return sections;
+}
+
+/**
+ * Helper to extract text from section
+ */
+function extractSectionText($: any, selector: string): string {
+  const element = $(selector).first();
+  if (!element.length) return '';
+  
+  // If it's a heading, get all text until the next heading
+  if (selector.includes('h2:') || selector.includes('h3:')) {
+    let text = '';
+    let next = element.next();
+    while (next.length && !next.is('h2, h3')) {
+      text += next.text().trim() + '\n\n';
+      next = next.next();
+    }
+    return text.trim();
+  }
+  
+  // Otherwise get text from the actual element
+  return element.text().trim();
+}
+
+/**
+ * Extract sections from XML (for PMC)
+ */
+function extractSectionsFromXml(xml: string): {
+  methods?: string;
+  results?: string;
+  conclusion?: string;
+} {
+  try {
+    const $ = load(xml, { xmlMode: true });
+    const sections: any = {};
+    
+    // Methods section
+    $('sec[sec-type="methods"], sec:contains("Methods"), sec:contains("METHODS")').each(function() {
+      if (!sections.methods) {
+        sections.methods = $(this).text().trim();
+      }
+    });
+    
+    // Results section
+    $('sec[sec-type="results"], sec:contains("Results"), sec:contains("RESULTS")').each(function() {
+      if (!sections.results) {
+        sections.results = $(this).text().trim();
+      }
+    });
+    
+    // Conclusion section
+    $('sec[sec-type="conclusions"], sec:contains("Conclusion"), sec:contains("CONCLUSION"), sec:contains("Discussion"), sec:contains("DISCUSSION")').each(function() {
+      if (!sections.conclusion) {
+        sections.conclusion = $(this).text().trim();
+      }
+    });
+    
+    return sections;
+  } catch (error) {
+    console.error('Error extracting sections from XML:', error);
+    return {};
   }
 }
 
@@ -256,7 +427,12 @@ async function fetchHtmlContent(url: string): Promise<string> {
 async function downloadImage(url: string, studyId: number): Promise<string | null> {
   try {
     const response = await axios.get(url, { responseType: 'arraybuffer' });
-    const buffer = Buffer.from(response.data, 'binary');
+    const contentType = response.headers['content-type'];
+    
+    // Ensure it's an image
+    if (!contentType || !contentType.startsWith('image/')) {
+      return null;
+    }
     
     // Create uploads directory if it doesn't exist
     const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -264,15 +440,18 @@ async function downloadImage(url: string, studyId: number): Promise<string | nul
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
     
-    // Generate a unique filename
-    const fileExtension = path.extname(url) || '.jpg'; // Default to jpg if no extension
-    const filename = `study_${studyId}_${uuidv4()}${fileExtension}`;
-    const filepath = path.join(uploadsDir, filename);
+    // Determine file extension
+    const extension = contentType.split('/')[1] || 'jpg';
+    const fileName = `study_${studyId}_${Date.now()}.${extension}`;
+    const filePath = path.join(uploadsDir, fileName);
     
-    fs.writeFileSync(filepath, buffer);
-    return `/uploads/${filename}`;
-  } catch (error: any) {
-    console.error(`Error downloading image:`, error);
+    // Write the file
+    fs.writeFileSync(filePath, Buffer.from(response.data));
+    
+    // Return the relative path for storage in the database
+    return `/uploads/${fileName}`;
+  } catch (error) {
+    console.error(`Error downloading image from ${url}:`, error);
     return null;
   }
 }
@@ -281,15 +460,35 @@ async function downloadImage(url: string, studyId: number): Promise<string | nul
  * Find studies with incomplete content for enhancement
  */
 export async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> {
-  // Find studies with DOIs but potentially incomplete content
-  const results = await db
-    .select({ id: studies.id })
-    .from(studies)
-    .where(
-      // Using a proper filter - studies with DOIs that exist and abstracts that need enhancement
-      sql`${studies.doi} IS NOT NULL AND (${studies.abstract} IS NULL OR LENGTH(${studies.abstract}) < 100)`
-    )
-    .limit(limit);
-  
-  return results.map(r => r.id);
+  try {
+    // Find studies with DOIs that have missing or short content
+    const candidates = await db.select({ id: studies.id })
+      .from(studies)
+      .where(
+        and(
+          // Check for studies with a DOI
+          studies.doi.isNotNull(),
+          // Check for studies with incomplete content
+          or(
+            // Need to use more basic SQL operations for Drizzle ORM
+            isNull(studies.abstract),
+            lt(studies.abstract, ''),
+            isNull(studies.methods),
+            lt(studies.methods, ''),
+            isNull(studies.results),
+            lt(studies.results, ''),
+            isNull(studies.conclusion),
+            lt(studies.conclusion, ''),
+            isNull(studies.imageUrl)
+          )
+        )
+      )
+      .orderBy(studies.createdAt)
+      .limit(limit);
+    
+    return candidates.map(c => c.id);
+  } catch (error) {
+    console.error('Error finding studies for enhancement:', error);
+    return [];
+  }
 }

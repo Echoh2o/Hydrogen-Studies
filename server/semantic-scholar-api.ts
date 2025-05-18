@@ -12,6 +12,24 @@ import type { InsertStudy } from '@shared/schema';
 const API_KEY = process.env.CORE_API_KEY || ''; // Can use CORE API key for enhanced limits
 
 /**
+ * Get article details by DOI for content enrichment
+ * @param doi Digital Object Identifier
+ * @returns Article data with fields optimized for content enrichment
+ */
+export async function getSemanticScholarArticleByDOI(doi: string): Promise<any> {
+  const paper = await getSemanticScholarPaper(doi);
+  if (!paper) return null;
+  
+  return {
+    abstract: paper.abstract || '',
+    title: paper.title || '',
+    authors: paper.authors ? paper.authors.map((a: any) => a.name).join(', ') : '',
+    imageUrl: paper.figures && paper.figures.length > 0 ? paper.figures[0].url : null,
+    sections: paper.sections || [],
+  };
+}
+
+/**
  * Get detailed paper information from Semantic Scholar by DOI
  * @param doi Digital Object Identifier
  * @returns Paper data
