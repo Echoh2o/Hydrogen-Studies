@@ -9,7 +9,7 @@ import { studies } from "@shared/schema";
 import { getCrossRefArticleByDOI } from "./crossref-api";
 import { getEuropePmcArticleByDOI } from "./europepmc-api";
 import { getSemanticScholarArticleByDOI } from "./semantic-scholar-api";
-import { eq, and, or, isNull, lt } from "drizzle-orm";
+import { eq, and, or, isNull, lt, sql } from "drizzle-orm";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
@@ -222,11 +222,11 @@ export async function enhanceStudyContent(studyId: number): Promise<EnhancementR
       updates,
       studyId
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error enhancing study #${studyId}:`, error);
     return {
       success: false,
-      message: `Error: ${error.message}`,
+      message: `Error: ${error.message || 'Unknown error'}`,
       studyId
     };
   }
@@ -461,32 +461,27 @@ async function downloadImage(url: string, studyId: number): Promise<string | nul
  */
 export async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> {
   try {
-    // Find studies with DOIs that have missing or short content
-    const candidates = await db.select({ id: studies.id })
-      .from(studies)
-      .where(
-        and(
-          // Check for studies with a DOI
-          studies.doi.isNotNull(),
-          // Check for studies with incomplete content
-          or(
-            // Need to use more basic SQL operations for Drizzle ORM
-            isNull(studies.abstract),
-            lt(studies.abstract, ''),
-            isNull(studies.methods),
-            lt(studies.methods, ''),
-            isNull(studies.results),
-            lt(studies.results, ''),
-            isNull(studies.conclusion),
-            lt(studies.conclusion, ''),
-            isNull(studies.imageUrl)
-          )
-        )
+    // Use raw SQL for more complex conditions
+    const result = await db.execute(sql`
+      SELECT id FROM studies 
+      WHERE doi IS NOT NULL 
+      AND (
+        abstract IS NULL 
+        OR LENGTH(abstract) < 200
+        OR methods IS NULL 
+        OR results IS NULL 
+        OR conclusion IS NULL 
+        OR image_url IS NULL
       )
-      .orderBy(studies.createdAt)
-      .limit(limit);
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `);
     
-    return candidates.map(c => c.id);
+    if (!result.rows || result.rows.length === 0) {
+      return [];
+    }
+    
+    return result.rows.map(row => Number(row.id));
   } catch (error) {
     console.error('Error finding studies for enhancement:', error);
     return [];

@@ -22,11 +22,10 @@ router.get("/candidates", async (req, res) => {
     if (studyIds.length === 0) {
       return res.json([]);
     }
-    
-    const candidates = await db.query.studies.findMany({
-      where: (eb) => eb.inArray(studies.id, studyIds),
-      orderBy: [desc(studies.updatedAt)]
-    });
+
+    const candidates = await db.select().from(studies)
+      .where(sql`${studies.id} IN (${studyIds.join(',')})`)
+      .orderBy(desc(studies.updatedAt));
     
     return res.json(candidates);
   } catch (error) {
@@ -44,22 +43,26 @@ router.get("/recent", async (req, res) => {
     // and were recently updated
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     
-    const recentlyEnriched = await db.select().from(studies)
-      .where(
-        or(
-          sql`length(${studies.abstract}) > 500`,
-          sql`length(${studies.methods}) > 200`,
-          sql`length(${studies.results}) > 200`, 
-          sql`length(${studies.conclusion}) > 200`,
-          sql`${studies.imageUrl} IS NOT NULL`
-        )
+    const result = await db.execute(sql`
+      SELECT * FROM studies 
+      WHERE (
+        LENGTH(abstract) > 500
+        OR LENGTH(methods) > 200
+        OR LENGTH(results) > 200
+        OR LENGTH(conclusion) > 200
+        OR image_url IS NOT NULL
       )
-      .where(sql`${studies.updatedAt} > ${oneWeekAgo}`)
-      .orderBy(desc(studies.updatedAt))
-      .limit(20);
+      AND updated_at > ${oneWeekAgo}
+      ORDER BY updated_at DESC
+      LIMIT 20
+    `);
+    
+    if (!result.rows) {
+      return res.json([]);
+    }
     
     // Add enhanced fields information
-    const studiesWithEnhancedFields = recentlyEnriched.map(study => ({
+    const studiesWithEnhancedFields = result.rows.map((study: StudyModel) => ({
       ...study,
       enhancedFields: getEnhancedFields(study)
     }));
@@ -120,7 +123,7 @@ router.post("/batch", async (req, res) => {
  * Helper function to determine which fields were likely enhanced
  * based on the content of the study
  */
-function getEnhancedFields(study: any): string[] {
+function getEnhancedFields(study: StudyModel): string[] {
   const enhancedFields: string[] = [];
   
   if (study.abstract && study.abstract.length > 500) {
@@ -150,9 +153,17 @@ function getEnhancedFields(study: any): string[] {
   return enhancedFields;
 }
 
-// Helper for the IN operator since TypeScript complains about the raw usage
-function inArray(column: any, values: any[]) {
-  return values.length > 0 ? column.in(values) : undefined;
+// Helper function to define types for study model
+interface StudyModel {
+  id: number;
+  title: string;
+  abstract?: string;
+  methods?: string;
+  results?: string;
+  conclusion?: string;
+  imageUrl?: string;
+  fullText?: string;
+  [key: string]: any;
 }
 
 export default router;
