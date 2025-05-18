@@ -374,7 +374,7 @@ const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void })
               <div className="pt-2 border-t">
                 <h3 className="font-medium text-sm text-neutral-600 mb-2">KEYWORDS</h3>
                 <div className="flex flex-wrap gap-1">
-                  {keyStudyTags.map((tag, index) => (
+                  {keyStudyTags.map((tag: string, index: number) => (
                     <Badge key={index} variant="secondary" className="text-xs">{tag}</Badge>
                   ))}
                 </div>
