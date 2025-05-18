@@ -52,6 +52,13 @@ export default function Studies() {
   
   const { data: studies, isLoading, isError, error, refetch } = useQuery<Study[]>({
     queryKey: [`/api/studies`, queryParams.toString()],
+    queryFn: async () => {
+      const response = await fetch(`/api/studies?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch studies');
+      }
+      return response.json();
+    }
   });
   
   const handleFilterChange = (key: string, value: string | boolean) => {

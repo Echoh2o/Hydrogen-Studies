@@ -447,7 +447,7 @@ ER  - `;
                 Links
               </Button>
             </div>
-          </ScrollArea>
+          </div>
           
           {/* Mobile Keywords/Tags */}
           {keyStudyTags.length > 0 && (
