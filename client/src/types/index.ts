@@ -14,6 +14,16 @@ export interface Study {
   pdfUrl?: string;
   citationUrl?: string;
   peerReviewed: boolean;
+  year?: number;
+  studyType?: string;
+  fullTextAvailable?: boolean;
+  tags?: string[];
+  score?: number;
+  simplifiedExplanation?: string;
+  methodsShort?: string;
+  resultsShort?: string;
+  conclusionShort?: string;
+  updatedAt?: string;
 }
 
 // Category interfaces
