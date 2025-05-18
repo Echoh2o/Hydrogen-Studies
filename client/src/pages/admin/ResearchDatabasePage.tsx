@@ -130,20 +130,31 @@ export default function ResearchDatabasePage() {
   
   const importPaperMutation = useMutation({
     mutationFn: async (paperData: any) => {
-      return await apiRequest('/api/research/import', {
+      const response = await fetch('/api/research/import', {
         method: 'POST',
-        data: paperData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paperData),
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: (data) => {
-      setImportedStudy(data.study);
-      setShowSuccessDialog(true);
-      queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
-      toast({
-        title: 'Success',
-        description: 'Study imported successfully',
-        variant: 'default'
-      });
+      if (data && data.study) {
+        setImportedStudy(data.study);
+        setShowSuccessDialog(true);
+        queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
+        toast({
+          title: 'Success',
+          description: 'Study imported successfully',
+          variant: 'default'
+        });
+      }
     },
     onError: (error: any) => {
       toast({
