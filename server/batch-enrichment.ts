@@ -5,15 +5,15 @@
  * including fetching full abstracts, texts, and images from external sources.
  * Also generates AI-powered tags and simplified explanations.
  */
-
 import { db } from './db';
-import { sql } from 'drizzle-orm';
-import { studies } from '@shared/schema';
+import { studies as studiesTable } from '../shared/schema';
+import { eq, isNull, lt, or } from 'drizzle-orm';
+import { enhanceStudyContent as fetchEnhancedContent } from './content-enrichment';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Interface for tracking batch processing status
 interface BatchProcessingStats {
   totalToProcess: number;
   processed: number;
@@ -26,6 +26,7 @@ interface BatchProcessingStats {
   completedAt?: Date;
 }
 
+// Result of enhancing a single study
 interface EnhancementResult {
   success: boolean;
   message: string;
@@ -42,8 +43,8 @@ interface EnhancementResult {
   studyId?: number;
 }
 
-// Global state to track current batch processing
-let currentBatchProcessing: BatchProcessingStats | null = null;
+// Global variable to hold processing state
+let processingStats: BatchProcessingStats | null = null;
 
 /**
  * Start batch processing of studies for content enrichment
@@ -55,16 +56,29 @@ export async function startBatchEnrichment(
   batchSize: number = 10,
   maxStudies: number = 100
 ): Promise<BatchProcessingStats> {
-  // Don't start a new batch process if one is already running
-  if (currentBatchProcessing && currentBatchProcessing.inProgress) {
-    return currentBatchProcessing;
+  if (processingStats && processingStats.inProgress) {
+    return processingStats;
   }
 
   // Find studies that need enrichment
   const studyIds = await findStudiesForEnhancement(maxStudies);
   
-  // Initialize stats
-  currentBatchProcessing = {
+  if (studyIds.length === 0) {
+    return {
+      totalToProcess: 0,
+      processed: 0,
+      success: 0,
+      failed: 0,
+      skipped: 0,
+      errors: [],
+      inProgress: false,
+      startedAt: new Date(),
+      completedAt: new Date()
+    };
+  }
+
+  // Initialize processing stats
+  processingStats = {
     totalToProcess: studyIds.length,
     processed: 0,
     success: 0,
@@ -75,10 +89,16 @@ export async function startBatchEnrichment(
     startedAt: new Date()
   };
 
-  // Process studies in batches to avoid overwhelming the system
-  processBatches(studyIds, batchSize);
-  
-  return currentBatchProcessing;
+  // Start processing batches in the background
+  processBatches(studyIds, batchSize).catch(error => {
+    console.error('Error in batch processing:', error);
+    if (processingStats) {
+      processingStats.inProgress = false;
+      processingStats.completedAt = new Date();
+    }
+  });
+
+  return processingStats;
 }
 
 /**
@@ -86,7 +106,7 @@ export async function startBatchEnrichment(
  * @returns Current processing stats or null if no processing has been started
  */
 export function getBatchEnrichmentStatus(): BatchProcessingStats | null {
-  return currentBatchProcessing;
+  return processingStats;
 }
 
 /**
@@ -101,24 +121,18 @@ async function processBatches(studyIds: number[], batchSize: number): Promise<vo
       const batchIds = studyIds.slice(i, i + batchSize);
       await processBatch(batchIds);
       
-      // Update stats
-      if (currentBatchProcessing) {
-        currentBatchProcessing.processed += batchIds.length;
-        
-        // If all studies have been processed, mark as completed
-        if (currentBatchProcessing.processed >= currentBatchProcessing.totalToProcess) {
-          currentBatchProcessing.inProgress = false;
-          currentBatchProcessing.completedAt = new Date();
-        }
+      // Update the progress after each batch
+      if (processingStats) {
+        processingStats.processed = i + batchIds.length;
       }
     }
   } catch (error) {
     console.error('Error in batch processing:', error);
-    
-    // Mark process as failed but complete
-    if (currentBatchProcessing) {
-      currentBatchProcessing.inProgress = false;
-      currentBatchProcessing.completedAt = new Date();
+    throw error;
+  } finally {
+    if (processingStats) {
+      processingStats.inProgress = false;
+      processingStats.completedAt = new Date();
     }
   }
 }
@@ -128,36 +142,44 @@ async function processBatches(studyIds: number[], batchSize: number): Promise<vo
  * @param batchIds Array of study IDs to process in this batch
  */
 async function processBatch(batchIds: number[]): Promise<void> {
-  for (const studyId of batchIds) {
+  // Process each study in parallel
+  const promises = batchIds.map(async (studyId) => {
     try {
-      // Enrich the study content
       const result = await enhanceStudyContent(studyId);
-      
-      // Update stats
-      if (currentBatchProcessing) {
+
+      if (processingStats) {
         if (result.success) {
-          currentBatchProcessing.success++;
+          processingStats.success++;
         } else {
-          currentBatchProcessing.failed++;
-          currentBatchProcessing.errors.push({
+          processingStats.failed++;
+          processingStats.errors.push({
             studyId,
             error: result.message
           });
         }
       }
+
+      return result;
     } catch (error) {
       console.error(`Error processing study ${studyId}:`, error);
       
-      // Update error stats
-      if (currentBatchProcessing) {
-        currentBatchProcessing.failed++;
-        currentBatchProcessing.errors.push({
+      if (processingStats) {
+        processingStats.failed++;
+        processingStats.errors.push({
           studyId,
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
+      
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        studyId
+      };
     }
-  }
+  });
+
+  await Promise.all(promises);
 }
 
 /**
@@ -167,28 +189,24 @@ async function processBatch(batchIds: number[]): Promise<void> {
  */
 async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> {
   try {
-    // Find studies with DOIs that haven't been enriched
-    // Prioritize studies with missing or short abstracts
-    const result = await db.execute(sql`
-      SELECT id FROM studies 
-      WHERE doi IS NOT NULL AND doi != '' 
-      AND (
-        abstract IS NULL 
-        OR LENGTH(abstract) < 200
-        OR methods IS NULL
-        OR results IS NULL
-        OR conclusion IS NULL
+    // Find studies that lack full abstract, full text, or have no simplified explanation
+    const incompleteStudies = await db.select({ id: studiesTable.id })
+      .from(studiesTable)
+      .where(
+        or(
+          isNull(studiesTable.abstract),
+          eq(studiesTable.abstract, ''),
+          isNull(studiesTable.fullText),
+          eq(studiesTable.fullText, ''),
+          isNull(studiesTable.simplifiedExplanation),
+          eq(studiesTable.simplifiedExplanation, ''),
+          isNull(studiesTable.tags),
+          eq(studiesTable.tags, '')
+        )
       )
-      ORDER BY CASE
-        WHEN abstract IS NULL THEN 0
-        WHEN LENGTH(abstract) < 100 THEN 1
-        WHEN LENGTH(abstract) < 200 THEN 2
-        ELSE 3
-      END
-      LIMIT ${limit}
-    `);
-    
-    return result.rows.map((row: any) => row.id);
+      .limit(limit);
+
+    return incompleteStudies.map(study => study.id);
   } catch (error) {
     console.error('Error finding studies for enhancement:', error);
     return [];
@@ -202,183 +220,108 @@ async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> 
  */
 export async function enhanceStudyContent(studyId: number): Promise<EnhancementResult> {
   try {
-    // Get the study by ID
-    const [study] = await db
-      .select()
-      .from(studies)
-      .where(sql`${studies.id} = ${studyId}`);
+    // Get the original study
+    const [study] = await db.select().from(studiesTable).where(eq(studiesTable.id, studyId));
     
     if (!study) {
       return {
         success: false,
         message: `Study with ID ${studyId} not found`,
+        studyId
       };
     }
+
+    // Use content enrichment to fetch external data
+    const contentEnhancementResult = await fetchEnhancedContent(studyId);
     
-    // Extract DOI information
-    const doi = study.doi ? study.doi.replace(/^https?:\/\/doi.org\//, '') : null;
+    // If content enhancement failed, still continue with AI generation
+    let updateData: any = { ...study };
     
-    if (!doi) {
-      return {
-        success: false,
-        message: `Study #${studyId} doesn't have a DOI for enrichment`,
-        studyId,
-      };
-    }
-    
-    // Initialize updates tracking
-    const updates: EnhancementResult['updates'] = {};
-    let enhancedData: any = null;
-    
-    // Try to fetch from CrossRef API
-    try {
-      const crossRefUrl = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
-      console.log(`Fetching CrossRef data for study ${studyId} from: ${crossRefUrl}`);
-      
-      const crossRefResponse = await fetch(crossRefUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'HydrogenStudies/1.0 (https://hydrogenstudies.com; mailto:info@hydrogenstudies.com)'
-        }
-      });
-      
-      if (crossRefResponse.ok) {
-        const crossRefData = await crossRefResponse.json();
-        console.log(`CrossRef data received for study ${studyId}:`, crossRefData.message.title);
-        enhancedData = crossRefData.message;
+    if (contentEnhancementResult.success && contentEnhancementResult.updates) {
+      // Copy updates from content enrichment
+      if (contentEnhancementResult.updates.abstract && study.abstract) {
+        updateData.abstract = study.abstract;
       }
-    } catch (error) {
-      console.error(`Error fetching from CrossRef for study ${studyId}:`, error);
-    }
-    
-    // If CrossRef failed, try EuropePMC
-    if (!enhancedData) {
-      try {
-        const europePmcUrl = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:${encodeURIComponent(doi)}&format=json`;
-        console.log(`Fetching EuropePMC data for study ${studyId} from: ${europePmcUrl}`);
-        
-        const europePmcResponse = await fetch(europePmcUrl);
-        if (europePmcResponse.ok) {
-          const europePmcData = await europePmcResponse.json();
-          if (europePmcData.resultList && europePmcData.resultList.result && europePmcData.resultList.result.length > 0) {
-            console.log(`EuropePMC data received for study ${studyId}`);
-            enhancedData = europePmcData.resultList.result[0];
-          }
-        }
-      } catch (error) {
-        console.error(`Error fetching from EuropePMC for study ${studyId}:`, error);
+      if (contentEnhancementResult.updates.fullText && study.fullText) {
+        updateData.fullText = study.fullText;
+      }
+      if (contentEnhancementResult.updates.methods && study.methods) {
+        updateData.methods = study.methods;
+      }
+      if (contentEnhancementResult.updates.results && study.results) {
+        updateData.results = study.results;
+      }
+      if (contentEnhancementResult.updates.conclusion && study.conclusion) {
+        updateData.conclusion = study.conclusion;
       }
     }
+
+    // Check if we need to generate missing sections using AI
+    const updates: Record<string, boolean> = { ...contentEnhancementResult.updates };
     
-    // Prepare update data
-    let updateData: any = {};
-    
-    // Update with enhanced data if available
-    if (enhancedData) {
-      // Process CrossRef data
-      if (enhancedData.abstract) {
-        updateData.abstract = enhancedData.abstract;
-        updates.abstract = true;
-      }
-      
-      // Process EuropePMC data
-      if (enhancedData.abstractText) {
-        updateData.abstract = enhancedData.abstractText;
-        updates.abstract = true;
-      }
-      
-      // Extract more fields if available
-      if (enhancedData.author) {
-        const authors = enhancedData.author.map((a: any) => 
-          `${a.given || ''} ${a.family || ''}`).join(', ');
-        if (authors.length > 0) {
-          updateData.authors = authors;
-        }
-      }
-      
-      // Extract journal publish date if available
-      if (enhancedData.published && enhancedData.published['date-parts'] && 
-          enhancedData.published['date-parts'][0]) {
-        const dateParts = enhancedData.published['date-parts'][0];
-        if (dateParts.length >= 3) {
-          updateData.journalPublishDate = 
-            `${dateParts[0]}-${String(dateParts[1]).padStart(2, '0')}-${String(dateParts[2]).padStart(2, '0')}`;
-        }
-      }
-    }
-    
-    // If the abstract is still missing or too short, provide a placeholder
-    if ((!updateData.abstract && !study.abstract) || 
-        (study.abstract && study.abstract.length < 100 && !updateData.abstract)) {
-      updateData.abstract = `This study, identified by DOI ${doi}, examines the effects of hydrogen on health outcomes. The complete abstract could not be automatically retrieved. Please refer to the original publication for more details.`;
-      updates.abstract = true;
-    }
-    
-    // Generate missing sections using AI if they don't exist
-    if (!study.methods) {
-      const methods = await generateSectionUsingAI(study, updateData, 'methods');
-      if (methods) {
-        updateData.methods = methods;
+    // Generate missing sections if needed
+    if (!updateData.methods || updateData.methods.length < 50) {
+      const methodsText = await generateSectionUsingAI(study, updateData, 'methods');
+      if (methodsText) {
+        updateData.methods = methodsText;
         updates.methods = true;
       }
     }
     
-    if (!study.results) {
-      const results = await generateSectionUsingAI(study, updateData, 'results');
-      if (results) {
-        updateData.results = results;
+    if (!updateData.results || updateData.results.length < 50) {
+      const resultsText = await generateSectionUsingAI(study, updateData, 'results');
+      if (resultsText) {
+        updateData.results = resultsText;
         updates.results = true;
       }
     }
     
-    if (!study.conclusion) {
-      const conclusion = await generateSectionUsingAI(study, updateData, 'conclusion');
-      if (conclusion) {
-        updateData.conclusion = conclusion;
+    if (!updateData.conclusion || updateData.conclusion.length < 50) {
+      const conclusionText = await generateSectionUsingAI(study, updateData, 'conclusion');
+      if (conclusionText) {
+        updateData.conclusion = conclusionText;
         updates.conclusion = true;
       }
     }
     
-    // Generate tags using AI
-    const tags = await generateTagsUsingAI(study, updateData);
-    if (tags && tags.length > 0) {
-      updateData.keywords = tags.join(', ');
-      updates.tags = true;
+    // Generate tags/keywords using AI
+    if (!updateData.tags || updateData.tags.length < 5) {
+      const tags = await generateTagsUsingAI(study, updateData);
+      if (tags && tags.length > 0) {
+        updateData.tags = tags.join(', ');
+        updates.tags = true;
+      }
     }
     
-    // Generate simplified explanation
-    const simplifiedExplanation = await generateSimplifiedExplanation(study, updateData);
-    if (simplifiedExplanation) {
-      updateData.summary_markdown = simplifiedExplanation;
-      updates.simplifiedExplanation = true;
+    // Generate simplified explanation if missing
+    if (!updateData.simplifiedExplanation || updateData.simplifiedExplanation.length < 100) {
+      const simplifiedExplanation = await generateSimplifiedExplanation(study, updateData);
+      if (simplifiedExplanation) {
+        updateData.simplifiedExplanation = simplifiedExplanation;
+        updates.simplifiedExplanation = true;
+      }
     }
-    
-    // Only update the database if we have changes to make
-    if (Object.keys(updateData).length > 0) {
-      await db.update(studies)
-        .set(updateData)
-        .where(sql`${studies.id} = ${studyId}`);
-      
-      return {
-        success: true,
-        message: `Successfully enhanced study ${studyId} with DOI ${doi}`,
-        updates,
-        studyId,
-      };
-    }
-    
+
+    // Update the study in the database
+    await db.update(studiesTable)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(studiesTable.id, studyId));
+
     return {
-      success: false,
-      message: `No enhancements could be made to study ${studyId}`,
-      studyId,
+      success: true,
+      message: 'Study content enhanced successfully',
+      updates,
+      studyId
     };
-    
   } catch (error) {
     console.error(`Error enhancing study ${studyId}:`, error);
     return {
       success: false,
-      message: `Error enhancing study ${studyId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      studyId,
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      studyId
     };
   }
 }
@@ -391,49 +334,77 @@ export async function enhanceStudyContent(studyId: number): Promise<EnhancementR
  * @returns Generated section text or null if generation failed
  */
 async function generateSectionUsingAI(
-  study: any, 
-  updateData: any, 
+  study: any,
+  updateData: any,
   section: 'methods' | 'results' | 'conclusion'
 ): Promise<string | null> {
   try {
-    const abstract = updateData.abstract || study.abstract || '';
-    const title = study.title || '';
-    
-    if (!abstract || abstract.length < 20 || !title) {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('OPENAI_API_KEY not set, skipping AI generation');
       return null;
     }
 
-    const sectionMap = {
-      methods: "Describe in detail the methodology used in this hydrogen research study based on the title and abstract. Include information about research design, participants or models, intervention details, measurements, and analytical approaches where possible.",
-      results: "Summarize the key findings and results of this hydrogen research study based on the title and abstract. Include statistical outcomes, observed effects, and relevant measurements where possible.",
-      conclusion: "Provide a conclusion for this hydrogen research study based on the title and abstract. Discuss the implications of the findings, limitations, and recommendations for future research."
-    };
-
-    const prompt = sectionMap[section];
+    // Use available data to create context for the AI
+    const title = study.title || '';
+    const abstract = study.abstract || updateData.abstract || '';
     
+    // Create a section-specific prompt
+    let prompt = '';
+    if (section === 'methods') {
+      prompt = `Based on the following title and abstract of a hydrogen research study, generate a detailed methods section. 
+      The methods section should describe how the study was conducted, what techniques were used, and how the data was collected and analyzed. 
+      Format your response as follows:
+      
+      Title: ${title}
+      
+      Abstract: ${abstract}
+      
+      Methods:`;
+    } else if (section === 'results') {
+      const methods = study.methods || updateData.methods || '';
+      prompt = `Based on the following title, abstract, and methods of a hydrogen research study, generate a detailed results section. 
+      The results section should describe the findings of the study, including any data, measurements, observations, and outcomes that were observed.
+      
+      Title: ${title}
+      
+      Abstract: ${abstract}
+      
+      Methods: ${methods}
+      
+      Results:`;
+    } else if (section === 'conclusion') {
+      const results = study.results || updateData.results || '';
+      prompt = `Based on the following title, abstract, and results of a hydrogen research study, generate a detailed conclusion section. 
+      The conclusion should summarize the key findings, discuss their implications, mention any limitations of the study, and suggest future research directions.
+      
+      Title: ${title}
+      
+      Abstract: ${abstract}
+      
+      Results: ${results}
+      
+      Conclusion:`;
+    }
+
+    // Call OpenAI to generate the section
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: "system",
-          content: "You are a scientific research assistant specializing in hydrogen health studies. Generate accurate content based on the provided information. Keep your response factual and directly related to the study information provided."
+          content: `You are a scientific writing assistant specialized in hydrogen health research. 
+          Your task is to generate high-quality, scientifically accurate content based on the available information. 
+          If you don't have enough information to generate accurate content, acknowledge the limitations in your response.
+          Write in a formal, academic tone appropriate for scientific research papers.`
         },
-        {
-          role: "user",
-          content: `Study Title: ${title}\n\nAbstract: ${abstract}\n\n${prompt}`
-        }
+        { role: "user", content: prompt }
       ],
+      max_tokens: 800,
       temperature: 0.3,
-      max_tokens: 500
     });
 
-    const generatedText = response.choices[0].message.content?.trim();
-    
-    if (generatedText) {
-      return `${generatedText}\n\n(Note: This section was generated based on available study information and may not reflect the complete original ${section} of the study. Please refer to the original publication for definitive details.)`;
-    }
-    
-    return null;
+    // Extract and return the generated text
+    return response.choices[0].message.content.trim();
   } catch (error) {
     console.error(`Error generating ${section} using AI:`, error);
     return null;
@@ -448,52 +419,50 @@ async function generateSectionUsingAI(
  */
 async function generateTagsUsingAI(study: any, updateData: any): Promise<string[] | null> {
   try {
-    const abstract = updateData.abstract || study.abstract || '';
-    const title = study.title || '';
-    
-    if (!abstract || abstract.length < 20 || !title) {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('OPENAI_API_KEY not set, skipping AI generation');
       return null;
     }
 
+    // Use available data to create context for the AI
+    const title = study.title || '';
+    const abstract = study.abstract || updateData.abstract || '';
+    
+    // Create a prompt for tag generation
+    const prompt = `Generate 5-10 relevant tags or keywords for the following hydrogen health research study. 
+    Return these keywords as a JSON array of strings.
+    
+    Title: ${title}
+    
+    Abstract: ${abstract}`;
+
+    // Call OpenAI to generate tags
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: "system",
-          content: "You are a scientific research assistant specializing in hydrogen health studies. Generate appropriate keywords or tags for the provided study. Focus on health benefits, delivery methods, target demographics, and mechanisms of action whenever possible."
+          content: `You are a scientific research assistant specialized in hydrogen health studies.
+          Your task is to generate relevant tags/keywords for research papers.
+          Return only the array of keywords as JSON, no additional text.`
         },
-        {
-          role: "user",
-          content: `Study Title: ${title}\n\nAbstract: ${abstract}\n\nGenerate 5-10 relevant keywords or tags for this hydrogen health study. Format your response as a JSON array of strings. Only include the array in your response, nothing else.`
-        }
+        { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
+      max_tokens: 300,
       temperature: 0.3,
-      max_tokens: 200
     });
 
-    const generatedContent = response.choices[0].message.content?.trim();
+    // Parse and return the generated tags
+    const content = response.choices[0].message.content;
+    const parsedContent = JSON.parse(content);
     
-    if (generatedContent) {
-      try {
-        const parsedResult = JSON.parse(generatedContent);
-        if (Array.isArray(parsedResult.tags || parsedResult.keywords)) {
-          return parsedResult.tags || parsedResult.keywords;
-        }
-        
-        // Handle if the response is just an array directly
-        if (Array.isArray(parsedResult)) {
-          return parsedResult;
-        }
-        
-        return null;
-      } catch (error) {
-        console.error('Error parsing AI-generated tags:', error);
-        return null;
-      }
-    }
-    
-    return null;
+    // Extract tags from the JSON response
+    return Array.isArray(parsedContent.keywords) 
+      ? parsedContent.keywords 
+      : Array.isArray(parsedContent.tags) 
+        ? parsedContent.tags 
+        : Object.values(parsedContent)[0];
   } catch (error) {
     console.error('Error generating tags using AI:', error);
     return null;
@@ -508,33 +477,51 @@ async function generateTagsUsingAI(study: any, updateData: any): Promise<string[
  */
 async function generateSimplifiedExplanation(study: any, updateData: any): Promise<string | null> {
   try {
-    const abstract = updateData.abstract || study.abstract || '';
-    const title = study.title || '';
-    const methods = updateData.methods || study.methods || '';
-    const results = updateData.results || study.results || '';
-    const conclusion = updateData.conclusion || study.conclusion || '';
-    
-    if (!abstract || abstract.length < 20 || !title) {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('OPENAI_API_KEY not set, skipping AI generation');
       return null;
     }
 
+    // Use available data to create context for the AI
+    const title = study.title || '';
+    const abstract = study.abstract || updateData.abstract || '';
+    const methods = study.methods || updateData.methods || '';
+    const results = study.results || updateData.results || '';
+    const conclusion = study.conclusion || updateData.conclusion || '';
+    
+    // Create a prompt for simplified explanation
+    const prompt = `Create a simplified explanation of the following hydrogen health research study in 3-5 paragraphs.
+    Explain the key findings, why they matter, and their potential impact on health in language that a non-scientist can understand.
+    Format your response in markdown with appropriate headings and bullet points for clarity. Include a "Key Takeaways" section at the end.
+    
+    Title: ${title}
+    
+    Abstract: ${abstract}
+    
+    Methods: ${methods}
+    
+    Results: ${results}
+    
+    Conclusion: ${conclusion}`;
+
+    // Call OpenAI to generate simplified explanation
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: "system",
-          content: "You are a science communicator who specializes in explaining complex scientific studies to a general audience. Your goal is to provide clear, accurate, and accessible explanations of hydrogen health research."
+          content: `You are a science communicator specialized in explaining complex hydrogen health research to the general public.
+          Your task is to create clear, accurate, and engaging explanations that maintain scientific integrity while being accessible.
+          Use simple language, avoid jargon, and focus on the practical implications for health and wellness.`
         },
-        {
-          role: "user",
-          content: `Study Title: ${title}\n\nAbstract: ${abstract}\n\nMethods: ${methods}\n\nResults: ${results}\n\nConclusion: ${conclusion}\n\nProvide a simplified explanation of this hydrogen health study in markdown format. Your explanation should be understandable to someone without a scientific background. Include the following sections: 1) What the study looked at, 2) How they did it, 3) What they found, and 4) Why it matters. Keep it under 300 words and use simple language.`
-        }
+        { role: "user", content: prompt }
       ],
+      max_tokens: 1000,
       temperature: 0.5,
-      max_tokens: 600
     });
 
-    return response.choices[0].message.content?.trim() || null;
+    // Extract and return the generated explanation
+    return response.choices[0].message.content.trim();
   } catch (error) {
     console.error('Error generating simplified explanation using AI:', error);
     return null;
