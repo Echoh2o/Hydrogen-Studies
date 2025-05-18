@@ -1,367 +1,452 @@
 /**
- * Research Suggestion Generator
+ * Research Suggestions Service
  * 
- * Provides AI-powered research suggestions based on user preferences
- * and available study data.
+ * Provides intelligent research topic suggestions based on user inputs
+ * using OpenAI and our database of hydrogen research.
  */
 
-import { storage } from "./storage";
-import { Study } from "@shared/schema";
 import OpenAI from "openai";
-import { topicsByCategory, healthConditionsList, demographicGroups } from "@shared/research-taxonomy";
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { eq, like, ilike, and, or, desc } from "drizzle-orm";
+import { researchTaxonomy } from "../shared/research-taxonomy";
 
-// Ensure API key is available
-if (!process.env.OPENAI_API_KEY) {
-  console.warn("OPENAI_API_KEY is missing. Research suggestion features will be limited.");
-}
+// Initialize OpenAI
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Define suggestion types
-export type SuggestionPromptType = 
-  | 'research_gaps'    // Areas where more research is needed
-  | 'trending_topics'  // Currently trending research areas
-  | 'personal_health'  // Based on user's health conditions
-  | 'application_methods' // Practical applications of hydrogen
-  | 'popular_questions'; // Common questions about hydrogen research
-
-export interface ResearchSuggestionParams {
-  // Basic user preferences
+// Interface for user selections in research wizard
+interface WizardSelections {
   interests?: string[];
   healthConditions?: string[];
-  demographicGroups?: string[];
-  
-  // Specific research needs
-  researchPurpose?: 'academic' | 'personal_health' | 'clinical' | 'general_interest';
-  preferredTopics?: string[];
-  
-  // Content preferences
-  includeRecentOnly?: boolean;
-  preferPeerReviewed?: boolean;
-  
-  // Suggestion type
-  suggestionType: SuggestionPromptType;
-  
-  // Optional user query to focus suggestions
-  userQuery?: string;
+  demographicGroup?: string;
+  researchType?: 'clinical' | 'experimental' | 'review' | 'case-study' | 'any';
+  deliveryMethod?: string[];
+  timeFrame?: 'short-term' | 'medium-term' | 'long-term' | 'any';
+  focusArea?: 'physical' | 'mental' | 'both';
 }
 
-export interface ResearchSuggestion {
+// Interface for generated research suggestions
+interface ResearchSuggestion {
   title: string;
   description: string;
-  relatedStudies: Study[];
   searchTerms: string[];
   researchGaps?: string[];
-  confidence: number; // 0-1 rating of suggestion confidence
+  confidence: number;
+  relatedStudies: Array<{
+    id: number;
+    title: string;
+    authors: string;
+    abstract: string;
+    journal: string;
+    publishDate: string;
+  }>;
 }
 
-/**
- * Generate research suggestions based on user preferences
- * @param params User preferences and suggestion parameters
- * @returns Array of research suggestions
- */
+// Main function to generate research suggestions
 export async function generateResearchSuggestions(
-  params: ResearchSuggestionParams
-): Promise<ResearchSuggestion[]> {
+  selections: WizardSelections
+): Promise<{ suggestions: ResearchSuggestion[], searchTerms: string[] }> {
   try {
-    // Fetch relevant studies based on user preferences
-    const relevantStudies = await getRelevantStudies(params);
+    // Step 1: Find relevant studies based on user selections
+    const relevantStudies = await findRelevantStudies(selections);
     
-    // Generate AI prompt based on user preferences and studies
-    const prompt = generateSuggestionPrompt(params, relevantStudies);
+    // Step 2: Generate search terms based on selections
+    const searchTerms = generateSearchTerms(selections);
     
-    // Get suggestions from OpenAI
-    const suggestions = await getAiSuggestions(prompt, params, relevantStudies);
+    // Step 3: Generate research suggestions using OpenAI
+    const suggestions = await generateSuggestionsUsingAI(selections, relevantStudies, searchTerms);
     
-    return suggestions;
+    // Step 4: For each suggestion, find related existing studies
+    for (const suggestion of suggestions) {
+      suggestion.relatedStudies = await findRelatedStudies(suggestion, relevantStudies);
+    }
+    
+    return {
+      suggestions,
+      searchTerms
+    };
   } catch (error) {
     console.error("Error generating research suggestions:", error);
+    throw error;
+  }
+}
+
+// Find studies that match the user's selections
+async function findRelevantStudies(selections: WizardSelections) {
+  try {
+    let query = db.select().from(studies);
+    const conditions = [];
+    
+    // Add conditions based on user selections
+    if (selections.interests && selections.interests.length > 0) {
+      // Match studies with similar focus areas
+      const interestConditions = selections.interests.map(interest => 
+        or(
+          ilike(studies.title, `%${interest}%`),
+          ilike(studies.abstract, `%${interest}%`),
+          ilike(studies.keywords, `%${interest}%`),
+          ilike(studies.tags, `%${interest}%`)
+        )
+      );
+      conditions.push(or(...interestConditions));
+    }
+    
+    if (selections.healthConditions && selections.healthConditions.length > 0) {
+      // Match studies about these health conditions
+      const healthConditions = selections.healthConditions.map(condition => 
+        or(
+          ilike(studies.title, `%${condition}%`),
+          ilike(studies.abstract, `%${condition}%`),
+          ilike(studies.keywords, `%${condition}%`),
+          ilike(studies.tags, `%${condition}%`)
+        )
+      );
+      conditions.push(or(...healthConditions));
+    }
+    
+    if (selections.demographicGroup && selections.demographicGroup !== 'any') {
+      // Match studies targeting specific demographic groups
+      conditions.push(
+        or(
+          ilike(studies.title, `%${selections.demographicGroup}%`),
+          ilike(studies.abstract, `%${selections.demographicGroup}%`),
+          ilike(studies.populationGroup, `%${selections.demographicGroup}%`)
+        )
+      );
+    }
+    
+    if (selections.researchType && selections.researchType !== 'any') {
+      // Match by study type
+      conditions.push(
+        or(
+          ilike(studies.studyType, `%${selections.researchType}%`),
+          ilike(studies.studyDesign, `%${selections.researchType}%`)
+        )
+      );
+    }
+    
+    if (selections.deliveryMethod && selections.deliveryMethod.length > 0) {
+      // Match studies using specific hydrogen delivery methods
+      const deliveryConditions = selections.deliveryMethod.map(method => 
+        or(
+          ilike(studies.title, `%${method}%`),
+          ilike(studies.abstract, `%${method}%`),
+          ilike(studies.keywords, `%${method}%`),
+          ilike(studies.interventionType, `%${method}%`)
+        )
+      );
+      conditions.push(or(...deliveryConditions));
+    }
+    
+    // Apply conditions to query
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    // Limit to recent and high-quality studies
+    query = query.orderBy(desc(studies.journalImpactFactor), desc(studies.citationCount), desc(studies.publishDate));
+    
+    // Execute query and get results
+    const results = await query.limit(20);
+    return results;
+    
+  } catch (error) {
+    console.error("Error finding relevant studies:", error);
     return [];
   }
 }
 
-/**
- * Get relevant studies based on user preferences
- */
-async function getRelevantStudies(params: ResearchSuggestionParams): Promise<Study[]> {
-  // Build filters based on user preferences
-  const filters: any = {
-    // Default to recent studies if specified
-    ...(params.includeRecentOnly && { dateFrom: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }),
-    
-    // Filter by peer-reviewed if specified
-    ...(params.preferPeerReviewed && { isPeerReviewed: true }),
-  };
+// Generate search terms based on user selections
+function generateSearchTerms(selections: WizardSelections): string[] {
+  const terms: string[] = [];
   
-  // Add health condition filters if specified
-  if (params.healthConditions && params.healthConditions.length > 0) {
-    filters.healthConditions = params.healthConditions;
+  // Add general hydrogen terms
+  terms.push("molecular hydrogen", "hydrogen therapy", "hydrogen medicine");
+  
+  // Add terms from interests
+  if (selections.interests && selections.interests.length > 0) {
+    terms.push(...selections.interests);
   }
   
-  // Add keywords from user interests and preferred topics
-  const keywordTerms = [
-    ...(params.interests || []),
-    ...(params.preferredTopics || []),
-  ];
-  
-  if (keywordTerms.length > 0) {
-    // Choose a random subset of keywords to avoid overly restrictive searches
-    const randomKeywords = keywordTerms
-      .sort(() => 0.5 - Math.random())
-      .slice(0, Math.min(3, keywordTerms.length));
-    
-    filters.query = randomKeywords.join(' OR ');
+  // Add health condition terms
+  if (selections.healthConditions && selections.healthConditions.length > 0) {
+    terms.push(...selections.healthConditions);
   }
   
-  // Get matching studies
-  const studies = await storage.getStudies(filters);
+  // Add demographic terms
+  if (selections.demographicGroup && selections.demographicGroup !== 'any') {
+    terms.push(selections.demographicGroup);
+  }
   
-  // Limit to a reasonable number for analysis
-  return studies.slice(0, 20);
+  // Add study type terms
+  if (selections.researchType && selections.researchType !== 'any') {
+    terms.push(selections.researchType);
+  }
+  
+  // Add delivery method terms
+  if (selections.deliveryMethod && selections.deliveryMethod.length > 0) {
+    terms.push(...selections.deliveryMethod);
+  }
+  
+  // Add time frame specific terms
+  if (selections.timeFrame && selections.timeFrame !== 'any') {
+    const timeFrameTerms = {
+      'short-term': ['acute', 'immediate effects', 'short-term'],
+      'medium-term': ['weeks', 'months', 'medium-term'],
+      'long-term': ['chronic', 'long-term', 'prolonged use']
+    };
+    
+    terms.push(...timeFrameTerms[selections.timeFrame]);
+  }
+  
+  // Add focus area terms
+  if (selections.focusArea) {
+    const focusTerms = {
+      'physical': ['physical health', 'physical performance', 'physiological'],
+      'mental': ['mental health', 'cognitive', 'neurological', 'brain'],
+      'both': ['health', 'wellbeing', 'holistic']
+    };
+    
+    terms.push(...focusTerms[selections.focusArea]);
+  }
+  
+  // Remove duplicates and return
+  return [...new Set(terms)];
 }
 
-/**
- * Generate a prompt for the AI based on user preferences and relevant studies
- */
-function generateSuggestionPrompt(
-  params: ResearchSuggestionParams, 
-  relevantStudies: Study[]
-): string {
-  let systemPrompt = `You are a hydrogen research specialist advisor helping a user discover relevant research topics. 
-Based on the user's preferences and available research data, suggest specific research topics that would be of interest.
-
-User preferences:
-- Interests: ${params.interests?.join(', ') || 'Not specified'}
-- Health conditions: ${params.healthConditions?.join(', ') || 'Not specified'}
-- Demographic groups: ${params.demographicGroups?.join(', ') || 'Not specified'}
-- Research purpose: ${params.researchPurpose || 'Not specified'}
-- Preferred topics: ${params.preferredTopics?.join(', ') || 'Not specified'}
-- User query: ${params.userQuery || 'Not specified'}
-
-Here are ${relevantStudies.length} studies related to their interests:\n`;
-
-  // Add summaries of relevant studies to provide context
-  const studySummaries = relevantStudies.map((study, index) => {
-    return `Study ${index + 1}: "${study.title}" - ${study.abstract.substring(0, 150)}...`;
-  }).join('\n\n');
-  
-  systemPrompt += studySummaries;
-  
-  // Add specific instructions based on suggestion type
-  switch (params.suggestionType) {
-    case 'research_gaps':
-      systemPrompt += `\n\nBased on the available studies, identify 3-5 specific research gaps or areas where more research on hydrogen gas therapy is needed. Focus on practical topics that could yield clinically relevant results.`;
-      break;
-    case 'trending_topics':
-      systemPrompt += `\n\nIdentify 3-5 trending research topics in hydrogen gas therapy based on the recent studies. Focus on areas that seem to be gaining momentum in the research community.`;
-      break;
-    case 'personal_health':
-      systemPrompt += `\n\nSuggest 3-5 specific research areas related to the user's health conditions (${params.healthConditions?.join(', ') || 'general health'}). Focus on practical applications of hydrogen therapy that might benefit their specific situation.`;
-      break;
-    case 'application_methods':
-      systemPrompt += `\n\nSuggest 3-5 specific research topics focused on methods of hydrogen application (drinking hydrogen water, inhalation, hydrogen baths) that would be relevant to the user's interests.`;
-      break;
-    case 'popular_questions':
-      systemPrompt += `\n\nBased on the research data, identify 3-5 common questions that people might have about hydrogen therapy, particularly related to the user's interests and health conditions.`;
-      break;
-  }
-  
-  systemPrompt += `\n\nFor each suggestion:
-1. Provide a specific, focused research topic title
-2. Include a brief description explaining why this topic is relevant 
-3. Suggest 3-5 search terms that would help find relevant studies 
-4. List any specific research gaps in this area
-5. Indicate your confidence in this suggestion (0.0-1.0)
-
-Format your response as a JSON array of objects with the structure:
-[
-  {
-    "title": "Topic title",
-    "description": "Description of relevance",
-    "searchTerms": ["term1", "term2", "term3"],
-    "researchGaps": ["gap1", "gap2"],
-    "confidence": 0.8
-  },
-  ...
-]
-`;
-
-  return systemPrompt;
-}
-
-/**
- * Get AI-generated research suggestions
- */
-async function getAiSuggestions(
-  prompt: string, 
-  params: ResearchSuggestionParams,
-  relevantStudies: Study[]
+// Generate research suggestions using OpenAI
+async function generateSuggestionsUsingAI(
+  selections: WizardSelections,
+  studies: any[],
+  searchTerms: string[]
 ): Promise<ResearchSuggestion[]> {
   try {
-    // Make API call to OpenAI
-    const response = await openai.chat.completions.create({
+    // Create context from studies
+    const studiesContext = studies.map(study => 
+      `Title: ${study.title}\nJournal: ${study.journal}\nAbstract: ${study.abstract}\n`
+    ).join('\n---\n');
+    
+    // Create prompt for OpenAI
+    const prompt = `
+You are a hydrogen research expert specializing in hydrogen health research. Your task is to generate 3 research topic suggestions based on the following user interests and relevant studies.
+
+USER INTERESTS:
+${selections.interests ? 'Interests: ' + selections.interests.join(', ') : ''}
+${selections.healthConditions ? 'Health Conditions: ' + selections.healthConditions.join(', ') : ''}
+${selections.demographicGroup ? 'Demographic Group: ' + selections.demographicGroup : ''}
+${selections.researchType ? 'Research Type: ' + selections.researchType : ''}
+${selections.deliveryMethod ? 'Delivery Method: ' + selections.deliveryMethod.join(', ') : ''}
+${selections.timeFrame ? 'Time Frame: ' + selections.timeFrame : ''}
+${selections.focusArea ? 'Focus Area: ' + selections.focusArea : ''}
+
+SEARCH TERMS:
+${searchTerms.join(', ')}
+
+EXISTING RELEVANT STUDIES:
+${studiesContext}
+
+Generate 3 research topic suggestions that would be valuable to study based on the user's interests and the existing research. For each suggestion, include:
+1. A title for the research topic
+2. A description of the research focus (2-3 sentences)
+3. 5-7 specific search terms that would help find relevant studies
+4. 2-3 research gaps that this topic addresses
+5. A confidence score (0-100) indicating how promising this research direction is based on existing evidence
+
+Format each suggestion as a JSON object with these fields:
+- title (string)
+- description (string)
+- searchTerms (array of strings)
+- researchGaps (array of strings)
+- confidence (number from 0 to 100)
+
+Return an array of these 3 JSON objects without any additional text.
+`;
+
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
-        { role: "system", content: prompt }
+        { role: "system", content: "You are a hydrogen health research specialist with expertise in suggesting promising research directions." },
+        { role: "user", content: prompt }
       ],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
+      response_format: { type: "json_object" }
     });
-    
-    // Parse the response
-    const content = response.choices[0].message.content || '{"suggestions": []}';
-    const parsed = JSON.parse(content);
-    
-    // Extract suggestions
-    const aiSuggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
-    
-    // Enhance suggestions with relevant studies
-    return aiSuggestions.map((suggestion: any) => {
-      // Find studies that match the suggestion's search terms
-      const matchingStudies = findMatchingStudies(suggestion.searchTerms, relevantStudies);
-      
-      return {
-        ...suggestion,
-        relatedStudies: matchingStudies.slice(0, 3) // Limit to top 3 matching studies
-      };
-    });
-  } catch (error) {
-    console.error("Error getting AI suggestions:", error);
-    return [];
-  }
-}
 
-/**
- * Find studies that match the given search terms
- */
-function findMatchingStudies(searchTerms: string[], studies: Study[]): Study[] {
-  if (!searchTerms || searchTerms.length === 0) {
-    return [];
-  }
-  
-  // Score each study based on how well it matches the search terms
-  const scoredStudies = studies.map(study => {
-    let score = 0;
-    const titleLower = study.title.toLowerCase();
-    const abstractLower = study.abstract.toLowerCase();
+    // Parse response
+    const responseContent = completion.choices[0].message.content;
+    const parsedResponse = JSON.parse(responseContent);
     
-    // Check each search term
-    searchTerms.forEach(term => {
-      const termLower = term.toLowerCase();
-      
-      // Higher score for title matches
-      if (titleLower.includes(termLower)) {
-        score += 3;
-      }
-      
-      // Lower score for abstract matches
-      if (abstractLower.includes(termLower)) {
-        score += 1;
-      }
-    });
-    
-    return { study, score };
-  });
-  
-  // Sort by score (highest first) and return just the studies
-  return scoredStudies
-    .sort((a, b) => b.score - a.score)
-    .filter(item => item.score > 0)
-    .map(item => item.study);
-}
-
-/**
- * Get a list of suggested search terms based on user preferences
- */
-export function getSuggestedSearchTerms(params: ResearchSuggestionParams): string[] {
-  const suggestions: string[] = [];
-  
-  // Add terms based on health conditions
-  if (params.healthConditions && params.healthConditions.length > 0) {
-    params.healthConditions.forEach(condition => {
-      suggestions.push(`hydrogen ${condition}`);
-      suggestions.push(`molecular hydrogen ${condition}`);
-    });
-  }
-  
-  // Add terms based on interests and topics
-  const topics = [...(params.interests || []), ...(params.preferredTopics || [])];
-  if (topics.length > 0) {
-    topics.forEach(topic => {
-      suggestions.push(`hydrogen ${topic}`);
-      suggestions.push(`${topic} hydrogen therapy`);
-    });
-  }
-  
-  // Add general hydrogen research terms
-  suggestions.push('hydrogen water benefits');
-  suggestions.push('hydrogen inhalation therapy');
-  suggestions.push('molecular hydrogen clinical trials');
-  
-  // Return unique terms, up to 10
-  return Array.from(new Set(suggestions)).slice(0, 10);
-}
-
-/**
- * Get default wizard steps for the research suggestion wizard
- */
-export function getWizardSteps() {
-  return [
-    {
-      id: 'purpose',
-      title: 'Research Purpose',
-      description: 'What is your primary purpose for exploring hydrogen research?',
-      options: [
-        { id: 'personal_health', label: 'Personal Health', description: 'Finding research relevant to my health conditions' },
-        { id: 'academic', label: 'Academic Research', description: 'Scholarly or professional research purposes' },
-        { id: 'clinical', label: 'Clinical Application', description: 'Using hydrogen in clinical practice' },
-        { id: 'general_interest', label: 'General Interest', description: 'Just curious about hydrogen research' }
-      ]
-    },
-    {
-      id: 'topics',
-      title: 'Research Topics',
-      description: 'Select topics you\'re interested in:',
-      options: topicsByCategory.flatMap(category => 
-        category.topics.map(topic => ({
-          id: topic.id,
-          label: topic.name,
-          description: topic.description || '',
-          category: category.name
-        }))
-      )
-    },
-    {
-      id: 'health',
-      title: 'Health Conditions',
-      description: 'Select any health conditions you\'re interested in:',
-      options: healthConditionsList.map(condition => ({
-        id: condition.id,
-        label: condition.name,
-        description: condition.description || ''
-      }))
-    },
-    {
-      id: 'demographics',
-      title: 'Demographics',
-      description: 'Select any specific demographic groups of interest:',
-      options: demographicGroups.map(group => ({
-        id: group.id,
-        label: group.name,
-        description: group.description || ''
-      }))
-    },
-    {
-      id: 'preferences',
-      title: 'Search Preferences',
-      description: 'Fine-tune your research suggestions:',
-      options: [
-        { id: 'recent_only', label: 'Recent Studies Only', description: 'Limit to studies published in the last 2 years' },
-        { id: 'peer_reviewed', label: 'Peer-Reviewed Only', description: 'Only include peer-reviewed research' }
-      ]
+    if (Array.isArray(parsedResponse.suggestions)) {
+      return parsedResponse.suggestions;
+    } else {
+      // If the API didn't return the expected format, create a default suggestion
+      return createDefaultSuggestions(selections);
     }
-  ];
+  } catch (error) {
+    console.error("Error generating suggestions using AI:", error);
+    return createDefaultSuggestions(selections);
+  }
+}
+
+// Create default suggestions when AI fails
+function createDefaultSuggestions(selections: WizardSelections): ResearchSuggestion[] {
+  const defaultSuggestions: ResearchSuggestion[] = [];
+  
+  // Generate suggestion titles based on user selections
+  let focusTerms: string[] = [];
+  
+  if (selections.interests && selections.interests.length > 0) {
+    focusTerms = [...focusTerms, ...selections.interests];
+  }
+  
+  if (selections.healthConditions && selections.healthConditions.length > 0) {
+    focusTerms = [...focusTerms, ...selections.healthConditions];
+  }
+  
+  if (focusTerms.length === 0) {
+    focusTerms = ["oxidative stress", "inflammation", "metabolic health"];
+  }
+  
+  const deliveryMethod = 
+    selections.deliveryMethod && selections.deliveryMethod.length > 0 
+      ? selections.deliveryMethod[0] 
+      : "hydrogen-rich water";
+  
+  for (let i = 0; i < 3 && i < focusTerms.length; i++) {
+    defaultSuggestions.push({
+      title: `Effects of ${deliveryMethod} on ${focusTerms[i]} in ${selections.demographicGroup || 'humans'}`,
+      description: `This research would investigate how ${deliveryMethod} affects ${focusTerms[i]} in ${selections.demographicGroup || 'human'} subjects. The study would measure key biomarkers and clinical outcomes.`,
+      searchTerms: [
+        "molecular hydrogen",
+        deliveryMethod,
+        focusTerms[i],
+        selections.demographicGroup || "humans",
+        "clinical trial",
+        "biomarkers"
+      ],
+      researchGaps: [
+        `Limited research on ${focusTerms[i]} with ${deliveryMethod}`,
+        "Lack of standardized protocols for hydrogen administration",
+        "Need for long-term outcome studies"
+      ],
+      confidence: 75 - (i * 10),
+      relatedStudies: []
+    });
+  }
+  
+  return defaultSuggestions;
+}
+
+// Find existing studies related to a specific suggestion
+async function findRelatedStudies(suggestion: ResearchSuggestion, preFilteredStudies: any[]): Promise<any[]> {
+  // If we already have pre-filtered studies, use those
+  if (preFilteredStudies.length > 0) {
+    // Sort by relevance to the suggestion
+    const scoredStudies = preFilteredStudies.map(study => {
+      let score = 0;
+      
+      // Check title matches
+      for (const term of suggestion.searchTerms) {
+        if (study.title.toLowerCase().includes(term.toLowerCase())) {
+          score += 3;
+        }
+        if (study.abstract && study.abstract.toLowerCase().includes(term.toLowerCase())) {
+          score += 2;
+        }
+        if (study.keywords && study.keywords.toLowerCase().includes(term.toLowerCase())) {
+          score += 1;
+        }
+      }
+      
+      return { ...study, relevanceScore: score };
+    });
+    
+    // Sort by relevance score
+    scoredStudies.sort((a, b) => b.relevanceScore - a.relevanceScore);
+    
+    // Return top results, formatted
+    return scoredStudies.slice(0, 5).map(study => ({
+      id: study.id,
+      title: study.title,
+      authors: study.authors || 'Unknown',
+      abstract: study.abstract || 'Not available',
+      journal: study.journal || 'Unknown journal',
+      publishDate: study.publishDate ? new Date(study.publishDate).toISOString().split('T')[0] : 'Unknown date'
+    }));
+  }
+  
+  // If no pre-filtered studies, query database
+  try {
+    // Build a query looking for matching studies
+    const searchConditions = suggestion.searchTerms.map(term => 
+      or(
+        ilike(studies.title, `%${term}%`),
+        ilike(studies.abstract, `%${term}%`),
+        ilike(studies.keywords, `%${term}%`)
+      )
+    );
+    
+    const relatedStudies = await db
+      .select()
+      .from(studies)
+      .where(or(...searchConditions))
+      .orderBy(desc(studies.journalImpactFactor), desc(studies.citationCount))
+      .limit(5);
+    
+    // Format results
+    return relatedStudies.map(study => ({
+      id: study.id,
+      title: study.title,
+      authors: study.authors || 'Unknown',
+      abstract: study.abstract || 'Not available',
+      journal: study.journal || 'Unknown journal',
+      publishDate: study.publishDate ? new Date(study.publishDate).toISOString().split('T')[0] : 'Unknown date'
+    }));
+  } catch (error) {
+    console.error("Error finding related studies:", error);
+    return [];
+  }
+}
+
+// Helper functions for taxonomy mapping
+function findCategoryForTopic(category: string, topic: string) {
+  const categoryData = researchTaxonomy.find(cat => cat.name.toLowerCase() === category.toLowerCase());
+  if (!categoryData) return null;
+  
+  return categoryData.topics.find(t => t.toLowerCase() === topic.toLowerCase());
+}
+
+function findRelatedTopicsForCondition(condition: string) {
+  // Find all topics that might relate to this condition across categories
+  const relatedTopics = [];
+  
+  for (const category of researchTaxonomy) {
+    for (const topic of category.topics) {
+      if (topic.toLowerCase().includes(condition.toLowerCase())) {
+        relatedTopics.push({ category: category.name, topic });
+      }
+    }
+  }
+  
+  return relatedTopics;
+}
+
+function findCategoriesForDemographicGroup(group: string) {
+  // Find categories that relate to specific demographic groups
+  const demographicCategories = researchTaxonomy.filter(
+    cat => cat.name.toLowerCase().includes('demographic') || 
+           cat.name.toLowerCase().includes('population')
+  );
+  
+  const matchingTopics = [];
+  
+  for (const category of demographicCategories) {
+    for (const topic of category.topics) {
+      if (topic.toLowerCase().includes(group.toLowerCase())) {
+        matchingTopics.push({ category: category.name, topic });
+      }
+    }
+  }
+  
+  return matchingTopics;
 }

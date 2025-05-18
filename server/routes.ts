@@ -97,6 +97,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register hydrogen organization routes for the new structure
   app.use('', hydrogenRoutes);
   
+  // Register research suggestions routes
+  app.use('/api', researchSuggestionsRoutes);
+  
   // API routes
   
   // Studies routes

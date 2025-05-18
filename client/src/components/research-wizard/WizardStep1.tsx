@@ -1,0 +1,160 @@
+import { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+interface WizardStep1Props {
+  selections: {
+    interests: string[];
+    healthConditions: string[];
+    [key: string]: any;
+  };
+  onSelectionChange: (category: string, value: string) => void;
+}
+
+const WizardStep1 = ({ selections, onSelectionChange }: WizardStep1Props) => {
+  const { toast } = useToast();
+  const [options, setOptions] = useState({
+    interests: [],
+    healthConditions: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiRequest({
+          url: "/api/research-suggestions/options",
+          method: "GET"
+        });
+        
+        if (response.success && response.data) {
+          setOptions({
+            interests: response.data.interests || [],
+            healthConditions: response.data.healthConditions || []
+          });
+        } else {
+          toast({
+            title: "Failed to load options",
+            description: "Using default options instead",
+            variant: "destructive"
+          });
+          // Set default options
+          setOptions({
+            interests: [
+              "Inflammation reduction",
+              "Oxidative stress",
+              "Athletic performance",
+              "Metabolic health",
+              "Neurological benefits",
+              "Gut health",
+              "Cardiovascular health",
+              "Skin health"
+            ],
+            healthConditions: [
+              "Diabetes",
+              "Hypertension",
+              "Arthritis",
+              "Neurodegenerative disorders",
+              "Metabolic syndrome",
+              "Inflammatory bowel disease",
+              "Skin conditions",
+              "Respiratory conditions"
+            ]
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching wizard options:", error);
+        toast({
+          title: "Failed to load options",
+          description: "Please try refreshing the page",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOptions();
+  }, [toast]);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-3">Research Interests</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Select one or more research areas you're interested in exploring
+        </p>
+        
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="flex items-center space-x-2 animate-pulse">
+                <div className="h-4 w-4 bg-muted rounded" />
+                <div className="h-4 w-32 bg-muted rounded" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {options.interests.map((interest) => (
+              <div key={interest} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`interest-${interest}`} 
+                  checked={selections.interests.includes(interest)}
+                  onCheckedChange={() => onSelectionChange("interests", interest)}
+                />
+                <Label 
+                  htmlFor={`interest-${interest}`}
+                  className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {interest}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-lg font-medium mb-3">Health Conditions</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Select any health conditions you'd like to focus on (optional)
+        </p>
+        
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="flex items-center space-x-2 animate-pulse">
+                <div className="h-4 w-4 bg-muted rounded" />
+                <div className="h-4 w-32 bg-muted rounded" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {options.healthConditions.map((condition) => (
+              <div key={condition} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`condition-${condition}`} 
+                  checked={selections.healthConditions.includes(condition)}
+                  onCheckedChange={() => onSelectionChange("healthConditions", condition)}
+                />
+                <Label 
+                  htmlFor={`condition-${condition}`}
+                  className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {condition}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default WizardStep1;
