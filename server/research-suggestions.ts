@@ -169,13 +169,11 @@ async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
   
   // Interests (map to benefits)
   if (selections.interests.length > 0) {
-    // This would be a join with study_benefits in a full implementation
-    // For now we'll search in the abstract, title, and keywords
+    // Search in the abstract and title
     const interestConditions = selections.interests.map(interest => 
       or(
         ilike(studies.title, `%${interest}%`),
-        ilike(studies.abstract, `%${interest}%`),
-        sql`${studies.keywords} ILIKE ${'%' + interest + '%'}`
+        ilike(studies.abstract, `%${interest}%`)
       )
     );
     conditions.push(or(...interestConditions));
@@ -186,9 +184,7 @@ async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
     const healthConditions = selections.healthConditions.map(condition => 
       or(
         ilike(studies.title, `%${condition}%`),
-        ilike(studies.abstract, `%${condition}%`),
-        sql`${studies.keywords} ILIKE ${'%' + condition + '%'}`,
-        sql`${studies.tags} ILIKE ${'%' + condition + '%'}`
+        ilike(studies.abstract, `%${condition}%`)
       )
     );
     conditions.push(or(...healthConditions));
@@ -196,11 +192,10 @@ async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
   
   // Demographic group
   if (selections.demographicGroup && selections.demographicGroup !== 'any') {
-    // This would be a join with study_demographics in a full implementation
-    // For now we'll search in the study's population field and abstract
+    // Search in the abstract
     conditions.push(
       or(
-        sql`${studies.populationGroup} ILIKE ${'%' + selections.demographicGroup + '%'}`,
+        ilike(studies.title, `%${selections.demographicGroup}%`),
         ilike(studies.abstract, `%${selections.demographicGroup}%`)
       )
     );
@@ -221,8 +216,7 @@ async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
       const typeConditions = typeTerms.map(term => 
         or(
           ilike(studies.title, `%${term}%`),
-          ilike(studies.abstract, `%${term}%`),
-          sql`${studies.studyDesign} ILIKE ${'%' + term + '%'}`
+          ilike(studies.abstract, `%${term}%`)
         )
       );
       conditions.push(or(...typeConditions));
@@ -234,9 +228,7 @@ async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
     const deliveryConditions = selections.deliveryMethod.map(method => 
       or(
         ilike(studies.title, `%${method}%`),
-        ilike(studies.abstract, `%${method}%`),
-        sql`${studies.keywords} ILIKE ${'%' + method + '%'}`,
-        sql`${studies.interventionType} ILIKE ${'%' + method + '%'}`
+        ilike(studies.abstract, `%${method}%`)
       )
     );
     conditions.push(or(...deliveryConditions));
@@ -249,9 +241,8 @@ async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
     query = query.where(and(...conditions));
   }
   
-  // Sort by relevance (using journal impact factor as a proxy for now)
-  // In a full implementation, you would calculate a relevance score
-  query = query.orderBy(desc(studies.journalImpactFactor));
+  // Sort by most recent studies
+  query = query.orderBy(desc(studies.publishDate));
   
   // Limit to 50 studies for performance
   query = query.limit(50);
@@ -263,12 +254,10 @@ async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
   return results.map(study => ({
     id: study.id,
     title: study.title,
-    abstract: study.abstract,
-    authors: study.authors,
-    journal: study.journal,
-    publishDate: study.publishDate || study.publicationDate,
-    fullText: study.fullText,
-    keywords: study.keywords?.split(',').map(k => k.trim()).filter(Boolean) || []
+    abstract: study.abstract || '',
+    authors: study.authors || '',
+    journal: study.journal || 'Scientific Journal',
+    publishDate: study.publishDate || '',
   }));
 }
 
