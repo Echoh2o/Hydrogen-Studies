@@ -1,6 +1,7 @@
 import { db } from './db';
 import { sql } from 'drizzle-orm';
 import { addJournalPublishDateField } from './migrations/add-journal-publish-date';
+import { runMigration as addMultipleImagesSupport } from './migrations/add-multiple-images-support';
 
 /**
  * Run database schema migrations to ensure the database structure
