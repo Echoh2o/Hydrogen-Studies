@@ -273,15 +273,12 @@ export async function findStudiesNeedingImages(limit: number = 10): Promise<Stud
       .from(studies)
       .where(
         and(
-          // Either images is null, an empty array, or has less than 1 element
-          or(
-            isNull(studies.images),
-            arrayLength(studies.images).lte(0)
-          ),
+          // Check if there's no image url set
+          isNull(studies.imageUrl),
           // Only process studies with sufficient content
-          isNull(studies.abstract).not(),
+          not(isNull(studies.abstract)),
           // Title must be available
-          isNull(studies.title).not()
+          not(isNull(studies.title))
         )
       )
       .orderBy(desc(studies.publishDate)) // Prioritize newer studies
