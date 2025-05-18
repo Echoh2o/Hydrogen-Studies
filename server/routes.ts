@@ -133,12 +133,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         journal,
         hasFullText,
         
+        // New enhanced search parameters
+        useFuzzyMatch,
+        searchInMethods,
+        searchInResults,
+        searchInConclusion, 
+        searchInSimplified,
+        enrichmentStatus,
+        tags,
+        excludeTerms,
+        
         // Legacy support
         peerReviewed
       } = req.query;
       
       console.log("Search query parameters:", { 
-        query, keyword, author, yearFrom, yearTo, category, sortBy
+        query, 
+        keyword, 
+        author, 
+        yearFrom, 
+        yearTo, 
+        category, 
+        sortBy,
+        // Log advanced options
+        useFuzzyMatch,
+        enrichmentStatus,
+        tags: tags ? typeof tags === 'string' ? tags.split(',') : tags : undefined
       });
       
       // Process query parameter for text search
@@ -235,6 +255,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For backward compatibility
       const processedPeerReviewed = peerReviewed === "true";
       
+      // Process the new search parameters
+      const processedUseFuzzyMatch = useFuzzyMatch === "true";
+      const processedSearchInMethods = searchInMethods !== "false";
+      const processedSearchInResults = searchInResults !== "false";
+      const processedSearchInConclusion = searchInConclusion !== "false";
+      const processedSearchInSimplified = searchInSimplified !== "false";
+      const processedEnrichmentStatus = enrichmentStatus as "basic" | "partial" | "complete" | undefined;
+      
+      // Process tags array
+      let processedTags: string[] | undefined;
+      if (tags) {
+        if (typeof tags === 'string') {
+          processedTags = tags.split(',').map(tag => tag.trim());
+        }
+      }
+      
+      // Process exclude terms array
+      let processedExcludeTerms: string[] | undefined;
+      if (excludeTerms) {
+        if (typeof excludeTerms === 'string') {
+          processedExcludeTerms = excludeTerms.split(',').map(term => term.trim());
+        }
+      }
+      
       const studies = await storage.getStudies({
         // Basic filters
         query: processedQuery,
@@ -266,6 +310,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         region: processedRegion,
         journal: journal ? [journal as string] : undefined,
         hasFullText: processedHasFullText,
+        
+        // New enhanced search features
+        useFuzzyMatch: processedUseFuzzyMatch,
+        searchInMethods: processedSearchInMethods,
+        searchInResults: processedSearchInResults,
+        searchInConclusion: processedSearchInConclusion,
+        searchInSimplified: processedSearchInSimplified,
+        enrichmentStatus: processedEnrichmentStatus,
+        tags: processedTags,
+        excludeTerms: processedExcludeTerms,
         
         // Legacy support
         peerReviewed: processedPeerReviewed
