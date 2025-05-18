@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { HiMenu, HiX } from "react-icons/hi";
-import { Brain, Droplet, Users, Zap, ChevronDown } from "lucide-react";
+import { Brain, Droplet, Users, Zap, ChevronDown, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -126,6 +126,14 @@ const Header = () => {
                 Ask AI
               </a>
             </Link>
+            <Link href="/research-suggestions">
+              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/research-suggestions') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
+                <span className="flex items-center">
+                  <Lightbulb className="mr-1 h-4 w-4" />
+                  Research Wizard
+                </span>
+              </a>
+            </Link>
             <Link href="/contact">
               <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/contact') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
                 Contact
@@ -213,6 +221,17 @@ const Header = () => {
                   onClick={closeMobileMenu}
                 >
                   Ask AI
+                </a>
+              </Link>
+              <Link href="/research-suggestions">
+                <a 
+                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/research-suggestions') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
+                  onClick={closeMobileMenu}
+                >
+                  <span className="flex items-center">
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    Research Suggestions Wizard
+                  </span>
                 </a>
               </Link>
               <Link href="/contact">

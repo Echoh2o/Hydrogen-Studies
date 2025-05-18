@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -44,24 +44,24 @@ const WizardStep1 = ({ selections, onSelectionChange }: WizardStep1Props) => {
           // Set default options
           setOptions({
             interests: [
-              "Inflammation reduction",
-              "Oxidative stress",
-              "Athletic performance",
-              "Metabolic health",
-              "Neurological benefits",
-              "Gut health",
-              "Cardiovascular health",
-              "Skin health"
+              "Athletic Performance",
+              "Anti-aging",
+              "Brain Health",
+              "Cardiovascular Health",
+              "Digestive Health",
+              "Energy Levels",
+              "Immune Function",
+              "Metabolic Health"
             ],
             healthConditions: [
-              "Diabetes",
-              "Hypertension",
+              "Alzheimer's Disease",
               "Arthritis",
-              "Neurodegenerative disorders",
-              "Metabolic syndrome",
-              "Inflammatory bowel disease",
-              "Skin conditions",
-              "Respiratory conditions"
+              "Cancer",
+              "Diabetes",
+              "Heart Disease",
+              "Hypertension",
+              "Inflammation",
+              "Obesity"
             ]
           });
         }
@@ -83,14 +83,14 @@ const WizardStep1 = ({ selections, onSelectionChange }: WizardStep1Props) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium mb-3">Research Interests</h3>
+        <h3 className="text-lg font-medium mb-3">Health Interests</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Select one or more research areas you're interested in exploring
+          Select one or more health areas you're interested in researching
         </p>
         
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4, 5, 6].map(i => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
               <div key={i} className="flex items-center space-x-2 animate-pulse">
                 <div className="h-4 w-4 bg-muted rounded" />
                 <div className="h-4 w-32 bg-muted rounded" />
@@ -117,16 +117,16 @@ const WizardStep1 = ({ selections, onSelectionChange }: WizardStep1Props) => {
           </div>
         )}
       </div>
-
+      
       <div>
         <h3 className="text-lg font-medium mb-3">Health Conditions</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Select any health conditions you'd like to focus on (optional)
+          Select one or more health conditions you'd like to research
         </p>
         
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4, 5, 6].map(i => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
               <div key={i} className="flex items-center space-x-2 animate-pulse">
                 <div className="h-4 w-4 bg-muted rounded" />
                 <div className="h-4 w-32 bg-muted rounded" />
