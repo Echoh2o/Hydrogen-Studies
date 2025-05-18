@@ -87,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/doi', doiEnhancementRoutes);
   
   // Register content enrichment routes to fix truncated abstracts
-  app.use('/api', contentEnrichmentRoutes);
+  app.use('/direct-api/content-enrichment', contentEnrichmentRoutes);
   
   // Register hydrogen organization routes for the new structure
   app.use('', hydrogenRoutes);

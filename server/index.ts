@@ -33,6 +33,37 @@ if (!fs.existsSync(uploadsDir)) {
 
 app.use('/uploads', express.static(uploadsDir));
 
+// Direct study enhancement API that bypasses Vite interception
+app.post('/direct-enhance/:id', async (req, res) => {
+  try {
+    const studyId = parseInt(req.params.id);
+    if (isNaN(studyId)) {
+      return res.status(400).json({ success: false, message: "Invalid study ID" });
+    }
+    
+    // Get the current study
+    const [study] = await db.select().from(sql`studies`).where(sql`id = ${studyId}`);
+    
+    if (!study) {
+      return res.status(404).json({ success: false, message: `Study with ID ${studyId} not found` });
+    }
+    
+    if (!study.doi) {
+      return res.status(400).json({ success: false, message: `Study #${studyId} doesn't have a DOI for enrichment` });
+    }
+    
+    // For now, return a success response with study info
+    return res.json({ 
+      success: true, 
+      message: `Found study ${studyId} for enhancement`, 
+      study: { id: study.id, title: study.title, doi: study.doi } 
+    });
+  } catch (error) {
+    console.error(`Error in direct enhance API:`, error);
+    return res.status(500).json({ success: false, message: "Server error during enhancement" });
+  }
+});
+
 // Configure session middleware
 app.use(session({
   secret: process.env.SESSION_SECRET || 'hydrogen-studies-dev-secret',
