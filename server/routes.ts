@@ -141,6 +141,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         query, keyword, author, yearFrom, yearTo, category, sortBy
       });
       
+      // Process query parameter for text search
+      let processedQuery: string | undefined;
+      if (query) {
+        processedQuery = query as string;
+        console.log("Using search query:", processedQuery);
+      }
+      
       // Process array fields that come as strings
       let processedHealthConditions: string[] | undefined;
       let processedBodySystems: string[] | undefined;
@@ -230,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const studies = await storage.getStudies({
         // Basic filters
-        query: query as string,
+        query: processedQuery,
         keyword: keyword as string,
         author: author as string,
         yearFrom: yearFrom as string,
