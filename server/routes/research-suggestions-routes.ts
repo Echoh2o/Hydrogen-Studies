@@ -1,110 +1,126 @@
-/**
- * Research Suggestions Routes
- * 
- * API endpoints for the AI-powered research suggestion wizard
- */
-
-import express from "express";
-import { 
-  generateResearchSuggestions, 
-  getSuggestedSearchTerms, 
-  getWizardSteps,
-  type ResearchSuggestionParams
-} from "../research-suggestions";
-import { ZodError, z } from "zod";
-import { fromZodError } from "zod-validation-error";
+import express from 'express';
+import { z } from 'zod';
+import { fromZodError } from 'zod-validation-error';
+import { generateResearchSuggestions } from '../research-suggestions';
 
 const router = express.Router();
 
-// Input validation schema
-const suggestionParamsSchema = z.object({
+// Schema for research wizard selections validation
+const wizardSelectionSchema = z.object({
   interests: z.array(z.string()).optional(),
   healthConditions: z.array(z.string()).optional(),
-  demographicGroups: z.array(z.string()).optional(),
-  researchPurpose: z.enum(['academic', 'personal_health', 'clinical', 'general_interest']).optional(),
-  preferredTopics: z.array(z.string()).optional(),
-  includeRecentOnly: z.boolean().optional(),
-  preferPeerReviewed: z.boolean().optional(),
-  suggestionType: z.enum([
-    'research_gaps', 
-    'trending_topics', 
-    'personal_health', 
-    'application_methods', 
-    'popular_questions'
-  ]),
-  userQuery: z.string().optional()
+  demographicGroup: z.string().optional(),
+  researchType: z.enum(['clinical', 'experimental', 'review', 'case-study', 'any']).optional(),
+  deliveryMethod: z.array(z.string()).optional(),
+  timeFrame: z.enum(['short-term', 'medium-term', 'long-term', 'any']).optional(),
+  focusArea: z.enum(['physical', 'mental', 'both']).optional(),
 });
 
-// Get wizard configuration steps
-router.get("/wizard-steps", async (req, res) => {
+// Route to generate research suggestions based on user selections
+router.post('/research-suggestions', async (req, res) => {
   try {
-    const steps = getWizardSteps();
-    res.json(steps);
-  } catch (error) {
-    console.error("Error fetching wizard steps:", error);
-    res.status(500).json({ message: "Failed to fetch wizard steps" });
-  }
-});
+    const selections = req.body;
 
-// Generate research suggestions
-router.post("/generate", async (req, res) => {
-  try {
-    // Validate input
-    const params = suggestionParamsSchema.parse(req.body);
-    
-    // Check if OpenAI API key is available
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ 
-        message: "OpenAI API key is missing. Please provide an API key to use this feature." 
+    // Validate request body
+    const validationResult = wizardSelectionSchema.safeParse(selections);
+    if (!validationResult.success) {
+      const validationError = fromZodError(validationResult.error);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid input data', 
+        errors: validationError.details 
       });
     }
-    
-    // Generate suggestions
-    const suggestions = await generateResearchSuggestions(params);
-    
-    // Return the results
-    res.json({
-      suggestions,
-      searchTerms: getSuggestedSearchTerms(params)
+
+    // Generate suggestions based on user selections
+    const suggestions = await generateResearchSuggestions(validationResult.data);
+
+    return res.json({
+      success: true,
+      data: suggestions
     });
   } catch (error) {
-    console.error("Error generating research suggestions:", error);
-    
-    if (error instanceof ZodError) {
-      const validationError = fromZodError(error);
-      return res.status(400).json({ 
-        message: "Invalid request parameters", 
-        errors: validationError.details 
-      });
-    }
-    
-    res.status(500).json({ message: "Failed to generate research suggestions" });
+    console.error('Error generating research suggestions:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate research suggestions'
+    });
   }
 });
 
-// Get suggested search terms
-router.post("/search-terms", async (req, res) => {
+// Route to get available options for the research wizard
+router.get('/research-suggestions/options', async (_req, res) => {
   try {
-    // Validate input
-    const params = suggestionParamsSchema.parse(req.body);
-    
-    // Generate search terms
-    const searchTerms = getSuggestedSearchTerms(params);
-    
-    // Return the results
-    res.json({ searchTerms });
+    // Return predefined options for the wizard
+    return res.json({
+      success: true,
+      data: {
+        interests: [
+          'Inflammation reduction',
+          'Oxidative stress',
+          'Athletic performance',
+          'Metabolic health',
+          'Neurological benefits',
+          'Gut health',
+          'Cardiovascular health',
+          'Skin health'
+        ],
+        healthConditions: [
+          'Diabetes',
+          'Hypertension',
+          'Arthritis',
+          'Neurodegenerative disorders',
+          'Metabolic syndrome',
+          'Inflammatory bowel disease',
+          'Skin conditions',
+          'Respiratory conditions',
+          'Post-exercise recovery',
+          'Chronic fatigue'
+        ],
+        demographicGroups: [
+          'Children',
+          'Adolescents',
+          'Adults',
+          'Elderly',
+          'Athletes',
+          'Pregnant women',
+          'People with chronic conditions'
+        ],
+        researchTypes: [
+          'clinical',
+          'experimental',
+          'review',
+          'case-study',
+          'any'
+        ],
+        deliveryMethods: [
+          'Hydrogen-rich water',
+          'Hydrogen gas inhalation',
+          'Hydrogen-rich saline',
+          'Hydrogen bathing',
+          'Hydrogen tablets',
+          'Topical hydrogen application',
+          'Hydrogen-producing intestinal bacteria'
+        ],
+        timeFrames: [
+          'short-term',
+          'medium-term',
+          'long-term',
+          'any'
+        ],
+        focusAreas: [
+          'physical',
+          'mental',
+          'both'
+        ]
+      }
+    });
   } catch (error) {
-    console.error("Error generating search terms:", error);
-    
-    if (error instanceof ZodError) {
-      const validationError = fromZodError(error);
-      return res.status(400).json({ 
-        message: "Invalid request parameters", 
-        errors: validationError.details 
-      });
-    }
-    
-    res.status(500).json({ message: "Failed to generate search terms" });
+    console.error('Error fetching research wizard options:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch research wizard options'
+    });
   }
 });
 
