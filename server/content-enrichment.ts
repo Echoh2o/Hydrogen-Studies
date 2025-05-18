@@ -205,7 +205,7 @@ export async function batchEnhanceStudies(studyIds: number[]): Promise<{
       if (!result.success) {
         overallSuccess = false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error enhancing study ${studyId}:`, error);
       results.push({
         success: false,
@@ -244,7 +244,7 @@ async function fetchHtmlContent(url: string): Promise<string> {
       .trim();
     
     return strippedHtml;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error fetching HTML content from ${url}:`, error);
     return '';
   }
@@ -271,7 +271,7 @@ async function downloadImage(url: string, studyId: number): Promise<string | nul
     
     fs.writeFileSync(filepath, buffer);
     return `/uploads/${filename}`;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error downloading image:`, error);
     return null;
   }
@@ -286,8 +286,8 @@ export async function findStudiesForEnhancement(limit: number = 50): Promise<num
     .select({ id: studies.id })
     .from(studies)
     .where(
-      // Has DOI but missing or short abstract or other fields
-      eq(studies.id, studies.id) // This is a placeholder that's always true
+      // Using a proper filter - studies with DOIs that exist
+      eq(studies.doi !== null, true)
     )
     .limit(limit);
   
