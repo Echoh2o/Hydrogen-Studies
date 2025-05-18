@@ -50,76 +50,95 @@ const StudyContent = ({ study }: { study: Study }) => {
           </div>
         </div>
         
-        <Separator className="my-6" />
-        
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-bold mb-3">Abstract</h2>
-            <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.abstract}</div>
-          </div>
+        <Tabs defaultValue="content" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="content">Study Content</TabsTrigger>
+            <TabsTrigger value="share" className="flex items-center gap-1">
+              <Share2 className="h-4 w-4" />
+              Share Insights
+            </TabsTrigger>
+          </TabsList>
           
-          {study.methods && (
-            <div>
-              <h2 className="text-xl font-bold mb-3">Methods</h2>
-              <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.methods}</div>
-            </div>
-          )}
-          
-          {study.results && (
-            <div>
-              <h2 className="text-xl font-bold mb-3">Results</h2>
-              <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.results}</div>
-            </div>
-          )}
-          
-          {study.conclusion && (
-            <div>
-              <h2 className="text-xl font-bold mb-3">Conclusion</h2>
-              <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.conclusion}</div>
-            </div>
-          )}
-          
-          <div>
-            <h2 className="text-xl font-bold mb-3">Links & Resources</h2>
-            <div className="flex flex-wrap gap-3">
-              {study.doi && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center gap-2"
-                  onClick={() => window.open(`https://doi.org/${study.doi}`, '_blank')}
-                >
-                  <LinkIcon className="h-4 w-4" />
-                  View Original Paper
-                </Button>
+          <TabsContent value="content">
+            <Separator className="mb-6" />
+            
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold mb-3">Abstract</h2>
+                <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.abstract}</div>
+              </div>
+              
+              {study.methods && (
+                <div>
+                  <h2 className="text-xl font-bold mb-3">Methods</h2>
+                  <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.methods}</div>
+                </div>
               )}
               
-              {study.pdfUrl && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center gap-2"
-                  onClick={() => window.open(study.pdfUrl, '_blank')}
-                >
-                  <FileText className="h-4 w-4" />
-                  View PDF
-                </Button>
+              {study.results && (
+                <div>
+                  <h2 className="text-xl font-bold mb-3">Results</h2>
+                  <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.results}</div>
+                </div>
               )}
               
-              {study.citationUrl && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center gap-2"
-                  onClick={() => window.open(study.citationUrl, '_blank')}
-                >
-                  <Download className="h-4 w-4" />
-                  Download Citation
-                </Button>
+              {study.conclusion && (
+                <div>
+                  <h2 className="text-xl font-bold mb-3">Conclusion</h2>
+                  <div className="text-neutral-700 leading-relaxed whitespace-pre-line">{study.conclusion}</div>
+                </div>
               )}
+              
+              <div>
+                <h2 className="text-xl font-bold mb-3">Links & Resources</h2>
+                <div className="flex flex-wrap gap-3">
+                  {study.doi && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2"
+                      onClick={() => window.open(`https://doi.org/${study.doi}`, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      View Original Paper
+                    </Button>
+                  )}
+                  
+                  {study.pdfUrl && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2"
+                      onClick={() => window.open(study.pdfUrl, '_blank')}
+                    >
+                      <FileText className="h-4 w-4" />
+                      View PDF
+                    </Button>
+                  )}
+                  
+                  {study.citationUrl && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2"
+                      onClick={() => window.open(study.citationUrl, '_blank')}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download Citation
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="share">
+            <Separator className="mb-6" />
+            <div className="p-2">
+              <ResearchInsightCard study={study} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </>
   );
