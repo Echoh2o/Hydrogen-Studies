@@ -455,7 +455,7 @@ export default function ResearchDatabasePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {searchResults.data.map((paper: any) => {
+                        {searchResults.articles.map((paper: any) => {
                           const paperId = paper.id || paper.paperId || paper.pmid || `${paper.source}-${paper.title}`;
                           return (
                             <TableRow key={paperId} className={selectedPapers[paperId] ? "bg-primary/5" : ""}>
