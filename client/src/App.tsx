@@ -52,6 +52,7 @@ import ResearchDatabasePage from "@/pages/admin/ResearchDatabasePage";
 import JournalDateUpdater from "@/pages/admin/JournalDateUpdater";
 import ContentEnrichmentPage from "@/pages/admin/ContentEnrichmentPage";
 import BatchEnrichmentPage from "@/pages/admin/BatchEnrichmentPage";
+import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
