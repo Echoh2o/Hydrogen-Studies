@@ -50,6 +50,7 @@ import DataImportPage from "@/pages/admin/DataImportPage";
 import ResearchDatabasePage from "@/pages/admin/ResearchDatabasePage";
 import JournalDateUpdater from "@/pages/admin/JournalDateUpdater";
 import ContentEnrichmentPage from "@/pages/admin/ContentEnrichmentPage";
+import BatchEnrichmentPage from "@/pages/admin/BatchEnrichmentPage";
 
 function ScrollToTop() {
   const [location] = useLocation();

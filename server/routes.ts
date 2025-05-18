@@ -46,6 +46,7 @@ import journalDateRoutes from "./routes/journal-date-routes";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
+import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 
@@ -88,6 +89,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register content enrichment routes to fix truncated abstracts
   app.use('/direct-api/content-enrichment', contentEnrichmentRoutes);
+  
+  // Register batch enrichment routes for processing multiple studies
+  app.use('/api/enrichment/batch', batchEnrichmentRoutes);
   
   // Register hydrogen organization routes for the new structure
   app.use('', hydrogenRoutes);

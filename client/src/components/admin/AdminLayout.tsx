@@ -33,6 +33,7 @@ export default function AdminLayout({ children, title, description }: AdminLayou
     { href: "/admin/research-database", label: "Research Database", icon: Database },
     { href: "/admin/data-import", label: "Data Import", icon: Upload },
     { href: "/admin/content-enrichment", label: "Content Enrichment", icon: RefreshCw },
+    { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: RefreshCw },
     { href: "/admin/journal-dates", label: "Journal Dates", icon: Calendar },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
     { href: "/admin/settings", label: "Settings", icon: Settings },
