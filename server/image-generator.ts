@@ -5,7 +5,7 @@ import axios from "axios";
 import { fileURLToPath } from 'url';
 import { Study, BlogArticle, studies } from "@shared/schema";
 import { db } from "./db";
-import { eq, isNull, and, or, lte, desc } from "drizzle-orm";
+import { eq, isNull, and, or, desc, not, sql } from "drizzle-orm";
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
