@@ -83,6 +83,15 @@ export async function searchEuropePMC(
  * @param doi Digital Object Identifier
  * @returns Article data
  */
+export async function getEuropePmcArticleByDOI(doi: string): Promise<any> {
+  return getArticleByDOI(doi);
+}
+
+/**
+ * Get article details by DOI (original function)
+ * @param doi Digital Object Identifier
+ * @returns Article data
+ */
 export async function getArticleByDOI(doi: string): Promise<any> {
   try {
     const response = await axios.get('https://www.ebi.ac.uk/europepmc/webservices/rest/search', {
