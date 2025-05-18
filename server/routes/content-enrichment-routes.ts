@@ -24,7 +24,7 @@ router.get("/candidates", async (req, res) => {
     }
     
     const candidates = await db.query.studies.findMany({
-      where: inArray(studies.id, studyIds),
+      where: (eb) => eb.inArray(studies.id, studyIds),
       orderBy: [desc(studies.updatedAt)]
     });
     
