@@ -107,6 +107,7 @@ function Router() {
       <Route path="/admin/journal-dates" component={JournalDateUpdater} />
       <Route path="/admin/content-enrichment" component={ContentEnrichmentPage} />
       <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
+      <Route path="/admin/image-generation" component={ImageGenerationPage} />
       
       {/* Legacy Admin Routes - will be removed after transition */}
       <Route path="/admin/legacy" component={AdminPage} />
