@@ -12,7 +12,8 @@ const router = Router();
  * Unified search across multiple research databases
  * 
  * This endpoint searches across PubMed, Europe PMC, Semantic Scholar, and CrossRef
- * based on the selected sources and returns consolidated results.
+ * based on the selected sources and returns consolidated results. It combines results
+ * from different sources by matching DOIs and creates a unified listing.
  */
 router.get('/api/research/search', async (req: Request, res: Response) => {
   try {
@@ -31,83 +32,178 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     const pageSizeNum = parseInt(pageSize as string);
     const selectedSources = typeof sources === 'string' ? sources.split(',') : ['pubmed'];
     
-    // Track all search results
+    console.log(`Unified search request - Query: "${query}", Sources: ${JSON.stringify(selectedSources)}`);
+    
+    // Step 1: Check if any matching studies are already in our database to avoid duplicates
+    // and to flag studies that are already imported
+    let existingStudies: any[] = [];
+    try {
+      console.log('Getting matching studies from database...');
+      existingStudies = await storage.getStudiesByTitlePartial(query, 50);
+      console.log(`Found ${existingStudies.length} potentially matching studies in our database`);
+      
+      // Create lookup maps for faster matching
+      const existingDOIMap = new Map();
+      const existingPMIDMap = new Map();
+      
+      existingStudies.forEach(study => {
+        if (study.doi) existingDOIMap.set(study.doi.toLowerCase(), study.id);
+        if (study.pmid) existingPMIDMap.set(study.pmid, study.id);
+      });
+    } catch (error) {
+      console.error('Error checking database for existing studies:', error);
+    }
+    
+    // Step 2: Run searches against each requested source sequentially
+    // This is more reliable than parallel searches and respects rate limits
     let allResults: any[] = [];
-    let totalResults = 0;
+    let totalResultsCount = 0;
     let errors: string[] = [];
     
-    // Perform searches sequentially for more reliable results
+    // Process each source one by one
     for (const source of selectedSources) {
       try {
         console.log(`Processing source: ${source}`);
         
         switch (source.toLowerCase()) {
           case 'pubmed':
-            // For PubMed, use the searchPubMedWithPagination function
+            // Search PubMed with an increased limit to account for duplicates later
             console.log('Searching PubMed...');
-            const pubmedData = await searchPubMedWithPagination(query, pageNum - 1, pageSizeNum);
+            const pubmedData = await searchPubMedWithPagination(query, pageNum - 1, pageSizeNum * 2);
             const totalPubmedResults = pubmedData.length > 0 ? pubmedData[0]?.totalResults || pubmedData.length : 0;
             
-            const formattedPubmedData = pubmedData.map((item: any) => ({
-              ...item,
-              source: 'pubmed'
-            }));
+            const formattedPubmedData = pubmedData.map((item: any) => {
+              // Check if this study is already in our database
+              const isInDatabase = existingStudies.some(study => 
+                (study.doi && item.doi && study.doi.toLowerCase() === item.doi.toLowerCase()) ||
+                (study.pmid && item.pmid && study.pmid === item.pmid)
+              );
+              
+              // Find the database ID if it exists
+              const databaseId = isInDatabase ? 
+                existingStudies.find(study => 
+                  (study.doi && item.doi && study.doi.toLowerCase() === item.doi.toLowerCase()) ||
+                  (study.pmid && item.pmid && study.pmid === item.pmid)
+                )?.id : undefined;
+              
+              return {
+                ...item,
+                source: 'pubmed',
+                inDatabase: isInDatabase,
+                databaseId: databaseId
+              };
+            });
             
             console.log(`Found ${formattedPubmedData.length} results from PubMed`);
             allResults = [...allResults, ...formattedPubmedData];
-            totalResults += totalPubmedResults;
+            totalResultsCount += totalPubmedResults;
             break;
             
           case 'europepmc':
             console.log('Searching EuropePMC...');
-            const europepmcResults = await searchEuropePMC(query, pageNum, pageSizeNum);
-            if (europepmcResults && europepmcResults.results) {
-              // Results are already formatted in the searchEuropePMC function
-              const formattedEpmcData = europepmcResults.results.map((item: any) => ({
-                ...item,
-                source: 'europepmc' // Explicitly ensure source is set
-              }));
+            const europepmcResults = await searchEuropePMC(query, pageNum, pageSizeNum * 2);
+            if (europepmcResults && europepmcResults.results && europepmcResults.results.length > 0) {
+              console.log(`Found ${europepmcResults.results.length} results from EuropePMC of ${europepmcResults.total} total`);
               
-              console.log(`Found ${formattedEpmcData.length} results from EuropePMC`);
-              // Log a sample result to check the format
-              if (formattedEpmcData.length > 0) {
-                console.log('Sample EuropePMC result:', JSON.stringify(formattedEpmcData[0]).substring(0, 200) + '...');
+              const formattedEPMCData = europepmcResults.results.map((item: any) => {
+                // Check if this study is already in our database
+                const isInDatabase = existingStudies.some(study => 
+                  (study.doi && item.doi && study.doi.toLowerCase() === item.doi.toLowerCase()) ||
+                  (study.pmid && item.pmid && study.pmid === item.pmid)
+                );
+                
+                // Find the database ID if it exists
+                const databaseId = isInDatabase ? 
+                  existingStudies.find(study => 
+                    (study.doi && item.doi && study.doi.toLowerCase() === item.doi.toLowerCase()) ||
+                    (study.pmid && item.pmid && study.pmid === item.pmid)
+                  )?.id : undefined;
+                
+                return {
+                  ...item,
+                  source: 'europepmc',
+                  inDatabase: isInDatabase,
+                  databaseId: databaseId
+                };
+              });
+              
+              // Log a sample result for debugging
+              if (formattedEPMCData.length > 0) {
+                console.log('Sample EuropePMC result:', JSON.stringify(formattedEPMCData[0]).substring(0, 200) + '...');
               }
               
-              allResults = [...allResults, ...formattedEpmcData];
-              totalResults += europepmcResults.total || 0;
+              allResults = [...allResults, ...formattedEPMCData];
+              totalResultsCount += europepmcResults.total || 0;
             } else {
-              console.log('No results from EuropePMC or unexpected format', europepmcResults);
+              console.log('No results from EuropePMC or unexpected format');
             }
             break;
             
           case 'semanticscholar':
             console.log('Searching Semantic Scholar...');
-            const semanticScholarResults = await searchSemanticScholar(query, pageNum - 1, pageSizeNum);
-            if (semanticScholarResults && semanticScholarResults.data) {
-              const semanticScholarData = semanticScholarResults.data.map((item: any) => ({
-                ...item,
-                source: 'semanticscholar'
-              }));
-              console.log(`Found ${semanticScholarData.length} results from Semantic Scholar`);
-              allResults = [...allResults, ...semanticScholarData];
-              totalResults += semanticScholarResults.total || 0;
+            const semanticScholarResults = await searchSemanticScholar(query, pageNum - 1, pageSizeNum * 2);
+            if (semanticScholarResults && semanticScholarResults.data && semanticScholarResults.data.length > 0) {
+              console.log(`Found ${semanticScholarResults.data.length} results from Semantic Scholar`);
+              
+              const formattedSSData = semanticScholarResults.data.map((item: any) => {
+                // Check if this study is already in our database
+                const isInDatabase = existingStudies.some(study => 
+                  (study.doi && item.doi && study.doi.toLowerCase() === item.doi.toLowerCase())
+                );
+                
+                // Find the database ID if it exists
+                const databaseId = isInDatabase ? 
+                  existingStudies.find(study => 
+                    (study.doi && item.doi && study.doi.toLowerCase() === item.doi.toLowerCase())
+                  )?.id : undefined;
+                
+                return {
+                  ...item,
+                  source: 'semanticscholar',
+                  inDatabase: isInDatabase,
+                  databaseId: databaseId
+                };
+              });
+              
+              allResults = [...allResults, ...formattedSSData];
+              totalResultsCount += semanticScholarResults.total || 0;
             }
             break;
             
           case 'crossref':
             console.log('Searching CrossRef...');
-            const crossrefResults = await searchCrossRef(query, pageNum, pageSizeNum);
-            if (crossrefResults && crossrefResults.items) {
-              const crossrefData = crossrefResults.items.map((item: any) => ({
-                ...item,
-                source: 'crossref'
-              }));
-              console.log(`Found ${crossrefData.length} results from CrossRef`);
-              allResults = [...allResults, ...crossrefData];
-              totalResults += crossrefResults.totalResults || 0;
+            const crossrefResults = await searchCrossRef(query, pageNum, pageSizeNum * 2);
+            if (crossrefResults && crossrefResults.items && crossrefResults.items.length > 0) {
+              console.log(`Found ${crossrefResults.items.length} results from CrossRef`);
+              
+              const formattedCRData = crossrefResults.items.map((item: any) => {
+                // Check if this study is already in our database
+                const isInDatabase = existingStudies.some(study => 
+                  (study.doi && item.DOI && study.doi.toLowerCase() === item.DOI.toLowerCase())
+                );
+                
+                // Find the database ID if it exists
+                const databaseId = isInDatabase ? 
+                  existingStudies.find(study => 
+                    (study.doi && item.DOI && study.doi.toLowerCase() === item.DOI.toLowerCase())
+                  )?.id : undefined;
+                
+                return {
+                  ...item,
+                  source: 'crossref',
+                  inDatabase: isInDatabase,
+                  databaseId: databaseId
+                };
+              });
+              
+              allResults = [...allResults, ...formattedCRData];
+              totalResultsCount += crossrefResults.totalResults || 0;
             }
             break;
+            
+          default:
+            console.log(`Unsupported source: ${source}`);
+            errors.push(`Unsupported source: ${source}`);
         }
       } catch (error: any) {
         console.error(`Error searching ${source}:`, error);
@@ -115,123 +211,221 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
       }
     }
     
-    console.log(`Unified search returned: ${allResults.length} results`);
+    console.log(`Total results before deduplication: ${allResults.length}`);
     
-    // Check for DOI duplicates to avoid showing the same study from multiple sources
-    const uniqueResults = [];
-    const seenDOIs = new Set();
-    const seenPMIDs = new Set();
+    // Step 3: Combine and deduplicate results using DOIs and PMIDs
+    // Create DOI and PMID maps to group identical studies
+    const doiMap = new Map();
+    const pmidMap = new Map();
+    const titleMap = new Map(); // Fallback for items without DOI or PMID
     
-    // Debug in detail what we have in allResults
-    console.log(`All results before deduplication: ${allResults.length}`);
-    
-    // Count per source before deduplication
-    const preDedupeSourceCounts = {};
+    // First pass: collect items by their DOI/PMID
     allResults.forEach(item => {
-      const source = item.source || 'unknown';
-      preDedupeSourceCounts[source] = (preDedupeSourceCounts[source] || 0) + 1;
-    });
-    console.log(`Source counts before deduplication: ${JSON.stringify(preDedupeSourceCounts)}`);
-    
-    for (const result of allResults) {
-      const doi = result.doi || '';
-      const pmid = result.pmid || '';
-      
-      // If no identifiers or not seen before, add to unique results
-      if ((!doi && !pmid) || 
-          (doi && !seenDOIs.has(doi.toLowerCase())) || 
-          (pmid && !seenPMIDs.has(pmid))) {
-        
-        // Add to tracking sets
-        if (doi) {
-          seenDOIs.add(doi.toLowerCase());
+      // Handle DOI
+      if (item.doi) {
+        const doi = item.doi.toLowerCase().trim();
+        if (doiMap.has(doi)) {
+          doiMap.get(doi).push(item);
+        } else {
+          doiMap.set(doi, [item]);
         }
-        if (pmid) {
-          seenPMIDs.add(pmid);
+      } 
+      // Handle PMID (as a fallback if no DOI exists)
+      else if (item.pmid) {
+        const pmid = item.pmid.toString().trim();
+        if (pmidMap.has(pmid)) {
+          pmidMap.get(pmid).push(item);
+        } else {
+          pmidMap.set(pmid, [item]);
         }
-        
-        uniqueResults.push(result);
       }
-    }
-    
-    console.log(`After deduplication: ${uniqueResults.length} unique results`);
-    
-    // Count per source after deduplication 
-    const postDedupeSourceCounts = {};
-    uniqueResults.forEach(item => {
-      const source = item.source || 'unknown';
-      postDedupeSourceCounts[source] = (postDedupeSourceCounts[source] || 0) + 1;
+      // Handle items with neither DOI nor PMID by title
+      else if (item.title) {
+        const titleKey = item.title.toLowerCase().trim();
+        if (titleMap.has(titleKey)) {
+          titleMap.get(titleKey).push(item);
+        } else {
+          titleMap.set(titleKey, [item]);
+        }
+      }
     });
-    console.log(`Source counts after deduplication: ${JSON.stringify(postDedupeSourceCounts)}`);
     
-    // Sort results by year (newest first) if available
-    uniqueResults.sort((a, b) => {
+    // Second pass: process and merge items with the same DOI
+    const unifiedResults: any[] = [];
+    
+    // Process DOI matches (highest priority)
+    doiMap.forEach((items, doi) => {
+      if (items.length === 1) {
+        // Single item - no merging needed
+        unifiedResults.push(items[0]);
+      } else {
+        // Multiple items with same DOI - merge them
+        const mergedItem = items.reduce((merged: any, current: any) => {
+          // Start with first item's properties
+          const result = { ...merged };
+          
+          // Keep track of which sources were merged
+          result.mergedSources = result.mergedSources || [];
+          if (!result.mergedSources.includes(current.source)) {
+            result.mergedSources.push(current.source);
+          }
+          
+          // Mark as unified since it comes from multiple sources
+          result.source = 'unified';
+          
+          // Take the most complete abstract
+          if ((!result.abstract || result.abstract.length < 50) && 
+              current.abstract && current.abstract.length > 50) {
+            result.abstract = current.abstract;
+          }
+          
+          // Prioritize items already in the database
+          if (current.inDatabase) {
+            result.inDatabase = true;
+            result.databaseId = current.databaseId;
+          }
+          
+          // Fill in missing fields from current item
+          Object.entries(current).forEach(([key, value]) => {
+            if (!result[key] && value) {
+              result[key] = value;
+            }
+          });
+          
+          return result;
+        }, items[0]);
+        
+        unifiedResults.push(mergedItem);
+      }
+    });
+    
+    // Process PMID matches (only if not already added via DOI)
+    pmidMap.forEach((items, pmid) => {
+      // Skip if any item with this PMID has already been included via DOI
+      const alreadyAdded = unifiedResults.some(item => item.pmid === pmid);
+      if (!alreadyAdded) {
+        if (items.length === 1) {
+          unifiedResults.push(items[0]);
+        } else {
+          // Merge items with same PMID
+          const mergedItem = items.reduce((merged: any, current: any) => {
+            const result = { ...merged };
+            
+            result.mergedSources = result.mergedSources || [];
+            if (!result.mergedSources.includes(current.source)) {
+              result.mergedSources.push(current.source);
+            }
+            
+            result.source = 'unified';
+            
+            if ((!result.abstract || result.abstract.length < 50) && 
+                current.abstract && current.abstract.length > 50) {
+              result.abstract = current.abstract;
+            }
+            
+            if (current.inDatabase) {
+              result.inDatabase = true;
+              result.databaseId = current.databaseId;
+            }
+            
+            Object.entries(current).forEach(([key, value]) => {
+              if (!result[key] && value) {
+                result[key] = value;
+              }
+            });
+            
+            return result;
+          }, items[0]);
+          
+          unifiedResults.push(mergedItem);
+        }
+      }
+    });
+    
+    // Process title matches as a last resort
+    titleMap.forEach((items, title) => {
+      // Skip if already added via DOI or PMID
+      const alreadyAdded = unifiedResults.some(item => 
+        item.title && item.title.toLowerCase().trim() === title
+      );
+      
+      if (!alreadyAdded) {
+        if (items.length === 1) {
+          unifiedResults.push(items[0]);
+        } else {
+          // Merge items with the same title
+          const mergedItem = items.reduce((merged: any, current: any) => {
+            const result = { ...merged };
+            
+            result.mergedSources = result.mergedSources || [];
+            if (!result.mergedSources.includes(current.source)) {
+              result.mergedSources.push(current.source);
+            }
+            
+            result.source = 'unified';
+            
+            if ((!result.abstract || result.abstract.length < 50) && 
+                current.abstract && current.abstract.length > 50) {
+              result.abstract = current.abstract;
+            }
+            
+            if (current.inDatabase) {
+              result.inDatabase = true;
+              result.databaseId = current.databaseId;
+            }
+            
+            Object.entries(current).forEach(([key, value]) => {
+              if (!result[key] && value) {
+                result[key] = value;
+              }
+            });
+            
+            return result;
+          }, items[0]);
+          
+          unifiedResults.push(mergedItem);
+        }
+      }
+    });
+    
+    console.log(`After deduplication and unification: ${unifiedResults.length} unique results`);
+    
+    // Step 4: Sort and paginate the results
+    // Sort by year (newest first) if available
+    unifiedResults.sort((a, b) => {
       const yearA = a.year ? parseInt(a.year) : 0;
       const yearB = b.year ? parseInt(b.year) : 0;
       return yearB - yearA; // Newest first
     });
     
-    // For now, just limit to requested page size
-    allResults = uniqueResults.slice(0, pageSizeNum);
+    // Get the paginated results
+    const paginatedResults = unifiedResults.slice(0, pageSizeNum);
     
-    // Check for empty results, if no results from multiple sources, default to PubMed-like format
-    if (allResults.length === 0) {
-      return res.json({
-        success: true,
-        source: selectedSources[0],
-        query: query,
-        total: 0,
-        startIndex: 0,
-        nextIndex: 0,
-        articles: []
-      });
-    }
-    
-    // For debugging, log the source counts
-    const sourceCounts = allResults.reduce((acc, item) => {
+    // Step 5: Count source distribution after deduplication
+    const sourceCounts = paginatedResults.reduce((acc: {[key: string]: number}, item: any) => {
       const source = item.source || 'unknown';
       acc[source] = (acc[source] || 0) + 1;
       return acc;
     }, {});
     
-    console.log(`Source counts in unified search: ${JSON.stringify(sourceCounts)}`);
-    console.log(`Combined results: ${allResults.length} total studies found`);
+    // Step 6: Set the correct source flag
+    // Always use 'unified' as the source when multiple sources were requested
+    const responseSource = selectedSources.length > 1 ? 'unified' : selectedSources[0].toLowerCase();
     
-    // Always use "unified" as the source when we have multiple sources requested
-    // Use the specific source name when it's the only source explicitly requested
-    // IMPORTANT: When multiple sources are requested, we must use 'unified'
-    // This ensures the frontend knows to handle the combined results properly
-    const finalSource = selectedSources.length === 1 ? selectedSources[0].toLowerCase() : 'unified';
-        
-    console.log(`Request details: query="${query}", sources=${JSON.stringify(selectedSources)}, page=${pageNum}, pageSize=${pageSizeNum}`);
-    console.log(`Using response source: ${finalSource}`);
-    
-    // If we've requested europepmc but got no results specifically from there, log that
-    if (selectedSources.includes('europepmc') && 
-        (!preDedupeSourceCounts['europepmc'] || preDedupeSourceCounts['europepmc'] === 0)) {
-      console.log('WARNING: EuropePMC was requested but returned no results');
-    }
-    
-    // Format response based on available results
-    // CRITICAL: Set the correct source identifier for the combined results
-    // The source must be explicitly set to 'unified' when multiple sources are selected
-    const responseSource = selectedSources.length > 1 ? 'unified' : finalSource;
-    
-    console.log(`Selected sources: ${JSON.stringify(selectedSources)}, setting response source to: ${responseSource}`);
+    // Step 7: Prepare and send the response
+    console.log(`Responding with source '${responseSource}' and ${paginatedResults.length} articles`);
     
     const responseObj = {
       success: true,
       source: responseSource,
       query: query,
-      total: totalResults,
+      total: unifiedResults.length,
       startIndex: (pageNum - 1) * pageSizeNum,
-      nextIndex: pageNum * pageSizeNum,
-      articles: uniqueResults.slice(0, pageSizeNum), // Use de-duped results and respect page size
-      sourceCounts: sourceCounts, // Include source counts for debugging
+      nextIndex: Math.min(pageNum * pageSizeNum, unifiedResults.length),
+      articles: paginatedResults,
+      sourceCounts: sourceCounts,
       errors: errors.length > 0 ? errors : undefined
     };
-    
-    console.log(`Responding with source: ${responseObj.source}, total articles: ${responseObj.articles.length}`);
     
     res.json(responseObj);
   } catch (error: any) {
