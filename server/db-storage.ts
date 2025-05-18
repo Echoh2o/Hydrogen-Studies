@@ -230,6 +230,26 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+  
+  /**
+   * Get studies by partial title match
+   * @param titlePart Part of the title to search for
+   * @param limit Maximum number of studies to return
+   * @returns Array of studies with matching titles
+   */
+  async getStudiesByTitlePartial(titlePart: string, limit: number = 20): Promise<Study[]> {
+    try {
+      const normalizedTitlePart = titlePart.trim().toLowerCase();
+      return await db
+        .select()
+        .from(studies)
+        .where(sql`LOWER(${studies.title}) LIKE ${`%${normalizedTitlePart}%`}`)
+        .limit(limit);
+    } catch (error) {
+      console.error(`Error fetching studies by partial title ${titlePart}:`, error);
+      return [];
+    }
+  }
 
   async getStudiesBySourcePlatform(platform: string): Promise<Study[]> {
     try {
