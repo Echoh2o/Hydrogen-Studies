@@ -1,452 +1,448 @@
-/**
- * Research Suggestions Service
- * 
- * Provides intelligent research topic suggestions based on user inputs
- * using OpenAI and our database of hydrogen research.
- */
-
-import OpenAI from "openai";
 import { db } from "./db";
 import { studies } from "@shared/schema";
-import { eq, like, ilike, and, or, desc } from "drizzle-orm";
-import { researchTaxonomy } from "../shared/research-taxonomy";
+import { benefits, demographics, mechanisms, deliveryMethods } from "@shared/schema-hydrogen-fields";
+import { eq, like, ilike, inArray, and, or, desc, sql } from "drizzle-orm";
+import OpenAI from "openai";
 
-// Initialize OpenAI
+// Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Interface for user selections in research wizard
-interface WizardSelections {
-  interests?: string[];
-  healthConditions?: string[];
-  demographicGroup?: string;
-  researchType?: 'clinical' | 'experimental' | 'review' | 'case-study' | 'any';
-  deliveryMethod?: string[];
-  timeFrame?: 'short-term' | 'medium-term' | 'long-term' | 'any';
-  focusArea?: 'physical' | 'mental' | 'both';
+// Interface for suggestion options
+interface SuggestionOptions {
+  interests: string[];
+  healthConditions: string[];
+  demographicGroups: string[];
+  researchTypes: string[];
+  deliveryMethods: string[];
+  timeFrames: string[];
 }
 
-// Interface for generated research suggestions
+// Interface for user selections
+interface UserSelections {
+  interests: string[];
+  healthConditions: string[];
+  demographicGroup: string;
+  researchType: string;
+  deliveryMethod: string[];
+  timeFrame: string;
+  focusArea: string;
+}
+
+// Interface for suggestion results
 interface ResearchSuggestion {
   title: string;
   description: string;
   searchTerms: string[];
   researchGaps?: string[];
   confidence: number;
-  relatedStudies: Array<{
+  relatedStudies: {
     id: number;
     title: string;
     authors: string;
     abstract: string;
     journal: string;
     publishDate: string;
-  }>;
+  }[];
 }
 
-// Main function to generate research suggestions
+// Interface for suggestion response
+interface SuggestionResponse {
+  suggestions: ResearchSuggestion[];
+  searchTerms: string[];
+}
+
+/**
+ * Get options for the research suggestion wizard
+ * This includes available interests, health conditions, demographics, etc.
+ */
+export async function getSuggestionOptions(): Promise<SuggestionOptions> {
+  try {
+    // Get benefit categories for interests
+    const benefitRecords = await db.select().from(benefits);
+    
+    // Get demographic groups
+    const demographicRecords = await db.select().from(demographics);
+    
+    // Get mechanisms for interests
+    const mechanismRecords = await db.select().from(mechanisms);
+    
+    // Get delivery methods
+    const deliveryMethodRecords = await db.select().from(deliveryMethods);
+    
+    // Extract common health conditions directly from titles and abstracts
+    // Since we don't have dedicated keywords/tags columns, we'll extract from abstracts
+    const healthConditionsQuery = await db.select({
+      condition: studies.abstract
+    }).from(studies)
+    .where(sql`${studies.abstract} IS NOT NULL AND ${studies.abstract} != ''`);
+    
+    // We'll extract potential health conditions in the processing step below
+    
+    // Extract health conditions from abstracts
+    const medicalKeywords = [
+      'disease', 'syndrome', 'disorder', 'condition', 'injury', 'cancer', 
+      'diabetes', 'inflammation', 'pain', 'arthritis', 'dementia', 'alzheimer',
+      'parkinson', 'hypertension', 'obesity', 'stroke', 'heart', 'liver', 'kidney',
+      'lung', 'brain', 'depression', 'anxiety', 'stress', 'fatigue', 'chronic'
+    ];
+    
+    // Use a Set to avoid duplicates
+    const healthConditionSet = new Set<string>();
+    
+    // Extract conditions from abstracts
+    healthConditionsQuery.forEach(item => {
+      if (item.condition) {
+        // Split abstract into words
+        const words = item.condition.split(/\s+/);
+        
+        // Look for 1-3 word phrases that could be conditions
+        for (let i = 0; i < words.length; i++) {
+          for (let len = 1; len <= 3 && i + len <= words.length; len++) {
+            const phrase = words.slice(i, i + len).join(' ').toLowerCase();
+            
+            // Check if the phrase contains any medical keywords
+            if (medicalKeywords.some(keyword => phrase.includes(keyword)) && 
+                phrase.length > 4 && 
+                !phrase.includes('hydrogen')) {
+              healthConditionSet.add(phrase.charAt(0).toUpperCase() + phrase.slice(1));
+            }
+          }
+        }
+      }
+    });
+    
+    // Convert set to array and limit to 30 conditions
+    const healthConditions = Array.from(healthConditionSet).slice(0, 30);
+    
+    // Get study design types
+    const designTypes = ['Clinical Trial', 'Case Study', 'Randomized Controlled Trial', 
+      'Meta-Analysis', 'Review', 'Cohort Study', 'Experimental'];
+    
+    // Get population groups
+    const populationGroups = demographicRecords.map(d => d.name);
+    
+    // Prepare the final options
+    return {
+      interests: benefitRecords.map(b => b.name),
+      healthConditions,
+      demographicGroups: populationGroups,
+      researchTypes: ['clinical', 'experimental', 'review', 'case-study', 'any'],
+      deliveryMethods: deliveryMethodRecords.map(d => d.name),
+      timeFrames: ['short-term', 'medium-term', 'long-term', 'any']
+    };
+  } catch (error) {
+    console.error('Error fetching suggestion options:', error);
+    throw new Error('Failed to fetch suggestion options');
+  }
+}
+
+/**
+ * Generate research suggestions based on user selections
+ */
 export async function generateResearchSuggestions(
-  selections: WizardSelections
-): Promise<{ suggestions: ResearchSuggestion[], searchTerms: string[] }> {
+  selections: UserSelections
+): Promise<SuggestionResponse> {
   try {
     // Step 1: Find relevant studies based on user selections
     const relevantStudies = await findRelevantStudies(selections);
     
-    // Step 2: Generate search terms based on selections
-    const searchTerms = generateSearchTerms(selections);
-    
-    // Step 3: Generate research suggestions using OpenAI
-    const suggestions = await generateSuggestionsUsingAI(selections, relevantStudies, searchTerms);
-    
-    // Step 4: For each suggestion, find related existing studies
-    for (const suggestion of suggestions) {
-      suggestion.relatedStudies = await findRelatedStudies(suggestion, relevantStudies);
+    if (relevantStudies.length === 0) {
+      // If no studies match the criteria, use AI to generate suggestions
+      // without specific study references
+      return await generateAIBasedSuggestions(selections, []);
     }
     
-    return {
-      suggestions,
-      searchTerms
-    };
+    // Step 2: Generate AI-based research suggestions with relevant studies
+    return await generateAIBasedSuggestions(selections, relevantStudies);
   } catch (error) {
-    console.error("Error generating research suggestions:", error);
-    throw error;
+    console.error('Error generating research suggestions:', error);
+    throw new Error('Failed to generate research suggestions');
   }
 }
 
-// Find studies that match the user's selections
-async function findRelevantStudies(selections: WizardSelections) {
-  try {
-    let query = db.select().from(studies);
-    const conditions = [];
-    
-    // Add conditions based on user selections
-    if (selections.interests && selections.interests.length > 0) {
-      // Match studies with similar focus areas
-      const interestConditions = selections.interests.map(interest => 
-        or(
-          ilike(studies.title, `%${interest}%`),
-          ilike(studies.abstract, `%${interest}%`),
-          ilike(studies.keywords, `%${interest}%`),
-          ilike(studies.tags, `%${interest}%`)
-        )
-      );
-      conditions.push(or(...interestConditions));
-    }
-    
-    if (selections.healthConditions && selections.healthConditions.length > 0) {
-      // Match studies about these health conditions
-      const healthConditions = selections.healthConditions.map(condition => 
-        or(
-          ilike(studies.title, `%${condition}%`),
-          ilike(studies.abstract, `%${condition}%`),
-          ilike(studies.keywords, `%${condition}%`),
-          ilike(studies.tags, `%${condition}%`)
-        )
-      );
-      conditions.push(or(...healthConditions));
-    }
-    
-    if (selections.demographicGroup && selections.demographicGroup !== 'any') {
-      // Match studies targeting specific demographic groups
-      conditions.push(
-        or(
-          ilike(studies.title, `%${selections.demographicGroup}%`),
-          ilike(studies.abstract, `%${selections.demographicGroup}%`),
-          ilike(studies.populationGroup, `%${selections.demographicGroup}%`)
-        )
-      );
-    }
-    
-    if (selections.researchType && selections.researchType !== 'any') {
-      // Match by study type
-      conditions.push(
-        or(
-          ilike(studies.studyType, `%${selections.researchType}%`),
-          ilike(studies.studyDesign, `%${selections.researchType}%`)
-        )
-      );
-    }
-    
-    if (selections.deliveryMethod && selections.deliveryMethod.length > 0) {
-      // Match studies using specific hydrogen delivery methods
-      const deliveryConditions = selections.deliveryMethod.map(method => 
-        or(
-          ilike(studies.title, `%${method}%`),
-          ilike(studies.abstract, `%${method}%`),
-          ilike(studies.keywords, `%${method}%`),
-          ilike(studies.interventionType, `%${method}%`)
-        )
-      );
-      conditions.push(or(...deliveryConditions));
-    }
-    
-    // Apply conditions to query
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-    
-    // Limit to recent and high-quality studies
-    query = query.orderBy(desc(studies.journalImpactFactor), desc(studies.citationCount), desc(studies.publishDate));
-    
-    // Execute query and get results
-    const results = await query.limit(20);
-    return results;
-    
-  } catch (error) {
-    console.error("Error finding relevant studies:", error);
-    return [];
-  }
-}
-
-// Generate search terms based on user selections
-function generateSearchTerms(selections: WizardSelections): string[] {
-  const terms: string[] = [];
+/**
+ * Find studies relevant to the user's selections
+ */
+async function findRelevantStudies(selections: UserSelections): Promise<any[]> {
+  // Build query conditions based on user selections
+  const conditions = [];
   
-  // Add general hydrogen terms
-  terms.push("molecular hydrogen", "hydrogen therapy", "hydrogen medicine");
-  
-  // Add terms from interests
-  if (selections.interests && selections.interests.length > 0) {
-    terms.push(...selections.interests);
+  // Interests (map to benefits)
+  if (selections.interests.length > 0) {
+    // This would be a join with study_benefits in a full implementation
+    // For now we'll search in the abstract, title, and keywords
+    const interestConditions = selections.interests.map(interest => 
+      or(
+        ilike(studies.title, `%${interest}%`),
+        ilike(studies.abstract, `%${interest}%`),
+        sql`${studies.keywords} ILIKE ${'%' + interest + '%'}`
+      )
+    );
+    conditions.push(or(...interestConditions));
   }
   
-  // Add health condition terms
-  if (selections.healthConditions && selections.healthConditions.length > 0) {
-    terms.push(...selections.healthConditions);
+  // Health conditions
+  if (selections.healthConditions.length > 0) {
+    const healthConditions = selections.healthConditions.map(condition => 
+      or(
+        ilike(studies.title, `%${condition}%`),
+        ilike(studies.abstract, `%${condition}%`),
+        sql`${studies.keywords} ILIKE ${'%' + condition + '%'}`,
+        sql`${studies.tags} ILIKE ${'%' + condition + '%'}`
+      )
+    );
+    conditions.push(or(...healthConditions));
   }
   
-  // Add demographic terms
+  // Demographic group
   if (selections.demographicGroup && selections.demographicGroup !== 'any') {
-    terms.push(selections.demographicGroup);
+    // This would be a join with study_demographics in a full implementation
+    // For now we'll search in the study's population field and abstract
+    conditions.push(
+      or(
+        sql`${studies.populationGroup} ILIKE ${'%' + selections.demographicGroup + '%'}`,
+        ilike(studies.abstract, `%${selections.demographicGroup}%`)
+      )
+    );
   }
   
-  // Add study type terms
+  // Research type
   if (selections.researchType && selections.researchType !== 'any') {
-    terms.push(selections.researchType);
-  }
-  
-  // Add delivery method terms
-  if (selections.deliveryMethod && selections.deliveryMethod.length > 0) {
-    terms.push(...selections.deliveryMethod);
-  }
-  
-  // Add time frame specific terms
-  if (selections.timeFrame && selections.timeFrame !== 'any') {
-    const timeFrameTerms = {
-      'short-term': ['acute', 'immediate effects', 'short-term'],
-      'medium-term': ['weeks', 'months', 'medium-term'],
-      'long-term': ['chronic', 'long-term', 'prolonged use']
+    const typeMap = {
+      'clinical': ['clinical trial', 'randomized', 'double-blind', 'placebo-controlled'],
+      'experimental': ['experimental', 'laboratory', 'in vitro', 'animal model'],
+      'review': ['review', 'meta-analysis', 'systematic review'],
+      'case-study': ['case study', 'case report', 'case series']
     };
     
-    terms.push(...timeFrameTerms[selections.timeFrame]);
-  }
-  
-  // Add focus area terms
-  if (selections.focusArea) {
-    const focusTerms = {
-      'physical': ['physical health', 'physical performance', 'physiological'],
-      'mental': ['mental health', 'cognitive', 'neurological', 'brain'],
-      'both': ['health', 'wellbeing', 'holistic']
-    };
+    const typeTerms = typeMap[selections.researchType as keyof typeof typeMap] || [];
     
-    terms.push(...focusTerms[selections.focusArea]);
+    if (typeTerms.length > 0) {
+      const typeConditions = typeTerms.map(term => 
+        or(
+          ilike(studies.title, `%${term}%`),
+          ilike(studies.abstract, `%${term}%`),
+          sql`${studies.studyDesign} ILIKE ${'%' + term + '%'}`
+        )
+      );
+      conditions.push(or(...typeConditions));
+    }
   }
   
-  // Remove duplicates and return
-  return [...new Set(terms)];
+  // Delivery methods
+  if (selections.deliveryMethod.length > 0) {
+    const deliveryConditions = selections.deliveryMethod.map(method => 
+      or(
+        ilike(studies.title, `%${method}%`),
+        ilike(studies.abstract, `%${method}%`),
+        sql`${studies.keywords} ILIKE ${'%' + method + '%'}`,
+        sql`${studies.interventionType} ILIKE ${'%' + method + '%'}`
+      )
+    );
+    conditions.push(or(...deliveryConditions));
+  }
+  
+  // Get query with all conditions
+  let query = db.select().from(studies);
+  
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
+  }
+  
+  // Sort by relevance (using journal impact factor as a proxy for now)
+  // In a full implementation, you would calculate a relevance score
+  query = query.orderBy(desc(studies.journalImpactFactor));
+  
+  // Limit to 50 studies for performance
+  query = query.limit(50);
+  
+  // Execute query
+  const results = await query;
+  
+  // Format results
+  return results.map(study => ({
+    id: study.id,
+    title: study.title,
+    abstract: study.abstract,
+    authors: study.authors,
+    journal: study.journal,
+    publishDate: study.publishDate || study.publicationDate,
+    fullText: study.fullText,
+    keywords: study.keywords?.split(',').map(k => k.trim()).filter(Boolean) || []
+  }));
 }
 
-// Generate research suggestions using OpenAI
-async function generateSuggestionsUsingAI(
-  selections: WizardSelections,
-  studies: any[],
-  searchTerms: string[]
-): Promise<ResearchSuggestion[]> {
+/**
+ * Generate research suggestions using OpenAI API
+ */
+async function generateAIBasedSuggestions(
+  selections: UserSelections,
+  relevantStudies: any[]
+): Promise<SuggestionResponse> {
+  // Create a prompt that describes what we want
+  const prompt = generatePrompt(selections, relevantStudies);
+  
   try {
-    // Create context from studies
-    const studiesContext = studies.map(study => 
-      `Title: ${study.title}\nJournal: ${study.journal}\nAbstract: ${study.abstract}\n`
-    ).join('\n---\n');
-    
-    // Create prompt for OpenAI
-    const prompt = `
-You are a hydrogen research expert specializing in hydrogen health research. Your task is to generate 3 research topic suggestions based on the following user interests and relevant studies.
-
-USER INTERESTS:
-${selections.interests ? 'Interests: ' + selections.interests.join(', ') : ''}
-${selections.healthConditions ? 'Health Conditions: ' + selections.healthConditions.join(', ') : ''}
-${selections.demographicGroup ? 'Demographic Group: ' + selections.demographicGroup : ''}
-${selections.researchType ? 'Research Type: ' + selections.researchType : ''}
-${selections.deliveryMethod ? 'Delivery Method: ' + selections.deliveryMethod.join(', ') : ''}
-${selections.timeFrame ? 'Time Frame: ' + selections.timeFrame : ''}
-${selections.focusArea ? 'Focus Area: ' + selections.focusArea : ''}
-
-SEARCH TERMS:
-${searchTerms.join(', ')}
-
-EXISTING RELEVANT STUDIES:
-${studiesContext}
-
-Generate 3 research topic suggestions that would be valuable to study based on the user's interests and the existing research. For each suggestion, include:
-1. A title for the research topic
-2. A description of the research focus (2-3 sentences)
-3. 5-7 specific search terms that would help find relevant studies
-4. 2-3 research gaps that this topic addresses
-5. A confidence score (0-100) indicating how promising this research direction is based on existing evidence
-
-Format each suggestion as a JSON object with these fields:
-- title (string)
-- description (string)
-- searchTerms (array of strings)
-- researchGaps (array of strings)
-- confidence (number from 0 to 100)
-
-Return an array of these 3 JSON objects without any additional text.
-`;
-
-    // Call OpenAI API
+    // Generate suggestions using OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
-        { role: "system", content: "You are a hydrogen health research specialist with expertise in suggesting promising research directions." },
-        { role: "user", content: prompt }
+        {
+          role: "system",
+          content: "You are a hydrogen research expert specializing in providing research suggestions based on user preferences. Your suggestions should be specific, actionable, and grounded in scientific evidence."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
       ],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 2500
     });
-
-    // Parse response
-    const responseContent = completion.choices[0].message.content;
-    const parsedResponse = JSON.parse(responseContent);
     
-    if (Array.isArray(parsedResponse.suggestions)) {
-      return parsedResponse.suggestions;
-    } else {
-      // If the API didn't return the expected format, create a default suggestion
-      return createDefaultSuggestions(selections);
-    }
+    // Parse the response
+    const responseText = completion.choices[0].message.content || "";
+    const responseJSON = JSON.parse(responseText);
+    
+    // Return the suggestions
+    return {
+      suggestions: responseJSON.suggestions || [],
+      searchTerms: responseJSON.searchTerms || []
+    };
   } catch (error) {
-    console.error("Error generating suggestions using AI:", error);
-    return createDefaultSuggestions(selections);
+    console.error('Error generating AI suggestions:', error);
+    
+    // Fallback to simplified response if OpenAI fails
+    return generateFallbackSuggestions(selections);
   }
 }
 
-// Create default suggestions when AI fails
-function createDefaultSuggestions(selections: WizardSelections): ResearchSuggestion[] {
-  const defaultSuggestions: ResearchSuggestion[] = [];
+/**
+ * Generate a prompt for the OpenAI API based on user selections
+ */
+function generatePrompt(selections: UserSelections, relevantStudies: any[]): string {
+  const { 
+    interests, 
+    healthConditions, 
+    demographicGroup, 
+    researchType, 
+    deliveryMethod, 
+    timeFrame,
+    focusArea 
+  } = selections;
   
-  // Generate suggestion titles based on user selections
-  let focusTerms: string[] = [];
-  
-  if (selections.interests && selections.interests.length > 0) {
-    focusTerms = [...focusTerms, ...selections.interests];
-  }
-  
-  if (selections.healthConditions && selections.healthConditions.length > 0) {
-    focusTerms = [...focusTerms, ...selections.healthConditions];
-  }
-  
-  if (focusTerms.length === 0) {
-    focusTerms = ["oxidative stress", "inflammation", "metabolic health"];
-  }
-  
-  const deliveryMethod = 
-    selections.deliveryMethod && selections.deliveryMethod.length > 0 
-      ? selections.deliveryMethod[0] 
-      : "hydrogen-rich water";
-  
-  for (let i = 0; i < 3 && i < focusTerms.length; i++) {
-    defaultSuggestions.push({
-      title: `Effects of ${deliveryMethod} on ${focusTerms[i]} in ${selections.demographicGroup || 'humans'}`,
-      description: `This research would investigate how ${deliveryMethod} affects ${focusTerms[i]} in ${selections.demographicGroup || 'human'} subjects. The study would measure key biomarkers and clinical outcomes.`,
-      searchTerms: [
-        "molecular hydrogen",
-        deliveryMethod,
-        focusTerms[i],
-        selections.demographicGroup || "humans",
-        "clinical trial",
-        "biomarkers"
-      ],
-      researchGaps: [
-        `Limited research on ${focusTerms[i]} with ${deliveryMethod}`,
-        "Lack of standardized protocols for hydrogen administration",
-        "Need for long-term outcome studies"
-      ],
-      confidence: 75 - (i * 10),
-      relatedStudies: []
+  let prompt = `Generate research suggestions for hydrogen health research based on the following preferences:
+
+User Preferences:
+- Interests: ${interests.length > 0 ? interests.join(', ') : 'Any health area'}
+- Health Conditions: ${healthConditions.length > 0 ? healthConditions.join(', ') : 'No specific conditions'}
+- Demographic Group: ${demographicGroup !== 'any' ? demographicGroup : 'Any demographic'}
+- Research Type: ${researchType !== 'any' ? researchType : 'Any research type'}
+- Hydrogen Delivery Methods: ${deliveryMethod.length > 0 ? deliveryMethod.join(', ') : 'Any delivery method'}
+- Time Frame: ${timeFrame !== 'any' ? timeFrame : 'Any time frame'}
+- Focus Area: ${focusArea !== 'both' ? focusArea : 'Both physical and mental health'}
+
+`;
+
+  // Add information about relevant studies if available
+  if (relevantStudies.length > 0) {
+    prompt += `\nBased on these preferences, I found ${relevantStudies.length} relevant studies on hydrogen research. Here are a few key studies to inform your suggestions:\n\n`;
+    
+    // Add details of up to 5 most relevant studies
+    const topStudies = relevantStudies.slice(0, 5);
+    topStudies.forEach((study, index) => {
+      prompt += `Study ${index + 1}: "${study.title}"
+Authors: ${study.authors}
+Published: ${study.publishDate || 'Unknown date'}
+Journal: ${study.journal}
+Abstract: ${study.abstract || 'No abstract available'}
+
+`;
     });
+  } else {
+    prompt += "\nI couldn't find any studies that exactly match these preferences, so please generate suggestions that could inspire new research in this area.\n";
   }
   
-  return defaultSuggestions;
-}
+  prompt += `
+Please generate at least 3 research suggestions based on the user's preferences ${relevantStudies.length > 0 ? 'and the provided studies' : ''}.
 
-// Find existing studies related to a specific suggestion
-async function findRelatedStudies(suggestion: ResearchSuggestion, preFilteredStudies: any[]): Promise<any[]> {
-  // If we already have pre-filtered studies, use those
-  if (preFilteredStudies.length > 0) {
-    // Sort by relevance to the suggestion
-    const scoredStudies = preFilteredStudies.map(study => {
-      let score = 0;
-      
-      // Check title matches
-      for (const term of suggestion.searchTerms) {
-        if (study.title.toLowerCase().includes(term.toLowerCase())) {
-          score += 3;
-        }
-        if (study.abstract && study.abstract.toLowerCase().includes(term.toLowerCase())) {
-          score += 2;
-        }
-        if (study.keywords && study.keywords.toLowerCase().includes(term.toLowerCase())) {
-          score += 1;
-        }
-      }
-      
-      return { ...study, relevanceScore: score };
-    });
-    
-    // Sort by relevance score
-    scoredStudies.sort((a, b) => b.relevanceScore - a.relevanceScore);
-    
-    // Return top results, formatted
-    return scoredStudies.slice(0, 5).map(study => ({
-      id: study.id,
-      title: study.title,
-      authors: study.authors || 'Unknown',
-      abstract: study.abstract || 'Not available',
-      journal: study.journal || 'Unknown journal',
-      publishDate: study.publishDate ? new Date(study.publishDate).toISOString().split('T')[0] : 'Unknown date'
-    }));
-  }
-  
-  // If no pre-filtered studies, query database
-  try {
-    // Build a query looking for matching studies
-    const searchConditions = suggestion.searchTerms.map(term => 
-      or(
-        ilike(studies.title, `%${term}%`),
-        ilike(studies.abstract, `%${term}%`),
-        ilike(studies.keywords, `%${term}%`)
-      )
-    );
-    
-    const relatedStudies = await db
-      .select()
-      .from(studies)
-      .where(or(...searchConditions))
-      .orderBy(desc(studies.journalImpactFactor), desc(studies.citationCount))
-      .limit(5);
-    
-    // Format results
-    return relatedStudies.map(study => ({
-      id: study.id,
-      title: study.title,
-      authors: study.authors || 'Unknown',
-      abstract: study.abstract || 'Not available',
-      journal: study.journal || 'Unknown journal',
-      publishDate: study.publishDate ? new Date(study.publishDate).toISOString().split('T')[0] : 'Unknown date'
-    }));
-  } catch (error) {
-    console.error("Error finding related studies:", error);
-    return [];
-  }
-}
+For each suggestion, include:
+1. A clear title
+2. A detailed description of the research focus
+3. Specific search terms that would be useful for finding related research
+4. Potential research gaps that could be addressed
+5. A confidence score (0-100) indicating how well supported this suggestion is by existing research
+6. Related studies (with ID, title, authors, journal, and publication date)
 
-// Helper functions for taxonomy mapping
-function findCategoryForTopic(category: string, topic: string) {
-  const categoryData = researchTaxonomy.find(cat => cat.name.toLowerCase() === category.toLowerCase());
-  if (!categoryData) return null;
-  
-  return categoryData.topics.find(t => t.toLowerCase() === topic.toLowerCase());
-}
-
-function findRelatedTopicsForCondition(condition: string) {
-  // Find all topics that might relate to this condition across categories
-  const relatedTopics = [];
-  
-  for (const category of researchTaxonomy) {
-    for (const topic of category.topics) {
-      if (topic.toLowerCase().includes(condition.toLowerCase())) {
-        relatedTopics.push({ category: category.name, topic });
-      }
+Provide your response in JSON format with the following structure:
+{
+  "suggestions": [
+    {
+      "title": "Suggestion title",
+      "description": "Detailed description",
+      "searchTerms": ["term1", "term2", "term3"],
+      "researchGaps": ["gap1", "gap2"],
+      "confidence": 85,
+      "relatedStudies": [
+        {
+          "id": 123,
+          "title": "Study title",
+          "authors": "Author names",
+          "journal": "Journal name",
+          "publishDate": "2023-01-01"
+        }
+      ]
     }
-  }
-  
-  return relatedTopics;
+  ],
+  "searchTerms": ["term1", "term2", "term3"]
 }
 
-function findCategoriesForDemographicGroup(group: string) {
-  // Find categories that relate to specific demographic groups
-  const demographicCategories = researchTaxonomy.filter(
-    cat => cat.name.toLowerCase().includes('demographic') || 
-           cat.name.toLowerCase().includes('population')
-  );
+The "searchTerms" array at the top level should include the most important terms that summarize these research suggestions as a whole.`;
+
+  return prompt;
+}
+
+/**
+ * Generate fallback suggestions when OpenAI API fails
+ */
+function generateFallbackSuggestions(selections: UserSelections): SuggestionResponse {
+  const { interests, healthConditions, demographicGroup, deliveryMethod } = selections;
   
-  const matchingTopics = [];
+  // Create basic search terms from user selections
+  const searchTerms = [
+    "hydrogen therapy",
+    "molecular hydrogen",
+    ...interests,
+    ...healthConditions,
+    ...(demographicGroup !== 'any' ? [demographicGroup] : []),
+    ...deliveryMethod
+  ];
   
-  for (const category of demographicCategories) {
-    for (const topic of category.topics) {
-      if (topic.toLowerCase().includes(group.toLowerCase())) {
-        matchingTopics.push({ category: category.name, topic });
-      }
-    }
-  }
+  // Generate a basic suggestion
+  const suggestion: ResearchSuggestion = {
+    title: "Hydrogen Therapy Research Suggestion",
+    description: `Research on the effects of hydrogen therapy ${
+      interests.length > 0 ? `for ${interests.join(' and ')}` : 'for health benefits'
+    } ${
+      healthConditions.length > 0 ? `in patients with ${healthConditions.join(' or ')}` : ''
+    } ${
+      demographicGroup !== 'any' ? `focusing on ${demographicGroup}` : ''
+    } ${
+      deliveryMethod.length > 0 ? `using ${deliveryMethod.join(' or ')}` : ''
+    }.`,
+    searchTerms: searchTerms.slice(0, 5),
+    researchGaps: [
+      "Long-term effects of hydrogen therapy",
+      "Optimal dosage and administration protocols",
+      "Comparison between different delivery methods"
+    ],
+    confidence: 60,
+    relatedStudies: []
+  };
   
-  return matchingTopics;
+  return {
+    suggestions: [suggestion],
+    searchTerms: searchTerms.slice(0, 8)
+  };
 }

@@ -28,6 +28,8 @@ import {
 } from "./chat-bot";
 import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB, semanticSearch } from "./vector-database";
 import { sendContactEmail } from "./sendgrid";
+import registerResearchSuggestionsRoutes from "./routes/research-suggestions-routes";
+import { getSuggestionOptions, generateResearchSuggestions } from "./research-suggestions";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
 import educationalRoutes from "./routes/educational";
