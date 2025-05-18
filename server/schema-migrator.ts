@@ -14,7 +14,8 @@ export async function runMigrations() {
     // Run specific migrations in order
     await addJournalPublishDateField();
     
-    // Add any other migrations here in the future
+    // Add multiple images support
+    await addMultipleImagesSupport();
     
     console.log('Database migrations completed successfully');
     return true;
