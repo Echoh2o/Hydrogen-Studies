@@ -6,6 +6,7 @@ import { Pool } from "@neondatabase/serverless";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { runMigrations } from "./schema-migrator";
+import { runDatabaseMigrations, initializeSampleCategoriesData } from "./schema-updates";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
@@ -74,7 +75,16 @@ app.use((req, res, next) => {
   try {
     console.log('Running database migrations...');
     await runMigrations();
+    
+    // Run additional hydrogen-specific migrations
+    await runDatabaseMigrations();
+    
     console.log('Successfully ran database migrations');
+    
+    // Initialize sample data for the hydrogen-specific categories
+    console.log('Initializing sample data in database...');
+    await initializeSampleCategoriesData();
+    console.log('Sample data initialized successfully');
   } catch (error) {
     console.error('Error running database migrations:', error);
   }

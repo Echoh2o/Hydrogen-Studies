@@ -51,7 +51,7 @@ async function createBenefitsTable() {
     }
     
     console.log('Creating benefits table...');
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS benefits (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
@@ -62,7 +62,7 @@ async function createBenefitsTable() {
         study_count INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
-    `.execute(db);
+    `);
     console.log('Benefits table created successfully');
   } catch (error) {
     console.error('Error creating benefits table:', error);
@@ -83,7 +83,7 @@ async function createDemographicsTable() {
     }
     
     console.log('Creating demographics table...');
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS demographics (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
@@ -94,7 +94,7 @@ async function createDemographicsTable() {
         study_count INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
-    `.execute(db);
+    `);
     console.log('Demographics table created successfully');
   } catch (error) {
     console.error('Error creating demographics table:', error);
@@ -115,7 +115,7 @@ async function createMechanismsTable() {
     }
     
     console.log('Creating mechanisms table...');
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS mechanisms (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
@@ -126,7 +126,7 @@ async function createMechanismsTable() {
         study_count INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
-    `.execute(db);
+    `);
     console.log('Mechanisms table created successfully');
   } catch (error) {
     console.error('Error creating mechanisms table:', error);
@@ -147,7 +147,7 @@ async function createDeliveryMethodsTable() {
     }
     
     console.log('Creating delivery methods table...');
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS delivery_methods (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
@@ -158,7 +158,7 @@ async function createDeliveryMethodsTable() {
         study_count INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
-    `.execute(db);
+    `);
     console.log('Delivery methods table created successfully');
   } catch (error) {
     console.error('Error creating delivery methods table:', error);
@@ -289,13 +289,13 @@ async function createMappingTable(tableName: string, studyColumn: string, entity
  */
 async function checkTableExists(tableName: string): Promise<boolean> {
   try {
-    const result = await sql`
+    const result = await db.execute(sql`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public'
         AND table_name = ${tableName}
       );
-    `.execute(db);
+    `);
     
     return result[0]?.exists || false;
   } catch (error) {
