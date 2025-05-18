@@ -69,6 +69,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={StudyDetails} />
+      <Route path="/studies/:id/:slug?" component={StudyDetails} />
       <Route path="/blog/:id/:slug?" component={BlogPage} />
       <Route path="/categories" component={Categories} />
       <Route path="/category/:id" component={CategoryDetails} />
