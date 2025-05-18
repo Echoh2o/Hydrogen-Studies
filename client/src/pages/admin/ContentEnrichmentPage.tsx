@@ -1,414 +1,452 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { RefreshCw, AlertCircle, CheckCircle2, DatabaseIcon, Search } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { apiRequest } from '@/lib/queryClient';
-import { Study } from '@shared/schema';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import {
+  BarChart,
+  BookOpen,
+  CheckCircle,
+  FileText,
+  Image,
+  AlertCircle,
+  Loader2,
+  ArrowRight
+} from "lucide-react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { Study } from "@/types/study";
+import { formatDate } from "@/lib/utils";
 
 export default function ContentEnrichmentPage() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [selectedTab, setSelectedTab] = useState('candidates');
+  const [activeTab, setActiveTab] = useState("candidates");
   const [processingStatus, setProcessingStatus] = useState<{
-    total: number;
-    processed: number;
-    success: number;
-    failed: number;
-  }>({ total: 0, processed: 0, success: 0, failed: 0 });
+    message: string;
+    type: "info" | "success" | "error";
+    visible: boolean;
+  }>({ message: "", type: "info", visible: false });
 
-  // Fetch studies that need content enrichment
-  const { data: candidateStudies, isLoading: loadingCandidates, refetch: refetchCandidates } = useQuery({
-    queryKey: ['/api/content-enrichment/candidates'],
-    refetchOnWindowFocus: false
+  // Fetch candidates for content enrichment
+  const candidatesQuery = useQuery({
+    queryKey: ["/api/content-enrichment/candidates"],
+    enabled: activeTab === "candidates",
   });
 
-  // Fetch recently processed studies
-  const { data: recentlyProcessed, isLoading: loadingRecent, refetch: refetchRecent } = useQuery({
-    queryKey: ['/api/content-enrichment/recent'],
-    refetchOnWindowFocus: false
+  // Fetch recently enriched studies
+  const recentlyEnrichedQuery = useQuery({
+    queryKey: ["/api/content-enrichment/recent"],
+    enabled: activeTab === "recent",
   });
 
-  // Mutation for enriching a single study
-  const { mutate: enrichStudy, isPending: isEnriching } = useMutation({
+  // Mutation for enhancing a single study
+  const enhanceStudyMutation = useMutation({
     mutationFn: async (studyId: number) => {
-      return apiRequest(`/api/content-enrichment/study/${studyId}`, {
-        method: 'POST'
+      const response = await fetch(`/api/content-enrichment/study/${studyId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+      
+      if (!response.ok) throw new Error("Failed to enhance study");
+      return response.json();
     },
     onSuccess: (data) => {
-      toast({
-        title: 'Study enriched successfully',
-        description: `Updated ${Object.entries(data.updates || {})
-          .filter(([_, value]) => value)
-          .map(([key]) => key)
-          .join(', ')}`,
-        variant: 'default'
+      // Show success message
+      setProcessingStatus({
+        message: `Successfully enhanced study #${data.studyId}. 
+          ${data.updates?.abstract ? "Abstract ✓ " : ""}
+          ${data.updates?.methods ? "Methods ✓ " : ""}
+          ${data.updates?.results ? "Results ✓ " : ""}
+          ${data.updates?.conclusion ? "Conclusion ✓ " : ""}
+          ${data.updates?.images ? "Images ✓ " : ""}`,
+        type: "success",
+        visible: true,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/content-enrichment/candidates'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/content-enrichment/recent'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/studies/${data.studyId}`] });
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/recent"] });
     },
     onError: (error) => {
-      toast({
-        title: 'Failed to enrich study',
-        description: 'There was an error while trying to enrich the study content.',
-        variant: 'destructive'
+      setProcessingStatus({
+        message: `Error: ${error.message}`,
+        type: "error",
+        visible: true,
       });
-    }
+    },
   });
 
-  // Mutation for batch enrichment of studies
-  const { mutate: batchEnrich, isPending: isBatchProcessing } = useMutation({
+  // Mutation for batch enrichment
+  const batchEnrichMutation = useMutation({
     mutationFn: async (count: number) => {
-      // Reset status
-      setProcessingStatus({ total: count, processed: 0, success: 0, failed: 0 });
-      
-      return apiRequest('/api/content-enrichment/batch', {
-        method: 'POST',
-        body: { count }
+      const response = await fetch(`/api/content-enrichment/batch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ count }),
       });
+      
+      if (!response.ok) throw new Error("Failed to process batch");
+      return response.json();
     },
     onSuccess: (data) => {
-      setProcessingStatus(prev => ({
-        ...prev,
-        processed: data.processed,
-        success: data.success,
-        failed: data.failed
-      }));
-      
-      toast({
-        title: 'Batch enrichment completed',
-        description: `Successfully enhanced ${data.success} studies out of ${data.processed}`,
-        variant: 'default'
+      setProcessingStatus({
+        message: `Batch process complete: ${data.processed} studies processed, 
+          ${data.success} improved, ${data.failed} failed`,
+        type: "success",
+        visible: true,
       });
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/content-enrichment/candidates'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/content-enrichment/recent'] });
+
+      if (data.success / data.processed > 0.8) {
+        setProcessingStatus({
+          message: `Success rate is high (${Math.round((data.success / data.processed) * 100)}%). 
+            Batch processing is working well.`,
+          type: "success",
+          visible: true,
+        });
+      }
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/recent"] });
     },
     onError: (error) => {
-      toast({
-        title: 'Batch enrichment failed',
-        description: 'There was an error while processing the batch of studies.',
-        variant: 'destructive'
+      setProcessingStatus({
+        message: `Error: ${error.message}`,
+        type: "error",
+        visible: true,
       });
-    }
+    },
   });
 
-  // Handle single study enrichment
-  const handleEnrichStudy = (studyId: number) => {
-    enrichStudy(studyId);
-  };
+  // Helper function to render study fields
+  const renderStudyEnhancementStatus = (study: Study) => {
+    const abstractStatus = (!study.abstract || study.abstract.length < 100) ? "missing" :
+      study.abstract.length < 500 ? "partial" : "complete";
+    
+    const methodsStatus = (!study.methods || study.methods.length < 50) ? "missing" :
+      study.methods.length < 200 ? "partial" : "complete";
+    
+    const resultsStatus = (!study.results || study.results.length < 50) ? "missing" :
+      study.results.length < 200 ? "partial" : "complete";
+    
+    const conclusionStatus = (!study.conclusion || study.conclusion.length < 50) ? "missing" :
+      study.conclusion.length < 200 ? "partial" : "complete";
 
-  // Handle batch enrichment
-  const handleBatchEnrich = (count: number) => {
-    batchEnrich(count);
-  };
+    const imageStatus = !study.imageUrl ? "missing" : "complete";
 
-  // Calculate progress percentage
-  const progressPercentage = processingStatus.total > 0
-    ? Math.round((processingStatus.processed / processingStatus.total) * 100)
-    : 0;
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case "missing": return "text-destructive";
+        case "partial": return "text-amber-500";
+        case "complete": return "text-green-500";
+        default: return "";
+      }
+    };
 
-  return (
-    <AdminLayout title="Content Enrichment">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Content Enrichment</h1>
-          <p className="text-muted-foreground mt-2">
-            Enhance studies with truncated abstracts, missing methods, results, or conclusions by fetching data from multiple research APIs.
-          </p>
+    return (
+      <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+        <div className="flex items-center gap-1">
+          <BookOpen className="h-4 w-4" />
+          <span>Abstract:</span> 
+          <span className={getStatusColor(abstractStatus)}>
+            {abstractStatus}
+          </span>
         </div>
+        <div className="flex items-center gap-1">
+          <FileText className="h-4 w-4" />
+          <span>Methods:</span> 
+          <span className={getStatusColor(methodsStatus)}>
+            {methodsStatus}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <BarChart className="h-4 w-4" />
+          <span>Results:</span> 
+          <span className={getStatusColor(resultsStatus)}>
+            {resultsStatus}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <CheckCircle className="h-4 w-4" />
+          <span>Conclusion:</span> 
+          <span className={getStatusColor(conclusionStatus)}>
+            {conclusionStatus}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Image className="h-4 w-4" />
+          <span>Image:</span> 
+          <span className={getStatusColor(imageStatus)}>
+            {imageStatus}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Enrichment Dashboard</CardTitle>
+  // Render the candidate studies list
+  const renderCandidatesList = () => {
+    if (candidatesQuery.isLoading) {
+      return (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading candidate studies...</span>
+        </div>
+      );
+    }
+
+    if (candidatesQuery.isError) {
+      return (
+        <Alert variant="destructive" className="my-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Failed to load candidate studies. Please try again.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    const candidates = candidatesQuery.data || [];
+
+    if (!candidates || candidates.length === 0) {
+      return (
+        <Alert className="my-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Candidates</AlertTitle>
+          <AlertDescription>
+            No studies found that need content enrichment. All studies may already have complete content.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {candidates.map((study: Study) => (
+          <Card key={study.id} className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between">
+                <CardTitle className="text-lg">{study.title}</CardTitle>
+                <Badge>{study.category}</Badge>
+              </div>
               <CardDescription>
-                Monitor content enrichment progress and statistics
+                {study.authors} ({formatDate(study.publishDate)})
+                {study.doi && (
+                  <span className="ml-2">
+                    DOI: <a href={`https://doi.org/${study.doi}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{study.doi}</a>
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="py-4">
-                    <CardTitle className="text-base flex items-center">
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Pending Enrichment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-2">
-                    <div className="text-3xl font-bold">
-                      {loadingCandidates ? (
-                        <Skeleton className="h-8 w-20" />
-                      ) : (
-                        candidateStudies?.length || 0
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Studies with DOIs but incomplete abstract data
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="py-4">
-                    <CardTitle className="text-base flex items-center">
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Recently Enhanced
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-2">
-                    <div className="text-3xl font-bold">
-                      {loadingRecent ? (
-                        <Skeleton className="h-8 w-20" />
-                      ) : (
-                        recentlyProcessed?.length || 0
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Studies successfully processed recently
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="py-4">
-                    <CardTitle className="text-base flex items-center">
-                      <DatabaseIcon className="mr-2 h-4 w-4" />
-                      Data Sources
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge>CrossRef</Badge>
-                      <Badge>EuropePMC</Badge>
-                      <Badge>Semantic Scholar</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Multiple sources for enhanced data completeness
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {isBatchProcessing && (
-                <div className="mt-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">
-                      Processing batch: {processingStatus.processed} of {processingStatus.total}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {progressPercentage}%
-                    </span>
-                  </div>
-                  <Progress value={progressPercentage} className="h-2" />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>Success: {processingStatus.success}</span>
-                    <span>Failed: {processingStatus.failed}</span>
-                  </div>
+              {renderStudyEnhancementStatus(study)}
+              {study.abstract && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  <p className="line-clamp-2">{study.abstract}</p>
                 </div>
               )}
             </CardContent>
-            <CardFooter className="bg-muted/50 py-4">
-              <div className="flex flex-col sm:flex-row gap-2 w-full justify-between">
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      refetchCandidates();
-                      refetchRecent();
-                    }}
-                    disabled={loadingCandidates || loadingRecent}
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh Stats
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => handleBatchEnrich(5)} 
-                    disabled={isBatchProcessing || isEnriching}
-                    variant="outline"
-                  >
-                    Process 5
-                  </Button>
-                  <Button 
-                    onClick={() => handleBatchEnrich(20)} 
-                    disabled={isBatchProcessing || isEnriching}
-                  >
-                    Process 20
-                  </Button>
-                </div>
-              </div>
+            <CardFooter className="bg-muted/50 flex justify-end">
+              <Button 
+                onClick={() => enhanceStudyMutation.mutate(study.id)}
+                disabled={enhanceStudyMutation.isPending}
+                size="sm"
+              >
+                {enhanceStudyMutation.isPending && enhanceStudyMutation.variables === study.id ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enriching...
+                  </>
+                ) : (
+                  <>
+                    Enrich Content
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
             </CardFooter>
           </Card>
-
-          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-            <TabsList className="grid w-full md:w-auto grid-cols-2">
-              <TabsTrigger value="candidates">Enrichment Candidates</TabsTrigger>
-              <TabsTrigger value="recent">Recently Enhanced</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="candidates" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Search className="mr-2 h-5 w-5" />
-                    Studies Needing Enhancement
-                  </CardTitle>
-                  <CardDescription>
-                    Studies with DOIs that have incomplete abstracts or missing data
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loadingCandidates ? (
-                    <div className="space-y-4">
-                      {Array(5).fill(0).map((_, index) => (
-                        <div key={index} className="flex flex-col space-y-2">
-                          <Skeleton className="h-6 w-1/3" />
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-2/3" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : candidateStudies?.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <CheckCircle2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                      <h3 className="text-lg font-medium">No studies need enrichment</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        All studies with DOIs have complete abstract data
-                      </p>
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[500px]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Study Title</TableHead>
-                            <TableHead>DOI</TableHead>
-                            <TableHead>Abstract Length</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {candidateStudies?.map((study: Study) => (
-                            <TableRow key={study.id}>
-                              <TableCell className="font-medium">{study.title}</TableCell>
-                              <TableCell>{study.doi}</TableCell>
-                              <TableCell>
-                                {study.abstract ? study.abstract.length : 0} chars
-                                {(!study.abstract || study.abstract.length < 100) && (
-                                  <Badge variant="outline" className="ml-2 bg-amber-50 text-amber-700 border-amber-200">
-                                    Truncated
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleEnrichStudy(study.id)}
-                                  disabled={isEnriching || isBatchProcessing}
-                                >
-                                  Enrich
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="recent" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <CheckCircle2 className="mr-2 h-5 w-5" />
-                    Recently Enhanced Studies
-                  </CardTitle>
-                  <CardDescription>
-                    Studies that have been successfully enhanced with additional content
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loadingRecent ? (
-                    <div className="space-y-4">
-                      {Array(5).fill(0).map((_, index) => (
-                        <div key={index} className="flex flex-col space-y-2">
-                          <Skeleton className="h-6 w-1/3" />
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-2/3" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : recentlyProcessed?.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                      <h3 className="text-lg font-medium">No recently enhanced studies</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Use the batch process or individual enrich buttons to enhance studies
-                      </p>
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[500px]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Study Title</TableHead>
-                            <TableHead>DOI</TableHead>
-                            <TableHead>Enhanced Fields</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {recentlyProcessed?.map((study: any) => (
-                            <TableRow key={study.id}>
-                              <TableCell className="font-medium">{study.title}</TableCell>
-                              <TableCell>{study.doi}</TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {study.enhancedFields?.map((field: string) => (
-                                    <Badge key={field} variant={field === 'abstract' ? 'success' : 'default'}>
-                                      {field}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleEnrichStudy(study.id)}
-                                  disabled={isEnriching || isBatchProcessing}
-                                >
-                                  Re-Enrich
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+        ))}
       </div>
+    );
+  };
+
+  // Render the recently enriched studies list
+  const renderRecentlyEnrichedList = () => {
+    if (recentlyEnrichedQuery.isLoading) {
+      return (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading recently enriched studies...</span>
+        </div>
+      );
+    }
+
+    if (recentlyEnrichedQuery.isError) {
+      return (
+        <Alert variant="destructive" className="my-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Failed to load recently enriched studies. Please try again.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    const recentlyEnriched = recentlyEnrichedQuery.data || [];
+
+    if (recentlyEnriched.length === 0) {
+      return (
+        <Alert className="my-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Recent Activity</AlertTitle>
+          <AlertDescription>
+            No studies have been recently enriched.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {recentlyEnriched.map((study: any) => (
+          <Card key={study.id} className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between">
+                <CardTitle className="text-lg">{study.title}</CardTitle>
+                <Badge variant="outline" className="bg-green-100 text-green-800">Enriched</Badge>
+              </div>
+              <CardDescription>
+                {study.authors} ({formatDate(study.publishDate)})
+                {study.doi && (
+                  <span className="ml-2">
+                    DOI: <a href={`https://doi.org/${study.doi}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{study.doi}</a>
+                  </span>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderStudyEnhancementStatus(study)}
+              
+              <div className="mt-3">
+                <h4 className="text-sm font-medium">Enhanced Fields:</h4>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {study.enhancedFields?.map((field: string) => (
+                    <Badge key={field} variant="outline" className="bg-blue-50 text-blue-700">
+                      {field}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              {study.abstract && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  <p className="line-clamp-3">{study.abstract}</p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="bg-muted/50 flex justify-end gap-2">
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`/studies/${study.id}`, '_blank')}
+              >
+                View Study
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <AdminLayout 
+      title="Content Enrichment" 
+      description="Enhance study content by fetching full abstracts, methods, results, and more from DOI sources."
+    >
+      {processingStatus.visible && (
+        <Alert 
+          variant={processingStatus.type === "error" ? "destructive" : undefined} 
+          className="mb-6"
+        >
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>
+            {processingStatus.type === "success" ? "Success" : 
+             processingStatus.type === "error" ? "Error" : "Info"}
+          </AlertTitle>
+          <AlertDescription>
+            {processingStatus.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex justify-end mb-6 gap-2">
+        <Button
+          variant="outline"
+          onClick={() => batchEnrichMutation.mutate(5)}
+          disabled={batchEnrichMutation.isPending}
+        >
+          {batchEnrichMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            "Process 5 Studies"
+          )}
+        </Button>
+        <Button
+          onClick={() => batchEnrichMutation.mutate(20)}
+          disabled={batchEnrichMutation.isPending}
+        >
+          {batchEnrichMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            "Batch Process 20 Studies"
+          )}
+        </Button>
+      </div>
+
+      <Tabs 
+        value={activeTab} 
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setProcessingStatus({ ...processingStatus, visible: false });
+        }}
+      >
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="candidates">Candidates for Enrichment</TabsTrigger>
+          <TabsTrigger value="recent">Recently Enriched</TabsTrigger>
+        </TabsList>
+        <TabsContent value="candidates" className="mt-6">
+          {renderCandidatesList()}
+        </TabsContent>
+        <TabsContent value="recent" className="mt-6">
+          {renderRecentlyEnrichedList()}
+        </TabsContent>
+      </Tabs>
     </AdminLayout>
   );
 }
