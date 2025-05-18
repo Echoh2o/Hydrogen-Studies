@@ -260,9 +260,6 @@ export async function enhanceStudyContent(studyId: number): Promise<EnhancementR
       if (contentEnhancementResult.updates.abstract && study.abstract) {
         updateData.abstract = study.abstract;
       }
-      if (contentEnhancementResult.updates.fullText && study.fullText) {
-        updateData.fullText = study.fullText;
-      }
       if (contentEnhancementResult.updates.methods && study.methods) {
         updateData.methods = study.methods;
       }
@@ -302,21 +299,71 @@ export async function enhanceStudyContent(studyId: number): Promise<EnhancementR
       }
     }
     
-    // Generate tags/keywords using AI
-    if (!updateData.tags || updateData.tags.length < 5) {
-      const tags = await generateTagsUsingAI(study, updateData);
-      if (tags && tags.length > 0) {
-        updateData.tags = tags.join(', ');
-        updates.tags = true;
+    // Generate standardized summary fields if missing using the existing generateSectionUsingAI function
+    if (!updateData.methodsShort || updateData.methodsShort?.length < 50) {
+      // We'll use the existing generateSectionUsingAI with a modified prompt
+      const methodsText = await generateSectionUsingAI(study, updateData, 'methods');
+      if (methodsText) {
+        // Create a shorter version for the methodsShort field
+        const methodsShort = methodsText.split('.').slice(0, 2).join('.') + '.';
+        updateData.methodsShort = methodsShort;
+        updates.methodsShort = true;
       }
     }
     
-    // Generate simplified explanation if missing
-    if (!updateData.simplifiedExplanation || updateData.simplifiedExplanation.length < 100) {
-      const simplifiedExplanation = await generateSimplifiedExplanation(study, updateData);
-      if (simplifiedExplanation) {
-        updateData.simplifiedExplanation = simplifiedExplanation;
-        updates.simplifiedExplanation = true;
+    if (!updateData.resultsShort || updateData.resultsShort?.length < 50) {
+      // We'll use the existing generateSectionUsingAI with a modified prompt
+      const resultsText = await generateSectionUsingAI(study, updateData, 'results');
+      if (resultsText) {
+        // Create a shorter version for the resultsShort field
+        const resultsShort = resultsText.split('.').slice(0, 2).join('.') + '.';
+        updateData.resultsShort = resultsShort;
+        updates.resultsShort = true;
+      }
+    }
+    
+    if (!updateData.conclusionShort || updateData.conclusionShort?.length < 50) {
+      // We'll use the existing generateSectionUsingAI with a modified prompt
+      const conclusionText = await generateSectionUsingAI(study, updateData, 'conclusion');
+      if (conclusionText) {
+        // Create a shorter version for the conclusionShort field
+        const conclusionShort = conclusionText.split('.').slice(0, 2).join('.') + '.';
+        updateData.conclusionShort = conclusionShort;
+        updates.conclusionShort = true;
+      }
+    }
+    
+    // Generate summary markdown if missing
+    if (!updateData.summaryMarkdown || updateData.summaryMarkdown?.length < 100) {
+      // Generate a markdown summary
+      const title = study.title;
+      const authors = study.authors;
+      const journal = study.journal;
+      const publishDate = study.journalPublishDate || study.publishDate;
+      const abstract = updateData.abstract || study.abstract || '';
+      const methods = updateData.methods || study.methods || '';
+      const results = updateData.results || study.results || '';
+      const conclusion = updateData.conclusion || study.conclusion || '';
+      
+      // Create the markdown content
+      const summaryMarkdown = `
+## ${title}
+
+**Authors**: ${authors || 'Not specified'}
+**Journal**: ${journal || 'Not specified'}
+**Published**: ${publishDate || 'Not specified'}
+
+### Abstract
+${abstract}
+
+${methods ? `### Methods\n${methods}` : ''}
+${results ? `### Results\n${results}` : ''}
+${conclusion ? `### Conclusion\n${conclusion}` : ''}
+`;
+      
+      if (summaryMarkdown) {
+        updateData.summaryMarkdown = summaryMarkdown;
+        updates.summaryMarkdown = true;
       }
     }
 
