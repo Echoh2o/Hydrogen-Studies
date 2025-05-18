@@ -1,0 +1,31 @@
+export interface Study {
+  id: number;
+  title: string;
+  abstract: string;
+  authors: string;
+  journal: string;
+  publishDate: string;
+  journalPublishDate?: string | null;
+  category: string;
+  methods?: string | null;
+  results?: string | null;
+  conclusion?: string | null;
+  doi?: string | null;
+  url?: string | null;
+  pmid?: string | null;
+  imageUrl?: string | null;
+  pdfUrl?: string | null;
+  citationUrl?: string | null;
+  isPeerReviewed?: boolean | null;
+  status?: string | null;
+  sourceId?: string | null;
+  sourcePlatform?: string | null;
+  fullText?: string | null;
+  hasMedia?: boolean | null;
+  hasHealthImplications?: boolean | null;
+  countriesOfResearch?: string[] | null;
+  regions?: string[] | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  enhancedFields?: string[];
+}
