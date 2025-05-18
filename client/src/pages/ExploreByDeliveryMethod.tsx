@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Helmet } from 'react-helmet';
 
 // Icons for delivery methods
-import { Droplet, Wind, Bath, Flask, Pill, Stethoscope, Soup } from 'lucide-react';
+import { Droplet, Wind, Bath, Beaker, Pill, Stethoscope, Soup } from 'lucide-react';
 
 const getDeliveryMethodIcon = (slug: string, className: string = '') => {
   switch (slug) {
@@ -32,7 +32,7 @@ const getDeliveryMethodIcon = (slug: string, className: string = '') => {
     case 'infused-liquids':
       return <Soup className={className} />;
     case 'echoh-flask':
-      return <Flask className={className} />;
+      return <Beaker className={className} />;
     default:
       return <Droplet className={className} />;
   }
@@ -103,7 +103,7 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg mt-12">
           <div className="flex flex-col md:flex-row items-center">
             <div className="mb-4 md:mb-0 md:mr-6">
-              <Flask className="h-16 w-16 text-primary" />
+              <Beaker className="h-16 w-16 text-primary" />
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-semibold mb-2">Echo Flask - The Optimal Hydrogen Delivery System</h3>
@@ -185,7 +185,7 @@ export const DeliveryMethodDetailPage: React.FC = () => {
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg mb-8">
               <div className="flex flex-col md:flex-row items-center">
                 <div className="mb-4 md:mb-0 md:mr-6">
-                  <Flask className="h-16 w-16 text-primary" />
+                  <Beaker className="h-16 w-16 text-primary" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold mb-2">Echo Flask - The Gold Standard in Hydrogen Water</h3>

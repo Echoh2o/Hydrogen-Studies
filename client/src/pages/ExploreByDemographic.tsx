@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Helmet } from 'react-helmet';
 
 // Icons for demographics
-import { Users, Child, Heart, MoveRight, Award, BookOpen, Hourglass } from 'lucide-react';
+import { Users, Baby, Heart, MoveRight, Award, BookOpen, Hourglass } from 'lucide-react';
 
 const getDemographicIcon = (slug: string, className: string = '') => {
   switch (slug) {
@@ -24,7 +24,7 @@ const getDemographicIcon = (slug: string, className: string = '') => {
     case 'elderly':
       return <Award className={className} />;
     case 'children':
-      return <Child className={className} />;
+      return <Baby className={className} />;
     case 'metabolic-conditions':
       return <Heart className={className} />;
     case 'healthy-adults':
