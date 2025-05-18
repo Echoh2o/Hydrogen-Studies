@@ -37,7 +37,8 @@ import {
   Microscope,
   Lightbulb,
   BrainCircuit,
-  PanelTop
+  PanelTop,
+  AlertCircle as InfoCircle
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -46,6 +47,31 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import ChatbotDialogue from "@/components/chatbot/ChatbotDialogue";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Function to determine the enrichment status of a study
+const determineEnrichmentStatus = (study: Study): 'basic' | 'partial' | 'complete' => {
+  // Check for enriched content fields
+  const hasEnrichedContent = Boolean(
+    study.methods || 
+    study.results || 
+    study.conclusion || 
+    study.simplifiedExplanation ||
+    (study.tags && study.tags.length > 0)
+  );
+  
+  // Check for complete enrichment
+  const hasCompleteEnrichment = Boolean(
+    study.methods && 
+    study.results && 
+    study.conclusion && 
+    study.simplifiedExplanation &&
+    (study.tags && study.tags.length > 0)
+  );
+  
+  if (hasCompleteEnrichment) return 'complete';
+  if (hasEnrichedContent) return 'partial';
+  return 'basic';
+};
 
 // StudyContent component to display the study details
 const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void }) => {
@@ -282,6 +308,31 @@ const StudyContent = ({ study, refetch }: { study: Study, refetch: () => void })
             </div>
           )}
         </section>
+        
+        {/* Enrichment Status Indicator */}
+        {determineEnrichmentStatus(study) !== 'complete' && (
+          <div className={`mb-6 p-3 rounded-lg border ${
+            determineEnrichmentStatus(study) === 'partial' 
+              ? 'bg-amber-50 border-amber-200' 
+              : 'bg-gray-50 border-gray-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              <InfoCircle className="h-4 w-4 text-amber-600" />
+              <div>
+                <p className="text-sm font-medium">
+                  {determineEnrichmentStatus(study) === 'partial' 
+                    ? 'Partial Content Available' 
+                    : 'Basic Content Only'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {determineEnrichmentStatus(study) === 'partial'
+                    ? 'This study has been partially enriched with additional content.'
+                    : 'This study contains basic information only. Full content enrichment is pending.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Key findings highlight card */}
         <section className="mb-8 print:mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
