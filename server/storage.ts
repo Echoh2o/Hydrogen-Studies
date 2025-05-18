@@ -78,7 +78,8 @@ export interface IStorage {
   getStudyById(id: number): Promise<Study | undefined>;
   getStudyByIdentifier(identifier: string): Promise<Study | undefined>;
   getLatestStudies(limit?: number): Promise<Study[]>;
-  getStudiesByTitle(title: string): Promise<Study[]>; // New method for duplicate checking
+  getStudiesByTitle(title: string): Promise<Study[]>; // Method for exact title matching
+  getStudiesByTitlePartial(titlePart: string, limit?: number): Promise<Study[]>; // Method for partial title matching
   getStudiesBySourcePlatform(platform: string): Promise<Study[]>; // Method to get studies from specific platforms
   createStudy(study: InsertStudy): Promise<Study>;
   updateStudy(id: number, study: Partial<InsertStudy>): Promise<Study>;
@@ -347,6 +348,28 @@ export class MemStorage implements IStorage {
       
       if (matchPercentage > 0.7) {
         results.push(study);
+      }
+    }
+    
+    return results;
+  }
+  
+  async getStudiesByTitlePartial(titlePart: string, limit: number = 20): Promise<Study[]> {
+    // Find studies with partial title match
+    const normalizedTitlePart = titlePart.trim().toLowerCase();
+    const results: Study[] = [];
+    
+    for (const study of this.studiesData.values()) {
+      const studyTitle = study.title.toLowerCase();
+      
+      // Simple inclusion check
+      if (studyTitle.includes(normalizedTitlePart)) {
+        results.push(study);
+        
+        // Respect the limit
+        if (results.length >= limit) {
+          break;
+        }
       }
     }
     
