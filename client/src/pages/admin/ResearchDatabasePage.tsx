@@ -104,8 +104,17 @@ export default function ResearchDatabasePage() {
         sources: selectedDatabases.join(',')
       });
       
-      const response = await apiRequest(`/api/research/search?${queryParams}`);
-      setSearchResults(response);
+      const response = await fetch(`/api/research/search?${queryParams}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${await response.text() || response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setSearchResults(data);
     } catch (error: any) {
       console.error('Search error:', error);
       setSearchError(error.message || 'Failed to search research databases');
@@ -166,8 +175,17 @@ export default function ResearchDatabasePage() {
         sources: selectedDatabases.join(',')
       });
       
-      const response = await apiRequest(`/api/research/search?${queryParams}`);
-      setSearchResults(response);
+      const response = await fetch(`/api/research/search?${queryParams}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${await response.text() || response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setSearchResults(data);
     } catch (error: any) {
       console.error('Pagination error:', error);
       setSearchError(error.message || 'Failed to load page');

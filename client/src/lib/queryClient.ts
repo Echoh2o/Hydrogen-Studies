@@ -8,36 +8,18 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  methodOrUrl: string,
-  urlOrData?: string | unknown,
+  method: string,
+  url: string,
   data?: unknown | undefined,
   throwOnError: boolean = true
 ): Promise<Response> {
-  // Handle case where apiRequest is called with just a URL
-  // This allows both apiRequest('GET', '/api/endpoint') and apiRequest('/api/endpoint')
-  let method: string;
-  let url: string;
-  let bodyData: unknown | undefined;
-  
-  if (!urlOrData || typeof urlOrData !== 'string') {
-    // apiRequest(url, data?) format
-    method = 'GET'; // Default to GET
-    url = methodOrUrl;
-    bodyData = urlOrData;
-  } else {
-    // apiRequest(method, url, data?) format
-    method = methodOrUrl;
-    url = urlOrData;
-    bodyData = data;
-  }
-
   // Make sure method is a valid HTTP method
   const validMethod = method.toUpperCase();
   
   const res = await fetch(url, {
     method: validMethod,
-    headers: bodyData ? { "Content-Type": "application/json" } : {},
-    body: bodyData ? JSON.stringify(bodyData) : undefined,
+    headers: data ? { "Content-Type": "application/json" } : {},
+    body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
 
