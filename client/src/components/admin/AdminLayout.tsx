@@ -13,7 +13,8 @@ import {
   BarChart2,
   Home,
   RefreshCw,
-  Calendar
+  Calendar,
+  Image
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -34,6 +35,7 @@ export default function AdminLayout({ children, title, description }: AdminLayou
     { href: "/admin/data-import", label: "Data Import", icon: Upload },
     { href: "/admin/content-enrichment", label: "Content Enrichment", icon: RefreshCw },
     { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: RefreshCw },
+    { href: "/admin/image-generation", label: "Image Generation", icon: Image },
     { href: "/admin/journal-dates", label: "Journal Dates", icon: Calendar },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
     { href: "/admin/settings", label: "Settings", icon: Settings },
