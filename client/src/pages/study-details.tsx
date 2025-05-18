@@ -10,8 +10,11 @@ import { formatDate } from "@/lib/utils";
 import { Study } from "@/types";
 import { 
   ArrowLeft, Calendar, User, BookOpen, FileText, 
-  Link as LinkIcon, Download, FileQuestion 
+  Link as LinkIcon, Download, FileQuestion, Share2,
+  ExternalLink
 } from "lucide-react";
+import ResearchInsightCard from "@/components/sharing/ResearchInsightCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // StudyContent component to display the study details
 const StudyContent = ({ study }: { study: Study }) => {
