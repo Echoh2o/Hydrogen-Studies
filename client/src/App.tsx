@@ -22,6 +22,9 @@ import NotFound from "@/pages/not-found";
 import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
 
+// New organization structure pages
+import ExploreByBenefitPage, { BenefitDetailPage } from "@/pages/ExploreByBenefit";
+
 // Admin pages - old
 import AdminPage from "@/pages/admin/AdminPage";
 import ImportPage from "@/pages/admin/ImportPage";
@@ -69,6 +72,10 @@ function Router() {
       <Route path="/learn" component={Learn} />
       <Route path="/contact" component={Contact} />
       <Route path="/chat" component={ChatPage} />
+      
+      {/* New Organization Structure Routes */}
+      <Route path="/benefits" component={ExploreByBenefitPage} />
+      <Route path="/benefits/:slug" component={BenefitDetailPage} />
       
       {/* Admin Routes - new layout */}
       <Route path="/admin" component={DashboardPage} />

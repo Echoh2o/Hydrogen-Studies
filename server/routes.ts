@@ -85,6 +85,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register DOI enhancement routes for improving study data quality
   app.use('/api/doi', doiEnhancementRoutes);
   
+  // Register hydrogen organization routes for the new structure
+  app.use('', hydrogenRoutes);
+  
   // API routes
   
   // Studies routes
