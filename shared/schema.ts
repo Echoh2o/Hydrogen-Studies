@@ -466,6 +466,19 @@ export const keywordGroupMappings = pgTable("keyword_group_mappings", {
   groupId: integer("group_id").references(() => keywordGroups.id, { onDelete: "cascade" }).notNull(),
 });
 
+export const monitorSchedule = pgTable("monitor_schedule", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false).notNull(),
+  frequency: text("frequency").default("daily").notNull(),
+  time: text("time").default("00:00").notNull(),
+  days: text("days").array(),
+  sources: text("sources").array(),
+  lastRun: timestamp("last_run"),
+  nextRun: timestamp("next_run"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const monitorResults = pgTable("monitor_results", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -500,15 +513,24 @@ export const insertMonitorResultSchema = createInsertSchema(monitorResults).omit
   foundAt: true, 
   reviewedAt: true 
 });
+export const insertMonitorScheduleSchema = createInsertSchema(monitorSchedule).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastRun: true,
+  nextRun: true
+});
 
 // Types for keyword monitoring
 export type Keyword = typeof keywords.$inferSelect;
 export type ExcludedKeyword = typeof excludedKeywords.$inferSelect;
 export type KeywordGroup = typeof keywordGroups.$inferSelect;
 export type KeywordGroupMapping = typeof keywordGroupMappings.$inferSelect;
+export type MonitorSchedule = typeof monitorSchedule.$inferSelect;
 export type MonitorResult = typeof monitorResults.$inferSelect;
 export type InsertKeyword = z.infer<typeof insertKeywordSchema>;
 export type InsertExcludedKeyword = z.infer<typeof insertExcludedKeywordSchema>;
 export type InsertKeywordGroup = z.infer<typeof insertKeywordGroupSchema>;
 export type InsertKeywordGroupMapping = z.infer<typeof insertKeywordGroupMappingSchema>;
+export type InsertMonitorSchedule = z.infer<typeof insertMonitorScheduleSchema>;
 export type InsertMonitorResult = z.infer<typeof insertMonitorResultSchema>;

@@ -764,39 +764,69 @@ export default function KeywordMonitorPage() {
                     <TableBody>
                       {filteredKeywords.map((keyword) => (
                         <TableRow key={keyword.id}>
-                          <TableCell>{keyword.term}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{keyword.category}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                checked={keyword.isActive}
-                                onCheckedChange={() => handleToggleStatus(keyword.id, keyword.isActive)}
+                          {editingKeyword && editingKeyword.id === keyword.id ? (
+                            <TableCell colSpan={6}>
+                              <KeywordEditor 
+                                keyword={keyword} 
+                                onCancel={() => setEditingKeyword(null)} 
                               />
-                              <span>{keyword.isActive ? "Active" : "Inactive"}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{keyword.lastSearched || "Never"}</TableCell>
-                          <TableCell>{keyword.matchCount || 0}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => setEditingKeyword(keyword)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDeleteKeyword(keyword.id)}
-                              >
-                                <Trash className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                            </TableCell>
+                          ) : (
+                            <>
+                              <TableCell>{keyword.term}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{keyword.category}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    checked={keyword.isActive}
+                                    onCheckedChange={() => handleToggleKeywordActive(keyword.id, !keyword.isActive)}
+                                  />
+                                  <span>{keyword.isActive ? "Active" : "Inactive"}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {keyword.lastSearched ? (
+                                  <span className="flex items-center text-sm">
+                                    <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
+                                    {new Date(keyword.lastSearched).toLocaleDateString()}
+                                  </span>
+                                ) : (
+                                  "Never"
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {typeof keyword.matchCount === 'number' ? (
+                                  <Badge variant={keyword.matchCount > 0 ? "default" : "outline"}>
+                                    {keyword.matchCount} {keyword.matchCount === 1 ? "match" : "matches"}
+                                  </Badge>
+                                ) : (
+                                  "0"
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => setEditingKeyword(keyword)}
+                                    title="Edit keyword"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleDeleteKeyword(keyword.id)}
+                                    title="Delete keyword"
+                                  >
+                                    <Trash className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
