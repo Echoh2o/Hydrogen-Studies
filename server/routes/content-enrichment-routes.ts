@@ -25,13 +25,16 @@ router.get("/candidates", async (req, res) => {
   try {
     const studyIds = await findStudiesForEnhancement(50);
     
-    if (studyIds.length === 0) {
+    if (!studyIds || studyIds.length === 0) {
       return res.json([]);
     }
 
-    const candidates = await db.select().from(studies)
-      .where(sql`${studies.id} IN (${studyIds.join(',')})`)
-      .orderBy(desc(studies.updatedAt));
+    // Make sure we handle empty arrays properly
+    const candidates = studyIds.length > 0 
+      ? await db.select().from(studies)
+          .where(sql`${studies.id} IN (${studyIds.join(',')})`)
+          .orderBy(desc(studies.createdAt))  // Using createdAt since updatedAt isn't in schema
+      : [];
     
     return res.json(candidates);
   } catch (error) {
@@ -49,6 +52,7 @@ router.get("/recent", async (req, res) => {
     // and were recently updated
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     
+    // Use SQL query for this complex case
     const result = await db.execute(sql`
       SELECT * FROM studies 
       WHERE (
@@ -58,17 +62,19 @@ router.get("/recent", async (req, res) => {
         OR LENGTH(conclusion) > 200
         OR image_url IS NOT NULL
       )
-      AND updated_at > ${oneWeekAgo}
-      ORDER BY updated_at DESC
+      AND created_at > ${oneWeekAgo}
+      ORDER BY created_at DESC
       LIMIT 20
     `);
     
-    if (!result.rows) {
+    const recentStudies = result.rows || [];
+    
+    if (!recentStudies || recentStudies.length === 0) {
       return res.json([]);
     }
     
     // Add enhanced fields information
-    const studiesWithEnhancedFields = result.rows.map((study: StudyModel) => ({
+    const studiesWithEnhancedFields = recentStudies.map((study: any) => ({
       ...study,
       enhancedFields: getEnhancedFields(study)
     }));
@@ -163,12 +169,12 @@ function getEnhancedFields(study: StudyModel): string[] {
 interface StudyModel {
   id: number;
   title: string;
-  abstract?: string;
-  methods?: string;
-  results?: string;
-  conclusion?: string;
-  imageUrl?: string;
-  fullText?: string;
+  abstract: string | null;
+  methods: string | null;
+  results: string | null;
+  conclusion: string | null;
+  imageUrl: string | null;
+  fullText: string | null;
   [key: string]: any;
 }
 
