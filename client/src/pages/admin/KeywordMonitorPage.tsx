@@ -116,6 +116,11 @@ export default function KeywordMonitorPage() {
     queryKey: ["/api/keywords/groups"],
     enabled: activeTab === "groups",
   });
+  
+  // Query for schedule configuration
+  const scheduleQuery = useQuery({
+    queryKey: ["/api/keywords/monitor/schedule"],
+  });
 
   // Query for monitor results
   const monitorResultsQuery = useQuery({
