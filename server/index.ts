@@ -238,6 +238,15 @@ app.use((req, res, next) => {
     // Run additional hydrogen-specific migrations
     await runDatabaseMigrations();
     
+    // Run keyword monitoring migrations
+    try {
+      // Import here to avoid circular dependencies
+      const { runKeywordMonitorMigrations } = await import("./migrations/keyword-monitor-migration");
+      await runKeywordMonitorMigrations();
+    } catch (error) {
+      console.error('Error running keyword monitoring migrations:', error);
+    }
+    
     console.log('Successfully ran database migrations');
     
     // Initialize sample data for the hydrogen-specific categories
