@@ -3,6 +3,7 @@ import { db } from "../db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { monitorSchedule, keywords } from "@shared/schema";
+import { checkScheduledSearches, runKeywordMonitorNow } from "../keyword-monitor-service";
 
 const router = Router();
 
@@ -13,6 +14,19 @@ const scheduleSchema = z.object({
   time: z.string(),
   days: z.array(z.string()),
   sources: z.array(z.string())
+});
+
+/**
+ * Check scheduled search status
+ */
+router.get("/status", async (req, res) => {
+  try {
+    const status = await checkScheduledSearches();
+    return res.json(status);
+  } catch (error) {
+    console.error("Error checking scheduled search status:", error);
+    return res.status(500).json({ message: "Failed to check schedule status" });
+  }
 });
 
 /**
@@ -89,23 +103,26 @@ router.post("/", async (req, res) => {
  */
 router.post("/run-now", async (req, res) => {
   try {
-    // Get the schedule configuration
+    // Get the schedule configuration to verify it exists
     const [schedule] = await db.select().from(monitorSchedule);
     
     if (!schedule) {
       return res.status(404).json({ message: "Schedule not found" });
     }
     
-    // Trigger the monitor to run based on the schedule configuration
-    // This would typically involve some background job or process
-    // For now, we'll just return a success message
+    // Run the keyword monitor immediately
+    const result = await runKeywordMonitorNow();
+    
+    if (!result.success) {
+      return res.status(400).json({ 
+        message: result.message || "Failed to run monitor", 
+        error: result.error 
+      });
+    }
     
     return res.json({ 
-      message: "Monitor started", 
-      config: {
-        sources: schedule.sources,
-        keywords: await getActiveKeywords()
-      }
+      message: "Monitor completed successfully", 
+      results: result.results
     });
   } catch (error) {
     console.error("Error running monitor:", error);
