@@ -144,7 +144,7 @@ export default function AdminLayout({ children, title, description }: AdminLayou
           {/* Mobile navigation */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-background">
             <nav className="flex h-16 items-center justify-around">
-              {/* Show most important nav items on mobile */}
+              {/* Main Dashboard */}
               <Link 
                 href="/admin"
                 className={cn(
@@ -156,59 +156,58 @@ export default function AdminLayout({ children, title, description }: AdminLayou
                 <span>Dashboard</span>
               </Link>
               
+              {/* Studies Section */}
               <Link 
                 href="/admin/studies"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/studies" ? "text-primary" : "text-muted-foreground"
+                  location.includes("/admin/stud") || 
+                  location.includes("/admin/research-import") || 
+                  location.includes("/admin/keyword-monitor") || 
+                  location.includes("/admin/content-enrichment") || 
+                  location.includes("/admin/batch-enrichment") ||
+                  location.includes("/admin/image-generation")
+                    ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <Database className="h-5 w-5" />
                 <span>Studies</span>
               </Link>
               
+              {/* Blogs Section */}
               <Link 
                 href="/admin/blogs"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/blogs" ? "text-primary" : "text-muted-foreground"
+                  location.includes("/admin/blog") ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <FileText className="h-5 w-5" />
                 <span>Blogs</span>
               </Link>
               
+              {/* Data Import */}
               <Link 
-                href="/admin/research-import"
+                href="/admin/data-import"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/research-import" ? "text-primary" : "text-muted-foreground"
+                  location === "/admin/data-import" ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Search className="h-5 w-5" />
+                <Upload className="h-5 w-5" />
                 <span>Import</span>
               </Link>
               
+              {/* Settings */}
               <Link 
-                href="/admin/batch-enrichment"
+                href="/admin/settings"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/batch-enrichment" ? "text-primary" : "text-muted-foreground"
+                  location === "/admin/settings" ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <RefreshCw className="h-5 w-5" />
-                <span>Enrich</span>
-              </Link>
-              
-              <Link 
-                href="/admin/keyword-monitor"
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/keyword-monitor" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                <Calendar className="h-5 w-5" />
-                <span>Monitor</span>
+                <Settings className="h-5 w-5" />
+                <span>Settings</span>
               </Link>
             </nav>
           </div>
