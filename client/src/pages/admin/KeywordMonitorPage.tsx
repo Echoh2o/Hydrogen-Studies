@@ -446,6 +446,11 @@ export default function KeywordMonitorPage() {
   const closeStatusAlert = () => {
     setProcessingStatus({ ...processingStatus, visible: false });
   };
+  
+  // Handle toggling keyword active status
+  const handleToggleKeywordActive = (id: number, isActive: boolean) => {
+    updateKeywordStatusMutation.mutate({ id, isActive });
+  };
 
   // Get the filtered data
   const filteredKeywords = getFilteredKeywords();
@@ -1193,12 +1198,12 @@ export default function KeywordMonitorPage() {
                             <Badge
                               variant={
                                 result.status === "approved" 
-                                  ? "success" 
+                                  ? "default" 
                                   : result.status === "rejected" 
                                     ? "destructive" 
                                     : result.status === "archived" 
                                       ? "outline" 
-                                      : "default"
+                                      : "secondary"
                               }
                             >
                               {result.status}
