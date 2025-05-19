@@ -16,7 +16,10 @@ interface WizardStep2Props {
 
 const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
   const { toast } = useToast();
-  const [options, setOptions] = useState({
+  const [options, setOptions] = useState<{
+    demographicGroups: string[];
+    researchTypes: string[];
+  }>({
     demographicGroups: [],
     researchTypes: []
   });
