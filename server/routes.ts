@@ -50,6 +50,7 @@ import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
 import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
+import enhancedEnrichmentRoutes from "./routes/enhanced-enrichment-routes";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
@@ -96,6 +97,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register batch enrichment routes for processing multiple studies
   app.use('/api/enrichment/batch', batchEnrichmentRoutes);
+  
+  // Register enhanced batch enrichment routes
+  app.use('/api/enhanced-enrichment', contentEnrichmentRoutes);
   
   // Register hydrogen organization routes for the new structure
   app.use('', hydrogenRoutes);
