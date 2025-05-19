@@ -117,12 +117,17 @@ router.post("/run-now", async (req, res) => {
  * Helper function to get all active keywords
  */
 async function getActiveKeywords() {
-  const activeKeywords = await db
-    .select()
-    .from(keywords)
-    .where(eq(keywords.isActive, true));
-  
-  return activeKeywords;
+  try {
+    const activeKeywords = await db
+      .select()
+      .from(keywords)
+      .where(eq(keywords.isActive, true));
+    
+    return activeKeywords;
+  } catch (error) {
+    console.error("Error fetching active keywords:", error);
+    return [];
+  }
 }
 
 export default router;

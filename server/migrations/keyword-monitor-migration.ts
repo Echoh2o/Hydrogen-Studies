@@ -1,6 +1,13 @@
 import { db } from "../db";
 import { sql } from "drizzle-orm";
-import { keywords, excludedKeywords, keywordGroups, keywordGroupMappings, monitorResults } from "@shared/schema";
+import { 
+  keywords, 
+  excludedKeywords, 
+  keywordGroups, 
+  keywordGroupMappings, 
+  monitorResults,
+  monitorSchedule
+} from "@shared/schema";
 
 /**
  * Run migrations for keyword monitoring tables
@@ -78,6 +85,23 @@ export async function runKeywordMonitorMigrations() {
       )
     `);
     console.log("Monitor results table created successfully");
+    
+    // Create monitor_schedule table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS monitor_schedule (
+        id SERIAL PRIMARY KEY,
+        enabled BOOLEAN NOT NULL DEFAULT FALSE,
+        frequency TEXT NOT NULL DEFAULT 'daily',
+        time TEXT NOT NULL DEFAULT '00:00',
+        days TEXT[],
+        sources TEXT[],
+        last_run TIMESTAMP,
+        next_run TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log("Monitor schedule table created successfully");
     
     // Insert some initial sample keyword data
     await insertSampleKeywordData();
