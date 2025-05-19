@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { InteractiveButton } from "@/components/ui/interactive-button";
+import { AnimatedContainer, StaggeredContainer, StaggeredItem } from "@/components/ui/animated-container";
 
 // Import wizard step components
 import WizardResults from "./WizardResults";
