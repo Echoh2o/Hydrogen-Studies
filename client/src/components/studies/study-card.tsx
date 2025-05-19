@@ -3,6 +3,7 @@ import { Study } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { User, BookOpen } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface StudyCardProps {
   study: Study;
@@ -32,16 +33,26 @@ export default function StudyCard({ study }: StudyCardProps) {
   }
 
   return (
-    <div className="bg-neutral-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all">
+    <motion.div 
+      className="bg-neutral-50 rounded-xl p-6 shadow-sm h-full"
+      whileHover={{ 
+        scale: 1.02, 
+        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+        y: -5
+      }}
+      transition={{ duration: 0.2 }}
+    >
       <div className="flex items-start justify-between mb-4">
-        <Badge variant="outline" className={`${categoryColor} border-none`}>
-          {study.category}
-        </Badge>
+        <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
+          <Badge variant="outline" className={`${categoryColor} border-none`}>
+            {study.category}
+          </Badge>
+        </motion.div>
         <span className="text-neutral-500 text-sm">{formatDate(study.publishDate)}</span>
       </div>
       
       <h3 className="font-heading font-bold text-lg mb-3 text-neutral-800 line-clamp-2">
-        <Link href={`/study/${study.id}`} className="hover:text-primary">
+        <Link href={`/study/${study.id}`} className="hover:text-primary transition-colors duration-200">
           {study.title}
         </Link>
       </h3>
@@ -51,19 +62,35 @@ export default function StudyCard({ study }: StudyCardProps) {
       </p>
       
       <div className="flex items-center text-sm text-neutral-500 mb-4">
-        <span className="flex items-center mr-4">
+        <motion.span 
+          className="flex items-center mr-4" 
+          whileHover={{ x: 2 }} 
+          transition={{ duration: 0.2 }}
+        >
           <User className="h-4 w-4 mr-1" />
           {study.authors}
-        </span>
-        <span className="flex items-center">
+        </motion.span>
+        <motion.span 
+          className="flex items-center" 
+          whileHover={{ x: 2 }} 
+          transition={{ duration: 0.2 }}
+        >
           <BookOpen className="h-4 w-4 mr-1" />
           {study.journal}
-        </span>
+        </motion.span>
       </div>
       
-      <Link href={`/study/${study.id}`} className="text-primary text-sm font-medium hover:underline">
-        Read full study →
-      </Link>
-    </div>
+      <motion.div 
+        whileHover={{ x: 5 }} 
+        transition={{ duration: 0.2 }}
+      >
+        <Link 
+          href={`/study/${study.id}`} 
+          className="text-primary text-sm font-medium hover:underline inline-flex items-center"
+        >
+          Read full study →
+        </Link>
+      </motion.div>
+    </motion.div>
   );
 }
