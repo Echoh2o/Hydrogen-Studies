@@ -35,7 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import KeywordEditor from "@/components/admin/keyword-monitor/KeywordEditor";
 import ScheduleDialog from "@/components/admin/keyword-monitor/ScheduleDialog";
-import StatusMonitor from "@/components/admin/keyword-monitor/StatusMonitor";
+import SimpleStatusMonitor from "@/components/admin/keyword-monitor/SimpleStatusMonitor";
 
 // Types for keyword monitoring
 interface Keyword {
@@ -490,7 +490,7 @@ export default function KeywordMonitorPage() {
       
       {/* Status Monitor */}
       <div className="mb-6">
-        <StatusMonitor onConfigureSchedule={() => setShowScheduleDialog(true)} />
+        <SimpleStatusMonitor onConfigureSchedule={() => setShowScheduleDialog(true)} />
       </div>
 
       {/* Main Tabs */}
