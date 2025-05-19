@@ -67,6 +67,13 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
     sources: [],
     lastRun: null,
     nextRun: null,
+  } as {
+    enabled: boolean;
+    frequency: string;
+    time: string;
+    sources: string[];
+    lastRun: string | null;
+    nextRun: string | null;
   };
   
   // Format search status from backend response
@@ -82,7 +89,14 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
       };
     }
     
-    const status = statusQuery.data;
+    const status = statusQuery.data as {
+      ran?: boolean;
+      message?: string;
+      results?: {
+        total: number;
+        bySource?: Record<string, number>;
+      };
+    } || {};
     
     if (status?.ran) {
       return { 

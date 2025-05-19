@@ -487,6 +487,11 @@ export default function KeywordMonitorPage() {
           </Button>
         </Alert>
       )}
+      
+      {/* Status Monitor */}
+      <div className="mb-6">
+        <StatusMonitor onConfigureSchedule={() => setShowScheduleDialog(true)} />
+      </div>
 
       {/* Main Tabs */}
       <Tabs defaultValue="keywords" value={activeTab} onValueChange={setActiveTab}>
