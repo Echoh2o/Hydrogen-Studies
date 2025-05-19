@@ -18,14 +18,34 @@ const scheduleSchema = z.object({
 
 /**
  * Check scheduled search status
+ * This endpoint returns the current status of scheduled keyword monitoring
  */
 router.get("/status", async (req, res) => {
   try {
+    // Set appropriate headers to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Get the current status
     const status = await checkScheduledSearches();
-    return res.json(status);
+    
+    // Create a standardized response format
+    const response = {
+      success: true,
+      data: status || { ran: false, message: "No status available" }
+    };
+    
+    // Return JSON response
+    return res.json(response);
   } catch (error) {
     console.error("Error checking scheduled search status:", error);
-    return res.status(500).json({ message: "Failed to check schedule status" });
+    
+    // Ensure error response is also JSON
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ 
+      success: false, 
+      message: "Failed to check schedule status",
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 

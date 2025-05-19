@@ -115,6 +115,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register keyword monitor schedule routes for automated search scheduling
   app.use('/api/keywords/monitor/schedule', keywordMonitorScheduleRoutes);
   
+  // Direct API endpoint for keyword monitor status
+  app.get('/api/keywords/monitor/status', async (req, res) => {
+    try {
+      // Explicitly set headers to ensure JSON
+      res.setHeader('Content-Type', 'application/json');
+      
+      const { checkScheduledSearches } = require('./keyword-monitor-service');
+      const status = await checkScheduledSearches();
+      
+      return res.json({
+        success: true,
+        data: status || { ran: false, message: "No status available" }
+      });
+    } catch (error) {
+      console.error("Error fetching monitor status:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to check monitor status",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Research suggestions routes are implemented directly in this file
   
   // API routes
