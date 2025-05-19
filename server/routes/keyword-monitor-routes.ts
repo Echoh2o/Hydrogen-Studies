@@ -1,7 +1,7 @@
 import express from "express";
 import { db } from "../db";
 import { keywords, excludedKeywords, keywordGroups, keywordGroupMappings, monitorResults } from "@shared/schema";
-import { eq, like, and, desc, asc, or, sql } from "drizzle-orm";
+import { eq, like, and, desc, asc, or, sql, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 const router = express.Router();
@@ -244,12 +244,15 @@ router.get("/groups", async (req, res) => {
         
         const keywordIds = mappings.map(mapping => mapping.keywordId);
         
-        const groupKeywords = keywordIds.length > 0
-          ? await db
-              .select()
-              .from(keywords)
-              .where(sql`${keywords.id} IN (${keywordIds.join(',')})`)
-          : [];
+        // Get keywords if there are any mappings
+        let groupKeywords = [];
+        if (keywordIds.length > 0) {
+          // Handle each ID separately to avoid formatting issues
+          groupKeywords = await db
+            .select()
+            .from(keywords)
+            .where(inArray(keywords.id, keywordIds));
+        }
         
         return {
           ...group,
