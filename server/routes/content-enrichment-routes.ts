@@ -23,17 +23,19 @@ router.use((req, res, next) => {
  */
 router.get("/candidates", async (req, res) => {
   try {
-    // Find studies with incomplete content directly
+    // Use native Drizzle filtering instead of raw SQL to avoid type issues
     const candidates = await db.select().from(studies)
       .where(
         and(
-          sql`doi IS NOT NULL`,
+          // Check for non-null DOI
+          sql`${studies.doi} IS NOT NULL`,
+          // Check for incomplete content
           or(
-            sql`abstract IS NULL OR LENGTH(abstract) < 200`,
-            sql`methods IS NULL`,
-            sql`results IS NULL`,
-            sql`conclusion IS NULL`,
-            sql`image_url IS NULL`
+            isNull(studies.abstract),
+            isNull(studies.methods),
+            isNull(studies.results),
+            isNull(studies.conclusion),
+            isNull(studies.imageUrl)
           )
         )
       )
@@ -56,22 +58,23 @@ router.get("/recent", async (req, res) => {
     // and were recently updated
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     
-    // Use SQL query for this complex case
-    const result = await db.execute(sql`
-      SELECT * FROM studies 
-      WHERE (
-        LENGTH(abstract) > 500
-        OR LENGTH(methods) > 200
-        OR LENGTH(results) > 200
-        OR LENGTH(conclusion) > 200
-        OR image_url IS NOT NULL
+    // Use SQL template literals for complex conditions
+    const recentStudies = await db.select().from(studies)
+      .where(
+        and(
+          // Get studies with substantial content
+          or(
+            sql`${studies.imageUrl} IS NOT NULL`,
+            sql`${studies.methods} IS NOT NULL`,
+            sql`${studies.results} IS NOT NULL`,
+            sql`${studies.conclusion} IS NOT NULL`
+          ),
+          // Recently updated
+          gt(studies.createdAt, oneWeekAgo)
+        )
       )
-      AND created_at > ${oneWeekAgo}
-      ORDER BY created_at DESC
-      LIMIT 20
-    `);
-    
-    const recentStudies = result.rows || [];
+      .orderBy(desc(studies.createdAt))
+      .limit(20);
     
     if (!recentStudies || recentStudies.length === 0) {
       return res.json([]);
@@ -120,13 +123,13 @@ router.post("/batch", async (req, res) => {
     const candidates = await db.select().from(studies)
       .where(
         and(
-          sql`doi IS NOT NULL`,
+          sql`${studies.doi} IS NOT NULL`,
           or(
-            sql`abstract IS NULL OR LENGTH(abstract) < 200`,
-            sql`methods IS NULL`,
-            sql`results IS NULL`,
-            sql`conclusion IS NULL`,
-            sql`image_url IS NULL`
+            sql`${studies.abstract} IS NULL`,
+            sql`${studies.methods} IS NULL`,
+            sql`${studies.results} IS NULL`,
+            sql`${studies.conclusion} IS NULL`,
+            sql`${studies.imageUrl} IS NULL`
           )
         )
       )
