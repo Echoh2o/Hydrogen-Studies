@@ -121,6 +121,12 @@ export default function KeywordMonitorPage() {
     queryKey: ["/api/keywords/results", statusFilter],
     enabled: activeTab === "results",
   });
+  
+  // Query for search schedule
+  const scheduleQuery = useQuery({
+    queryKey: ["/api/keywords/monitor/schedule"],
+    enabled: activeTab === "results" || activeTab === "keywords",
+  });
 
   // Mutation for adding a keyword
   const addKeywordMutation = useMutation({
@@ -609,18 +615,38 @@ export default function KeywordMonitorPage() {
             )}
             
             {activeTab === "results" && (
-              <Button onClick={handleRunMonitor} disabled={runMonitorMutation.isPending}>
-                {runMonitorMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Run Monitor
-                  </>
-                )}
+              <div className="flex space-x-2">
+                <Button onClick={handleRunMonitor} disabled={runMonitorMutation.isPending}>
+                  {runMonitorMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Run Monitor
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowScheduleDialog(true)}
+                >
+                  <CalendarClock className="h-4 w-4 mr-2" />
+                  Schedule
+                </Button>
+              </div>
+            )}
+            
+            {activeTab === "keywords" && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowScheduleDialog(true)}
+              >
+                <CalendarClock className="h-4 w-4 mr-2" />
+                Schedule Auto Search
               </Button>
             )}
           </div>
@@ -1178,6 +1204,19 @@ export default function KeywordMonitorPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Schedule Dialog */}
+      <ScheduleDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        currentSchedule={scheduleQuery.data as {
+          enabled: boolean;
+          frequency: string;
+          time: string;
+          days: string[];
+          sources: string[];
+        } | null}
+      />
     </AdminLayout>
   );
 }
