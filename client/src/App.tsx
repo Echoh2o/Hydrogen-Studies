@@ -54,6 +54,7 @@ import JournalDateUpdater from "@/pages/admin/JournalDateUpdater";
 import ContentEnrichmentPage from "@/pages/admin/ContentEnrichmentPage";
 import BatchEnrichmentPage from "@/pages/admin/BatchEnrichmentPage";
 import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
+import EnhancementPage from "@/pages/admin/EnhancementPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -107,7 +108,8 @@ function Router() {
       <Route path="/admin/data-import" component={DataImportPage} />
       <Route path="/admin/research-database" component={ResearchDatabasePage} />
       <Route path="/admin/journal-dates" component={JournalDateUpdater} />
-      <Route path="/admin/content-enrichment" component={ContentEnrichmentPage} />
+      <Route path="/admin/content-enrichment" component={EnhancementPage} />
+      <Route path="/admin/old-enrichment" component={ContentEnrichmentPage} />
       <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
       <Route path="/admin/image-generation" component={ImageGenerationPage} />
       
