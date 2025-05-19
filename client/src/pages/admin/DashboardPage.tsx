@@ -155,7 +155,7 @@ export default function DashboardPage() {
                 </Button>
                 <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                   <Link href="/admin/image-generation">
-                    <Image className="mr-2 h-4 w-4" />
+                    <ImageIcon className="mr-2 h-4 w-4" />
                     Image Generation
                   </Link>
                 </Button>
@@ -219,12 +219,20 @@ export default function DashboardPage() {
           </Card>
         </div>
         
-        {/* Recent Activity */}
+        {/* Recent Activity and Analytics */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Recent Studies</CardTitle>
-              <CardDescription>Recently added research studies</CardDescription>
+          {/* Recent Studies */}
+          <Card className="col-span-1 border-blue-100 dark:border-blue-900/50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Recent Studies</CardTitle>
+                  <CardDescription>Recently added research entries</CardDescription>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Database className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoadingStudies ? (
@@ -238,23 +246,23 @@ export default function DashboardPage() {
                   <p className="text-xs text-muted-foreground mt-1">Import some research to see it here</p>
                 </div>
               ) : (
-                <ul className="space-y-4">
+                <ul className="space-y-3">
                   {recentStudies.slice(0, 5).map((study: any) => (
-                    <li key={study.id} className="flex flex-col">
+                    <li key={study.id} className="flex flex-col p-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
                       <Link href={`/admin/studies/edit/${study.id}`}>
-                        <a className="font-medium text-sm hover:underline">{study.title}</a>
+                        <a className="font-medium text-sm hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1">{study.title}</a>
                       </Link>
                       <div className="flex mt-1 text-xs text-muted-foreground">
-                        <span>{study.journal}</span>
-                        <span className="mx-2">•</span>
-                        <span>{formatDate(study.publishDate)}</span>
+                        <span className="line-clamp-1">{study.journal || "Journal not specified"}</span>
+                        <span className="mx-2 flex-shrink-0">•</span>
+                        <span className="flex-shrink-0">{formatDate(study.publishDate) || "Date unknown"}</span>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
               <div className="mt-4 pt-4 border-t">
-                <Button variant="outline" size="sm" className="w-full" asChild>
+                <Button variant="default" size="sm" className="w-full bg-blue-600 hover:bg-blue-700" asChild>
                   <Link href="/admin/studies">
                     <a>View All Studies</a>
                   </Link>
@@ -263,36 +271,48 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Analytics Overview</CardTitle>
-              <CardDescription>Key metrics and trends</CardDescription>
+          {/* Analytics Overview */}
+          <Card className="col-span-1 border-purple-100 dark:border-purple-900/50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Analytics Overview</CardTitle>
+                  <CardDescription>Key metrics and trends</CardDescription>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <BarChart2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-3 rounded-md bg-purple-50 dark:bg-purple-900/10">
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Studies by Category</p>
                     <p className="text-xs text-muted-foreground">Distribution across {displayStats.categoriesCount} categories</p>
                   </div>
-                  <BarChart2 className="h-4 w-4 text-muted-foreground" />
+                  <BarChart2 className="h-5 w-5 text-purple-500" />
                 </div>
                 
-                <div className="h-[160px] flex items-center justify-center border rounded-md bg-muted/5">
+                <div className="h-[130px] flex items-center justify-center rounded-md bg-purple-50 dark:bg-purple-900/10">
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Analytics charts coming soon</p>
+                    <p className="text-sm text-muted-foreground">Content analytics charts coming soon</p>
                   </div>
                 </div>
                 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm p-2 rounded-md bg-green-50 dark:bg-green-900/10">
                     <div>Recent Imports</div>
-                    <div className="font-medium">{displayStats.recentImports} <span className="text-xs text-muted-foreground">(last 30 days)</span></div>
+                    <div className="font-medium flex items-center">
+                      <Upload className="mr-2 h-4 w-4 text-green-500" />
+                      <span>{displayStats.recentImports}</span>
+                      <span className="ml-1 text-xs text-muted-foreground">(30 days)</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-sm p-2 rounded-md bg-green-50 dark:bg-green-900/10">
                     <div>Content Growth</div>
                     <div className="flex items-center font-medium">
-                      <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
+                      <TrendingUp className="mr-1 h-4 w-4 text-green-500" />
                       <span>8.2%</span>
                     </div>
                   </div>
@@ -300,7 +320,7 @@ export default function DashboardPage() {
               </div>
               
               <div className="mt-4 pt-4 border-t">
-                <Button variant="outline" size="sm" className="w-full" asChild>
+                <Button variant="default" size="sm" className="w-full bg-purple-600 hover:bg-purple-700" asChild>
                   <Link href="/admin/analytics">
                     <a>View Full Analytics</a>
                   </Link>
