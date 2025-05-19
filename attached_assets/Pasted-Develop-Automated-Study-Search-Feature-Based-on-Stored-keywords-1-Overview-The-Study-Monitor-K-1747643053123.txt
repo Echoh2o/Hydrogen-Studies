@@ -1,0 +1,106 @@
+Develop Automated Study Search Feature Based on Stored keywords.
+
+1. Overview
+
+The Study Monitor & Keyword Alert System is designed to continuously scan designated scientific research databases for new publications that match a list of predefined keywords. When a match is found, the system pulls study metadata into a review queue for human curation and tagging before publication to HydrogenStudies.com
+
+2. Objectives
+	•	Automate keyword-based monitoring of medical/scientific research directories.
+	•	Build and maintain a secure, efficient keyword tracking system.
+	•	Create a review queue of matched studies to support editorial curation.
+	•	Minimize redundant or irrelevant results using smart filtering logic. Compare DOI to ensure we are looking at new research and not redundant studies that already exist in our database
+
+3. Scope
+
+In-Scope:
+	•	Keyword management (create, edit, delete, group)
+	•	Scheduled or on-demand scraping of directories (e.g., PubMed, Europe PMC)
+	•	Matching studies to keywords
+	•	Human review interface with tagging and approval functions
+	•	Audit log of matches and decisions
+
+
+4. Core Functional Requirements
+
+4.1 Keyword Management
+	•	Admin UI to add/edit/delete keywords or keyword groups
+	•	Grouping keywords by organ system, condition, or theme
+	•	Boolean operator support: AND, OR, NOT
+
+4.2 Scheduled Search
+	•	Daily or user-defined interval polling (e.g., hourly, weekly)
+	•	Access API endpoints for study sources 
+	•	Query builder that appends keyword logic to directory search endpoints
+
+4.3 Matching Engine
+	•	Match studies using:
+	•	Title
+	•	Abstract
+	•	Keywords
+Image tags
+Study body
+
+	•	Score each match based on:
+	•	Number of keyword hits
+	•	Recency
+	•	Source trustworthiness
+
+4.4 Review Queue
+	•	Front-end dashboard for human reviewers
+	•	Display study title, abstract, source, publication date, and link
+	•	Tagging system for classification (e.g., disease type, hydrogen mechanism, study type)
+	•	Buttons: Approve, Reject, Archive, Flag
+	•	Filters by source, keyword, date found
+
+4.5 Audit Trail
+	•	Store all actions taken by reviewers
+	•	Log keyword(s) that triggered each match
+	•	Historical lookup for debugging or analysis
+
+5. Non-Functional Requirements
+	•	Performance: Should handle thousands of keywords and hundreds of results per day without lag
+	•	Scalability: Built to eventually support AI-based summarization or scoring
+	•	Logging: All fetch and review events must be timestamped and logged
+	•	UI/UX: Clean, minimal UI optimized for quick human triage
+
+Example keyword list
+
+Absolutely. Here’s a Replit-friendly summary of the keyword section:
+
+⸻
+
+Keyword Setup Summary
+
+keywords.json
+
+This file contains health-related search terms to find studies on the medical use of hydrogen. Examples include:
+	•	"molecular hydrogen"
+	•	"hydrogen-rich water"
+	•	"inhaled hydrogen"
+	•	"oxidative stress"
+	•	"neuroprotection"
+	•	"Parkinson's disease"
+
+These keywords will be used to search databases like PubMed and Europe PMC for relevant studies.
+
+⸻
+
+excluded_keywords.json
+
+This file contains filter terms to remove irrelevant studies related to energy, industry, or fuel cells. Examples include:
+	•	"hydrogen fuel cell"
+	•	"combustion"
+	•	"hydrogen production"
+	•	"green hydrogen"
+	•	"electrolysis"
+
+If any of these terms are found in a study’s title or abstract, that study will be ignored.
+
+⸻
+
+Use in Code
+
+In your scraper, you’ll:
+	1.	Load keywords.json to search for studies.
+	2.	Load excluded_keywords.json to filter out unwanted results.
+	3.	Save matching studies to results.json.

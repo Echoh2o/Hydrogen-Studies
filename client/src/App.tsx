@@ -55,6 +55,7 @@ import ContentEnrichmentPage from "@/pages/admin/ContentEnrichmentPage";
 import BatchEnrichmentPage from "@/pages/admin/BatchEnrichmentPage";
 import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
 import EnhancementPage from "@/pages/admin/EnhancementPage";
+import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -112,6 +113,7 @@ function Router() {
       <Route path="/admin/old-enrichment" component={ContentEnrichmentPage} />
       <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
       <Route path="/admin/image-generation" component={ImageGenerationPage} />
+      <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
       
       {/* Legacy Admin Routes - will be removed after transition */}
       <Route path="/admin/legacy" component={AdminPage} />
