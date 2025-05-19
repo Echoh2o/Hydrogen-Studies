@@ -23,7 +23,7 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
   
   // Fetch current status
   const statusQuery = useQuery({
-    queryKey: ["/api/keywords/monitor/schedule/status"],
+    queryKey: ["/api/keywords/monitor/status"],
     staleTime: 1000 * 30, // 30 seconds
     refetchInterval: 1000 * 60, // Auto refresh every minute
   });
@@ -86,12 +86,17 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
   
   // Interface for status response
   interface StatusResponse {
-    ran?: boolean;
-    message?: string;
-    results?: {
-      total: number;
-      bySource?: Record<string, number>;
+    success?: boolean;
+    data?: {
+      ran?: boolean;
+      message?: string;
+      results?: {
+        total: number;
+        bySource?: Record<string, number>;
+      };
+      nextRun?: string;
     };
+    message?: string;
     error?: string;
   }
 
@@ -110,7 +115,10 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
     }
     
     // Ensure we have data, even if it's an empty object
-    const status = statusQuery.data as StatusResponse || {};
+    const response = statusQuery.data as StatusResponse || {};
+    
+    // Extract nested status data from the response with proper fallbacks
+    const status = response?.data || { ran: false, message: "No status available" };
     
     // Check if we have a valid response
     if (typeof status === 'object') {
