@@ -96,17 +96,23 @@ function Router() {
       <Route path="/delivery-methods" component={ExploreByDeliveryMethodPage} />
       <Route path="/delivery-methods/:slug" component={DeliveryMethodDetailPage} />
       
-      {/* Admin Routes - new layout */}
+      {/* Admin Routes - new organization by content type */}
       <Route path="/admin" component={DashboardPage} />
+      
+      {/* Unified Study Management Page - contains all study-related tools */}
       <Route path="/admin/studies" component={StudiesManagementPage} />
+      <Route path="/admin/blogs" component={BlogsManagementPage} />
+      
+      {/* Individual routes still available for direct access */}
       <Route path="/admin/studies/add" component={AddStudyPage} />
       <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
-      <Route path="/admin/blogs" component={BlogsManagementPage} />
       <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
       <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
-      <Route path="/admin/research-import" component={ResearchImportPage} />
       <Route path="/admin/data-import" component={DataImportPage} />
+      
+      {/* Legacy routes that will be incorporated into the unified pages */}
+      <Route path="/admin/research-import" component={ResearchImportPage} />
       <Route path="/admin/research-database" component={ResearchDatabasePage} />
       <Route path="/admin/journal-dates" component={JournalDateUpdater} />
       <Route path="/admin/content-enrichment" component={EnhancementPage} />
