@@ -1,317 +1,355 @@
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Share2, Download, Edit, Check } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { Button } from '@/components/ui/button';
-import { InteractiveButton } from '@/components/ui/interactive-button';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Download, Share2, Copy, ExternalLink } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Study } from '@/types';
-
-// Card themes
-const CARD_THEMES = {
-  default: {
-    bg: 'bg-gradient-to-br from-white to-zinc-100',
-    border: 'border border-zinc-200',
-    text: 'text-zinc-900',
-    highlight: 'text-primary',
-    accent: 'bg-primary/10'
-  },
-  blue: {
-    bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
-    border: 'border border-blue-200',
-    text: 'text-blue-900',
-    highlight: 'text-blue-600',
-    accent: 'bg-blue-600/10'
-  },
-  green: {
-    bg: 'bg-gradient-to-br from-green-50 to-green-100',
-    border: 'border border-green-200',
-    text: 'text-green-900',
-    highlight: 'text-green-600',
-    accent: 'bg-green-600/10'
-  },
-  purple: {
-    bg: 'bg-gradient-to-br from-purple-50 to-purple-100',
-    border: 'border border-purple-200',
-    text: 'text-purple-900',
-    highlight: 'text-purple-600',
-    accent: 'bg-purple-600/10'
-  },
-  amber: {
-    bg: 'bg-gradient-to-br from-amber-50 to-amber-100',
-    border: 'border border-amber-200',
-    text: 'text-amber-900',
-    highlight: 'text-amber-600',
-    accent: 'bg-amber-600/10'
-  }
-};
-
-// Layout options
-const CARD_LAYOUTS = {
-  centered: 'text-center',
-  leftAligned: 'text-left',
-  quote: 'text-left border-l-4 pl-4 border-primary'
-};
-
-// Font options
-const CARD_FONTS = {
-  sans: 'font-sans',
-  serif: 'font-serif',
-  mono: 'font-mono'
-};
+import { useToast } from '@/hooks/use-toast';
 
 interface InsightCardProps {
   study: Study;
   insight?: string;
   isEditable?: boolean;
+  onSave?: (data: any) => void;
   className?: string;
 }
 
 export default function InsightCard({ 
   study, 
-  insight: initialInsight,
-  isEditable = false, 
-  className
+  insight,
+  isEditable = false,
+  onSave,
+  className = ''
 }: InsightCardProps) {
-  // State for customization options
-  const [theme, setTheme] = useState<keyof typeof CARD_THEMES>('default');
-  const [layout, setLayout] = useState<keyof typeof CARD_LAYOUTS>('centered');
-  const [font, setFont] = useState<keyof typeof CARD_FONTS>('sans');
+  const { toast } = useToast();
+  const [text, setText] = useState(insight || '');
+  const [theme, setTheme] = useState('medical');
+  const [style, setStyle] = useState('minimalist');
+  const [includeSource, setIncludeSource] = useState(true);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   
-  // State for the insight text content
-  const [insight, setInsight] = useState(initialInsight || 
-    `Key finding: ${study.title.split(':')[0] || study.title.substring(0, 80)}...`
-  );
+  useEffect(() => {
+    if (insight) {
+      setText(insight);
+    }
+  }, [insight]);
   
-  // State for editing mode
-  const [isEditing, setIsEditing] = useState(false);
-  
-  // Reference to the card for taking screenshot
-  const cardRef = useRef<HTMLDivElement>(null);
-  
-  // State for success feedback
-  const [showSuccess, setShowSuccess] = useState(false);
-  
-  // Function to handle share functionality
-  const handleShare = async () => {
-    if (!cardRef.current) return;
+  const handleGenerateImage = async () => {
+    if (!text) {
+      toast({
+        title: "Insight Required",
+        description: "Please enter an insight or select one from the suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
-      // Create a canvas from the card
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2, // Higher resolution
-        backgroundColor: null,
+      setIsGeneratingImage(true);
+      
+      const response = await fetch('/api/insight-cards/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          studyId: study.id,
+          insight: text,
+          theme,
+          style,
+        }),
       });
       
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          resolve(blob!);
-        }, 'image/png');
-      });
-      
-      // Create file from blob for sharing
-      const file = new File([blob], `hydrogen-insight-${study.id}.png`, { type: 'image/png' });
-      
-      // Check if Web Share API is available
-      if (navigator.share) {
-        await navigator.share({
-          title: `Research Insight: ${study.title.substring(0, 50)}...`,
-          text: insight,
-          files: [file]
-        });
-        
-        showSuccessFeedback();
-      } else {
-        // Fallback if Web Share API is not available
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `hydrogen-insight-${study.id}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showSuccessFeedback();
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
       }
+      
+      const data = await response.json();
+      setImageUrl(data.imageUrl);
+      
+      toast({
+        title: "Image Generated",
+        description: "Custom image created for your research insight",
+      });
+      
+    } catch (error) {
+      console.error('Error generating image:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Unable to generate image. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+  
+  const handleShare = async () => {
+    if (!imageUrl || !text) {
+      toast({
+        title: "Missing Content",
+        description: "Please generate an image and provide insight text before sharing",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/insight-cards/share', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          studyId: study.id,
+          insight: text,
+          imageUrl,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to share insight card');
+      }
+      
+      const data = await response.json();
+      
+      if (onSave) {
+        onSave({
+          text,
+          imageUrl,
+          shareUrl: data.shareUrl,
+          shareId: data.shareId,
+        });
+      }
+      
+      toast({
+        title: "Insight Shared",
+        description: "Your research insight is now shareable",
+      });
+      
+      // Copy share URL to clipboard
+      navigator.clipboard.writeText(window.location.origin + data.shareUrl)
+        .then(() => {
+          toast({
+            title: "Link Copied",
+            description: "Share link copied to clipboard",
+          });
+        })
+        .catch(err => {
+          console.error('Failed to copy link:', err);
+        });
+      
     } catch (error) {
       console.error('Error sharing insight card:', error);
-    }
-  };
-  
-  // Function to download the card as image
-  const handleDownload = async () => {
-    if (!cardRef.current) return;
-    
-    try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        backgroundColor: null,
+      toast({
+        title: "Sharing Failed",
+        description: "Unable to share insight card. Please try again later.",
+        variant: "destructive",
       });
-      
-      const url = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `hydrogen-insight-${study.id}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      showSuccessFeedback();
-    } catch (error) {
-      console.error('Error downloading insight card:', error);
     }
   };
   
-  // Show success feedback temporarily
-  const showSuccessFeedback = () => {
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 2000);
+  const handleDownloadImage = () => {
+    if (!imageUrl) {
+      toast({
+        title: "No Image",
+        description: "Please generate an image first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `hydrogen-insight-${study.id}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
   
-  // Toggle editing mode
-  const toggleEditing = () => {
-    setIsEditing(!isEditing);
+  const handleCopyText = () => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        toast({
+          title: "Text Copied",
+          description: "Insight text copied to clipboard",
+        });
+      })
+      .catch(err => {
+        console.error('Failed to copy text:', err);
+        toast({
+          title: "Copy Failed",
+          description: "Unable to copy text to clipboard",
+          variant: "destructive",
+        });
+      });
   };
   
   return (
-    <div className={cn("max-w-md mx-auto", className)}>
-      {/* The actual insight card that will be captured */}
-      <div 
-        ref={cardRef}
-        className={cn(
-          "p-6 rounded-xl shadow-sm",
-          CARD_THEMES[theme].bg,
-          CARD_THEMES[theme].border,
-          CARD_THEMES[theme].text,
-          CARD_LAYOUTS[layout],
-          CARD_FONTS[font]
-        )}
-      >
-        {/* Card content */}
-        <div className="flex flex-col space-y-4">
-          {/* Metadata */}
-          <div className="flex justify-between items-center text-xs">
-            <span className={cn("px-2 py-1 rounded", CARD_THEMES[theme].accent)}>
-              {study.category}
-            </span>
-            <span>HydrogenStudies.com</span>
-          </div>
-          
-          {/* Main insight */}
-          {isEditing ? (
-            <textarea
-              value={insight}
-              onChange={(e) => setInsight(e.target.value)}
-              className="w-full p-2 border rounded text-black bg-white/90"
-              rows={4}
-              placeholder="Enter the key insight from this study..."
-              autoFocus
-            />
-          ) : (
-            <p className="text-lg font-medium my-4 leading-relaxed">
-              "{insight}"
-            </p>
-          )}
-          
-          {/* Attribution */}
-          <div className="text-sm mt-2 opacity-75">
-            <div>Source: {study.journal}</div>
-            <div>Authors: {study.authors}</div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Card controls - only visible in UI, not in the exported image */}
-      <div className="flex flex-col gap-4 mt-4">
-        {/* Theme selector */}
-        {isEditable && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Customize card appearance:</h4>
-            
-            <div className="flex flex-wrap gap-2">
-              {Object.keys(CARD_THEMES).map((key) => (
-                <motion.button
-                  key={key}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={cn(
-                    "w-6 h-6 rounded-full border-2",
-                    CARD_THEMES[key as keyof typeof CARD_THEMES].bg,
-                    theme === key ? "ring-2 ring-primary ring-offset-2" : ""
-                  )}
-                  onClick={() => setTheme(key as keyof typeof CARD_THEMES)}
+    <motion.div
+      className={`w-full ${className}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex flex-col">
+            {/* Image Area */}
+            <div className="bg-gray-100 aspect-video relative flex items-center justify-center">
+              {imageUrl ? (
+                <img 
+                  src={imageUrl} 
+                  alt="Research insight visualization"
+                  className="w-full h-full object-cover"
                 />
-              ))}
+              ) : (
+                <div className="text-center p-6 flex flex-col items-center justify-center h-full">
+                  <div className="text-primary/60 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5c0-8-7-9-10-3-3-6-10-5-10 3"></path>
+                      <path d="M12 13c0 .83-.67 1.5-1.5 1.5S9 13.83 9 13s.67-1.5 1.5-1.5c.83 0 1.5.67 1.5 1.5z"></path>
+                    </svg>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {isGeneratingImage ? 'Generating custom visualization...' : 'Custom visualization will appear here'}
+                  </p>
+                  {!isGeneratingImage && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={handleGenerateImage}
+                    >
+                      Generate Image
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="grid grid-cols-2 gap-2">
-              <select 
-                value={layout} 
-                onChange={(e) => setLayout(e.target.value as keyof typeof CARD_LAYOUTS)}
-                className="p-1 text-sm border rounded"
-              >
-                <option value="centered">Centered</option>
-                <option value="leftAligned">Left Aligned</option>
-                <option value="quote">Quote Style</option>
-              </select>
+            {/* Content Area */}
+            <div className="p-4">
+              {isEditable ? (
+                <Textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Enter research insight..."
+                  className="mb-4 resize-none min-h-[100px]"
+                />
+              ) : (
+                <div className="mb-4">
+                  <p className="text-sm font-medium leading-6">{text}</p>
+                </div>
+              )}
               
-              <select 
-                value={font} 
-                onChange={(e) => setFont(e.target.value as keyof typeof CARD_FONTS)}
-                className="p-1 text-sm border rounded"
-              >
-                <option value="sans">Sans-serif</option>
-                <option value="serif">Serif</option>
-                <option value="mono">Monospace</option>
-              </select>
+              {includeSource && (
+                <div className="text-xs text-muted-foreground mt-2">
+                  <span className="font-medium">Source:</span> {study.authors} ({new Date(study.publishDate).getFullYear()}). {study.journal}.
+                </div>
+              )}
+              
+              {isEditable && (
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="theme">Theme</Label>
+                      <Select
+                        value={theme}
+                        onValueChange={setTheme}
+                      >
+                        <SelectTrigger id="theme">
+                          <SelectValue placeholder="Select theme" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="medical">Medical</SelectItem>
+                          <SelectItem value="scientific">Scientific</SelectItem>
+                          <SelectItem value="technical">Technical</SelectItem>
+                          <SelectItem value="abstract">Abstract</SelectItem>
+                          <SelectItem value="wellness">Wellness</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="style">Style</Label>
+                      <Select
+                        value={style}
+                        onValueChange={setStyle}
+                      >
+                        <SelectTrigger id="style">
+                          <SelectValue placeholder="Select style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="minimalist">Minimalist</SelectItem>
+                          <SelectItem value="modern">Modern</SelectItem>
+                          <SelectItem value="illustrated">Illustrated</SelectItem>
+                          <SelectItem value="geometric">Geometric</SelectItem>
+                          <SelectItem value="gradient">Gradient</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="include-source"
+                      checked={includeSource}
+                      onCheckedChange={setIncludeSource}
+                    />
+                    <Label htmlFor="include-source">Include source citation</Label>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 pt-4">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleGenerateImage}
+                      disabled={!text || isGeneratingImage}
+                    >
+                      {isGeneratingImage ? 'Generating...' : 'Generate Image'}
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleDownloadImage}
+                      disabled={!imageUrl}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleCopyText}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy Text
+                    </Button>
+                    
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      onClick={handleShare}
+                      disabled={!imageUrl || !text}
+                    >
+                      <Share2 className="h-4 w-4 mr-1" />
+                      Share
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
-        
-        <div className="flex justify-between mt-2">
-          {isEditable && (
-            <InteractiveButton
-              size="sm"
-              variant={isEditing ? "default" : "outline"}
-              onClick={toggleEditing}
-              className="flex items-center gap-1"
-            >
-              {isEditing ? <Check className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              {isEditing ? 'Save' : 'Edit Text'}
-            </InteractiveButton>
-          )}
-          
-          <div className="flex gap-2">
-            <InteractiveButton
-              size="sm"
-              variant="outline"
-              onClick={handleDownload}
-              className="flex items-center gap-1"
-              hoverScale={1.05}
-            >
-              <Download className="w-4 h-4" />
-              {showSuccess ? 'Saved!' : 'Save'}
-            </InteractiveButton>
-            
-            <InteractiveButton
-              size="sm"
-              variant="default"
-              onClick={handleShare}
-              className="flex items-center gap-1"
-              hoverScale={1.05}
-              hoverGlow={true}
-            >
-              <Share2 className="w-4 h-4" />
-              {showSuccess ? 'Shared!' : 'Share'}
-            </InteractiveButton>
-          </div>
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

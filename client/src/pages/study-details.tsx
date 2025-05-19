@@ -305,6 +305,20 @@ ER  - `;
                 <TooltipContent>Save For Later</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InsightCardButton 
+                    studyId={study.id} 
+                    size="icon"
+                    variant="ghost"
+                    className="print:hidden"
+                  />
+                </TooltipTrigger>
+                <TooltipContent>Create Shareable Insight Card</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
         

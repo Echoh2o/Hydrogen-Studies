@@ -22,6 +22,7 @@ import NotFound from "@/pages/not-found";
 import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
 import ResearchSuggestionsPage from "@/pages/research-suggestions";
+import ShareInsightCard from "@/pages/ShareInsightCard";
 
 // New organization structure pages
 import ExploreByBenefitPage, { BenefitDetailPage } from "@/pages/ExploreByBenefit";
@@ -72,6 +73,7 @@ function Router() {
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={StudyDetails} />
       <Route path="/studies/:id/:slug?" component={StudyDetails} />
+      <Route path="/share-insight/:id" component={ShareInsightCard} />
       <Route path="/blog/:id/:slug?" component={BlogPage} />
       <Route path="/categories" component={Categories} />
       <Route path="/category/:id" component={CategoryDetails} />
