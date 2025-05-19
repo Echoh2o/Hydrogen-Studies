@@ -26,21 +26,48 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children, title, description }: AdminLayoutProps) {
   const [location] = useLocation();
   
-  const mainNavItems = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/studies", label: "Studies", icon: Database },
-    { href: "/admin/blogs", label: "Blogs", icon: FileText },
-    { href: "/admin/research-import", label: "Research Import", icon: Search },
-    { href: "/admin/research-database", label: "Research Database", icon: Database },
-    { href: "/admin/data-import", label: "Data Import", icon: Upload },
-    { href: "/admin/content-enrichment", label: "Content Enrichment", icon: RefreshCw },
-    { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: RefreshCw },
-    { href: "/admin/image-generation", label: "Image Generation", icon: Image },
-    { href: "/admin/journal-dates", label: "Journal Dates", icon: Calendar },
-    { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
-    { href: "/admin/users", label: "Users", icon: UserCog },
+  // Organize navigation by categories for better usability
+  const navSections = [
+    {
+      title: "Main",
+      items: [
+        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      ]
+    },
+    {
+      title: "Content Management",
+      items: [
+        { href: "/admin/studies", label: "Studies", icon: Database },
+        { href: "/admin/blogs", label: "Blogs", icon: FileText },
+      ]
+    },
+    {
+      title: "Data Operations",
+      items: [
+        { href: "/admin/research-import", label: "Research Import", icon: Search },
+        { href: "/admin/data-import", label: "Data Import", icon: Upload },
+      ]
+    },
+    {
+      title: "Enhancement Tools",
+      items: [
+        { href: "/admin/content-enrichment", label: "Content Enrichment", icon: RefreshCw },
+        { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: RefreshCw },
+        { href: "/admin/image-generation", label: "Image Generation", icon: Image },
+      ]
+    },
+    {
+      title: "Administration",
+      items: [
+        { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
+        { href: "/admin/settings", label: "Settings", icon: Settings },
+        { href: "/admin/users", label: "Users", icon: UserCog },
+      ]
+    },
   ];
+  
+  // Flatten items for mobile navigation (limited space)
+  const mainNavItems = navSections.flatMap(section => section.items);
   
   return (
     <div className="min-h-screen bg-background">
@@ -81,43 +108,94 @@ export default function AdminLayout({ children, title, description }: AdminLayou
         
         <div className="flex-1 flex">
           {/* Sidebar */}
-          <aside className="hidden md:flex w-64 flex-col border-r bg-background">
+          <aside className="hidden md:flex w-72 flex-col border-r bg-background">
             <nav className="flex-1 overflow-y-auto p-4">
-              <ul className="space-y-2">
-                {mainNavItems.map(({ href, label, icon: Icon }) => (
-                  <li key={href}>
-                    <Link 
-                      href={href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                        location === href ? "bg-accent text-accent-foreground" : "transparent"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {label}
-                    </Link>
-                  </li>
+              <div className="space-y-6">
+                {navSections.map((section, index) => (
+                  <div key={index}>
+                    <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {section.title}
+                    </h3>
+                    <ul className="space-y-1">
+                      {section.items.map(({ href, label, icon: Icon }) => (
+                        <li key={href}>
+                          <Link 
+                            href={href}
+                            className={cn(
+                              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                              location === href ? "bg-accent text-accent-foreground" : "transparent"
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                            {label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </nav>
           </aside>
           
           {/* Mobile navigation */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-background">
             <nav className="flex h-16 items-center justify-around">
-              {mainNavItems.slice(0, 5).map(({ href, label, icon: Icon }) => (
-                <Link 
-                  key={href} 
-                  href={href}
-                  className={cn(
-                    "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                    location === href ? "text-primary" : "text-muted-foreground"
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{label}</span>
-                </Link>
-              ))}
+              {/* Show most important nav items on mobile */}
+              <Link 
+                href="/admin"
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                  location === "/admin" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <LayoutDashboard className="h-5 w-5" />
+                <span>Dashboard</span>
+              </Link>
+              
+              <Link 
+                href="/admin/studies"
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                  location === "/admin/studies" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Database className="h-5 w-5" />
+                <span>Studies</span>
+              </Link>
+              
+              <Link 
+                href="/admin/blogs"
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                  location === "/admin/blogs" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <FileText className="h-5 w-5" />
+                <span>Blogs</span>
+              </Link>
+              
+              <Link 
+                href="/admin/research-import"
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                  location === "/admin/research-import" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Search className="h-5 w-5" />
+                <span>Import</span>
+              </Link>
+              
+              <Link 
+                href="/admin/batch-enrichment"
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                  location === "/admin/batch-enrichment" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <RefreshCw className="h-5 w-5" />
+                <span>Enrich</span>
+              </Link>
             </nav>
           </div>
           
