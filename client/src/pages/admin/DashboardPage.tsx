@@ -14,7 +14,9 @@ import {
   Clock,
   Loader2,
   AlertCircle,
-  Plus
+  Plus,
+  RefreshCw,
+  ImageIcon
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -66,80 +68,153 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks and shortcuts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button variant="outline" className="h-auto flex-col p-4 justify-start items-center text-center" asChild>
-                <Link href="/admin/studies/add">
-                  <a>
-                    <Plus className="mb-2 h-5 w-5" />
-                    <span className="text-sm font-medium">Add Study</span>
-                  </a>
-                </Link>
-              </Button>
-              <Button variant="outline" className="h-auto flex-col p-4 justify-start items-center text-center" asChild>
-                <Link href="/admin/research-import">
-                  <a>
-                    <Search className="mb-2 h-5 w-5" />
-                    <span className="text-sm font-medium">Import Research</span>
-                  </a>
-                </Link>
-              </Button>
-              <Button variant="outline" className="h-auto flex-col p-4 justify-start items-center text-center" asChild>
-                <Link href="/admin/blogs">
-                  <a>
-                    <FileText className="mb-2 h-5 w-5" />
-                    <span className="text-sm font-medium">Manage Blogs</span>
-                  </a>
-                </Link>
-              </Button>
-              <Button variant="outline" className="h-auto flex-col p-4 justify-start items-center text-center" asChild>
-                <Link href="/admin/data-import">
-                  <a>
-                    <Upload className="mb-2 h-5 w-5" />
-                    <span className="text-sm font-medium">Data Import</span>
-                  </a>
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Quick Action Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Content Management */}
+          <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Database className="h-5 w-5 mr-2 text-blue-500" />
+                Content Management
+              </CardTitle>
+              <CardDescription>Manage studies and blog articles</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button variant="default" size="sm" className="w-full justify-start bg-blue-600 hover:bg-blue-700" asChild>
+                  <Link href="/admin/studies/add">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add New Study
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                  <Link href="/admin/studies">
+                    <Database className="mr-2 h-4 w-4" />
+                    Manage Studies
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                  <Link href="/admin/blogs">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Manage Blogs
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Data Operations */}
+          <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-background border-amber-100 dark:border-amber-900">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Upload className="h-5 w-5 mr-2 text-amber-500" />
+                Data Operations
+              </CardTitle>
+              <CardDescription>Import and manage research data</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button variant="default" size="sm" className="w-full justify-start bg-amber-600 hover:bg-amber-700" asChild>
+                  <Link href="/admin/research-import">
+                    <Search className="mr-2 h-4 w-4" />
+                    Import Research
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                  <Link href="/admin/data-import">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Data Import (CSV/Excel)
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enhancement Tools */}
+          <Card className="bg-gradient-to-br from-green-50 to-white dark:from-green-950/30 dark:to-background border-green-100 dark:border-green-900">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <RefreshCw className="h-5 w-5 mr-2 text-green-500" />
+                Enhancement Tools
+              </CardTitle>
+              <CardDescription>Enrich and improve content</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button variant="default" size="sm" className="w-full justify-start bg-green-600 hover:bg-green-700" asChild>
+                  <Link href="/admin/batch-enrichment">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Batch Enrichment
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                  <Link href="/admin/content-enrichment">
+                    <Clock className="mr-2 h-4 w-4" />
+                    Content Enrichment
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                  <Link href="/admin/image-generation">
+                    <Image className="mr-2 h-4 w-4" />
+                    Image Generation
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-blue-100 dark:border-blue-900/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Studies</CardTitle>
-              <Database className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Database className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{displayStats.totalStudies}</div>
               <p className="text-xs text-muted-foreground">Hydrogen research studies in database</p>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-amber-100 dark:border-amber-900/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Blog Articles</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{displayStats.totalBlogs}</div>
               <p className="text-xs text-muted-foreground">Published blog articles</p>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-purple-100 dark:border-purple-900/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Content</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{displayStats.pendingBlogs}</div>
               <p className="text-xs text-muted-foreground">Blogs awaiting review/publishing</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-green-100 dark:border-green-900/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Recent Imports</CardTitle>
+              <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Upload className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{displayStats.recentImports}</div>
+              <p className="text-xs text-muted-foreground">Studies imported in last 30 days</p>
             </CardContent>
           </Card>
         </div>
