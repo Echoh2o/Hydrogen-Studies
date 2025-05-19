@@ -13,6 +13,7 @@ import {
   Link as LinkIcon, Download, FileQuestion, Share2,
   ExternalLink, RefreshCcw, AlertCircle
 } from "lucide-react";
+import InsightCardButton from "@/components/insight-cards/InsightCardButton";
 import ResearchInsightCard from "@/components/sharing/ResearchInsightCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
