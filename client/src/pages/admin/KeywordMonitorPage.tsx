@@ -35,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import KeywordEditor from "@/components/admin/keyword-monitor/KeywordEditor";
 import ScheduleDialog from "@/components/admin/keyword-monitor/ScheduleDialog";
+import StatusMonitor from "@/components/admin/keyword-monitor/StatusMonitor";
 
 // Types for keyword monitoring
 interface Keyword {
