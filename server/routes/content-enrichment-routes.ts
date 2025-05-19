@@ -7,7 +7,7 @@
 import { Router } from "express";
 import { db } from "../db";
 import { studies } from "@shared/schema";
-import { enhanceStudyContent, batchEnhanceStudies, findStudiesForEnhancement } from "../content-enrichment";
+import { enhanceStudyContent, batchEnhanceStudies } from "../content-enrichment";
 import { eq, desc, and, or, isNull, lt, gt, sql } from "drizzle-orm";
 
 const router = Router();
@@ -23,18 +23,22 @@ router.use((req, res, next) => {
  */
 router.get("/candidates", async (req, res) => {
   try {
-    const studyIds = await findStudiesForEnhancement(50);
-    
-    if (!studyIds || studyIds.length === 0) {
-      return res.json([]);
-    }
-
-    // Make sure we handle empty arrays properly
-    const candidates = studyIds.length > 0 
-      ? await db.select().from(studies)
-          .where(sql`${studies.id} IN (${studyIds.join(',')})`)
-          .orderBy(desc(studies.createdAt))  // Using createdAt since updatedAt isn't in schema
-      : [];
+    // Find studies with incomplete content directly
+    const candidates = await db.select().from(studies)
+      .where(
+        and(
+          sql`doi IS NOT NULL`,
+          or(
+            sql`abstract IS NULL OR LENGTH(abstract) < 200`,
+            sql`methods IS NULL`,
+            sql`results IS NULL`,
+            sql`conclusion IS NULL`,
+            sql`image_url IS NULL`
+          )
+        )
+      )
+      .orderBy(desc(studies.createdAt))
+      .limit(50);
     
     return res.json(candidates);
   } catch (error) {
@@ -112,9 +116,24 @@ router.post("/batch", async (req, res) => {
     const { count = 5 } = req.body;
     const limitedCount = Math.min(50, Math.max(1, count)); // Limit between 1 and 50
     
-    const studyIds = await findStudiesForEnhancement(limitedCount);
+    // Find studies with incomplete content directly
+    const candidates = await db.select().from(studies)
+      .where(
+        and(
+          sql`doi IS NOT NULL`,
+          or(
+            sql`abstract IS NULL OR LENGTH(abstract) < 200`,
+            sql`methods IS NULL`,
+            sql`results IS NULL`,
+            sql`conclusion IS NULL`,
+            sql`image_url IS NULL`
+          )
+        )
+      )
+      .orderBy(desc(studies.createdAt))
+      .limit(limitedCount);
     
-    if (studyIds.length === 0) {
+    if (!candidates || candidates.length === 0) {
       return res.json({ 
         message: "No studies found that need enrichment",
         processed: 0,
@@ -123,6 +142,7 @@ router.post("/batch", async (req, res) => {
       });
     }
     
+    const studyIds = candidates.map(study => study.id);
     const results = await batchEnhanceStudies(studyIds);
     return res.json(results);
   } catch (error) {
