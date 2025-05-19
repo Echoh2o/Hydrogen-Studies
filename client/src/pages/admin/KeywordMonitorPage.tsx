@@ -25,12 +25,16 @@ import {
   Filter,
   Lightbulb,
   AlertCircle,
-  Save
+  Save,
+  CalendarClock,
+  RefreshCw
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import KeywordEditor from "@/components/admin/keyword-monitor/KeywordEditor";
+import ScheduleDialog from "@/components/admin/keyword-monitor/ScheduleDialog";
 
 // Types for keyword monitoring
 interface Keyword {
@@ -87,6 +91,7 @@ export default function KeywordMonitorPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showAddExcludedDialog, setShowAddExcludedDialog] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<{
     message: string;
     type: "info" | "success" | "error";
