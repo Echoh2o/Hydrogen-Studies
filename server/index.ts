@@ -286,5 +286,17 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Set up periodic keyword monitoring checks
+    setInterval(async () => {
+      try {
+        const { checkScheduledSearches } = await import('./keyword-monitor-service');
+        await checkScheduledSearches();
+      } catch (error) {
+        console.error('Error checking scheduled searches:', error);
+      }
+    }, 15 * 60 * 1000); // Check every 15 minutes
+    
+    console.log('Keyword monitoring scheduler started');
   });
 })();
