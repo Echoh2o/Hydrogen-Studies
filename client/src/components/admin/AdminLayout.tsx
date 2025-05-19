@@ -46,6 +46,7 @@ export default function AdminLayout({ children, title, description }: AdminLayou
       items: [
         { href: "/admin/research-import", label: "Research Import", icon: Search },
         { href: "/admin/data-import", label: "Data Import", icon: Upload },
+        { href: "/admin/keyword-monitor", label: "Keyword Monitor", icon: Calendar },
       ]
     },
     {
@@ -195,6 +196,17 @@ export default function AdminLayout({ children, title, description }: AdminLayou
               >
                 <RefreshCw className="h-5 w-5" />
                 <span>Enrich</span>
+              </Link>
+              
+              <Link 
+                href="/admin/keyword-monitor"
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
+                  location === "/admin/keyword-monitor" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Calendar className="h-5 w-5" />
+                <span>Monitor</span>
               </Link>
             </nav>
           </div>
