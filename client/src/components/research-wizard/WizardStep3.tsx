@@ -26,15 +26,13 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
     const fetchOptions = async () => {
       try {
         setIsLoading(true);
-        const response = await apiRequest({
-          url: "/api/research-suggestions/options",
-          method: "GET"
-        });
+        const response = await apiRequest("GET", "/api/research-suggestions/options");
         
-        if (response.success && response.data) {
+        const data = await response.json();
+        if (data.success && data.data) {
           setOptions({
-            deliveryMethods: response.data.deliveryMethods || [],
-            timeFrames: response.data.timeFrames || []
+            deliveryMethods: data.data.deliveryMethods || [],
+            timeFrames: data.data.timeFrames || []
           });
         } else {
           toast({

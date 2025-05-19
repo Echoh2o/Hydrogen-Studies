@@ -26,15 +26,13 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
     const fetchOptions = async () => {
       try {
         setIsLoading(true);
-        const response = await apiRequest({
-          url: "/api/research-suggestions/options",
-          method: "GET"
-        });
+        const response = await apiRequest("GET", "/api/research-suggestions/options");
         
-        if (response.success && response.data) {
+        const data = await response.json();
+        if (data.success && data.data) {
           setOptions({
-            demographicGroups: response.data.demographicGroups || [],
-            researchTypes: response.data.researchTypes || []
+            demographicGroups: data.data.demographicGroups || [],
+            researchTypes: data.data.researchTypes || []
           });
         } else {
           toast({

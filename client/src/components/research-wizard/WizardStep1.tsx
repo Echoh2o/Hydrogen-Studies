@@ -15,7 +15,10 @@ interface WizardStep1Props {
 
 const WizardStep1 = ({ selections, onSelectionChange }: WizardStep1Props) => {
   const { toast } = useToast();
-  const [options, setOptions] = useState({
+  const [options, setOptions] = useState<{
+    interests: string[];
+    healthConditions: string[];
+  }>({
     interests: [],
     healthConditions: []
   });
@@ -25,15 +28,13 @@ const WizardStep1 = ({ selections, onSelectionChange }: WizardStep1Props) => {
     const fetchOptions = async () => {
       try {
         setIsLoading(true);
-        const response = await apiRequest({
-          url: "/api/research-suggestions/options",
-          method: "GET"
-        });
+        const response = await apiRequest("GET", "/api/research-suggestions/options");
         
-        if (response.success && response.data) {
+        const data = await response.json();
+        if (data.success && data.data) {
           setOptions({
-            interests: response.data.interests || [],
-            healthConditions: response.data.healthConditions || []
+            interests: data.data.interests || [],
+            healthConditions: data.data.healthConditions || []
           });
         } else {
           toast({
