@@ -26,7 +26,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children, title, description }: AdminLayoutProps) {
   const [location] = useLocation();
   
-  // Organize navigation by categories for better usability
+  // Organize navigation by content type for better usability
   const navSections = [
     {
       title: "Main",
@@ -35,26 +35,28 @@ export default function AdminLayout({ children, title, description }: AdminLayou
       ]
     },
     {
-      title: "Content Management",
+      title: "Studies Management",
       items: [
-        { href: "/admin/studies", label: "Studies", icon: Database },
-        { href: "/admin/blogs", label: "Blogs", icon: FileText },
-      ]
-    },
-    {
-      title: "Data Operations",
-      items: [
-        { href: "/admin/research-import", label: "Research Import", icon: Search },
-        { href: "/admin/data-import", label: "Data Import", icon: Upload },
-        { href: "/admin/keyword-monitor", label: "Keyword Monitor", icon: Calendar },
-      ]
-    },
-    {
-      title: "Enhancement Tools",
-      items: [
-        { href: "/admin/content-enrichment", label: "Content Enrichment", icon: RefreshCw },
+        { href: "/admin/studies", label: "Manage Studies", icon: Database },
+        { href: "/admin/research-import", label: "Find New Studies", icon: Search },
+        { href: "/admin/keyword-monitor", label: "Monitor Keywords", icon: Calendar },
+        { href: "/admin/content-enrichment", label: "Enrich Content", icon: RefreshCw },
         { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: RefreshCw },
-        { href: "/admin/image-generation", label: "Image Generation", icon: Image },
+        { href: "/admin/image-generation", label: "Generate Images", icon: Image },
+      ]
+    },
+    {
+      title: "Blog Management",
+      items: [
+        { href: "/admin/blogs", label: "Manage Blogs", icon: FileText },
+        { href: "/admin/blog-generator", label: "Generate Blogs", icon: FileText },
+        { href: "/admin/blog-categories", label: "Blog Categories", icon: FileText },
+      ]
+    },
+    {
+      title: "Data & Import",
+      items: [
+        { href: "/admin/data-import", label: "Data Import", icon: Upload },
       ]
     },
     {
