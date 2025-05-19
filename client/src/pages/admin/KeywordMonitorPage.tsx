@@ -117,10 +117,7 @@ export default function KeywordMonitorPage() {
     enabled: activeTab === "groups",
   });
   
-  // Query for schedule configuration
-  const scheduleQuery = useQuery({
-    queryKey: ["/api/keywords/monitor/schedule"],
-  });
+  // This scheduleQuery will be used for both the StatusMonitor and ScheduleDialog components
 
   // Query for monitor results
   const monitorResultsQuery = useQuery({
@@ -128,10 +125,9 @@ export default function KeywordMonitorPage() {
     enabled: activeTab === "results",
   });
   
-  // Query for search schedule
+  // Query for search schedule - used for both StatusMonitor and ScheduleDialog
   const scheduleQuery = useQuery({
     queryKey: ["/api/keywords/monitor/schedule"],
-    enabled: activeTab === "results" || activeTab === "keywords",
   });
 
   // Mutation for adding a keyword
