@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/keywords', keywordMonitorRoutes);
   
   // Register keyword monitor schedule routes for automated search scheduling
-  app.use('/api/keywords/schedule', keywordMonitorScheduleRoutes);
+  app.use('/api/keywords/monitor/schedule', keywordMonitorScheduleRoutes);
   
   // Research suggestions routes are implemented directly in this file
   

@@ -59,23 +59,42 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
     runSearchMutation.mutate();
   };
   
-  // Extract schedule data
-  const schedule = scheduleQuery.data || {
-    enabled: false,
-    frequency: "daily",
-    time: "00:00",
-    sources: [],
-    lastRun: null,
-    nextRun: null,
-  } as {
+  // Define interface for schedule data
+  interface ScheduleData {
     enabled: boolean;
     frequency: string;
     time: string;
     sources: string[];
     lastRun: string | null;
     nextRun: string | null;
+    id?: number;
+    createdAt?: string;
+    updatedAt?: string;
+    days?: string[];
+  }
+  
+  // Extract schedule data with proper typing
+  const schedule: ScheduleData = scheduleQuery.data || {
+    enabled: false,
+    frequency: "daily",
+    time: "00:00",
+    sources: [],
+    lastRun: null,
+    nextRun: null,
+    days: []
   };
   
+  // Interface for status response
+  interface StatusResponse {
+    ran?: boolean;
+    message?: string;
+    results?: {
+      total: number;
+      bySource?: Record<string, number>;
+    };
+    error?: string;
+  }
+
   // Format search status from backend response
   const getSearchStatus = () => {
     if (statusQuery.isLoading) {
@@ -91,7 +110,7 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
     }
     
     // Ensure we have data, even if it's an empty object
-    const status = statusQuery.data || {};
+    const status = statusQuery.data as StatusResponse || {};
     
     // Check if we have a valid response
     if (typeof status === 'object') {
