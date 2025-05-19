@@ -43,12 +43,14 @@ export default function ContentEnrichmentPage() {
   const candidatesQuery = useQuery({
     queryKey: ["/api/content-enrichment/candidates"],
     enabled: activeTab === "candidates",
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
   // Fetch recently enriched studies
   const recentlyEnrichedQuery = useQuery({
     queryKey: ["/api/content-enrichment/recent"],
     enabled: activeTab === "recent",
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
   });
 
   // Mutation for enhancing a single study
