@@ -16,7 +16,10 @@ interface WizardStep3Props {
 
 const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
   const { toast } = useToast();
-  const [options, setOptions] = useState({
+  const [options, setOptions] = useState<{
+    deliveryMethods: string[];
+    timeFrames: string[];
+  }>({
     deliveryMethods: [],
     timeFrames: []
   });
