@@ -41,20 +41,20 @@ export default function ContentEnrichmentPage() {
 
   // Fetch candidates for content enrichment
   const candidatesQuery = useQuery({
-    queryKey: ["/direct-api/content-enrichment/candidates"],
+    queryKey: ["/api/content-enrichment/candidates"],
     enabled: activeTab === "candidates",
   });
 
   // Fetch recently enriched studies
   const recentlyEnrichedQuery = useQuery({
-    queryKey: ["/direct-api/content-enrichment/recent"],
+    queryKey: ["/api/content-enrichment/recent"],
     enabled: activeTab === "recent",
   });
 
   // Mutation for enhancing a single study
   const enhanceStudyMutation = useMutation({
     mutationFn: async (studyId: number) => {
-      const response = await fetch(`/direct-api/content-enrichment/study/${studyId}`, {
+      const response = await fetch(`/api/content-enrichment/study/${studyId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +93,7 @@ export default function ContentEnrichmentPage() {
   // Mutation for batch enrichment
   const batchEnrichMutation = useMutation({
     mutationFn: async (count: number) => {
-      const response = await fetch(`/direct-api/content-enrichment/batch`, {
+      const response = await fetch(`/api/content-enrichment/batch`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
