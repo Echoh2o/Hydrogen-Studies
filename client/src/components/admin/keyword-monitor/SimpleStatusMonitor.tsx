@@ -11,6 +11,16 @@ interface StatusMonitorProps {
   onConfigureSchedule: () => void;
 }
 
+interface ScheduleData {
+  enabled?: boolean;
+  frequency?: string;
+  time?: string;
+  sources?: string[];
+  lastRun?: string | null;
+  nextRun?: string | null;
+  days?: string[];
+}
+
 export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonitorProps) {
   const [runningSearch, setRunningSearch] = useState(false);
   
@@ -40,9 +50,20 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
     }
   });
   
+  // Cast the query data to our defined schema type with defaults
+  const scheduleData: ScheduleData = (scheduleQuery.data as ScheduleData) || {
+    enabled: false,
+    frequency: "",
+    time: "",
+    sources: [],
+    lastRun: null,
+    nextRun: null,
+    days: []
+  };
+  
   // Determine the schedule state
-  const isScheduleEnabled = !!scheduleQuery.data?.enabled;
-  const hasScheduleSources = Array.isArray(scheduleQuery.data?.sources) && scheduleQuery.data?.sources.length > 0;
+  const isScheduleEnabled = !!scheduleData.enabled;
+  const hasScheduleSources = Array.isArray(scheduleData.sources) && scheduleData.sources.length > 0;
   
   return (
     <Card className="w-full">
@@ -71,22 +92,22 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
           </Alert>
         )}
         
-        {!scheduleQuery.isLoading && !scheduleQuery.isError && scheduleQuery.data && (
+        {!scheduleQuery.isLoading && !scheduleQuery.isError && (
           <div className="grid gap-4">
             <p>
               <strong>Status:</strong> {isScheduleEnabled ? "Active" : "Inactive"}
             </p>
             <p>
-              <strong>Frequency:</strong> {scheduleQuery.data.frequency || "Not set"}
+              <strong>Frequency:</strong> {scheduleData.frequency || "Not set"}
             </p>
             <p>
-              <strong>Next Run:</strong> {scheduleQuery.data.nextRun ? new Date(scheduleQuery.data.nextRun).toLocaleString() : "Not scheduled"}
+              <strong>Next Run:</strong> {scheduleData.nextRun ? new Date(scheduleData.nextRun).toLocaleString() : "Not scheduled"}
             </p>
             <p>
-              <strong>Last Run:</strong> {scheduleQuery.data.lastRun ? new Date(scheduleQuery.data.lastRun).toLocaleString() : "Never run"}
+              <strong>Last Run:</strong> {scheduleData.lastRun ? new Date(scheduleData.lastRun).toLocaleString() : "Never run"}
             </p>
             <p>
-              <strong>Sources:</strong> {hasScheduleSources ? scheduleQuery.data.sources.join(", ") : "No sources configured"}
+              <strong>Sources:</strong> {hasScheduleSources && scheduleData.sources ? scheduleData.sources.join(", ") : "No sources configured"}
             </p>
           </div>
         )}
