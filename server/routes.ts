@@ -51,6 +51,7 @@ import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
 import enhancedEnrichmentRoutes from "./routes/enhanced-enrichment-routes";
+import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
@@ -106,6 +107,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register insight card routes for sharing research findings
   app.use('/api', insightCardRoutes);
+  
+  // Register keyword monitoring routes for automated study searching
+  app.use('/api/keywords', keywordMonitorRoutes);
   
   // Research suggestions routes are implemented directly in this file
   
