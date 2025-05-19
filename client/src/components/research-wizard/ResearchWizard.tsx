@@ -21,12 +21,23 @@ const ResearchWizard = () => {
   const [results, setResults] = useState<any>(null);
   
   // Wizard selections state
-  const [selections, setSelections] = useState({
-    interests: [] as string[],
-    healthConditions: [] as string[],
+  interface WizardSelections {
+    interests: string[];
+    healthConditions: string[];
+    demographicGroup: string;
+    researchType: string;
+    deliveryMethod: string[];
+    timeFrame: string;
+    focusArea: string;
+    [key: string]: string | string[];
+  }
+
+  const [selections, setSelections] = useState<WizardSelections>({
+    interests: [],
+    healthConditions: [],
     demographicGroup: "any",
     researchType: "any",
-    deliveryMethod: [] as string[],
+    deliveryMethod: [],
     timeFrame: "any",
     focusArea: "both"
   });
@@ -101,19 +112,17 @@ const ResearchWizard = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const response = await apiRequest({
-        url: "/api/research-suggestions/generate",
-        method: "POST",
-        data: selections
-      });
+      const response = await apiRequest("POST", "/api/research-suggestions/generate", selections);
       
-      if (response.success && response.data) {
-        setResults(response.data);
+      const responseData = await response.json();
+      
+      if (responseData && responseData.success && responseData.data) {
+        setResults(responseData.data);
         setCurrentStep(totalSteps + 1); // Move to results step
       } else {
         toast({
           title: "Error Generating Suggestions",
-          description: response.message || "Failed to generate research suggestions. Please try again.",
+          description: (responseData && responseData.message) || "Failed to generate research suggestions. Please try again.",
           variant: "destructive"
         });
       }
@@ -161,74 +170,103 @@ const ResearchWizard = () => {
   if (currentStep === totalSteps + 1 && results) {
     return (
       <div className="max-w-6xl mx-auto">
-        <WizardResults 
-          results={results} 
-          onReset={handleReset}
-          selections={selections}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <WizardResults 
+            results={results} 
+            onReset={handleReset}
+            selections={selections}
+          />
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Card>
-        <CardContent className="p-6">
-          {/* Progress Steps */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card>
+          <CardContent className="p-6">
+            {/* Progress Steps */}
           <div className="mb-8">
             <div className="flex justify-between items-center">
-              {Array.from({ length: totalSteps }, (_, i) => i + 1).map(step => (
-                <div key={step} className="flex flex-col items-center">
-                  <div 
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 
-                      ${currentStep >= step 
-                        ? 'border-primary bg-primary text-white' 
-                        : 'border-gray-300 text-gray-400'
-                      }`}
-                  >
-                    {step}
-                  </div>
-                  <div className="text-xs mt-2 text-center">
-                    {step === 1 && "Interests"}
-                    {step === 2 && "Demographics"}
-                    {step === 3 && "Methods"}
-                  </div>
-                </div>
-              ))}
+              <StaggeredContainer>
+                {Array.from({ length: totalSteps }, (_, i) => i + 1).map(step => (
+                  <StaggeredItem key={step} className="flex flex-col items-center">
+                    <motion.div 
+                      className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors duration-300
+                        ${currentStep >= step 
+                          ? 'border-primary bg-primary text-white' 
+                          : 'border-gray-300 text-gray-400'
+                        }`}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {step}
+                    </motion.div>
+                    <div className="text-xs mt-2 text-center">
+                      {step === 1 && "Interests"}
+                      {step === 2 && "Demographics"}
+                      {step === 3 && "Methods"}
+                    </div>
+                  </StaggeredItem>
+                ))}
+              </StaggeredContainer>
             </div>
             
             {/* Progress Bar */}
             <div className="relative mt-4">
               <div className="absolute top-0 left-0 h-2 bg-gray-200 w-full rounded-full" />
-              <div 
-                className="absolute top-0 left-0 h-2 bg-primary rounded-full transition-all duration-300" 
-                style={{ width: `${(currentStep - 1) / (totalSteps - 1) * 100}%` }}
+              <motion.div 
+                className="absolute top-0 left-0 h-2 bg-primary rounded-full"
+                initial={{ width: `${(currentStep - 1) / (totalSteps - 1) * 100}%` }}
+                animate={{ width: `${(currentStep - 1) / (totalSteps - 1) * 100}%` }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
               />
             </div>
           </div>
           
           {/* Step Content */}
-          <div className="min-h-[400px]">
-            {renderStepContent()}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="min-h-[400px]"
+            >
+              {renderStepContent()}
+            </motion.div>
+          </AnimatePresence>
           
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8">
             {currentStep > 1 ? (
-              <Button 
+              <InteractiveButton 
                 variant="outline" 
                 onClick={handleBack}
                 disabled={loading}
+                hoverScale={1.05}
               >
                 Back
-              </Button>
+              </InteractiveButton>
             ) : (
               <div></div>
             )}
             
-            <Button 
+            <InteractiveButton 
               onClick={handleNext}
               disabled={!isStepComplete(currentStep) || loading}
+              hoverScale={1.05}
+              hoverGlow={true}
             >
               {loading ? (
                 <>
@@ -238,10 +276,11 @@ const ResearchWizard = () => {
               ) : (
                 currentStep === totalSteps ? "Generate Suggestions" : "Next"
               )}
-            </Button>
+            </InteractiveButton>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 };
