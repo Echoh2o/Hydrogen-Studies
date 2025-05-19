@@ -432,3 +432,83 @@ export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type InsertChatFeedback = z.infer<typeof insertChatFeedbackSchema>;
 export type InsertPopularQuestion = z.infer<typeof insertPopularQuestionSchema>;
+
+// Keyword monitoring tables
+export const keywords = pgTable("keywords", {
+  id: serial("id").primaryKey(),
+  term: text("term").notNull(),
+  category: text("category").default("general").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastSearched: timestamp("last_searched"),
+  matchCount: integer("match_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const excludedKeywords = pgTable("excluded_keywords", {
+  id: serial("id").primaryKey(),
+  term: text("term").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const keywordGroups = pgTable("keyword_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const keywordGroupMappings = pgTable("keyword_group_mappings", {
+  id: serial("id").primaryKey(),
+  keywordId: integer("keyword_id").references(() => keywords.id, { onDelete: "cascade" }).notNull(),
+  groupId: integer("group_id").references(() => keywordGroups.id, { onDelete: "cascade" }).notNull(),
+});
+
+export const monitorResults = pgTable("monitor_results", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  abstract: text("abstract"),
+  authors: text("authors"),
+  journal: text("journal"),
+  publishDate: text("publish_date"),
+  doi: text("doi"),
+  url: text("url"),
+  matchedKeywords: text("matched_keywords").array(),
+  status: text("status").default("pending").notNull(),
+  source: text("source").notNull(),
+  foundAt: timestamp("found_at").defaultNow().notNull(),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  notes: text("notes"),
+});
+
+// Create insertion schemas for keyword monitoring
+export const insertKeywordSchema = createInsertSchema(keywords).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true, 
+  lastSearched: true,
+  matchCount: true
+});
+export const insertExcludedKeywordSchema = createInsertSchema(excludedKeywords).omit({ id: true, createdAt: true });
+export const insertKeywordGroupSchema = createInsertSchema(keywordGroups).omit({ id: true, createdAt: true });
+export const insertKeywordGroupMappingSchema = createInsertSchema(keywordGroupMappings).omit({ id: true });
+export const insertMonitorResultSchema = createInsertSchema(monitorResults).omit({ 
+  id: true, 
+  foundAt: true, 
+  reviewedAt: true 
+});
+
+// Types for keyword monitoring
+export type Keyword = typeof keywords.$inferSelect;
+export type ExcludedKeyword = typeof excludedKeywords.$inferSelect;
+export type KeywordGroup = typeof keywordGroups.$inferSelect;
+export type KeywordGroupMapping = typeof keywordGroupMappings.$inferSelect;
+export type MonitorResult = typeof monitorResults.$inferSelect;
+export type InsertKeyword = z.infer<typeof insertKeywordSchema>;
+export type InsertExcludedKeyword = z.infer<typeof insertExcludedKeywordSchema>;
+export type InsertKeywordGroup = z.infer<typeof insertKeywordGroupSchema>;
+export type InsertKeywordGroupMapping = z.infer<typeof insertKeywordGroupMappingSchema>;
+export type InsertMonitorResult = z.infer<typeof insertMonitorResultSchema>;
