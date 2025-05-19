@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PlayCircle } from "lucide-react";
+import { Loader2, PlayCircle, CheckCircle } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 
 interface StatusMonitorProps {
@@ -30,6 +30,9 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
     staleTime: 1000 * 60, // 1 minute
   });
 
+  // State for success message
+  const [showSuccess, setShowSuccess] = useState(false);
+  
   // Run search now mutation
   const runSearchMutation = useMutation({
     mutationFn: async () => {
@@ -43,7 +46,12 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/keywords/monitor/schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/keywords/results"] });
       setRunningSearch(false);
+      
+      // Show success message and auto-hide after 3 seconds
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     },
     onError: () => {
       setRunningSearch(false);
@@ -78,6 +86,17 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* Success message */}
+        {showSuccess && (
+          <Alert className="mb-4">
+            <CheckCircle className="h-4 w-4" />
+            <AlertTitle>Search Started</AlertTitle>
+            <AlertDescription>
+              The keyword search has been started successfully. Any matches will appear in the "Monitor Results" tab.
+            </AlertDescription>
+          </Alert>
+        )}
+      
         {scheduleQuery.isLoading && (
           <div className="flex justify-center py-6">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
