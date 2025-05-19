@@ -14,12 +14,12 @@ router.use(excelImportRoutes);
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), 'uploads');
-    
+
     // Create the directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-    
+
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -44,16 +44,16 @@ router.post('/import/csv', upload.single('csvFile'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    
+
     const filePath = req.file.path;
     console.log(`Received CSV file: ${filePath}`);
-    
+
     // Import the studies from the CSV file
     const result = await importStudiesFromCsv(filePath);
-    
+
     // Clean up the file after import
     fs.unlinkSync(filePath);
-    
+
     return res.status(200).json({
       success: true,
       message: `Successfully imported ${result.success} out of ${result.total} studies`,
@@ -74,16 +74,16 @@ router.post('/import/json', upload.single('jsonFile'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    
+
     const filePath = req.file.path;
     console.log(`Received JSON file: ${filePath}`);
-    
+
     // Import the studies from the JSON file
     const result = await importStudiesFromJson(filePath);
-    
+
     // Clean up the file after import
     fs.unlinkSync(filePath);
-    
+
     return res.status(200).json({
       success: true,
       message: `Successfully imported ${result.success} out of ${result.total} studies`,
@@ -104,21 +104,20 @@ router.post('/import/excel', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-    
+
     const filePath = req.file.path;
     console.log(`Received Excel file: ${filePath}`);
-    
+
     // Import the studies from the Excel file
     const result = await importStudiesFromExcel(filePath);
-    
+
     // Clean up the file after import
     fs.unlinkSync(filePath);
-    
+
     return res.status(200).json({
-      success: true,
+      success: result.success,
       message: `Successfully imported ${result.success} out of ${result.total} studies`,
-      total: result.total,
-      success: result.success
+      total: result.total
     });
   } catch (error: any) {
     console.error('Error importing Excel file:', error);
@@ -133,18 +132,18 @@ router.post('/import/excel', upload.single('file'), async (req, res) => {
 router.post('/import/attached', async (req, res) => {
   try {
     const { filePath, fileType } = req.body;
-    
+
     if (!filePath || !fileType) {
       return res.status(400).json({ 
         success: false, 
         message: 'File path and file type are required' 
       });
     }
-    
+
     console.log(`Attempting to import from: ${filePath}`);
     const absolutePath = path.resolve(process.cwd(), filePath);
     console.log(`Absolute path: ${absolutePath}`);
-    
+
     // Check if file exists
     if (!fs.existsSync(absolutePath)) {
       return res.status(404).json({ 
@@ -152,9 +151,9 @@ router.post('/import/attached', async (req, res) => {
         message: `File not found: ${absolutePath}` 
       });
     }
-    
+
     let result;
-    
+
     // Import based on file type
     switch (fileType.toLowerCase()) {
       case 'csv':
@@ -173,7 +172,7 @@ router.post('/import/attached', async (req, res) => {
           message: 'Unsupported file type. Supported types: csv, json, xlsx, xls' 
         });
     }
-    
+
     return res.status(200).json({
       success: true,
       message: `Successfully imported ${result.success} out of ${result.total} studies`,
@@ -192,15 +191,15 @@ router.post('/import/attached', async (req, res) => {
 router.post('/import/googlesheet', async (req, res) => {
   try {
     const { url } = req.body;
-    
+
     if (!url) {
       return res.status(400).json({ success: false, message: 'No Google Sheet URL provided' });
     }
-    
+
     console.log(`Importing from Google Sheet: ${url}`);
-    
+
     const result = await importStudiesFromGoogleSheets(url);
-    
+
     return res.status(200).json({
       success: true,
       message: `Successfully imported ${result.success} out of ${result.total} studies`,

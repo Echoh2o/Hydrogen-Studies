@@ -342,7 +342,7 @@ export class MemStorage implements IStorage {
           );
         } else if (queryWords.length > 0) {
           // Default: Count how many query words appear in the study (partial match)
-          const matchCount = queryWords.filter(word => 
+          let matchCount = queryWords.filter(word => 
             titleLower.includes(word) || 
             abstractLower.includes(word) || 
             authorsLower.includes(word) || 
