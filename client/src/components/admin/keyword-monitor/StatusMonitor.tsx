@@ -83,31 +83,35 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
     }
     
     if (statusQuery.isError) {
+      console.error("Status query error:", statusQuery.error);
       return { 
         status: "error", 
         message: "Failed to load status" 
       };
     }
     
-    const status = statusQuery.data as {
-      ran?: boolean;
-      message?: string;
-      results?: {
-        total: number;
-        bySource?: Record<string, number>;
-      };
-    } || {};
+    // Ensure we have data, even if it's an empty object
+    const status = statusQuery.data || {};
     
-    if (status?.ran) {
-      return { 
-        status: "success",
-        message: "Last search completed successfully",
-        results: status.results
-      };
+    // Check if we have a valid response
+    if (typeof status === 'object') {
+      if (status.ran === true) {
+        return { 
+          status: "success",
+          message: "Last search completed successfully",
+          results: status.results || { total: 0, bySource: {} }
+        };
+      } else {
+        return { 
+          status: "idle",
+          message: status.message || "No recent searches"
+        };
+      }
     } else {
-      return { 
-        status: "idle",
-        message: status?.message || "No recent searches"
+      console.error("Unexpected status format:", status);
+      return {
+        status: "error",
+        message: "Invalid status format received"
       };
     }
   };
