@@ -1116,11 +1116,23 @@ export default function KeywordMonitorPage() {
         {/* Monitor Results Tab */}
         <TabsContent value="results">
           <Card>
-            <CardHeader>
-              <CardTitle>Monitor Results</CardTitle>
-              <CardDescription>
-                Studies found by the keyword monitor
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle>Monitor Results</CardTitle>
+                <CardDescription>
+                  Studies found by the keyword monitor
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/keywords/results"] });
+                }}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Results
+              </Button>
             </CardHeader>
             <CardContent>
               {monitorResultsQuery.isLoading ? (
@@ -1133,8 +1145,28 @@ export default function KeywordMonitorPage() {
                   <p>Failed to load monitor results. Please try again.</p>
                 </div>
               ) : filteredResults.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p>No monitor results found. Run the monitor to find new studies.</p>
+                <div className="py-10">
+                  <div className="text-center py-6 border rounded-md bg-muted/30">
+                    <div className="mb-4">
+                      <Search className="h-12 w-12 mx-auto text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">No results found</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      No matches have been found for your keywords yet. 
+                      You can trigger a new search from the Monitor tab or 
+                      wait for the scheduled search to run automatically.
+                    </p>
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => {
+                          setActiveTab("monitor");
+                        }}
+                      >
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Go to Monitor Settings
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <ScrollArea className="h-[400px]">
