@@ -47,16 +47,23 @@ export class DatabaseStorage implements IStorage {
 
   async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
     try {
-      // Initialize queries
-      let studyQuery = db.select().from(studies);
-      let countQuery = db.select({ count: sql`count(*)` }).from(studies);
+      // Get all studies and filter in memory for now
+      // This is a temporary solution until we properly implement the database version
+      const allStudies = await db.select().from(studies);
+      let filteredStudies = [...allStudies];
 
-      // Apply filters
-      const conditions: SQL<unknown>[] = [];
-
+      // Simple text filtering for query
       if (filters.query) {
-        // Optimize by using concatenated indexed search and adding index hints
-        const queryTerms = filters.query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+        const query = filters.query.toLowerCase();
+        filteredStudies = filteredStudies.filter(study => {
+          const titleLower = study.title?.toLowerCase() || '';
+          const abstractLower = study.abstract?.toLowerCase() || '';
+          const authorsLower = study.authors?.toLowerCase() || '';
+          
+          return titleLower.includes(query) || 
+                 abstractLower.includes(query) || 
+                 authorsLower.includes(query);
+        });
         
         if (queryTerms.length > 0) {
           const searchConditions = [];

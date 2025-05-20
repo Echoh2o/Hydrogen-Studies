@@ -195,7 +195,7 @@ export class MemStorage implements IStorage {
 
   // Studies methods
   async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
-    let allResults = Array.from(this.studiesData.values());
+    const allResults = Array.from(this.studiesData.values());
     
     // Apply filters with advanced search capabilities
     if (filters.query) {
