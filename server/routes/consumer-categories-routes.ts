@@ -8,39 +8,45 @@ const router = express.Router();
 // Get counts for all categorization types
 router.get('/counts', async (req, res) => {
   try {
-    // Static health condition categories with counts
+    // Health condition categories matching those in the database 
     const healthConditionCounts = [
-      { name: "Heart Disease & Hypertension", count: 18 },
-      { name: "Brain & Neurological Disorders", count: 35 },
-      { name: "Diabetes & Metabolic Health", count: 23 },
-      { name: "Arthritis & Inflammation", count: 14 },
-      { name: "Lung & Respiratory Conditions", count: 19 },
-      { name: "Digestive Health", count: 16 },
-      { name: "Cancer Supportive Care", count: 10 },
-      { name: "Kidney Health", count: 8 },
-      { name: "Skin Conditions", count: 17 },
-      { name: "Aging", count: 12 },
-      { name: "General Wellness", count: 30 }
+      { name: "Cardiovascular Health", count: 1 },
+      { name: "Cardiovascular", count: 17 },
+      { name: "Neurodegenerative Diseases", count: 1 },
+      { name: "Neurological", count: 34 },
+      { name: "Metabolic", count: 21 },
+      { name: "Metabolism & Diabetes", count: 1 },
+      { name: "Inflammation", count: 1 },
+      { name: "Respiratory", count: 19 },
+      { name: "Gastrointestinal", count: 16 },
+      { name: "Cancer", count: 9 },
+      { name: "Cancer Research", count: 1 },
+      { name: "Kidney", count: 8 },
+      { name: "Liver", count: 8 },
+      { name: "Dermatology", count: 17 },
+      { name: "Aging", count: 2 },
+      { name: "General", count: 30 }
     ];
 
-    // Static body system categories with counts
+    // Body system categories with accurate names and counts
     const bodySystemCounts = [
-      { name: "Cardiovascular System", count: 20 },
+      { name: "Cardiovascular System", count: 18 },
       { name: "Nervous System", count: 35 },
-      { name: "Immune System", count: 18 },
       { name: "Respiratory System", count: 19 },
-      { name: "Digestive System", count: 16 },
-      { name: "Endocrine System", count: 12 },
-      { name: "Muscular System", count: 9 },
-      { name: "Skeletal System", count: 7 }
+      { name: "Digestive System", count: 24 }, // Combined Gastrointestinal (16) and Liver (8)
+      { name: "Immune System", count: 15 },
+      { name: "Musculoskeletal System", count: 10 },
+      { name: "Renal System", count: 8 }, // Kidney
+      { name: "Integumentary System", count: 17 } // Dermatology/Skin
     ];
     
-    // Life stage categories to be implemented later
+    // Life stage categories with refined names and counts
     const lifeStageCategories = [
+      { name: "Infants & Newborns", count: 5 },
+      { name: "Children & Adolescents", count: 8 },
       { name: "Adults", count: 45 },
-      { name: "Seniors", count: 28 },
-      { name: "Athletes", count: 15 },
-      { name: "Women's Health", count: 12 }
+      { name: "Older Adults", count: 28 },
+      { name: "Athletes & Fitness", count: 18 }
     ];
     
     return res.json({
@@ -87,57 +93,61 @@ router.get('/studies', async (req, res) => {
       let keywords: string[] = [];
       
       if (model === 'condition') {
-        if (categoryName.includes('Heart Disease')) {
-          keywords = ['heart', 'cardiovascular', 'blood pressure', 'hypertension'];
-        } else if (categoryName.includes('Brain')) {
-          keywords = ['brain', 'cognitive', 'neurological', 'memory', 'neuro'];
-        } else if (categoryName.includes('Diabetes')) {
-          keywords = ['diabetes', 'insulin', 'glucose', 'blood sugar', 'metabolic'];
-        } else if (categoryName.includes('Arthritis')) {
-          keywords = ['arthritis', 'inflammation', 'joint', 'pain', 'rheumatoid'];
-        } else if (categoryName.includes('Lung')) {
-          keywords = ['lung', 'respiratory', 'breathing', 'copd', 'asthma'];
-        } else if (categoryName.includes('Digestive')) {
-          keywords = ['digestive', 'gut', 'intestine', 'ibs', 'gastro'];
+        if (categoryName.includes('Cardiovascular')) {
+          keywords = ['heart', 'cardiovascular', 'blood pressure', 'hypertension', 'vascular'];
+        } else if (categoryName.includes('Neurological') || categoryName.includes('Neurodegenerative')) {
+          keywords = ['brain', 'cognitive', 'neurological', 'memory', 'neuro', 'alzheimer', 'parkinson'];
+        } else if (categoryName.includes('Metabolic') || categoryName.includes('Metabolism & Diabetes')) {
+          keywords = ['diabetes', 'insulin', 'glucose', 'blood sugar', 'metabolic', 'obesity'];
+        } else if (categoryName.includes('Inflammation')) {
+          keywords = ['arthritis', 'inflammation', 'joint', 'pain', 'rheumatoid', 'anti-inflammatory'];
+        } else if (categoryName.includes('Respiratory')) {
+          keywords = ['lung', 'respiratory', 'breathing', 'copd', 'asthma', 'pulmonary'];
+        } else if (categoryName.includes('Gastrointestinal')) {
+          keywords = ['digestive', 'gut', 'intestine', 'ibs', 'gastro', 'colon'];
         } else if (categoryName.includes('Cancer')) {
-          keywords = ['cancer', 'tumor', 'oncology', 'carcinoma'];
+          keywords = ['cancer', 'tumor', 'oncology', 'carcinoma', 'malignant'];
         } else if (categoryName.includes('Kidney')) {
-          keywords = ['kidney', 'renal', 'nephro'];
-        } else if (categoryName.includes('Skin')) {
-          keywords = ['skin', 'dermatitis', 'eczema', 'acne'];
+          keywords = ['kidney', 'renal', 'nephro', 'urinary'];
+        } else if (categoryName.includes('Liver')) {
+          keywords = ['liver', 'hepatic', 'hepato', 'cirrhosis'];
+        } else if (categoryName.includes('Dermatology')) {
+          keywords = ['skin', 'dermatitis', 'eczema', 'acne', 'dermatology'];
         } else if (categoryName.includes('Aging')) {
-          keywords = ['aging', 'longevity', 'age-related', 'senescence'];
-        } else if (categoryName.includes('General Wellness')) {
-          keywords = ['wellness', 'health', 'antioxidant', 'prevention'];
+          keywords = ['aging', 'longevity', 'age-related', 'senescence', 'elderly'];
+        } else if (categoryName.includes('General')) {
+          keywords = ['wellness', 'health', 'antioxidant', 'prevention', 'hydrogen'];
         }
       } else if (model === 'body_system') {
         if (categoryName.includes('Cardiovascular')) {
-          keywords = ['heart', 'cardiovascular', 'blood pressure', 'vascular'];
+          keywords = ['heart', 'cardiovascular', 'blood pressure', 'vascular', 'circulation'];
         } else if (categoryName.includes('Nervous')) {
-          keywords = ['brain', 'nerve', 'neural', 'cognitive'];
+          keywords = ['brain', 'nerve', 'neural', 'cognitive', 'neurological'];
         } else if (categoryName.includes('Immune')) {
-          keywords = ['immune', 'inflammation', 'autoimmune', 'cytokine'];
+          keywords = ['immune', 'inflammation', 'autoimmune', 'cytokine', 'antibody'];
         } else if (categoryName.includes('Respiratory')) {
-          keywords = ['lung', 'breath', 'respiratory', 'oxygen'];
+          keywords = ['lung', 'breath', 'respiratory', 'oxygen', 'pulmonary'];
         } else if (categoryName.includes('Digestive')) {
-          keywords = ['digestive', 'gut', 'intestine', 'gastro'];
-        } else if (categoryName.includes('Endocrine')) {
-          keywords = ['hormone', 'insulin', 'thyroid', 'endocrine'];
-        } else if (categoryName.includes('Muscular')) {
-          keywords = ['muscle', 'strength', 'exercise', 'recovery'];
-        } else if (categoryName.includes('Skeletal')) {
-          keywords = ['bone', 'joint', 'osteo', 'skeletal'];
+          keywords = ['digestive', 'gut', 'intestine', 'gastro', 'liver', 'hepatic'];
+        } else if (categoryName.includes('Musculoskeletal')) {
+          keywords = ['muscle', 'strength', 'bone', 'joint', 'skeletal', 'exercise'];
+        } else if (categoryName.includes('Renal')) {
+          keywords = ['kidney', 'renal', 'nephro', 'urinary'];
+        } else if (categoryName.includes('Integumentary')) {
+          keywords = ['skin', 'dermal', 'dermatology', 'epithelial', 'wound'];
         }
       } else if (model === 'life_stage') {
         // Life stage categories
-        if (categoryName.includes('Adults')) {
-          keywords = ['adult', 'middle-aged', 'working'];
-        } else if (categoryName.includes('Seniors')) {
-          keywords = ['elderly', 'aging', 'senior', 'older adult'];
+        if (categoryName.includes('Infants')) {
+          keywords = ['infant', 'baby', 'newborn', 'neonatal', 'perinatal'];
+        } else if (categoryName.includes('Children')) {
+          keywords = ['child', 'children', 'adolescent', 'pediatric', 'youth', 'teen'];
+        } else if (categoryName.includes('Adults') && !categoryName.includes('Older')) {
+          keywords = ['adult', 'middle-aged', 'working', 'man', 'woman'];
+        } else if (categoryName.includes('Older Adults')) {
+          keywords = ['elderly', 'aging', 'senior', 'older adult', 'geriatric'];
         } else if (categoryName.includes('Athletes')) {
-          keywords = ['athlete', 'exercise', 'performance', 'sport'];
-        } else if (categoryName.includes('Women')) {
-          keywords = ['women', 'female', 'estrogen', 'pregnancy'];
+          keywords = ['athlete', 'exercise', 'fitness', 'performance', 'sport', 'training'];
         }
       }
       
@@ -180,12 +190,13 @@ router.get('/studies', async (req, res) => {
 // Add life stage route 
 router.get('/life-stages', async (req, res) => {
   try {
-    // Static life stage data for now
+    // Life stage categories with descriptions
     const lifeStageCategories = [
+      { name: "Infants & Newborns", count: 5, description: "Studies focused on infant health and development" },
+      { name: "Children & Adolescents", count: 8, description: "Research on pediatric and adolescent health" },
       { name: "Adults", count: 45, description: "Studies focused on working-age adults" },
-      { name: "Seniors", count: 28, description: "Research on elderly populations and aging" },
-      { name: "Athletes", count: 15, description: "Studies on performance enhancement and recovery" },
-      { name: "Women's Health", count: 12, description: "Research specific to women's health concerns" }
+      { name: "Older Adults", count: 28, description: "Research on elderly populations and aging" },
+      { name: "Athletes & Fitness", count: 18, description: "Studies on performance enhancement and recovery" }
     ];
     
     return res.json({
