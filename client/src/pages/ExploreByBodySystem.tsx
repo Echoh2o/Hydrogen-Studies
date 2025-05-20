@@ -6,11 +6,11 @@ import {
   Brain, 
   Lung, 
   Microscope, 
-  Bacteria, 
   Dumbbell, 
   Bone,
   ArrowRight, 
-  Loader2
+  Loader2,
+  Pill
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -52,7 +52,7 @@ const ExploreByBodySystem = () => {
             icon = <Microscope className="h-12 w-12 text-yellow-600" />;
             break;
           case "Immune System":
-            icon = <Bacteria className="h-12 w-12 text-purple-500" />;
+            icon = <Pill className="h-12 w-12 text-purple-500" />;
             break;
           case "Muscular System":
             icon = <Dumbbell className="h-12 w-12 text-gray-600" />;
