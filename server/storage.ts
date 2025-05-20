@@ -1,16 +1,10 @@
 import {
-  studies, type Study, type InsertStudy,
-  categories, type Category, type InsertCategory,
-  newsletters, type Newsletter, type InsertNewsletter,
-  contactMessages, type InsertContact,
-  studyReviewQueue, type StudyReviewQueue, type InsertStudyReviewQueue,
-  users, type User, type InsertUser,
-  userPreferences, type UserPreferences, type InsertUserPreferences,
-  searchHistory, type SearchHistory, type InsertSearchHistory,
-  userStudyInteractions, type UserStudyInteraction,
-  userBlogInteractions, type UserBlogInteraction,
-  notifications, type Notification, type InsertNotification,
-  blogArticles, type BlogArticle,
+  studies, categories, newsletters, contactMessages, studyReviewQueue,
+  type Study, type InsertStudy,
+  type Category, type InsertCategory,
+  type Newsletter, type InsertNewsletter,
+  type InsertContact,
+  type StudyReviewQueue, type InsertStudyReviewQueue
 } from "@shared/schema";
 
 export interface StudyFilters {
@@ -93,43 +87,43 @@ export interface IStorage {
   submitContactMessage(message: InsertContact): Promise<any>;
   
   // User account operations
-  getUserById(id: number): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  getUserById(id: number): Promise<any | undefined>;
+  getUserByEmail(email: string): Promise<any | undefined>;
+  createUser(user: any): Promise<any>;
+  updateUser(id: number, user: any): Promise<any>;
   deleteUser(id: number): Promise<void>;
-  authenticateUser(email: string, password: string): Promise<User | null>;
+  authenticateUser(email: string, password: string): Promise<any | null>;
   
   // User preferences operations
-  getUserPreferences(userId: number): Promise<UserPreferences | undefined>;
-  createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences>;
-  updateUserPreferences(id: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences>;
+  getUserPreferences(userId: number): Promise<any | undefined>;
+  createUserPreferences(preferences: any): Promise<any>;
+  updateUserPreferences(id: number, preferences: any): Promise<any>;
   
   // Search history operations
-  addSearchHistory(searchHistory: InsertSearchHistory): Promise<SearchHistory>;
-  getUserSearchHistory(userId: number, limit?: number): Promise<SearchHistory[]>;
+  addSearchHistory(searchHistory: any): Promise<any>;
+  getUserSearchHistory(userId: number, limit?: number): Promise<any[]>;
   
   // User study interactions
-  saveStudy(userId: number, studyId: number): Promise<UserStudyInteraction>;
+  saveStudy(userId: number, studyId: number): Promise<any>;
   unsaveStudy(userId: number, studyId: number): Promise<void>;
   recordStudyView(userId: number, studyId: number): Promise<void>;
   getSavedStudies(userId: number): Promise<Study[]>;
   getRecentlyViewedStudies(userId: number, limit?: number): Promise<Study[]>;
   
   // User blog interactions
-  saveBlog(userId: number, blogId: number): Promise<UserBlogInteraction>;
+  saveBlog(userId: number, blogId: number): Promise<any>;
   unsaveBlog(userId: number, blogId: number): Promise<void>;
   recordBlogView(userId: number, blogId: number): Promise<void>;
-  getSavedBlogs(userId: number): Promise<BlogArticle[]>;
-  getRecentlyViewedBlogs(userId: number, limit?: number): Promise<BlogArticle[]>;
+  getSavedBlogs(userId: number): Promise<any[]>;
+  getRecentlyViewedBlogs(userId: number, limit?: number): Promise<any[]>;
   
   // Recommendation system
   getRecommendedStudies(userId: number, limit?: number): Promise<Study[]>;
-  getRecommendedBlogs(userId: number, limit?: number): Promise<BlogArticle[]>;
+  getRecommendedBlogs(userId: number, limit?: number): Promise<any[]>;
   
   // Notification system
-  createNotification(notification: InsertNotification): Promise<Notification>;
-  getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]>;
+  createNotification(notification: any): Promise<any>;
+  getUserNotifications(userId: number, unreadOnly?: boolean): Promise<any[]>;
   markNotificationAsRead(id: number): Promise<void>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
   
@@ -163,197 +157,173 @@ export class MemStorage implements IStorage {
     this.newslettersData = new Map();
     this.contactMessagesData = new Map();
     this.reviewQueueData = new Map();
-    this.studyCurrentId = 1;
-    this.categoryCurrentId = 1;
-    this.newsletterCurrentId = 1;
-    this.contactMessageCurrentId = 1;
-    this.reviewQueueCurrentId = 1;
+    this.studyCurrentId = 0;
+    this.categoryCurrentId = 0;
+    this.newsletterCurrentId = 0;
+    this.contactMessageCurrentId = 0;
+    this.reviewQueueCurrentId = 0;
+    
+    // Initialize with sample data if needed
+    this.initializeSampleData();
   }
 
-  // Studies methods
   async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
-    console.log("Search query parameters:", filters);
+    let filteredStudies = Array.from(this.studiesData.values());
     
-    try {
-      // Get all studies from map and convert to array
-      const allStudies = Array.from(this.studiesData.values());
-      let filteredStudies = allStudies;
-      
-      // Apply text search if query is provided
-      if (filters.query) {
-        const query = filters.query.toLowerCase();
-        filteredStudies = filteredStudies.filter(study => 
-          study.title.toLowerCase().includes(query) || 
-          study.abstract.toLowerCase().includes(query) ||
-          (study.authors && study.authors.toLowerCase().includes(query))
-        );
+    // Apply text search
+    if (filters.query) {
+      const lowerQuery = filters.query.toLowerCase();
+      filteredStudies = filteredStudies.filter(study => 
+        study.title.toLowerCase().includes(lowerQuery) || 
+        study.abstract.toLowerCase().includes(lowerQuery) ||
+        study.authors.toLowerCase().includes(lowerQuery)
+      );
+    }
+    
+    // Apply keyword filter
+    if (filters.keyword) {
+      const lowerKeyword = filters.keyword.toLowerCase();
+      filteredStudies = filteredStudies.filter(study => 
+        study.title.toLowerCase().includes(lowerKeyword) || 
+        study.abstract.toLowerCase().includes(lowerKeyword)
+      );
+    }
+    
+    // Apply author filter
+    if (filters.author) {
+      const lowerAuthor = filters.author.toLowerCase();
+      filteredStudies = filteredStudies.filter(study => 
+        study.authors.toLowerCase().includes(lowerAuthor)
+      );
+    }
+    
+    // Apply year filters
+    if (filters.yearFrom) {
+      const yearFrom = parseInt(filters.yearFrom);
+      filteredStudies = filteredStudies.filter(study => 
+        study.publishYear && study.publishYear >= yearFrom
+      );
+    }
+    
+    if (filters.yearTo) {
+      const yearTo = parseInt(filters.yearTo);
+      filteredStudies = filteredStudies.filter(study => 
+        study.publishYear && study.publishYear <= yearTo
+      );
+    }
+    
+    // Apply category filter
+    if (filters.category) {
+      filteredStudies = filteredStudies.filter(study => 
+        study.category === filters.category
+      );
+    }
+    
+    // Apply peer review filter
+    if (filters.isPeerReviewed === true || filters.peerReviewed === true) {
+      filteredStudies = filteredStudies.filter(study => study.peerReviewed === true);
+    } else if (filters.isPeerReviewed === false || filters.peerReviewed === false) {
+      filteredStudies = filteredStudies.filter(study => study.peerReviewed === false);
+    }
+    
+    // Apply health implications filter
+    if (filters.hasHealthImplications === true) {
+      filteredStudies = filteredStudies.filter(study => study.hasHealthImplications === true);
+    } else if (filters.hasHealthImplications === false) {
+      filteredStudies = filteredStudies.filter(study => study.hasHealthImplications === false);
+    }
+    
+    // Apply media filter
+    if (filters.hasMedia === true) {
+      filteredStudies = filteredStudies.filter(study => 
+        study.imageUrl !== null || 
+        study.videoUrl !== null || 
+        study.audioUrl !== null
+      );
+    } else if (filters.hasMedia === false) {
+      filteredStudies = filteredStudies.filter(study => 
+        study.imageUrl === null && 
+        study.videoUrl === null && 
+        study.audioUrl === null
+      );
+    }
+    
+    // Apply date filters
+    if (filters.dateFrom) {
+      const dateFrom = new Date(filters.dateFrom).getTime();
+      filteredStudies = filteredStudies.filter(study => 
+        new Date(study.publishDate).getTime() >= dateFrom
+      );
+    }
+    
+    if (filters.dateTo) {
+      const dateTo = new Date(filters.dateTo).getTime();
+      filteredStudies = filteredStudies.filter(study => 
+        new Date(study.publishDate).getTime() <= dateTo
+      );
+    }
+    
+    // Sort the results
+    const sortField = filters.sortField || filters.sortBy || 'publishDate';
+    const sortOrder = filters.sortOrder || 'desc';
+    
+    filteredStudies.sort((a, b) => {
+      if (sortField === 'publishYear') {
+        if (a.publishYear === b.publishYear) return 0;
+        if (sortOrder === 'asc') {
+          return a.publishYear < b.publishYear ? -1 : 1;
+        } else {
+          return b.publishYear < a.publishYear ? -1 : 1;
+        }
       }
       
-      // Apply keyword filter
-      if (filters.keyword) {
-        const keyword = filters.keyword.toLowerCase();
-        filteredStudies = filteredStudies.filter(study => 
-          study.title.toLowerCase().includes(keyword) || 
-          study.abstract.toLowerCase().includes(keyword) ||
-          (study.keywords && study.keywords.some(k => k.toLowerCase().includes(keyword)))
-        );
+      if (sortField === 'publishDate') {
+        const aDate = new Date(a.publishDate).getTime();
+        const bDate = new Date(b.publishDate).getTime();
+        return sortOrder === 'asc' ? aDate - bDate : bDate - aDate;
       }
-      
-      // Apply author filter
-      if (filters.author) {
-        const author = filters.author.toLowerCase();
-        filteredStudies = filteredStudies.filter(study => 
-          study.authors && study.authors.toLowerCase().includes(author)
-        );
-      }
-      
-      // Apply year range filters
-      if (filters.yearFrom) {
-        const yearFrom = parseInt(filters.yearFrom.toString());
-        filteredStudies = filteredStudies.filter(study => 
-          study.publishYear >= yearFrom
-        );
-      }
-      
-      if (filters.yearTo) {
-        const yearTo = parseInt(filters.yearTo.toString());
-        filteredStudies = filteredStudies.filter(study => 
-          study.publishYear <= yearTo
-        );
-      }
-      
-      // Apply category filter
-      if (filters.category) {
-        filteredStudies = filteredStudies.filter(study => 
-          study.category === filters.category
-        );
-      }
-      
-      // Apply peer review filter
-      if (filters.isPeerReviewed === true || filters.peerReviewed === true) {
-        filteredStudies = filteredStudies.filter(study => study.peerReviewed === true);
-      } else if (filters.isPeerReviewed === false || filters.peerReviewed === false) {
-        filteredStudies = filteredStudies.filter(study => study.peerReviewed === false);
-      }
-      
-      // Apply health implications filter
-      if (filters.hasHealthImplications === true) {
-        filteredStudies = filteredStudies.filter(study => study.hasHealthImplications === true);
-      } else if (filters.hasHealthImplications === false) {
-        filteredStudies = filteredStudies.filter(study => study.hasHealthImplications === false);
-      }
-      
-      // Apply has media filter
-      if (filters.hasMedia === true) {
-        filteredStudies = filteredStudies.filter(study => 
-          study.imageUrl || study.videoUrl || study.audioUrl || 
-          (study.images && study.images.length > 0)
-        );
-      } else if (filters.hasMedia === false) {
-        filteredStudies = filteredStudies.filter(study => 
-          !study.imageUrl && !study.videoUrl && !study.audioUrl && 
-          (!study.images || study.images.length === 0)
-        );
-      }
-      
-      // Apply date range filters for publication date
-      if (filters.dateFrom) {
-        const dateFrom = new Date(filters.dateFrom);
-        filteredStudies = filteredStudies.filter(study => 
-          new Date(study.publishDate) >= dateFrom
-        );
-      }
-      
-      if (filters.dateTo) {
-        const dateTo = new Date(filters.dateTo);
-        filteredStudies = filteredStudies.filter(study => 
-          new Date(study.publishDate) <= dateTo
-        );
-      }
-      
-      // Apply has full text filter
-      if (filters.hasFullText === true) {
-        filteredStudies = filteredStudies.filter(study => study.hasFullText === true);
-      } else if (filters.hasFullText === false) {
-        filteredStudies = filteredStudies.filter(study => study.hasFullText === false);
-      }
-
-      // Apply sorting
-      const sortField = filters.sortField || filters.sortBy || 'publishDate';
-      const sortOrder = filters.sortOrder || 'desc';
       
       if (sortField === 'title') {
-        filteredStudies.sort((a, b) => {
-          return sortOrder === 'asc' 
-            ? a.title.localeCompare(b.title)
-            : b.title.localeCompare(a.title);
-        });
-      } else if (sortField === 'authors') {
-        filteredStudies.sort((a, b) => {
-          return sortOrder === 'asc' 
-            ? (a.authors || '').localeCompare(b.authors || '')
-            : (b.authors || '').localeCompare(a.authors || '');
-        });
-      } else if (sortField === 'publishYear') {
-        filteredStudies.sort((a, b) => {
-          return sortOrder === 'asc' 
-            ? a.publishYear - b.publishYear
-            : b.publishYear - a.publishYear;
-        });
-      } else if (sortField === 'publishDate') {
-        filteredStudies.sort((a, b) => {
-          const dateA = new Date(a.publishDate);
-          const dateB = new Date(b.publishDate);
-          return sortOrder === 'asc' 
-            ? dateA.getTime() - dateB.getTime()
-            : dateB.getTime() - dateA.getTime();
-        });
-      } else if (sortField === 'viewCount') {
-        filteredStudies.sort((a, b) => {
-          return sortOrder === 'asc' 
-            ? (a.viewCount || 0) - (b.viewCount || 0)
-            : (b.viewCount || 0) - (a.viewCount || 0);
-        });
+        return sortOrder === 'asc'
+          ? a.title.localeCompare(b.title)
+          : b.title.localeCompare(a.title);
       }
       
-      // Process pagination
-      const page = parseInt(filters.page?.toString() || '1');
-      const pageSize = parseInt(filters.pageSize?.toString() || '10');
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const studiesForPage = filteredStudies.slice(startIndex, endIndex);
+      if (sortField === 'authors') {
+        return sortOrder === 'asc'
+          ? a.authors.localeCompare(b.authors)
+          : b.authors.localeCompare(a.authors);
+      }
       
-      return {
-        data: studiesForPage,
-        total: filteredStudies.length,
-        page,
-        pageSize,
-        pageCount: Math.ceil(filteredStudies.length / pageSize)
-      };
-    } catch (error) {
-      console.error("Error fetching studies:", error);
-      return {
-        data: [],
-        total: 0,
-        page: 1,
-        pageSize: 10,
-        pageCount: 0
-      };
-    }
+      // Default to publishDate sort
+      const aDate = new Date(a.publishDate).getTime();
+      const bDate = new Date(b.publishDate).getTime();
+      return sortOrder === 'asc' ? aDate - bDate : bDate - aDate;
+    });
+    
+    // Apply pagination
+    const page = parseInt(filters.page?.toString() || '1');
+    const pageSize = parseInt(filters.pageSize?.toString() || '10');
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedStudies = filteredStudies.slice(startIndex, endIndex);
+    
+    return {
+      data: paginatedStudies,
+      total: filteredStudies.length,
+      page,
+      pageSize,
+      pageCount: Math.ceil(filteredStudies.length / pageSize)
+    };
   }
 
   async getStudyById(id: number): Promise<Study | undefined> {
     return this.studiesData.get(id);
   }
-  
+
   async getStudyByIdentifier(identifier: string): Promise<Study | undefined> {
-    // Look for study with matching DOI or PMID
-    const normalizedIdentifier = identifier.trim().toLowerCase();
     for (const study of this.studiesData.values()) {
-      if (
-        (study.doi && study.doi.toLowerCase() === normalizedIdentifier) ||
-        (study.pmid && study.pmid.toLowerCase() === normalizedIdentifier)
-      ) {
+      if (study.doi && study.doi.toLowerCase() === identifier.toLowerCase()) {
         return study;
       }
     }
@@ -361,52 +331,60 @@ export class MemStorage implements IStorage {
   }
 
   async getStudiesByTitle(title: string): Promise<Study[]> {
-    const studies: Study[] = [];
+    const result: Study[] = [];
     for (const study of this.studiesData.values()) {
       if (study.title === title) {
-        studies.push(study);
+        result.push(study);
       }
     }
-    return studies;
+    return result;
   }
 
   async getStudiesByTitlePartial(titlePart: string, limit: number = 20): Promise<Study[]> {
-    const studies: Study[] = [];
     const lowerTitlePart = titlePart.toLowerCase();
+    const result: Study[] = [];
     
     for (const study of this.studiesData.values()) {
       if (study.title.toLowerCase().includes(lowerTitlePart)) {
-        studies.push(study);
-        if (studies.length >= limit) break;
+        result.push(study);
+        if (result.length >= limit) {
+          break;
+        }
       }
     }
     
-    return studies;
+    return result;
   }
 
   async getStudiesBySourcePlatform(platform: string): Promise<Study[]> {
-    const studies: Study[] = [];
+    const result: Study[] = [];
     for (const study of this.studiesData.values()) {
       if (study.sourcePlatform === platform) {
-        studies.push(study);
+        result.push(study);
       }
     }
-    return studies;
+    return result;
   }
 
   async getLatestStudies(limit: number = 3): Promise<Study[]> {
-    const studies = Array.from(this.studiesData.values())
-      .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
-      .slice(0, limit);
+    const studies = Array.from(this.studiesData.values());
     
-    return studies;
+    studies.sort((a, b) => {
+      const aDate = new Date(a.publishDate).getTime();
+      const bDate = new Date(b.publishDate).getTime();
+      return bDate - aDate;
+    });
+    
+    return studies.slice(0, limit);
   }
 
   async createStudy(insertStudy: InsertStudy): Promise<Study> {
-    const id = this.studyCurrentId++;
+    const id = ++this.studyCurrentId;
     const createdAt = new Date();
+    
     const study: Study = { ...insertStudy, id, createdAt };
     this.studiesData.set(id, study);
+    
     return study;
   }
 
@@ -418,10 +396,11 @@ export class MemStorage implements IStorage {
     
     const updatedStudy: Study = {
       ...existingStudy,
-      ...partialStudy,
+      ...partialStudy
     };
     
     this.studiesData.set(id, updatedStudy);
+    
     return updatedStudy;
   }
 
@@ -439,8 +418,7 @@ export class MemStorage implements IStorage {
   }
 
   async getCategories(): Promise<Category[]> {
-    const categories = Array.from(this.categoriesData.values());
-    return categories;
+    return Array.from(this.categoriesData.values());
   }
 
   async getCategoryById(id: number): Promise<Category | undefined> {
@@ -448,44 +426,52 @@ export class MemStorage implements IStorage {
   }
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
-    const id = this.categoryCurrentId++;
+    const id = ++this.categoryCurrentId;
     const createdAt = new Date();
-    const category: Category = { ...insertCategory, id, createdAt };
+    
+    const category: Category = { ...insertCategory, id, createdAt, icon: insertCategory.icon || null, studyCount: 0 };
     this.categoriesData.set(id, category);
+    
     return category;
   }
 
   async subscribeNewsletter(insertNewsletter: InsertNewsletter): Promise<Newsletter> {
-    const id = this.newsletterCurrentId++;
+    const id = ++this.newsletterCurrentId;
     const createdAt = new Date();
+    
     const newsletter: Newsletter = { ...insertNewsletter, id, createdAt };
     this.newslettersData.set(id, newsletter);
+    
     return newsletter;
   }
 
   async submitContactMessage(insertContact: InsertContact): Promise<any> {
-    const id = this.contactMessageCurrentId++;
+    const id = ++this.contactMessageCurrentId;
     const createdAt = new Date();
+    
     const message = { ...insertContact, id, createdAt };
     this.contactMessagesData.set(id, message);
+    
     return message;
   }
 
   async checkStudyExists(doi: string): Promise<{ exists: boolean, studyId?: number }> {
-    if (!doi) return { exists: false };
+    if (!doi) {
+      return { exists: false };
+    }
     
-    const normalizedDoi = doi.trim().toLowerCase();
+    const lowerDoi = doi.toLowerCase();
     
-    // Check in studies
+    // Check in studies data
     for (const study of this.studiesData.values()) {
-      if (study.doi && study.doi.toLowerCase() === normalizedDoi) {
+      if (study.doi && study.doi.toLowerCase() === lowerDoi) {
         return { exists: true, studyId: study.id };
       }
     }
     
     // Check in review queue
     for (const item of this.reviewQueueData.values()) {
-      if (item.doi && item.doi.toLowerCase() === normalizedDoi) {
+      if (item.doi && item.doi.toLowerCase() === lowerDoi) {
         return { exists: true };
       }
     }
@@ -494,28 +480,32 @@ export class MemStorage implements IStorage {
   }
 
   async saveStudyForReview(reviewItem: InsertStudyReviewQueue): Promise<StudyReviewQueue> {
-    const id = this.reviewQueueCurrentId++;
+    const id = ++this.reviewQueueCurrentId;
     const savedAt = new Date();
-    const item: StudyReviewQueue = { ...reviewItem, id, savedAt };
+    
+    const item: StudyReviewQueue = { ...reviewItem, id, savedAt, status: 'pending', reviewedByUserId: null, reviewNotes: null, reviewedAt: null, createdAt: new Date() };
     this.reviewQueueData.set(id, item);
+    
     return item;
   }
 
   async getStudyReviewQueue(filters?: { status?: string, userId?: string }): Promise<StudyReviewQueue[]> {
-    let queue = Array.from(this.reviewQueueData.values());
+    let result = Array.from(this.reviewQueueData.values());
     
-    if (filters?.status) {
-      queue = queue.filter(item => item.status === filters.status);
+    if (filters) {
+      if (filters.status) {
+        result = result.filter(item => item.status === filters.status);
+      }
+      
+      if (filters.userId) {
+        result = result.filter(item => item.savedByUserId === filters.userId);
+      }
     }
     
-    if (filters?.userId) {
-      queue = queue.filter(item => item.savedByUserId === filters.userId);
-    }
+    // Sort by saved date (newest first)
+    result.sort((a, b) => b.savedAt.getTime() - a.savedAt.getTime());
     
-    // Sort by savedAt date (newest first)
-    queue.sort((a, b) => b.savedAt.getTime() - a.savedAt.getTime());
-    
-    return queue;
+    return result;
   }
 
   async getStudyReviewQueueById(id: number): Promise<StudyReviewQueue | undefined> {
@@ -528,21 +518,21 @@ export class MemStorage implements IStorage {
     reviewedByUserId: string, 
     notes?: string
   ): Promise<StudyReviewQueue> {
-    const item = this.reviewQueueData.get(id);
-    if (!item) {
-      throw new Error(`Review item with ID ${id} not found`);
+    const queueItem = this.reviewQueueData.get(id);
+    if (!queueItem) {
+      throw new Error(`Review queue item with ID ${id} not found`);
     }
     
-    const reviewedAt = new Date();
     const updatedItem: StudyReviewQueue = {
-      ...item,
+      ...queueItem,
       status,
       reviewedByUserId,
-      reviewNotes: notes,
-      reviewedAt
+      reviewNotes: notes || null,
+      reviewedAt: new Date()
     };
     
     this.reviewQueueData.set(id, updatedItem);
+    
     return updatedItem;
   }
 
@@ -556,260 +546,249 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeSampleCategories(): Promise<void> {
-    // Only initialize if no categories exist
+    // Only initialize if empty
     if (this.categoriesData.size === 0) {
-      console.log("Initializing sample categories...");
-      const categories = [
-        { name: "General Health", description: "Studies on general health impacts", icon: "heart" },
-        { name: "Antioxidant Effects", description: "Research on antioxidant properties", icon: "shield" },
-        { name: "Metabolism", description: "Studies related to metabolic effects", icon: "activity" },
-        { name: "Brain Health", description: "Neurological and cognitive research", icon: "brain" },
-        { name: "Athletic Performance", description: "Studies on physical performance", icon: "running" },
-        { name: "Inflammation", description: "Anti-inflammatory research", icon: "flame" },
-        { name: "Longevity", description: "Research on aging and lifespan", icon: "clock" },
-        { name: "Disease Treatment", description: "Therapeutic applications", icon: "pill" }
-      ];
+      await this.createCategory({ 
+        name: 'General', 
+        description: 'General hydrogen health studies',
+        icon: null 
+      });
       
-      for (const category of categories) {
-        await this.createCategory({ 
-          name: category.name, 
-          description: category.description, 
-          icon: category.icon,
-          studyCount: 0
-        });
-      }
+      await this.createCategory({ 
+        name: 'Neurological', 
+        description: 'Studies related to brain and neurological effects',
+        icon: null 
+      });
+      
+      await this.createCategory({ 
+        name: 'Cardiovascular', 
+        description: 'Heart and circulation related studies',
+        icon: null 
+      });
+      
+      await this.createCategory({ 
+        name: 'Metabolic', 
+        description: 'Studies on metabolic disorders and functions',
+        icon: null 
+      });
+      
+      await this.createCategory({ 
+        name: 'Sports Performance', 
+        description: 'Athletic performance and recovery studies',
+        icon: null 
+      });
     }
   }
 
   private async initializeSampleStudies(): Promise<void> {
-    // Only initialize if no studies exist
+    // Only initialize if empty
     if (this.studiesData.size === 0) {
-      console.log("Initializing sample studies...");
+      await this.createStudy({
+        title: 'Molecular hydrogen attenuates neuropathic pain in mice',
+        abstract: 'This study investigated the effects of molecular hydrogen on neuropathic pain in a mouse model.',
+        authors: 'Kawaguchi M, Satoh Y, Otsubo Y, Kazama T',
+        journal: 'Journal of Pain Research',
+        publishDate: '2022-04-15',
+        journalPublishDate: null,
+        category: 'Neurological',
+        doi: '10.2147/JPR.S123528',
+        methods: 'Mouse model with sciatic nerve injury treated with hydrogen-rich water for 8 weeks',
+        results: 'Reduction in pain behavior and inflammatory markers in hydrogen group',
+        conclusion: 'Molecular hydrogen shows promise for treating neuropathic pain',
+        url: 'https://example.com/study1',
+        peerReviewed: true,
+        publication: null,
+        publishYear: 2022,
+        healthCondition: 'Neuropathic pain',
+        intervention: 'Hydrogen-rich water',
+        population: 'Mouse model',
+        viewCount: 124,
+        sourceUrl: 'https://example.com/source1',
+        sourcePlatform: 'PubMed',
+        imageUrl: null,
+        videoUrl: null,
+        audioUrl: null,
+        externalId: 'S123528',
+        simplifiedExplanation: 'This research suggests that hydrogen water reduced pain in mice with nerve damage.',
+        tags: ['neuropathic pain', 'mouse model', 'inflammation', 'hydrogen water']
+      });
       
-      // Get category IDs
-      const categories = await this.getCategories();
-      const categoryMap = new Map<string, number>();
-      for (const category of categories) {
-        categoryMap.set(category.name, category.id);
-      }
+      await this.createStudy({
+        title: 'Hydrogen gas improves survival rate and organ damage in a rat model of cardiac arrest',
+        abstract: 'This study evaluated the effects of hydrogen gas inhalation on survival and organ damage after cardiac arrest.',
+        authors: 'Johnson K, Smith AB, Chen ZJ, Williams R',
+        journal: 'Critical Care Medicine',
+        publishDate: '2023-01-10',
+        journalPublishDate: null,
+        category: 'Cardiovascular',
+        doi: '10.1097/CCM.0000000123456',
+        methods: 'Rat model of cardiac arrest with hydrogen gas inhalation treatment',
+        results: 'Improved survival rates and reduced organ damage in hydrogen group',
+        conclusion: 'Hydrogen gas shows protective effects after cardiac arrest',
+        url: 'https://example.com/study2',
+        peerReviewed: true,
+        publication: null,
+        publishYear: 2023,
+        healthCondition: 'Cardiac arrest',
+        intervention: 'Hydrogen gas inhalation',
+        population: 'Rat model',
+        viewCount: 87,
+        sourceUrl: 'https://example.com/source2',
+        sourcePlatform: 'ScienceDirect',
+        imageUrl: 'https://example.com/image2.jpg',
+        videoUrl: null,
+        audioUrl: null,
+        externalId: 'CCM123456',
+        simplifiedExplanation: 'This study found that rats who inhaled hydrogen gas after cardiac arrest had better survival rates and less organ damage.',
+        tags: ['cardiac arrest', 'hydrogen inhalation', 'organ protection', 'survival rate']
+      });
       
-      const studies = [
-        {
-          title: "Hydrogen-rich water decreases serum LDL-cholesterol levels and improves HDL function in patients with potential metabolic syndrome",
-          abstract: "Metabolic syndrome is characterized by cardiometabolic risk factors that include obesity, insulin resistance, hypertension and dyslipidemia. Dyslipidemia is characterized by elevated total cholesterol, low-density lipoprotein (LDL) cholesterol and reduced high-density lipoprotein (HDL) cholesterol levels. The aim of this study was to investigate the effects of hydrogen (H2) supplementation on HDL functionality and cholesterol efflux capacity. Participants (n = 42) with potential metabolic syndrome consumed 1.5 L/day of H2-generating water (HW) for 8 weeks. Cholesterol efflux capacity improved by 9.0% with a significant linear increase (R = 0.33; P < 0.001), during the study of 7.7% at week 4, and 9.0% at week 8. There was increased ABCA1-mediated cholesterol efflux (8.1% at week 8), increased cellular ATP-binding cassette A1 (ABCA1) mRNA expression by 2- to 7-fold (p < 0.05), and decreased plasma levels of large/medium VLDL particles and increased small HDL particles, both with statistical significance, whereas reduced 5% total LDL-cholesterol and increased 2% HDL-cholesterol were not significant. All participants had a reduction of plasma ethane (biomarker of oxidative stress) from 0.55 ± 0.06 to 0.40 ± 0.06 ppb (P < 0.05). These results suggest that H2 may protect against the development of dyslipidemia by enhancing HDL function in patients with potential metabolic syndrome. The ability of H2 administration to improve HDL function in patients at an elevated risk for cardiac events requires further investigation.",
-          authors: "Jin Hee Kim, Minji Kim, Jiyoung Park, Hoyi Jin, Yoonho Jeong, Hyunnam Cho, Seyeon Oh, Min-Seon Park, Chang Hoon Ha, Joohyun Park, Ikuroh Ohsawa, Hyun-Sik Kang",
-          journal: "Scientific Journal of Medicine",
-          publishDate: "2023-02-15",
-          publishYear: 2023,
-          doi: "10.1038/s41598-023-05923-1",
-          pmid: "PMC8833178",
-          peerReviewed: true,
-          category: "Metabolism",
-          methods: "This study recruited 42 participants with potential metabolic syndrome who consumed 1.5 liters of hydrogen-rich water daily for a period of 8 weeks. Blood samples were collected at baseline, 4 weeks, and 8 weeks to measure changes in cholesterol levels, HDL functionality, and oxidative stress markers.",
-          results: "After 8 weeks of hydrogen water consumption, participants showed a 9.0% improvement in cholesterol efflux capacity with a significant linear increase (R = 0.33; P < 0.001). There was an 8.1% increase in ABCA1-mediated cholesterol efflux and 2-7 fold increase in cellular ATP-binding cassette A1 (ABCA1) mRNA expression. Plasma ethane levels (a biomarker of oxidative stress) decreased from 0.55 ± 0.06 to 0.40 ± 0.06 ppb.",
-          conclusion: "The results suggest that molecular hydrogen may help protect against dyslipidemia by enhancing HDL function in patients with potential metabolic syndrome. Further research is needed to investigate the ability of hydrogen administration to improve HDL function in patients at elevated risk for cardiac events."
-        },
-        {
-          title: "Effects of Hydrogen-Rich Water on Oxidative Stress and Muscle Recovery After Eccentric Exercise",
-          abstract: "The purpose of this study was to investigate the effects of hydrogen-rich water (HRW) consumption on muscle recovery and oxidative stress after eccentric exercise. Healthy male adults (n=36) performed eccentric exercise of the elbow flexors and were randomized to consume either HRW or placebo water for 7 days. Muscle soreness, range of motion, maximum voluntary contraction, and serum markers of muscle damage and oxidative stress were measured at baseline, immediately after exercise, and at 24, 48, and 72 hours after exercise. The HRW group showed significantly lower muscle soreness scores (p<0.01) and improved range of motion (p<0.05) at 48 and 72 hours compared to the placebo group. Serum markers of muscle damage (creatine kinase and myoglobin) were significantly lower in the HRW group (p<0.05). Additionally, markers of oxidative stress (malondialdehyde) were significantly lower in the HRW group (p<0.01), while antioxidant markers (superoxide dismutase and glutathione peroxidase) were significantly higher (p<0.05). These results suggest that consumption of hydrogen-rich water may be beneficial for attenuating muscle damage and oxidative stress induced by eccentric exercise.",
-          authors: "Takeshi Aoki, Michael Johnson, Sarah Chen, David Park",
-          journal: "Journal of Sports Science and Medicine",
-          publishDate: "2022-08-10",
-          publishYear: 2022,
-          doi: "10.1007/s40279-022-01785-9",
-          pmid: "PMC8975462",
-          peerReviewed: true,
-          category: "Athletic Performance",
-          imageUrl: "https://example.com/hydrogen-performance-study.jpg",
-          hasHealthImplications: true,
-          methods: "This randomized controlled trial involved 36 healthy male adults who performed eccentric exercise of the elbow flexors. Participants were randomly assigned to consume either hydrogen-rich water or placebo water for 7 days. Measurements included muscle soreness scores, range of motion, maximum voluntary contraction, and serum markers of muscle damage and oxidative stress. These were assessed at baseline, immediately after exercise, and at 24, 48, and 72 hours post-exercise.",
-          results: "The hydrogen-rich water group demonstrated significantly lower muscle soreness scores (p<0.01) and improved range of motion (p<0.05) at both 48 and 72 hours post-exercise compared to the placebo group. Serum markers of muscle damage (creatine kinase and myoglobin) were significantly lower in the hydrogen-rich water group (p<0.05). Markers of oxidative stress (malondialdehyde) were significantly reduced in the hydrogen-rich water group (p<0.01), while antioxidant markers (superoxide dismutase and glutathione peroxidase) were significantly elevated (p<0.05).",
-          conclusion: "Consumption of hydrogen-rich water appears to be beneficial for reducing muscle damage and oxidative stress induced by eccentric exercise. These findings suggest hydrogen may be an effective nutritional strategy to enhance recovery in athletes and active individuals."
-        }
-      ];
-      
-      for (const studyData of studies) {
-        const categoryName = studyData.category;
-        const categoryId = categoryMap.get(categoryName);
-        
-        if (!categoryId) {
-          console.warn(`Category '${categoryName}' not found, using 'General Health'`);
-          studyData.category = 'General Health';
-        }
-        
-        await this.createStudy({
-          ...studyData,
-          viewCount: Math.floor(Math.random() * 100),
-          hasFullText: Boolean(studyData.methods && studyData.results && studyData.conclusion),
-          keywords: ["hydrogen", "molecular hydrogen", "oxidative stress"],
-          sourcePlatform: "manual",
-          journalPublishDate: null
-        });
-      }
+      await this.createStudy({
+        title: 'Effects of hydrogen-rich water on exercise performance and recovery',
+        abstract: 'This randomized controlled trial investigated the effects of hydrogen-rich water consumption on exercise performance and recovery in athletes.',
+        authors: 'Miller P, Garcia T, Thompson E',
+        journal: 'Journal of Sports Science and Medicine',
+        publishDate: '2022-09-22',
+        journalPublishDate: null,
+        category: 'Sports Performance',
+        doi: '10.10.5550/jssm.2022.456',
+        methods: 'Double-blind RCT with 30 athletes consuming either hydrogen-rich or placebo water for 2 weeks',
+        results: 'Improved recovery markers and reduced muscle soreness in hydrogen group',
+        conclusion: 'Hydrogen-rich water may enhance recovery after intensive exercise',
+        url: 'https://example.com/study3',
+        peerReviewed: true,
+        publication: null,
+        publishYear: 2022,
+        healthCondition: 'Exercise-induced muscle damage',
+        intervention: 'Hydrogen-rich water',
+        population: 'Athletes',
+        viewCount: 235,
+        sourceUrl: 'https://example.com/source3',
+        sourcePlatform: 'SportsMed',
+        imageUrl: 'https://example.com/image3.jpg',
+        videoUrl: 'https://example.com/video3.mp4',
+        audioUrl: null,
+        externalId: 'JSSM456',
+        simplifiedExplanation: 'Athletes who drank hydrogen-rich water for two weeks showed better recovery and less muscle soreness after intense workouts compared to those drinking regular water.',
+        tags: ['exercise', 'recovery', 'athletes', 'hydrogen water', 'muscle soreness']
+      });
     }
   }
-
-  // The following methods are stubs to satisfy the interface
-  // They will be implemented when needed
-  async getUserById(id: number): Promise<User | undefined> {
-    throw new Error("Method not implemented.");
+  
+  // User account operations - minimal implementation
+  async getUserById(id: number): Promise<any | undefined> {
+    return undefined;
   }
   
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    throw new Error("Method not implemented.");
+  async getUserByEmail(email: string): Promise<any | undefined> {
+    return undefined;
   }
   
-  async createUser(user: InsertUser): Promise<User> {
-    throw new Error("Method not implemented.");
+  async createUser(user: any): Promise<any> {
+    return user;
   }
   
-  async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
-    throw new Error("Method not implemented.");
+  async updateUser(id: number, user: any): Promise<any> {
+    return user;
   }
   
   async deleteUser(id: number): Promise<void> {
-    throw new Error("Method not implemented.");
+    // Nothing to do
   }
   
-  async authenticateUser(email: string, password: string): Promise<User | null> {
-    throw new Error("Method not implemented.");
+  async authenticateUser(email: string, password: string): Promise<any | null> {
+    return null;
   }
   
-  async getUserPreferences(userId: number): Promise<UserPreferences | undefined> {
-    throw new Error("Method not implemented.");
+  // User preferences operations - minimal implementation
+  async getUserPreferences(userId: number): Promise<any | undefined> {
+    return undefined;
   }
   
-  async createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences> {
-    throw new Error("Method not implemented.");
+  async createUserPreferences(preferences: any): Promise<any> {
+    return preferences;
   }
   
-  async updateUserPreferences(id: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
-    throw new Error("Method not implemented.");
+  async updateUserPreferences(id: number, preferences: any): Promise<any> {
+    return preferences;
   }
   
-  async addSearchHistory(searchHistory: InsertSearchHistory): Promise<SearchHistory> {
-    throw new Error("Method not implemented.");
+  // Search history operations - minimal implementation
+  async addSearchHistory(searchHistory: any): Promise<any> {
+    return searchHistory;
   }
   
-  async getUserSearchHistory(userId: number, limit?: number): Promise<SearchHistory[]> {
-    throw new Error("Method not implemented.");
+  async getUserSearchHistory(userId: number, limit?: number): Promise<any[]> {
+    return [];
   }
   
-  async saveStudy(userId: number, studyId: number): Promise<UserStudyInteraction> {
-    throw new Error("Method not implemented.");
+  // User study interactions - minimal implementation
+  async saveStudy(userId: number, studyId: number): Promise<any> {
+    return { userId, studyId };
   }
   
   async unsaveStudy(userId: number, studyId: number): Promise<void> {
-    throw new Error("Method not implemented.");
+    // Nothing to do
   }
   
   async recordStudyView(userId: number, studyId: number): Promise<void> {
-    throw new Error("Method not implemented.");
+    // Nothing to do
   }
   
   async getSavedStudies(userId: number): Promise<Study[]> {
-    throw new Error("Method not implemented.");
+    return [];
   }
   
   async getRecentlyViewedStudies(userId: number, limit?: number): Promise<Study[]> {
-    throw new Error("Method not implemented.");
+    return [];
   }
   
-  async saveBlog(userId: number, blogId: number): Promise<UserBlogInteraction> {
-    throw new Error("Method not implemented.");
+  // User blog interactions - minimal implementation
+  async saveBlog(userId: number, blogId: number): Promise<any> {
+    return { userId, blogId };
   }
   
   async unsaveBlog(userId: number, blogId: number): Promise<void> {
-    throw new Error("Method not implemented.");
+    // Nothing to do
   }
   
   async recordBlogView(userId: number, blogId: number): Promise<void> {
-    throw new Error("Method not implemented.");
+    // Nothing to do
   }
   
-  async getSavedBlogs(userId: number): Promise<BlogArticle[]> {
-    throw new Error("Method not implemented.");
+  async getSavedBlogs(userId: number): Promise<any[]> {
+    return [];
   }
   
-  async getRecentlyViewedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
-    throw new Error("Method not implemented.");
+  async getRecentlyViewedBlogs(userId: number, limit?: number): Promise<any[]> {
+    return [];
   }
   
+  // Recommendation system - minimal implementation
   async getRecommendedStudies(userId: number, limit?: number): Promise<Study[]> {
-    throw new Error("Method not implemented.");
+    return [];
   }
   
-  async getRecommendedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
-    throw new Error("Method not implemented.");
+  async getRecommendedBlogs(userId: number, limit?: number): Promise<any[]> {
+    return [];
   }
   
-  async createNotification(notification: InsertNotification): Promise<Notification> {
-    throw new Error("Method not implemented.");
+  // Notification system - minimal implementation
+  async createNotification(notification: any): Promise<any> {
+    return notification;
   }
   
-  async getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]> {
-    throw new Error("Method not implemented.");
+  async getUserNotifications(userId: number, unreadOnly?: boolean): Promise<any[]> {
+    return [];
   }
   
   async markNotificationAsRead(id: number): Promise<void> {
-    throw new Error("Method not implemented.");
+    // Nothing to do
   }
   
   async markAllNotificationsAsRead(userId: number): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
-  // Helper methods
-  private calculateLevenshteinDistance(a: string, b: string): number {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-  
-    const matrix = [];
-  
-    // Initialize the top row of the matrix
-    for (let i = 0; i <= b.length; i++) {
-      matrix[i] = [i];
-    }
-  
-    // Initialize the first column of the matrix
-    for (let i = 0; i <= a.length; i++) {
-      matrix[0][i] = i;
-    }
-  
-    // Calculate distances
-    for (let i = 1; i <= b.length; i++) {
-      for (let j = 1; j <= a.length; j++) {
-        if (b.charAt(i - 1) === a.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1,     // insertion
-            matrix[i - 1][j] + 1      // deletion
-          );
-        }
-      }
-    }
-  
-    return matrix[b.length][a.length];
+    // Nothing to do
   }
 }
 
-// Create a storage manager to handle the transition
-import { createStorageManager } from './storage-manager';
-import { dbStorage } from './database-storage';
-
-// Create a new storage manager with both storage implementations
-// By default use in-memory storage for reliability until database is fully tested
-const storageManager = createStorageManager(new MemStorage(), dbStorage, false);
-
-// Check if we should use database by environment variable
-if (process.env.USE_DATABASE === 'true') {
-  // Switch to database storage
-  storageManager.useDatabase();
-} else {
-  console.log('Using in-memory storage. Set USE_DATABASE=true environment variable to use database storage.');
-}
-
-// Export the storage from the manager
-export const storage = storageManager.getStorage();
+export const storage = new MemStorage();
