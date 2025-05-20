@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 
 const navigationLinks = [
   { href: "/", label: "Home" },
   { href: "/studies", label: "Studies" },
-  { href: "/explore-by-condition", label: "By Health Condition" },
-  { href: "/categories", label: "Categories" },
+  { 
+    href: "#",
+    label: "Explore By",
+    dropdown: [
+      { href: "/explore-by-condition", label: "Health Condition" },
+      { href: "/explore-by-body-system", label: "Body System" },
+      { href: "/explore-by-life-stage", label: "Life Stage" },
+      { href: "/categories", label: "Research Category" }
+    ]
+  },
   { href: "/resources", label: "Resources" },
   { href: "/learn", label: "Learn" },
   { href: "/chat", label: "AI Assistant" },
@@ -17,10 +25,35 @@ const navigationLinks = [
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
+
+  const toggleDropdown = (label: string) => {
+    if (openDropdown === label) {
+      setOpenDropdown(null);
+    } else {
+      setOpenDropdown(label);
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (openDropdown && dropdownRefs.current[openDropdown] && 
+          !dropdownRefs.current[openDropdown]?.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openDropdown]);
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-40">
@@ -50,13 +83,46 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             {navigationLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-neutral-700 hover:text-primary font-medium"
+              <div 
+                key={link.href} 
+                className="relative"
+                ref={(el) => { if (link.dropdown) dropdownRefs.current[link.label] = el; }}
               >
-                {link.label}
-              </Link>
+                {link.dropdown ? (
+                  <>
+                    <button
+                      onClick={() => toggleDropdown(link.label)}
+                      className={`flex items-center text-neutral-700 hover:text-primary font-medium ${openDropdown === link.label ? 'text-primary' : ''}`}
+                    >
+                      {link.label} 
+                      <ChevronDown className={`ml-1 h-4 w-4 transform transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
+                    </button>
+                    {openDropdown === link.label && (
+                      <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                        <div className="py-1" role="menu" aria-orientation="vertical">
+                          {link.dropdown.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className="block px-4 py-2 text-sm text-neutral-700 hover:bg-gray-100 hover:text-primary"
+                              onClick={() => setOpenDropdown(null)}
+                            >
+                              {item.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href={link.href}
+                    className="text-neutral-700 hover:text-primary font-medium"
+                  >
+                    {link.label}
+                  </Link>
+                )}
+              </div>
             ))}
           </nav>
 
@@ -81,14 +147,44 @@ export default function Header() {
         <div className="md:hidden bg-white px-4 py-2 pb-4 border-t border-neutral-200">
           <nav className="flex flex-col space-y-3">
             {navigationLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-neutral-700 hover:text-primary py-2 px-1 font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
+              <div key={link.href}>
+                {link.dropdown ? (
+                  <div className="py-2">
+                    <button
+                      onClick={() => toggleDropdown(link.label)}
+                      className="flex items-center justify-between w-full text-neutral-700 hover:text-primary font-medium"
+                    >
+                      {link.label}
+                      <ChevronDown className={`h-4 w-4 transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
+                    </button>
+                    {openDropdown === link.label && (
+                      <div className="pl-4 mt-2 space-y-2 border-l-2 border-neutral-200">
+                        {link.dropdown.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block py-1 text-neutral-600 hover:text-primary"
+                            onClick={() => {
+                              setOpenDropdown(null);
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    href={link.href}
+                    className="text-neutral-700 hover:text-primary py-2 px-1 font-medium block"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                )}
+              </div>
             ))}
           </nav>
         </div>
