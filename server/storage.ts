@@ -82,9 +82,17 @@ export interface StudyFilters {
   peerReviewed?: boolean;
 }
 
+export interface PaginatedResults<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
 export interface IStorage {
   // Studies operations
-  getStudies(filters: StudyFilters): Promise<Study[]>;
+  getStudies(filters: StudyFilters): Promise<PaginatedResults<Study>>;
   getStudyById(id: number): Promise<Study | undefined>;
   getStudyByIdentifier(identifier: string): Promise<Study | undefined>;
   getLatestStudies(limit?: number): Promise<Study[]>;
@@ -186,8 +194,8 @@ export class MemStorage implements IStorage {
   }
 
   // Studies methods
-  async getStudies(filters: StudyFilters = {}): Promise<Study[]> {
-    let results = Array.from(this.studiesData.values());
+  async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
+    let allResults = Array.from(this.studiesData.values());
     
     // Apply filters with advanced search capabilities
     if (filters.query) {
