@@ -1,29 +1,32 @@
 // Study interfaces
 export interface Study {
-  id: string;
+  id: number;
   title: string;
   abstract: string;
   authors: string;
   journal: string;
   publishDate: string;
+  journalPublishDate?: string | null;
   category: string;
-  methods?: string;
-  results?: string;
-  conclusion?: string;
-  doi?: string;
-  pdfUrl?: string;
-  citationUrl?: string;
+  methods?: string | null;
+  results?: string | null;
+  conclusion?: string | null;
+  doi?: string | null;
+  pdfUrl?: string | null;
+  citationUrl?: string | null;
   peerReviewed: boolean;
-  year?: number;
-  studyType?: string;
-  fullTextAvailable?: boolean;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  videoUrl?: string | null;
+  audioUrl?: string | null;
+  publishYear?: number | null;
+  simplifiedExplanation?: string | null;
   tags?: string[];
-  score?: number;
-  simplifiedExplanation?: string;
-  methodsShort?: string;
-  resultsShort?: string;
-  conclusionShort?: string;
-  updatedAt?: string;
+  createdAt?: string | Date;
+  viewCount?: number;
+  citationCount?: number;
+  sourceUrl?: string | null;
+  sourcePlatform?: string | null;
 }
 
 // Category interfaces

@@ -48,7 +48,11 @@ export default function Studies() {
       } else if (typeof value === 'boolean') {
         queryParams.append(key, value.toString());
       } else if (value) {
-        queryParams.append(key, value.toString());
+        // Convert empty strings to undefined
+        const stringValue = value.toString().trim();
+        if (stringValue) {
+          queryParams.append(key, stringValue);
+        }
       }
     }
   });

@@ -10,16 +10,22 @@ interface StudyCardProps {
 }
 
 export default function StudyCard({ study }: StudyCardProps) {
-  const categoryColor = getCategoryColor(study.category);
+  // Handle null/undefined category gracefully
+  const category = study.category || "General";
+  const categoryColor = getCategoryColor(category);
 
   function getCategoryColor(category: string) {
-    switch (category.toLowerCase()) {
+    const categoryLower = category.toLowerCase();
+    switch (categoryLower) {
       case 'cardiovascular':
+      case 'cardiovascular health':
         return 'bg-secondary/10 text-secondary';
       case 'neurology':
       case 'neurodegenerative':
+      case 'neurodegenerative diseases':
         return 'bg-accent/10 text-accent';
       case 'metabolism':
+      case 'metabolism & diabetes':
         return 'bg-primary/10 text-primary';
       case 'inflammation':
         return 'bg-orange-500/10 text-orange-500';
@@ -27,10 +33,16 @@ export default function StudyCard({ study }: StudyCardProps) {
         return 'bg-rose-500/10 text-rose-500';
       case 'aging':
         return 'bg-purple-500/10 text-purple-500';
+      case 'sports performance':
+        return 'bg-blue-500/10 text-blue-500';
       default:
         return 'bg-gray-500/10 text-gray-500';
     }
   }
+
+  // Safe date formatting
+  const displayDate = study.publishDate ? formatDate(study.publishDate) : 
+                     (study.journalPublishDate ? formatDate(study.journalPublishDate) : "No date");
 
   return (
     <motion.div 
@@ -45,10 +57,10 @@ export default function StudyCard({ study }: StudyCardProps) {
       <div className="flex items-start justify-between mb-4">
         <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
           <Badge variant="outline" className={`${categoryColor} border-none`}>
-            {study.category}
+            {category}
           </Badge>
         </motion.div>
-        <span className="text-neutral-500 text-sm">{formatDate(study.publishDate)}</span>
+        <span className="text-neutral-500 text-sm">{displayDate}</span>
       </div>
       
       <h3 className="font-heading font-bold text-lg mb-3 text-neutral-800 line-clamp-2">
