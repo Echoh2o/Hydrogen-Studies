@@ -48,6 +48,7 @@ import journalDateRoutes from "./routes/journal-date-routes";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
+import studiesRoutes from "./routes/studies-routes";
 import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
