@@ -74,6 +74,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register studies routes for the main study search and retrieval
   app.use('/api/studies', studiesRouter);
   
+  // Register consumer categories routes for condition-based browsing
+  app.use('/api/consumer-categories', consumerCategoriesRouter);
+  
   // Register the educational routes
   app.use('/api', educationalRoutes);
   
