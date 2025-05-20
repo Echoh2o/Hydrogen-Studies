@@ -97,19 +97,46 @@ const sampleStudies = [
 // Initialize the database with sample data if it doesn't already have data
 export async function initializeData() {
   try {
-    // Check if database has studies
+    // First initialize memory storage with our sample data for immediate search results
+    for (const study of sampleStudies) {
+      try {
+        // Only add to memory if storage is using MemStorage
+        if ((storage as any).studiesData) {
+          const id = study.id || ((storage as any).studyCurrentId ? ++((storage as any).studyCurrentId) : 1);
+          const createdAt = new Date();
+          (storage as any).studiesData.set(id, { ...study, id, createdAt });
+        }
+      } catch (err) {
+        console.log('Error adding sample study to memory:', err);
+      }
+    }
+    
+    // Then check if database has studies
     const existingStudies = await db.select({ count: sql`count(*)` }).from(studies);
     const studyCount = Number(existingStudies[0]?.count || 0);
     
     console.log(`Found ${studyCount} existing studies in database`);
     
-    // If there are no studies, insert the sample data
+    // If there are no studies, insert the sample data into the database
     if (studyCount === 0) {
       console.log('Adding sample studies to database...');
       
       // Insert each sample study
       for (const study of sampleStudies) {
-        await storage.createStudy(study);
+        try {
+          await db.insert(studies).values({
+            ...study,
+            journalPublishDate: null,
+            videoUrl: study.videoUrl || null,
+            audioUrl: null,
+            imageUrl: study.imageUrl || null,
+            peerReviewed: study.peerReviewed || false,
+            createdAt: new Date()
+          });
+          console.log(`Added study '${study.title.substring(0, 30)}...' to database`);
+        } catch (err) {
+          console.error('Error inserting study to database:', err);
+        }
       }
       
       console.log('Sample data initialization complete');
