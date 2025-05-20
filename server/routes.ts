@@ -58,6 +58,8 @@ import enhancedEnrichmentRoutes from "./routes/enhanced-enrichment-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
 import exportRoutes from "./routes/export-routes";
+import consumerCategoriesRoutes from "./routes/consumer-categories-routes";
+import priorityEnrichmentRoutes from "./routes/priority-enrichment-routes";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";

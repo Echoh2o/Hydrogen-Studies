@@ -107,6 +107,8 @@ export const studies = pgTable("studies", {
   resultsShort: text("results_short"),
   conclusionShort: text("conclusion_short"),
   summaryMarkdown: text("summary_markdown"),
+  // Consumer-friendly categorization
+  consumerCategories: text("consumer_categories"),
   // Additional fields for visualizations
   publishYear: integer("publish_year"),
   country: text("country"),
