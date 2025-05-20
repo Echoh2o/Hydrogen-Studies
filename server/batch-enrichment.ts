@@ -9,6 +9,7 @@ import { db } from './db';
 import { studies as studiesTable } from '../shared/schema';
 import { eq, isNull, lt, or } from 'drizzle-orm';
 import { enhanceStudyContent as fetchEnhancedContent } from './content-enrichment';
+import { generateImageForStudy } from './image-generator';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -39,6 +40,7 @@ interface EnhancementResult {
     conclusion?: boolean;
     tags?: boolean;
     simplifiedExplanation?: boolean;
+    generatedImage?: boolean;
   };
   studyId?: number;
 }
@@ -447,6 +449,24 @@ ${conclusion ? `### Conclusion\n${conclusion}` : ''}
       if (summaryMarkdown) {
         updateData.summaryMarkdown = summaryMarkdown;
         updates.summaryMarkdown = true;
+      }
+    }
+
+    // Check if the study needs an image and generate one if necessary
+    let generatedImage = false;
+    if (!study.imageUrl) {
+      try {
+        console.log(`Study ${studyId} has no image, attempting to generate one...`);
+        const imageResult = await generateImageForStudy(studyId);
+        if (imageResult.success) {
+          console.log(`Successfully generated image for study ${studyId}: ${imageResult.imageUrl}`);
+          generatedImage = true;
+          updates.generatedImage = true;
+        } else {
+          console.log(`Failed to generate image for study ${studyId}: ${imageResult.message}`);
+        }
+      } catch (imageError) {
+        console.error(`Error generating image for study ${studyId}:`, imageError);
       }
     }
 
