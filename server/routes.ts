@@ -64,6 +64,9 @@ import priorityEnrichmentRoutes from "./routes/priority-enrichment-routes";
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
 
+// Import routers
+import consumerCategoriesRouter from './routes/consumer-categories-routes';
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // We've moved table initialization to the main server startup process
   // This avoids redundant operations on each startup and improves performance

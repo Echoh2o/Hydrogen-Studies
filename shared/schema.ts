@@ -2,6 +2,13 @@ import { pgTable, text, serial, integer, boolean, timestamp, primaryKey, varchar
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Consumer-friendly categorization model
+export enum CategorizationModel {
+  CONDITION = 'condition',
+  BODY_SYSTEM = 'body_system',
+  LIFE_STAGE = 'life_stage'
+}
+
 // Users table schema
 export const users = pgTable("users", {
   id: text("id").primaryKey().notNull(), // Store Replit user ID
