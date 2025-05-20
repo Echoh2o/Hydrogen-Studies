@@ -134,6 +134,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register export routes for downloading research data
   app.use('/api/export', exportRoutes);
   
+  // Register consumer-friendly categorization routes for more accessible research
+  app.use('', consumerCategoriesRoutes);
+  
+  // Register priority enrichment routes for content quality improvement
+  app.use('', priorityEnrichmentRoutes);
+  
   // Direct API endpoint for keyword monitor status
   app.get('/api/keywords/monitor/status', async (req, res) => {
     try {
