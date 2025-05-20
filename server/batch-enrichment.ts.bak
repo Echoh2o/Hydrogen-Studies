@@ -127,7 +127,7 @@ async function processBatches(studyIds: number[], batchSize: number): Promise<vo
       
       try {
         await processBatch(batchIds);
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Error processing batch ${i / effectiveBatchSize + 1}:`, error);
         
         // Continue with the next batch even if this one failed
@@ -192,7 +192,7 @@ async function processBatch(batchIds: number[]): Promise<void> {
             console.log(`Failed to enhance study ${studyId}: ${result.message}`);
           }
         }
-      } catch (processingError: any) {
+      } catch (processingError) {
         // Check if it's a rate limit error
         if (processingError.toString().includes('rate_limit_exceeded')) {
           console.log(`Rate limit hit for study ${studyId}. Waiting 15 seconds before continuing...`);
@@ -278,7 +278,7 @@ async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> 
     // - results 
     // - conclusion
     // These fields exist in our schema and can be enhanced with AI
-    const incompleteStudies = await db?.select({ id: studiesTable.id })
+    const incompleteStudies = await db.select({ id: studiesTable.id })
       .from(studiesTable)
       .where(
         or(
@@ -292,8 +292,8 @@ async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> 
       .limit(limit);
 
     // If no studies with empty content, look for null content
-    if (!incompleteStudies || incompleteStudies.length === 0) {
-      const nullValueStudies = await db?.select({ id: studiesTable.id })
+    if (incompleteStudies.length === 0) {
+      const nullValueStudies = await db.select({ id: studiesTable.id })
         .from(studiesTable)
         .where(
           or(
@@ -304,7 +304,7 @@ async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> 
         )
         .limit(limit);
         
-      return nullValueStudies?.map(study => study.id) || [];
+      return nullValueStudies.map(study => study.id);
     }
 
     return incompleteStudies.map(study => study.id);
@@ -322,7 +322,7 @@ async function findStudiesForEnhancement(limit: number = 50): Promise<number[]> 
 export async function enhanceStudyContent(studyId: number): Promise<EnhancementResult> {
   try {
     // Get the original study
-    const [study] = await db?.select().from(studiesTable).where(eq(studiesTable.id, studyId)) || [];
+    const [study] = await db.select().from(studiesTable).where(eq(studiesTable.id, studyId));
     
     if (!study) {
       return {
@@ -382,7 +382,7 @@ export async function enhanceStudyContent(studyId: number): Promise<EnhancementR
       }
     }
     
-    // Generate standardized summary fields if missing
+    // Generate standardized summary fields if missing using the existing generateSectionUsingAI function
     if (!updateData.methodsShort || updateData.methodsShort?.length < 50) {
       // We'll use the existing generateSectionUsingAI with a modified prompt
       const methodsText = await generateSectionUsingAI(study, updateData, 'methods');
@@ -451,7 +451,7 @@ ${conclusion ? `### Conclusion\n${conclusion}` : ''}
     }
 
     // Update the study in the database
-    await db?.update(studiesTable)
+    await db.update(studiesTable)
       .set({
         ...updateData,
         updatedAt: new Date()
@@ -465,10 +465,10 @@ ${conclusion ? `### Conclusion\n${conclusion}` : ''}
       studyId
     };
   } catch (error) {
-    console.error(`Error enhancing study content for study ${studyId}:`, error);
+    console.error(`Error enhancing study ${studyId}:`, error);
     return {
       success: false,
-      message: `Error enhancing study content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
       studyId
     };
   }
@@ -619,11 +619,7 @@ async function generateSectionUsingAI(
     });
 
     // Extract and return the generated text
-    const generatedText = response.choices[0]?.message.content?.trim();
-    
-    if (!generatedText) {
-      return null;
-    }
+    const generatedText = response.choices[0].message.content.trim();
     
     // Post-process to remove any preamble that might have been generated
     let cleanedText = generatedText;
@@ -689,11 +685,7 @@ async function generateTagsUsingAI(study: any, updateData: any): Promise<string[
     });
 
     // Parse and return the generated tags
-    const content = response.choices[0]?.message.content;
-    if (!content) {
-      return null;
-    }
-    
+    const content = response.choices[0].message.content;
     const parsedContent = JSON.parse(content);
     
     // Extract tags from the JSON response
@@ -797,11 +789,7 @@ async function generateSimplifiedExplanation(study: any, updateData: any): Promi
     });
 
     // Extract and return the generated explanation
-    const explanation = response.choices[0]?.message.content?.trim();
-    
-    if (!explanation) {
-      return null;
-    }
+    const explanation = response.choices[0].message.content.trim();
     
     // Add a standardized header if not already present
     if (!explanation.toLowerCase().startsWith('#')) {
