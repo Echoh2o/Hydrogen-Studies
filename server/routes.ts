@@ -71,6 +71,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register import routes for Excel and other data sources
   app.use('/api', importRoutes);
   
+  // Register Excel and Google Sheets import routes
+  app.use('/api/import', excelImportRoutes);
+  
   // Register hydrogen database import route
   app.use('/api', hydrogenImportRoutes);
   
