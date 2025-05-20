@@ -105,7 +105,9 @@ export default function Studies() {
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // The query is automatically sent via queryParams
+    console.log("Search submitted with filters:", filters);
+    // Force the query to update if necessary
+    refetch();
   };
   
   // Categories for filter dropdown
