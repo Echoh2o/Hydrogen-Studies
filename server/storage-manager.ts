@@ -1,5 +1,4 @@
-import { IStorage } from './storage';
-import { dbStorage } from './db-storage';
+import { IStorage } from './storage-types';
 
 /**
  * Storage Manager class
@@ -63,7 +62,7 @@ export class StorageManager {
 // Export a function to create a storage manager with the provided implementations
 export function createStorageManager(
   memStore: IStorage, 
-  dbStore: IStorage = dbStorage,
+  dbStore: IStorage,
   useDbByDefault: boolean = false
 ): StorageManager {
   return new StorageManager(memStore, dbStore, useDbByDefault);
