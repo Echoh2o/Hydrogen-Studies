@@ -965,5 +965,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Using MemStorage for now until database implementation is fixed
+// Use the MemStorage implementation for now
+// We'll implement proper database access later
 export const storage = new MemStorage();
