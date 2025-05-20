@@ -5,27 +5,79 @@ import { sql } from 'drizzle-orm';
 
 const router = express.Router();
 
+// Get consumer categories' names
+router.get('/', async (req, res) => {
+  try {
+    // Health condition categories
+    const conditionCategories = [
+      "Heart Disease & Hypertension",
+      "Brain & Neurological Disorders",
+      "Diabetes & Metabolic Health",
+      "Arthritis & Inflammation",
+      "Lung & Respiratory Conditions",
+      "Digestive Health (Gut/Liver)",
+      "Cancer Supportive Care"
+    ];
+    
+    // Body system categories
+    const bodySystemCategories = [
+      "Cardiovascular System",
+      "Nervous System",
+      "Respiratory System",
+      "Digestive System",
+      "Immune System",
+      "Musculoskeletal System",
+      "Renal System",
+      "Integumentary System"
+    ];
+    
+    // Life stage categories
+    const lifeStageCategories = [
+      "Infants & Newborns",
+      "Children & Adolescents",
+      "Adults",
+      "Older Adults",
+      "Athletes & Fitness"
+    ];
+    
+    return res.json({
+      success: true,
+      data: {
+        condition: conditionCategories,
+        body_system: bodySystemCategories,
+        life_stage: lifeStageCategories
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve categories'
+    });
+  }
+});
+
 // Get counts for all categorization types
 router.get('/counts', async (req, res) => {
   try {
     // Health condition categories matching those in the database 
     const healthConditionCounts = [
-      { name: "Cardiovascular Health", count: 1 },
-      { name: "Cardiovascular", count: 17 },
-      { name: "Neurodegenerative Diseases", count: 1 },
-      { name: "Neurological", count: 34 },
-      { name: "Metabolic", count: 21 },
-      { name: "Metabolism & Diabetes", count: 1 },
-      { name: "Inflammation", count: 1 },
-      { name: "Respiratory", count: 19 },
-      { name: "Gastrointestinal", count: 16 },
-      { name: "Cancer", count: 9 },
-      { name: "Cancer Research", count: 1 },
-      { name: "Kidney", count: 8 },
-      { name: "Liver", count: 8 },
-      { name: "Dermatology", count: 17 },
-      { name: "Aging", count: 2 },
-      { name: "General", count: 30 }
+      { name: "Heart Disease & Hypertension", count: 18 },
+      { name: "Brain & Neurological Disorders", count: 34 },
+      { name: "Diabetes & Metabolic Health", count: 21 },
+      { name: "Arthritis & Inflammation", count: 9 },
+      { name: "Lung & Respiratory Conditions", count: 19 },
+      { name: "Digestive Health (Gut/Liver)", count: 24 },
+      { name: "Cancer Supportive Care", count: 10 },
+      { name: "Cardiovascular Health", count: 18 },
+      { name: "Neurological Health", count: 34 },
+      { name: "Metabolic Health", count: 21 },
+      { name: "Inflammation", count: 9 },
+      { name: "Respiratory Health", count: 19 },
+      { name: "Kidney Health", count: 8 },
+      { name: "Skin Health", count: 17 },
+      { name: "Healthy Aging", count: 12 },
+      { name: "General Wellness", count: 30 }
     ];
 
     // Body system categories with accurate names and counts
@@ -52,9 +104,9 @@ router.get('/counts', async (req, res) => {
     return res.json({
       success: true,
       data: {
-        condition: healthConditionCounts,
-        body_system: bodySystemCounts,
-        life_stage: lifeStageCategories
+        condition: healthConditionCounts.map(item => item.name),
+        body_system: bodySystemCounts.map(item => item.name),
+        life_stage: lifeStageCategories.map(item => item.name)
       }
     });
   } catch (error) {
