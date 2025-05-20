@@ -109,19 +109,19 @@ export default function Header() {
                   <>
                     <button
                       onClick={() => toggleDropdown(link.label)}
-                      className={`flex items-center text-neutral-700 hover:text-primary font-medium ${openDropdown === link.label ? 'text-primary' : ''}`}
+                      className={`flex items-center px-2 py-1 rounded-md text-neutral-700 hover:text-primary hover:bg-slate-50 font-medium transition-colors ${openDropdown === link.label ? 'text-primary bg-slate-50' : ''}`}
                     >
                       {link.label} 
                       <ChevronDown className={`ml-1 h-4 w-4 transform transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
                     </button>
                     {openDropdown === link.label && (
-                      <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                      <div className="absolute left-0 mt-2 w-60 rounded-md shadow-xl bg-white ring-1 ring-slate-200 z-50">
                         <div className="py-1" role="menu" aria-orientation="vertical">
                           {link.dropdown.map((item) => (
                             <Link
                               key={item.href}
                               href={item.href}
-                              className="block px-4 py-2 text-sm text-neutral-700 hover:bg-gray-100 hover:text-primary"
+                              className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-blue-50 hover:text-primary transition-colors duration-150"
                               onClick={() => setOpenDropdown(null)}
                             >
                               {item.label}
@@ -175,12 +175,12 @@ export default function Header() {
                       <ChevronDown className={`h-4 w-4 transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
                     </button>
                     {openDropdown === link.label && (
-                      <div className="pl-4 mt-2 space-y-2 border-l-2 border-neutral-200">
+                      <div className="pl-4 mt-2 space-y-2.5 border-l-2 border-blue-100">
                         {link.dropdown.map((item) => (
                           <Link
                             key={item.href}
                             href={item.href}
-                            className="block py-1 text-neutral-600 hover:text-primary"
+                            className="block py-1.5 text-neutral-600 hover:text-primary transition-colors duration-150"
                             onClick={() => {
                               setOpenDropdown(null);
                               setMobileMenuOpen(false);
