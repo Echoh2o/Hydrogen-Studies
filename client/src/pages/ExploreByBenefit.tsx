@@ -73,19 +73,36 @@ const ExploreByBenefit: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Fetch all available consumer categories
-  const { data: categoryData, isLoading: categoriesLoading } = useQuery({
+  const { data: categoryData, isLoading: categoriesLoading } = useQuery<{
+    success: boolean,
+    data: {
+      condition: string[],
+      body_system: string[],
+      life_stage: string[]
+    }
+  }>({
     queryKey: ['/api/consumer-categories'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Fetch category counts
-  const { data: countData, isLoading: countsLoading } = useQuery({
+  const { data: countData, isLoading: countsLoading } = useQuery<{
+    success: boolean,
+    data: {
+      condition: {name: string, count: number}[],
+      body_system: {name: string, count: number}[],
+      life_stage: {name: string, count: number}[]
+    }
+  }>({
     queryKey: ['/api/consumer-categories/counts'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Fetch studies for selected category when it changes
-  const { data: studies, isLoading: studiesLoading } = useQuery({
+  const { data: studies, isLoading: studiesLoading } = useQuery<{
+    success: boolean,
+    data: Study[]
+  }>({
     queryKey: ['/api/studies/by-consumer-category', selectedModel, selectedCategory],
     enabled: !!selectedCategory,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -97,11 +114,21 @@ const ExploreByBenefit: React.FC = () => {
     
     switch (model) {
       case 'condition':
-        return countData.data.condition[category] || 0;
-      case 'bodySystem':
-        return countData.data.bodySystem[category] || 0;
-      case 'lifeStage':
-        return countData.data.lifeStage[category] || 0;
+        // Find the count by matching the category name
+        const conditionItem = countData.data.condition.find(
+          (item: any) => item.name === category
+        );
+        return conditionItem ? conditionItem.count : 0;
+      case 'body_system':
+        const bodySystemItem = countData.data.body_system.find(
+          (item: any) => item.name === category
+        );
+        return bodySystemItem ? bodySystemItem.count : 0;
+      case 'life_stage':
+        const lifeStageItem = countData.data.life_stage.find(
+          (item: any) => item.name === category
+        );
+        return lifeStageItem ? lifeStageItem.count : 0;
       default:
         return 0;
     }
