@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Category } from "@shared/schema";
+import { type Category } from "@/types";
 import { 
   HiBrain, 
   HiHeart, 
