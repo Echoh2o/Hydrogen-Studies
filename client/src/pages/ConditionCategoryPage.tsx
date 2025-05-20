@@ -28,22 +28,25 @@ const ConditionCategoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch studies for this condition category
+  // Fetch studies for this condition category using the consumer categories API
   useEffect(() => {
     const fetchStudies = async () => {
       setIsLoading(true);
       try {
-        // Try to fetch from API
-        const response = await fetch(`/api/studies?query=${displayName}&limit=20`);
+        // Use the consumer categories API with the model and category parameters
+        const response = await fetch(`/api/consumer-categories/studies?model=condition&category=${encodeURIComponent(displayName)}`);
         
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
             setStudies(data.data);
+            console.log("Studies for condition:", data.data);
           } else {
+            console.warn("No studies found or invalid response format:", data);
             setStudies([]);
           }
         } else {
+          console.error("Failed API response:", response.status, response.statusText);
           setError("Failed to load studies for this condition");
           setStudies([]);
         }
