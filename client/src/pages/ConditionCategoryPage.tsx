@@ -1,23 +1,65 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { Heart, Calendar, Book, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
-import { CategorizationModel, StudiesByCategoryResponse } from "../types/consumer-categories";
+
+interface Study {
+  id: number;
+  title: string;
+  abstract: string;
+  publishDate: string;
+  journal: string;
+  doi?: string | null;
+  fullText?: string | null;
+  methods?: string | null;
+  results?: string | null;
+  conclusions?: string | null;
+  imageUrl?: string | null;
+}
 
 const ConditionCategoryPage = () => {
   const { name } = useParams();
   const decodedName = name ? decodeURIComponent(name) : '';
   const displayName = decodedName.charAt(0).toUpperCase() + decodedName.slice(1);
   
-  // Fetch studies for this condition category
-  const { data, isLoading, error } = useQuery<StudiesByCategoryResponse>({
-    queryKey: ["/api/consumer-categories/studies", { model: "condition", category: displayName }],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const [studies, setStudies] = useState<Study[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const studies = data?.data || [];
+  // Fetch studies for this condition category
+  useEffect(() => {
+    const fetchStudies = async () => {
+      setIsLoading(true);
+      try {
+        // Try to fetch from API
+        const response = await fetch(`/api/studies?query=${displayName}&limit=20`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setStudies(data.data);
+          } else {
+            setStudies([]);
+          }
+        } else {
+          setError("Failed to load studies for this condition");
+          setStudies([]);
+        }
+      } catch (err) {
+        console.error(`Error fetching studies for ${displayName}:`, err);
+        setError("Error loading studies. Please try again.");
+        setStudies([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (displayName) {
+      fetchStudies();
+    }
+  }, [displayName]);
 
   // Format a date string to a readable format
   const formatDate = (dateString: string) => {

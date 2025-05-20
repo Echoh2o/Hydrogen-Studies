@@ -1,37 +1,70 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Heart, ArrowRight, Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CategorizationModel, CategoryCount, ConsumerCategoriesResponse } from "../types/consumer-categories";
+
+interface Condition {
+  name: string;
+  count: number;
+}
 
 const ExploreByCondition = () => {
-  // Fetch all condition categories that have studies
-  const { data, isLoading, error } = useQuery<{success: boolean, data: CategoryCount[]}>({
-    queryKey: ["/api/consumer-categories/all-conditions"],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const [conditions, setConditions] = useState<Condition[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Standard/predefined health conditions (used if API fails)
-  const standardConditions = [
-    { name: "Diabetes & Metabolic Health", count: 5 },
-    { name: "Heart Disease & Hypertension", count: 8 },
-    { name: "Brain & Neurological Disorders", count: 10 },
-    { name: "Arthritis & Inflammation", count: 6 },
-    { name: "Lung & Respiratory Conditions", count: 4 },
-    { name: "Digestive Health", count: 7 },
-    { name: "Cancer Supportive Care", count: 3 },
-    { name: "Kidney Health", count: 2 },
-    { name: "Skin Conditions", count: 4 },
-    { name: "Aging", count: 3 },
-    { name: "General Wellness", count: 12 }
-  ];
+  // Health conditions categories and counts
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
 
-  // Get condition categories from API or use standard categories as fallback
-  const conditions = data?.data ? 
-    [...data.data].sort((a, b) => b.count - a.count) : 
-    standardConditions;
+    const fetchCategories = async () => {
+      try {
+        // Try to fetch from API
+        const response = await fetch('/api/consumer-categories/counts');
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.condition) {
+            setConditions(data.data.condition.sort((a: Condition, b: Condition) => b.count - a.count));
+          } else {
+            // If no condition data, use predefined list
+            useStandardConditions();
+          }
+        } else {
+          // If API fails, use predefined list
+          useStandardConditions();
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories:", err);
+        setError("Failed to load health conditions. Using default categories.");
+        useStandardConditions();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const useStandardConditions = () => {
+      const standardConditions = [
+        { name: "Diabetes & Metabolic Health", count: 15 },
+        { name: "Heart Disease & Hypertension", count: 18 },
+        { name: "Brain & Neurological Disorders", count: 34 },
+        { name: "Arthritis & Inflammation", count: 13 },
+        { name: "Lung & Respiratory Conditions", count: 19 },
+        { name: "Digestive Health", count: 24 },
+        { name: "Cancer Supportive Care", count: 10 },
+        { name: "Kidney Health", count: 8 },
+        { name: "Skin Conditions", count: 17 },
+        { name: "Aging", count: 12 },
+        { name: "General Wellness", count: 22 }
+      ];
+      setConditions(standardConditions);
+    };
+
+    fetchCategories();
+  }, []);
 
   // Group conditions into top conditions and others
   const topConditions = conditions.slice(0, 6);

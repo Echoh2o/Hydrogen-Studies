@@ -1,94 +1,128 @@
-import { Router } from 'express';
-import { CategorizationModel } from '../../shared/schema';
-import { getAllConsumerCategories, getConsumerCategoryCounts, findStudiesByConsumerCategory, categorizeStudyForConsumers, batchCategorizeStudies } from '../consumer-categories';
+import express from 'express';
+import { db } from '../db';
+import { studies, healthConditions, bodySystems } from '../../shared/schema';
+import { SQL, count, eq, and, sql, desc } from 'drizzle-orm';
 
-const router = Router();
+const router = express.Router();
 
-// Get all available consumer categories with counts
+// Get counts for all categorization types
 router.get('/counts', async (req, res) => {
   try {
-    const categoryCounts = await getConsumerCategoryCounts();
-    res.json({ success: true, data: categoryCounts });
+    // Gather all health condition counts
+    const healthConditionCounts = await db.select({
+      name: healthConditions.name,
+      count: count(studies.id)
+    })
+    .from(healthConditions)
+    .leftJoin(
+      studies, 
+      and(
+        eq(healthConditions.id, sql`ANY(${studies.healthConditions})`)
+      )
+    )
+    .groupBy(healthConditions.name)
+    .orderBy(desc(count(studies.id)));
+
+    // Gather all body system counts
+    const bodySystemCounts = await db.select({
+      name: bodySystems.name,
+      count: count(studies.id)
+    })
+    .from(bodySystems)
+    .leftJoin(
+      studies, 
+      and(
+        eq(bodySystems.id, sql`ANY(${studies.bodySystems})`)
+      )
+    )
+    .groupBy(bodySystems.name)
+    .orderBy(desc(count(studies.id)));
+    
+    return res.json({
+      success: true,
+      data: {
+        condition: healthConditionCounts,
+        body_system: bodySystemCounts,
+        life_stage: [] // Not implemented yet
+      }
+    });
   } catch (error) {
     console.error('Error fetching category counts:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch category counts' });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve category counts'
+    });
   }
 });
 
-// Get studies for a specific category in a specific model
+// Get studies by category (health condition, body system, or life stage)
 router.get('/studies', async (req, res) => {
   try {
-    const { model = 'condition', category } = req.query;
+    const { model, category } = req.query;
     
-    if (!category) {
-      return res.status(400).json({ success: false, message: 'Category parameter is required' });
+    if (!model || !category) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters'
+      });
     }
     
-    if (!Object.values(CategorizationModel).includes(model as CategorizationModel)) {
-      return res.status(400).json({ success: false, message: 'Invalid model parameter' });
+    let studyResults = [];
+    
+    // Filter based on model type
+    if (model === 'condition') {
+      // Get the condition ID
+      const [conditionRecord] = await db
+        .select()
+        .from(healthConditions)
+        .where(eq(healthConditions.name, category as string));
+      
+      if (!conditionRecord) {
+        return res.status(404).json({
+          success: false,
+          error: 'Health condition not found'
+        });
+      }
+      
+      // Get studies with this condition
+      studyResults = await db
+        .select()
+        .from(studies)
+        .where(sql`${conditionRecord.id} = ANY(${studies.healthConditions})`)
+        .limit(20);
+    } 
+    else if (model === 'body_system') {
+      // Get the body system ID
+      const [bodySystemRecord] = await db
+        .select()
+        .from(bodySystems)
+        .where(eq(bodySystems.name, category as string));
+      
+      if (!bodySystemRecord) {
+        return res.status(404).json({
+          success: false,
+          error: 'Body system not found'
+        });
+      }
+      
+      // Get studies with this body system
+      studyResults = await db
+        .select()
+        .from(studies)
+        .where(sql`${bodySystemRecord.id} = ANY(${studies.bodySystems})`)
+        .limit(20);
     }
     
-    const studies = await findStudiesByConsumerCategory(
-      model as CategorizationModel, 
-      category as string,
-      100 // limit
-    );
-    
-    res.json({ success: true, data: studies });
+    return res.json({
+      success: true,
+      data: studyResults
+    });
   } catch (error) {
     console.error('Error fetching studies by category:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch studies by category' });
-  }
-});
-
-// Get all condition categories that have studies - with counts
-router.get('/all-conditions', async (req, res) => {
-  try {
-    const categoryCounts = await getConsumerCategoryCounts();
-    const conditions = categoryCounts.condition || [];
-    
-    // If we don't have any categories, provide some fallback standard categories
-    if (conditions.length === 0) {
-      const standardConditions = [
-        { name: "Diabetes & Metabolic Health", count: 5 },
-        { name: "Heart Disease & Hypertension", count: 8 },
-        { name: "Brain & Neurological Disorders", count: 10 },
-        { name: "Arthritis & Inflammation", count: 6 },
-        { name: "Lung & Respiratory Conditions", count: 4 },
-        { name: "Digestive Health", count: 7 },
-        { name: "Cancer Supportive Care", count: 3 }
-      ];
-      return res.json({ success: true, data: standardConditions });
-    }
-    
-    res.json({ success: true, data: conditions });
-  } catch (error) {
-    console.error('Error fetching all conditions:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch all conditions' });
-  }
-});
-
-// Categorize a single study
-router.post('/categorize/:studyId', async (req, res) => {
-  try {
-    const { studyId } = req.params;
-    const result = await categorizeStudyForConsumers(parseInt(studyId));
-    res.json({ success: true, ...result });
-  } catch (error) {
-    console.error('Error categorizing study:', error);
-    res.status(500).json({ success: false, message: 'Failed to categorize study' });
-  }
-});
-
-// Batch categorize studies
-router.post('/batch-categorize', async (req, res) => {
-  try {
-    const { limit = 10 } = req.body;
-    const result = await batchCategorizeStudies(parseInt(limit.toString()));
-    res.json({ success: true, ...result });
-  } catch (error) {
-    console.error('Error batch categorizing studies:', error);
-    res.status(500).json({ success: false, message: 'Failed to batch categorize studies' });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve studies'
+    });
   }
 });
 
