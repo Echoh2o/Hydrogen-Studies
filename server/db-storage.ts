@@ -1,5 +1,6 @@
 import { db } from './db';
-import { IStorage, StudyFilters } from './storage';
+import { IStorage, StudyFilters, PaginatedResults } from './storage';
+import { SQL } from 'drizzle-orm';
 import { 
   studies, 
   categories, 
@@ -44,13 +45,14 @@ export class DatabaseStorage implements IStorage {
   private categoryCacheLastUpdate: number = 0;
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-  async getStudies(filters: StudyFilters = {}): Promise<{ data: Study[]; total: number; page: number; pageSize: number; pageCount: number }> {
+  async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
     try {
-      let query = db.select().from(studies);
+      // Initialize queries
+      let studyQuery = db.select().from(studies);
       let countQuery = db.select({ count: sql`count(*)` }).from(studies);
 
       // Apply filters
-      const conditions = [];
+      const conditions: SQL<unknown>[] = [];
 
       if (filters.query) {
         // Optimize by using concatenated indexed search and adding index hints
@@ -199,7 +201,7 @@ export class DatabaseStorage implements IStorage {
       query = query.limit(pageSize).offset(offset);
       
       // Execute both queries concurrently for better performance
-      const [studies, totalResults] = await Promise.all([
+      const [studyResults, totalResults] = await Promise.all([
         query,
         countQuery
       ]);
@@ -212,7 +214,7 @@ export class DatabaseStorage implements IStorage {
       
       // Return formatted result with pagination metadata
       return {
-        data: studies,
+        data: studyResults,
         total,
         page,
         pageSize,
