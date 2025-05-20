@@ -23,6 +23,7 @@ import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
 import ResearchSuggestionsPage from "@/pages/research-suggestions";
 import ShareInsightCard from "@/pages/ShareInsightCard";
+import ImprovedSearchPage from "@/pages/ImprovedSearchPage";
 
 // New organization structure pages
 import ExploreByBenefitPage, { BenefitDetailPage } from "@/pages/ExploreByBenefit";
@@ -85,6 +86,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/chat" component={ChatPage} />
       <Route path="/research-suggestions" component={ResearchSuggestionsPage} />
+      <Route path="/improved-search" component={ImprovedSearchPage} />
       
       {/* New Organization Structure Routes */}
       <Route path="/benefits" component={ExploreByBenefitPage} />

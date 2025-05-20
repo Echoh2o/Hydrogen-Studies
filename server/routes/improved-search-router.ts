@@ -1,184 +1,179 @@
-import { Router, Request, Response } from 'express';
-import { db } from '../db';
-import { studies } from '@shared/schema';
-import { eq, and, or, ilike, sql } from 'drizzle-orm';
+import express, { Request, Response } from "express";
+import { z } from "zod";
+import { db } from "../db";
+import { studies } from "@shared/schema";
+import { SQL, sql, eq, and, or, ilike, desc } from "drizzle-orm";
+import { format } from "date-fns";
 
-const router = Router();
+const router = express.Router();
 
-/**
- * Improved search endpoint that provides better results with deduplication
- * This fixes the issue of showing the same 3 studies for heart searches
- */
+// Query validation schema
+const searchQuerySchema = z.object({
+  q: z.string().optional(),
+  page: z.string().transform(Number).default("1"),
+  pageSize: z.string().transform(Number).default("10"),
+  sortBy: z.enum(["date", "relevance", "title"]).optional().default("relevance"),
+});
+
+// Define our improved search route with PostgreSQL's built-in text search
 router.get('/api/improved-search', async (req: Request, res: Response) => {
   try {
-    const {
-      query,
-      page = '1',
-      pageSize = '20',
-      sortBy = 'date',
-      sortOrder = 'desc'
-    } = req.query;
-
-    console.log('Improved search query parameters:', req.query);
+    // Validate and parse query parameters
+    const { q, page, pageSize, sortBy } = searchQuerySchema.parse(req.query);
+    const offset = (page - 1) * pageSize;
     
-    // Parse pagination parameters
-    const parsedPage = parseInt(page as string, 10) || 1;
-    const parsedPageSize = parseInt(pageSize as string, 10) || 20;
-    const offset = (parsedPage - 1) * parsedPageSize;
-
-    if (!query || (query as string).trim().length === 0) {
-      // Return a default result set if no query is provided
-      const studiesQuery = db.select()
-        .from(studies)
-        .orderBy(sortOrder === 'asc' ? 
-          sql`${studies.publishDate} ASC` : 
-          sql`${studies.publishDate} DESC`)
-        .limit(parsedPageSize)
+    // If no search query, return the most recent studies
+    if (!q || q.trim() === '') {
+      const results = await db.select().from(studies)
+        .orderBy(desc(studies.publishYear))
+        .limit(pageSize)
         .offset(offset);
-
-      const resultsTotal = await db.select({ count: sql`count(*)` }).from(studies);
-      const total = Number(resultsTotal[0]?.count || 0);
-      const results = await studiesQuery;
-
+      
+      const totalCount = await db.select({ count: sql<number>`count(*)` })
+        .from(studies);
+      
       return res.json({
         data: results,
         pagination: {
-          total,
-          page: parsedPage,
-          pageSize: parsedPageSize,
-          pageCount: Math.ceil(total / parsedPageSize)
+          total: totalCount[0].count,
+          page: page,
+          pageSize: pageSize,
+          pageCount: Math.ceil(totalCount[0].count / pageSize)
         }
       });
     }
 
-    // Extract the search query term
-    const searchTerm = (query as string).trim().toLowerCase();
-    console.log('Using search term:', searchTerm);
-
-    // Create a more comprehensive search query that looks in all relevant fields
-    // and gives different weights to different fields
-    const searchConditions = or(
-      // Primary fields (highest weight)
-      ilike(studies.title, `%${searchTerm}%`),
-      ilike(studies.abstract, `%${searchTerm}%`),
-      
-      // Secondary fields (medium weight)
-      and(sql`${studies.methods} IS NOT NULL`, ilike(studies.methods, `%${searchTerm}%`)),
-      and(sql`${studies.results} IS NOT NULL`, ilike(studies.results, `%${searchTerm}%`)),
-      and(sql`${studies.conclusion} IS NOT NULL`, ilike(studies.conclusion, `%${searchTerm}%`)),
-      
-      // Other fields (lower weight)
-      ilike(studies.authors, `%${searchTerm}%`),
-      and(sql`${studies.simplifiedExplanation} IS NOT NULL`, ilike(studies.simplifiedExplanation, `%${searchTerm}%`))
-    );
-
-    // First, get the total count for pagination
-    const countQuery = db.select({ count: sql`count(DISTINCT ${studies.title})` })
-      .from(studies)
-      .where(searchConditions);
+    // Build search conditions with deduplication logic
+    let whereClause: SQL<unknown> | undefined;
     
-    const countResult = await countQuery;
-    const total = Number(countResult[0]?.count || 0);
+    // Split the search query into keywords
+    const keywords = q.toLowerCase().split(/\s+/).filter(k => k.length > 0);
+    
+    if (keywords.length > 0) {
+      // Create conditions for each keyword across multiple fields
+      const conditions = keywords.map(keyword => {
+        return or(
+          ilike(studies.title, `%${keyword}%`),
+          ilike(studies.abstract, `%${keyword}%`),
+          ilike(studies.authors, `%${keyword}%`),
+          ilike(studies.journal, `%${keyword}%`),
+          ilike(studies.methods, `%${keyword}%`),
+          ilike(studies.results, `%${keyword}%`),
+          ilike(studies.conclusion, `%${keyword}%`)
+        );
+      });
+      
+      // Combine all keyword conditions with AND (study must match all keywords)
+      whereClause = conditions.reduce((acc, condition) => and(acc, condition));
+    }
 
-    console.log(`Found ${total} distinct studies for search term: ${searchTerm}`);
-
-    // We'll use a subquery with ROW_NUMBER to implement deduplication
-    // by title - this ensures we don't get duplicates in our results
-    const deduplicatedResults = await db.execute(sql`
-      WITH ranked_studies AS (
+    // Execute search query with whereClause
+    const searchQuery = db.select({
+      id: studies.id,
+      title: studies.title,
+      abstract: studies.abstract,
+      authors: studies.authors,
+      journal: studies.journal,
+      publishDate: studies.publishDate,
+      category: studies.category,
+      peerReviewed: studies.peerReviewed,
+      methods: studies.methods,
+      results: studies.results,
+      conclusion: studies.conclusion,
+      doi: studies.doi,
+      imageUrl: studies.imageUrl,
+      publishYear: studies.publishYear,
+      // Compute a relevance score based on where matches occur
+      relevance: sql<number>`
+        CASE 
+          WHEN ${studies.title} ILIKE ${`%${q}%`} THEN 10
+          WHEN ${studies.abstract} ILIKE ${`%${q}%`} THEN 5
+          WHEN ${studies.methods} ILIKE ${`%${q}%`} OR ${studies.results} ILIKE ${`%${q}%`} THEN 3
+          ELSE 1
+        END
+      `,
+    }).from(studies);
+    
+    // Apply where clause if we have search conditions
+    if (whereClause) {
+      searchQuery.where(whereClause);
+    }
+    
+    // Apply sorting based on user preference
+    if (sortBy === 'date') {
+      searchQuery.orderBy(desc(studies.publishYear));
+    } else if (sortBy === 'title') {
+      searchQuery.orderBy(studies.title);
+    } else {
+      // Default to relevance
+      searchQuery.orderBy(desc(sql<number>`relevance`));
+    }
+    
+    // Fetch results with pagination
+    const results = await searchQuery
+      .limit(pageSize)
+      .offset(offset);
+    
+    // Execute a raw SQL query to deduplicate studies based on title similarity
+    // This helps avoid showing multiple copies of the same study
+    const deduplicatedTitleQuery = sql`
+      WITH ranked_results AS (
         SELECT 
-          *,
+          r.*,
           ROW_NUMBER() OVER (
-            PARTITION BY title 
-            ORDER BY "publishDate" DESC
-          ) as rn
-        FROM studies
-        WHERE 
-          title ILIKE ${`%${searchTerm}%`} OR
-          abstract ILIKE ${`%${searchTerm}%`} OR
-          authors ILIKE ${`%${searchTerm}%`} OR
-          (methods IS NOT NULL AND methods ILIKE ${`%${searchTerm}%`}) OR
-          (results IS NOT NULL AND results ILIKE ${`%${searchTerm}%`}) OR
-          (conclusion IS NOT NULL AND conclusion ILIKE ${`%${searchTerm}%`}) OR
-          (journal IS NOT NULL AND journal ILIKE ${`%${searchTerm}%`}) OR
-          ("simplifiedExplanation" IS NOT NULL AND "simplifiedExplanation" ILIKE ${`%${searchTerm}%`})
+            PARTITION BY similarity(lower(title), lower(title)) > 0.9
+            ORDER BY 
+              CASE 
+                WHEN title ILIKE ${`%${q}%`} THEN 10
+                WHEN abstract ILIKE ${`%${q}%`} THEN 5
+                ELSE 1
+              END DESC
+          ) as rank
+        FROM (${searchQuery}) r
       )
-      SELECT * FROM ranked_studies
-      WHERE rn = 1
-      ORDER BY ${sortBy === 'date' ? 
-        (sortOrder === 'asc' ? 'publish_date ASC' : 'publish_date DESC') : 
-        (sortBy === 'title' ? 
-          (sortOrder === 'asc' ? 'title ASC' : 'title DESC') : 
-          'publish_date DESC')}
-      LIMIT ${parsedPageSize}
-      OFFSET ${offset}
-    `);
+      SELECT * FROM ranked_results WHERE rank = 1
+      LIMIT ${pageSize} OFFSET ${offset}
+    `;
+    
+    const queryResult = await db.execute(deduplicatedTitleQuery);
+    const deduplicatedResults = queryResult.rows;
 
-    console.log(`Returning ${deduplicatedResults.length} deduplicated results`);
-
-    res.json({
+    // Count total results (with deduplication)
+    const countQuery = sql`
+      SELECT COUNT(*) FROM (
+        WITH ranked_results AS (
+          SELECT 
+            r.*,
+            ROW_NUMBER() OVER (
+              PARTITION BY similarity(lower(title), lower(title)) > 0.9
+              ORDER BY id
+            ) as rank
+          FROM studies r
+          WHERE
+            ${whereClause ? whereClause : sql`TRUE`}
+        )
+        SELECT * FROM ranked_results WHERE rank = 1
+      ) AS deduplicated_count
+    `;
+    
+    const countResult = await db.execute(countQuery);
+    const totalCount = parseInt(countResult.rows[0].count as string, 10);
+    
+    // Return the search results
+    return res.json({
       data: deduplicatedResults,
       pagination: {
-        total,
-        page: parsedPage,
-        pageSize: parsedPageSize,
-        pageCount: Math.ceil(total / parsedPageSize)
+        total: totalCount,
+        page: page,
+        pageSize: pageSize,
+        pageCount: Math.ceil(totalCount / pageSize)
       }
     });
   } catch (error) {
-    console.error('Error in improved search:', error);
+    console.error("Error in improved search:", error);
     res.status(500).json({ 
-      error: 'Failed to execute search', 
-      details: error.message
+      error: "An error occurred during search. Please try again." 
     });
-  }
-});
-
-/**
- * Find studies with words related to heart/cardiac health
- * This endpoint helps demonstrate the problem with duplicates
- */
-router.get('/api/search/heart-studies', async (req: Request, res: Response) => {
-  try {
-    const heartTerms = ['heart', 'cardiac', 'cardio', 'cardiovascular', 'myocardial'];
-    
-    // Create a condition that checks for any heart-related term in title or abstract
-    const conditions = heartTerms.map(term => {
-      return or(
-        ilike(studies.title, `%${term}%`),
-        ilike(studies.abstract, `%${term}%`)
-      );
-    });
-    
-    // Use a CTE to deduplicate by title
-    const deduplicatedResults = await db.execute(sql`
-      WITH ranked_studies AS (
-        SELECT 
-          *,
-          ROW_NUMBER() OVER (
-            PARTITION BY title 
-            ORDER BY "publishDate" DESC
-          ) as rn
-        FROM studies
-        WHERE 
-          title ILIKE '%heart%' OR title ILIKE '%cardiac%' OR title ILIKE '%cardio%' OR
-          title ILIKE '%cardiovascular%' OR title ILIKE '%myocardial%' OR
-          abstract ILIKE '%heart%' OR abstract ILIKE '%cardiac%' OR abstract ILIKE '%cardio%' OR
-          abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%myocardial%'
-      )
-      SELECT * FROM ranked_studies
-      WHERE rn = 1
-      ORDER BY publish_date DESC
-    `);
-    
-    res.json({
-      message: "Heart-related studies (deduplicated)",
-      count: deduplicatedResults.length,
-      data: deduplicatedResults
-    });
-  } catch (error) {
-    console.error('Error fetching heart studies:', error);
-    res.status(500).json({ error: 'Failed to fetch heart studies' });
   }
 });
 
