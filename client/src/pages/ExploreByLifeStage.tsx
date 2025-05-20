@@ -32,7 +32,7 @@ const ExploreByLifeStage = () => {
   });
 
   useEffect(() => {
-    if (categoriesData?.success && categoriesData?.data?.life_stage) {
+    if (categoriesData && categoriesData.success && categoriesData.data && categoriesData.data.life_stage) {
       // Map icons to each category 
       const mappedCategories = categoriesData.data.life_stage.map((cat: LifeStageCategory) => {
         let icon;
