@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import { runMigrations } from "./schema-migrator";
 import { runDatabaseMigrations, initializeSampleCategoriesData } from "./schema-updates";
 import { initializeData } from "./initialize-data";
+import { updateCategoryCounts } from "./update-category-counts";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
@@ -253,6 +254,12 @@ app.use((req, res, next) => {
     // Initialize sample data for the hydrogen-specific categories
     console.log('Initializing sample data in database...');
     await initializeSampleCategoriesData();
+    
+    // Update category counts to ensure accurate data
+    console.log('Updating category counts...');
+    await updateCategoryCounts();
+    console.log('Category counts updated successfully');
+    
     console.log('Sample data initialized successfully');
   } catch (error) {
     console.error('Error running database migrations:', error);

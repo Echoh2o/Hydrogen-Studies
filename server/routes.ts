@@ -549,6 +549,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertStudySchema.parse(req.body);
       const study = await storage.createStudy(validatedData);
+      
+      // Update the category count when a new study is created
+      try {
+        const { updateSingleCategoryCount } = await import('./update-category-counts');
+        await updateSingleCategoryCount(study.category);
+      } catch (countError) {
+        console.error("Error updating category count:", countError);
+        // Don't fail the request if count update fails
+      }
+      
       res.status(201).json(study);
     } catch (error) {
       if (error instanceof ZodError) {
