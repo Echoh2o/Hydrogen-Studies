@@ -1,269 +1,338 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useRoute } from 'wouter';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Helmet } from 'react-helmet';
-import { Benefit, BenefitWithStudies, Study } from '@/types/hydrogen';
+import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
+import { Loader2 } from 'lucide-react';
 
-// Icons for benefits
-import { Brain, Activity, Heart, Leaf, Shield, Lightbulb, FlameIcon, Sparkles } from 'lucide-react';
+// Condition-focused categories
+const conditionCategories = [
+  'Diabetes & Metabolic Health',
+  'Heart Disease & Hypertension',
+  'Brain & Neurological Disorders',
+  'Arthritis & Inflammation',
+  'Lung & Respiratory Conditions',
+  'Digestive Health (Gut/Liver)',
+  'Cancer Supportive Care'
+];
 
-const getBenefitIcon = (slug: string | undefined, className: string = '') => {
-  if (!slug) return <Leaf className={className} />;
-  
-  switch (slug) {
-    case 'brain-health':
-      return <Brain className={className} />;
-    case 'energy-exercise':
-      return <Activity className={className} />;
-    case 'digestive-health':
-      return <Heart className={className} />;
-    case 'inflammation-reduction':
-      return <FlameIcon className={className} />;
-    case 'cellular-protection':
-      return <Shield className={className} />;
-    case 'metabolic-health':
-      return <Leaf className={className} />;
-    case 'skin-health':
-      return <Sparkles className={className} />;
-    case 'pain-relief':
-      return <Lightbulb className={className} />;
-    default:
-      return <Leaf className={className} />;
-  }
+// Define icons for each category
+const categoryIcons: Record<string, string> = {
+  'Diabetes & Metabolic Health': '🩸',
+  'Heart Disease & Hypertension': '❤️',
+  'Brain & Neurological Disorders': '🧠',
+  'Arthritis & Inflammation': '🦴',
+  'Lung & Respiratory Conditions': '🫁',
+  'Digestive Health (Gut/Liver)': '🍽️',
+  'Cancer Supportive Care': '🎗️',
+  'Cardiovascular Health': '❤️',
+  'Neurological Health': '🧠',
+  'Respiratory Health': '🫁',
+  'Digestive Health': '🍽️',
+  'Immune System & Allergies': '🛡️',
+  'Musculoskeletal Health': '🦴',
+  'Skin & Dermatological Health': '👩‍🦰',
+  'Endocrine & Hormonal Health': '⚡',
+  'Women\'s Health': '👩',
+  'Men\'s Health': '👨',
+  'Children\'s Health': '👶',
+  'Senior Health (Healthy Aging)': '👵',
+  'Athletic Performance & Recovery': '🏃',
+  'General Wellness & Prevention': '✨'
 };
 
-const ExploreByBenefitPage: React.FC = () => {
-  // Fetch all benefits
-  const { data: benefits = [], isLoading: benefitsLoading } = useQuery<Benefit[]>({
-    queryKey: ['/api/benefits'],
+// TypeScript interfaces for our data structures
+interface Study {
+  id: number;
+  title: string;
+  abstract: string;
+  category: string;
+  publishDate: string;
+  journal: string;
+  authors: string;
+  doi?: string;
+  imageUrl?: string;
+}
+
+interface ConsumerCategory {
+  condition: string[];
+  bodySystem: string[];
+  lifeStage: string[];
+}
+
+const ExploreByBenefit: React.FC = () => {
+  const [selectedModel, setSelectedModel] = useState<string>('condition');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Fetch all available consumer categories
+  const { data: categoryData, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['/api/consumer-categories'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  return (
-    <div className="container mx-auto py-10">
-      <Helmet>
-        <title>Explore Hydrogen Studies by Benefit | HydrogenStudies.com</title>
-        <meta name="description" content="Discover hydrogen research organized by health benefits including brain health, pain relief, skin health, energy, and more." />
-      </Helmet>
-      
-      <div className="space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Explore by Benefit</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Find hydrogen research studies organized by the specific health benefits they address
-          </p>
-        </div>
+  // Fetch category counts
+  const { data: countData, isLoading: countsLoading } = useQuery({
+    queryKey: ['/api/consumer-categories/counts'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-        {benefitsLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array(8).fill(0).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <CardHeader className="p-4 pb-2">
-                  <Skeleton className="h-6 w-3/4" />
-                </CardHeader>
-                <CardContent className="p-4 pt-2">
-                  <Skeleton className="h-20" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit) => (
-              <Link key={benefit.id} href={`/benefits/${benefit.slug}`}>
-                <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader className="p-4 pb-2 flex flex-row items-start space-x-4">
-                    <div className="bg-primary/10 p-2 rounded-md">
-                      {getBenefitIcon(benefit.slug, 'h-6 w-6 text-primary')}
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">{benefit.name}</CardTitle>
-                      <Badge variant="outline" className="mt-1">
-                        {benefit.studyCount || 0} studies
-                      </Badge>
-                    </div>
+  // Fetch studies for selected category when it changes
+  const { data: studies, isLoading: studiesLoading } = useQuery({
+    queryKey: ['/api/studies/by-consumer-category', selectedModel, selectedCategory],
+    enabled: !!selectedCategory,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Get counts for rendering badges
+  const getCategoryCount = (model: string, category: string): number => {
+    if (!countData?.data) return 0;
+    
+    switch (model) {
+      case 'condition':
+        return countData.data.condition[category] || 0;
+      case 'bodySystem':
+        return countData.data.bodySystem[category] || 0;
+      case 'lifeStage':
+        return countData.data.lifeStage[category] || 0;
+      default:
+        return 0;
+    }
+  };
+
+  // Get categories for current model
+  const getCurrentCategories = (): string[] => {
+    if (!categoryData?.data) return [];
+    
+    switch (selectedModel) {
+      case 'condition':
+        return categoryData.data.condition || [];
+      case 'body_system':
+        return categoryData.data.body_system || [];
+      case 'life_stage':
+        return categoryData.data.life_stage || [];
+      default:
+        return [];
+    }
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  return (
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Explore Hydrogen Research by Health Benefits
+      </h1>
+      
+      <p className="text-center mb-8 max-w-3xl mx-auto text-muted-foreground">
+        Browse hydrogen health studies organized by health conditions, body systems, and life stages to find research most relevant to your interests.
+      </p>
+      
+      <Tabs 
+        defaultValue="condition" 
+        className="mb-8"
+        onValueChange={(value) => {
+          setSelectedModel(value);
+          setSelectedCategory(null);
+        }}
+      >
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="condition">By Health Condition</TabsTrigger>
+          <TabsTrigger value="body_system">By Body System</TabsTrigger>
+          <TabsTrigger value="life_stage">By Life Stage</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="condition" className="mt-6">
+          <h2 className="text-xl font-semibold mb-4">Select a Health Condition</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categoriesLoading ? (
+              <div className="col-span-full flex justify-center p-8">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+            ) : (
+              categoryData?.data?.condition?.map((category: string) => (
+                <Card 
+                  key={category}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${
+                    selectedCategory === category ? 'border-primary border-2' : ''
+                  }`}
+                  onClick={() => handleCategorySelect(category)}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center text-lg">
+                      <span className="mr-2">{categoryIcons[category] || '🔬'}</span>
+                      {category}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 pt-2">
-                    <CardDescription className="line-clamp-3 text-sm">
-                      {benefit.description}
-                    </CardDescription>
+                  <CardContent>
+                    <Badge variant="outline">
+                      {getCategoryCount('condition', category)} studies
+                    </Badge>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
+              ))
+            )}
           </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default ExploreByBenefitPage;
-
-// Detail page for a specific benefit
-export const BenefitDetailPage: React.FC = () => {
-  const [, params] = useRoute('/benefits/:slug');
-  const slug = params?.slug || '';
-
-  // Fetch benefit details
-  const { data: benefit, isLoading: benefitLoading } = useQuery<Benefit>({
-    queryKey: [`/api/benefits/${slug}`],
-    enabled: !!slug,
-  });
-
-  // Fetch studies for this benefit
-  const { data: benefitWithStudies, isLoading: studiesLoading } = useQuery<BenefitWithStudies>({
-    queryKey: [`/api/benefits/${slug}/studies`],
-    enabled: !!slug,
-  });
-
-  const studies = benefitWithStudies?.studies || [];
-  const isLoading = benefitLoading || studiesLoading;
-
-  return (
-    <div className="container mx-auto py-10">
-      {isLoading ? (
-        <div className="space-y-6">
-          <Skeleton className="h-10 w-3/4 max-w-md" />
-          <Skeleton className="h-20 w-full max-w-2xl" />
-          <div className="grid grid-cols-1 gap-4">
-            {Array(5).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
+        </TabsContent>
+        
+        <TabsContent value="body_system" className="mt-6">
+          <h2 className="text-xl font-semibold mb-4">Select a Body System</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categoriesLoading ? (
+              <div className="col-span-full flex justify-center p-8">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+            ) : (
+              categoryData?.data?.body_system?.map((category: string) => (
+                <Card 
+                  key={category}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${
+                    selectedCategory === category ? 'border-primary border-2' : ''
+                  }`}
+                  onClick={() => handleCategorySelect(category)}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center text-lg">
+                      <span className="mr-2">{categoryIcons[category] || '🔬'}</span>
+                      {category}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant="outline">
+                      {getCategoryCount('bodySystem', category)} studies
+                    </Badge>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
-        </div>
-      ) : (
-        <>
-          <Helmet>
-            <title>{benefit?.name || 'Benefit'} | Hydrogen Research | HydrogenStudies.com</title>
-            <meta 
-              name="description" 
-              content={`Explore hydrogen research studies on ${benefit?.name?.toLowerCase() || 'health benefits'} - ${benefit?.description || ''}`} 
-            />
-          </Helmet>
+        </TabsContent>
+        
+        <TabsContent value="life_stage" className="mt-6">
+          <h2 className="text-xl font-semibold mb-4">Select a Life Stage or Demographic</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categoriesLoading ? (
+              <div className="col-span-full flex justify-center p-8">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+            ) : (
+              categoryData?.data?.life_stage?.map((category: string) => (
+                <Card 
+                  key={category}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${
+                    selectedCategory === category ? 'border-primary border-2' : ''
+                  }`}
+                  onClick={() => handleCategorySelect(category)}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center text-lg">
+                      <span className="mr-2">{categoryIcons[category] || '🔬'}</span>
+                      {category}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant="outline">
+                      {getCategoryCount('lifeStage', category)} studies
+                    </Badge>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Display studies for selected category */}
+      {selectedCategory && (
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">
+              {categoryIcons[selectedCategory] || '🔬'} {selectedCategory} Research
+            </h2>
+            <Button variant="outline" onClick={() => setSelectedCategory(null)}>
+              Back to Categories
+            </Button>
+          </div>
           
-          <div className="mb-8 flex items-center space-x-4">
-            <div className="bg-primary/10 p-3 rounded-md">
-              {getBenefitIcon(benefit?.slug, 'h-8 w-8 text-primary')}
+          {studiesLoading ? (
+            <div className="flex justify-center p-12">
+              <Loader2 className="w-10 h-10 animate-spin" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">{benefit?.name}</h1>
-              <p className="text-muted-foreground">{benefit?.description}</p>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold mb-4">Research on {benefit?.name}</h2>
-            
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">All Studies ({studies.length})</TabsTrigger>
-                <TabsTrigger value="clinical">Clinical Studies ({studies.filter((s) => s.studyType === 'human').length})</TabsTrigger>
-                <TabsTrigger value="preclinical">Preclinical ({studies.filter((s) => s.studyType === 'animal' || s.studyType === 'in vitro').length})</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="all">
-                <div className="space-y-4">
-                  {studies.length > 0 ? (
-                    studies.map((study) => (
-                      <StudyCard key={study.id} study={study} />
-                    ))
-                  ) : (
-                    <div className="text-center py-10">
-                      <p className="text-muted-foreground">No studies found for this benefit.</p>
-                    </div>
-                  )}
+          ) : (
+            <>
+              {studies?.data?.length === 0 ? (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-6 text-center">
+                    <p>No studies found for this category yet. We're continuously adding new research.</p>
+                    <Button className="mt-4" asChild>
+                      <Link to="/studies">Browse All Studies</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-6">
+                  {studies?.data?.map((study: Study) => (
+                    <Card key={study.id} className="overflow-hidden">
+                      <div className="md:flex">
+                        {study.imageUrl && (
+                          <div className="md:w-1/4 min-h-[160px] bg-muted">
+                            <img 
+                              src={study.imageUrl} 
+                              alt={`Illustration for study: ${study.title}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className={`${study.imageUrl ? 'md:w-3/4' : 'w-full'}`}>
+                          <CardHeader>
+                            <CardTitle className="text-xl hover:text-primary transition-colors">
+                              <Link to={`/study/${study.id}`}>{study.title}</Link>
+                            </CardTitle>
+                            <CardDescription>
+                              {new Date(study.publishDate).toLocaleDateString()} | {study.journal}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="line-clamp-3">{study.abstract}</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <Badge variant="secondary">{study.category}</Badge>
+                              {study.doi && (
+                                <Badge variant="outline">
+                                  <a href={`https://doi.org/${study.doi}`} target="_blank" rel="noopener noreferrer">
+                                    DOI: {study.doi}
+                                  </a>
+                                </Badge>
+                              )}
+                            </div>
+                          </CardContent>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  
+                  <div className="flex justify-center mt-6">
+                    <Button asChild>
+                      <Link to="/studies">View All Studies</Link>
+                    </Button>
+                  </div>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="clinical">
-                <div className="space-y-4">
-                  {studies.filter((s) => s.studyType === 'human').length > 0 ? (
-                    studies
-                      .filter((s) => s.studyType === 'human')
-                      .map((study) => (
-                        <StudyCard key={study.id} study={study} />
-                      ))
-                  ) : (
-                    <div className="text-center py-10">
-                      <p className="text-muted-foreground">No clinical studies found for this benefit.</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="preclinical">
-                <div className="space-y-4">
-                  {studies.filter((s) => s.studyType === 'animal' || s.studyType === 'in vitro').length > 0 ? (
-                    studies
-                      .filter((s) => s.studyType === 'animal' || s.studyType === 'in vitro')
-                      .map((study) => (
-                        <StudyCard key={study.id} study={study} />
-                      ))
-                  ) : (
-                    <div className="text-center py-10">
-                      <p className="text-muted-foreground">No preclinical studies found for this benefit.</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </>
+              )}
+            </>
+          )}
+        </div>
       )}
     </div>
   );
 };
 
-// Study card component for displaying study info
-const StudyCard: React.FC<{ study: Study }> = ({ study }) => {
-  return (
-    <Link href={`/studies/${study.id}`}>
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="pb-2">
-          <div className="flex justify-between">
-            <CardTitle className="text-lg font-medium">{study.title}</CardTitle>
-            {study.peerReviewed && (
-              <Badge className="ml-2" variant="secondary">Peer Reviewed</Badge>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-            <span>{new Date(study.publishDate).getFullYear()}</span>
-            <span>•</span>
-            <span>{study.journal || 'Journal N/A'}</span>
-            {study.studyType && (
-              <>
-                <span>•</span>
-                <span className="capitalize">{study.studyType} Study</span>
-              </>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm line-clamp-2">{study.abstract}</p>
-          
-          <div className="mt-4 flex justify-between items-center">
-            <div className="flex space-x-2">
-              {study.doi && (
-                <Badge variant="outline">DOI: {study.doi}</Badge>
-              )}
-            </div>
-            <Button variant="ghost" size="sm">
-              View Study
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-};
+export default ExploreByBenefit;
