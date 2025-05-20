@@ -48,7 +48,7 @@ import journalDateRoutes from "./routes/journal-date-routes";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
-import studiesRoutes from "./routes/studies-routes";
+import studiesRouter from "./routes/studies-router";
 import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
@@ -63,6 +63,9 @@ import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedin
 export async function registerRoutes(app: Express): Promise<Server> {
   // We've moved table initialization to the main server startup process
   // This avoids redundant operations on each startup and improves performance
+  
+  // Register studies routes for the main study search and retrieval
+  app.use('/api/studies', studiesRouter);
   
   // Register the educational routes
   app.use('/api', educationalRoutes);
