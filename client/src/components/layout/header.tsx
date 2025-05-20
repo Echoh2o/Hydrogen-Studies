@@ -8,6 +8,7 @@ const navigationLinks = [
   { 
     href: "/studies",
     label: "Research",
+    id: "research-menu",
     dropdown: [
       { href: "/studies", label: "All Studies" },
       { href: "/improved-search", label: "Advanced Search" },
@@ -15,8 +16,9 @@ const navigationLinks = [
     ]
   },
   { 
-    href: "#",
+    href: "/explore-by-condition",
     label: "Explore",
+    id: "explore-menu",
     dropdown: [
       { href: "/explore-by-condition", label: "Health Conditions" },
       { href: "/explore-by-body-system", label: "Body Systems" },
@@ -25,8 +27,9 @@ const navigationLinks = [
     ]
   },
   { 
-    href: "#",
+    href: "/learn",
     label: "Learn",
+    id: "learn-menu",
     dropdown: [
       { href: "/learn", label: "Educational Content" },
       { href: "/resources", label: "Resources" },
@@ -101,7 +104,7 @@ export default function Header() {
           <nav className="hidden md:flex space-x-8">
             {navigationLinks.map((link) => (
               <div 
-                key={link.href} 
+                key={link.id || link.href} 
                 className="relative"
                 ref={(el) => { if (link.dropdown) dropdownRefs.current[link.label] = el; }}
               >
@@ -164,7 +167,7 @@ export default function Header() {
         <div className="md:hidden bg-white px-4 py-2 pb-4 border-t border-neutral-200">
           <nav className="flex flex-col space-y-3">
             {navigationLinks.map((link) => (
-              <div key={link.href}>
+              <div key={link.id || link.href}>
                 {link.dropdown ? (
                   <div className="py-2">
                     <button
