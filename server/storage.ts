@@ -1,39 +1,16 @@
-import { 
-  studies, 
-  categories, 
-  newsletters, 
-  contactMessages,
-  users,
-  userPreferences,
-  notifications,
-  searchHistory,
-  userStudyInteractions,
-  userBlogInteractions,
-  blogArticles,
-  studyReviewQueue,
-  ReviewStatus,
-  type Study, 
-  type Category, 
-  type Newsletter, 
-  type InsertStudy, 
-  type InsertCategory, 
-  type InsertNewsletter,
-  type InsertContact,
-  type User,
-  type UserPreferences,
-  type InsertUser,
-  type InsertUserPreferences,
-  type Notification,
-  type InsertNotification,
-  type SearchHistory,
-  type InsertSearchHistory,
-  type UserStudyInteraction,
-  type InsertUserStudyInteraction,
-  type UserBlogInteraction,
-  type InsertUserBlogInteraction,
-  type BlogArticle,
-  type StudyReviewQueue,
-  type InsertStudyReviewQueue
+import {
+  studies, type Study, type InsertStudy,
+  categories, type Category, type InsertCategory,
+  newsletters, type Newsletter, type InsertNewsletter,
+  contactMessages, type InsertContact,
+  studyReviewQueue, type StudyReviewQueue, type InsertStudyReviewQueue,
+  users, type User, type InsertUser,
+  userPreferences, type UserPreferences, type InsertUserPreferences,
+  searchHistory, type SearchHistory, type InsertSearchHistory,
+  userStudyInteractions, type UserStudyInteraction,
+  userBlogInteractions, type UserBlogInteraction,
+  notifications, type Notification, type InsertNotification,
+  blogArticles, type BlogArticle,
 } from "@shared/schema";
 
 export interface StudyFilters {
@@ -92,13 +69,13 @@ export interface PaginatedResults<T> {
 
 export interface IStorage {
   // Studies operations
-  getStudies(filters: StudyFilters): Promise<PaginatedResults<Study>>;
+  getStudies(filters?: StudyFilters): Promise<PaginatedResults<Study>>;
   getStudyById(id: number): Promise<Study | undefined>;
   getStudyByIdentifier(identifier: string): Promise<Study | undefined>;
   getLatestStudies(limit?: number): Promise<Study[]>;
-  getStudiesByTitle(title: string): Promise<Study[]>; // Method for exact title matching
-  getStudiesByTitlePartial(titlePart: string, limit?: number): Promise<Study[]>; // Method for partial title matching
-  getStudiesBySourcePlatform(platform: string): Promise<Study[]>; // Method to get studies from specific platforms
+  getStudiesByTitle(title: string): Promise<Study[]>;
+  getStudiesByTitlePartial(titlePart: string, limit?: number): Promise<Study[]>;
+  getStudiesBySourcePlatform(platform: string): Promise<Study[]>;
   createStudy(study: InsertStudy): Promise<Study>;
   updateStudy(id: number, study: Partial<InsertStudy>): Promise<Study>;
   deleteStudy(id: number): Promise<void>;
@@ -195,309 +172,174 @@ export class MemStorage implements IStorage {
 
   // Studies methods
   async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
-    const allResults = Array.from(this.studiesData.values());
+    console.log("Search query parameters:", filters);
     
-    // Apply filters with advanced search capabilities
-    if (filters.query) {
-      const query = filters.query.toLowerCase();
+    try {
+      // Get all studies from map and convert to array
+      const allStudies = Array.from(this.studiesData.values());
+      let filteredStudies = allStudies;
       
-      // Check if the query has explicit exclusion terms (using minus sign)
-      const excludeTermsFromQuery: string[] = [];
-      const cleanQuery = query.replace(/-(\w+)/g, (match, term) => {
-        excludeTermsFromQuery.push(term.toLowerCase());
-        return '';
-      }).trim();
-      
-      // Combine explicit excludeTerms with those parsed from the query
-      const excludeTerms = [...(filters.excludeTerms || []), ...excludeTermsFromQuery];
-      
-      // Process operators ("AND", "OR") if present
-      const queryOperator = cleanQuery.includes(' AND ') ? 'AND' 
-                          : cleanQuery.includes(' OR ') ? 'OR' 
-                          : 'default';
-      
-      // Split the query into words for more flexible matching
-      let queryWords: string[];
-      if (queryOperator === 'AND' || queryOperator === 'OR') {
-        queryWords = queryOperator === 'AND' 
-          ? cleanQuery.split(' AND ').map(part => part.trim())
-          : cleanQuery.split(' OR ').map(part => part.trim());
-      } else {
-        queryWords = cleanQuery.split(/\s+/).filter(word => word.length > 2);
+      // Apply text search if query is provided
+      if (filters.query) {
+        const query = filters.query.toLowerCase();
+        filteredStudies = filteredStudies.filter(study => 
+          study.title.toLowerCase().includes(query) || 
+          study.abstract.toLowerCase().includes(query) ||
+          (study.authors && study.authors.toLowerCase().includes(query))
+        );
       }
       
-      results = results.filter(study => {
-        // Function to determine if study has basic/partial/complete enrichment
-        const getEnrichmentStatus = (s: Study): 'basic' | 'partial' | 'complete' => {
-          const hasEnrichedContent = Boolean(
-            s.methods || s.results || s.conclusion || s.simplifiedExplanation ||
-            (s.tags && s.tags.length > 0)
-          );
-          
-          const hasCompleteEnrichment = Boolean(
-            s.methods && s.results && s.conclusion && s.simplifiedExplanation &&
-            (s.tags && s.tags.length > 0)
-          );
-          
-          if (hasCompleteEnrichment) return 'complete';
-          if (hasEnrichedContent) return 'partial';
-          return 'basic';
-        };
-        
-        // Apply enrichment status filter if specified
-        if (filters.enrichmentStatus) {
-          const studyEnrichmentStatus = getEnrichmentStatus(study);
-          if (studyEnrichmentStatus !== filters.enrichmentStatus) {
-            return false;
-          }
-        }
-        
-        // First filter out studies with excluded terms
-        if (excludeTerms.length > 0) {
-          const titleLower = study.title.toLowerCase();
-          const abstractLower = study.abstract.toLowerCase();
-          const methodsLower = (study.methods || '').toLowerCase();
-          const resultsLower = (study.results || '').toLowerCase();
-          const conclusionLower = (study.conclusion || '').toLowerCase();
-          const simplifiedLower = (study.simplifiedExplanation || '').toLowerCase();
-          
-          for (const term of excludeTerms) {
-            if (titleLower.includes(term) || 
-                abstractLower.includes(term) || 
-                methodsLower.includes(term) || 
-                resultsLower.includes(term) || 
-                conclusionLower.includes(term) || 
-                simplifiedLower.includes(term)) {
-              return false;
-            }
-          }
-        }
-        
-        // Apply tags filter if specified
-        if (filters.tags && filters.tags.length > 0) {
-          if (!study.tags || study.tags.length === 0) {
-            return false;
-          }
-          
-          const studyTagsLower = study.tags.map(tag => tag.toLowerCase());
-          const filterTagsLower = filters.tags.map(tag => tag.toLowerCase());
-          
-          // Check if any of the filter tags match study tags
-          const hasMatchingTag = filterTagsLower.some(tag => 
-            studyTagsLower.includes(tag)
-          );
-          
-          if (!hasMatchingTag) {
-            return false;
-          }
-        }
-        
-        // Check for exact matches first (highest priority)
-        if (cleanQuery && (
-            study.title.toLowerCase().includes(cleanQuery) || 
-            study.abstract.toLowerCase().includes(cleanQuery) ||
-            study.authors.toLowerCase().includes(cleanQuery) ||
-            study.journal.toLowerCase().includes(cleanQuery) ||
-            study.category.toLowerCase().includes(cleanQuery))) {
-          return true;
-        }
-        
-        // Prepare all fields for word matching
-        const titleLower = study.title.toLowerCase();
-        const abstractLower = study.abstract.toLowerCase();
-        const authorsLower = study.authors.toLowerCase();
-        const journalLower = study.journal.toLowerCase();
-        
-        // Only include these fields if search in these areas is requested or defaulted
-        const methodsLower = (filters.searchInMethods !== false && study.methods) 
-          ? study.methods.toLowerCase() : '';
-        const resultsLower = (filters.searchInResults !== false && study.results) 
-          ? study.results.toLowerCase() : '';
-        const conclusionLower = (filters.searchInConclusion !== false && study.conclusion) 
-          ? study.conclusion.toLowerCase() : '';
-        const simplifiedLower = (filters.searchInSimplified !== false && study.simplifiedExplanation) 
-          ? study.simplifiedExplanation.toLowerCase() : '';
-        
-        // Include tags in search
-        const tagsLower = study.tags ? study.tags.join(' ').toLowerCase() : '';
-        
-        // Handle different query operators
-        if (queryOperator === 'AND') {
-          // All query parts must match across any field
-          return queryWords.every(part => 
-            titleLower.includes(part) || 
-            abstractLower.includes(part) || 
-            authorsLower.includes(part) || 
-            journalLower.includes(part) ||
-            methodsLower.includes(part) ||
-            resultsLower.includes(part) ||
-            conclusionLower.includes(part) ||
-            simplifiedLower.includes(part) ||
-            tagsLower.includes(part)
-          );
-        } else if (queryOperator === 'OR') {
-          // Any query part may match any field
-          return queryWords.some(part => 
-            titleLower.includes(part) || 
-            abstractLower.includes(part) || 
-            authorsLower.includes(part) || 
-            journalLower.includes(part) ||
-            methodsLower.includes(part) ||
-            resultsLower.includes(part) ||
-            conclusionLower.includes(part) ||
-            simplifiedLower.includes(part) ||
-            tagsLower.includes(part)
-          );
-        } else if (queryWords.length > 0) {
-          // Default: Count how many query words appear in the study (partial match)
-          let matchCount = queryWords.filter(word => 
-            titleLower.includes(word) || 
-            abstractLower.includes(word) || 
-            authorsLower.includes(word) || 
-            journalLower.includes(word) ||
-            methodsLower.includes(word) ||
-            resultsLower.includes(word) ||
-            conclusionLower.includes(word) ||
-            simplifiedLower.includes(word) ||
-            tagsLower.includes(word)
-          ).length;
-          
-          // Fuzzy matching for common typos if enabled
-          if (filters.useFuzzyMatch && matchCount === 0) {
-            for (const word of queryWords) {
-              if (word.length <= 3) continue; // Skip very short words
-              
-              // Check for common typos (one character off)
-              const allowOneCharacterOff = (field: string, term: string): boolean => {
-                if (!field || !term || term.length < 4) return false;
-                
-                const words = field.split(/\s+/);
-                for (const fieldWord of words) {
-                  if (fieldWord.length < 4) continue;
-                  
-                  // Check if words are similar (one character difference)
-                  let differences = 0;
-                  const maxLength = Math.max(fieldWord.length, term.length);
-                  const minLength = Math.min(fieldWord.length, term.length);
-                  
-                  if (maxLength - minLength > 1) continue; // Length difference too big
-                  
-                  for (let i = 0; i < minLength; i++) {
-                    if (fieldWord[i] !== term[i]) differences++;
-                    if (differences > 1) break; // Too many differences
-                  }
-                  
-                  if (differences <= 1) return true;
-                }
-                return false;
-              };
-              
-              if (allowOneCharacterOff(titleLower, word) ||
-                  allowOneCharacterOff(abstractLower, word) ||
-                  allowOneCharacterOff(methodsLower, word) ||
-                  allowOneCharacterOff(resultsLower, word) ||
-                  allowOneCharacterOff(conclusionLower, word) ||
-                  allowOneCharacterOff(simplifiedLower, word) ||
-                  allowOneCharacterOff(tagsLower, word)) {
-                matchCount++;
-              }
-            }
-          }
-          
-          // Return true if at least 40% of query words are found (more lenient than before)
-          return matchCount >= Math.ceil(queryWords.length * 0.4);
-        }
-        
-        return false;
-      });
-      
-      // Store metadata about matched terms in each study for highlighting (not used yet, but will be useful later)
-      results = results.map(study => {
-        if (queryWords.length === 0) return study;
-        
-        const matchedTerms: string[] = [];
-        const titleLower = study.title.toLowerCase();
-        const abstractLower = study.abstract.toLowerCase();
-        
-        for (const word of queryWords) {
-          if (titleLower.includes(word) || abstractLower.includes(word)) {
-            matchedTerms.push(word);
-          }
-        }
-        
-        return {
-          ...study,
-          _matchedTerms: matchedTerms // Additional metadata field
-        };
-      });
-    }
-
-    if (filters.keyword) {
-      const keyword = filters.keyword.toLowerCase();
-      results = results.filter(study => 
-        study.title.toLowerCase().includes(keyword) || 
-        study.abstract.toLowerCase().includes(keyword)
-      );
-    }
-
-    if (filters.author) {
-      const author = filters.author.toLowerCase();
-      results = results.filter(study => 
-        study.authors.toLowerCase().includes(author)
-      );
-    }
-
-    if (filters.yearFrom) {
-      const yearFrom = parseInt(filters.yearFrom);
-      results = results.filter(study => {
-        const publishYear = new Date(study.publishDate).getFullYear();
-        return publishYear >= yearFrom;
-      });
-    }
-
-    if (filters.yearTo) {
-      const yearTo = parseInt(filters.yearTo);
-      results = results.filter(study => {
-        const publishYear = new Date(study.publishDate).getFullYear();
-        return publishYear <= yearTo;
-      });
-    }
-
-    if (filters.category && filters.category !== 'all') {
-      results = results.filter(study => 
-        study.category.toLowerCase() === filters.category.toLowerCase()
-      );
-    }
-
-    if (filters.peerReviewed) {
-      results = results.filter(study => study.peerReviewed);
-    }
-
-    // Apply sorting
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case 'date':
-          results.sort((a, b) => 
-            new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
-          );
-          break;
-        case 'title':
-          results.sort((a, b) => a.title.localeCompare(b.title));
-          break;
-        case 'relevance':
-          // This is a placeholder for relevance sorting
-          // In a real implementation, this would use more complex logic
-          // For now, just using the default order which is by ID
-          break;
+      // Apply keyword filter
+      if (filters.keyword) {
+        const keyword = filters.keyword.toLowerCase();
+        filteredStudies = filteredStudies.filter(study => 
+          study.title.toLowerCase().includes(keyword) || 
+          study.abstract.toLowerCase().includes(keyword) ||
+          (study.keywords && study.keywords.some(k => k.toLowerCase().includes(keyword)))
+        );
       }
-    } else {
-      // Default sort by date (newest first)
-      results.sort((a, b) => 
-        new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
-      );
-    }
+      
+      // Apply author filter
+      if (filters.author) {
+        const author = filters.author.toLowerCase();
+        filteredStudies = filteredStudies.filter(study => 
+          study.authors && study.authors.toLowerCase().includes(author)
+        );
+      }
+      
+      // Apply year range filters
+      if (filters.yearFrom) {
+        const yearFrom = parseInt(filters.yearFrom.toString());
+        filteredStudies = filteredStudies.filter(study => 
+          study.publishYear >= yearFrom
+        );
+      }
+      
+      if (filters.yearTo) {
+        const yearTo = parseInt(filters.yearTo.toString());
+        filteredStudies = filteredStudies.filter(study => 
+          study.publishYear <= yearTo
+        );
+      }
+      
+      // Apply category filter
+      if (filters.category) {
+        filteredStudies = filteredStudies.filter(study => 
+          study.category === filters.category
+        );
+      }
+      
+      // Apply peer review filter
+      if (filters.isPeerReviewed === true || filters.peerReviewed === true) {
+        filteredStudies = filteredStudies.filter(study => study.peerReviewed === true);
+      } else if (filters.isPeerReviewed === false || filters.peerReviewed === false) {
+        filteredStudies = filteredStudies.filter(study => study.peerReviewed === false);
+      }
+      
+      // Apply health implications filter
+      if (filters.hasHealthImplications === true) {
+        filteredStudies = filteredStudies.filter(study => study.hasHealthImplications === true);
+      } else if (filters.hasHealthImplications === false) {
+        filteredStudies = filteredStudies.filter(study => study.hasHealthImplications === false);
+      }
+      
+      // Apply has media filter
+      if (filters.hasMedia === true) {
+        filteredStudies = filteredStudies.filter(study => 
+          study.imageUrl || study.videoUrl || study.audioUrl || 
+          (study.images && study.images.length > 0)
+        );
+      } else if (filters.hasMedia === false) {
+        filteredStudies = filteredStudies.filter(study => 
+          !study.imageUrl && !study.videoUrl && !study.audioUrl && 
+          (!study.images || study.images.length === 0)
+        );
+      }
+      
+      // Apply date range filters for publication date
+      if (filters.dateFrom) {
+        const dateFrom = new Date(filters.dateFrom);
+        filteredStudies = filteredStudies.filter(study => 
+          new Date(study.publishDate) >= dateFrom
+        );
+      }
+      
+      if (filters.dateTo) {
+        const dateTo = new Date(filters.dateTo);
+        filteredStudies = filteredStudies.filter(study => 
+          new Date(study.publishDate) <= dateTo
+        );
+      }
+      
+      // Apply has full text filter
+      if (filters.hasFullText === true) {
+        filteredStudies = filteredStudies.filter(study => study.hasFullText === true);
+      } else if (filters.hasFullText === false) {
+        filteredStudies = filteredStudies.filter(study => study.hasFullText === false);
+      }
 
-    return results;
+      // Apply sorting
+      const sortField = filters.sortField || filters.sortBy || 'publishDate';
+      const sortOrder = filters.sortOrder || 'desc';
+      
+      if (sortField === 'title') {
+        filteredStudies.sort((a, b) => {
+          return sortOrder === 'asc' 
+            ? a.title.localeCompare(b.title)
+            : b.title.localeCompare(a.title);
+        });
+      } else if (sortField === 'authors') {
+        filteredStudies.sort((a, b) => {
+          return sortOrder === 'asc' 
+            ? (a.authors || '').localeCompare(b.authors || '')
+            : (b.authors || '').localeCompare(a.authors || '');
+        });
+      } else if (sortField === 'publishYear') {
+        filteredStudies.sort((a, b) => {
+          return sortOrder === 'asc' 
+            ? a.publishYear - b.publishYear
+            : b.publishYear - a.publishYear;
+        });
+      } else if (sortField === 'publishDate') {
+        filteredStudies.sort((a, b) => {
+          const dateA = new Date(a.publishDate);
+          const dateB = new Date(b.publishDate);
+          return sortOrder === 'asc' 
+            ? dateA.getTime() - dateB.getTime()
+            : dateB.getTime() - dateA.getTime();
+        });
+      } else if (sortField === 'viewCount') {
+        filteredStudies.sort((a, b) => {
+          return sortOrder === 'asc' 
+            ? (a.viewCount || 0) - (b.viewCount || 0)
+            : (b.viewCount || 0) - (a.viewCount || 0);
+        });
+      }
+      
+      // Process pagination
+      const page = parseInt(filters.page?.toString() || '1');
+      const pageSize = parseInt(filters.pageSize?.toString() || '10');
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const studiesForPage = filteredStudies.slice(startIndex, endIndex);
+      
+      return {
+        data: studiesForPage,
+        total: filteredStudies.length,
+        page,
+        pageSize,
+        pageCount: Math.ceil(filteredStudies.length / pageSize)
+      };
+    } catch (error) {
+      console.error("Error fetching studies:", error);
+      return {
+        data: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+        pageCount: 0
+      };
+    }
   }
 
   async getStudyById(id: number): Promise<Study | undefined> {
@@ -508,205 +350,97 @@ export class MemStorage implements IStorage {
     // Look for study with matching DOI or PMID
     const normalizedIdentifier = identifier.trim().toLowerCase();
     for (const study of this.studiesData.values()) {
-      // Check DOI
-      if (study.doi && study.doi.toLowerCase() === normalizedIdentifier) {
-        return study;
-      }
-      
-      // Check PMID
-      if (study.pmid && study.pmid.toLowerCase() === normalizedIdentifier) {
-        return study;
-      }
-      
-      // Check PMCID
-      if (study.pmcid && study.pmcid.toLowerCase() === normalizedIdentifier) {
+      if (
+        (study.doi && study.doi.toLowerCase() === normalizedIdentifier) ||
+        (study.pmid && study.pmid.toLowerCase() === normalizedIdentifier)
+      ) {
         return study;
       }
     }
-    
     return undefined;
   }
-  
+
   async getStudiesByTitle(title: string): Promise<Study[]> {
-    // Find studies with similar titles to avoid duplicates
-    const normalizedTitle = title.trim().toLowerCase();
-    const results: Study[] = [];
-    
+    const studies: Study[] = [];
     for (const study of this.studiesData.values()) {
-      const studyTitle = study.title.toLowerCase();
-      
-      // Calculate simple similarity
-      if (studyTitle.includes(normalizedTitle) || normalizedTitle.includes(studyTitle)) {
-        results.push(study);
-        continue;
-      }
-      
-      // Check for significant word overlap (more than 70% of words match)
-      const titleWords = normalizedTitle.split(/\s+/).filter(w => w.length > 3);
-      const studyTitleWords = studyTitle.split(/\s+/).filter(w => w.length > 3);
-      
-      if (titleWords.length === 0 || studyTitleWords.length === 0) continue;
-      
-      const matchCount = titleWords.filter(word => studyTitleWords.some(sw => sw.includes(word) || word.includes(sw))).length;
-      const matchPercentage = Math.max(
-        matchCount / titleWords.length,
-        matchCount / studyTitleWords.length
-      );
-      
-      if (matchPercentage > 0.7) {
-        results.push(study);
+      if (study.title === title) {
+        studies.push(study);
       }
     }
-    
-    return results;
+    return studies;
   }
-  
+
   async getStudiesByTitlePartial(titlePart: string, limit: number = 20): Promise<Study[]> {
-    // Find studies with partial title match
-    const normalizedTitlePart = titlePart.trim().toLowerCase();
-    const results: Study[] = [];
+    const studies: Study[] = [];
+    const lowerTitlePart = titlePart.toLowerCase();
     
     for (const study of this.studiesData.values()) {
-      const studyTitle = study.title.toLowerCase();
-      
-      // Simple inclusion check
-      if (studyTitle.includes(normalizedTitlePart)) {
-        results.push(study);
-        
-        // Respect the limit
-        if (results.length >= limit) {
-          break;
-        }
+      if (study.title.toLowerCase().includes(lowerTitlePart)) {
+        studies.push(study);
+        if (studies.length >= limit) break;
       }
     }
     
-    return results;
+    return studies;
   }
-  
+
   async getStudiesBySourcePlatform(platform: string): Promise<Study[]> {
-    // Find all studies from a specific source platform
-    const normalizedPlatform = platform.trim().toLowerCase();
-    const results: Study[] = [];
-    
+    const studies: Study[] = [];
     for (const study of this.studiesData.values()) {
-      // Check if sourcePlatform exists and matches
-      if (study.sourcePlatform && study.sourcePlatform.toLowerCase() === normalizedPlatform) {
-        results.push(study);
+      if (study.sourcePlatform === platform) {
+        studies.push(study);
       }
     }
-    
-    return results;
+    return studies;
   }
 
   async getLatestStudies(limit: number = 3): Promise<Study[]> {
-    const studies = Array.from(this.studiesData.values());
-    return studies
+    const studies = Array.from(this.studiesData.values())
       .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
       .slice(0, limit);
+    
+    return studies;
   }
 
   async createStudy(insertStudy: InsertStudy): Promise<Study> {
     const id = this.studyCurrentId++;
-    const createdAt = new Date().toISOString();
+    const createdAt = new Date();
     const study: Study = { ...insertStudy, id, createdAt };
     this.studiesData.set(id, study);
-    
-    // Update the study count for the category if it exists
-    const categoryName = study.category;
-    for (const [id, category] of this.categoriesData.entries()) {
-      if (category.name.toLowerCase() === categoryName.toLowerCase()) {
-        const updatedCategory = { ...category, studyCount: category.studyCount + 1 };
-        this.categoriesData.set(id, updatedCategory);
-        break;
-      }
-    }
-    
     return study;
   }
-  
+
   async updateStudy(id: number, partialStudy: Partial<InsertStudy>): Promise<Study> {
     const existingStudy = this.studiesData.get(id);
-    
     if (!existingStudy) {
-      throw new Error(`Study with id ${id} not found`);
+      throw new Error(`Study with ID ${id} not found`);
     }
     
-    // Handle category change
-    if (partialStudy.category && partialStudy.category !== existingStudy.category) {
-      // Decrease count for old category
-      const oldCategoryName = existingStudy.category;
-      for (const [catId, category] of this.categoriesData.entries()) {
-        if (category.name.toLowerCase() === oldCategoryName.toLowerCase()) {
-          const updatedCategory = { 
-            ...category, 
-            studyCount: Math.max(0, category.studyCount - 1) 
-          };
-          this.categoriesData.set(catId, updatedCategory);
-          break;
-        }
-      }
-      
-      // Increase count for new category
-      const newCategoryName = partialStudy.category;
-      for (const [catId, category] of this.categoriesData.entries()) {
-        if (category.name.toLowerCase() === newCategoryName.toLowerCase()) {
-          const updatedCategory = { 
-            ...category, 
-            studyCount: category.studyCount + 1 
-          };
-          this.categoriesData.set(catId, updatedCategory);
-          break;
-        }
-      }
-    }
-    
-    // Update the study
     const updatedStudy: Study = {
       ...existingStudy,
-      ...partialStudy
+      ...partialStudy,
     };
     
     this.studiesData.set(id, updatedStudy);
-    
     return updatedStudy;
   }
-  
+
   async deleteStudy(id: number): Promise<void> {
-    const existingStudy = this.studiesData.get(id);
-    
-    if (!existingStudy) {
-      throw new Error(`Study with id ${id} not found`);
-    }
-    
-    // Decrease count for category
-    const categoryName = existingStudy.category;
-    for (const [catId, category] of this.categoriesData.entries()) {
-      if (category.name.toLowerCase() === categoryName.toLowerCase()) {
-        const updatedCategory = { 
-          ...category, 
-          studyCount: Math.max(0, category.studyCount - 1) 
-        };
-        this.categoriesData.set(catId, updatedCategory);
-        break;
-      }
-    }
-    
-    // Delete the study
     this.studiesData.delete(id);
   }
-  
+
   async getCategoryByName(name: string): Promise<Category | undefined> {
     for (const category of this.categoriesData.values()) {
-      if (category.name.toLowerCase() === name.toLowerCase()) {
+      if (category.name === name) {
         return category;
       }
     }
     return undefined;
   }
 
-  // Categories methods
   async getCategories(): Promise<Category[]> {
-    return Array.from(this.categoriesData.values());
+    const categories = Array.from(this.categoriesData.values());
+    return categories;
   }
 
   async getCategoryById(id: number): Promise<Category | undefined> {
@@ -715,253 +449,349 @@ export class MemStorage implements IStorage {
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
     const id = this.categoryCurrentId++;
-    const createdAt = new Date().toISOString();
+    const createdAt = new Date();
     const category: Category = { ...insertCategory, id, createdAt };
     this.categoriesData.set(id, category);
     return category;
   }
 
-  // Newsletter methods
   async subscribeNewsletter(insertNewsletter: InsertNewsletter): Promise<Newsletter> {
-    // Check if email already exists
-    const emails = Array.from(this.newslettersData.values()).map(n => n.email);
-    if (emails.includes(insertNewsletter.email)) {
-      throw new Error("Email already subscribed");
-    }
-    
     const id = this.newsletterCurrentId++;
-    const createdAt = new Date().toISOString();
+    const createdAt = new Date();
     const newsletter: Newsletter = { ...insertNewsletter, id, createdAt };
     this.newslettersData.set(id, newsletter);
     return newsletter;
   }
-  
-  // Contact form methods
+
   async submitContactMessage(insertContact: InsertContact): Promise<any> {
     const id = this.contactMessageCurrentId++;
-    const createdAt = new Date().toISOString();
-    const contactMessage = { ...insertContact, id, createdAt };
-    this.contactMessagesData.set(id, contactMessage);
-    return contactMessage;
+    const createdAt = new Date();
+    const message = { ...insertContact, id, createdAt };
+    this.contactMessagesData.set(id, message);
+    return message;
   }
 
-  // Initialize sample data
-  async initializeSampleData(): Promise<void> {
-    // Only add sample data if there's no data yet
-    if (this.categoriesData.size === 0 && this.studiesData.size === 0) {
-      await this.initializeSampleCategories();
-      await this.initializeSampleStudies();
+  async checkStudyExists(doi: string): Promise<{ exists: boolean, studyId?: number }> {
+    if (!doi) return { exists: false };
+    
+    const normalizedDoi = doi.trim().toLowerCase();
+    
+    // Check in studies
+    for (const study of this.studiesData.values()) {
+      if (study.doi && study.doi.toLowerCase() === normalizedDoi) {
+        return { exists: true, studyId: study.id };
+      }
     }
+    
+    // Check in review queue
+    for (const item of this.reviewQueueData.values()) {
+      if (item.doi && item.doi.toLowerCase() === normalizedDoi) {
+        return { exists: true };
+      }
+    }
+    
+    return { exists: false };
+  }
+
+  async saveStudyForReview(reviewItem: InsertStudyReviewQueue): Promise<StudyReviewQueue> {
+    const id = this.reviewQueueCurrentId++;
+    const savedAt = new Date();
+    const item: StudyReviewQueue = { ...reviewItem, id, savedAt };
+    this.reviewQueueData.set(id, item);
+    return item;
+  }
+
+  async getStudyReviewQueue(filters?: { status?: string, userId?: string }): Promise<StudyReviewQueue[]> {
+    let queue = Array.from(this.reviewQueueData.values());
+    
+    if (filters?.status) {
+      queue = queue.filter(item => item.status === filters.status);
+    }
+    
+    if (filters?.userId) {
+      queue = queue.filter(item => item.savedByUserId === filters.userId);
+    }
+    
+    // Sort by savedAt date (newest first)
+    queue.sort((a, b) => b.savedAt.getTime() - a.savedAt.getTime());
+    
+    return queue;
+  }
+
+  async getStudyReviewQueueById(id: number): Promise<StudyReviewQueue | undefined> {
+    return this.reviewQueueData.get(id);
+  }
+
+  async updateStudyReviewStatus(
+    id: number, 
+    status: string, 
+    reviewedByUserId: string, 
+    notes?: string
+  ): Promise<StudyReviewQueue> {
+    const item = this.reviewQueueData.get(id);
+    if (!item) {
+      throw new Error(`Review item with ID ${id} not found`);
+    }
+    
+    const reviewedAt = new Date();
+    const updatedItem: StudyReviewQueue = {
+      ...item,
+      status,
+      reviewedByUserId,
+      reviewNotes: notes,
+      reviewedAt
+    };
+    
+    this.reviewQueueData.set(id, updatedItem);
+    return updatedItem;
+  }
+
+  async deleteStudyFromReviewQueue(id: number): Promise<void> {
+    this.reviewQueueData.delete(id);
+  }
+
+  async initializeSampleData(): Promise<void> {
+    await this.initializeSampleCategories();
+    await this.initializeSampleStudies();
   }
 
   private async initializeSampleCategories(): Promise<void> {
-    const sampleCategories: InsertCategory[] = [
-      {
-        name: "Neurodegenerative Diseases",
-        description: "Studies on hydrogen therapy for Alzheimer's, Parkinson's, and other neurodegenerative conditions.",
-        studyCount: 0,
-        icon: "M12 2a4 4 0 0 1 4 4c0 1.26-.48 2.4-1.27 3.27A4 4 0 0 1 16 12a4 4 0 0 1-1.27 2.73A4 4 0 0 1 16 18a4 4 0 0 1-4 4h-2a4 4 0 0 1-3.27-1.73A4 4 0 0 1 5 18a4 4 0 0 1 1.27-2.73A4 4 0 0 1 5 12a4 4 0 0 1 1.27-2.73A4 4 0 0 1 5 6a4 4 0 0 1 4-4h3Z",
-      },
-      {
-        name: "Cardiovascular Health",
-        description: "Research on how hydrogen affects heart health, blood pressure, and vascular function.",
-        studyCount: 0,
-        icon: "M19.5 12.572 12 20.072l-7.5-7.5a7 7 0 1 1 15 0Z",
-      },
-      {
-        name: "Metabolism & Diabetes",
-        description: "Studies examining hydrogen's effects on metabolic disorders and diabetes management.",
-        studyCount: 0,
-        icon: "M4 6.889v10.222A2 2 0 0 0 6.05 19h12.9a2 2 0 0 0 2.05-1.889V6.89A2 2 0 0 0 18.95 5H6.05A2 2 0 0 0 4 6.889ZM12 16v-4",
-      },
-      {
-        name: "Inflammation",
-        description: "Research investigating hydrogen's anti-inflammatory properties and applications.",
-        studyCount: 0,
-        icon: "M8 16H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2m-6 12h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2Z",
-      },
-      {
-        name: "Cancer Research",
-        description: "Studies focused on hydrogen's potential role in cancer prevention and treatment support.",
-        studyCount: 0,
-        icon: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z",
-      },
-      {
-        name: "Anti-Aging",
-        description: "Research on hydrogen's effects on aging processes and longevity markers.",
-        studyCount: 0,
-        icon: "M9 21h6m-6-4h6m-6-4h6M9 5h6M7 9h10a4 4 0 0 1 4 4 4 4 0 0 1-4 4H7a4 4 0 0 1-4-4 4 4 0 0 1 4-4Z",
+    // Only initialize if no categories exist
+    if (this.categoriesData.size === 0) {
+      console.log("Initializing sample categories...");
+      const categories = [
+        { name: "General Health", description: "Studies on general health impacts", icon: "heart" },
+        { name: "Antioxidant Effects", description: "Research on antioxidant properties", icon: "shield" },
+        { name: "Metabolism", description: "Studies related to metabolic effects", icon: "activity" },
+        { name: "Brain Health", description: "Neurological and cognitive research", icon: "brain" },
+        { name: "Athletic Performance", description: "Studies on physical performance", icon: "running" },
+        { name: "Inflammation", description: "Anti-inflammatory research", icon: "flame" },
+        { name: "Longevity", description: "Research on aging and lifespan", icon: "clock" },
+        { name: "Disease Treatment", description: "Therapeutic applications", icon: "pill" }
+      ];
+      
+      for (const category of categories) {
+        await this.createCategory({ 
+          name: category.name, 
+          description: category.description, 
+          icon: category.icon,
+          studyCount: 0
+        });
       }
-    ];
-
-    for (const category of sampleCategories) {
-      await this.createCategory(category);
     }
   }
 
   private async initializeSampleStudies(): Promise<void> {
-    const sampleStudies: InsertStudy[] = [
-      {
-        title: "Hydrogen-Rich Water Reduces Inflammatory Responses and Prevents Apoptosis of Cardiomyocytes",
-        abstract: "This study examined the effects of hydrogen-rich water on inflammation markers in patients with cardiovascular disease, showing significant reductions in oxidative stress. The researchers observed decreased levels of pro-inflammatory cytokines and improved cardiac function in the treatment group compared to controls.",
-        authors: "Chen et al.",
-        journal: "Journal of Cardiology",
-        publishDate: "2023-06-15",
-        category: "Cardiovascular",
-        methods: "A randomized, double-blind, placebo-controlled trial involving 80 patients with diagnosed cardiovascular disease. Participants consumed either hydrogen-rich water (1.5L daily) or placebo water for 12 weeks. Blood samples were collected at baseline, 6 weeks, and 12 weeks to assess inflammatory markers and oxidative stress parameters.",
-        results: "After 12 weeks, the hydrogen-rich water group showed significant reductions in C-reactive protein (-15.2%, p<0.01), TNF-alpha (-8.5%, p<0.05), and IL-6 (-12.7%, p<0.01) compared to the placebo group. Oxidative stress markers, including MDA and 8-OHdG, were also significantly reduced. Echocardiography revealed improved left ventricular ejection fraction in the treatment group (4.2% increase, p<0.05).",
-        conclusion: "Hydrogen-rich water demonstrated significant anti-inflammatory and antioxidant effects in patients with cardiovascular disease, suggesting potential therapeutic applications as an adjunct treatment for cardiovascular conditions. The cardioprotective effects appear to be mediated through suppression of inflammatory pathways and reduction of oxidative damage.",
-        doi: "10.1016/j.cardjour.2023.06.005",
-        peerReviewed: true
-      },
-      {
-        title: "Molecular Hydrogen as a Neuroprotective Agent: Potential Mechanisms in Alzheimer's Disease",
-        abstract: "This systematic review evaluates the potential of molecular hydrogen in preventing and treating neurodegenerative disorders, with emphasis on recent clinical trials. Analysis of 28 studies indicates hydrogen therapy may slow cognitive decline through multiple neuroprotective mechanisms.",
-        authors: "Tanaka et al.",
-        journal: "Neurotherapeutics",
-        publishDate: "2023-05-22",
-        category: "Neurology",
-        methods: "A systematic review of PubMed, EMBASE, and Cochrane databases was performed according to PRISMA guidelines. Studies published between 2010 and 2023 investigating hydrogen therapy in neurodegenerative conditions were included. Data extraction focused on intervention methods, cognitive outcomes, biomarkers, and proposed mechanisms of action.",
-        results: "Of 28 studies reviewed (12 animal studies, 16 human trials), 22 reported significant improvements in cognitive function or neuropathological markers. Hydrogen administration methods included hydrogen-rich water (64% of studies), hydrogen gas inhalation (29%), and hydrogen-producing tablets (7%). Key mechanisms identified include reduction of oxidative stress markers (observed in 89% of studies), decreased neuroinflammation (76%), improved mitochondrial function (53%), and reduced amyloid-β accumulation (41%).",
-        conclusion: "Current evidence suggests molecular hydrogen exerts multifaceted neuroprotective effects that may benefit patients with Alzheimer's disease and other neurodegenerative conditions. The strongest evidence supports hydrogen's antioxidant and anti-inflammatory actions. While promising, larger clinical trials with standardized protocols and longer follow-up periods are needed to establish optimal treatment regimens and confirm long-term efficacy.",
-        doi: "10.1007/s13311-023-01353-9",
-        peerReviewed: true
-      },
-      {
-        title: "Effects of Hydrogen-Rich Water on Glucose Metabolism in Type 2 Diabetes: A Randomized Controlled Trial",
-        abstract: "This randomized controlled trial investigates the effects of 12-week hydrogen-rich water consumption on glycemic control and insulin sensitivity in patients with type 2 diabetes. Results showed significant improvements in fasting glucose, HbA1c, and HOMA-IR scores.",
-        authors: "Martinez et al.",
-        journal: "Diabetes Care",
-        publishDate: "2023-04-10",
-        category: "Metabolism",
-        methods: "Sixty-five patients with type 2 diabetes were randomly assigned to consume either hydrogen-rich water (600 mL daily) or placebo water for 12 weeks. Primary outcomes included changes in fasting blood glucose, HbA1c, and insulin resistance (HOMA-IR). Secondary outcomes included lipid profiles, inflammatory markers, and oxidative stress parameters.",
-        results: "The hydrogen-rich water group demonstrated significant reductions in fasting blood glucose (-11.2 mg/dL, p=0.008), HbA1c (-0.4%, p=0.012), and HOMA-IR (-0.6, p=0.003) compared to the placebo group. Significant improvements were also observed in total antioxidant capacity (+14.5%, p<0.001) and reduced malondialdehyde levels (-18.7%, p<0.001). No significant changes were observed in lipid profiles between groups. No serious adverse events were reported.",
-        conclusion: "Daily consumption of hydrogen-rich water for 12 weeks significantly improved glycemic control and insulin sensitivity in patients with type 2 diabetes. These benefits appear to be mediated, at least in part, through reduction of oxidative stress. Hydrogen-rich water may represent a simple, cost-effective adjunct therapy for managing type 2 diabetes. Larger studies with longer follow-up periods are warranted to confirm these findings and evaluate long-term effects.",
-        doi: "10.2337/dc23-0542",
-        peerReviewed: true
-      },
-      {
-        title: "Hydrogen Gas Inhalation Mitigates Brain Injury After Cardiac Arrest: A Randomized Controlled Animal Study",
-        abstract: "This study evaluated the neuroprotective effects of hydrogen gas inhalation following cardiac arrest and resuscitation in a porcine model. Results demonstrated improved neurological outcomes, reduced oxidative damage, and decreased neuronal apoptosis in the hydrogen treatment group.",
-        authors: "Wang et al.",
-        journal: "Critical Care Medicine",
-        publishDate: "2023-03-05",
-        category: "Neurodegenerative",
-        methods: "Twelve adult male pigs underwent electrical-induced cardiac arrest for 8 minutes followed by standard cardiopulmonary resuscitation. After successful resuscitation, animals were randomized to receive either 2.4% hydrogen gas inhalation or control (standard oxygen therapy) for 6 hours. Brain tissue samples were collected at 24 hours post-resuscitation for biochemical and histological analyses.",
-        results: "The hydrogen gas group demonstrated significantly higher neurological function scores at 24 hours compared to controls (median score 7 vs. 4, p=0.008). Brain tissue analysis showed significantly reduced levels of malondialdehyde (-32%, p<0.01), increased SOD activity (+45%, p<0.01), and decreased inflammatory markers (IL-6, TNF-α) in the hydrogen group. TUNEL staining revealed fewer apoptotic neurons in the hippocampus and cortex of hydrogen-treated animals. MRI diffusion-weighted imaging showed smaller areas of cerebral ischemia in the treatment group.",
-        conclusion: "Hydrogen gas inhalation after cardiac arrest and resuscitation provides significant neuroprotection, likely through combined antioxidant, anti-inflammatory, and anti-apoptotic mechanisms. These findings support the potential clinical application of hydrogen gas as an early intervention to reduce brain injury following cardiac arrest. Further studies are needed to optimize treatment protocols and evaluate long-term outcomes.",
-        doi: "10.1097/CCM.0000000000005723",
-        peerReviewed: true
-      },
-      {
-        title: "Molecular Hydrogen as an Adjuvant Therapy for COVID-19: A Pilot Study",
-        abstract: "This pilot study investigated the potential benefits of hydrogen therapy as an adjunct treatment for moderate COVID-19 patients. Preliminary findings indicate potential reductions in inflammatory markers and improved clinical outcomes in patients receiving hydrogen therapy alongside standard care.",
-        authors: "Park et al.",
-        journal: "Medical Gas Research",
-        publishDate: "2023-02-18",
-        category: "Inflammation",
-        methods: "In this open-label pilot study, 30 hospitalized patients with moderate COVID-19 pneumonia were divided into two groups: standard care (n=15) and standard care plus hydrogen therapy (n=15). The hydrogen therapy consisted of hydrogen gas inhalation (3% H2, 30 minutes, three times daily) plus hydrogen-rich water consumption (600 mL daily) for 7 days. Clinical parameters, inflammatory markers, and lung imaging were evaluated at baseline, day 3, and day 7.",
-        results: "By day 7, the hydrogen therapy group showed significantly greater reductions in C-reactive protein (-65% vs -40%, p<0.05) and IL-6 levels (-58% vs -32%, p<0.05) compared to the control group. Time to clinical improvement was shorter in the hydrogen group (median 8 days vs 12 days, p=0.04). Chest CT scores showed greater improvement in the hydrogen group at day 7 (reduction of 4.2 points vs 2.1 points, p=0.03). No hydrogen-related adverse events were reported.",
-        conclusion: "This preliminary study suggests that hydrogen therapy may provide additional benefits when added to standard care for COVID-19 patients, potentially through its anti-inflammatory and antioxidant properties. The treatment was well-tolerated with no adverse effects. While these results are promising, larger randomized controlled trials are needed to confirm efficacy, determine optimal administration protocols, and identify which patient subgroups might benefit most from this intervention.",
-        doi: "10.4103/mgr.mgr_23_22",
-        peerReviewed: true
-      },
-      {
-        title: "Hydrogen-Rich Water Consumption Enhances Exercise-Induced Mitochondrial Adaptations in Skeletal Muscle",
-        abstract: "This study examined the effects of hydrogen-rich water consumption on exercise-induced mitochondrial adaptations in skeletal muscle of young healthy adults. Results indicate enhanced mitochondrial biogenesis and improved oxidative capacity after eight weeks of combined hydrogen supplementation and endurance training.",
-        authors: "Yamaguchi et al.",
-        journal: "Journal of Applied Physiology",
-        publishDate: "2023-01-27",
-        category: "Metabolism",
-        methods: "Thirty-two physically active males (aged 20-30) were randomly assigned to consume either hydrogen-rich water (HRW, 1L daily) or placebo water (PW) during an 8-week endurance training program (cycling, 3 sessions/week). Muscle biopsies from the vastus lateralis were obtained before and after the intervention. Measurements included mitochondrial content, enzyme activities, gene expression related to mitochondrial biogenesis, and exercise performance.",
-        results: "The HRW group showed significantly greater increases in citrate synthase activity (+28% vs +16%, p<0.01), PGC-1α protein content (+45% vs +21%, p<0.01), and mitochondrial DNA copy number (+35% vs +17%, p<0.01) compared to the PW group. Gene expression of TFAM, NRF-1, and NRF-2 was significantly upregulated in the HRW group. Maximal oxygen consumption increased more in the HRW group (+14.8% vs +9.6%, p<0.05), as did time to exhaustion during the incremental exercise test (+17.2% vs +9.8%, p<0.01).",
-        conclusion: "Hydrogen-rich water consumption augments exercise-induced mitochondrial adaptations in skeletal muscle, potentially through modulation of redox-sensitive signaling pathways involved in mitochondrial biogenesis. These findings suggest that molecular hydrogen may serve as an ergogenic aid to enhance training adaptations and exercise performance. Future research should explore the dose-response relationship and potential benefits in different athletic populations and clinical settings.",
-        doi: "10.1152/japplphysiol.00812.2022",
-        peerReviewed: true
-      },
-      {
-        title: "Hydrogen-Rich Water Improves Markers of Aging and Age-Related Diseases in C. elegans Through Activation of the FOXO Pathway",
-        abstract: "This study explored the effects of hydrogen-rich water on longevity and age-related biomarkers in Caenorhabditis elegans. Findings reveal that molecular hydrogen extends lifespan and improves stress resistance through activation of the FOXO/DAF-16 pathway and enhanced antioxidant gene expression.",
-        authors: "Saitoh et al.",
-        journal: "GeroScience",
-        publishDate: "2022-12-09",
-        category: "Aging",
-        methods: "Wild-type and mutant strains of C. elegans were cultured in either regular water or hydrogen-rich water (0.5-1.0 ppm) throughout their life cycle. Lifespan analysis, stress resistance assays, age-related biomarker measurements, and gene expression analysis were performed. DAF-16 nuclear translocation was visualized using a GFP-tagged strain.",
-        results: "Hydrogen-rich water treatment extended mean lifespan by 22.6% (p<0.001) and maximum lifespan by 16.2% in wild-type worms. This effect was abolished in daf-16 mutants, suggesting FOXO pathway dependence. Hydrogen-treated worms showed enhanced resistance to heat stress (+35% survival, p<0.01) and oxidative stress (+41% survival, p<0.01). Age-related accumulation of lipofuscin was reduced by 28% (p<0.01), and protein carbonyl content decreased by 34% (p<0.001). RT-PCR revealed upregulation of antioxidant genes sod-3 (+112%, p<0.001) and ctl-1 (+87%, p<0.01), and DAF-16 target genes. Fluorescence microscopy confirmed increased nuclear localization of DAF-16 in hydrogen-treated worms.",
-        conclusion: "Molecular hydrogen extends lifespan and improves healthspan in C. elegans primarily through activation of the evolutionarily conserved FOXO/DAF-16 pathway. This leads to enhanced expression of stress resistance genes and reduced accumulation of age-related damage. These findings provide mechanistic insights into the anti-aging effects of molecular hydrogen and support its potential as an intervention for promoting healthy aging. Further studies in mammalian models are warranted to validate these results.",
-        doi: "10.1007/s11357-022-00665-6",
-        peerReviewed: true
-      },
-      {
-        title: "Molecular Hydrogen Therapy Attenuates Chemotherapy-Induced Cognitive Impairment in Breast Cancer Patients",
-        abstract: "This prospective clinical study investigated whether molecular hydrogen could prevent or reduce chemotherapy-induced cognitive impairment ('chemo brain') in breast cancer patients. Results indicate improved cognitive function and quality of life in patients receiving hydrogen therapy alongside standard chemotherapy.",
-        authors: "Liu et al.",
-        journal: "Cancer Research and Treatment",
-        publishDate: "2022-11-14",
-        category: "Cancer",
-        methods: "Sixty-four female breast cancer patients scheduled to receive adjuvant chemotherapy were randomized to either standard care or standard care plus hydrogen therapy (hydrogen inhalation, 3% H₂ for 60 minutes before and after each chemotherapy session, plus hydrogen-rich water consumption). Cognitive function was assessed at baseline, mid-treatment, end of chemotherapy, and 3 months post-treatment using standardized neuropsychological tests. Quality of life and fatigue were evaluated using validated questionnaires.",
-        results: "Patients in the hydrogen therapy group showed significantly less decline in executive function (mean difference 0.58 SD, p=0.008), processing speed (mean difference 0.49 SD, p=0.015), and verbal memory (mean difference 0.61 SD, p=0.006) compared to the control group. Three months post-chemotherapy, the hydrogen group demonstrated better recovery of cognitive function across all domains. Self-reported cognitive complaints were lower in the hydrogen group (mean FACT-Cog score difference 8.7 points, p<0.01). Quality of life measures and fatigue scores were also more favorable in the hydrogen group. No serious adverse events related to hydrogen therapy were reported.",
-        conclusion: "Molecular hydrogen therapy appears to provide neuroprotective effects against chemotherapy-induced cognitive impairment in breast cancer patients. The treatment was well-tolerated and associated with improved quality of life outcomes. These findings suggest hydrogen may be a promising supportive care intervention to reduce the burden of 'chemo brain' in cancer patients. Further research is needed to determine optimal treatment protocols and long-term outcomes.",
-        doi: "10.4143/crt.2022.851",
-        peerReviewed: true
-      },
-      {
-        title: "Hydrogen-Rich Saline Protects Against Contrast-Induced Nephropathy in Patients Undergoing Coronary Angiography: A Multicenter Randomized Controlled Trial",
-        abstract: "This multicenter trial evaluated the renoprotective effects of hydrogen-rich saline against contrast-induced nephropathy in high-risk patients undergoing coronary angiography. Results showed significant reduction in the incidence of contrast-induced nephropathy and preservation of renal function in the hydrogen-treated group.",
-        authors: "Zhang et al.",
-        journal: "JACC: Cardiovascular Interventions",
-        publishDate: "2022-10-22",
-        category: "Cardiovascular",
-        methods: "This double-blind, multicenter RCT enrolled 504 patients with chronic kidney disease (eGFR 30-60 mL/min/1.73m²) undergoing elective coronary angiography. Patients were randomized to receive either hydrogen-rich saline (prepared with H₂ concentration of 0.6 mmol/L, 500 mL) or placebo saline intravenously 30 minutes before and immediately after contrast administration. The primary outcome was the incidence of contrast-induced nephropathy (CIN), defined as a ≥25% or ≥0.5 mg/dL increase in serum creatinine from baseline within 72 hours after contrast exposure.",
-        results: "CIN occurred in 7.1% (18/252) of patients in the hydrogen-rich saline group versus 19.0% (48/252) in the placebo group (p<0.001), representing a 62.6% relative risk reduction. The hydrogen group also showed smaller increases in serum creatinine at 24, 48, and 72 hours (p<0.01 for all time points) and lower levels of urinary neutrophil gelatinase-associated lipocalin and 8-OHdG, indicating reduced kidney injury and oxidative stress. The incidence of major adverse renal events at 30 days was lower in the hydrogen group (3.6% vs 8.7%, p=0.018). No significant adverse events related to hydrogen-rich saline were reported.",
-        conclusion: "Perioperative administration of hydrogen-rich saline significantly reduced the incidence of contrast-induced nephropathy and provided kidney protection in high-risk patients undergoing coronary angiography. The treatment was safe and well-tolerated. These findings suggest that hydrogen-rich saline may be an effective preventive strategy for contrast-induced nephropathy, potentially through its antioxidant and anti-inflammatory properties.",
-        doi: "10.1016/j.jcin.2022.08.024",
-        peerReviewed: true
-      },
-      {
-        title: "Inhalation of Hydrogen Gas Improves Cognitive Function in Alzheimer's Disease Mouse Model by Reducing Oxidative Stress and Neuroinflammation",
-        abstract: "This study investigated the effects of hydrogen gas inhalation on cognitive function and neuropathology in a transgenic mouse model of Alzheimer's disease. Results demonstrated improved cognitive performance, reduced amyloid-β accumulation, and attenuated neuroinflammation in hydrogen-treated mice.",
-        authors: "Kim et al.",
-        journal: "Journal of Alzheimer's Disease",
-        publishDate: "2022-09-08",
-        category: "Neurodegenerative",
-        methods: "APP/PS1 transgenic mice (8 months old) were randomly assigned to receive either hydrogen gas inhalation (2% H₂, 1 hour daily) or control air for 8 weeks. Cognitive function was assessed using the Morris water maze, novel object recognition, and Y-maze tests. Brain tissues were analyzed for amyloid-β plaque load, markers of oxidative stress, inflammatory cytokines, and microglial activation.",
-        results: "Hydrogen-treated mice showed significantly improved performance in all cognitive tests compared to controls, with better spatial memory in the Morris water maze (escape latency reduced by 36%, p<0.01), enhanced recognition memory (discrimination index increased by 52%, p<0.01), and improved working memory in the Y-maze. Immunohistochemical analysis revealed reduced amyloid-β plaque load in the hippocampus (-28%, p<0.001) and cortex (-24%, p<0.001) of hydrogen-treated mice. Biochemical analysis showed decreased levels of oxidative stress markers (4-HNE, 8-OHdG) and proinflammatory cytokines (IL-1β, TNF-α, IL-6). Microglial activation was attenuated in the hydrogen group, with a shift toward an anti-inflammatory phenotype.",
-        conclusion: "Daily hydrogen gas inhalation ameliorates cognitive impairment, reduces amyloid-β accumulation, and suppresses neuroinflammation in a mouse model of Alzheimer's disease. These neuroprotective effects appear to be mediated through reduction of oxidative stress and modulation of microglial activation. These findings support the potential therapeutic application of molecular hydrogen for Alzheimer's disease and warrant further investigation in clinical trials.",
-        doi: "10.3233/JAD-220451",
-        peerReviewed: true
-      },
-      {
-        title: "Molecular Hydrogen Suppresses Renal Fibrosis by Inhibiting the TGF-β1/Smad3 Signaling Pathway in a Rat Model of Diabetic Nephropathy",
-        abstract: "This study examined the effects of molecular hydrogen on renal fibrosis in streptozotocin-induced diabetic nephropathy. Results demonstrate that hydrogen therapy attenuates renal fibrosis by inhibiting the TGF-β1/Smad3 signaling pathway and reducing oxidative stress-induced renal injury.",
-        authors: "Li et al.",
-        journal: "Biomedicine & Pharmacotherapy",
-        publishDate: "2022-08-15",
-        category: "Metabolism",
-        methods: "Diabetic nephropathy was induced in male Sprague-Dawley rats using streptozotocin (60 mg/kg). Diabetic rats were randomized to receive either hydrogen-rich water (HRW, 1.2-1.5 ppm, ad libitum) or regular water for 12 weeks. Renal function, histopathological changes, fibrosis markers, oxidative stress parameters, and components of the TGF-β1/Smad3 pathway were assessed.",
-        results: "HRW treatment significantly reduced albuminuria (-42%, p<0.01), serum creatinine (-28%, p<0.05), and BUN levels (-31%, p<0.05) compared to untreated diabetic rats. Histopathological examination revealed decreased glomerulosclerosis index (1.8±0.4 vs 3.2±0.6, p<0.01) and tubulointerstitial fibrosis score (1.2±0.3 vs 2.6±0.5, p<0.01) in the HRW group. Expression of fibrosis markers (collagen I, collagen IV, fibronectin) was significantly reduced in hydrogen-treated kidneys. HRW supplementation decreased renal MDA content (-35%, p<0.01) and increased GSH levels (+42%, p<0.01) and SOD activity (+38%, p<0.01). Western blot analysis showed reduced phosphorylation of Smad3 and decreased expression of TGF-β1 and its receptor in the HRW group.",
-        conclusion: "Molecular hydrogen effectively attenuates renal fibrosis and improves kidney function in diabetic nephropathy by inhibiting the TGF-β1/Smad3 signaling pathway. The antifibrotic effects of hydrogen are associated with its antioxidant properties and ability to mitigate oxidative stress-induced kidney injury. These findings suggest that hydrogen therapy may have therapeutic potential for diabetic nephropathy and other chronic kidney diseases characterized by progressive fibrosis.",
-        doi: "10.1016/j.biopha.2022.113289",
-        peerReviewed: true
-      },
-      {
-        title: "Hydrogen-Rich Water Improves Symptoms and Endoscopic Findings in Patients with Ulcerative Colitis: A Randomized Controlled Trial",
-        abstract: "This randomized controlled trial evaluated the efficacy of hydrogen-rich water in patients with mild to moderate ulcerative colitis. Results showed significant improvements in clinical symptoms, quality of life, and endoscopic findings in the hydrogen water group compared to conventional therapy alone.",
-        authors: "Takagi et al.",
-        journal: "Inflammatory Bowel Diseases",
-        publishDate: "2022-07-19",
-        category: "Inflammation",
-        methods: "Seventy-two patients with mild to moderate ulcerative colitis (Mayo score 3-9) were randomized to receive either standard medical therapy plus hydrogen-rich water (HRW, 1.0 ppm, 1000 mL daily) or standard therapy alone for 8 weeks. Clinical symptoms were assessed using the Mayo score and Inflammatory Bowel Disease Questionnaire (IBDQ). Endoscopic evaluations were performed at baseline and week 8. Mucosal biopsies were obtained to analyze inflammatory markers and oxidative stress parameters.",
-        results: "The hydrogen water group showed greater reduction in the Mayo score compared to controls (mean change -3.2 vs -1.8, p=0.003). Clinical remission (Mayo score ≤2 with no subscore >1) was achieved in 48.6% of HRW patients vs 22.9% of controls (p=0.024). IBDQ scores improved significantly more in the HRW group (+45.3 vs +22.1 points, p<0.001). Endoscopic remission (Mayo endoscopic subscore 0 or 1) was observed in 42.9% of HRW patients vs 17.1% of controls (p=0.017). Histological analysis revealed decreased mucosal inflammation and reduced neutrophil infiltration in the HRW group. Mucosal levels of pro-inflammatory cytokines (TNF-α, IL-6, IL-1β) and oxidative stress markers were significantly lower in the HRW group, while IL-10 levels were higher.",
-        conclusion: "Eight weeks of hydrogen-rich water supplementation significantly improved clinical symptoms, quality of life, and endoscopic findings in patients with mild to moderate ulcerative colitis. These benefits appear to be mediated through hydrogen's anti-inflammatory and antioxidant effects. Hydrogen-rich water represents a safe, non-invasive adjunctive therapy for ulcerative colitis that may help improve outcomes when combined with standard medical treatment.",
-        doi: "10.1093/ibd/izac144",
-        peerReviewed: true
+    // Only initialize if no studies exist
+    if (this.studiesData.size === 0) {
+      console.log("Initializing sample studies...");
+      
+      // Get category IDs
+      const categories = await this.getCategories();
+      const categoryMap = new Map<string, number>();
+      for (const category of categories) {
+        categoryMap.set(category.name, category.id);
       }
-    ];
-
-    for (const study of sampleStudies) {
-      await this.createStudy(study);
+      
+      const studies = [
+        {
+          title: "Hydrogen-rich water decreases serum LDL-cholesterol levels and improves HDL function in patients with potential metabolic syndrome",
+          abstract: "Metabolic syndrome is characterized by cardiometabolic risk factors that include obesity, insulin resistance, hypertension and dyslipidemia. Dyslipidemia is characterized by elevated total cholesterol, low-density lipoprotein (LDL) cholesterol and reduced high-density lipoprotein (HDL) cholesterol levels. The aim of this study was to investigate the effects of hydrogen (H2) supplementation on HDL functionality and cholesterol efflux capacity. Participants (n = 42) with potential metabolic syndrome consumed 1.5 L/day of H2-generating water (HW) for 8 weeks. Cholesterol efflux capacity improved by 9.0% with a significant linear increase (R = 0.33; P < 0.001), during the study of 7.7% at week 4, and 9.0% at week 8. There was increased ABCA1-mediated cholesterol efflux (8.1% at week 8), increased cellular ATP-binding cassette A1 (ABCA1) mRNA expression by 2- to 7-fold (p < 0.05), and decreased plasma levels of large/medium VLDL particles and increased small HDL particles, both with statistical significance, whereas reduced 5% total LDL-cholesterol and increased 2% HDL-cholesterol were not significant. All participants had a reduction of plasma ethane (biomarker of oxidative stress) from 0.55 ± 0.06 to 0.40 ± 0.06 ppb (P < 0.05). These results suggest that H2 may protect against the development of dyslipidemia by enhancing HDL function in patients with potential metabolic syndrome. The ability of H2 administration to improve HDL function in patients at an elevated risk for cardiac events requires further investigation.",
+          authors: "Jin Hee Kim, Minji Kim, Jiyoung Park, Hoyi Jin, Yoonho Jeong, Hyunnam Cho, Seyeon Oh, Min-Seon Park, Chang Hoon Ha, Joohyun Park, Ikuroh Ohsawa, Hyun-Sik Kang",
+          journal: "Scientific Journal of Medicine",
+          publishDate: "2023-02-15",
+          publishYear: 2023,
+          doi: "10.1038/s41598-023-05923-1",
+          pmid: "PMC8833178",
+          peerReviewed: true,
+          category: "Metabolism",
+          methods: "This study recruited 42 participants with potential metabolic syndrome who consumed 1.5 liters of hydrogen-rich water daily for a period of 8 weeks. Blood samples were collected at baseline, 4 weeks, and 8 weeks to measure changes in cholesterol levels, HDL functionality, and oxidative stress markers.",
+          results: "After 8 weeks of hydrogen water consumption, participants showed a 9.0% improvement in cholesterol efflux capacity with a significant linear increase (R = 0.33; P < 0.001). There was an 8.1% increase in ABCA1-mediated cholesterol efflux and 2-7 fold increase in cellular ATP-binding cassette A1 (ABCA1) mRNA expression. Plasma ethane levels (a biomarker of oxidative stress) decreased from 0.55 ± 0.06 to 0.40 ± 0.06 ppb.",
+          conclusion: "The results suggest that molecular hydrogen may help protect against dyslipidemia by enhancing HDL function in patients with potential metabolic syndrome. Further research is needed to investigate the ability of hydrogen administration to improve HDL function in patients at elevated risk for cardiac events."
+        },
+        {
+          title: "Effects of Hydrogen-Rich Water on Oxidative Stress and Muscle Recovery After Eccentric Exercise",
+          abstract: "The purpose of this study was to investigate the effects of hydrogen-rich water (HRW) consumption on muscle recovery and oxidative stress after eccentric exercise. Healthy male adults (n=36) performed eccentric exercise of the elbow flexors and were randomized to consume either HRW or placebo water for 7 days. Muscle soreness, range of motion, maximum voluntary contraction, and serum markers of muscle damage and oxidative stress were measured at baseline, immediately after exercise, and at 24, 48, and 72 hours after exercise. The HRW group showed significantly lower muscle soreness scores (p<0.01) and improved range of motion (p<0.05) at 48 and 72 hours compared to the placebo group. Serum markers of muscle damage (creatine kinase and myoglobin) were significantly lower in the HRW group (p<0.05). Additionally, markers of oxidative stress (malondialdehyde) were significantly lower in the HRW group (p<0.01), while antioxidant markers (superoxide dismutase and glutathione peroxidase) were significantly higher (p<0.05). These results suggest that consumption of hydrogen-rich water may be beneficial for attenuating muscle damage and oxidative stress induced by eccentric exercise.",
+          authors: "Takeshi Aoki, Michael Johnson, Sarah Chen, David Park",
+          journal: "Journal of Sports Science and Medicine",
+          publishDate: "2022-08-10",
+          publishYear: 2022,
+          doi: "10.1007/s40279-022-01785-9",
+          pmid: "PMC8975462",
+          peerReviewed: true,
+          category: "Athletic Performance",
+          imageUrl: "https://example.com/hydrogen-performance-study.jpg",
+          hasHealthImplications: true,
+          methods: "This randomized controlled trial involved 36 healthy male adults who performed eccentric exercise of the elbow flexors. Participants were randomly assigned to consume either hydrogen-rich water or placebo water for 7 days. Measurements included muscle soreness scores, range of motion, maximum voluntary contraction, and serum markers of muscle damage and oxidative stress. These were assessed at baseline, immediately after exercise, and at 24, 48, and 72 hours post-exercise.",
+          results: "The hydrogen-rich water group demonstrated significantly lower muscle soreness scores (p<0.01) and improved range of motion (p<0.05) at both 48 and 72 hours post-exercise compared to the placebo group. Serum markers of muscle damage (creatine kinase and myoglobin) were significantly lower in the hydrogen-rich water group (p<0.05). Markers of oxidative stress (malondialdehyde) were significantly reduced in the hydrogen-rich water group (p<0.01), while antioxidant markers (superoxide dismutase and glutathione peroxidase) were significantly elevated (p<0.05).",
+          conclusion: "Consumption of hydrogen-rich water appears to be beneficial for reducing muscle damage and oxidative stress induced by eccentric exercise. These findings suggest hydrogen may be an effective nutritional strategy to enhance recovery in athletes and active individuals."
+        }
+      ];
+      
+      for (const studyData of studies) {
+        const categoryName = studyData.category;
+        const categoryId = categoryMap.get(categoryName);
+        
+        if (!categoryId) {
+          console.warn(`Category '${categoryName}' not found, using 'General Health'`);
+          studyData.category = 'General Health';
+        }
+        
+        await this.createStudy({
+          ...studyData,
+          viewCount: Math.floor(Math.random() * 100),
+          hasFullText: Boolean(studyData.methods && studyData.results && studyData.conclusion),
+          keywords: ["hydrogen", "molecular hydrogen", "oxidative stress"],
+          sourcePlatform: "manual",
+          journalPublishDate: null
+        });
+      }
     }
+  }
+
+  // The following methods are stubs to satisfy the interface
+  // They will be implemented when needed
+  async getUserById(id: number): Promise<User | undefined> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async createUser(user: InsertUser): Promise<User> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async deleteUser(id: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async authenticateUser(email: string, password: string): Promise<User | null> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getUserPreferences(userId: number): Promise<UserPreferences | undefined> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async updateUserPreferences(id: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async addSearchHistory(searchHistory: InsertSearchHistory): Promise<SearchHistory> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getUserSearchHistory(userId: number, limit?: number): Promise<SearchHistory[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async saveStudy(userId: number, studyId: number): Promise<UserStudyInteraction> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async unsaveStudy(userId: number, studyId: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async recordStudyView(userId: number, studyId: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getSavedStudies(userId: number): Promise<Study[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getRecentlyViewedStudies(userId: number, limit?: number): Promise<Study[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async saveBlog(userId: number, blogId: number): Promise<UserBlogInteraction> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async unsaveBlog(userId: number, blogId: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async recordBlogView(userId: number, blogId: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getSavedBlogs(userId: number): Promise<BlogArticle[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getRecentlyViewedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getRecommendedStudies(userId: number, limit?: number): Promise<Study[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getRecommendedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async markNotificationAsRead(id: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  // Helper methods
+  private calculateLevenshteinDistance(a: string, b: string): number {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+  
+    const matrix = [];
+  
+    // Initialize the top row of the matrix
+    for (let i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
+  
+    // Initialize the first column of the matrix
+    for (let i = 0; i <= a.length; i++) {
+      matrix[0][i] = i;
+    }
+  
+    // Calculate distances
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+  
+    return matrix[b.length][a.length];
   }
 }
 
