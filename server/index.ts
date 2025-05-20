@@ -9,6 +9,7 @@ import { runMigrations } from "./schema-migrator";
 import { runDatabaseMigrations, initializeSampleCategoriesData } from "./schema-updates";
 import { initializeData } from "./initialize-data";
 import { updateCategoryCounts } from "./update-category-counts";
+import { addConsumerCategoriesColumn } from "./migrations/add-consumer-categories";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
@@ -254,6 +255,10 @@ app.use((req, res, next) => {
     // Initialize sample data for the hydrogen-specific categories
     console.log('Initializing sample data in database...');
     await initializeSampleCategoriesData();
+    
+    // Run the migration to add consumer categories column
+    console.log('Running migration for consumer-friendly categories...');
+    await addConsumerCategoriesColumn();
     
     // Update category counts to ensure accurate data
     console.log('Updating category counts...');
