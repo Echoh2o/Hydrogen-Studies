@@ -7,37 +7,27 @@ const navigationLinks = [
   { href: "/", label: "Home" },
   { 
     href: "/studies",
-    label: "Research",
-    id: "research-menu",
-    dropdown: [
-      { href: "/studies", label: "All Studies" },
-      { href: "/improved-search", label: "Advanced Search" },
-      { href: "/research-suggestions", label: "Research Wizard" }
-    ]
+    label: "Studies",
+    id: "studies-menu"
   },
   { 
+    href: "/categories",
+    label: "Categories",
+    id: "categories-menu"
+  },
+  {
     href: "/explore-by-condition",
     label: "Explore",
     id: "explore-menu",
     dropdown: [
       { href: "/explore-by-condition", label: "Health Conditions" },
       { href: "/explore-by-body-system", label: "Body Systems" },
-      { href: "/explore-by-life-stage", label: "Life Stages" },
-      { href: "/categories", label: "Scientific Categories" }
+      { href: "/explore-by-life-stage", label: "Life Stages" }
     ]
   },
-  { 
-    href: "/learn",
-    label: "Learn",
-    id: "learn-menu",
-    dropdown: [
-      { href: "/learn", label: "Educational Content" },
-      { href: "/resources", label: "Resources" },
-      { href: "/chat", label: "Ask AI Assistant" }
-    ]
-  },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" }
+  { href: "/improved-search", label: "Search", id: "search-menu" },
+  { href: "/chat", label: "AI Assistant", id: "chat-menu" },
+  { href: "/about", label: "About" }
 ];
 
 export default function Header() {
