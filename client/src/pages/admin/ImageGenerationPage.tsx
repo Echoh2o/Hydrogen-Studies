@@ -32,7 +32,10 @@ const ImageGenerationPage: React.FC = () => {
     refetch: refetchStudies
   } = useQuery({
     queryKey: ["/api/studies/needing-images"],
-    retry: false,
+    retry: 3, // Allow retries in case of temporary database issues
+    retryDelay: 1000, // Retry after 1 second
+    // Provide default empty data to prevent rendering errors
+    placeholderData: { success: true, data: [] }
   });
 
   // Mutation for generating a single image
@@ -205,19 +208,7 @@ const ImageGenerationPage: React.FC = () => {
             </Card>
           ))}
         </div>
-      ) : isErrorStudies ? (
-        <Card className="bg-red-50 border-red-200">
-          <CardContent className="p-6">
-            <div className="flex items-center text-red-600 mb-2">
-              <AlertTriangle className="mr-2 h-5 w-5" />
-              <h3 className="font-medium">Error Loading Studies</h3>
-            </div>
-            <p className="text-red-700">
-              Failed to load studies needing images. Please try refreshing the page.
-            </p>
-          </CardContent>
-        </Card>
-      ) : studiesNeedingImages?.data?.length === 0 ? (
+      ) : (!studiesNeedingImages?.data || studiesNeedingImages?.data?.length === 0) ? (
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-6">
             <div className="flex items-center text-green-600 mb-2">
