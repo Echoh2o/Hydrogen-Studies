@@ -38,6 +38,7 @@ import hydrogenImportRoutes from "./routes/hydrogen-import";
 import excelAnalysisRoutes from "./routes/excel-analysis";
 import minimalImportRoutes from "./routes/minimal-import";
 import researchRoutes from "./routes/research-routes";
+import excelImportRoutes from "./routes/excel-import";
 import unifiedResearchRoutes from "./routes/research-unified-routes";
 import studyDetailsRoutes from "./routes/study-details";
 import europePmcRoutes from "./routes/europepmc-routes";

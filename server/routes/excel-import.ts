@@ -10,7 +10,7 @@ import axios from 'axios';
 const router = express.Router();
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
+const uploadStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), 'temp_files');
     
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: uploadStorage });
 
 // Helper function to clean up temporary files
 function cleanupTempFile(filePath: string) {
