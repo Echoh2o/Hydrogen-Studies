@@ -1,0 +1,31 @@
+Consumer-Friendly Categorization Models for Hydrogen Health Studies
+
+Model 1: Condition-Focused Categories (By Disease/Ailment)
+
+	•	Diabetes & Metabolic Health – Studies on diabetes, metabolic syndrome, and blood sugar control.
+	•	Heart Disease & Hypertension – Research on cardiovascular health, blood pressure, and cholesterol .
+	•	Brain & Neurological Disorders – Covers neurodegenerative diseases (e.g. Parkinson’s, Alzheimer’s), stroke recovery, cognitive health.
+	•	Arthritis & Inflammation – Includes osteoarthritis, rheumatoid arthritis, and other inflammatory joint conditions.
+	•	Lung & Respiratory Conditions – Studies on asthma, COPD, and lung function improvement.
+	•	Digestive Health (Gut/Liver) – Research on gastrointestinal issues like colitis, liver protection, and gut inflammation.
+	•	Cancer Supportive Care – Hydrogen’s effects in oncology (e.g. mitigating chemo side effects, supporting recovery in cancer patients).
+
+Model 2: Body System Categories (By Health Area)
+
+	•	Cardiovascular Health – Heart and blood vessel health, including circulation and blood pressure studies.
+	•	Neurological Health – Brain and nerve system focus: cognitive function, neuroprotection, and nervous system disorders.
+	•	Respiratory Health – Lung and breathing-related studies (asthma relief, COPD, pulmonary function).
+	•	Digestive Health – Gastrointestinal and liver health, including gut inflammation, liver protection, and metabolism.
+	•	Immune System & Allergies – Studies on immunity, anti-inflammatory effects, and relief of allergic or autoimmune conditions.
+	•	Musculoskeletal Health – Bone, joint, and muscle health (e.g. arthritis, osteoporosis, exercise recovery).
+	•	Skin & Dermatological Health – Skin health topics such as wound healing, skin inflammation, or dermatology-related benefits.
+	•	Endocrine & Hormonal Health – Hormone-related health (thyroid function, metabolic hormone balance, etc., often tied in with diabetes/metabolic studies).
+
+Model 3: Life Stage / Audience Categories (By Demographic or Lifestyle)
+
+	•	Women’s Health – Studies relevant to female health concerns (e.g. hydrogen’s effects on menopause symptoms, osteoporosis, UTIs).
+	•	Men’s Health – Male-focused issues (e.g. studies on metabolic syndrome in men, athletic performance, prostate health if applicable).
+	•	Children’s Health – Pediatric applications, such as studies on childhood conditions like asthma or neurodevelopment (where hydrogen therapy was studied in kids).
+	•	Senior Health (Healthy Aging) – Research on aging-related issues: cognitive decline, joint degeneration, or general longevity/anti-aging benefits.
+	•	Athletic Performance & Recovery – Studies on sports and exercise, highlighting hydrogen’s role in muscle recovery, endurance, or reducing fatigue in active individuals.
+	•	General Wellness & Prevention – Broad wellness topics not tied to a disease, like antioxidant effects, stress reduction , or overall preventive health that anyone can benefit from. (This category appeals to those seeking health maintenance tips, similar to “Stress management” or “Weight loss” sections on wellness sites .)
