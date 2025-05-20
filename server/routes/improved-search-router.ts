@@ -105,33 +105,65 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
     } else if (sortBy === 'title') {
       searchQuery.orderBy(studies.title);
     } else {
-      // Default to relevance
-      searchQuery.orderBy(desc(sql<number>`relevance`));
+      // For relevance, we'll handle sorting in the raw SQL query
     }
     
-    // Fetch results with pagination
-    const results = await searchQuery
-      .limit(pageSize)
-      .offset(offset);
+    // We don't fetch results directly from the query builder since we'll use raw SQL
     
-    // Execute a raw SQL query to deduplicate studies based on title similarity
+    // Execute a modified SQL query with title-based deduplication
     // This helps avoid showing multiple copies of the same study
+    // We'll use a simpler query first that works with PostgreSQL's syntax
+    // This still helps with deduplication by using a modified approach
     const deduplicatedTitleQuery = sql`
-      WITH ranked_results AS (
+      WITH base_query AS (
         SELECT 
-          r.*,
+          id, 
+          title, 
+          abstract, 
+          authors, 
+          journal, 
+          publish_date as "publishDate", 
+          category,
+          peer_reviewed as "peerReviewed",
+          methods,
+          results,
+          conclusion,
+          doi,
+          image_url as "imageUrl",
+          publish_year as "publishYear",
+          CASE 
+            WHEN title ILIKE ${`%${q}%`} THEN 10
+            WHEN abstract ILIKE ${`%${q}%`} THEN 5 
+            WHEN methods ILIKE ${`%${q}%`} OR results ILIKE ${`%${q}%`} THEN 3
+            ELSE 1
+          END as score
+        FROM studies
+        WHERE ${whereClause ? whereClause : sql`TRUE`}
+      ),
+      grouped_titles AS (
+        SELECT 
+          MIN(id) as group_id,
+          title
+        FROM base_query
+        GROUP BY title
+      ),
+      ranked_results AS (
+        SELECT 
+          b.*,
           ROW_NUMBER() OVER (
-            PARTITION BY similarity(lower(title), lower(title)) > 0.9
-            ORDER BY 
-              CASE 
-                WHEN title ILIKE ${`%${q}%`} THEN 10
-                WHEN abstract ILIKE ${`%${q}%`} THEN 5
-                ELSE 1
-              END DESC
+            PARTITION BY g.group_id
+            ORDER BY b.score DESC, b."publishYear" DESC NULLS LAST
           ) as rank
-        FROM (${searchQuery}) r
+        FROM base_query b
+        JOIN grouped_titles g ON similarity(lower(b.title), lower(g.title)) > 0.9
       )
-      SELECT * FROM ranked_results WHERE rank = 1
+      SELECT 
+        id, title, abstract, authors, journal, "publishDate", 
+        category, "peerReviewed", methods, results, conclusion, 
+        doi, "imageUrl", "publishYear" 
+      FROM ranked_results
+      WHERE rank = 1
+      ORDER BY score DESC, "publishYear" DESC NULLS LAST
       LIMIT ${pageSize} OFFSET ${offset}
     `;
     
@@ -141,18 +173,31 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
     // Count total results (with deduplication)
     const countQuery = sql`
       SELECT COUNT(*) FROM (
-        WITH ranked_results AS (
+        WITH base_query AS (
           SELECT 
-            r.*,
+            id, 
+            title
+          FROM studies
+          WHERE ${whereClause ? whereClause : sql`TRUE`}
+        ),
+        grouped_titles AS (
+          SELECT 
+            MIN(id) as group_id,
+            title
+          FROM base_query
+          GROUP BY title
+        ),
+        ranked_results AS (
+          SELECT 
+            b.id,
             ROW_NUMBER() OVER (
-              PARTITION BY similarity(lower(title), lower(title)) > 0.9
-              ORDER BY id
+              PARTITION BY g.group_id
+              ORDER BY b.id
             ) as rank
-          FROM studies r
-          WHERE
-            ${whereClause ? whereClause : sql`TRUE`}
+          FROM base_query b
+          JOIN grouped_titles g ON similarity(lower(b.title), lower(g.title)) > 0.9
         )
-        SELECT * FROM ranked_results WHERE rank = 1
+        SELECT id FROM ranked_results WHERE rank = 1
       ) AS deduplicated_count
     `;
     
