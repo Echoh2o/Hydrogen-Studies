@@ -112,8 +112,8 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
     
     // Execute a modified SQL query with title-based deduplication
     // This helps avoid showing multiple copies of the same study
-    // We'll use a simpler query first that works with PostgreSQL's syntax
-    // This still helps with deduplication by using a modified approach
+    // Using a simpler deduplication approach with exact title matching
+    // This helps prevent duplicate studies from appearing in results
     const deduplicatedTitleQuery = sql`
       WITH base_query AS (
         SELECT 
@@ -143,9 +143,9 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
       grouped_titles AS (
         SELECT 
           MIN(id) as group_id,
-          title
+          lower(trim(title)) as normalized_title
         FROM base_query
-        GROUP BY title
+        GROUP BY lower(trim(title))
       ),
       ranked_results AS (
         SELECT 
@@ -155,7 +155,7 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
             ORDER BY b.score DESC, b."publishYear" DESC NULLS LAST
           ) as rank
         FROM base_query b
-        JOIN grouped_titles g ON similarity(lower(b.title), lower(g.title)) > 0.9
+        JOIN grouped_titles g ON lower(trim(b.title)) = g.normalized_title
       )
       SELECT 
         id, title, abstract, authors, journal, "publishDate", 
@@ -170,7 +170,7 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
     const queryResult = await db.execute(deduplicatedTitleQuery);
     const deduplicatedResults = queryResult.rows;
 
-    // Count total results (with deduplication)
+    // Count total results with exact title matching deduplication
     const countQuery = sql`
       SELECT COUNT(*) FROM (
         WITH base_query AS (
@@ -183,9 +183,9 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
         grouped_titles AS (
           SELECT 
             MIN(id) as group_id,
-            title
+            lower(trim(title)) as normalized_title
           FROM base_query
-          GROUP BY title
+          GROUP BY lower(trim(title))
         ),
         ranked_results AS (
           SELECT 
@@ -195,7 +195,7 @@ router.get('/api/improved-search', async (req: Request, res: Response) => {
               ORDER BY b.id
             ) as rank
           FROM base_query b
-          JOIN grouped_titles g ON similarity(lower(b.title), lower(g.title)) > 0.9
+          JOIN grouped_titles g ON lower(trim(b.title)) = g.normalized_title
         )
         SELECT id FROM ranked_results WHERE rank = 1
       ) AS deduplicated_count
