@@ -122,6 +122,20 @@ router.get("/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid study ID format" });
     }
     
+    // First try to get the study directly from the database
+    if (db) {
+      try {
+        const [studyFromDb] = await db.select().from(studies).where(eq(studies.id, id));
+        
+        if (studyFromDb) {
+          return res.json(studyFromDb);
+        }
+      } catch (dbError) {
+        console.log("Database error fetching study, falling back to storage:", dbError);
+      }
+    }
+    
+    // If no result from database, try with the storage interface
     const study = await storage.getStudyById(id);
     
     if (!study) {
