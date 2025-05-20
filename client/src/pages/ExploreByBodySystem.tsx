@@ -4,13 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { 
   Heart, 
   Brain, 
-  Lung, 
   Microscope, 
   Dumbbell, 
   Bone,
   ArrowRight, 
   Loader2,
-  Pill
+  Pill,
+  Wind
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -46,7 +46,7 @@ const ExploreByBodySystem = () => {
             icon = <Brain className="h-12 w-12 text-blue-500" />;
             break;
           case "Respiratory System":
-            icon = <Lung className="h-12 w-12 text-teal-500" />;
+            icon = <Wind className="h-12 w-12 text-teal-500" />;
             break;
           case "Digestive System":
             icon = <Microscope className="h-12 w-12 text-yellow-600" />;

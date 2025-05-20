@@ -3,13 +3,13 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Baby, 
-  Child, 
   User, 
   CalendarClock, 
   Users,
   Ruler,
   ArrowRight, 
-  Loader2
+  Loader2,
+  School
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -42,7 +42,7 @@ const ExploreByLifeStage = () => {
             icon = <Baby className="h-12 w-12 text-blue-400" />;
             break;
           case "Children & Adolescents":
-            icon = <Child className="h-12 w-12 text-green-500" />;
+            icon = <School className="h-12 w-12 text-green-500" />;
             break;
           case "Adults":
             icon = <User className="h-12 w-12 text-purple-500" />;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { Baby, Calendar, Book, ArrowLeft, Loader2, User, Child, CalendarClock } from "lucide-react";
+import { Baby, Calendar, Book, ArrowLeft, Loader2, User, School, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
@@ -89,7 +89,7 @@ const LifeStageCategoryPage = () => {
       case "Infants & Newborns":
         return <Baby className="h-8 w-8 text-blue-400" />;
       case "Children & Adolescents":
-        return <Child className="h-8 w-8 text-green-500" />;
+        return <School className="h-8 w-8 text-green-500" />;
       case "Adults":
         return <User className="h-8 w-8 text-purple-500" />;
       case "Older Adults":
