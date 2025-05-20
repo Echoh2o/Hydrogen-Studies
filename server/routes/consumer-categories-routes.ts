@@ -104,9 +104,9 @@ router.get('/counts', async (req, res) => {
     return res.json({
       success: true,
       data: {
-        condition: healthConditionCounts.map(item => item.name),
-        body_system: bodySystemCounts.map(item => item.name),
-        life_stage: lifeStageCategories.map(item => item.name)
+        condition: healthConditionCounts,
+        body_system: bodySystemCounts,
+        life_stage: lifeStageCategories 
       }
     });
   } catch (error) {
