@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 const navigationLinks = [
   { href: "/", label: "Home" },
   { href: "/studies", label: "Studies" },
+  { href: "/explore-by-condition", label: "By Health Condition" },
   { href: "/categories", label: "Categories" },
   { href: "/resources", label: "Resources" },
   { href: "/learn", label: "Learn" },

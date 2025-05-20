@@ -1,95 +1,131 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Heart, Loader2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CategorizationModel } from "../types/consumer-categories";
+import { Heart, ArrowRight, Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategorizationModel, CategoryCount, ConsumerCategoriesResponse } from "../types/consumer-categories";
 
 const ExploreByCondition = () => {
-  // Fetch all consumer categories with their study counts
-  const { data: categoriesData, isLoading } = useQuery({
+  // Fetch consumer category counts
+  const { data, isLoading, error } = useQuery<ConsumerCategoriesResponse>({
     queryKey: ["/api/consumer-categories/counts"],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Get condition categories (filtered from all categories)
-  const conditionCategories = categoriesData?.condition || [];
+  // Get condition categories and sort by count
+  const conditions = data?.data?.condition
+    ? [...data.data.condition].sort((a, b) => b.count - a.count)
+    : [];
+
+  // Group conditions into top conditions and others
+  const topConditions = conditions.slice(0, 6);
+  const otherConditions = conditions.slice(6);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <Helmet>
-        <title>Explore Hydrogen Studies by Health Condition | HydrogenStudies.com</title>
+        <title>Explore by Health Condition | HydrogenStudies.com</title>
         <meta 
           name="description" 
-          content="Browse hydrogen research studies categorized by health conditions such as cardiovascular health, diabetes, neurological disorders, and more." 
+          content="Browse hydrogen therapy research studies by health condition. Find the latest research on how molecular hydrogen may benefit specific health conditions and diseases."
         />
       </Helmet>
 
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold text-primary mb-4">
-          Explore Hydrogen Studies by Health Condition
+        <h1 className="text-3xl font-bold text-primary mb-4 flex items-center justify-center">
+          <Heart className="h-8 w-8 mr-3 text-red-500" />
+          Explore Hydrogen Research by Health Condition
         </h1>
         <p className="text-neutral-600 max-w-2xl mx-auto">
-          Browse research on how hydrogen may impact different health conditions. Click on a condition 
-          to see all related studies and their findings.
+          Browse our collection of hydrogen therapy research studies organized by health condition. 
+          Discover how molecular hydrogen may benefit specific health conditions through its 
+          antioxidant, anti-inflammatory, and cell-signaling properties.
         </p>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
+        <div className="flex justify-center items-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-neutral-700">Loading categories...</span>
+          <span className="ml-2 text-neutral-700">Loading health conditions...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center py-16">
+          <p className="text-red-500">Error loading health conditions. Please try again.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {conditionCategories && conditionCategories.length > 0 ? (
-            conditionCategories.map((category) => (
-              <Link 
-                key={category.name} 
-                href={`/condition/${encodeURIComponent(category.name.toLowerCase())}`}
+        <>
+          {/* Highlighted top health conditions */}
+          <h2 className="text-2xl font-bold text-neutral-800 mb-6">
+            Top Health Conditions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {topConditions.map((condition) => (
+              <Card 
+                key={condition.name} 
+                className="shadow-md hover:shadow-lg transition-shadow duration-200"
               >
-                <Card className="cursor-pointer hover:shadow-md transition-shadow duration-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center text-xl font-semibold text-primary">
-                      <Heart className="h-5 w-5 mr-2 text-red-500" />
-                      {category.name}
-                    </CardTitle>
-                    <CardDescription>
-                      {category.count} {category.count === 1 ? 'study' : 'studies'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-neutral-600 text-sm">
-                      Explore hydrogen research related to {category.name.toLowerCase()}, including 
-                      clinical trials, animal studies, and mechanistic research.
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))
-          ) : (
-            <div className="col-span-3 text-center py-12">
-              <p className="text-neutral-500">
-                No health condition categories found. Please check back later as we continue to categorize studies.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold text-primary">
+                    {condition.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-neutral-600">
+                    Explore {condition.count} {condition.count === 1 ? 'study' : 'studies'} on how hydrogen therapy 
+                    may benefit {condition.name.toLowerCase()} conditions.
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Link href={`/condition/${encodeURIComponent(condition.name)}`}>
+                    <Button className="w-full">
+                      View Studies
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
 
-      <div className="mt-16 max-w-2xl mx-auto p-6 bg-neutral-50 rounded-lg border border-neutral-200">
-        <h2 className="text-xl font-semibold text-primary mb-4">About Our Health Condition Categories</h2>
-        <p className="text-neutral-600 mb-4">
-          Our health condition categorization system makes it easier to find relevant hydrogen research 
-          for specific health concerns. Each study is carefully categorized based on the conditions it 
-          addresses.
-        </p>
-        <p className="text-neutral-600">
-          These categories are regularly updated as new research emerges. If you're interested in a 
-          condition not listed here, please use our search feature or contact us with your specific 
-          research interests.
-        </p>
-      </div>
+          {/* All health conditions */}
+          <h2 className="text-2xl font-bold text-neutral-800 mb-6">
+            All Health Conditions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {conditions.map((condition) => (
+              <Link 
+                key={condition.name} 
+                href={`/condition/${encodeURIComponent(condition.name)}`}
+                className="block"
+              >
+                <div className="bg-white p-4 rounded-lg border border-neutral-200 hover:border-primary hover:bg-primary/5 transition-colors duration-200">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium text-neutral-800">{condition.name}</h3>
+                    <span className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
+                      {condition.count}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Related information */}
+          <div className="mt-16 p-6 bg-neutral-50 rounded-lg border border-neutral-200">
+            <h2 className="text-xl font-semibold text-primary mb-4">About Condition-Based Research</h2>
+            <p className="text-neutral-600 mb-4">
+              Research into hydrogen's effects on various health conditions is a growing field. Molecular hydrogen
+              (H₂) has been studied for its potential therapeutic effects across a range of conditions due to its
+              antioxidant properties, anti-inflammatory effects, and ability to modulate cell signaling pathways.
+            </p>
+            <p className="text-neutral-600">
+              Our database categorizes studies based on the conditions they address, making it easier for you
+              to find relevant research. We're constantly updating our collection as new studies are published.
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 };
