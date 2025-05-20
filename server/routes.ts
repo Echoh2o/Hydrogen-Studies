@@ -48,6 +48,7 @@ import journalDateRoutes from "./routes/journal-date-routes";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
+import consumerCategoriesRoutes from "./routes/consumer-categories-routes";
 import advancedSearchRouter from "./routes/advanced-search-router";
 import improvedSearchRouter from "./routes/improved-search-router";
 import studiesRouter from "./routes/studies-router";
