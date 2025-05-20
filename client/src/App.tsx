@@ -29,6 +29,10 @@ import ImprovedSearchPage from "@/pages/ImprovedSearchPage";
 import ExploreByBenefit from "@/pages/ExploreByBenefit";
 import ExploreByCondition from "@/pages/ExploreByCondition";
 import ConditionCategoryPage from "@/pages/ConditionCategoryPage";
+import ExploreByBodySystem from "@/pages/ExploreByBodySystem";
+import BodySystemCategoryPage from "@/pages/BodySystemCategoryPage";
+import ExploreByLifeStage from "@/pages/ExploreByLifeStage";
+import LifeStageCategoryPage from "@/pages/LifeStageCategoryPage";
 import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/ExploreByDemographic";
 import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
 import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
@@ -93,8 +97,18 @@ function Router() {
       
       {/* New Organization Structure Routes */}
       <Route path="/benefits" component={ExploreByBenefit} />
+      
+      {/* Consumer-friendly categorization models */}
       <Route path="/explore-by-condition" component={ExploreByCondition} />
       <Route path="/condition/:name" component={ConditionCategoryPage} />
+      
+      <Route path="/explore-by-body-system" component={ExploreByBodySystem} />
+      <Route path="/body-system/:name" component={BodySystemCategoryPage} />
+      
+      <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />
+      <Route path="/life-stage/:name" component={LifeStageCategoryPage} />
+      
+      {/* Other categorization methods */}
       <Route path="/demographics" component={ExploreByDemographicPage} />
       <Route path="/demographics/:slug" component={DemographicDetailPage} />
       <Route path="/mechanisms" component={ExploreByMechanismPage} />
