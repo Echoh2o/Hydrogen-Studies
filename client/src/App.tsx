@@ -54,6 +54,7 @@ import ResearchDatabasePage from "@/pages/admin/ResearchDatabasePage";
 import JournalDateUpdater from "@/pages/admin/JournalDateUpdater";
 import ContentEnrichmentPage from "@/pages/admin/ContentEnrichmentPage";
 import BatchEnrichmentPage from "@/pages/admin/BatchEnrichmentPage";
+import BatchCategorizationPage from "@/pages/admin/BatchCategorizationPage";
 import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
 import EnhancementPage from "@/pages/admin/EnhancementPage";
 import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
@@ -122,6 +123,7 @@ function Router() {
       <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
       <Route path="/admin/image-generation" component={ImageGenerationPage} />
       <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
+      <Route path="/admin/batch-categorization" component={BatchCategorizationPage} />
       
       {/* Legacy Admin Routes - will be removed after transition */}
       <Route path="/admin/legacy" component={AdminPage} />
