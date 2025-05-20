@@ -27,6 +27,7 @@ import ImprovedSearchPage from "@/pages/ImprovedSearchPage";
 
 // New organization structure pages
 import ExploreByBenefit from "@/pages/ExploreByBenefit";
+import ExploreByCondition from "@/pages/ExploreByCondition";
 import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/ExploreByDemographic";
 import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
 import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
@@ -91,7 +92,8 @@ function Router() {
       
       {/* New Organization Structure Routes */}
       <Route path="/benefits" component={ExploreByBenefit} />
-      <Route path="/explore-by-condition" component={ExploreByBenefit} />
+      <Route path="/explore-by-condition" component={ExploreByCondition} />
+      <Route path="/condition/:name" component={CategoryDetails} />
       <Route path="/demographics" component={ExploreByDemographicPage} />
       <Route path="/demographics/:slug" component={DemographicDetailPage} />
       <Route path="/mechanisms" component={ExploreByMechanismPage} />
