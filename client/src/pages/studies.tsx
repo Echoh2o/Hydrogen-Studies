@@ -40,7 +40,17 @@ export default function Studies() {
   // Create query parameters for API request
   const queryParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
-    if (value) queryParams.append(key, value.toString());
+    // Only add parameters that have actual values
+    if (value !== undefined && value !== null && value !== '') {
+      // For arrays, join with commas
+      if (Array.isArray(value) && value.length > 0) {
+        queryParams.append(key, value.join(','));
+      } else if (typeof value === 'boolean') {
+        queryParams.append(key, value.toString());
+      } else if (value) {
+        queryParams.append(key, value.toString());
+      }
+    }
   });
   
   // Update query when filters change
@@ -106,7 +116,23 @@ export default function Studies() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Search submitted with filters:", filters);
-    // Force the query to update if necessary
+    
+    // Update URL with search parameters
+    const searchParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value) && value.length > 0) {
+          searchParams.append(key, value.join(','));
+        } else if (value) {
+          searchParams.append(key, value.toString());
+        }
+      }
+    });
+    
+    const newSearch = searchParams.toString();
+    window.history.pushState(null, '', newSearch ? `?${newSearch}` : window.location.pathname);
+    
+    // Explicitly force a refetch
     refetch();
   };
   
