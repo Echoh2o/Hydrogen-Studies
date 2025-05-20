@@ -49,6 +49,7 @@ import researchUnifiedRoutes from "./routes/research-unified-routes";
 import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
 import advancedSearchRouter from "./routes/advanced-search-router";
+import improvedSearchRouter from "./routes/improved-search-router";
 import studiesRouter from "./routes/studies-router";
 import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
@@ -115,6 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register hydrogen organization routes for the new structure
   app.use('', hydrogenRoutes);
+  
+  // Register improved search router for better deduplicated results
+  app.use('', improvedSearchRouter);
   
   // Register insight card routes for sharing research findings
   app.use('/api', insightCardRoutes);
