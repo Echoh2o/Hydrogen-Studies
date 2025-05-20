@@ -795,8 +795,9 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Create a storage manager to handle the transition
 import { createStorageManager } from './storage-manager';
-import { dbStorage } from './db-storage';
+import { dbStorage } from './database-storage';
 
 // Create a new storage manager with both storage implementations
 // By default use in-memory storage for reliability until database is fully tested
@@ -806,6 +807,8 @@ const storageManager = createStorageManager(new MemStorage(), dbStorage, false);
 if (process.env.USE_DATABASE === 'true') {
   // Switch to database storage
   storageManager.useDatabase();
+} else {
+  console.log('Using in-memory storage. Set USE_DATABASE=true environment variable to use database storage.');
 }
 
 // Export the storage from the manager

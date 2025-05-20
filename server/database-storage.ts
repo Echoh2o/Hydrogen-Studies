@@ -1,21 +1,30 @@
-import { IStorage } from './storage';
+import { IStorage, PaginatedResults } from './storage';
 import { dbAdapter } from './database-adapter';
-import { MemStorage } from './storage';
+import type {
+  Study, InsertStudy, 
+  Category, InsertCategory,
+  Newsletter, InsertNewsletter,
+  User, InsertUser,
+  UserPreferences, InsertUserPreferences,
+  SearchHistory, InsertSearchHistory,
+  UserStudyInteraction, UserBlogInteraction,
+  BlogArticle, Notification, InsertNotification,
+  StudyReviewQueue, InsertStudyReviewQueue
+} from "@shared/schema";
 
 /**
  * Database Storage class
- * Wraps the database adapter with the IStorage interface
- * This allows for a gradual transition from in-memory to database storage
+ * Implements the IStorage interface for database operations
+ * Falls back to a provided memory storage for unimplemented methods
  */
 export class DatabaseStorage implements IStorage {
   // Reference to the memory storage for fallback operations
-  private memStorage: MemStorage;
+  private fallbackStorage: IStorage;
   
-  constructor() {
-    // Create a new memory storage instance for operations not yet
-    // implemented in the database adapter
-    this.memStorage = new MemStorage();
-    console.log('DatabaseStorage initialized with fallbacks to MemStorage');
+  constructor(fallbackStorage: IStorage) {
+    // Store the provided fallback storage implementation
+    this.fallbackStorage = fallbackStorage;
+    console.log('DatabaseStorage initialized with database adapter and fallbacks');
   }
   
   // Core study operations - implemented in database
