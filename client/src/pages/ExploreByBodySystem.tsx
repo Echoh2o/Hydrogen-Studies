@@ -12,6 +12,7 @@ import {
   Pill,
   Wind
 } from "lucide-react";
+import { ConsumerCategoriesResponse } from "@/types/consumer-categories";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
@@ -28,12 +29,12 @@ const ExploreByBodySystem = () => {
   const [categories, setCategories] = useState<BodySystemCategory[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: categoriesData } = useQuery({
+  const { data: categoriesData } = useQuery<ConsumerCategoriesResponse>({
     queryKey: ["/api/consumer-categories/counts"],
   });
 
   useEffect(() => {
-    if (categoriesData?.success && categoriesData?.data?.body_system) {
+    if (categoriesData && categoriesData.success && categoriesData.data && categoriesData.data.body_system) {
       // Map icons to each category 
       const mappedCategories = categoriesData.data.body_system.map((cat: BodySystemCategory) => {
         let icon;
