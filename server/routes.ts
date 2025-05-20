@@ -98,6 +98,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register research article search and discovery routes
   app.use('/api', researchRoutes);
   
+  // Register consumer-friendly categorization routes
+  app.use('/api/consumer-categories', consumerCategoriesRouter);
+  
   // Register unified search routes for multi-source searches
   app.use('/api', unifiedResearchRoutes);
   
