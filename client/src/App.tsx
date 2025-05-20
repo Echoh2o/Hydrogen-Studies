@@ -26,7 +26,7 @@ import ShareInsightCard from "@/pages/ShareInsightCard";
 import ImprovedSearchPage from "@/pages/ImprovedSearchPage";
 
 // New organization structure pages
-import ExploreByBenefitPage, { BenefitDetailPage } from "@/pages/ExploreByBenefit";
+import ExploreByBenefit from "@/pages/ExploreByBenefit";
 import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/ExploreByDemographic";
 import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
 import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
@@ -89,8 +89,8 @@ function Router() {
       <Route path="/improved-search" component={ImprovedSearchPage} />
       
       {/* New Organization Structure Routes */}
-      <Route path="/benefits" component={ExploreByBenefitPage} />
-      <Route path="/benefits/:slug" component={BenefitDetailPage} />
+      <Route path="/benefits" component={ExploreByBenefit} />
+      <Route path="/explore-by-condition" component={ExploreByBenefit} />
       <Route path="/demographics" component={ExploreByDemographicPage} />
       <Route path="/demographics/:slug" component={DemographicDetailPage} />
       <Route path="/mechanisms" component={ExploreByMechanismPage} />
