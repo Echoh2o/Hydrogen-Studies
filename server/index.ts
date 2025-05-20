@@ -7,6 +7,7 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { runMigrations } from "./schema-migrator";
 import { runDatabaseMigrations, initializeSampleCategoriesData } from "./schema-updates";
+import { initializeData } from "./initialize-data";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
