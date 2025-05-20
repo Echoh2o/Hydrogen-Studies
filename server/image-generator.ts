@@ -267,14 +267,23 @@ async function downloadAndSaveImage(imageUrl: string, entityId: number, entityTy
  */
 export async function findStudiesNeedingImages(limit: number = 10): Promise<Study[]> {
   try {
-    // Find studies that have no images or empty images array
+    // Use a more flexible approach to find studies without images
+    // This handles both null imageUrl and empty images array
     const studiesWithoutImages = await db
       .select()
       .from(studies)
       .where(
-        and(
+        or(
           // Check if there's no image url set
           isNull(studies.imageUrl),
+          // Check if images array is empty or null
+          isNull(studies.images),
+          // Use raw SQL for checking array length
+          sql`(${studies.images}::jsonb = '[]'::jsonb OR ${studies.images}::jsonb = 'null'::jsonb)`
+        )
+      )
+      .where(
+        and(
           // Only process studies with sufficient content
           not(isNull(studies.abstract)),
           // Title must be available
@@ -287,7 +296,8 @@ export async function findStudiesNeedingImages(limit: number = 10): Promise<Stud
     return studiesWithoutImages;
   } catch (error) {
     console.error("Error finding studies needing images:", error);
-    throw error;
+    // Return empty array instead of throwing to prevent API failures
+    return [];
   }
 }
 
