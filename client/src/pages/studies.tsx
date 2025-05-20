@@ -58,7 +58,13 @@ export default function Studies() {
     }
   }, [filters]);
   
-  const { data: studies, isLoading, isError, error, refetch } = useQuery<Study[]>({
+  const { data: studiesResponse, isLoading, isError, error, refetch } = useQuery<{
+    data: Study[];
+    total: number;
+    page: number;
+    pageSize: number;
+    pageCount: number;
+  }>({
     queryKey: [`/api/studies`, queryParams.toString()],
     queryFn: async () => {
       const response = await fetch(`/api/studies?${queryParams.toString()}`);
@@ -68,6 +74,9 @@ export default function Studies() {
       return response.json();
     }
   });
+  
+  // Extract the studies array from the paginated response
+  const studies = studiesResponse?.data || [];
   
   const handleFilterChange = (key: string, value: string | boolean) => {
     setFilters(prev => ({ ...prev, [key]: value }));
