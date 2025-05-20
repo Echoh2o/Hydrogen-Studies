@@ -170,14 +170,36 @@ export class MemStorage implements IStorage {
   async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
     let filteredStudies = Array.from(this.studiesData.values());
     
-    // Apply text search
+    // Apply comprehensive text search across all relevant fields
     if (filters.query) {
       const lowerQuery = filters.query.toLowerCase();
-      filteredStudies = filteredStudies.filter(study => 
-        study.title.toLowerCase().includes(lowerQuery) || 
-        study.abstract.toLowerCase().includes(lowerQuery) ||
-        study.authors.toLowerCase().includes(lowerQuery)
-      );
+      filteredStudies = filteredStudies.filter(study => {
+        // Always search in these primary fields
+        const inTitle = study.title?.toLowerCase().includes(lowerQuery) || false;
+        const inAbstract = study.abstract?.toLowerCase().includes(lowerQuery) || false;
+        const inAuthors = study.authors?.toLowerCase().includes(lowerQuery) || false;
+        
+        // Search in additional fields if they exist
+        const inMethods = study.methods?.toLowerCase().includes(lowerQuery) || false;
+        const inResults = study.results?.toLowerCase().includes(lowerQuery) || false;
+        const inConclusion = study.conclusion?.toLowerCase().includes(lowerQuery) || false;
+        const inJournal = study.journal?.toLowerCase().includes(lowerQuery) || false;
+        const inSimplifiedExplanation = study.simplifiedExplanation?.toLowerCase().includes(lowerQuery) || false;
+        
+        // Also search in keywords, tags, and other metadata
+        const inKeywords = Array.isArray(study.keywords) 
+          ? study.keywords.some(k => k.toLowerCase().includes(lowerQuery)) 
+          : false;
+        
+        const inTags = Array.isArray(study.tags) 
+          ? study.tags.some(t => t.toLowerCase().includes(lowerQuery)) 
+          : false;
+        
+        // Return true if the query is found in any field
+        return inTitle || inAbstract || inAuthors || inMethods || 
+               inResults || inConclusion || inJournal || 
+               inSimplifiedExplanation || inKeywords || inTags;
+      });
     }
     
     // Apply keyword filter
