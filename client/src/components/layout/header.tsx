@@ -5,22 +5,36 @@ import { Menu, X, ChevronDown } from "lucide-react";
 
 const navigationLinks = [
   { href: "/", label: "Home" },
-  { href: "/studies", label: "Studies" },
   { 
-    href: "#",
-    label: "Explore By",
+    href: "/studies",
+    label: "Research",
     dropdown: [
-      { href: "/explore-by-condition", label: "Health Condition" },
-      { href: "/explore-by-body-system", label: "Body System" },
-      { href: "/explore-by-life-stage", label: "Life Stage" },
-      { href: "/categories", label: "Research Category" }
+      { href: "/studies", label: "All Studies" },
+      { href: "/improved-search", label: "Advanced Search" },
+      { href: "/research-suggestions", label: "Research Wizard" }
     ]
   },
-  { href: "/resources", label: "Resources" },
-  { href: "/learn", label: "Learn" },
-  { href: "/chat", label: "AI Assistant" },
+  { 
+    href: "#",
+    label: "Explore",
+    dropdown: [
+      { href: "/explore-by-condition", label: "Health Conditions" },
+      { href: "/explore-by-body-system", label: "Body Systems" },
+      { href: "/explore-by-life-stage", label: "Life Stages" },
+      { href: "/categories", label: "Scientific Categories" }
+    ]
+  },
+  { 
+    href: "#",
+    label: "Learn",
+    dropdown: [
+      { href: "/learn", label: "Educational Content" },
+      { href: "/resources", label: "Resources" },
+      { href: "/chat", label: "Ask AI Assistant" }
+    ]
+  },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/contact", label: "Contact" }
 ];
 
 export default function Header() {
@@ -56,15 +70,15 @@ export default function Header() {
   }, [openDropdown]);
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-40">
+    <header className="bg-white shadow-md sticky top-0 z-40">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex justify-between items-center py-3">
           <div className="flex items-center space-x-4">
             {/* Logo */}
             <Link href="/" className="flex items-center">
               <svg
-                width="40"
-                height="40"
+                width="42"
+                height="42"
                 viewBox="0 0 40 40"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -74,9 +88,12 @@ export default function Header() {
                 <circle cx="14" cy="20" r="6" fill="#1A73E8" />
                 <circle cx="26" cy="20" r="6" fill="#34A853" />
               </svg>
-              <span className="text-xl font-bold text-primary">
-                Hydrogen<span className="text-secondary">Studies</span>
-              </span>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-primary">
+                  Hydrogen<span className="text-secondary">Studies</span>
+                </span>
+                <span className="text-xs text-gray-500 -mt-1">Research Database</span>
+              </div>
             </Link>
           </div>
 
