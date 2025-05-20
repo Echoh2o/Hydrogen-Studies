@@ -10,6 +10,13 @@ import { Study } from "@/types";
 export default function LatestStudiesSection() {
   const { data: studies, isLoading, isError, error, refetch } = useQuery<Study[]>({
     queryKey: ['/api/studies/latest'],
+    queryFn: async () => {
+      const response = await fetch('/api/studies/latest');
+      if (!response.ok) {
+        throw new Error('Failed to fetch latest studies');
+      }
+      return response.json();
+    }
   });
 
   return (
