@@ -1,13 +1,3 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
-import { eq, like, and, or, sql, desc, asc, count, isNull, isNotNull } from "drizzle-orm";
-
-// Configure Neon connection for WebSockets
-neonConfig.webSocketConstructor = ws;
-
-// Database tables
 import { 
   studies, categories, newsletters, contactMessages, studyReviewQueue,
   type Study, type InsertStudy,
@@ -17,56 +7,14 @@ import {
   type StudyReviewQueue, type InsertStudyReviewQueue
 } from "@shared/schema";
 
-// Check for database URL
-if (!process.env.DATABASE_URL) {
-  console.warn("DATABASE_URL not set. Database operations will not work.");
-}
-
-// Create a database connection pool
-export const pool = process.env.DATABASE_URL 
-  ? new Pool({ connectionString: process.env.DATABASE_URL })
-  : null;
-
-// Create a Drizzle ORM instance with our schema
-export const db = pool 
-  ? drizzle(pool, { schema })
-  : null;
-
-// Interface for study filters
-export interface StudyFilters {
-  query?: string;
-  keyword?: string;
-  author?: string;
-  yearFrom?: string | number;
-  yearTo?: string | number;
-  category?: string;
-  isPeerReviewed?: boolean | null;
-  hasHealthImplications?: boolean | null;
-  hasMedia?: boolean | null;
-  dateFrom?: string;
-  dateTo?: string;
-  page?: number | string;
-  pageSize?: number | string;
-  sortField?: string;
-  sortOrder?: 'asc' | 'desc';
-  sortBy?: string;
-  peerReviewed?: boolean;
-  [key: string]: any; // Allow additional properties for flexibility
-}
-
-// Interface for paginated results
-export interface PaginatedResults<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  pageCount: number;
-}
+import { eq, like, and, or, sql, desc, asc, count, isNull, isNotNull } from "drizzle-orm";
+import { db } from "./db";
+import type { StudyFilters, PaginatedResults, IStorage } from "./storage";
 
 /**
- * Database adapter class providing core database operations
+ * Database implementation of the storage interface
  */
-export class DatabaseAdapter {
+export class DatabaseImplementation {
   // Category cache for better performance
   private categoryCache: Map<string, Category> = new Map();
   private categoryCacheLastUpdate: number = 0;
@@ -816,4 +764,4 @@ export class DatabaseAdapter {
 }
 
 // Export a singleton instance
-export const dbAdapter = new DatabaseAdapter();
+export const dbImplementation = new DatabaseImplementation();
