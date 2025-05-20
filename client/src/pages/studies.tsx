@@ -282,7 +282,7 @@ export default function Studies() {
                                 <SelectValue placeholder="Any enrichment level" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Any enrichment level</SelectItem>
+                                <SelectItem value="any">Any enrichment level</SelectItem>
                                 <SelectItem value="complete">Complete (all sections)</SelectItem>
                                 <SelectItem value="partial">Partial (some sections)</SelectItem>
                                 <SelectItem value="basic">Basic (title/abstract only)</SelectItem>
