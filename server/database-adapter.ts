@@ -10,13 +10,14 @@ import {
 
 import { eq, like, and, or, sql, desc, asc, count, isNull, isNotNull } from "drizzle-orm";
 import { db } from "./db";
-import { StudyFilters, PaginatedResults, IStorage } from "./storage";
+import { StudyFilters, PaginatedResults } from "./storage";
 
 /**
- * Database implementation of the storage interface
- * Note: This implementation focuses on the core study operations for now
+ * Database adapter providing core database operations
+ * This is not a full implementation of IStorage, but provides
+ * the core functions needed for database operations.
  */
-export class DatabaseStorage implements Partial<IStorage> {
+export class DatabaseAdapter {
   // Category cache for better performance
   private categoryCache: Map<string, Category> = new Map();
   private categoryCacheLastUpdate: number = 0;
@@ -126,9 +127,9 @@ export class DatabaseStorage implements Partial<IStorage> {
       const offset = (page - 1) * pageSize;
       
       // Build the main query
-      const studiesQuery = db.select().from(studies);
+      let mainQuery = db.select().from(studies);
       if (whereConditions.length > 0) {
-        studiesQuery.where(and(...whereConditions));
+        mainQuery = mainQuery.where(and(...whereConditions));
       }
       
       // Apply sorting
@@ -161,11 +162,18 @@ export class DatabaseStorage implements Partial<IStorage> {
           sortColumn = studies.publishDate;
       }
       
-      // Apply sort direction and pagination
-      const data = await studiesQuery
-        .orderBy(sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn))
-        .limit(pageSize)
-        .offset(offset);
+      // Apply sort direction
+      if (sortOrder === 'asc') {
+        mainQuery = mainQuery.orderBy(asc(sortColumn));
+      } else {
+        mainQuery = mainQuery.orderBy(desc(sortColumn));
+      }
+      
+      // Apply pagination
+      mainQuery = mainQuery.limit(pageSize).offset(offset);
+      
+      // Execute main query
+      const data = await mainQuery;
       
       return {
         data,
@@ -206,23 +214,22 @@ export class DatabaseStorage implements Partial<IStorage> {
   }
 
   /**
-   * Get a single study by identifier
+   * Get a single study by DOI
    */
-  async getStudyByIdentifier(identifier: string): Promise<Study | undefined> {
+  async getStudyByDoi(doi: string): Promise<Study | undefined> {
     try {
-      // Normalize identifier
-      const normalizedIdentifier = identifier.trim().toLowerCase();
+      // Normalize DOI
+      const normalizedDoi = doi.trim().toLowerCase();
       
-      // Search in DOI field
       const result = await db
         .select()
         .from(studies)
-        .where(sql`LOWER(${studies.doi}) = ${normalizedIdentifier}`)
+        .where(sql`LOWER(${studies.doi}) = ${normalizedDoi}`)
         .limit(1);
       
       return result.length > 0 ? result[0] : undefined;
     } catch (error) {
-      console.error(`Error in database getStudyByIdentifier(${identifier}):`, error);
+      console.error(`Error in database getStudyByDoi(${doi}):`, error);
       return undefined;
     }
   }
@@ -528,7 +535,7 @@ export class DatabaseStorage implements Partial<IStorage> {
       
       // Check if study exists
       const studyResult = await db
-        .select()
+        .select({ id: studies.id })
         .from(studies)
         .where(sql`LOWER(${studies.doi}) = ${normalizedDoi}`)
         .limit(1);
@@ -539,7 +546,7 @@ export class DatabaseStorage implements Partial<IStorage> {
       
       // Check if study is in review queue
       const queueResult = await db
-        .select()
+        .select({ id: studyReviewQueue.id })
         .from(studyReviewQueue)
         .where(sql`LOWER(${studyReviewQueue.doi}) = ${normalizedDoi}`)
         .limit(1);
@@ -671,5 +678,5 @@ export class DatabaseStorage implements Partial<IStorage> {
   }
 }
 
-// Create a singleton instance of the database storage
-export const dbStorage = new DatabaseStorage();
+// Create a singleton instance of the database adapter
+export const dbAdapter = new DatabaseAdapter();

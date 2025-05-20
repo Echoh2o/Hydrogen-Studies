@@ -795,6 +795,18 @@ export class MemStorage implements IStorage {
   }
 }
 
-// For now, use the in-memory implementation 
-// This gives us a working application while we refine our database approach
-export const storage = new MemStorage();
+import { createStorageManager } from './storage-manager';
+import { dbStorage } from './db-storage';
+
+// Create a new storage manager with both storage implementations
+// By default use in-memory storage for reliability until database is fully tested
+const storageManager = createStorageManager(new MemStorage(), dbStorage, false);
+
+// Check if we should use database by environment variable
+if (process.env.USE_DATABASE === 'true') {
+  // Switch to database storage
+  storageManager.useDatabase();
+}
+
+// Export the storage from the manager
+export const storage = storageManager.getStorage();
