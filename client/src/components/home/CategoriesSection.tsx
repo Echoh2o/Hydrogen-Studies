@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Category } from "@shared/schema";
+import { type Category } from "@/types";
 import { HiArrowRight } from "react-icons/hi";
 import { 
   HiBrain, 

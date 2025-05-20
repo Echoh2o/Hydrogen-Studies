@@ -15,7 +15,7 @@ import {
   Calendar,
   RefreshCcw,
   Home,
-  Category,
+  Folders, 
   KeyRound
 } from 'lucide-react';
 
