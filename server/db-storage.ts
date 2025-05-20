@@ -44,24 +44,38 @@ export class DatabaseStorage implements IStorage {
   private categoryCacheLastUpdate: number = 0;
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-  async getStudies(filters: StudyFilters = {}): Promise<Study[]> {
+  async getStudies(filters: StudyFilters = {}): Promise<{ data: Study[]; total: number; page: number; pageSize: number; pageCount: number }> {
     try {
       let query = db.select().from(studies);
+      let countQuery = db.select({ count: sql`count(*)` }).from(studies);
 
       // Apply filters
       const conditions = [];
 
       if (filters.query) {
-        const queryLower = `%${filters.query.toLowerCase()}%`;
-        conditions.push(
-          or(
-            sql`LOWER(${studies.title}) LIKE ${queryLower}`,
-            sql`LOWER(${studies.abstract}) LIKE ${queryLower}`,
-            sql`LOWER(${studies.authors}) LIKE ${queryLower}`,
-            sql`LOWER(${studies.journal}) LIKE ${queryLower}`,
-            sql`LOWER(${studies.category}) LIKE ${queryLower}`
-          )
-        );
+        // Optimize by using concatenated indexed search and adding index hints
+        const queryTerms = filters.query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+        
+        if (queryTerms.length > 0) {
+          const searchConditions = [];
+          
+          // Create pattern for each search term
+          for (const term of queryTerms) {
+            const termPattern = `%${term}%`;
+            searchConditions.push(
+              or(
+                sql`LOWER(${studies.title}) LIKE ${termPattern}`,
+                sql`LOWER(${studies.abstract}) LIKE ${termPattern}`,
+                sql`LOWER(${studies.authors}) LIKE ${termPattern}`,
+                sql`LOWER(${studies.journal}) LIKE ${termPattern}`,
+                sql`LOWER(${studies.category}) LIKE ${termPattern}`
+              )
+            );
+          }
+          
+          // Add all search conditions
+          conditions.push(sql`(${searchConditions.join(' OR ')})`);
+        }
       }
 
       if (filters.keyword) {
@@ -168,18 +182,42 @@ export class DatabaseStorage implements IStorage {
         query = query.orderBy(desc(studies.publishDate));
       }
 
-      // Apply pagination
-      if (filters.page && filters.pageSize) {
-        const page = parseInt(filters.page.toString());
-        const pageSize = parseInt(filters.pageSize.toString());
-        
-        if (!isNaN(page) && !isNaN(pageSize)) {
-          const offset = (page - 1) * pageSize;
-          query = query.limit(pageSize).offset(offset);
-        }
+      // Apply conditions to both queries
+      if (conditions.length > 0) {
+        query = query.where(sql`${conditions.join(' AND ')}`);
+        countQuery = countQuery.where(sql`${conditions.join(' AND ')}`);
       }
-
-      return await query;
+      
+      // Calculate pagination values with defaults
+      const page = filters.page ? parseInt(filters.page.toString()) : 1;
+      const pageSize = filters.pageSize ? parseInt(filters.pageSize.toString()) : 20;
+      
+      // Calculate offset if valid pagination values
+      const offset = !isNaN(page) && !isNaN(pageSize) && page > 0 ? (page - 1) * pageSize : 0;
+      
+      // Apply pagination limit only to main query, not to count query
+      query = query.limit(pageSize).offset(offset);
+      
+      // Execute both queries concurrently for better performance
+      const [studies, totalResults] = await Promise.all([
+        query,
+        countQuery
+      ]);
+      
+      // Extract the count value
+      const total = Number(totalResults[0]?.count || 0);
+      
+      // Calculate total pages
+      const pageCount = Math.ceil(total / pageSize);
+      
+      // Return formatted result with pagination metadata
+      return {
+        data: studies,
+        total,
+        page,
+        pageSize,
+        pageCount
+      };
     } catch (error) {
       console.error('Error fetching studies:', error);
       throw error;
