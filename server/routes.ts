@@ -54,6 +54,7 @@ import insightCardRoutes from "./routes/insight-card-routes";
 import enhancedEnrichmentRoutes from "./routes/enhanced-enrichment-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
+import exportRoutes from "./routes/export-routes";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
@@ -118,6 +119,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register keyword monitor schedule routes for automated search scheduling
   app.use('/api/keywords/monitor/schedule', keywordMonitorScheduleRoutes);
+  
+  // Register export routes for downloading research data
+  app.use('/api/export', exportRoutes);
   
   // Direct API endpoint for keyword monitor status
   app.get('/api/keywords/monitor/status', async (req, res) => {
