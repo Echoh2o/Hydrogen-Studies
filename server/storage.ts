@@ -388,7 +388,7 @@ export class MemStorage implements IStorage {
     return result;
   }
 
-  async getLatestStudies(limit: number = 3): Promise<Study[]> {
+  async getLatestStudies(limit: number = 20): Promise<Study[]> {
     const studies = Array.from(this.studiesData.values());
     
     studies.sort((a, b) => {
