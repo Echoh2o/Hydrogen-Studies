@@ -88,7 +88,7 @@ router.get("/", async (req, res) => {
 // Get latest studies
 router.get("/latest", async (req, res) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 3;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
     
     // Direct database access if needed
     if (process.env.DATABASE_URL) {

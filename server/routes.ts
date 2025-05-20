@@ -395,7 +395,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/studies/latest", async (req, res) => {
     try {
-      const studies = await storage.getLatestStudies();
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const studies = await storage.getLatestStudies(limit);
       res.json(studies);
     } catch (error) {
       console.error("Error fetching latest studies:", error);
