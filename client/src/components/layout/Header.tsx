@@ -84,6 +84,12 @@ const Header = () => {
                 </a>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
+                <Link href="/explore-by-condition">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Brain className="mr-2 h-4 w-4" />
+                    <span>By Health Condition</span>
+                  </DropdownMenuItem>
+                </Link>
                 <Link href="/benefits">
                   <DropdownMenuItem className="cursor-pointer">
                     <Brain className="mr-2 h-4 w-4" />
@@ -160,6 +166,15 @@ const Header = () => {
               <div className="px-3 py-2 font-medium text-neutral-800">
                 <div className="mb-1 font-semibold">Explore Studies By:</div>
                 <div className="ml-2 space-y-2 mt-2">
+                  <Link href="/explore-by-condition">
+                    <a 
+                      className={`flex items-center ${isActiveLink('/explore-by-condition') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
+                      onClick={closeMobileMenu}
+                    >
+                      <Brain className="mr-2 h-4 w-4" />
+                      Health Conditions
+                    </a>
+                  </Link>
                   <Link href="/benefits">
                     <a 
                       className={`flex items-center ${isActiveLink('/benefits') || location.startsWith('/benefits/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
