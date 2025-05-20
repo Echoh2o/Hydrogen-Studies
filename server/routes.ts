@@ -898,7 +898,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validatedData = req.body; // We could add validation here
+      
+      // Store the original category to check if it changes
+      const originalCategory = study.category;
+      
       const updatedStudy = await storage.updateStudy(studyId, validatedData);
+      
+      // If the category has changed, update the counts for both old and new categories
+      if (originalCategory !== updatedStudy.category) {
+        try {
+          const { updateSingleCategoryCount } = await import('./update-category-counts');
+          // Update count for the original category (decreased count)
+          await updateSingleCategoryCount(originalCategory);
+          // Update count for the new category (increased count)
+          await updateSingleCategoryCount(updatedStudy.category);
+        } catch (countError) {
+          console.error("Error updating category counts:", countError);
+          // Don't fail the request if count update fails
+        }
+      }
+      
       res.status(200).json(updatedStudy);
     } catch (error) {
       console.error("Error updating study:", error);
@@ -922,7 +941,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Study not found" });
       }
       
+      // Store the category name before deleting
+      const categoryName = study.category;
+      
       await storage.deleteStudy(studyId);
+      
+      // Update the category count after the study is deleted
+      try {
+        const { updateSingleCategoryCount } = await import('./update-category-counts');
+        await updateSingleCategoryCount(categoryName);
+      } catch (countError) {
+        console.error("Error updating category count after deletion:", countError);
+        // Don't fail the request if count update fails
+      }
+      
       res.status(200).json({ message: "Study deleted successfully" });
     } catch (error) {
       console.error("Error deleting study:", error);
