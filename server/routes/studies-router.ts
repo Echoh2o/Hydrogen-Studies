@@ -156,7 +156,7 @@ router.get("/latest", async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
     
     // Direct database access if needed
-    if (process.env.DATABASE_URL) {
+    if (process.env.DATABASE_URL && db) {
       try {
         // Try to get latest studies directly from the database
         const latestStudies = await db.select().from(studies).orderBy(studies.createdAt).limit(limit);

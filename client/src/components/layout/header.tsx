@@ -20,6 +20,7 @@ const navigationLinks = [
     label: "Explore",
     id: "explore-menu",
     dropdown: [
+      { href: "/benefits", label: "Health Benefits" },
       { href: "/explore-by-condition", label: "Health Conditions" },
       { href: "/explore-by-body-system", label: "Body Systems" },
       { href: "/explore-by-life-stage", label: "Life Stages" }
