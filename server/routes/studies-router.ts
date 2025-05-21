@@ -255,7 +255,10 @@ router.get("/:id", async (req, res) => {
     if (study && !study.imageUrl) {
       // Generate a dynamic image related to the study topic
       const topic = study.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
-      study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${topic}`;
+      // Make sure we properly encode the text to avoid URL issues
+      const encodedTopic = encodeURIComponent(topic);
+      study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${encodedTopic}`;
+      console.log(`Generated image URL for study ${id}: ${study.imageUrl}`);
     }
     
     if (!study) {
