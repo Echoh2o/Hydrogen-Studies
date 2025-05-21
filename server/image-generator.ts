@@ -233,8 +233,8 @@ export async function generateImageForStudy(studyId: number): Promise<{
     // Save the image to disk
     fs.writeFileSync(imagePath, imageResponse.data);
     
-    // Get the relative path for storage in the database
-    const relativeImagePath = path.join('uploads', 'study-images', imageName);
+    // Get the relative path for storage in the database - use forward slashes for web URLs
+    const relativeImagePath = `/uploads/study-images/${imageName}`;
     
     // Update the study record with the new image
     await db?.update(studiesTable)
