@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Image, Check, AlertTriangle } from "lucide-react";
+import { Loader2, Image, Check, AlertTriangle, Zap, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ImageGenerationPage: React.FC = () => {
   const { toast } = useToast();
