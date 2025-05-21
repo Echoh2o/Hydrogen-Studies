@@ -80,4 +80,4 @@ router.post('/batch-generate', async (req, res) => {
   }
 });
 
-export default router;
+export const imageGenerationRoutes = router;

@@ -1,16 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiDocumentText, HiClipboardCheck } from "react-icons/hi";
+import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiDocumentText, HiClipboardCheck, HiPhotograph } from "react-icons/hi";
 import { Helmet } from "react-helmet";
+import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
 
 const StudyPage = () => {
   const { id } = useParams();
   const studyId = parseInt(id);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: study, isLoading, error } = useQuery({
     queryKey: [`/api/studies/${studyId}`],
@@ -18,6 +21,48 @@ const StudyPage = () => {
   
   // Create a fallback image URL for studies
   const fallbackImageUrl = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visual";
+  
+  // Mutation for generating an AI image for this study
+  const generateImageMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/studies/${studyId}/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate image');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Image generated successfully",
+          description: "A new scientific illustration has been created for this study.",
+        });
+        // Invalidate the study query to refresh the data with the new image
+        queryClient.invalidateQueries({ queryKey: [`/api/studies/${studyId}`] });
+      } else {
+        toast({
+          title: "Image generation failed",
+          description: data.message || "Unable to generate image. Please try again later.",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Image generation failed",
+        description: error instanceof Error ? error.message : "Unable to generate image. Please try again later.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Related studies query (same category)
   const { data: allStudies } = useQuery({
@@ -137,23 +182,48 @@ const StudyPage = () => {
               <div className="p-6 md:p-8">
                 {/* Study Image */}
                 <div className="mb-6 rounded-lg overflow-hidden">
-                  {/* Create fallback URL directly in a more reliable way */}
-                  <img 
-                    src={study.imageUrl ? study.imageUrl : 
-                      "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visual"
-                    }
-                    alt={`Visual representation of hydrogen research`}
-                    className="w-full h-auto object-cover shadow-sm" 
-                    onError={(e) => {
-                      // Fallback if the image fails to load
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null; // Prevent infinite loop
-                      target.src = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visual";
-                    }}
-                  />
-                  <p className="text-xs text-neutral-500 mt-2 italic">
-                    Visual representation of hydrogen effects related to this research
-                  </p>
+                  {/* Image with fallback */}
+                  <div className="relative">
+                    <img 
+                      src={study.imageUrl ? study.imageUrl : fallbackImageUrl}
+                      alt={`Visual representation of hydrogen research`}
+                      className="w-full h-auto object-cover shadow-sm" 
+                      onError={(e) => {
+                        // Fallback if the image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null; // Prevent infinite loop
+                        target.src = fallbackImageUrl;
+                      }}
+                    />
+                    
+                    {/* Generate Image Button - Only show if image is missing or using fallback */}
+                    {(!study.imageUrl || study.imageUrl === fallbackImageUrl) && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
+                        <Button 
+                          variant="secondary"
+                          className="flex items-center gap-2 bg-white hover:bg-neutral-100"
+                          onClick={() => generateImageMutation.mutate()}
+                          disabled={generateImageMutation.isPending}
+                        >
+                          <HiPhotograph className="w-4 h-4" />
+                          {generateImageMutation.isPending ? 'Generating...' : 'Generate Scientific Visual'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-between items-start mt-2">
+                    <p className="text-xs text-neutral-500 italic">
+                      Visual representation of hydrogen effects related to this research
+                    </p>
+                    
+                    {/* Image attribution if available */}
+                    {study.imageAlt && (
+                      <span className="text-xs text-neutral-400">
+                        {study.imageAlt}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <h2 className="text-xl font-semibold mb-4">Abstract</h2>
