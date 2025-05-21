@@ -103,11 +103,59 @@ const LifeStageCategoryPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <Helmet>
-        <title>{displayName} Hydrogen Studies | HydrogenStudies.com</title>
+        <title>{`Hydrogen Therapy for ${displayName} | Age-Specific Health Research`}</title>
         <meta 
           name="description" 
-          content={`Research studies about how hydrogen therapy may affect ${displayName.toLowerCase()}. Browse the latest scientific evidence and findings.`}
+          content={`Scientific studies on hydrogen therapy benefits specifically for ${displayName.toLowerCase()}. Discover age-appropriate research on molecular hydrogen for optimal health at every life stage.`}
         />
+        <meta name="keywords" content={`hydrogen therapy ${displayName.toLowerCase()}, molecular hydrogen age-specific, h2 benefits ${displayName.toLowerCase()}, hydrogen water ${displayName.toLowerCase()}, hydrogen research by age`} />
+        <link rel="canonical" href={`https://hydrogenstudies.com/life-stage/${name}`} />
+        
+        {/* Open Graph Tags */}
+        <meta property="og:title" content={`Hydrogen Therapy Research for ${displayName} | Age-Specific Studies`} />
+        <meta property="og:description" content={`Scientific studies on hydrogen therapy benefits specifically for ${displayName.toLowerCase()}. Age-appropriate research on molecular hydrogen.`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://hydrogenstudies.com/life-stage/${name}`} />
+        <meta property="og:image" content="/og-lifestage-image.jpg" />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:title" content={`${displayName} Hydrogen Therapy Research | Age-Specific Benefits`} />
+        <meta name="twitter:description" content={`Scientific studies on hydrogen therapy benefits for ${displayName.toLowerCase()}. Age-appropriate research database.`} />
+        
+        {/* Schema.org structured data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "headline": `Hydrogen Therapy Research for ${displayName}`,
+            "description": `Scientific research database on how hydrogen therapy affects ${displayName.toLowerCase()}. Age-specific evidence on molecular hydrogen health benefits.`,
+            "keywords": `hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 benefits, age-specific research`,
+            "url": `https://hydrogenstudies.com/life-stage/${name}`,
+            "mainEntity": {
+              "@type": "ItemList",
+              "itemListElement": studies.map((study, index) => ({
+                "@type": "ListItem",
+                "position": index + 1,
+                "url": `https://hydrogenstudies.com/studies/${study.id}`,
+                "name": study.title
+              }))
+            },
+            "audience": {
+              "@type": "Audience",
+              "audienceType": displayName
+            },
+            "about": [
+              {
+                "@type": "Thing",
+                "name": `${displayName} Health`
+              },
+              {
+                "@type": "Thing",
+                "name": "Hydrogen Therapy"
+              }
+            ]
+          })}
+        </script>
       </Helmet>
 
       <div className="mb-8">
