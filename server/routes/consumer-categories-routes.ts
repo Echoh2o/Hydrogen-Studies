@@ -5,8 +5,8 @@ import { sql } from 'drizzle-orm';
 
 const router = express.Router();
 
-// Get consumer categories' names
-router.get('/', async (req, res) => {
+// Get consumer categories' names - use specific path to avoid conflict with homepage
+router.get('/list', async (req, res) => {
   try {
     // Health condition categories
     const conditionCategories = [

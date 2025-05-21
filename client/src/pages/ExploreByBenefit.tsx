@@ -81,7 +81,7 @@ const ExploreByBenefit: React.FC = () => {
       life_stage: string[]
     }
   }>({
-    queryKey: ['/api/consumer-categories'],
+    queryKey: ['/api/consumer-categories/list'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
