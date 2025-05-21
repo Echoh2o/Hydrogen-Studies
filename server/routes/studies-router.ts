@@ -7,6 +7,24 @@ import { db } from "../db";
 const router = Router();
 
 // Get studies by consumer category type (condition, body_system, life_stage)
+router.get("/by-consumer-category", async (req, res) => {
+  try {
+    // For requests without parameters, return empty result with instructions
+    return res.json({
+      success: true,
+      data: [],
+      message: "Please specify a model and category to get studies"
+    });
+  } catch (error) {
+    console.error("Error fetching studies by consumer category:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch studies by consumer category"
+    });
+  }
+});
+
+// Get studies by specific model and category
 router.get("/by-consumer-category/:model/:category", async (req, res) => {
   try {
     const { model, category } = req.params;
