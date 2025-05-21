@@ -4,6 +4,28 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 
+// Define types for API responses
+interface StudyWithoutImage {
+  id: number;
+  title: string;
+  abstract: string;
+  category: string;
+  publishDate: string;
+}
+
+interface ImageGenerationResponse {
+  success: boolean;
+  message: string;
+  studyId?: number;
+  imagePath?: string;
+}
+
+interface BatchImageResponse {
+  success: boolean;
+  message: string;
+  studyIds?: number[];
+}
+
 import {
   Card,
   CardContent,
@@ -33,27 +55,27 @@ const ImageGenerationPage: React.FC = () => {
     isError: isErrorStudies,
     refetch: refetchStudies
   } = useQuery({
-    queryKey: ["/api/studies/needing-images"],
+    queryKey: ["/api/image-generation/find-studies-needing-images"],
     retry: 3, // Allow retries in case of temporary database issues
     retryDelay: 1000, // Retry after 1 second
     // Provide default empty data to prevent rendering errors
-    placeholderData: { success: true, data: [] }
+    placeholderData: { success: true, studyIds: [] }
   });
 
   // Mutation for generating a single image
-  const singleImageMutation = useMutation({
+  const singleImageMutation = useMutation<ImageGenerationResponse, Error, number>({
     mutationFn: async (studyId: number) => {
       const response = await apiRequest({
         url: `/api/studies/${studyId}/generate-image`,
         method: "POST"
       });
-      return response as any;
+      return response as unknown as ImageGenerationResponse;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
       toast({
         title: "Image Generated",
-        description: `Successfully generated image for study #${data.studyId || studyId}`,
+        description: `Successfully generated image for study #${data.studyId || variables}`,
         variant: "default",
       });
       setSelectedStudyId(null);
@@ -70,16 +92,16 @@ const ImageGenerationPage: React.FC = () => {
   });
 
   // Mutation for batch generating images
-  const batchImageMutation = useMutation({
+  const batchImageMutation = useMutation<BatchImageResponse, Error, number>({
     mutationFn: async (size: number) => {
       const response = await apiRequest({
         url: "/api/image-generation/batch-generate",
         method: "POST",
         data: { limit: size }
       });
-      return response as any;
+      return response as unknown as BatchImageResponse;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
       toast({
         title: "Batch Processing Started",
@@ -98,15 +120,15 @@ const ImageGenerationPage: React.FC = () => {
   });
   
   // Mutation for auto-generating images for all studies without images
-  const autoGenImageMutation = useMutation({
+  const autoGenImageMutation = useMutation<BatchImageResponse, Error, void>({
     mutationFn: async () => {
       const response = await apiRequest({
         url: "/api/image-generation/auto-generate-all",
         method: "POST"
       });
-      return response as any;
+      return response as unknown as BatchImageResponse;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       setAutoGenStarted(true);
       queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
       toast({
@@ -156,7 +178,7 @@ const ImageGenerationPage: React.FC = () => {
               {isLoadingStudies ? (
                 <Skeleton className="h-4 w-48" />
               ) : (
-                `${studiesNeedingImages?.data?.length || 0} studies need images`
+                `${studiesNeedingImages?.studyIds?.length || 0} studies need images`
               )}
             </p>
             <Button onClick={() => refetchStudies()} variant="outline" className="w-full">
@@ -186,7 +208,7 @@ const ImageGenerationPage: React.FC = () => {
             </div>
             <Button 
               onClick={handleBatchGenerate} 
-              disabled={batchImageMutation.isPending || !studiesNeedingImages?.data?.length}
+              disabled={batchImageMutation.isPending || !studiesNeedingImages?.studyIds?.length}
               className="w-full"
             >
               {batchImageMutation.isPending ? (
