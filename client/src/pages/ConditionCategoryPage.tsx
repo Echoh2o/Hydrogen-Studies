@@ -86,11 +86,49 @@ const ConditionCategoryPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <Helmet>
-        <title>{displayName} Hydrogen Studies | HydrogenStudies.com</title>
+        <title>{`Hydrogen Therapy for ${displayName} | Research on Health Benefits & Treatment`}</title>
         <meta 
           name="description" 
-          content={`Research studies about how hydrogen therapy may benefit ${displayName.toLowerCase()} conditions. Browse the latest scientific evidence and findings.`}
+          content={`Evidence-based research on hydrogen therapy for ${displayName.toLowerCase()}. Discover how molecular hydrogen may help treat and prevent ${displayName.toLowerCase()} conditions with scientific studies.`}
         />
+        <meta name="keywords" content={`hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 treatment, hydrogen water, ${displayName.toLowerCase()} treatment`} />
+        <link rel="canonical" href={`https://hydrogenstudies.com/condition/${name}`} />
+        
+        {/* Open Graph Tags */}
+        <meta property="og:title" content={`Hydrogen Therapy Research for ${displayName} | Scientific Evidence`} />
+        <meta property="og:description" content={`Discover the latest research on using hydrogen therapy to treat ${displayName.toLowerCase()} conditions. Evidence-based studies on molecular hydrogen benefits.`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://hydrogenstudies.com/condition/${name}`} />
+        <meta property="og:image" content="/og-category-image.jpg" />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:title" content={`Hydrogen Therapy for ${displayName} | Research Database`} />
+        <meta name="twitter:description" content={`Scientific studies on hydrogen therapy benefits for ${displayName.toLowerCase()}. Evidence-based research database.`} />
+        
+        {/* Schema.org structured data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "headline": `Hydrogen Therapy Research for ${displayName}`,
+            "description": `Scientific studies on how hydrogen therapy may benefit and treat ${displayName.toLowerCase()} conditions. Evidence-based research database.`,
+            "keywords": `hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 treatment`,
+            "url": `https://hydrogenstudies.com/condition/${name}`,
+            "mainEntity": {
+              "@type": "ItemList",
+              "itemListElement": studies.map((study, index) => ({
+                "@type": "ListItem",
+                "position": index + 1,
+                "url": `https://hydrogenstudies.com/studies/${study.id}`,
+                "name": study.title
+              }))
+            },
+            "about": {
+              "@type": "MedicalCondition",
+              "name": displayName
+            }
+          })}
+        </script>
       </Helmet>
 
       <div className="mb-8">
