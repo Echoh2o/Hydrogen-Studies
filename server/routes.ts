@@ -67,6 +67,7 @@ import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
 import exportRoutes from "./routes/export-routes";
 import priorityEnrichmentRoutes from "./routes/priority-enrichment-routes";
+import batchImageFixRoutes from "./routes/batch-image-fix-routes";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
@@ -219,6 +220,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register batch enrichment routes for processing multiple studies
   app.use('/api/enrichment/batch', batchEnrichmentRoutes);
+  
+  // Register batch image fix routes to ensure all studies have images
+  app.use('/api/images/fix', batchImageFixRoutes);
   
   // Register enhanced batch enrichment routes
   app.use('/api/enhanced-enrichment', contentEnrichmentRoutes);

@@ -47,11 +47,18 @@ const StudyPage = () => {
   // Create a fallback image URL for studies with enhanced visual appeal
   const fallbackImageUrl = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visualization";
   
-  // Helper function to process image URLs correctly
+  // Enhanced helper function to process image URLs correctly and handle all edge cases
   const getProcessedImageUrl = (url?: string) => {
-    if (!url) return fallbackImageUrl;
+    // If no URL provided or it's null/empty, use fallback
+    if (!url || url.trim() === '') return fallbackImageUrl;
+    
+    // If it's already a fully qualified URL (starts with http/https), use it directly
     if (url.startsWith('http')) return url;
+    
+    // If it's a root-relative URL (starts with /), use it as is
     if (url.startsWith('/')) return url;
+    
+    // For any other case, prepend / to make it a root-relative URL
     return `/${url}`;
   };
   
