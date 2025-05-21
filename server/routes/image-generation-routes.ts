@@ -25,7 +25,7 @@ router.post('/generate/:studyId', async (req, res) => {
     }
     
     // Get the study to check if it exists
-    const study = await db.select().from(studiesTable).where(eq(studiesTable.id, studyId)).limit(1);
+    const study = await db?.select().from(studiesTable).where(eq(studiesTable.id, studyId)).limit(1);
     if (!study || study.length === 0) {
       return res.status(404).json({ 
         success: false, 
@@ -84,8 +84,10 @@ router.post('/batch-generate', async (req, res) => {
       });
     }
     
-    // Start the batch process
-    const batchProcess = batchGenerateImagesForStudies(idsToProcess);
+    // Start the batch process with the array of study IDs
+    setTimeout(() => {
+      batchGenerateImagesForStudies(idsToProcess);
+    }, 100);
     
     // Log that the batch process has started
     console.log(`Started batch image generation for ${idsToProcess.length} studies`);
