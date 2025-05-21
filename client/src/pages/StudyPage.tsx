@@ -15,6 +15,9 @@ const StudyPage = () => {
   const { data: study, isLoading, error } = useQuery({
     queryKey: [`/api/studies/${studyId}`],
   });
+  
+  // Create a fallback image URL for studies
+  const fallbackImageUrl = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visual";
 
   // Related studies query (same category)
   const { data: allStudies } = useQuery({
