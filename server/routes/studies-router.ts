@@ -38,42 +38,58 @@ router.get("/by-consumer-category/:model/:category", async (req, res) => {
     
     console.log(`Fetching studies for ${model} category: ${category}`);
     
-    // Mock data for demonstration - this should be replaced with actual database query
-    const mockStudies = [
-      {
-        id: 1,
-        title: "Effects of hydrogen-rich water on metabolic syndrome",
-        abstract: "This study investigates the effects of hydrogen-rich water consumption on markers of metabolic syndrome.",
-        category: "Metabolic",
-        publishDate: "2023-05-15",
-        journal: "Journal of Hydrogen Medicine",
-        authors: "Smith J, Johnson A",
-        doi: "10.1234/hydro.2023.001",
-        imageUrl: "/uploads/metabolic-syndrome-study.jpg"
-      },
-      {
-        id: 2,
-        title: "Hydrogen inhalation for respiratory conditions",
-        abstract: "A clinical trial evaluating hydrogen gas inhalation therapy for respiratory disorders.",
-        category: "Respiratory",
-        publishDate: "2023-06-20",
-        journal: "Respiratory Research International",
-        authors: "Chen L, Wang H",
-        doi: "10.1234/resp.2023.015",
-        imageUrl: "/uploads/respiratory-hydrogen-study.jpg"
-      },
-      {
-        id: 3,
-        title: "Hydrogen baths for psoriasis treatment",
-        abstract: "Evaluation of hydrogen-enriched water baths for treating psoriasis symptoms.",
-        category: "Dermatology",
-        publishDate: "2023-04-10",
-        journal: "Dermatology Science Journal",
-        authors: "Tanaka Y, Suzuki K",
-        doi: "10.1234/derm.2023.008",
-        imageUrl: "/uploads/psoriasis-hydrogen-study.jpg"
-      }
-    ];
+    // Generate appropriate mock data based on the selected category
+    const generateMockStudies = (categoryName) => {
+      // Create a list of studies tailored to this category
+      const studyTemplates = [
+        {
+          title: `Effects of hydrogen-rich water on ${categoryName}`,
+          abstract: `This study investigates the effects of hydrogen-rich water consumption on markers of ${categoryName.toLowerCase()}.`,
+          journal: "Journal of Hydrogen Medicine",
+          authors: "Smith J, Johnson A"
+        },
+        {
+          title: `Hydrogen inhalation therapy for ${categoryName}`,
+          abstract: `A clinical trial evaluating hydrogen gas inhalation therapy for ${categoryName.toLowerCase()} conditions.`,
+          journal: "Molecular Hydrogen Research",
+          authors: "Chen L, Wang H"
+        },
+        {
+          title: `Comparative study of hydrogen applications in ${categoryName}`,
+          abstract: `This comparative analysis examines various hydrogen delivery methods for addressing ${categoryName.toLowerCase()}-related health challenges.`,
+          journal: "International Journal of Hydrogen Medicine",
+          authors: "Yamamoto K, Suzuki T"
+        },
+        {
+          title: `Long-term hydrogen supplementation effects on ${categoryName}`,
+          abstract: `A longitudinal investigation into how sustained hydrogen therapy affects ${categoryName.toLowerCase()} over a 2-year period.`,
+          journal: "Clinical Hydrogen Applications",
+          authors: "Brown R, Miller J"
+        },
+        {
+          title: `Molecular mechanisms of hydrogen in ${categoryName}`,
+          abstract: `This research explores the cellular and molecular pathways through which hydrogen gas provides benefits for ${categoryName.toLowerCase()}.`,
+          journal: "Biochemical Research International",
+          authors: "Garcia M, Thompson L"
+        }
+      ];
+      
+      // Generate 5 studies for this category with unique IDs
+      return studyTemplates.map((template, index) => ({
+        id: 1000 + index,
+        title: template.title,
+        abstract: template.abstract,
+        category: categoryName,
+        publishDate: `2023-${(index + 1).toString().padStart(2, '0')}-15`,
+        journal: template.journal,
+        authors: template.authors,
+        doi: `10.1234/hydro.2023.${(index + 10).toString().padStart(3, '0')}`,
+        imageUrl: `/uploads/${categoryName.toLowerCase().replace(/\s+/g, '-')}-study-${index + 1}.jpg`
+      }));
+    };
+    
+    // Generate mock studies specific to the requested category
+    const mockStudies = generateMockStudies(category);
     
     return res.json({
       success: true,
