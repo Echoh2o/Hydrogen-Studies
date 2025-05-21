@@ -1,143 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-  <!-- Main Studies Section -->
-  <url>
-    <loc>https://hydrogenstudies.com/studies</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-  </url>
 
-  <!-- Recent Studies Section -->
-  <url>
-    <loc>https://hydrogenstudies.com/recent-studies</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-  </url>
+<!-- Example study entries - in production, this would be dynamically generated -->
+<url>
+  <loc>https://hydrogenstudies.com/study/1</loc>
+  <lastmod>2025-05-21T00:00:00+00:00</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+  <image:image>
+    <image:loc>https://hydrogenstudies.com/study-images/1.jpg</image:loc>
+    <image:title>Hydrogen therapy effects on oxidative stress</image:title>
+  </image:image>
+</url>
 
-  <!-- Study Archive Pages -->
-  <url>
-    <loc>https://hydrogenstudies.com/studies/page/1</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/studies/page/2</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/studies/page/3</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-  </url>
+<url>
+  <loc>https://hydrogenstudies.com/study/2</loc>
+  <lastmod>2025-05-21T00:00:00+00:00</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+  <image:image>
+    <image:loc>https://hydrogenstudies.com/study-images/2.jpg</image:loc>
+    <image:title>Molecular hydrogen as a selective antioxidant</image:title>
+  </image:image>
+</url>
 
-  <!-- Example Featured Studies (first 10) - in real implementation, these would be dynamically generated -->
-  <url>
-    <loc>https://hydrogenstudies.com/study/1</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-1-image.jpg</image:loc>
-      <image:title>Hydrogen water reduces inflammatory markers in patients with rheumatoid arthritis</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/2</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-2-image.jpg</image:loc>
-      <image:title>Effects of hydrogen gas inhalation on cognitive function in Alzheimer's disease model</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/3</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-3-image.jpg</image:loc>
-      <image:title>Molecular hydrogen improves obesity and diabetes by inducing hepatic FGF21</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/4</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-4-image.jpg</image:loc>
-      <image:title>Hydrogen bath for atopic dermatitis: A randomized controlled trial</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/5</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-5-image.jpg</image:loc>
-      <image:title>Effects of hydrogen-rich water on sports performance and recovery</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/6</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-6-image.jpg</image:loc>
-      <image:title>Hydrogen gas inhalation protects against liver injury in acute pancreatitis</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/7</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-7-image.jpg</image:loc>
-      <image:title>Molecular hydrogen attenuates neuropathic pain in mice</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/8</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-8-image.jpg</image:loc>
-      <image:title>Hydrogen-rich water reduces oxidative stress and enhances antioxidant status</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/9</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-9-image.jpg</image:loc>
-      <image:title>Hydrogen therapy protects mitochondria and reduces cardiac reperfusion injury</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://hydrogenstudies.com/study/10</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-05-21T10:00:00+00:00</lastmod>
-    <image:image>
-      <image:loc>https://hydrogenstudies.com/uploads/study-10-image.jpg</image:loc>
-      <image:title>Effects of hydrogen water on Parkinson's disease: A randomized controlled trial</image:title>
-    </image:image>
-  </url>
-  
-  <!-- Note: In a production environment, this file would be dynamically generated to include all studies -->
+<url>
+  <loc>https://hydrogenstudies.com/study/3</loc>
+  <lastmod>2025-05-21T00:00:00+00:00</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+  <image:image>
+    <image:loc>https://hydrogenstudies.com/study-images/3.jpg</image:loc>
+    <image:title>Hydrogen-rich water for sports performance</image:title>
+  </image:image>
+</url>
+
+<url>
+  <loc>https://hydrogenstudies.com/study/4</loc>
+  <lastmod>2025-05-21T00:00:00+00:00</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+<url>
+  <loc>https://hydrogenstudies.com/study/5</loc>
+  <lastmod>2025-05-21T00:00:00+00:00</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+<!-- Additional study URLs would be dynamically generated -->
+<!-- In a real implementation, this file would be generated by a server-side script -->
+<!-- that pulls all study IDs from the database and creates entries for each -->
+
+<url>
+  <loc>https://hydrogenstudies.com/study/100</loc>
+  <lastmod>2025-05-20T00:00:00+00:00</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+<url>
+  <loc>https://hydrogenstudies.com/study/101</loc>
+  <lastmod>2025-05-20T00:00:00+00:00</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+<!-- This file would contain hundreds of entries in production -->
+<!-- For studies that have images, the image extension would be included -->
+
 </urlset>

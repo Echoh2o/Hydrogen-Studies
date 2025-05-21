@@ -6,6 +6,10 @@ import CategorySection from "@/components/home/category-section";
 import LatestStudiesSection from "@/components/home/latest-studies-section";
 import InfoSection from "@/components/home/info-section";
 import NewsletterSection from "@/components/home/newsletter-section";
+import JsonLd, { 
+  generateOrganizationSchema, 
+  generateFaqSchema 
+} from "@/components/seo/JsonLd";
 
 export default function Home() {
   return (
@@ -24,116 +28,83 @@ export default function Home() {
         <meta property="og:description" content="Explore the world's largest collection of scientific research on hydrogen therapy and its health applications. Trusted by researchers, practitioners, and health-conscious individuals." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://hydrogenstudies.com" />
-        <meta property="og:image" content="/og-home-image.jpg" />
+        <meta property="og:image" content="https://hydrogenstudies.com/og-home-image.jpg" />
         <meta property="og:site_name" content="Hydrogen Studies" />
         
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Hydrogen Therapy Research Database" />
         <meta name="twitter:description" content="Evidence-based research on molecular hydrogen's health benefits across various medical conditions and body systems." />
-        <meta name="twitter:image" content="/og-home-image.jpg" />
-        
-        {/* Schema.org structured data */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "url": "https://hydrogenstudies.com",
-            "name": "Hydrogen Studies Research Database",
-            "description": "Comprehensive research database for molecular hydrogen therapy and its health applications",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://hydrogenstudies.com/improved-search?query={search_term_string}",
-              "query-input": "required name=search_term_string"
-            }
-          })}
-        </script>
-        
-        {/* Organization Schema */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            "name": "Hydrogen Studies Research Database",
-            "url": "https://hydrogenstudies.com",
-            "logo": {
-              "@type": "ImageObject",
-              "url": "https://hydrogenstudies.com/logo.png"
-            },
-            "description": "The world's most comprehensive research database focused on molecular hydrogen therapy and its evidence-based health applications",
-            "sameAs": [
-              "https://twitter.com/hydrogenstudies",
-              "https://www.facebook.com/hydrogenstudiesdb",
-              "https://www.linkedin.com/company/hydrogen-studies"
-            ],
-            "contactPoint": {
-              "@type": "ContactPoint",
-              "telephone": "",
-              "contactType": "customer service",
-              "email": "contact@hydrogenstudies.com",
-              "availableLanguage": "English"
-            }
-          })}
-        </script>
-        
-        {/* FAQ Schema for Rich Results */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "What is molecular hydrogen therapy?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Molecular hydrogen (H2) therapy involves consuming hydrogen gas, typically by drinking hydrogen-rich water, inhaling hydrogen gas, or hydrogen bath therapy. Research suggests it may act as a selective antioxidant, potentially reducing oxidative stress and inflammation in the body without interfering with necessary cellular signaling."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What health conditions might benefit from hydrogen therapy?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Research studies have investigated hydrogen therapy's potential benefits for various conditions including metabolic disorders, inflammatory diseases, neurodegenerative conditions, cardiovascular health, and sports recovery. However, more clinical research is needed to fully establish efficacy for specific conditions."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "How do I use the Hydrogen Studies Research Database?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Our database allows you to search for studies by keyword, filter by health condition, body system, or benefit category. You can browse studies chronologically, by relevance, or explore curated collections. Each study includes a comprehensive summary, methodology details, and links to original research when available."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Is hydrogen therapy scientifically proven?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Hydrogen therapy has shown promising results in numerous pre-clinical and some clinical studies. While research is still evolving, there is growing scientific evidence supporting its therapeutic potential for certain conditions. Our database compiles peer-reviewed studies to help researchers and consumers evaluate the current state of evidence."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What are the common methods of hydrogen administration?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "The most common methods include drinking hydrogen-rich water, inhaling hydrogen gas at specific concentrations, hydrogen baths, and hydrogen saline injections (primarily in clinical settings). Different administration methods may have varying efficacy depending on the target condition and individual factors."
-                }
-              }
-            ]
-          })}
-        </script>
+        <meta name="twitter:image" content="https://hydrogenstudies.com/og-home-image.jpg" />
       </Helmet>
       
-      <HeroSection />
-      <AdvancedSearchSection />
-      <BrowseOptionsSection />
-      <LatestStudiesSection />
-      <CategorySection />
-      <InfoSection />
-      <NewsletterSection />
+      {/* WebSite Schema */}
+      <JsonLd 
+        type="WebSite"
+        data={{
+          name: "Hydrogen Studies Research Database",
+          url: "https://hydrogenstudies.com",
+          description: "Comprehensive research database for molecular hydrogen therapy and its health applications",
+          potentialAction: {
+            "@type": "SearchAction",
+            "target": "https://hydrogenstudies.com/improved-search?query={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }}
+      />
+      
+      {/* Organization Schema */}
+      <JsonLd 
+        type="Organization"
+        data={generateOrganizationSchema({
+          name: "Hydrogen Studies",
+          url: "https://hydrogenstudies.com",
+          logo: "https://hydrogenstudies.com/logo.png",
+          description: "The authoritative source for molecular hydrogen health research, providing evidence-based information about the potential benefits of hydrogen therapy.",
+          socialLinks: [
+            "https://twitter.com/hydrogenstudies",
+            "https://facebook.com/hydrogenstudies",
+            "https://linkedin.com/company/hydrogenstudies"
+          ]
+        })}
+      />
+      
+      {/* FAQ Schema for rich snippets */}
+      <JsonLd 
+        type="FAQPage"
+        data={generateFaqSchema([
+          {
+            question: "What is molecular hydrogen therapy?",
+            answer: "Molecular hydrogen (H2) therapy involves the therapeutic use of hydrogen gas or hydrogen-rich water for health benefits. Studies indicate it may act as a selective antioxidant, targeting harmful free radicals while preserving beneficial ones."
+          },
+          {
+            question: "How can hydrogen be consumed for health benefits?",
+            answer: "Hydrogen can be consumed through hydrogen-rich water, inhalation of hydrogen gas, hydrogen baths, or hydrogen saline injections. Each delivery method has different applications and efficacy depending on the condition being addressed."
+          },
+          {
+            question: "What health conditions might benefit from hydrogen therapy?",
+            answer: "Research suggests hydrogen therapy may benefit conditions involving oxidative stress and inflammation, including metabolic disorders, neurodegenerative diseases, cardiovascular conditions, skin disorders, and athletic recovery."
+          },
+          {
+            question: "Is hydrogen therapy backed by scientific research?",
+            answer: "Yes, there are over 1,500 peer-reviewed studies on hydrogen's biological effects. Research includes animal studies, cell culture experiments, and human clinical trials across various medical fields."
+          },
+          {
+            question: "Where can I find research studies about hydrogen therapy?",
+            answer: "HydrogenStudies.com maintains the world's largest database of peer-reviewed research on hydrogen therapy. You can search by health condition, body system, benefit, or research methodology."
+          }
+        ])}
+      />
+
+      <main>
+        <HeroSection />
+        <AdvancedSearchSection />
+        <BrowseOptionsSection />
+        <CategorySection />
+        <LatestStudiesSection />
+        <InfoSection />
+        <NewsletterSection />
+      </main>
     </>
   );
 }
