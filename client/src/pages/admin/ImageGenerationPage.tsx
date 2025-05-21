@@ -62,7 +62,7 @@ const ImageGenerationPage: React.FC = () => {
   const singleImageMutation = useMutation<ImageGenerationResponse, Error, number>({
     mutationFn: async (studyId: number) => {
       const response = await apiRequest({
-        url: `/api/studies/${studyId}/generate-image`,
+        url: `/api/image-generation/generate/${studyId}`,
         method: "POST"
       });
       return response as unknown as ImageGenerationResponse;
