@@ -213,6 +213,27 @@ export default function LearnPage() {
                   <p className="text-gray-600 text-sm mt-1">In-depth explanations on key topics</p>
                 </div>
                 <div className="p-4">
+                  {/* Featured Guide - Always visible */}
+                  <div className="mb-6 border-2 border-indigo-100 rounded-lg p-4 bg-indigo-50/50 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs px-3 py-1 rounded-bl-lg">
+                      Featured
+                    </div>
+                    <h4 className="font-semibold text-indigo-800 text-lg">Complete Guide to Molecular Hydrogen Therapy</h4>
+                    <p className="text-sm text-gray-700 mt-1 mb-3">
+                      Comprehensive overview of hydrogen therapy mechanisms, delivery methods, and potential health benefits based on current research.
+                    </p>
+                    <Link 
+                      to="/educational/hydrogen-therapy-guide"
+                      className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Read the guide
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </Link>
+                  </div>
+                  
+                  {/* Dynamic Guides from API */}
                   {resourcesLoading ? (
                     <div className="animate-pulse space-y-3">
                       {[1, 2, 3].map(i => (
@@ -234,7 +255,7 @@ export default function LearnPage() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-gray-500 italic">No guides available yet.</p>
+                    <p className="text-gray-500 italic">Additional guides coming soon.</p>
                   )}
                 </div>
               </div>
