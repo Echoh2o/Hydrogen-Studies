@@ -1,25 +1,46 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
-import { Study, Category } from "@shared/schema";
-import { HiUser, HiBookOpen, HiQuote, HiDocument, HiFilter, HiChevronRight, HiChevronLeft } from "react-icons/hi";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Helmet } from "react-helmet";
+import { HiUser, HiBookOpen, HiDocument, HiFilter, HiChevronRight, HiChevronLeft } from "react-icons/hi";
+
+// Study type definition 
+interface Study {
+  id: number;
+  title: string;
+  abstract: string;
+  authors: string;
+  journal: string;
+  publishDate: string;
+  category: string;
+  year?: number;
+  citations?: number;
+  imageUrl?: string;
+}
+
+// Category type definition
+interface Category {
+  id: number;
+  name: string;
+  description: string;
+  count: number;
+}
 
 const CategoryPage = () => {
-  const { name } = useParams();
+  const { name } = useParams<{ name: string }>();
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'citations'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   // Get category details
-  const { data: category, isLoading: categoryLoading, error: categoryError } = useQuery({
+  const { data: category, isLoading: categoryLoading, error: categoryError } = useQuery<Category>({
     queryKey: [`/api/categories/${name}`],
   });
 
   // Get studies by category
-  const { data: studies, isLoading: studiesLoading, error: studiesError } = useQuery({
+  const { data: studies, isLoading: studiesLoading, error: studiesError } = useQuery<Study[]>({
     queryKey: [`/api/categories/${name}/studies`],
   });
 
@@ -28,9 +49,9 @@ const CategoryPage = () => {
 
   // Sort studies based on selected order
   const sortedStudies = studies ? [...studies].sort((a, b) => {
-    if (sortOrder === 'newest') return b.year - a.year;
-    if (sortOrder === 'oldest') return a.year - b.year;
-    if (sortOrder === 'citations') return b.citations - a.citations;
+    if (sortOrder === 'newest') return (b.year || 0) - (a.year || 0);
+    if (sortOrder === 'oldest') return (a.year || 0) - (b.year || 0);
+    if (sortOrder === 'citations') return (b.citations || 0) - (a.citations || 0);
     return 0;
   }) : [];
 
@@ -50,13 +71,28 @@ const CategoryPage = () => {
       <Helmet>
         <title>{category?.name || name} Research - Hydrogen Studies Database</title>
         <meta name="description" content={`Browse hydrogen research studies in ${category?.name || name}. Explore the latest findings and applications in this field.`} />
+        <meta name="keywords" content={`hydrogen therapy, molecular hydrogen, ${name?.toLowerCase()}, hydrogen water, h2 therapy, hydrogen research`} />
+        <link rel="canonical" href={`https://hydrogenstudies.com/category/${name?.toLowerCase().replace(/\s+/g, '-')}`} />
+        
+        {/* Open Graph Tags */}
+        <meta property="og:title" content={`${category?.name || name} Hydrogen Therapy Research`} />
+        <meta property="og:description" content={`Access a comprehensive collection of scientific studies on hydrogen therapy for ${category?.name || name}. Evidence-based research on mechanisms and benefits.`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://hydrogenstudies.com/category/${name?.toLowerCase().replace(/\s+/g, '-')}`} />
+        <meta property="og:image" content={`https://hydrogenstudies.com/og-images/category-${name?.toLowerCase().replace(/\s+/g, '-')}.jpg`} />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${category?.name || name} Hydrogen Research`} />
+        <meta name="twitter:description" content={`Discover peer-reviewed studies on hydrogen therapy for ${category?.name || name}. Scientific evidence and clinical applications.`} />
+        <meta name="twitter:image" content={`https://hydrogenstudies.com/og-images/category-${name?.toLowerCase().replace(/\s+/g, '-')}.jpg`} />
       </Helmet>
       
       <section className="bg-primary-gradient text-white py-12 md:py-16">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center mb-4">
             <Link href="/categories">
-              <a className="text-white/80 hover:text-white text-sm">Categories</a>
+              <span className="text-white/80 hover:text-white text-sm cursor-pointer">Categories</span>
             </Link>
             <span className="mx-2 text-white/60">/</span>
             <span className="text-white text-sm font-medium">{category?.name || name}</span>
@@ -71,17 +107,27 @@ const CategoryPage = () => {
           )}
         </div>
       </section>
-
-      <section className="py-8 bg-white">
+      
+      <section className="py-12 bg-neutral-50">
         <div className="container mx-auto px-4">
-          {/* Filter and Sort Controls */}
-          <div className="bg-neutral-50 p-4 rounded-lg mb-8 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <HiFilter className="text-neutral-500 mr-2" />
-              <span className="text-neutral-800 font-medium mr-3">Sort by:</span>
-              <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as 'newest' | 'oldest' | 'citations')}>
-                <SelectTrigger className="w-40 bg-white">
-                  <SelectValue placeholder="Sort order" />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <h2 className="text-2xl font-bold mb-4 md:mb-0">
+              {isLoading ? (
+                <span className="animate-pulse bg-neutral-200 h-8 w-48 rounded inline-block"></span>
+              ) : (
+                `${sortedStudies.length} ${category?.name || name} Studies`
+              )}
+            </h2>
+            
+            <div className="flex items-center">
+              <HiFilter className="mr-2 text-neutral-500" />
+              <span className="mr-3 text-neutral-600 text-sm">Sort by:</span>
+              <Select
+                value={sortOrder}
+                onValueChange={(value) => setSortOrder(value as any)}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select an option" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="newest">Newest First</SelectItem>
@@ -90,133 +136,118 @@ const CategoryPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="text-neutral-600 text-sm">
-              Showing {sortedStudies.length > 0 ? indexOfFirstItem + 1 : 0} - {Math.min(indexOfLastItem, sortedStudies.length)} of {sortedStudies.length} studies
-            </div>
           </div>
-
-          {/* Studies Listing */}
+          
           {isLoading ? (
-            <div className="space-y-6">
-              {[...Array(5)].map((_, index) => (
-                <div key={index} className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6 animate-pulse">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-neutral-200 h-5 w-24 rounded-full"></div>
-                    <div className="bg-neutral-200 h-4 w-12 rounded"></div>
-                  </div>
-                  <div className="h-6 bg-neutral-200 rounded w-full mb-2"></div>
-                  <div className="h-6 bg-neutral-200 rounded w-3/4 mb-3"></div>
-                  <div className="space-y-1 mb-4">
-                    <div className="h-4 bg-neutral-200 rounded w-full"></div>
-                    <div className="h-4 bg-neutral-200 rounded w-full"></div>
-                    <div className="h-4 bg-neutral-200 rounded w-2/3"></div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="h-4 bg-neutral-200 rounded w-24 mr-4"></div>
-                      <div className="h-4 bg-neutral-200 rounded w-24"></div>
-                    </div>
-                    <div className="h-4 bg-neutral-200 rounded w-16"></div>
-                  </div>
+            // Loading state
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="bg-white p-6 rounded-lg shadow-sm animate-pulse">
+                  <div className="h-4 bg-neutral-200 rounded w-1/4 mb-3"></div>
+                  <div className="h-6 bg-neutral-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-neutral-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-neutral-200 rounded w-5/6"></div>
                 </div>
               ))}
             </div>
           ) : error ? (
-            <div className="text-center py-8">
-              <p className="text-red-500 mb-4">Error loading studies. Please try again later.</p>
-              <Link href="/categories">
-                <Button variant="outline">Back to Categories</Button>
-              </Link>
+            // Error state
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+              <p>Unable to load studies. Please try again later.</p>
             </div>
           ) : sortedStudies.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-neutral-600 mb-4">No studies found in this category yet.</p>
+            // Empty state
+            <div className="bg-white p-8 rounded-lg shadow-sm text-center">
+              <HiDocument className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">No Studies Found</h3>
+              <p className="text-neutral-500 mb-6">We couldn't find any studies in this category.</p>
               <Link href="/categories">
-                <Button variant="outline">Back to Categories</Button>
+                <Button>Browse Other Categories</Button>
               </Link>
             </div>
           ) : (
-            <>
-              <div className="space-y-6">
-                {currentStudies.map((study: Study) => (
-                  <div key={study.id} className="bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="bg-primary/10 text-primary text-xs font-medium px-3 py-1 rounded-full">
+            // Studies list
+            <div className="space-y-6">
+              {currentStudies.map((study) => (
+                <Link key={study.id} href={`/study/${study.id}`}>
+                  <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-neutral-100">
+                    <div className="flex items-start mb-3">
+                      <div className="bg-primary/10 text-primary text-xs px-2 py-1 rounded font-medium">
                         {study.category}
-                      </span>
-                      <span className="text-neutral-500 text-sm">{study.year}</span>
+                      </div>
+                      {study.year && (
+                        <div className="ml-3 text-neutral-500 text-sm">
+                          {study.year}
+                        </div>
+                      )}
                     </div>
-                    <h2 className="text-xl font-semibold mb-3">
-                      <Link href={`/study/${study.id}`}>
-                        <a className="hover:text-primary">{study.title}</a>
-                      </Link>
-                    </h2>
-                    <p className="text-neutral-600 mb-4">{study.abstract}</p>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex flex-col sm:flex-row sm:items-center mb-3 sm:mb-0">
-                        <span className="flex items-center text-neutral-500 text-sm mr-4 mb-2 sm:mb-0">
-                          <HiUser className="mr-1" /> {study.authors}
+                    
+                    <h3 className="text-xl font-bold mb-3 leading-tight hover:text-primary transition-colors">
+                      {study.title}
+                    </h3>
+                    
+                    <p className="text-neutral-600 mb-4 line-clamp-2">
+                      {study.abstract}
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center text-sm text-neutral-500">
+                      <span className="flex items-center mr-6 mb-2">
+                        <HiUser className="mr-1" />
+                        {study.authors}
+                      </span>
+                      <span className="flex items-center mr-6 mb-2">
+                        <HiBookOpen className="mr-1" />
+                        {study.journal}
+                      </span>
+                      {study.citations !== undefined && (
+                        <span className="flex items-center mb-2">
+                          <HiDocument className="mr-1" />
+                          {study.citations} citations
                         </span>
-                        <span className="flex items-center text-neutral-500 text-sm">
-                          <HiBookOpen className="mr-1" /> {study.journal}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="flex items-center text-neutral-500 text-sm mr-4">
-                          <HiQuote className="mr-1" /> {study.citations} citations
-                        </span>
-                        <Link href={`/study/${study.id}`}>
-                          <Button variant="outline" size="sm" className="text-primary border-primary hover:bg-primary/5">
-                            View Study
-                          </Button>
-                        </Link>
-                      </div>
+                      )}
                     </div>
                   </div>
+                </Link>
+              ))}
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-10">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <HiChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Previous</span>
+                </Button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </Button>
                 ))}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <HiChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Next</span>
+                </Button>
               </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-8">
-                  <nav className="flex items-center">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="mr-2"
-                    >
-                      <HiChevronLeft />
-                    </Button>
-                    
-                    <div className="flex space-x-1">
-                      {[...Array(totalPages)].map((_, index) => (
-                        <Button
-                          key={index}
-                          variant={currentPage === index + 1 ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handlePageChange(index + 1)}
-                          className={currentPage === index + 1 ? "bg-primary text-white" : ""}
-                        >
-                          {index + 1}
-                        </Button>
-                      ))}
-                    </div>
-                    
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="ml-2"
-                    >
-                      <HiChevronRight />
-                    </Button>
-                  </nav>
-                </div>
-              )}
-            </>
+            </div>
           )}
         </div>
       </section>
