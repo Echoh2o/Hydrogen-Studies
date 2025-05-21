@@ -282,12 +282,13 @@ app.use((req, res, next) => {
 
   // Add a specific route for the homepage to ensure it's not intercepted by API routes
   app.get('/', (req, res, next) => {
-    if (req.headers.accept && req.headers.accept.includes('text/html')) {
-      // For HTML requests, let Vite or the static server handle it
+    // Force sending HTML content for the homepage
+    if (app.get("env") === "development") {
+      // Let Vite handle rendering in development
       next();
     } else {
-      // For non-HTML requests (API calls), pass through
-      next();
+      // In production, serve the index.html directly
+      res.sendFile(path.resolve(__dirname, '../public/index.html'));
     }
   });
 
