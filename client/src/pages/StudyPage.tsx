@@ -255,8 +255,8 @@ const StudyPage = () => {
                     {/* Image with fallback */}
                     <div className="relative">
                       <img 
-                        src={study.imageUrl ? study.imageUrl : fallbackImageUrl}
-                        alt={`Visual representation of hydrogen research on ${study.title}`}
+                        src={study.imageUrl ? (study.imageUrl.startsWith('http') ? study.imageUrl : `/${study.imageUrl}`) : fallbackImageUrl}
+                        alt={study.imageAlt || `Visual representation of hydrogen research on ${study.title}`}
                         className="w-full h-auto object-cover shadow-sm rounded-md" 
                         itemProp="image"
                         onError={(e) => {
@@ -264,6 +264,7 @@ const StudyPage = () => {
                           const target = e.target as HTMLImageElement;
                           target.onerror = null; // Prevent infinite loop
                           target.src = fallbackImageUrl;
+                          console.log("Image failed to load:", study.imageUrl);
                         }}
                       />
                       
