@@ -133,18 +133,16 @@ const StudyPage = () => {
             <div className="bg-white border border-neutral-200 rounded-xl shadow-sm mb-10">
               <div className="p-6 md:p-8">
                 {/* Study Image */}
-                {study.imageUrl && (
-                  <div className="mb-6 rounded-lg overflow-hidden">
-                    <img 
-                      src={study.imageUrl} 
-                      alt={`Visual representation of ${study.title}`}
-                      className="w-full h-auto object-cover shadow-sm" 
-                    />
-                    <p className="text-xs text-neutral-500 mt-2 italic">
-                      Visual representation of hydrogen effects related to this research
-                    </p>
-                  </div>
-                )}
+                <div className="mb-6 rounded-lg overflow-hidden">
+                  <img 
+                    src={study.imageUrl || `https://placehold.co/800x400/e2f3ff/003366?text=${encodeURIComponent(study.title?.split(' ').slice(0, 3).join(' ') || 'Hydrogen Research')}`} 
+                    alt={`Visual representation of ${study.title}`}
+                    className="w-full h-auto object-cover shadow-sm" 
+                  />
+                  <p className="text-xs text-neutral-500 mt-2 italic">
+                    Visual representation of hydrogen effects related to this research
+                  </p>
+                </div>
 
                 <h2 className="text-xl font-semibold mb-4">Abstract</h2>
                 <div className="text-neutral-700 mb-8 leading-relaxed whitespace-pre-line">
