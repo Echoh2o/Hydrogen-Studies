@@ -134,10 +134,19 @@ const StudyPage = () => {
               <div className="p-6 md:p-8">
                 {/* Study Image */}
                 <div className="mb-6 rounded-lg overflow-hidden">
+                  {/* Create fallback URL directly in a more reliable way */}
                   <img 
-                    src={study.imageUrl || `https://placehold.co/800x400/e2f3ff/003366?text=${encodeURIComponent(study.title?.split(' ').slice(0, 3).join(' ') || 'Hydrogen Research')}`} 
-                    alt={`Visual representation of ${study.title}`}
+                    src={study.imageUrl ? study.imageUrl : 
+                      "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visual"
+                    }
+                    alt={`Visual representation of hydrogen research`}
                     className="w-full h-auto object-cover shadow-sm" 
+                    onError={(e) => {
+                      // Fallback if the image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null; // Prevent infinite loop
+                      target.src = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visual";
+                    }}
                   />
                   <p className="text-xs text-neutral-500 mt-2 italic">
                     Visual representation of hydrogen effects related to this research
