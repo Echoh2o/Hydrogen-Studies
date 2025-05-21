@@ -291,28 +291,34 @@ const StudyPage = () => {
                   <figure className="mb-8 rounded-lg overflow-hidden">
                     {/* Image with fallback */}
                     <div className="relative">
-                      <img 
-                        src={getProcessedImageUrl(study)}
-                        alt={study.imageAlt || study.image_alt || `Scientific visualization of hydrogen therapy research: ${study.title}`}
-                        className="w-full h-auto object-cover shadow-sm rounded-md" 
-                        itemProp="image"
-                        onError={(e) => {
-                          // Fallback if the image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null; // Prevent infinite loop
-                          console.log("Image load error, using local fallback for study #" + studyId);
-                          
-                          // Use our local SVG image instead of external placeholder service
-                          if (studyId === 1000) {
-                            target.src = study1000ImageUrl;
-                          } else {
+                      {/* Special direct handling for study #1000 */}
+                      {studyId === 1000 ? (
+                        <img 
+                          src="/images/study-1000-fallback.svg"
+                          alt={`Scientific visualization for Future Directions in Hydrogen Studies (Study #1000)`}
+                          className="w-full h-auto object-cover shadow-sm rounded-md" 
+                          itemProp="image"
+                        />
+                      ) : (
+                        <img 
+                          src={getProcessedImageUrl(study)}
+                          alt={study.imageAlt || study.image_alt || `Scientific visualization of hydrogen therapy research: ${study.title}`}
+                          className="w-full h-auto object-cover shadow-sm rounded-md" 
+                          itemProp="image"
+                          onError={(e) => {
+                            // Fallback if the image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null; // Prevent infinite loop
+                            console.log("Image load error, using fallback");
+                            
+                            // Use our local fallback SVG image
                             target.src = fallbackImageUrl;
-                          }
-                          
-                          // Update alt text for accessibility
-                          target.alt = `Scientific visualization of hydrogen therapy research: ${study.title}`;
-                        }}
-                      />
+                            
+                            // Update alt text for accessibility
+                            target.alt = `Scientific visualization of hydrogen therapy research: ${study.title}`;
+                          }}
+                        />
+                      )}
                       
                       {/* Generate Image Button - Only show if image is missing or using fallback */}
                       {(!(study.imageUrl || study.image_url) || (study.imageUrl === fallbackImageUrl || study.image_url === fallbackImageUrl)) && (
