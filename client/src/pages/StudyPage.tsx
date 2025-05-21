@@ -55,6 +55,16 @@ const StudyPage = () => {
     // If it's already a fully qualified URL (starts with http/https), use it directly
     if (url.startsWith('http')) return url;
     
+    // If it's a placeholder image URL that might have been truncated or malformed, repair it
+    if (url.includes('placehold.co')) {
+      // Make sure we have the full URL with the text parameter
+      if (!url.includes('text=')) {
+        // Add study ID to the text if it's missing
+        return `https://placehold.co/800x500/e2f3ff/003366?text=Hydrogen+Study+${studyId}`;
+      }
+      return url;
+    }
+    
     // If it's a root-relative URL (starts with /), use it as is
     if (url.startsWith('/')) return url;
     
@@ -278,8 +288,13 @@ const StudyPage = () => {
                           // Fallback if the image fails to load
                           const target = e.target as HTMLImageElement;
                           target.onerror = null; // Prevent infinite loop
-                          console.log("Image load error, using fallback");
-                          target.src = fallbackImageUrl;
+                          console.log("Image load error, using direct fallback for study #" + studyId);
+                          
+                          // Use a direct placehold.co URL with the study ID clearly included
+                          target.src = `https://placehold.co/800x500/e2f3ff/003366?text=Hydrogen+Study+${studyId}`;
+                          
+                          // Update alt text for accessibility
+                          target.alt = `Scientific visualization of hydrogen therapy research: ${study.title}`;
                         }}
                       />
                       
