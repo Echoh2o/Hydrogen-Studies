@@ -1,8 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2, Image, Check, Zap, Activity } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Define types for API responses
 interface StudyWithoutImage {
@@ -26,21 +38,6 @@ interface BatchImageResponse {
   studyIds?: number[];
 }
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2, Image, Check, AlertTriangle, Zap, Activity } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
 const ImageGenerationPage: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -56,9 +53,8 @@ const ImageGenerationPage: React.FC = () => {
     refetch: refetchStudies
   } = useQuery({
     queryKey: ["/api/image-generation/find-studies-needing-images"],
-    retry: 3, // Allow retries in case of temporary database issues
-    retryDelay: 1000, // Retry after 1 second
-    // Provide default empty data to prevent rendering errors
+    retry: 3,
+    retryDelay: 1000,
     placeholderData: { success: true, studyIds: [] }
   });
 
@@ -72,7 +68,7 @@ const ImageGenerationPage: React.FC = () => {
       return response as unknown as ImageGenerationResponse;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/image-generation/find-studies-needing-images"] });
       toast({
         title: "Image Generated",
         description: `Successfully generated image for study #${data.studyId || variables}`,
@@ -102,7 +98,7 @@ const ImageGenerationPage: React.FC = () => {
       return response as unknown as BatchImageResponse;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/image-generation/find-studies-needing-images"] });
       toast({
         title: "Batch Processing Started",
         description: `Started processing ${data.studyIds?.length || 0} studies. This will run in the background.`,
@@ -130,7 +126,7 @@ const ImageGenerationPage: React.FC = () => {
     },
     onSuccess: (data) => {
       setAutoGenStarted(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/image-generation/find-studies-needing-images"] });
       toast({
         title: "Auto-Generation Started",
         description: data.message || "Started generating images for all studies that need them. This process will run in the background.",
@@ -281,7 +277,7 @@ const ImageGenerationPage: React.FC = () => {
             </Card>
           ))}
         </div>
-      ) : (!studiesNeedingImages?.data || studiesNeedingImages?.data?.length === 0) ? (
+      ) : (!studiesNeedingImages?.studyIds || studiesNeedingImages?.studyIds?.length === 0) ? (
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-6">
             <div className="flex items-center text-green-600 mb-2">
@@ -295,26 +291,23 @@ const ImageGenerationPage: React.FC = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {studiesNeedingImages?.data?.map((study: any) => (
-            <Card key={study.id}>
+          {studiesNeedingImages?.studyIds?.map((studyId: number) => (
+            <Card key={studyId}>
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">{study.title}</h3>
+                    <h3 className="font-semibold text-lg mb-1">Study #{studyId}</h3>
                     <p className="text-muted-foreground text-sm mb-3">
-                      {study.category} • {study.publishDate}
-                    </p>
-                    <p className="text-sm mb-4">
-                      {study.abstract || "No abstract available"}
+                      Missing Image
                     </p>
                   </div>
                   <Button
-                    onClick={() => handleGenerateImage(study.id)}
-                    disabled={singleImageMutation.isPending && selectedStudyId === study.id}
+                    onClick={() => handleGenerateImage(studyId)}
+                    disabled={singleImageMutation.isPending && selectedStudyId === studyId}
                     size="sm"
                     className="shrink-0"
                   >
-                    {singleImageMutation.isPending && selectedStudyId === study.id ? (
+                    {singleImageMutation.isPending && selectedStudyId === studyId ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Generating...
