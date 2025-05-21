@@ -45,22 +45,26 @@ const StudyPage = () => {
   });
   
   // Create a fallback image URL for studies with enhanced visual appeal
-  const fallbackImageUrl = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visualization";
+  const fallbackImageUrl = "/images/fallback-study-image.svg";
+  
+  // Special case for study #1000 that has known issues
+  const study1000ImageUrl = "/images/study-1000-fallback.svg";
   
   // Enhanced helper function to process image URLs correctly and handle all edge cases
   const getProcessedImageUrl = (url?: string) => {
+    // Special handling for study #1000
+    if (studyId === 1000) {
+      return study1000ImageUrl;
+    }
+    
     // If no URL provided or it's null/empty, use fallback
     if (!url || url.trim() === '') return fallbackImageUrl;
     
     // If it's already a fully qualified URL (starts with http/https), use it directly
-    if (url.startsWith('http')) return url;
-    
-    // If it's a placeholder image URL that might have been truncated or malformed, repair it
-    if (url.includes('placehold.co')) {
-      // Make sure we have the full URL with the text parameter
-      if (!url.includes('text=')) {
-        // Add study ID to the text if it's missing
-        return `https://placehold.co/800x500/e2f3ff/003366?text=Hydrogen+Study+${studyId}`;
+    if (url.startsWith('http')) {
+      // Sometimes external URLs might have issues, if it's a placeholder service, use our local fallback
+      if (url.includes('placehold.co')) {
+        return fallbackImageUrl;
       }
       return url;
     }
@@ -288,10 +292,14 @@ const StudyPage = () => {
                           // Fallback if the image fails to load
                           const target = e.target as HTMLImageElement;
                           target.onerror = null; // Prevent infinite loop
-                          console.log("Image load error, using direct fallback for study #" + studyId);
+                          console.log("Image load error, using local fallback for study #" + studyId);
                           
-                          // Use a direct placehold.co URL with the study ID clearly included
-                          target.src = `https://placehold.co/800x500/e2f3ff/003366?text=Hydrogen+Study+${studyId}`;
+                          // Use our local SVG image instead of external placeholder service
+                          if (studyId === 1000) {
+                            target.src = study1000ImageUrl;
+                          } else {
+                            target.src = fallbackImageUrl;
+                          }
                           
                           // Update alt text for accessibility
                           target.alt = `Scientific visualization of hydrogen therapy research: ${study.title}`;
