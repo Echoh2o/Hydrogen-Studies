@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import * as fs from "fs";
 import * as path from "path";
+import express from "express";
 import { storage } from "./storage";
 import { 
   insertNewsletterSchema, 
