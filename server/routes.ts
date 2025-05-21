@@ -15,7 +15,13 @@ import {
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
-import { generateScientificImage, generateBlogImage } from "./image-generator";
+import { 
+  generateScientificImage, 
+  generateBlogImage,
+  generateImageForStudy,
+  findStudiesNeedingImages,
+  batchGenerateImagesForStudies
+} from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
 import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
 import { 
@@ -28,6 +34,7 @@ import {
 } from "./chat-bot";
 import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB, semanticSearch } from "./vector-database";
 import { sendContactEmail } from "./sendgrid";
+import imageGenerationRoutes from "./routes/image-generation-routes";
 import { getSuggestionOptions, generateResearchSuggestions } from "./research-suggestions";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
@@ -2091,6 +2098,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: "Failed to start batch image generation"
+      });
+    }
+  });
+  
+  // Register image generation routes
+  app.use("/api/image-generation", imageGenerationRoutes);
+  
+  // API endpoint to directly generate an image for a specific study
+  app.post("/api/studies/:id/generate-image", async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      
+      if (isNaN(studyId)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid study ID" 
+        });
+      }
+      
+      // Call the image generation service
+      const result = await generateImageForStudy(studyId);
+      
+      return res.json(result);
+    } catch (error) {
+      console.error("Error generating image for study:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   });
