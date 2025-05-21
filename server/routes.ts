@@ -68,6 +68,7 @@ import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-rout
 import exportRoutes from "./routes/export-routes";
 import priorityEnrichmentRoutes from "./routes/priority-enrichment-routes";
 import batchImageFixRoutes from "./routes/batch-image-fix-routes";
+import quickImageFixRoutes from "./routes/quick-image-fix";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
