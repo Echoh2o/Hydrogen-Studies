@@ -84,7 +84,8 @@ router.get("/by-consumer-category/:model/:category", async (req, res) => {
         journal: template.journal,
         authors: template.authors,
         doi: `10.1234/hydro.2023.${(index + 10).toString().padStart(3, '0')}`,
-        imageUrl: `/uploads/${categoryName.toLowerCase().replace(/\s+/g, '-')}-study-${index + 1}.jpg`
+        // Use placeholder image URLs that will actually load
+        imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+${categoryName.toLowerCase().replace(/\s+/g, '+').replace(/&/g, 'and')}`
       }));
     };
     
