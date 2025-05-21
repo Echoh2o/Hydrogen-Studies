@@ -201,6 +201,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register image fix routes for handling image display issues
   app.use('/api/images/fix', imageFixRoutes);
   
+  // Register direct SQL quick image fix routes
+  app.use('/api/quick-image-fix', quickImageFixRoutes);
+  
   // Register research article search and discovery routes
   app.use('/api', researchRoutes);
   
