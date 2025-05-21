@@ -73,6 +73,97 @@ import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedin
 import consumerCategoriesRouter from './routes/consumer-categories-routes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // XML Sitemap generation for SEO
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      // Start XML content
+      let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+      
+      // Base URL from request
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      
+      // Add static pages
+      const staticPages = [
+        { url: "", priority: 1.0 },  // Home page
+        { url: "about", priority: 0.8 },
+        { url: "resources", priority: 0.8 },
+        { url: "learn", priority: 0.8 },
+        { url: "improved-search", priority: 0.9 },
+        { url: "explore-by-condition", priority: 0.9 },
+        { url: "explore-by-body-system", priority: 0.9 },
+        { url: "explore-by-life-stage", priority: 0.9 },
+        { url: "explore-by-benefit", priority: 0.9 }
+      ];
+      
+      for (const page of staticPages) {
+        sitemap += `  <url>\n    <loc>${baseUrl}/${page.url}</loc>\n    <priority>${page.priority}</priority>\n  </url>\n`;
+      }
+      
+      // Add all studies
+      const allStudies = await db.select({ id: studies.id, updatedAt: studies.updatedAt })
+        .from(studies)
+        .orderBy(desc(studies.updatedAt))
+        .limit(1000);  // Limit to avoid massive sitemaps
+      
+      for (const study of allStudies) {
+        const lastmod = study.updatedAt ? new Date(study.updatedAt).toISOString() : new Date().toISOString();
+        sitemap += `  <url>\n    <loc>${baseUrl}/studies/${study.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <priority>0.7</priority>\n  </url>\n`;
+      }
+      
+      // Try to add consumer categories (conditions) if available
+      try {
+        const conditionCategories = await db.query.consumerCategories.findMany({
+          where: eq(sql`category_model`, 'condition'),
+          limit: 100
+        });
+        
+        for (const category of conditionCategories) {
+          sitemap += `  <url>\n    <loc>${baseUrl}/condition/${encodeURIComponent(category.name)}</loc>\n    <priority>0.8</priority>\n  </url>\n`;
+        }
+      } catch (error) {
+        console.log("No condition categories available for sitemap");
+      }
+      
+      // Try to add consumer categories (body systems) if available
+      try {
+        const bodySystemCategories = await db.query.consumerCategories.findMany({
+          where: eq(sql`category_model`, 'body_system'),
+          limit: 50
+        });
+        
+        for (const category of bodySystemCategories) {
+          sitemap += `  <url>\n    <loc>${baseUrl}/body-system/${encodeURIComponent(category.name)}</loc>\n    <priority>0.8</priority>\n  </url>\n`;
+        }
+      } catch (error) {
+        console.log("No body system categories available for sitemap");
+      }
+      
+      // Try to add consumer categories (life stages) if available
+      try {
+        const lifeStageCategories = await db.query.consumerCategories.findMany({
+          where: eq(sql`category_model`, 'life_stage'),
+          limit: 20
+        });
+        
+        for (const category of lifeStageCategories) {
+          sitemap += `  <url>\n    <loc>${baseUrl}/life-stage/${encodeURIComponent(category.name)}</loc>\n    <priority>0.8</priority>\n  </url>\n`;
+        }
+      } catch (error) {
+        console.log("No life stage categories available for sitemap");
+      }
+      
+      // Close XML content
+      sitemap += '</urlset>';
+      
+      // Send response
+      res.header('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (error) {
+      console.error("Error generating sitemap:", error);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
   // We've moved table initialization to the main server startup process
   // This avoids redundant operations on each startup and improves performance
   

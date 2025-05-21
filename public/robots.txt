@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://hydrogenstudies.com/sitemap.xml
+
+# Allow all crawlers to access these directories
+Allow: /studies/
+Allow: /explore-by-condition/
+Allow: /explore-by-body-system/
+Allow: /explore-by-life-stage/
+Allow: /explore-by-benefit/
+Allow: /condition/
+Allow: /body-system/
+Allow: /life-stage/
+Allow: /resources/
+Allow: /learn/
+Allow: /about/
+
+# Block crawling of irrelevant or sensitive areas
+Disallow: /api/
+Disallow: /admin/

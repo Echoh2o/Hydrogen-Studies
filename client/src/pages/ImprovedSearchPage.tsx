@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Pagination } from "@/components/ui/pagination";
 import { Search, CalendarIcon, BookOpen, Award, AlertCircle, FileText, User } from "lucide-react";
+import { Helmet } from "react-helmet";
 
 type Study = {
   id: number;
