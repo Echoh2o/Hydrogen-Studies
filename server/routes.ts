@@ -18,9 +18,7 @@ import { upload, getFileType } from "./upload";
 import { 
   generateScientificImage, 
   generateBlogImage,
-  generateImageForStudy,
-  findStudiesNeedingImages,
-  batchGenerateImagesForStudies
+  generateImageForStudy
 } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
 import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
@@ -2084,35 +2082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // API endpoint to get studies needing images
-  app.get("/api/studies/needing-images", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      
-      const studiesNeedingImages = await findStudiesNeedingImages(limit);
-      
-      // Return a successful response even if the list is empty
-      return res.json({
-        success: true,
-        data: studiesNeedingImages.map(study => ({
-          id: study.id,
-          title: study.title || "Untitled Study",
-          abstract: study.abstract ? study.abstract.substring(0, 100) + "..." : "No abstract available",
-          category: study.category || "General",
-          publishDate: study.publishDate ? new Date(study.publishDate).toISOString().split('T')[0] : null
-        }))
-      });
-    } catch (error) {
-      console.error("Error finding studies needing images:", error);
-      // Return an empty data array with success=true instead of error
-      // This prevents frontend from showing error state
-      return res.json({
-        success: true,
-        data: [],
-        message: "No studies requiring images found"
-      });
-    }
-  });
+  // API endpoint for study images is now handled through imageGenerationRoutes
 
   // Research Suggestions API routes
   app.get("/api/research-suggestions/options", async (req, res) => {
