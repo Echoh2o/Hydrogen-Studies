@@ -1,6 +1,4 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
@@ -40,124 +38,194 @@ interface BatchImageResponse {
 
 const ImageGenerationPage: React.FC = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [batchSize, setBatchSize] = useState<number>(5);
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
   const [autoGenStarted, setAutoGenStarted] = useState<boolean>(false);
+  const [isLoadingStudies, setIsLoadingStudies] = useState<boolean>(true);
+  const [studiesNeedingImages, setStudiesNeedingImages] = useState<number[]>([]);
+  const [isGeneratingSingle, setIsGeneratingSingle] = useState<boolean>(false);
+  const [isGeneratingBatch, setIsGeneratingBatch] = useState<boolean>(false);
+  const [isGeneratingAll, setIsGeneratingAll] = useState<boolean>(false);
 
-  // Query for studies needing images
-  const {
-    data: studiesNeedingImages,
-    isLoading: isLoadingStudies,
-    isError: isErrorStudies,
-    refetch: refetchStudies
-  } = useQuery({
-    queryKey: ["/api/image-generation/find-studies-needing-images"],
-    retry: 3,
-    retryDelay: 1000,
-    placeholderData: { success: true, studyIds: [] }
-  });
-
-  // Mutation for generating a single image
-  const singleImageMutation = useMutation<ImageGenerationResponse, Error, number>({
-    mutationFn: async (studyId: number) => {
-      const response = await apiRequest({
-        url: `/api/image-generation/generate/${studyId}`,
-        method: "POST"
-      });
-      return response as unknown as ImageGenerationResponse;
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/image-generation/find-studies-needing-images"] });
+  // Fetch studies needing images
+  const fetchStudiesNeedingImages = async () => {
+    setIsLoadingStudies(true);
+    try {
+      const response = await fetch('/api/image-generation/find-studies-needing-images');
+      const data = await response.json();
+      
+      if (data.success) {
+        setStudiesNeedingImages(data.studyIds || []);
+      } else {
+        console.error('Error fetching studies needing images:', data.message);
+        toast({
+          title: "Error",
+          description: "Failed to fetch studies needing images",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching studies needing images:', error);
       toast({
-        title: "Image Generated",
-        description: `Successfully generated image for study #${data.studyId || variables}`,
-        variant: "default",
+        title: "Error",
+        description: "Failed to fetch studies needing images",
+        variant: "destructive",
       });
-      setSelectedStudyId(null);
-    },
-    onError: (error) => {
-      console.error("Error generating image:", error);
+    } finally {
+      setIsLoadingStudies(false);
+    }
+  };
+
+  // Generate a single image
+  const generateSingleImage = async (studyId: number) => {
+    setSelectedStudyId(studyId);
+    setIsGeneratingSingle(true);
+    
+    try {
+      const response = await fetch(`/api/image-generation/generate/${studyId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "Image Generated",
+          description: `Successfully generated image for study #${studyId}`,
+          variant: "default",
+        });
+        
+        // Refresh the list of studies needing images
+        fetchStudiesNeedingImages();
+      } else {
+        console.error('Error generating image:', data.message);
+        toast({
+          title: "Error",
+          description: `Failed to generate image: ${data.message}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
       toast({
         title: "Error",
         description: "Failed to generate image. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingSingle(false);
       setSelectedStudyId(null);
     }
-  });
+  };
 
-  // Mutation for batch generating images
-  const batchImageMutation = useMutation<BatchImageResponse, Error, number>({
-    mutationFn: async (size: number) => {
-      const response = await apiRequest({
-        url: "/api/image-generation/batch-generate",
-        method: "POST",
-        data: { limit: size }
+  // Generate images in batch
+  const generateBatchImages = async () => {
+    setIsGeneratingBatch(true);
+    
+    try {
+      // First, get the studies needing images
+      const listResponse = await fetch(`/api/image-generation/find-studies-needing-images?limit=${batchSize}`);
+      const listData = await listResponse.json();
+      
+      if (!listData.success || !listData.studyIds || listData.studyIds.length === 0) {
+        toast({
+          title: "No Studies Found",
+          description: "No studies need images or there was an error finding them.",
+          variant: "destructive",
+        });
+        setIsGeneratingBatch(false);
+        return;
+      }
+      
+      // Now start the batch process
+      const response = await fetch('/api/image-generation/batch-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studyIds: listData.studyIds })
       });
-      return response as unknown as BatchImageResponse;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/image-generation/find-studies-needing-images"] });
-      toast({
-        title: "Batch Processing Started",
-        description: `Started processing ${data.studyIds?.length || 0} studies. This will run in the background.`,
-        variant: "default",
-      });
-    },
-    onError: (error) => {
-      console.error("Error batch generating images:", error);
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "Batch Processing Started",
+          description: `Started processing ${listData.studyIds.length} studies. This will run in the background.`,
+          variant: "default",
+        });
+        
+        // Wait a moment then refresh the list
+        setTimeout(fetchStudiesNeedingImages, 5000);
+      } else {
+        console.error('Error batch generating images:', data.message);
+        toast({
+          title: "Error",
+          description: `Failed to start batch generation: ${data.message}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error batch generating images:', error);
       toast({
         title: "Error",
         description: "Failed to start batch image generation. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsGeneratingBatch(false);
     }
-  });
-  
-  // Mutation for auto-generating images for all studies without images
-  const autoGenImageMutation = useMutation<BatchImageResponse, Error, void>({
-    mutationFn: async () => {
-      const response = await apiRequest({
-        url: "/api/image-generation/auto-generate-all",
-        method: "POST"
+  };
+
+  // Auto-generate all images
+  const autoGenerateAllImages = async () => {
+    if (!confirm("This will start generating images for ALL studies without images. The process will run in the background and may take a significant amount of time. Do you want to continue?")) {
+      return;
+    }
+    
+    setIsGeneratingAll(true);
+    
+    try {
+      const response = await fetch('/api/image-generation/auto-generate-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
-      return response as unknown as BatchImageResponse;
-    },
-    onSuccess: (data) => {
-      setAutoGenStarted(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/image-generation/find-studies-needing-images"] });
-      toast({
-        title: "Auto-Generation Started",
-        description: data.message || "Started generating images for all studies that need them. This process will run in the background.",
-        variant: "default",
-      });
-    },
-    onError: (error) => {
-      console.error("Error starting auto image generation:", error);
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAutoGenStarted(true);
+        toast({
+          title: "Auto-Generation Started",
+          description: data.message || "Started generating images for all studies that need them. This process will run in the background.",
+          variant: "default",
+        });
+        
+        // Wait a moment then refresh the list
+        setTimeout(fetchStudiesNeedingImages, 5000);
+      } else {
+        console.error('Error auto generating images:', data.message);
+        toast({
+          title: "Error",
+          description: `Failed to start auto generation: ${data.message}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error starting auto image generation:', error);
       toast({
         title: "Error",
         description: "Failed to start auto image generation. Please try again.",
         variant: "destructive",
       });
-    }
-  });
-
-  // Handle single image generation for a study
-  const handleGenerateImage = (studyId: number) => {
-    setSelectedStudyId(studyId);
-    singleImageMutation.mutate(studyId);
-  };
-
-  const handleBatchGenerate = () => {
-    batchImageMutation.mutate(batchSize);
-  };
-  
-  const handleAutoGenerate = () => {
-    if (confirm("This will start generating images for ALL studies without images. The process will run in the background and may take a significant amount of time. Do you want to continue?")) {
-      autoGenImageMutation.mutate();
+    } finally {
+      setIsGeneratingAll(false);
     }
   };
+
+  // Fetch studies on initial load
+  useEffect(() => {
+    fetchStudiesNeedingImages();
+  }, []);
 
   return (
     <AdminLayout title="Image Generation" description="Generate scientific images for studies without media">      
@@ -174,10 +242,10 @@ const ImageGenerationPage: React.FC = () => {
               {isLoadingStudies ? (
                 <Skeleton className="h-4 w-48" />
               ) : (
-                `${studiesNeedingImages?.studyIds?.length || 0} studies need images`
+                `${studiesNeedingImages.length} studies need images`
               )}
             </p>
-            <Button onClick={() => refetchStudies()} variant="outline" className="w-full">
+            <Button onClick={fetchStudiesNeedingImages} variant="outline" className="w-full">
               Refresh List
             </Button>
           </CardContent>
@@ -203,11 +271,11 @@ const ImageGenerationPage: React.FC = () => {
               <span className="text-muted-foreground">studies at once</span>
             </div>
             <Button 
-              onClick={handleBatchGenerate} 
-              disabled={batchImageMutation.isPending || !studiesNeedingImages?.studyIds?.length}
+              onClick={generateBatchImages} 
+              disabled={isGeneratingBatch || studiesNeedingImages.length === 0}
               className="w-full"
             >
-              {batchImageMutation.isPending ? (
+              {isGeneratingBatch ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
@@ -244,11 +312,11 @@ const ImageGenerationPage: React.FC = () => {
                   This will find all studies without images and generate AI visuals for them in the background.
                 </p>
                 <Button 
-                  onClick={handleAutoGenerate} 
-                  disabled={autoGenImageMutation.isPending}
+                  onClick={autoGenerateAllImages} 
+                  disabled={isGeneratingAll}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 >
-                  {autoGenImageMutation.isPending ? (
+                  {isGeneratingAll ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Starting...
@@ -277,7 +345,7 @@ const ImageGenerationPage: React.FC = () => {
             </Card>
           ))}
         </div>
-      ) : (!studiesNeedingImages?.studyIds || studiesNeedingImages?.studyIds?.length === 0) ? (
+      ) : (studiesNeedingImages.length === 0) ? (
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-6">
             <div className="flex items-center text-green-600 mb-2">
@@ -291,7 +359,7 @@ const ImageGenerationPage: React.FC = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {studiesNeedingImages?.studyIds?.map((studyId: number) => (
+          {studiesNeedingImages.map((studyId: number) => (
             <Card key={studyId}>
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
@@ -302,12 +370,12 @@ const ImageGenerationPage: React.FC = () => {
                     </p>
                   </div>
                   <Button
-                    onClick={() => handleGenerateImage(studyId)}
-                    disabled={singleImageMutation.isPending && selectedStudyId === studyId}
+                    onClick={() => generateSingleImage(studyId)}
+                    disabled={isGeneratingSingle && selectedStudyId === studyId}
                     size="sm"
                     className="shrink-0"
                   >
-                    {singleImageMutation.isPending && selectedStudyId === studyId ? (
+                    {isGeneratingSingle && selectedStudyId === studyId ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Generating...
