@@ -44,8 +44,16 @@ const StudyPage = () => {
     queryKey: [`/api/studies/${studyId}`],
   });
   
-  // Create a fallback image URL for studies
-  const fallbackImageUrl = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visual";
+  // Create a fallback image URL for studies with enhanced visual appeal
+  const fallbackImageUrl = "https://placehold.co/800x400/e2f3ff/003366?text=Hydrogen+Research+Visualization";
+  
+  // Helper function to process image URLs correctly
+  const getProcessedImageUrl = (url?: string) => {
+    if (!url) return fallbackImageUrl;
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return url;
+    return `/${url}`;
+  };
   
   // Mutation for generating an AI image for this study
   const generateImageMutation = useMutation({
@@ -255,13 +263,7 @@ const StudyPage = () => {
                     {/* Image with fallback */}
                     <div className="relative">
                       <img 
-                        src={study.imageUrl 
-                          ? (study.imageUrl.startsWith('http') 
-                              ? study.imageUrl 
-                              : (study.imageUrl.startsWith('/') 
-                                  ? study.imageUrl 
-                                  : `/${study.imageUrl}`))
-                          : fallbackImageUrl}
+                        src={getProcessedImageUrl(study.imageUrl)}
                         alt={study.imageAlt || `Scientific visualization of hydrogen therapy research: ${study.title}`}
                         className="w-full h-auto object-cover shadow-sm rounded-md" 
                         itemProp="image"
@@ -269,6 +271,7 @@ const StudyPage = () => {
                           // Fallback if the image fails to load
                           const target = e.target as HTMLImageElement;
                           target.onerror = null; // Prevent infinite loop
+                          console.log("Image load error, using fallback");
                           target.src = fallbackImageUrl;
                         }}
                       />
