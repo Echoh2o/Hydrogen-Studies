@@ -107,6 +107,50 @@ const HydrogenTherapyGuide = () => {
         }}
       />
       
+      {/* Course Schema for educational content */}
+      <JsonLd 
+        type="Course"
+        data={{
+          name: "Comprehensive Molecular Hydrogen Therapy Guide",
+          description: "Learn about molecular hydrogen therapy, its mechanisms of action, health benefits, and different administration methods.",
+          provider: {
+            "@type": "Organization",
+            "name": "Hydrogen Studies",
+            "sameAs": "https://hydrogenstudies.com"
+          },
+          hasCourseInstance: {
+            "@type": "CourseInstance",
+            "courseMode": "ONLINE",
+            "courseWorkload": "PT1H",
+            "educationalLevel": "BEGINNER",
+            "offers": {
+              "@type": "Offer",
+              "availability": "http://schema.org/InStock",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          },
+          teaches: [
+            "Molecular hydrogen therapy principles",
+            "Selective antioxidant properties",
+            "Anti-inflammatory effects",
+            "Administration methods",
+            "Research evidence for health benefits"
+          ],
+          educationalCredentialAwarded: "Certificate of Completion",
+          learningResource: {
+            "@type": "LearningResource",
+            "educationalUse": "SELF_ASSESSMENT",
+            "educationalAlignment": {
+              "@type": "AlignmentObject",
+              "alignmentType": "teaches",
+              "educationalFramework": "Health Sciences",
+              "targetName": "Complementary and Alternative Medicine"
+            }
+          }
+        }}
+      />
+      
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-50 to-indigo-50 py-16">
         <div className="container mx-auto px-4 max-w-6xl">

@@ -49,49 +49,37 @@ const StudyPage = () => {
   
   // Mutation for generating an AI image for this study
   const generateImageMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`/api/image-generation/generate/${studyId}`, {
+    mutationFn: () => {
+      return fetch(`/api/images/generate/${studyId}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
+      }).then(res => {
+        if (!res.ok) throw new Error('Failed to generate image');
+        return res.json();
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to generate image');
-      }
-      
-      return response.json();
     },
     onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Image generated successfully",
-          description: "A new scientific illustration has been created for this study.",
-        });
-        // Invalidate the study query to refresh the data with the new image
-        queryClient.invalidateQueries({ queryKey: [`/api/studies/${studyId}`] });
-      } else {
-        toast({
-          title: "Image generation failed",
-          description: data.message || "Unable to generate image. Please try again later.",
-          variant: "destructive"
-        });
-      }
+      queryClient.invalidateQueries({ queryKey: [`/api/studies/${studyId}`] });
+      toast({
+        title: "Image Generated Successfully",
+        description: "A new scientific visualization has been created for this study.",
+      });
     },
     onError: (error) => {
+      console.error('Image generation error:', error);
       toast({
-        title: "Image generation failed",
-        description: error instanceof Error ? error.message : "Unable to generate image. Please try again later.",
-        variant: "destructive"
+        title: "Image Generation Failed",
+        description: "Unable to generate an image. Please try again later.",
+        variant: "destructive",
       });
     }
   });
 
-  // Related studies query (same category)
-  const { data: allStudies } = useQuery({
-    queryKey: ["/api/studies"],
+  // Get all studies for related studies section
+  const { data: allStudies } = useQuery<any[]>({
+    queryKey: ['/api/studies'],
   });
 
   // Get related studies (same category, exclude current)
@@ -152,26 +140,30 @@ const StudyPage = () => {
   return (
     <>
       <Helmet>
-        <title>{`Hydrogen Therapy Research: ${study.title} | Health Benefits & Effects`}</title>
-        <meta name="description" content={`Explore research on ${study.category} showing how hydrogen therapy affects ${study.title.toLowerCase()}. View methodology, results, and scientific evidence.`} />
-        <meta name="keywords" content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, ${study.title.split(' ').slice(0, 5).join(' ').toLowerCase()}, health research`} />
+        <title>{study.title} | Hydrogen Studies Research</title>
+        <meta name="description" content={study.abstract?.substring(0, 160) + "..."} />
+        <meta name="keywords" content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, research study, scientific evidence, health effects`} />
+        <meta name="author" content={study.authors} />
+        <meta name="date" content={study.publishDate} />
         <link rel="canonical" href={`https://hydrogenstudies.com/study/${study.id}`} />
         
-        {/* Open Graph tags for better social sharing */}
-        <meta property="og:title" content={`Hydrogen Therapy Research: ${study.title}`} />
-        <meta property="og:description" content={study.abstract ? study.abstract.substring(0, 200) + '...' : `Research on hydrogen therapy effects for ${study.category}.`} />
+        {/* Open Graph Tags */}
+        <meta property="og:title" content={`${study.title} | Hydrogen Studies`} />
+        <meta property="og:description" content={study.abstract?.substring(0, 200) + "..."} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />
         <meta property="og:image" content={study.imageUrl || fallbackImageUrl} />
+        <meta property="article:published_time" content={study.publishDate} />
+        <meta property="article:section" content={study.category} />
         
-        {/* Twitter Card tags */}
+        {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`Hydrogen Research: ${study.title.substring(0, 60)}${study.title.length > 60 ? '...' : ''}`} />
-        <meta name="twitter:description" content={study.abstract ? study.abstract.substring(0, 120) + '...' : `Research on hydrogen therapy effects for ${study.category}.`} />
+        <meta name="twitter:title" content={study.title} />
+        <meta name="twitter:description" content={study.abstract?.substring(0, 200) + "..."} />
         <meta name="twitter:image" content={study.imageUrl || fallbackImageUrl} />
       </Helmet>
       
-      {/* JSON-LD Structured Data for Medical/Scientific Research */}
+      {/* Structured Data */}
       <JsonLd 
         type="MedicalScholarlyArticle"
         data={generateMedicalArticleSchema(study)}
@@ -192,32 +184,46 @@ const StudyPage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {/* Breadcrumb */}
-            <div className="flex items-center text-sm text-neutral-500 mb-6">
-              <Link href="/">
-                <span className="hover:text-primary cursor-pointer">Home</span>
-              </Link>
-              <span className="mx-2">/</span>
-              <Link href="/categories">
-                <span className="hover:text-primary cursor-pointer">Categories</span>
-              </Link>
-              <span className="mx-2">/</span>
-              <Link href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}>
-                <span className="hover:text-primary cursor-pointer">{study.category}</span>
-              </Link>
-              <span className="mx-2">/</span>
-              <span className="text-neutral-800">Study</span>
-            </div>
+            <nav aria-label="Breadcrumb" className="mb-6">
+              <ol className="flex items-center text-sm text-neutral-500" itemScope itemType="https://schema.org/BreadcrumbList">
+                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center">
+                  <Link href="/">
+                    <span itemProp="name" className="hover:text-primary cursor-pointer">Home</span>
+                  </Link>
+                  <meta itemProp="position" content="1" />
+                  <span className="mx-2" aria-hidden="true">/</span>
+                </li>
+                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center">
+                  <Link href="/categories">
+                    <span itemProp="name" className="hover:text-primary cursor-pointer">Categories</span>
+                  </Link>
+                  <meta itemProp="position" content="2" />
+                  <span className="mx-2" aria-hidden="true">/</span>
+                </li>
+                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center">
+                  <Link href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}>
+                    <span itemProp="name" className="hover:text-primary cursor-pointer">{study.category}</span>
+                  </Link>
+                  <meta itemProp="position" content="3" />
+                  <span className="mx-2" aria-hidden="true">/</span>
+                </li>
+                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center" aria-current="page">
+                  <span itemProp="name" className="text-neutral-800">Study</span>
+                  <meta itemProp="position" content="4" />
+                </li>
+              </ol>
+            </nav>
 
             {/* Study Header */}
-            <div className="mb-8">
+            <header className="mb-8">
               <div className="flex items-center mb-3">
                 <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/15">
                   {study.category}
                 </Badge>
                 {study.year && (
-                  <span className="ml-4 text-neutral-500 flex items-center">
-                    <HiCalendar className="mr-1" /> {study.year}
-                  </span>
+                  <time dateTime={study.year.toString()} className="ml-4 text-neutral-500 flex items-center">
+                    <HiCalendar className="mr-1" aria-hidden="true" /> {study.year}
+                  </time>
                 )}
               </div>
               
@@ -225,179 +231,181 @@ const StudyPage = () => {
               
               <div className="flex flex-wrap items-center text-neutral-600 gap-y-2">
                 <span className="flex items-center mr-6">
-                  <HiUser className="mr-1" /> {study.authors}
+                  <HiUser className="mr-1" aria-hidden="true" /> 
+                  <span itemProp="author">{study.authors}</span>
                 </span>
                 <span className="flex items-center mr-6">
-                  <HiBookOpen className="mr-1" /> {study.journal}
+                  <HiBookOpen className="mr-1" aria-hidden="true" /> 
+                  <span itemProp="publisher">{study.journal}</span>
                 </span>
                 <span className="flex items-center">
-                  <HiDocumentText className="mr-1" /> {study.citations || "0"} citations
+                  <HiDocumentText className="mr-1" aria-hidden="true" /> 
+                  <span>{study.citations || "0"} citations</span>
                 </span>
               </div>
-            </div>
+            </header>
 
             {/* Study Content */}
-            <div className="bg-white border border-neutral-200 rounded-xl shadow-sm mb-10">
+            <article className="bg-white border border-neutral-200 rounded-xl shadow-sm mb-10" itemScope itemType="https://schema.org/MedicalScholarlyArticle">
               <div className="p-6 md:p-8">
-                <h2 className="text-xl font-semibold mb-4">Research Visualization</h2>
-                {/* Study Image */}
-                <div className="mb-8 rounded-lg overflow-hidden">
-                  {/* Image with fallback */}
-                  <div className="relative">
-                    <img 
-                      src={study.imageUrl ? study.imageUrl : fallbackImageUrl}
-                      alt={`Visual representation of hydrogen research on ${study.title}`}
-                      className="w-full h-auto object-cover shadow-sm rounded-md" 
-                      onError={(e) => {
-                        // Fallback if the image fails to load
-                        const target = e.target as HTMLImageElement;
-                        target.onerror = null; // Prevent infinite loop
-                        target.src = fallbackImageUrl;
-                      }}
-                    />
+                <section aria-labelledby="visualization-heading">
+                  <h2 id="visualization-heading" className="text-xl font-semibold mb-4">Research Visualization</h2>
+                  {/* Study Image */}
+                  <figure className="mb-8 rounded-lg overflow-hidden">
+                    {/* Image with fallback */}
+                    <div className="relative">
+                      <img 
+                        src={study.imageUrl ? study.imageUrl : fallbackImageUrl}
+                        alt={`Visual representation of hydrogen research on ${study.title}`}
+                        className="w-full h-auto object-cover shadow-sm rounded-md" 
+                        itemProp="image"
+                        onError={(e) => {
+                          // Fallback if the image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null; // Prevent infinite loop
+                          target.src = fallbackImageUrl;
+                        }}
+                      />
+                      
+                      {/* Generate Image Button - Only show if image is missing or using fallback */}
+                      {(!study.imageUrl || study.imageUrl === fallbackImageUrl) && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
+                          <Button 
+                            variant="secondary"
+                            className="flex items-center gap-2 bg-white hover:bg-neutral-100"
+                            onClick={() => generateImageMutation.mutate()}
+                            disabled={generateImageMutation.isPending}
+                          >
+                            <HiPhotograph className="w-4 h-4" />
+                            {generateImageMutation.isPending ? 'Generating...' : 'Generate Scientific Visual'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                     
-                    {/* Generate Image Button - Only show if image is missing or using fallback */}
-                    {(!study.imageUrl || study.imageUrl === fallbackImageUrl) && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
-                        <Button 
-                          variant="secondary"
-                          className="flex items-center gap-2 bg-white hover:bg-neutral-100"
-                          onClick={() => generateImageMutation.mutate()}
-                          disabled={generateImageMutation.isPending}
-                        >
-                          <HiPhotograph className="w-4 h-4" />
-                          {generateImageMutation.isPending ? 'Generating...' : 'Generate Scientific Visual'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-between items-start mt-2">
-                    <p className="text-xs text-neutral-500 italic">
-                      {study.autoGeneratedImage ? 
-                        "AI-generated visualization of the study's hydrogen mechanisms and effects" : 
-                        "Visual representation of hydrogen effects related to this research"}
-                    </p>
-                    
-                    {/* Image attribution if available */}
-                    {study.imageAlt && (
-                      <span className="text-xs text-neutral-400">
-                        {study.imageAlt}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                    <figcaption className="flex justify-between items-start mt-2">
+                      <p className="text-xs text-neutral-500 italic">
+                        {study.autoGeneratedImage ? 
+                          "AI-generated visualization of the study's hydrogen mechanisms and effects" : 
+                          "Visual representation of hydrogen effects related to this research"}
+                      </p>
+                      
+                      {/* Image attribution if available */}
+                      {study.imageAlt && (
+                        <span className="text-xs text-neutral-400">
+                          {study.imageAlt}
+                        </span>
+                      )}
+                    </figcaption>
+                  </figure>
+                </section>
 
-                <h2 className="text-xl font-semibold mb-4">Abstract</h2>
-                <div className="prose max-w-none prose-neutral mb-8">
-                  <p className="text-lg leading-relaxed">{study.abstract}</p>
-                </div>
+                <section aria-labelledby="abstract-heading">
+                  <h2 id="abstract-heading" className="text-xl font-semibold mb-4">Abstract</h2>
+                  <div className="prose max-w-none prose-neutral mb-8">
+                    <p className="text-lg leading-relaxed" itemProp="abstract">{study.abstract}</p>
+                  </div>
+                </section>
 
                 {/* Methods Section */}
                 {study.methods && (
-                  <>
+                  <section aria-labelledby="methods-heading">
                     <Separator className="my-6" />
-                    <h2 className="text-xl font-semibold mb-4">Methods</h2>
-                    <div className="prose max-w-none prose-neutral mb-6">
+                    <h2 id="methods-heading" className="text-xl font-semibold mb-4">Methods</h2>
+                    <div className="prose max-w-none prose-neutral mb-6" itemProp="methodDescription">
                       <p>{study.methods}</p>
                     </div>
-                  </>
+                  </section>
                 )}
 
                 {/* Results Section */}
                 {study.results && (
-                  <>
+                  <section aria-labelledby="results-heading">
                     <Separator className="my-6" />
-                    <h2 className="text-xl font-semibold mb-4">Results</h2>
-                    <div className="prose max-w-none prose-neutral mb-6">
+                    <h2 id="results-heading" className="text-xl font-semibold mb-4">Results</h2>
+                    <div className="prose max-w-none prose-neutral mb-6" itemProp="resultDescription">
                       <p>{study.results}</p>
                     </div>
-                  </>
+                  </section>
                 )}
 
                 {/* Conclusion Section */}
                 {study.conclusion && (
-                  <>
+                  <section aria-labelledby="conclusion-heading">
                     <Separator className="my-6" />
-                    <h2 className="text-xl font-semibold mb-4">Conclusion</h2>
-                    <div className="prose max-w-none prose-neutral mb-6">
+                    <h2 id="conclusion-heading" className="text-xl font-semibold mb-4">Conclusion</h2>
+                    <div className="prose max-w-none prose-neutral mb-6" itemProp="conclusion">
                       <p>{study.conclusion}</p>
                     </div>
-                  </>
+                  </section>
                 )}
 
                 {/* Study Metadata */}
                 <Separator className="my-6" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                  <div>
-                    <h3 className="text-sm font-semibold text-neutral-500 uppercase mb-2">Publication Details</h3>
-                    <ul className="space-y-2">
-                      <li className="flex items-start">
-                        <span className="font-semibold w-24">Journal:</span>
-                        <span>{study.journal}</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-semibold w-24">Published:</span>
-                        <span>{study.publishDate}</span>
-                      </li>
-                      {study.studyType && (
-                        <li className="flex items-start">
-                          <span className="font-semibold w-24">Study Type:</span>
-                          <span>{study.studyType}</span>
-                        </li>
-                      )}
-                    </ul>
+                <section aria-labelledby="metadata-heading" className="mt-6">
+                  <h2 id="metadata-heading" className="sr-only">Study Metadata</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {study.doi && (
+                      <div>
+                        <p className="text-sm font-medium text-neutral-500 mb-1">DOI Reference</p>
+                        <p className="text-sm">
+                          <a 
+                            href={`https://doi.org/${study.doi}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center"
+                            itemProp="identifier"
+                          >
+                            {study.doi} <HiExternalLink className="ml-1" />
+                          </a>
+                        </p>
+                      </div>
+                    )}
+                    
+                    {study.pdfUrl && (
+                      <div>
+                        <p className="text-sm font-medium text-neutral-500 mb-1">Full Text Access</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex items-center text-sm"
+                          asChild
+                        >
+                          <a href={study.pdfUrl} target="_blank" rel="noopener noreferrer">
+                            <HiDownload className="mr-1" /> Download PDF
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {study.citationUrl && (
+                      <div>
+                        <p className="text-sm font-medium text-neutral-500 mb-1">Citation Information</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex items-center text-sm"
+                          asChild
+                        >
+                          <a href={study.citationUrl} target="_blank" rel="noopener noreferrer">
+                            <HiClipboardCheck className="mr-1" /> Copy Citation
+                          </a>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-neutral-500 uppercase mb-2">Resources</h3>
-                    <div className="space-y-3">
-                      {study.doi && (
-                        <a
-                          href={`https://doi.org/${study.doi}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-primary hover:underline"
-                        >
-                          <HiExternalLink className="mr-2" />
-                          View DOI Reference
-                        </a>
-                      )}
-                      {study.pdfUrl && (
-                        <a
-                          href={study.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-primary hover:underline"
-                        >
-                          <HiDownload className="mr-2" />
-                          Access Full PDF
-                        </a>
-                      )}
-                      {study.citationUrl && (
-                        <a
-                          href={study.citationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-primary hover:underline"
-                        >
-                          <HiDocumentText className="mr-2" />
-                          View Citations
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                </section>
               </div>
-            </div>
+            </article>
 
-            {/* Related Studies */}
+            {/* Related Studies Section */}
             {relatedStudies.length > 0 && (
-              <div className="mt-10">
-                <h2 className="text-2xl font-bold mb-6">Related Research</h2>
+              <section aria-labelledby="related-studies-heading" className="mt-12">
+                <h2 id="related-studies-heading" className="text-2xl font-bold mb-6">Related Studies</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {relatedStudies.map((relatedStudy: any) => (
                     <Link key={relatedStudy.id} href={`/study/${relatedStudy.id}`}>
-                      <Card className="h-full hover:bg-neutral-50 transition-colors cursor-pointer">
+                      <Card className="h-full hover:shadow-md transition-shadow">
                         <CardContent className="p-5">
                           <Badge variant="outline" className="mb-3">
                             {relatedStudy.category}
@@ -409,13 +417,14 @@ const StudyPage = () => {
                     </Link>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Related Blogs */}
-            <div className="mt-12">
+            <section aria-labelledby="related-blogs-heading" className="mt-12">
+              <h2 id="related-blogs-heading" className="sr-only">Related Blog Articles</h2>
               <RelatedBlogs studyId={study.id} />
-            </div>
+            </section>
           </div>
         </div>
       </section>
