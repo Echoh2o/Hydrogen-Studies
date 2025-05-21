@@ -8,6 +8,7 @@ import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar
 import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
+import JsonLd, { generateMedicalArticleSchema, generateBreadcrumbSchema } from "@/components/seo/JsonLd";
 
 const StudyPage = () => {
   const { id } = useParams();
@@ -158,6 +159,16 @@ const StudyPage = () => {
         
         {/* Open Graph tags for better social sharing */}
         <meta property="og:title" content={`Hydrogen Therapy Research: ${study.title}`} />
+        <meta property="og:description" content={study.abstract ? study.abstract.substring(0, 200) + '...' : `Research on hydrogen therapy effects for ${study.category}.`} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />
+        <meta property="og:image" content={study.imageUrl || fallbackImageUrl} />
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`Hydrogen Research: ${study.title.substring(0, 60)}${study.title.length > 60 ? '...' : ''}`} />
+        <meta name="twitter:description" content={study.abstract ? study.abstract.substring(0, 120) + '...' : `Research on hydrogen therapy effects for ${study.category}.`} />
+        <meta name="twitter:image" content={study.imageUrl || fallbackImageUrl} />
         <meta property="og:description" content={`Scientific research on how hydrogen therapy affects ${study.title.toLowerCase()}. From the Hydrogen Studies Research Database.`} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />

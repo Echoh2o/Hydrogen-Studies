@@ -86,6 +86,46 @@ export default function Home() {
                   "@type": "Answer",
                   "text": "Hydrogen can be administered through multiple methods: drinking hydrogen-rich water, inhaling hydrogen gas, taking hydrogen baths, or using hydrogen-generating supplements. Each delivery method has different bioavailability characteristics and potential applications depending on the health condition being addressed."
                 }
+              },
+              {
+                "@type": "Question",
+                "name": "Is hydrogen therapy backed by scientific research?",
+                "acceptedAnswer": {
+                  "@type": "Answer", 
+                  "text": "Yes, hydrogen therapy has been studied in hundreds of peer-reviewed scientific papers since 2007, when a landmark paper in Nature Medicine demonstrated its selective antioxidant properties. Research includes cell studies, animal models, and human clinical trials across multiple health conditions, with the most robust evidence in areas of oxidative stress-related conditions."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does molecular hydrogen work in the body?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Molecular hydrogen works through several mechanisms: 1) It selectively neutralizes harmful hydroxyl radicals while preserving beneficial reactive oxygen species needed for cell signaling, 2) It activates the Nrf2 pathway which regulates antioxidant proteins, 3) It reduces inflammation by suppressing pro-inflammatory cytokines, and 4) It influences cell signaling pathways related to metabolism and cell survival."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is hydrogen water the same as alkaline water?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No, hydrogen water and alkaline water are different. Hydrogen water contains dissolved molecular hydrogen gas (H2) that acts as a selective antioxidant in the body. Alkaline water has a higher pH level (typically 8-9) due to mineral content or electrolysis but doesn't necessarily contain therapeutic levels of molecular hydrogen. Some devices can produce both alkaline and hydrogen-rich water, but the benefits attributed to each are different."
+                }
+              },
+              {
+                "@type": "Question", 
+                "name": "Which method of hydrogen therapy is most effective?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The most effective method depends on the specific health condition being addressed. Hydrogen water is convenient for daily use and shows benefits for metabolic conditions. Hydrogen gas inhalation delivers higher concentrations and may be more effective for acute conditions or neurological applications. Hydrogen baths may be beneficial for skin conditions and relaxation. For serious medical conditions, clinical studies often use a combination of methods under professional supervision."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How can I find reliable hydrogen therapy research?",
+                "acceptedAnswer": {
+                  "@type": "Answer", 
+                  "text": "Our Hydrogen Studies database provides access to peer-reviewed research on hydrogen therapy from reputable scientific journals. You can search by health condition, body system, or delivery method to find relevant studies. Each study includes key details such as publication information, methodology, and findings. For deeper research, we provide links to the original journal publications where available."
+                }
               }
             ]
           })}
