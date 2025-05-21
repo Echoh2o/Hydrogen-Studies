@@ -1,26 +1,23 @@
 User-agent: *
 Allow: /
-
-# Allow all bots to access these directories
-Allow: /studies/
-Allow: /categories/
-Allow: /learn/
-Allow: /explore/
-Allow: /resources/
-Allow: /about/
-Allow: /condition/
-
-# Specific allow for Google Image crawler
-User-agent: Googlebot-Image
-Allow: /images/
-Allow: /uploads/
-
-# Disallow admin sections
 Disallow: /admin/
 Disallow: /api/
 Disallow: /login
-Disallow: /register
+Disallow: /logout
+Disallow: /reset-password
 
-# Specify sitemap locations
+# Allow important content directories
+Allow: /study/
+Allow: /category/
+Allow: /educational/
+Allow: /explore-by-*/
+
+# Crawl delay to avoid overwhelming the server
+Crawl-delay: 1
+
+# Sitemaps
 Sitemap: https://hydrogenstudies.com/sitemap-index.xml
 Sitemap: https://hydrogenstudies.com/sitemap.xml
+Sitemap: https://hydrogenstudies.com/sitemap-studies.xml
+Sitemap: https://hydrogenstudies.com/sitemap-categories.xml
+Sitemap: https://hydrogenstudies.com/sitemap-blog.xml
