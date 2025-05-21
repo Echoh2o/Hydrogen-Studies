@@ -197,6 +197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register minimal import routes with PubMed enrichment
   app.use('/api', minimalImportRoutes);
   
+  // Register image fix routes for handling image display issues
+  app.use('/api/images/fix', imageFixRoutes);
+  
   // Register research article search and discovery routes
   app.use('/api', researchRoutes);
   
