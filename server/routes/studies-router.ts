@@ -6,6 +6,71 @@ import { db } from "../db";
 
 const router = Router();
 
+// Get studies by consumer category type (condition, body_system, life_stage)
+router.get("/by-consumer-category/:model/:category", async (req, res) => {
+  try {
+    const { model, category } = req.params;
+    
+    if (!model || !category) {
+      return res.status(400).json({
+        success: false,
+        message: "Model and category parameters are required"
+      });
+    }
+    
+    console.log(`Fetching studies for ${model} category: ${category}`);
+    
+    // Mock data for demonstration - this should be replaced with actual database query
+    const mockStudies = [
+      {
+        id: 1,
+        title: "Effects of hydrogen-rich water on metabolic syndrome",
+        abstract: "This study investigates the effects of hydrogen-rich water consumption on markers of metabolic syndrome.",
+        category: "Metabolic",
+        publishDate: "2023-05-15",
+        journal: "Journal of Hydrogen Medicine",
+        authors: "Smith J, Johnson A",
+        doi: "10.1234/hydro.2023.001",
+        imageUrl: "/uploads/metabolic-syndrome-study.jpg"
+      },
+      {
+        id: 2,
+        title: "Hydrogen inhalation for respiratory conditions",
+        abstract: "A clinical trial evaluating hydrogen gas inhalation therapy for respiratory disorders.",
+        category: "Respiratory",
+        publishDate: "2023-06-20",
+        journal: "Respiratory Research International",
+        authors: "Chen L, Wang H",
+        doi: "10.1234/resp.2023.015",
+        imageUrl: "/uploads/respiratory-hydrogen-study.jpg"
+      },
+      {
+        id: 3,
+        title: "Hydrogen baths for psoriasis treatment",
+        abstract: "Evaluation of hydrogen-enriched water baths for treating psoriasis symptoms.",
+        category: "Dermatology",
+        publishDate: "2023-04-10",
+        journal: "Dermatology Science Journal",
+        authors: "Tanaka Y, Suzuki K",
+        doi: "10.1234/derm.2023.008",
+        imageUrl: "/uploads/psoriasis-hydrogen-study.jpg"
+      }
+    ];
+    
+    return res.json({
+      success: true,
+      data: mockStudies
+    });
+    
+  } catch (error) {
+    console.error("Error fetching studies by consumer category:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch studies by consumer category"
+    });
+  }
+});
+
 // Get all studies with filtering and search
 router.get("/", async (req, res) => {
   try {

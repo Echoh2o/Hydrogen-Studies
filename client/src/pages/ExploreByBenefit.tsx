@@ -110,7 +110,7 @@ const ExploreByBenefit: React.FC = () => {
 
   // Get counts for rendering badges
   const getCategoryCount = (model: string, category: string): number => {
-    if (!countData?.data) return 0;
+    if (!countData?.success) return 0;
     
     switch (model) {
       case 'condition':
@@ -136,7 +136,7 @@ const ExploreByBenefit: React.FC = () => {
 
   // Get categories for current model
   const getCurrentCategories = (): string[] => {
-    if (!categoryData?.data) return [];
+    if (!categoryData?.success) return [];
     
     switch (selectedModel) {
       case 'condition':
@@ -187,7 +187,7 @@ const ExploreByBenefit: React.FC = () => {
                 <Loader2 className="w-8 h-8 animate-spin" />
               </div>
             ) : (
-              categoryData?.data?.condition?.map((category: string) => (
+              getCurrentCategories().map((category: string) => (
                 <Card 
                   key={category}
                   className={`cursor-pointer hover:shadow-md transition-shadow ${
@@ -220,7 +220,7 @@ const ExploreByBenefit: React.FC = () => {
                 <Loader2 className="w-8 h-8 animate-spin" />
               </div>
             ) : (
-              categoryData?.data?.body_system?.map((category: string) => (
+              getCurrentCategories().map((category: string) => (
                 <Card 
                   key={category}
                   className={`cursor-pointer hover:shadow-md transition-shadow ${
@@ -253,7 +253,7 @@ const ExploreByBenefit: React.FC = () => {
                 <Loader2 className="w-8 h-8 animate-spin" />
               </div>
             ) : (
-              categoryData?.data?.life_stage?.map((category: string) => (
+              getCurrentCategories().map((category: string) => (
                 <Card 
                   key={category}
                   className={`cursor-pointer hover:shadow-md transition-shadow ${
@@ -297,7 +297,7 @@ const ExploreByBenefit: React.FC = () => {
             </div>
           ) : (
             <>
-              {studies?.data?.length === 0 ? (
+              {!studies?.success || studies?.data?.length === 0 ? (
                 <Card className="bg-muted/50">
                   <CardContent className="pt-6 text-center">
                     <p>No studies found for this category yet. We're continuously adding new research.</p>
