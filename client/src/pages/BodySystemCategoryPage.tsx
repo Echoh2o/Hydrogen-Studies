@@ -99,11 +99,53 @@ const BodySystemCategoryPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <Helmet>
-        <title>{displayName} Hydrogen Studies | HydrogenStudies.com</title>
+        <title>{`Hydrogen Therapy for ${displayName} | Health Benefits & Research Evidence`}</title>
         <meta 
           name="description" 
-          content={`Research studies about how hydrogen therapy may affect the ${displayName.toLowerCase()}. Browse the latest scientific evidence and findings.`}
+          content={`Scientific research on how hydrogen therapy affects the ${displayName.toLowerCase()}. Discover evidence-based studies on molecular hydrogen benefits for ${displayName.toLowerCase()} health.`}
         />
+        <meta name="keywords" content={`hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 therapy, hydrogen water benefits, ${displayName.toLowerCase()} health`} />
+        <link rel="canonical" href={`https://hydrogenstudies.com/body-system/${name}`} />
+
+        {/* Open Graph Tags for social sharing */}
+        <meta property="og:title" content={`Hydrogen Therapy Effects on ${displayName} | Research Database`} />
+        <meta property="og:description" content={`Scientific research on how hydrogen therapy affects the ${displayName.toLowerCase()}. Evidence-based studies on molecular hydrogen health benefits.`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://hydrogenstudies.com/body-system/${name}`} />
+        <meta property="og:image" content="/og-body-system-image.jpg" />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:title" content={`${displayName} Hydrogen Therapy Research | Evidence Database`} />
+        <meta name="twitter:description" content={`Scientific studies on how hydrogen therapy affects ${displayName.toLowerCase()} health. Research database on molecular hydrogen benefits.`} />
+        
+        {/* Schema.org structured data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "headline": `Hydrogen Therapy Research for ${displayName}`,
+            "description": `Scientific research database on how hydrogen therapy affects the ${displayName.toLowerCase()}. Evidence-based studies on molecular hydrogen health benefits.`,
+            "keywords": `hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 benefits`,
+            "url": `https://hydrogenstudies.com/body-system/${name}`,
+            "mainEntityOfPage": {
+              "@type": "MedicalWebPage",
+              "about": {
+                "@type": "AnatomicalSystem",
+                "name": displayName
+              }
+            },
+            "about": [
+              {
+                "@type": "AnatomicalSystem",
+                "name": displayName
+              },
+              {
+                "@type": "MedicalTherapy",
+                "name": "Hydrogen Therapy"
+              }
+            ]
+          })}
+        </script>
       </Helmet>
 
       <div className="mb-8">
