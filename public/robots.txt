@@ -21,5 +21,6 @@ Disallow: /api/
 Disallow: /login
 Disallow: /register
 
-# Specify sitemap location
+# Specify sitemap locations
+Sitemap: https://hydrogenstudies.com/sitemap-index.xml
 Sitemap: https://hydrogenstudies.com/sitemap.xml
