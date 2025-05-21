@@ -151,8 +151,53 @@ const StudyPage = () => {
   return (
     <>
       <Helmet>
-        <title>{study.title} | Hydrogen Studies Research</title>
-        <meta name="description" content={`${study.abstract.substring(0, 155)}...`} />
+        <title>{`Hydrogen Therapy Research: ${study.title} | Health Benefits & Effects`}</title>
+        <meta name="description" content={`Explore research on ${study.category} showing how hydrogen therapy affects ${study.title.toLowerCase()}. View methodology, results, and scientific evidence.`} />
+        <meta name="keywords" content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, ${study.title.split(' ').slice(0, 5).join(' ').toLowerCase()}, health research`} />
+        <link rel="canonical" href={`https://hydrogenstudies.com/study/${study.id}`} />
+        
+        {/* Open Graph tags for better social sharing */}
+        <meta property="og:title" content={`Hydrogen Therapy Research: ${study.title}`} />
+        <meta property="og:description" content={`Scientific research on how hydrogen therapy affects ${study.title.toLowerCase()}. From the Hydrogen Studies Research Database.`} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />
+        <meta property="og:image" content={study.imageUrl || fallbackImageUrl} />
+        
+        {/* Twitter Card data */}
+        <meta name="twitter:title" content={`Hydrogen Therapy Research: ${study.title}`} />
+        <meta name="twitter:description" content={`Scientific research on ${study.category} showing how hydrogen therapy affects health.`} />
+        <meta name="twitter:image" content={study.imageUrl || fallbackImageUrl} />
+        
+        {/* Schema.org markup for Google */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ScholarlyArticle",
+            "headline": study.title,
+            "author": {
+              "@type": "Person",
+              "name": study.authors
+            },
+            "abstract": study.abstract,
+            "datePublished": study.publishDate,
+            "publisher": {
+              "@type": "Organization",
+              "name": study.journal
+            },
+            "about": [
+              {
+                "@type": "Thing",
+                "name": "Hydrogen Therapy"
+              },
+              {
+                "@type": "Thing",
+                "name": study.category
+              }
+            ],
+            "isAccessibleForFree": study.fullTextAvailable || false,
+            "image": study.imageUrl || fallbackImageUrl
+          })}
+        </script>
       </Helmet>
 
       <section className="bg-white py-8 md:py-12">
