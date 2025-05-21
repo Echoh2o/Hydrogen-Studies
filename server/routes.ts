@@ -48,6 +48,7 @@ import excelImportRoutes from "./routes/excel-import";
 import unifiedResearchRoutes from "./routes/research-unified-routes";
 import studyDetailsRoutes from "./routes/study-details";
 import europePmcRoutes from "./routes/europepmc-routes";
+import imageFixRoutes from "./routes/image-fix-routes";
 import semanticScholarRoutes from "./routes/semantic-scholar-routes";
 import crossrefRoutes from "./routes/crossref-routes";
 import journalDateRoutes from "./routes/journal-date-routes";
