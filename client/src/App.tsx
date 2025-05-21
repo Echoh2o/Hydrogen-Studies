@@ -25,6 +25,9 @@ import ResearchSuggestionsPage from "@/pages/research-suggestions";
 import ShareInsightCard from "@/pages/ShareInsightCard";
 import ImprovedSearchPage from "@/pages/ImprovedSearchPage";
 
+// Educational content pages
+import HydrogenTherapyGuide from "@/pages/educational/HydrogenTherapyGuide";
+
 // New organization structure pages
 import ExploreByBenefit from "@/pages/ExploreByBenefit";
 import ExploreByCondition from "@/pages/ExploreByCondition";
@@ -94,6 +97,9 @@ function Router() {
       <Route path="/chat" component={ChatPage} />
       <Route path="/research-suggestions" component={ResearchSuggestionsPage} />
       <Route path="/improved-search" component={ImprovedSearchPage} />
+      
+      {/* Educational Content Pages */}
+      <Route path="/educational/hydrogen-therapy-guide" component={HydrogenTherapyGuide} />
       
       {/* New Organization Structure Routes */}
       <Route path="/benefits" component={ExploreByBenefit} />
