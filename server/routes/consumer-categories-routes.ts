@@ -7,6 +7,8 @@ const router = express.Router();
 
 // Get consumer categories' names - use specific path to avoid conflict with homepage
 router.get('/list', async (req, res) => {
+  // Set content type to JSON explicitly
+  res.setHeader('Content-Type', 'application/json');
   try {
     // Health condition categories
     const conditionCategories = [
@@ -59,6 +61,8 @@ router.get('/list', async (req, res) => {
 
 // Get counts for all categorization types
 router.get('/counts', async (req, res) => {
+  // Set content type to JSON explicitly
+  res.setHeader('Content-Type', 'application/json');
   try {
     // Health condition categories matching those in the database 
     const healthConditionCounts = [
