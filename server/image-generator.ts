@@ -454,10 +454,10 @@ export async function findStudiesNeedingImages(limit: number = 20): Promise<numb
 
 /**
  * Batch generate images for multiple studies
- * @param limit Maximum number of studies to process
+ * @param studyIdsOrLimit Array of study IDs to process, or a number indicating maximum studies to process
  * @returns Results of batch processing
  */
-export async function batchGenerateImagesForStudies(limit: number = 10): Promise<{
+export async function batchGenerateImagesForStudies(studyIdsOrLimit: number[] | number = 10): Promise<{
   total: number;
   success: number;
   failed: number;
@@ -471,11 +471,31 @@ export async function batchGenerateImagesForStudies(limit: number = 10): Promise
   };
   
   try {
-    // Find studies that need images
-    const studyIds = await findStudiesNeedingImages(limit);
+    // Determine if we're given an array of study IDs or a limit
+    let studyIds: number[];
+    if (Array.isArray(studyIdsOrLimit)) {
+      studyIds = studyIdsOrLimit;
+      console.log(`Processing ${studyIds.length} specified studies`);
+    } else {
+      // Find studies that need images up to the limit
+      studyIds = await findStudiesNeedingImages(studyIdsOrLimit);
+      console.log(`Found ${studyIds.length} studies that need images (limit: ${studyIdsOrLimit})`);
+    }
+    
     results.total = studyIds.length;
     
     if (studyIds.length === 0) {
+      console.log('No studies to process for image generation');
+      return results;
+    }
+    
+    // Check if API key is set
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY not set, batch processing aborted');
+      results.errors.push({
+        studyId: 0,
+        error: 'OPENAI_API_KEY not set in environment variables'
+      });
       return results;
     }
     
@@ -492,9 +512,9 @@ export async function batchGenerateImagesForStudies(limit: number = 10): Promise
           results.failed++;
           results.errors.push({
             studyId,
-            error: result.message
+            error: result.message || 'Unknown error'
           });
-          console.error(`Failed to generate image for study ${studyId}: ${result.message}`);
+          console.error(`Failed to generate image for study ${studyId}: ${result.message || 'Unknown error'}`);
         }
       } catch (error) {
         results.failed++;
@@ -506,10 +526,13 @@ export async function batchGenerateImagesForStudies(limit: number = 10): Promise
       }
       
       // Add a delay to avoid rate limits
-      console.log('Waiting 10 seconds before processing next study...');
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      if (studyIds.indexOf(studyId) < studyIds.length - 1) {
+        console.log('Waiting 10 seconds before processing next study...');
+        await new Promise(resolve => setTimeout(resolve, 10000));
+      }
     }
     
+    console.log(`Batch processing complete: ${results.success} successful, ${results.failed} failed`);
     return results;
   } catch (error) {
     console.error('Error in batch image generation:', error);
