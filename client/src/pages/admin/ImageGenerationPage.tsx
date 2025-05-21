@@ -24,6 +24,7 @@ const ImageGenerationPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [batchSize, setBatchSize] = useState<number>(5);
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
+  const [autoGenStarted, setAutoGenStarted] = useState<boolean>(false);
 
   // Query for studies needing images
   const {
@@ -41,17 +42,18 @@ const ImageGenerationPage: React.FC = () => {
 
   // Mutation for generating a single image
   const singleImageMutation = useMutation({
-    mutationFn: (studyId: number) => {
-      return apiRequest({
+    mutationFn: async (studyId: number) => {
+      const response = await apiRequest({
         url: `/api/studies/${studyId}/generate-image`,
         method: "POST"
       });
+      return response as any;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
       toast({
         title: "Image Generated",
-        description: `Successfully generated image for study #${data.data.studyId}`,
+        description: `Successfully generated image for study #${data.studyId || studyId}`,
         variant: "default",
       });
       setSelectedStudyId(null);
@@ -69,18 +71,19 @@ const ImageGenerationPage: React.FC = () => {
 
   // Mutation for batch generating images
   const batchImageMutation = useMutation({
-    mutationFn: (size: number) => {
-      return apiRequest({
-        url: "/api/images/batch-generate",
+    mutationFn: async (size: number) => {
+      const response = await apiRequest({
+        url: "/api/image-generation/batch-generate",
         method: "POST",
-        data: { batchSize: size }
+        data: { limit: size }
       });
+      return response as any;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
       toast({
-        title: "Batch Processing Complete",
-        description: `Processed ${data.data.processed} studies, ${data.data.success} successful, ${data.data.failed} failed`,
+        title: "Batch Processing Started",
+        description: `Started processing ${data.studyIds?.length || 0} studies. This will run in the background.`,
         variant: "default",
       });
     },
@@ -88,12 +91,41 @@ const ImageGenerationPage: React.FC = () => {
       console.error("Error batch generating images:", error);
       toast({
         title: "Error",
-        description: "Failed to process batch image generation. Please try again.",
+        description: "Failed to start batch image generation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation for auto-generating images for all studies without images
+  const autoGenImageMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest({
+        url: "/api/image-generation/auto-generate-all",
+        method: "POST"
+      });
+      return response as any;
+    },
+    onSuccess: (data: any) => {
+      setAutoGenStarted(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/studies/needing-images"] });
+      toast({
+        title: "Auto-Generation Started",
+        description: data.message || "Started generating images for all studies that need them. This process will run in the background.",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      console.error("Error starting auto image generation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start auto image generation. Please try again.",
         variant: "destructive",
       });
     }
   });
 
+  // Handle single image generation for a study
   const handleGenerateImage = (studyId: number) => {
     setSelectedStudyId(studyId);
     singleImageMutation.mutate(studyId);
@@ -101,6 +133,12 @@ const ImageGenerationPage: React.FC = () => {
 
   const handleBatchGenerate = () => {
     batchImageMutation.mutate(batchSize);
+  };
+  
+  const handleAutoGenerate = () => {
+    if (confirm("This will start generating images for ALL studies without images. The process will run in the background and may take a significant amount of time. Do you want to continue?")) {
+      autoGenImageMutation.mutate();
+    }
   };
 
   return (
@@ -163,33 +201,45 @@ const ImageGenerationPage: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-blue-200 bg-blue-50">
           <CardHeader>
-            <CardTitle>Statistics</CardTitle>
+            <CardTitle className="flex items-center text-blue-700">
+              <Zap className="w-5 h-5 mr-2" />
+              Auto-Generate All Images
+            </CardTitle>
             <CardDescription>
-              Image generation statistics
+              Generate images for all studies in the database
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {batchImageMutation.data ? (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span>Processed:</span>
-                  <Badge variant="outline">{batchImageMutation.data.data.processed}</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Success:</span>
-                  <Badge variant="success" className="bg-green-100 text-green-800">{batchImageMutation.data.data.success}</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Failed:</span>
-                  <Badge variant="destructive">{batchImageMutation.data.data.failed}</Badge>
-                </div>
-              </div>
+            {autoGenStarted ? (
+              <Alert className="bg-green-50 border-green-200 text-green-800">
+                <Activity className="h-4 w-4" />
+                <AlertTitle>Auto-Generation In Progress</AlertTitle>
+                <AlertDescription>
+                  Image generation is running in the background. This process may take some time to complete.
+                </AlertDescription>
+              </Alert>
             ) : (
-              <p className="text-muted-foreground text-center">
-                No batch processing stats available
-              </p>
+              <>
+                <p className="text-muted-foreground mb-4">
+                  This will find all studies without images and generate AI visuals for them in the background.
+                </p>
+                <Button 
+                  onClick={handleAutoGenerate} 
+                  disabled={autoGenImageMutation.isPending}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  {autoGenImageMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>Auto-Generate All Missing Images</>
+                  )}
+                </Button>
+              </>
             )}
           </CardContent>
         </Card>
