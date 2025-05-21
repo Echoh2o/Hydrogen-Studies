@@ -95,9 +95,9 @@ const StudyPage = () => {
   });
 
   // Get related studies (same category, exclude current)
-  const relatedStudies = allStudies
+  const relatedStudies = allStudies && study
     ? allStudies
-        .filter((s: any) => s.category === study?.category && s.id !== studyId)
+        .filter((s: any) => s.category === study.category && s.id !== studyId)
         .slice(0, 3)
     : [];
 
@@ -169,109 +169,24 @@ const StudyPage = () => {
         <meta name="twitter:title" content={`Hydrogen Research: ${study.title.substring(0, 60)}${study.title.length > 60 ? '...' : ''}`} />
         <meta name="twitter:description" content={study.abstract ? study.abstract.substring(0, 120) + '...' : `Research on hydrogen therapy effects for ${study.category}.`} />
         <meta name="twitter:image" content={study.imageUrl || fallbackImageUrl} />
-        <meta property="og:description" content={`Scientific research on how hydrogen therapy affects ${study.title.toLowerCase()}. From the Hydrogen Studies Research Database.`} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />
-        <meta property="og:image" content={study.imageUrl || fallbackImageUrl} />
-        
-        {/* Twitter Card data */}
-        <meta name="twitter:title" content={`Hydrogen Therapy Research: ${study.title}`} />
-        <meta name="twitter:description" content={`Scientific research on ${study.category} showing how hydrogen therapy affects health.`} />
-        <meta name="twitter:image" content={study.imageUrl || fallbackImageUrl} />
-        
-        {/* Schema.org markup for Google - Enhanced for Medical Research */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "MedicalScholarlyArticle",
-            "headline": study.title,
-            "name": study.title,
-            "author": study.authors.split(',').map(author => ({
-              "@type": "Person",
-              "name": author.trim()
-            })),
-            "abstract": study.abstract,
-            "description": study.abstract.substring(0, 200) + "...",
-            "datePublished": study.publishDate,
-            "dateModified": new Date().toISOString(),
-            "citation": study.doi ? `DOI: ${study.doi}` : null,
-            "publisher": {
-              "@type": "Organization",
-              "name": study.journal,
-              "publishingPrinciples": "https://hydrogenstudies.com/about"
-            },
-            "mainEntityOfPage": {
-              "@type": "WebPage",
-              "@id": `https://hydrogenstudies.com/studies/${study.id}`
-            },
-            "about": [
-              {
-                "@type": "MedicalTherapy",
-                "name": "Hydrogen Therapy",
-                "relevantSpecialty": "Alternative Medicine"
-              },
-              {
-                "@type": "MedicalCondition",
-                "name": study.category
-              }
-            ],
-            "keywords": [
-              "hydrogen therapy", 
-              "molecular hydrogen", 
-              "h2 therapy", 
-              study.category.toLowerCase(), 
-              "health research",
-              "medical research"
-            ],
-            "isAccessibleForFree": study.fullTextAvailable || false,
-            "image": study.imageUrl || fallbackImageUrl,
-            "thumbnailUrl": study.imageUrl || fallbackImageUrl,
-            "educationalUse": "Research",
-            "inLanguage": "en",
-            "articleSection": "Research Study",
-            "wordCount": study.abstract.split(' ').length,
-            "provider": {
-              "@type": "Organization",
-              "name": "Hydrogen Studies Research Database",
-              "url": "https://hydrogenstudies.com"
-            }
-          })}
-        </script>
-
-        {/* Additional BreadcrumbList structured data for better navigation path indexing */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": "https://hydrogenstudies.com"
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Studies",
-                "item": "https://hydrogenstudies.com/studies"
-              },
-              {
-                "@type": "ListItem",
-                "position": 3,
-                "name": study.category,
-                "item": `https://hydrogenstudies.com/category/${study.category.toLowerCase().replace(/ /g, '-')}`
-              },
-              {
-                "@type": "ListItem",
-                "position": 4,
-                "name": study.title,
-                "item": `https://hydrogenstudies.com/studies/${study.id}`
-              }
-            ]
-          })}
-        </script>
       </Helmet>
+      
+      {/* JSON-LD Structured Data for Medical/Scientific Research */}
+      <JsonLd 
+        type="MedicalScholarlyArticle"
+        data={generateMedicalArticleSchema(study)}
+      />
+      
+      {/* Breadcrumb Schema */}
+      <JsonLd 
+        type="BreadcrumbList"
+        data={generateBreadcrumbSchema([
+          { name: 'Home', url: 'https://hydrogenstudies.com' },
+          { name: 'Research Studies', url: 'https://hydrogenstudies.com/studies' },
+          { name: study.category, url: `https://hydrogenstudies.com/category/${encodeURIComponent(study.category)}` },
+          { name: study.title, url: `https://hydrogenstudies.com/study/${study.id}` }
+        ])}
+      />
 
       <section className="bg-white py-8 md:py-12">
         <div className="container mx-auto px-4">
@@ -279,15 +194,15 @@ const StudyPage = () => {
             {/* Breadcrumb */}
             <div className="flex items-center text-sm text-neutral-500 mb-6">
               <Link href="/">
-                <a className="hover:text-primary">Home</a>
+                <span className="hover:text-primary cursor-pointer">Home</span>
               </Link>
               <span className="mx-2">/</span>
               <Link href="/categories">
-                <a className="hover:text-primary">Categories</a>
+                <span className="hover:text-primary cursor-pointer">Categories</span>
               </Link>
               <span className="mx-2">/</span>
-              <Link href={`/category/${study.category.toLowerCase()}`}>
-                <a className="hover:text-primary">{study.category}</a>
+              <Link href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}>
+                <span className="hover:text-primary cursor-pointer">{study.category}</span>
               </Link>
               <span className="mx-2">/</span>
               <span className="text-neutral-800">Study</span>
@@ -299,9 +214,11 @@ const StudyPage = () => {
                 <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/15">
                   {study.category}
                 </Badge>
-                <span className="ml-4 text-neutral-500 flex items-center">
-                  <HiCalendar className="mr-1" /> {study.year}
-                </span>
+                {study.year && (
+                  <span className="ml-4 text-neutral-500 flex items-center">
+                    <HiCalendar className="mr-1" /> {study.year}
+                  </span>
+                )}
               </div>
               
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{study.title}</h1>
@@ -372,113 +289,132 @@ const StudyPage = () => {
                 </div>
 
                 <h2 className="text-xl font-semibold mb-4">Abstract</h2>
-                <div className="text-neutral-700 mb-8 leading-relaxed whitespace-pre-line">
-                  {study.abstract}
+                <div className="prose max-w-none prose-neutral mb-8">
+                  <p className="text-lg leading-relaxed">{study.abstract}</p>
                 </div>
 
-                {/* Methods, Results, and Conclusion Sections */}
+                {/* Methods Section */}
                 {study.methods && (
                   <>
+                    <Separator className="my-6" />
                     <h2 className="text-xl font-semibold mb-4">Methods</h2>
-                    <div className="text-neutral-700 mb-8 leading-relaxed whitespace-pre-line">
-                      {study.methods}
+                    <div className="prose max-w-none prose-neutral mb-6">
+                      <p>{study.methods}</p>
                     </div>
                   </>
                 )}
-                
+
+                {/* Results Section */}
                 {study.results && (
                   <>
+                    <Separator className="my-6" />
                     <h2 className="text-xl font-semibold mb-4">Results</h2>
-                    <div className="text-neutral-700 mb-8 leading-relaxed whitespace-pre-line">
-                      {study.results}
+                    <div className="prose max-w-none prose-neutral mb-6">
+                      <p>{study.results}</p>
                     </div>
                   </>
                 )}
-                
+
+                {/* Conclusion Section */}
                 {study.conclusion && (
                   <>
+                    <Separator className="my-6" />
                     <h2 className="text-xl font-semibold mb-4">Conclusion</h2>
-                    <div className="text-neutral-700 mb-8 leading-relaxed whitespace-pre-line">
-                      {study.conclusion}
+                    <div className="prose max-w-none prose-neutral mb-6">
+                      <p>{study.conclusion}</p>
                     </div>
                   </>
                 )}
 
+                {/* Study Metadata */}
                 <Separator className="my-6" />
-
-                <div className="flex flex-col md:flex-row md:justify-between gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                   <div>
-                    <h3 className="font-medium text-neutral-800 mb-2">Study Details</h3>
-                    <ul className="space-y-1 text-sm text-neutral-600">
-                      <li>Publication Year: {study.year}</li>
-                      {study.studyType && <li>Study Type: {study.studyType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</li>}
-                      <li>Journal: {study.journal}</li>
-                      <li>Authors: {study.authors}</li>
+                    <h3 className="text-sm font-semibold text-neutral-500 uppercase mb-2">Publication Details</h3>
+                    <ul className="space-y-2">
+                      <li className="flex items-start">
+                        <span className="font-semibold w-24">Journal:</span>
+                        <span>{study.journal}</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="font-semibold w-24">Published:</span>
+                        <span>{study.publishDate}</span>
+                      </li>
+                      {study.studyType && (
+                        <li className="flex items-start">
+                          <span className="font-semibold w-24">Study Type:</span>
+                          <span>{study.studyType}</span>
+                        </li>
+                      )}
                     </ul>
                   </div>
-                  
-                  <div className="flex flex-col space-y-3">
-                    {study.fullTextAvailable ? (
-                      <Button className="bg-primary hover:bg-primary-dark text-white">
-                        <HiDownload className="mr-2" /> Download Full Text
-                      </Button>
-                    ) : (
-                      <Button variant="outline">
-                        <HiExternalLink className="mr-2" /> View on Publisher's Site
-                      </Button>
-                    )}
-                    
-                    <Button variant="outline" className="border-neutral-200 hover:border-neutral-300">
-                      <HiClipboardCheck className="mr-2" /> Cite this Study
-                    </Button>
+                  <div>
+                    <h3 className="text-sm font-semibold text-neutral-500 uppercase mb-2">Resources</h3>
+                    <div className="space-y-3">
+                      {study.doi && (
+                        <a
+                          href={`https://doi.org/${study.doi}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-primary hover:underline"
+                        >
+                          <HiExternalLink className="mr-2" />
+                          View DOI Reference
+                        </a>
+                      )}
+                      {study.pdfUrl && (
+                        <a
+                          href={study.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-primary hover:underline"
+                        >
+                          <HiDownload className="mr-2" />
+                          Access Full PDF
+                        </a>
+                      )}
+                      {study.citationUrl && (
+                        <a
+                          href={study.citationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-primary hover:underline"
+                        >
+                          <HiDocumentText className="mr-2" />
+                          View Citations
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Related Blogs - AI Generated Articles */}
-            <div className="mt-10">
-              <div className="mb-10">
-                {/* Import the RelatedBlogs component here */}
-                {/* @ts-ignore - We'll fix this later */}
-                <RelatedBlogs studyId={studyId} />
-              </div>
-            </div>
-            
             {/* Related Studies */}
             {relatedStudies.length > 0 && (
               <div className="mt-10">
-                <h2 className="text-2xl font-bold mb-6">Related Studies</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <h2 className="text-2xl font-bold mb-6">Related Research</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {relatedStudies.map((relatedStudy: any) => (
                     <Link key={relatedStudy.id} href={`/study/${relatedStudy.id}`}>
-                      <a className="bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition p-4 block">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      <Card className="h-full hover:bg-neutral-50 transition-colors cursor-pointer">
+                        <CardContent className="p-5">
+                          <Badge variant="outline" className="mb-3">
                             {relatedStudy.category}
-                          </span>
-                          <span className="text-neutral-500 text-sm">{relatedStudy.year}</span>
-                        </div>
-                        <h3 className="text-lg font-semibold mb-2 line-clamp-2 hover:text-primary">
-                          {relatedStudy.title}
-                        </h3>
-                        <p className="text-neutral-600 text-sm line-clamp-2 mb-3">
-                          {relatedStudy.abstract}
-                        </p>
-                      </a>
+                          </Badge>
+                          <h3 className="font-bold mb-2 line-clamp-2">{relatedStudy.title}</h3>
+                          <p className="text-sm text-neutral-600 line-clamp-3">{relatedStudy.abstract}</p>
+                        </CardContent>
+                      </Card>
                     </Link>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Back navigation */}
-            <div className="mt-10 flex justify-between">
-              <Link href={`/category/${study.category.toLowerCase()}`}>
-                <Button variant="ghost" className="text-neutral-600 hover:text-primary">
-                  <HiArrowLeft className="mr-2" /> Back to {study.category} Studies
-                </Button>
-              </Link>
+            {/* Related Blogs */}
+            <div className="mt-12">
+              <RelatedBlogs studyId={study.id} />
             </div>
           </div>
         </div>
