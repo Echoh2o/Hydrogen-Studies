@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiQuote, HiClipboardCheck } from "react-icons/hi";
+import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiDocumentText, HiClipboardCheck } from "react-icons/hi";
 import { Helmet } from "react-helmet";
 import RelatedBlogs from "@/components/studies/related-blogs";
 
@@ -124,7 +124,7 @@ const StudyPage = () => {
                   <HiBookOpen className="mr-1" /> {study.journal}
                 </span>
                 <span className="flex items-center">
-                  <HiQuote className="mr-1" /> {study.citations} citations
+                  <HiDocumentText className="mr-1" /> {study.citations || "0"} citations
                 </span>
               </div>
             </div>

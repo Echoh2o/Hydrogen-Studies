@@ -351,6 +351,11 @@ export class MemStorage implements IStorage {
     }
     return undefined;
   }
+  
+  async getStudyDoi(id: number): Promise<any> {
+    const study = await this.getStudyById(id);
+    return { doi: study?.doi || null };
+  }
 
   async getStudiesByTitle(title: string): Promise<Study[]> {
     const result: Study[] = [];

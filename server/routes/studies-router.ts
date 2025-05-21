@@ -222,12 +222,25 @@ router.get("/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid study ID format" });
     }
     
+    // Log DOI information for debugging
+    console.log(`Study ${id} DOI data:`, await storage.getStudyDoi(id));
+    
     // First try to get the study directly from the database
     if (db) {
       try {
         const [studyFromDb] = await db.select().from(studies).where(eq(studies.id, id));
         
         if (studyFromDb) {
+          // Log full study data
+          console.log(`Study ${id} full data:`, studyFromDb);
+          
+          // Ensure study has an image URL
+          if (!studyFromDb.imageUrl) {
+            // Generate a dynamic image related to the study topic
+            const topic = studyFromDb.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
+            studyFromDb.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${topic}`;
+          }
+          
           return res.json(studyFromDb);
         }
       } catch (dbError) {
@@ -237,6 +250,13 @@ router.get("/:id", async (req, res) => {
     
     // If no result from database, try with the storage interface
     const study = await storage.getStudyById(id);
+    
+    // Ensure study has an image URL if found
+    if (study && !study.imageUrl) {
+      // Generate a dynamic image related to the study topic
+      const topic = study.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
+      study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${topic}`;
+    }
     
     if (!study) {
       return res.status(404).json({ message: "Study not found" });
