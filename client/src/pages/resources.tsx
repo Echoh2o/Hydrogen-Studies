@@ -22,11 +22,72 @@ export default function Resources() {
   return (
     <>
       <Helmet>
-        <title>Resources | Hydrogen Studies</title>
+        <title>Hydrogen Therapy Resources | Research Tools & Clinical Guidelines</title>
         <meta
           name="description"
-          content="Access resources for researchers, healthcare providers, bibliography tools, and methodological information about hydrogen gas research."
+          content="Access comprehensive hydrogen therapy resources including research protocols, clinical guidelines, patient materials, and citation tools for scientists and healthcare providers."
         />
+        <meta name="keywords" content="hydrogen therapy resources, molecular hydrogen research, h2 clinical guidelines, hydrogen medical protocols, hydrogen research methodology, hydrogen therapy tools" />
+        <link rel="canonical" href="https://hydrogenstudies.com/resources" />
+        
+        {/* Open Graph Tags */}
+        <meta property="og:title" content="Hydrogen Therapy Resources | Research & Clinical Tools" />
+        <meta property="og:description" content="Comprehensive collection of hydrogen therapy resources for researchers, healthcare providers, and those interested in molecular hydrogen applications." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/resources" />
+        <meta property="og:image" content="/og-resources-image.jpg" />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:title" content="Hydrogen Therapy Resources | Research & Clinical Tools" />
+        <meta name="twitter:description" content="Access research protocols, clinical guidelines, and educational materials about molecular hydrogen therapy from the definitive hydrogen studies database." />
+        
+        {/* Schema.org structured data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "name": "Hydrogen Therapy Resources",
+            "description": "Comprehensive resources for hydrogen therapy research and clinical applications",
+            "url": "https://hydrogenstudies.com/resources",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Research Frameworks",
+                "description": "Standardized methodologies and protocols for hydrogen research",
+                "url": "https://hydrogenstudies.com/resources#researchers"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Clinical Guidelines",
+                "description": "Evidence-based recommendations for clinical applications of hydrogen therapy",
+                "url": "https://hydrogenstudies.com/resources#healthcare"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Bibliography Tools",
+                "description": "Citation formats and reference management for hydrogen research literature",
+                "url": "https://hydrogenstudies.com/resources#bibliography"
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": "Research Methodology",
+                "description": "Standards and processes for evaluating hydrogen therapy research",
+                "url": "https://hydrogenstudies.com/resources#methodology"
+              },
+              {
+                "@type": "ListItem",
+                "position": 5,
+                "name": "Contact Information",
+                "description": "Get in touch with the Hydrogen Studies research team",
+                "url": "https://hydrogenstudies.com/resources#contact"
+              }
+            ]
+          })}
+        </script>
       </Helmet>
       
       <div className="bg-neutral-100 py-12">

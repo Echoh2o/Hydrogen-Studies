@@ -117,6 +117,44 @@ export default function ImprovedSearchPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      <Helmet>
+        <title>Search Hydrogen Therapy Research | Find Evidence-Based Studies</title>
+        <meta 
+          name="description" 
+          content="Search the comprehensive database of peer-reviewed hydrogen therapy research. Find evidence-based studies on molecular hydrogen for various health conditions and medical applications." 
+        />
+        <meta name="keywords" content="hydrogen therapy search, molecular hydrogen research, h2 studies database, hydrogen health evidence, hydrogen water research, hydrogen gas therapy" />
+        <link rel="canonical" href="https://hydrogenstudies.com/improved-search" />
+        
+        {/* Open Graph Tags */}
+        <meta property="og:title" content="Search Hydrogen Therapy Research | Evidence-Based Studies Database" />
+        <meta property="og:description" content="Find peer-reviewed research on hydrogen therapy from the world's most comprehensive molecular hydrogen database." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/improved-search" />
+        <meta property="og:image" content="/og-search-image.jpg" />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:title" content="Search Hydrogen Therapy Research | Find Scientific Studies" />
+        <meta name="twitter:description" content="Search the leading database of hydrogen therapy research. Find evidence-based studies on molecular hydrogen's health benefits." />
+        
+        {/* Schema.org structured data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "url": "https://hydrogenstudies.com/",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://hydrogenstudies.com/improved-search?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          })}
+        </script>
+      </Helmet>
+      
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold mb-2 text-primary">Hydrogen Studies Search</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">

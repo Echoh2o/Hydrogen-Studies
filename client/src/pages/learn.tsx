@@ -93,8 +93,62 @@ export default function LearnPage() {
   return (
     <>
       <Helmet>
-        <title>Educational Resources | Hydrogen Studies</title>
-        <meta name="description" content="Learn about hydrogen research with our comprehensive educational resources, tutorials, glossary terms, and frequently asked questions." />
+        <title>Hydrogen Therapy Education | Tutorials, Glossary & Expert Resources</title>
+        <meta name="description" content="Learn about molecular hydrogen therapy with expert educational resources. Access tutorials, comprehensive glossary terms, and answers to frequently asked questions about hydrogen research." />
+        <meta name="keywords" content="hydrogen therapy education, molecular hydrogen tutorials, h2 therapy glossary, hydrogen water guide, hydrogen gas FAQ, molecular hydrogen learning resources" />
+        <link rel="canonical" href="https://hydrogenstudies.com/learn" />
+        
+        {/* Open Graph Tags */}
+        <meta property="og:title" content="Hydrogen Therapy Educational Resources | Learn About H2 Benefits" />
+        <meta property="og:description" content="Comprehensive educational materials about molecular hydrogen therapy. Expert guides, video tutorials, and scientific explanations for researchers and health enthusiasts." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/learn" />
+        <meta property="og:image" content="/og-education-image.jpg" />
+        
+        {/* Twitter Card Tags */}
+        <meta name="twitter:title" content="Hydrogen Therapy Learning Center | Educational Resources" />
+        <meta name="twitter:description" content="Learn about molecular hydrogen therapy benefits with expert tutorials, comprehensive glossary, and frequently asked questions about hydrogen research." />
+        
+        {/* Schema.org structured data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LearningResource",
+            "name": "Hydrogen Therapy Educational Resources",
+            "description": "Comprehensive educational materials about molecular hydrogen therapy and its health applications",
+            "url": "https://hydrogenstudies.com/learn",
+            "educationalLevel": "Beginner to Advanced",
+            "keywords": "hydrogen therapy, molecular hydrogen, h2 therapy, hydrogen water, medical education",
+            "hasPart": [
+              {
+                "@type": "Course",
+                "name": "Hydrogen Therapy Tutorials",
+                "description": "Step-by-step guides for beginners to understand molecular hydrogen applications"
+              },
+              {
+                "@type": "DefinedTermSet",
+                "name": "Molecular Hydrogen Glossary",
+                "description": "Comprehensive glossary of terminology related to hydrogen therapy research"
+              },
+              {
+                "@type": "FAQPage",
+                "mainEntity": faqItems.slice(0, 5).map(faq => ({
+                  "@type": "Question",
+                  "name": faq.question,
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": faq.answer.replace(/<[^>]*>?/gm, '')
+                  }
+                }))
+              }
+            ],
+            "provider": {
+              "@type": "Organization",
+              "name": "Hydrogen Studies",
+              "url": "https://hydrogenstudies.com"
+            }
+          })}
+        </script>
       </Helmet>
       
       <div className="py-8 md:py-12 bg-gradient-to-br from-blue-50 to-indigo-50">

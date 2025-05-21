@@ -168,34 +168,96 @@ const StudyPage = () => {
         <meta name="twitter:description" content={`Scientific research on ${study.category} showing how hydrogen therapy affects health.`} />
         <meta name="twitter:image" content={study.imageUrl || fallbackImageUrl} />
         
-        {/* Schema.org markup for Google */}
+        {/* Schema.org markup for Google - Enhanced for Medical Research */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "ScholarlyArticle",
+            "@type": "MedicalScholarlyArticle",
             "headline": study.title,
-            "author": {
+            "name": study.title,
+            "author": study.authors.split(',').map(author => ({
               "@type": "Person",
-              "name": study.authors
-            },
+              "name": author.trim()
+            })),
             "abstract": study.abstract,
+            "description": study.abstract.substring(0, 200) + "...",
             "datePublished": study.publishDate,
+            "dateModified": new Date().toISOString(),
+            "citation": study.doi ? `DOI: ${study.doi}` : null,
             "publisher": {
               "@type": "Organization",
-              "name": study.journal
+              "name": study.journal,
+              "publishingPrinciples": "https://hydrogenstudies.com/about"
+            },
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": `https://hydrogenstudies.com/studies/${study.id}`
             },
             "about": [
               {
-                "@type": "Thing",
-                "name": "Hydrogen Therapy"
+                "@type": "MedicalTherapy",
+                "name": "Hydrogen Therapy",
+                "relevantSpecialty": "Alternative Medicine"
               },
               {
-                "@type": "Thing",
+                "@type": "MedicalCondition",
                 "name": study.category
               }
             ],
+            "keywords": [
+              "hydrogen therapy", 
+              "molecular hydrogen", 
+              "h2 therapy", 
+              study.category.toLowerCase(), 
+              "health research",
+              "medical research"
+            ],
             "isAccessibleForFree": study.fullTextAvailable || false,
-            "image": study.imageUrl || fallbackImageUrl
+            "image": study.imageUrl || fallbackImageUrl,
+            "thumbnailUrl": study.imageUrl || fallbackImageUrl,
+            "educationalUse": "Research",
+            "inLanguage": "en",
+            "articleSection": "Research Study",
+            "wordCount": study.abstract.split(' ').length,
+            "provider": {
+              "@type": "Organization",
+              "name": "Hydrogen Studies Research Database",
+              "url": "https://hydrogenstudies.com"
+            }
+          })}
+        </script>
+
+        {/* Additional BreadcrumbList structured data for better navigation path indexing */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://hydrogenstudies.com"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Studies",
+                "item": "https://hydrogenstudies.com/studies"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": study.category,
+                "item": `https://hydrogenstudies.com/category/${study.category.toLowerCase().replace(/ /g, '-')}`
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": study.title,
+                "item": `https://hydrogenstudies.com/studies/${study.id}`
+              }
+            ]
           })}
         </script>
       </Helmet>
