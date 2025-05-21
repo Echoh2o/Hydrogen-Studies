@@ -1,0 +1,13 @@
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": "https://hydrogenstudies.com/",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://hydrogenstudies.com/improved-search?query={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}

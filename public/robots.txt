@@ -21,3 +21,4 @@ Sitemap: https://hydrogenstudies.com/sitemap.xml
 Sitemap: https://hydrogenstudies.com/sitemap-studies.xml
 Sitemap: https://hydrogenstudies.com/sitemap-categories.xml
 Sitemap: https://hydrogenstudies.com/sitemap-blog.xml
+Sitemap: https://hydrogenstudies.com/sitemap-images.xml

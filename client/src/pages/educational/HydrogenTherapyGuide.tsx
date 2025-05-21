@@ -17,7 +17,10 @@ import {
   BookOpen,
   MoveRight
 } from 'lucide-react';
-import JsonLd, { generateFaqSchema } from "@/components/seo/JsonLd";
+import JsonLd, { 
+  generateFaqSchema, 
+  generateCourseSchema 
+} from "@/components/seo/JsonLd";
 
 // FAQ data for structured data and content
 const hydrogenFaqs = [
