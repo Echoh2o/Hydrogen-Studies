@@ -16,7 +16,26 @@ router.post('/generate/:studyId', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid study ID' });
     }
     
+    // Check if API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'OPENAI_API_KEY not set in environment variables'
+      });
+    }
+    
+    // Get the study to check if it exists
+    const study = await db.select().from(studiesTable).where(eq(studiesTable.id, studyId)).limit(1);
+    if (!study || study.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `Study with ID ${studyId} not found`
+      });
+    }
+    
+    console.log(`Generating image for study ${studyId}...`);
     const result = await generateImageForStudy(studyId);
+    console.log(`Image generation result:`, result);
     return res.json(result);
   } catch (error) {
     console.error('Error generating image for study:', error);
@@ -67,6 +86,9 @@ router.post('/batch-generate', async (req, res) => {
     
     // Start the batch process
     const batchProcess = batchGenerateImagesForStudies(idsToProcess);
+    
+    // Log that the batch process has started
+    console.log(`Started batch image generation for ${idsToProcess.length} studies`);
     
     // Return immediately to let the process run in background
     return res.json({ 
