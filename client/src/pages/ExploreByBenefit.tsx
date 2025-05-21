@@ -136,7 +136,14 @@ const ExploreByBenefit: React.FC = () => {
     data: Study[]
   }>({
     queryKey: ['/api/studies/by-consumer-category', selectedModel, selectedCategory],
-    enabled: !!selectedCategory,
+    queryFn: async () => {
+      if (!selectedCategory || !selectedModel) return { success: true, data: [] };
+      
+      // Make direct fetch request to ensure proper URL formatting
+      const response = await fetch(`/api/studies/by-consumer-category/${selectedModel}/${encodeURIComponent(selectedCategory)}`);
+      return response.json();
+    },
+    enabled: !!selectedCategory && !!selectedModel,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
