@@ -45,19 +45,38 @@ export default function Home() {
               "@type": "SearchAction",
               "target": "https://hydrogenstudies.com/improved-search?query={search_term_string}",
               "query-input": "required name=search_term_string"
-            },
-            "publisher": {
-              "@type": "Organization",
-              "name": "Hydrogen Studies",
-              "logo": {
-                "@type": "ImageObject",
-                "url": "https://hydrogenstudies.com/logo.png"
-              }
             }
           })}
         </script>
         
-        {/* FAQ Schema for homepage - key hydrogen therapy questions */}
+        {/* Organization Schema */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Hydrogen Studies Research Database",
+            "url": "https://hydrogenstudies.com",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://hydrogenstudies.com/logo.png"
+            },
+            "description": "The world's most comprehensive research database focused on molecular hydrogen therapy and its evidence-based health applications",
+            "sameAs": [
+              "https://twitter.com/hydrogenstudies",
+              "https://www.facebook.com/hydrogenstudiesdb",
+              "https://www.linkedin.com/company/hydrogen-studies"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "",
+              "contactType": "customer service",
+              "email": "contact@hydrogenstudies.com",
+              "availableLanguage": "English"
+            }
+          })}
+        </script>
+        
+        {/* FAQ Schema for Rich Results */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
@@ -65,66 +84,42 @@ export default function Home() {
             "mainEntity": [
               {
                 "@type": "Question",
-                "name": "What is hydrogen therapy?",
+                "name": "What is molecular hydrogen therapy?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Hydrogen therapy refers to therapeutic applications of molecular hydrogen (H2) administered through hydrogen-rich water, hydrogen gas inhalation, or hydrogen baths. Molecular hydrogen acts as a selective antioxidant that can penetrate cell membranes and neutralize harmful free radicals while preserving beneficial reactive oxygen species."
+                  "text": "Molecular hydrogen (H2) therapy involves consuming hydrogen gas, typically by drinking hydrogen-rich water, inhaling hydrogen gas, or hydrogen bath therapy. Research suggests it may act as a selective antioxidant, potentially reducing oxidative stress and inflammation in the body without interfering with necessary cellular signaling."
                 }
               },
               {
                 "@type": "Question",
-                "name": "What health conditions can hydrogen therapy help with?",
+                "name": "What health conditions might benefit from hydrogen therapy?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Research suggests hydrogen therapy may benefit various conditions including metabolic disorders, inflammatory conditions, neurodegenerative diseases, cardiovascular issues, and sports recovery. The scientific database contains studies investigating effects on specific conditions like Parkinson's disease, diabetes, arthritis, and athletic performance."
+                  "text": "Research studies have investigated hydrogen therapy's potential benefits for various conditions including metabolic disorders, inflammatory diseases, neurodegenerative conditions, cardiovascular health, and sports recovery. However, more clinical research is needed to fully establish efficacy for specific conditions."
                 }
               },
               {
                 "@type": "Question",
-                "name": "How is hydrogen therapy administered?",
+                "name": "How do I use the Hydrogen Studies Research Database?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Hydrogen can be administered through multiple methods: drinking hydrogen-rich water, inhaling hydrogen gas, taking hydrogen baths, or using hydrogen-generating supplements. Each delivery method has different bioavailability characteristics and potential applications depending on the health condition being addressed."
+                  "text": "Our database allows you to search for studies by keyword, filter by health condition, body system, or benefit category. You can browse studies chronologically, by relevance, or explore curated collections. Each study includes a comprehensive summary, methodology details, and links to original research when available."
                 }
               },
               {
                 "@type": "Question",
-                "name": "Is hydrogen therapy backed by scientific research?",
+                "name": "Is hydrogen therapy scientifically proven?",
                 "acceptedAnswer": {
-                  "@type": "Answer", 
-                  "text": "Yes, hydrogen therapy has been studied in hundreds of peer-reviewed scientific papers since 2007, when a landmark paper in Nature Medicine demonstrated its selective antioxidant properties. Research includes cell studies, animal models, and human clinical trials across multiple health conditions, with the most robust evidence in areas of oxidative stress-related conditions."
+                  "@type": "Answer",
+                  "text": "Hydrogen therapy has shown promising results in numerous pre-clinical and some clinical studies. While research is still evolving, there is growing scientific evidence supporting its therapeutic potential for certain conditions. Our database compiles peer-reviewed studies to help researchers and consumers evaluate the current state of evidence."
                 }
               },
               {
                 "@type": "Question",
-                "name": "How does molecular hydrogen work in the body?",
+                "name": "What are the common methods of hydrogen administration?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Molecular hydrogen works through several mechanisms: 1) It selectively neutralizes harmful hydroxyl radicals while preserving beneficial reactive oxygen species needed for cell signaling, 2) It activates the Nrf2 pathway which regulates antioxidant proteins, 3) It reduces inflammation by suppressing pro-inflammatory cytokines, and 4) It influences cell signaling pathways related to metabolism and cell survival."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Is hydrogen water the same as alkaline water?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No, hydrogen water and alkaline water are different. Hydrogen water contains dissolved molecular hydrogen gas (H2) that acts as a selective antioxidant in the body. Alkaline water has a higher pH level (typically 8-9) due to mineral content or electrolysis but doesn't necessarily contain therapeutic levels of molecular hydrogen. Some devices can produce both alkaline and hydrogen-rich water, but the benefits attributed to each are different."
-                }
-              },
-              {
-                "@type": "Question", 
-                "name": "Which method of hydrogen therapy is most effective?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "The most effective method depends on the specific health condition being addressed. Hydrogen water is convenient for daily use and shows benefits for metabolic conditions. Hydrogen gas inhalation delivers higher concentrations and may be more effective for acute conditions or neurological applications. Hydrogen baths may be beneficial for skin conditions and relaxation. For serious medical conditions, clinical studies often use a combination of methods under professional supervision."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "How can I find reliable hydrogen therapy research?",
-                "acceptedAnswer": {
-                  "@type": "Answer", 
-                  "text": "Our Hydrogen Studies database provides access to peer-reviewed research on hydrogen therapy from reputable scientific journals. You can search by health condition, body system, or delivery method to find relevant studies. Each study includes key details such as publication information, methodology, and findings. For deeper research, we provide links to the original journal publications where available."
+                  "text": "The most common methods include drinking hydrogen-rich water, inhaling hydrogen gas at specific concentrations, hydrogen baths, and hydrogen saline injections (primarily in clinical settings). Different administration methods may have varying efficacy depending on the target condition and individual factors."
                 }
               }
             ]

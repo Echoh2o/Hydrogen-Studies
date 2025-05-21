@@ -1,22 +1,25 @@
 User-agent: *
 Allow: /
 
-# Sitemap location
-Sitemap: https://hydrogenstudies.com/sitemap.xml
-
-# Allow all crawlers to access these directories
+# Allow all bots to access these directories
 Allow: /studies/
-Allow: /explore-by-condition/
-Allow: /explore-by-body-system/
-Allow: /explore-by-life-stage/
-Allow: /explore-by-benefit/
-Allow: /condition/
-Allow: /body-system/
-Allow: /life-stage/
-Allow: /resources/
+Allow: /categories/
 Allow: /learn/
+Allow: /explore/
+Allow: /resources/
 Allow: /about/
+Allow: /condition/
 
-# Block crawling of irrelevant or sensitive areas
-Disallow: /api/
+# Specific allow for Google Image crawler
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /uploads/
+
+# Disallow admin sections
 Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+
+# Specify sitemap location
+Sitemap: https://hydrogenstudies.com/sitemap.xml
