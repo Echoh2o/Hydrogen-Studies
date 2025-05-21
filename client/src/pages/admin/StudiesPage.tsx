@@ -68,8 +68,9 @@ export default function StudiesPage() {
     );
   }
   
-  const studies = studiesQuery.data || [];
-  const categories = categoriesQuery.data || [];
+  // Make sure studies data is properly handled as an array
+  const studies = Array.isArray(studiesQuery.data) ? studiesQuery.data : [];
+  const categories = Array.isArray(categoriesQuery.data) ? categoriesQuery.data : [];
   
   // Filter and sort studies
   const filteredStudies = studies.filter((study) => {
