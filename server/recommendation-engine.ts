@@ -10,7 +10,7 @@
  */
 
 import { db } from "./db";
-import { studies, userPreferences, userReadingHistory, categories } from "@shared/schema";
+import { studies, userPreferences, categories } from "@shared/schema";
 import { eq, and, or, desc, asc, sql, inArray, ne, gt, gte } from "drizzle-orm";
 
 interface UserProfile {
