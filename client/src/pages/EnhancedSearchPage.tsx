@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AdvancedSearchFilters } from "@/components/AdvancedSearchFilters";
-import { ExternalLink, Calendar, Users, BookOpen, Sparkles } from "lucide-react";
+import { EnhancedStudyCard } from "@/components/EnhancedStudyCard";
 import { Link } from "wouter";
 
 interface SearchFilters {
@@ -122,145 +122,9 @@ export default function EnhancedSearchPage() {
     });
   };
 
-  const getStudyTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      "Human Clinical Trial": "bg-green-100 text-green-800",
-      "Animal Study": "bg-blue-100 text-blue-800",
-      "In Vitro Study": "bg-purple-100 text-purple-800",
-      "Randomized Controlled Trial": "bg-emerald-100 text-emerald-800",
-      "Observational Study": "bg-orange-100 text-orange-800",
-      "Meta-analysis": "bg-red-100 text-red-800",
-      "Systematic Review": "bg-indigo-100 text-indigo-800"
-    };
-    return colors[type] || "bg-gray-100 text-gray-800";
-  };
 
-  const StudyCard = ({ study }: { study: Study }) => (
-    <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-blue-500">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-semibold text-gray-900 leading-tight mb-2">
-              <Link href={`/study/${study.id}`} className="hover:text-blue-600 transition-colors">
-                {study.title}
-              </Link>
-            </CardTitle>
-            
-            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                {formatDate(study.publishDate)}
-              </div>
-              <div className="flex items-center gap-1">
-                <BookOpen className="h-4 w-4" />
-                {study.journal}
-              </div>
-              {study.estimatedReadTime && (
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  {study.estimatedReadTime}min read
-                </div>
-              )}
-              {study.enhancedWithAI && (
-                <div className="flex items-center gap-1">
-                  <Sparkles className="h-4 w-4 text-purple-500" />
-                  <span className="text-purple-600 font-medium">AI Enhanced</span>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {study.imageUrl && (
-            <img
-              src={study.imageUrl}
-              alt={study.title}
-              className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
-            />
-          )}
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        {/* Simplified Explanation (if available) */}
-        {study.simplifiedExplanation && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-200">
-            <h4 className="text-sm font-semibold text-blue-900 mb-1">Plain Language Summary</h4>
-            <p className="text-sm text-blue-800 leading-relaxed">
-              {study.simplifiedExplanation.length > 200 
-                ? `${study.simplifiedExplanation.substring(0, 200)}...`
-                : study.simplifiedExplanation
-              }
-            </p>
-          </div>
-        )}
 
-        {/* Abstract */}
-        <p className="text-gray-700 text-sm leading-relaxed mb-4">
-          {study.abstract.length > 300 
-            ? `${study.abstract.substring(0, 300)}...`
-            : study.abstract
-          }
-        </p>
 
-        {/* Health Benefits & Conditions */}
-        {(study.healthBenefits?.length || study.healthConditions?.length) && (
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2">
-              {study.healthBenefits?.slice(0, 3).map((benefit) => (
-                <Badge key={benefit} variant="secondary" className="bg-green-100 text-green-800">
-                  {benefit}
-                </Badge>
-              ))}
-              {study.healthConditions?.slice(0, 2).map((condition) => (
-                <Badge key={condition} variant="secondary" className="bg-amber-100 text-amber-800">
-                  {condition}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Study Types & Body Systems */}
-        {(study.studyTypes?.length || study.bodySystems?.length) && (
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2">
-              {study.studyTypes?.slice(0, 2).map((type) => (
-                <Badge key={type} className={getStudyTypeColor(type)}>
-                  {type}
-                </Badge>
-              ))}
-              {study.bodySystems?.slice(0, 2).map((system) => (
-                <Badge key={system} variant="outline" className="border-purple-200 text-purple-700">
-                  {system}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Author and Population Info */}
-        <div className="text-xs text-gray-500 mb-4">
-          <div><strong>Authors:</strong> {study.authors}</div>
-          {study.population && <div><strong>Population:</strong> {study.population}</div>}
-          {study.intervention && <div><strong>Intervention:</strong> {study.intervention}</div>}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-between items-center">
-          <Link href={`/study/${study.id}`}>
-            <Button variant="default" size="sm" className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              View Full Study
-            </Button>
-          </Link>
-          
-          <div className="text-xs text-gray-500">
-            Category: {study.category}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
