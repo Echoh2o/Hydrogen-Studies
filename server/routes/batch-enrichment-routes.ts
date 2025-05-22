@@ -1,86 +1,117 @@
+/**
+ * Batch Enrichment API Routes
+ * 
+ * Provides endpoints for managing batch enrichment of all studies
+ */
+
 import { Router } from 'express';
-import { z } from 'zod';
 import { 
   startBatchEnrichment, 
-  getBatchEnrichmentStatus, 
-  enhanceStudyContent 
-} from '../batch-enrichment';
+  getBatchEnrichmentProgress, 
+  stopBatchEnrichment,
+  getEnrichmentStats 
+} from '../batch-study-enrichment';
 
 const router = Router();
 
 /**
- * Start a batch enrichment process
- * POST /api/enrichment/batch/start
+ * Start batch enrichment of all studies
  */
 router.post('/start', async (req, res) => {
   try {
-    const schema = z.object({
-      batchSize: z.number().int().min(1).max(50).default(10),
-      maxStudies: z.number().int().min(1).max(1000).default(100)
-    });
-
-    const validatedData = schema.parse(req.body);
-    const { batchSize, maxStudies } = validatedData;
+    console.log('🚀 Starting batch enrichment via API...');
+    const progress = await startBatchEnrichment();
     
-    const status = await startBatchEnrichment(batchSize, maxStudies);
-    
-    return res.json({
+    res.json({
       success: true,
-      status
+      message: 'Batch enrichment started successfully',
+      progress
     });
   } catch (error) {
-    console.error('Error starting batch enrichment:', error);
-    return res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'An unknown error occurred'
-    });
-  }
-});
-
-/**
- * Get the status of the current batch enrichment process
- * GET /api/enrichment/batch/status
- */
-router.get('/status', (req, res) => {
-  try {
-    const status = getBatchEnrichmentStatus();
+    console.error('❌ Error starting batch enrichment:', error);
     
-    return res.json({
-      success: true,
-      status
-    });
-  } catch (error) {
-    console.error('Error getting batch enrichment status:', error);
-    return res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'An unknown error occurred'
-    });
-  }
-});
-
-/**
- * Enrich a specific study by ID (single study enrichment)
- * POST /api/enrichment/batch/enrichStudy/:id
- */
-router.post('/enrichStudy/:id', async (req, res) => {
-  try {
-    const studyId = parseInt(req.params.id);
-    
-    if (isNaN(studyId) || studyId <= 0) {
-      return res.status(400).json({
+    if (error instanceof Error && error.message.includes('already running')) {
+      return res.status(409).json({
         success: false,
-        message: 'Invalid study ID'
+        message: 'Batch enrichment is already running',
+        progress: getBatchEnrichmentProgress()
       });
     }
     
-    const result = await enhanceStudyContent(studyId);
-    
-    return res.json(result);
-  } catch (error) {
-    console.error('Error enriching study:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'An unknown error occurred'
+      message: 'Failed to start batch enrichment',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Get current batch enrichment progress
+ */
+router.get('/progress', (req, res) => {
+  try {
+    const progress = getBatchEnrichmentProgress();
+    
+    res.json({
+      success: true,
+      progress
+    });
+  } catch (error) {
+    console.error('❌ Error getting batch enrichment progress:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get progress',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Stop batch enrichment
+ */
+router.post('/stop', (req, res) => {
+  try {
+    const stopped = stopBatchEnrichment();
+    
+    if (stopped) {
+      res.json({
+        success: true,
+        message: 'Batch enrichment stopped successfully'
+      });
+    } else {
+      res.json({
+        success: false,
+        message: 'No batch enrichment is currently running'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error stopping batch enrichment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to stop batch enrichment',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Get enrichment statistics
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const stats = await getEnrichmentStats();
+    
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('❌ Error getting enrichment stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get enrichment statistics',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
