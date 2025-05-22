@@ -1919,13 +1919,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Validate that the query is about hydrogen health research
-        const validation = await validateQuery(query);
-        if (!validation.isValid) {
+        // Simple validation - reject only clearly non-health industrial queries
+        const lowerQuery = query.toLowerCase();
+        if ((lowerQuery.includes('fuel cell') || 
+             lowerQuery.includes('energy storage') ||
+             lowerQuery.includes('power generation') ||
+             lowerQuery.includes('industrial manufacturing')) && 
+            !lowerQuery.includes('health') && 
+            !lowerQuery.includes('medical') && 
+            !lowerQuery.includes('drinking')) {
           return res.status(400).json({
             success: false,
-            message: 'Your question does not appear to be related to hydrogen health and wellness. Please ask a question about health applications of hydrogen like hydrogen water, inhalation therapy, or hydrogen baths. We don\'t provide information about hydrogen energy, fuel cells, or industrial applications.',
-            reason: validation.reason
+            message: 'We focus on hydrogen health and wellness applications. For questions about hydrogen energy or fuel cells, please consult industrial hydrogen resources.',
+            reason: 'Query appears to be about industrial hydrogen applications'
           });
         }
         

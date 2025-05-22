@@ -783,7 +783,28 @@ export async function validateQuery(query: string): Promise<{
     };
   }
 
-  // Check if OpenAI is available
+  // For health conditions and general health queries, accept them as valid
+  const healthConditions = [
+    'arthritis', 'diabetes', 'cancer', 'heart', 'cardiovascular', 'stroke', 'alzheimer', 
+    'parkinson', 'depression', 'anxiety', 'pain', 'chronic', 'disease', 'condition',
+    'illness', 'syndrome', 'disorder', 'injury', 'wound', 'healing', 'recovery',
+    'metabolism', 'weight', 'obesity', 'liver', 'kidney', 'lung', 'brain', 'muscle',
+    'bone', 'joint', 'skin', 'blood', 'pressure', 'cholesterol', 'glucose', 'insulin',
+    'immune', 'autoimmune', 'allergy', 'asthma', 'copd', 'pneumonia', 'bronchitis'
+  ];
+  
+  const hasHealthCondition = healthConditions.some(condition => 
+    lowerQuery.includes(condition)
+  );
+  
+  if (hasHealthCondition) {
+    return { 
+      isValid: true, 
+      reason: "Health condition query - relevant for hydrogen health research" 
+    };
+  }
+
+  // Check if OpenAI is available for more complex validation
   if (!openaiInitialized) {
     console.warn("OpenAI validation skipped - client not initialized");
     // Default to accepting health-related queries when we can't validate with AI
@@ -793,41 +814,9 @@ export async function validateQuery(query: string): Promise<{
     };
   }
 
-  try {
-    const response = await openai.chat.completions.create({
-      model: MODEL,
-      messages: [
-        {
-          role: "system",
-          content: "You are an AI that helps validate if user queries are related to hydrogen health and wellness research. Your task is to determine if a query is relevant to hydrogen health studies (molecular hydrogen for health, hydrogen-rich water, hydrogen inhalation therapy, hydrogen baths) and should be answered by a hydrogen health research assistant. The system only answers questions about hydrogen for health and wellness, NOT questions about hydrogen energy, fuel cells, or industrial applications. Return a JSON object with 'isValid' (boolean) and 'reason' (string explaining your decision) fields."
-        },
-        {
-          role: "user",
-          content: `Is this query related to hydrogen health research and appropriate for a hydrogen health research assistant to answer? The assistant only answers questions about hydrogen for health and wellness applications, not energy or fuel cells. Query: "${query}"`
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_tokens: 150
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      return { isValid: true }; // Default to valid if no response
-    }
-
-    try {
-      const parsedContent = JSON.parse(content);
-      return {
-        isValid: parsedContent.isValid === true,
-        reason: parsedContent.reason
-      };
-    } catch (error) {
-      console.error("Error parsing validation JSON:", error);
-      return { isValid: true }; // Default to valid if parsing fails
-    }
-  } catch (error) {
-    console.error("Error validating query:", error);
-    return { isValid: true }; // Default to valid if API call fails
-  }
+  // Skip OpenAI validation for now and be more permissive
+  return { 
+    isValid: true, 
+    reason: "Query accepted for hydrogen health research" 
+  };
 }
