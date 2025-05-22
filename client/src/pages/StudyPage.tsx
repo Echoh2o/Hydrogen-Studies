@@ -291,13 +291,19 @@ const StudyPage = () => {
                   <figure className="mb-8 rounded-lg overflow-hidden">
                     {/* Image with fallback */}
                     <div className="relative">
-                      {/* Special direct handling for study #1000 */}
+                      {/* Direct image element with robust fallback system */}
                       {studyId === 1000 ? (
                         <img 
-                          src="/images/study-1000-fallback.svg"
+                          src="https://d18e5e2b-bbfe-4588-9c10-a5e2efc25a8e-00-19md0w0nv1ssf.spock.replit.dev/images/study-1000-fallback.svg"
                           alt={`Scientific visualization for Future Directions in Hydrogen Studies (Study #1000)`}
-                          className="w-full h-auto object-cover shadow-sm rounded-md" 
+                          className="w-full h-auto object-cover shadow-sm rounded-md"
                           itemProp="image"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            console.log("Study 1000 fallback image failed, using text placeholder");
+                            target.src = `https://placehold.co/800x500/e2f3ff/003366?text=Future+Directions+in+Hydrogen+Studies`;
+                          }}
                         />
                       ) : (
                         <img 
@@ -309,13 +315,13 @@ const StudyPage = () => {
                             // Fallback if the image fails to load
                             const target = e.target as HTMLImageElement;
                             target.onerror = null; // Prevent infinite loop
-                            console.log("Image load error, using fallback");
+                            console.log("Image load error, using text placeholder");
                             
-                            // Use our local fallback SVG image
-                            target.src = fallbackImageUrl;
+                            // Use a direct placeholder service that's reliable
+                            target.src = `https://placehold.co/800x500/e2f3ff/003366?text=${encodeURIComponent(study?.title || 'Hydrogen Research Study')}`;
                             
                             // Update alt text for accessibility
-                            target.alt = `Scientific visualization of hydrogen therapy research: ${study.title}`;
+                            target.alt = `Scientific visualization of hydrogen therapy research: ${study?.title}`;
                           }}
                         />
                       )}
