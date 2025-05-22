@@ -212,9 +212,9 @@ export const ChatWidget: React.FC = () => {
       
       console.log('Sending chat request with conversation ID:', conversationId);
       
-      // Use the API with a timeout to prevent long-hanging requests
+      // Use the API with a longer timeout for complex queries
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       try {
         const response = await fetch('/api/chat', {
@@ -274,27 +274,37 @@ export const ChatWidget: React.FC = () => {
         } else {
           throw new Error('Invalid response format from server');
         }
-      } catch (fetchError) {
-        // Generate fallback product recommendations based on the query
-        generateFallbackProductRecommendations(userMessage);
-        
-        // Create a graceful fallback response for the user
-        const assistantMessage: ChatMessage = { 
-          role: 'assistant', 
-          content: `I'm sorry, but I'm having temporary difficulty accessing the research database. Your question about ${identifyQueryTopic(userMessage)} is important, and while I work to resolve this issue, I've included some product recommendations that might be helpful for your specific needs.`,
-          id: Math.floor(Math.random() * 10000)
-        };
-        
-        setMessages([...newMessages, assistantMessage]);
-        setLastMessageId(assistantMessage.id || null);
-        
-        // Set related questions for continued engagement
-        setRelatedQuestions([
-          "What are the benefits of hydrogen water for inflammation?",
-          "How does molecular hydrogen help with oxidative stress?",
-          "What conditions can hydrogen therapy help with?",
-          "How often should I use hydrogen therapy for best results?"
-        ]);
+      } catch (fetchError: any) {
+        // Handle timeout specifically
+        if (fetchError.name === 'AbortError') {
+          const assistantMessage: ChatMessage = { 
+            role: 'assistant', 
+            content: `I'm taking a bit longer than usual to research your question about "${userMessage}". This usually means I'm finding comprehensive information from multiple studies. Please try asking your question again, and I'll work to respond more quickly.`,
+            id: Math.floor(Math.random() * 10000)
+          };
+          setMessages([...newMessages, assistantMessage]);
+        } else {
+          // Generate fallback product recommendations based on the query
+          generateFallbackProductRecommendations(userMessage);
+          
+          // Create a graceful fallback response for the user
+          const assistantMessage: ChatMessage = { 
+            role: 'assistant', 
+            content: `I'm sorry, but I'm having temporary difficulty accessing the research database. Your question about ${identifyQueryTopic(userMessage)} is important, and while I work to resolve this issue, I've included some product recommendations that might be helpful for your specific needs.`,
+            id: Math.floor(Math.random() * 10000)
+          };
+          
+          setMessages([...newMessages, assistantMessage]);
+          setLastMessageId(assistantMessage.id || null);
+          
+          // Set related questions for continued engagement
+          setRelatedQuestions([
+            "What are the benefits of hydrogen water for inflammation?",
+            "How does molecular hydrogen help with oxidative stress?",
+            "What conditions can hydrogen therapy help with?",
+            "How often should I use hydrogen therapy for best results?"
+          ]);
+        }
         
         console.error('Error fetching chat response:', fetchError);
       }
