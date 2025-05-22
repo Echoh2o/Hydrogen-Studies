@@ -26,6 +26,7 @@ import ShareInsightCard from "@/pages/ShareInsightCard";
 import ImprovedSearchPage from "@/pages/ImprovedSearchPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
+import RecommendationsPage from "@/pages/RecommendationsPage";
 
 // Educational content pages
 import HydrogenTherapyGuide from "@/pages/educational/HydrogenTherapyGuide";
