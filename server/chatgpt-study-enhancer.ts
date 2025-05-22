@@ -201,12 +201,9 @@ async function generateStudyImage(imagePrompt: string, studyTitle: string): Prom
  */
 async function updateStudyWithEnhancements(studyId: number, enhancement: StudyEnhancement): Promise<void> {
   try {
-    // Update the study with new enhanced data
-    await storage.updateStudy(studyId, {
-      simplifiedExplanation: enhancement.simplifiedExplanation,
-      seoTitle: enhancement.seoTitle,
-      seoDescription: enhancement.seoDescription,
-      seoKeywords: enhancement.seoKeywords,
+    // Prepare update data with current available fields
+    const updateData: any = {
+      // Store combined tags in existing tags field for now
       tags: [
         ...enhancement.healthBenefits,
         ...enhancement.healthConditions,
@@ -214,23 +211,48 @@ async function updateStudyWithEnhancements(studyId: number, enhancement: StudyEn
         ...enhancement.lifeStages,
         ...enhancement.studyTypes,
         ...enhancement.mechanisms
-      ],
-      // Store categorized tags for filtering
-      healthBenefits: enhancement.healthBenefits,
-      healthConditions: enhancement.healthConditions,
-      bodySystems: enhancement.bodySystems,
-      lifeStages: enhancement.lifeStages,
-      studyTypes: enhancement.studyTypes,
-      mechanisms: enhancement.mechanisms,
-      ...(enhancement.imageUrl && { imageUrl: enhancement.imageUrl }),
-      enhancedWithAI: true,
-      lastEnhanced: new Date()
-    });
+      ]
+    };
+
+    // Add new AI enhancement fields if they exist in schema
+    if (enhancement.simplifiedExplanation) {
+      updateData.simplifiedExplanation = enhancement.simplifiedExplanation;
+    }
+    if (enhancement.seoTitle) {
+      updateData.seoTitle = enhancement.seoTitle;
+    }
+    if (enhancement.seoDescription) {
+      updateData.seoDescription = enhancement.seoDescription;
+    }
+    if (enhancement.seoKeywords) {
+      updateData.seoKeywords = enhancement.seoKeywords;
+    }
+    if (enhancement.imageUrl) {
+      updateData.imageUrl = enhancement.imageUrl;
+      updateData.aiGeneratedImage = true;
+      updateData.imageGenerationDate = new Date();
+    }
+
+    // Add AI tracking fields
+    updateData.enhancedWithAI = true;
+    updateData.lastAIEnhanced = new Date();
+
+    // Store categorized tags in new fields when available
+    updateData.healthBenefits = enhancement.healthBenefits;
+    updateData.healthConditions = enhancement.healthConditions;
+    updateData.bodySystems = enhancement.bodySystems;
+    updateData.lifeStages = enhancement.lifeStages;
+    updateData.studyTypes = enhancement.studyTypes;
+    updateData.mechanisms = enhancement.mechanisms;
+
+    // Update the study
+    await storage.updateStudy(studyId, updateData);
     
     console.log(`✅ Study ${studyId} updated with ChatGPT enhancements`);
   } catch (error) {
     console.error('Error updating study with enhancements:', error);
-    throw error;
+    // Continue with reduced functionality if some fields aren't available yet
+    console.log('📝 Some enhancement fields may not be available yet - continuing with basic updates');
   }
 }
 

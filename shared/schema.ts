@@ -211,6 +211,41 @@ export const studies = pgTable("studies", {
   enrichmentSources: text("enrichment_sources").array(), // Which APIs provided data
   enrichmentQuality: integer("enrichment_quality").default(0), // 0-100 completeness score
   
+  // === CHATGPT AI ENHANCEMENT FIELDS ===
+  // Consumer-friendly content
+  simplifiedExplanation: text("simplified_explanation"), // Plain language explanation
+  seoTitle: text("seo_title"), // Search-optimized title
+  seoDescription: text("seo_description"), // Meta description for SEO
+  seoKeywords: text("seo_keywords").array(), // SEO keyword array
+  
+  // AI processing tracking
+  enhancedWithAI: boolean("enhanced_with_ai").default(false), // Has been AI enhanced
+  lastAIEnhanced: timestamp("last_ai_enhanced"), // When AI enhancement was performed
+  
+  // Smart tagging system for filtering and search
+  healthBenefits: text("health_benefits").array(), // Health benefit tags
+  healthConditions: text("health_conditions").array(), // Health condition tags
+  bodySystems: text("body_systems").array(), // Body system tags
+  lifeStages: text("life_stages").array(), // Life stage tags
+  studyTypes: text("study_types").array(), // Study type tags
+  mechanisms: text("mechanisms").array(), // Mechanism tags
+  
+  // Enhanced image generation
+  aiGeneratedImage: boolean("ai_generated_image").default(false), // AI-generated image
+  imagePrompt: text("image_prompt"), // Prompt used for image generation
+  imageGenerationDate: timestamp("image_generation_date"), // When image was generated
+  
+  // User experience enhancements
+  readingLevel: text("reading_level"), // Content difficulty level
+  estimatedReadTime: integer("estimated_read_time"), // Reading time in minutes
+  popularityScore: integer("popularity_score").default(0), // User engagement metrics
+  
+  // Advanced research details
+  deliveryMethods: text("delivery_methods").array(), // How hydrogen was administered
+  dosageInformation: text("dosage_information"), // Dosage details
+  studyDurationDays: integer("study_duration_days"), // Length of study in days
+  participantCount: integer("participant_count"), // Number of participants
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
