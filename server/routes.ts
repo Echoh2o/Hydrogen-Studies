@@ -34,6 +34,7 @@ import {
 import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB, semanticSearch } from "./vector-database";
 import { sendContactEmail } from "./sendgrid";
 import { imageGenerationRoutes } from "./routes/image-generation-routes";
+import { comprehensiveEnrichmentRoutes } from "./routes/comprehensive-enrichment-routes";
 import { getSuggestionOptions, generateResearchSuggestions } from "./research-suggestions";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";

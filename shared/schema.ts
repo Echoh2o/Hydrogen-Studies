@@ -130,6 +130,87 @@ export const studies = pgTable("studies", {
   // Source tracking information
   sourceUrl: text("source_url"),
   sourcePlatform: text("source_platform"),
+  
+  // === COMPREHENSIVE DOI ENRICHMENT FIELDS ===
+  // Full text and content
+  fullText: text("full_text"), // Complete article text when available
+  fullTextHtml: text("full_text_html"), // HTML version of full text
+  fullTextXml: text("full_text_xml"), // XML version from PMC
+  supplementaryMaterials: text("supplementary_materials").array(), // URLs to supplementary files
+  
+  // Author information (enhanced)
+  authorAffiliations: text("author_affiliations").array(), // Institutional affiliations
+  correspondingAuthor: text("corresponding_author"), // Email/contact of corresponding author
+  authorOrcids: text("author_orcids").array(), // ORCID IDs for authors
+  authorInstitutions: text("author_institutions").array(), // Institution names
+  
+  // Publication metadata (enhanced)
+  journalIssn: text("journal_issn"), // Journal ISSN
+  journalEissn: text("journal_e_issn"), // Electronic ISSN
+  journalImpactFactor: text("journal_impact_factor"), // Impact factor if available
+  volume: text("volume"), // Journal volume
+  issue: text("issue"), // Journal issue
+  pages: text("pages"), // Page range (e.g., "123-145")
+  
+  // Licensing and copyright
+  license: text("license"), // License type (CC-BY, etc.)
+  licenseUrl: text("license_url"), // URL to license terms
+  copyright: text("copyright"), // Copyright statement
+  openAccess: boolean("open_access").default(false), // Is open access
+  
+  // Citations and references
+  referencesJson: text("references_json"), // Complete reference list as JSON
+  citedByCount: integer("cited_by_count").default(0), // Number of citing papers
+  citingPapers: text("citing_papers").array(), // DOIs of papers that cite this one
+  relatedPapers: text("related_papers").array(), // DOIs of related papers
+  
+  // Research funding and grants
+  fundingSources: text("funding_sources").array(), // Funding organizations
+  grantNumbers: text("grant_numbers").array(), // Grant/award numbers
+  fundingCountries: text("funding_countries").array(), // Countries providing funding
+  
+  // Clinical and research specifics
+  clinicalTrialNumbers: text("clinical_trial_numbers").array(), // NCT numbers, etc.
+  studyRegistry: text("study_registry"), // Registry where study is registered
+  ethicsApproval: text("ethics_approval"), // Ethics committee approval info
+  dataAvailability: text("data_availability"), // Data availability statement
+  conflictOfInterest: text("conflict_of_interest"), // COI statement
+  
+  // Quality and validation indicators
+  peerReviewType: text("peer_review_type"), // Type of peer review
+  retracted: boolean("retracted").default(false), // Is the paper retracted
+  retractionReason: text("retraction_reason"), // Reason for retraction if applicable
+  corrections: text("corrections").array(), // Any published corrections
+  
+  // Subject classification
+  meshTerms: text("mesh_terms").array(), // Medical Subject Headings
+  keywords: text("keywords").array(), // Author-provided keywords
+  subjectAreas: text("subject_areas").array(), // Subject classifications
+  researchFields: text("research_fields").array(), // Research field classifications
+  
+  // Media and figures (enhanced)
+  figureUrls: text("figure_urls").array(), // URLs to all figures
+  figureCaptions: text("figure_captions").array(), // Captions for all figures
+  tableData: text("table_data"), // Structured table data as JSON
+  graphicalAbstract: text("graphical_abstract"), // URL to graphical abstract
+  
+  // External identifiers
+  pmid: text("pmid"), // PubMed ID
+  pmcid: text("pmc_id"), // PMC ID
+  semanticScholarId: text("semantic_scholar_id"), // Semantic Scholar paper ID
+  crossrefId: text("crossref_id"), // CrossRef ID
+  arxivId: text("arxiv_id"), // arXiv ID if applicable
+  
+  // Language and accessibility
+  language: text("language").default("en"), // Publication language
+  abstractLanguages: text("abstract_languages").array(), // Available abstract languages
+  fullTextLanguages: text("full_text_languages").array(), // Available full text languages
+  
+  // Update tracking
+  lastEnriched: timestamp("last_enriched"), // When DOI enrichment was last performed
+  enrichmentSources: text("enrichment_sources").array(), // Which APIs provided data
+  enrichmentQuality: integer("enrichment_quality").default(0), // 0-100 completeness score
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
