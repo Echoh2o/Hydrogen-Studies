@@ -750,6 +750,18 @@ export async function validateQuery(query: string): Promise<{
       lowerQuery.includes('hydrogen inhalation') ||
       lowerQuery.includes('hydrogen therapy') ||
       lowerQuery.includes('hydrogen bath') ||
+      lowerQuery.includes('hydrogen') ||
+      lowerQuery.includes('h2') ||
+      lowerQuery.includes('antioxidant') ||
+      lowerQuery.includes('oxidative stress') ||
+      lowerQuery.includes('inflammation') ||
+      lowerQuery.includes('health') ||
+      lowerQuery.includes('wellness') ||
+      lowerQuery.includes('benefit') ||
+      lowerQuery.includes('water') ||
+      lowerQuery.includes('drink') ||
+      lowerQuery.includes('inhale') ||
+      lowerQuery.includes('bath') ||
       (lowerQuery.includes('molecular hydrogen') && 
        (lowerQuery.includes('health') || 
         lowerQuery.includes('wellness') || 
