@@ -227,7 +227,7 @@ const StudyPage = () => {
   });
 
   // Get related studies (same category, exclude current)
-  const relatedStudies = allStudies && study
+  const relatedStudies = (allStudies && study && Array.isArray(allStudies))
     ? allStudies
         .filter((s: any) => s.category === study.category && s.id !== studyId)
         .slice(0, 3)
