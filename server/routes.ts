@@ -2239,27 +2239,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use comprehensive enrichment routes
   app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
   
-  // Test enrichment endpoint
-  app.get('/api/test-enrichment', async (req, res) => {
+  // ChatGPT Study Enhancement Routes
+  app.post('/api/enhance-study/:studyId', async (req, res) => {
     try {
-      const { testBatchEnrichment } = await import('./simple-batch-test');
-      const result = await testBatchEnrichment();
-      res.json({ success: true, ...result });
+      const studyId = parseInt(req.params.studyId);
+      const { enhanceStudyWithChatGPT } = await import('./chatgpt-study-enhancer');
+      const result = await enhanceStudyWithChatGPT(studyId);
+      res.json(result);
     } catch (error) {
-      console.error('Test enrichment error:', error);
+      console.error('ChatGPT enhancement error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });
 
-  // Test single study enrichment
-  app.get('/api/test-enrichment/:studyId', async (req, res) => {
+  // Batch enhance multiple studies with ChatGPT
+  app.post('/api/enhance-studies/batch', async (req, res) => {
     try {
-      const studyId = parseInt(req.params.studyId);
-      const { testSingleStudyEnrichment } = await import('./simple-batch-test');
-      const result = await testSingleStudyEnrichment(studyId);
+      const { studyIds, batchSize = 5 } = req.body;
+      const { batchEnhanceStudiesWithChatGPT } = await import('./chatgpt-study-enhancer');
+      const result = await batchEnhanceStudiesWithChatGPT(studyIds, batchSize);
       res.json({ success: true, ...result });
     } catch (error) {
-      console.error('Single study test error:', error);
+      console.error('Batch ChatGPT enhancement error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get enhanced study data
+  app.get('/api/enhanced-study/:studyId', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.studyId);
+      const { getEnhancedStudyData } = await import('./chatgpt-study-enhancer');
+      const result = await getEnhancedStudyData(studyId);
+      res.json({ success: true, study: result });
+    } catch (error) {
+      console.error('Get enhanced study error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });
