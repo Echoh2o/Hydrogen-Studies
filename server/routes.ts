@@ -2239,7 +2239,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use comprehensive enrichment routes
   app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
   
-  // Batch enrichment routes will be added after system stabilizes
+  // Test enrichment endpoint
+  app.get('/api/test-enrichment', async (req, res) => {
+    try {
+      const { testBatchEnrichment } = await import('./simple-batch-test');
+      const result = await testBatchEnrichment();
+      res.json({ success: true, ...result });
+    } catch (error) {
+      console.error('Test enrichment error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Test single study enrichment
+  app.get('/api/test-enrichment/:studyId', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.studyId);
+      const { testSingleStudyEnrichment } = await import('./simple-batch-test');
+      const result = await testSingleStudyEnrichment(studyId);
+      res.json({ success: true, ...result });
+    } catch (error) {
+      console.error('Single study test error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
   // Initialize sample data (only in development)
   if (process.env.NODE_ENV === 'development') {
