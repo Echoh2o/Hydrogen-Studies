@@ -2238,6 +2238,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Use comprehensive enrichment routes
   app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
+  
+  // Use batch enrichment routes
+  app.use('/api/batch-enrichment', batchEnrichmentRoutes);
 
   // Initialize sample data (only in development)
   if (process.env.NODE_ENV === 'development') {
