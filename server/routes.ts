@@ -1919,34 +1919,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Simple validation - reject only clearly non-health industrial queries
-        const lowerQuery = query.toLowerCase();
-        if ((lowerQuery.includes('fuel cell') || 
-             lowerQuery.includes('energy storage') ||
-             lowerQuery.includes('power generation') ||
-             lowerQuery.includes('industrial manufacturing')) && 
-            !lowerQuery.includes('health') && 
-            !lowerQuery.includes('medical') && 
-            !lowerQuery.includes('drinking')) {
-          return res.status(400).json({
-            success: false,
-            message: 'We focus on hydrogen health and wellness applications. For questions about hydrogen energy or fuel cells, please consult industrial hydrogen resources.',
-            reason: 'Query appears to be about industrial hydrogen applications'
-          });
-        }
-        
-        // Get conversation history if conversation ID is provided
-        let conversationHistory = [];
-        if (conversationId) {
-          conversationHistory = await getConversationHistory(conversationId);
-        }
-        
-        // Generate and return chat response with conversation context
-        const response = await generateChatResponse(
-          query,
-          conversationId,
-          userId
-        );
+        // Skip complex validation and use simple search-based responses
+        const response = await generateSimpleChatResponse(query, conversationId);
         
         res.json({
           success: true,
