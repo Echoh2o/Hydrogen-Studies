@@ -47,41 +47,43 @@ const StudyPage = () => {
     queryKey: [`/api/studies/${studyId}`],
   });
   
-  // Create a fallback image URL for studies with enhanced visual appeal
-  const fallbackImageUrl = "/images/fallback-study-image.svg";
+  // Create fallback image directly as base64-encoded SVG data URI
+  const fallbackImageBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPkh5ZHJvZ2VuIFJlc2VhcmNoIFN0dWR5PC90ZXh0PjxjaXJjbGUgY3g9IjQwMCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDY2Y2MiIG9wYWNpdHk9IjAuNyIvPjxjaXJjbGUgY3g9IjM0MCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDMzNjYiIG9wYWNpdHk9IjAuNyIvPjxsaW5lIHgxPSIzNzAiIHkxPSIzNTAiIHgyPSI0MzAiIHkyPSIzNTAiIHN0cm9rZT0iIzAwMzM2NiIgc3Ryb2tlLXdpZHRoPSI0Ii8+PC9zdmc+";
   
   // Special case for study #1000 that has known issues
-  const study1000ImageUrl = "/images/study-1000-fallback.svg";
+  const study1000ImageBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN0dWR5ICMxMDAwPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiIGZvbnQtd2VpZ2h0PSJib2xkIj5GdXR1cmUgRGlyZWN0aW9ucyBpbiBIeWRyb2dlbiBTdHVkaWVzPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN1biwgWHVlanVuLCBPaHRhLCBTaGlnZW88L3RleHQ+PHRleHQgeD0iNDAwIiB5PSIyOTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMzM2NiI+SHlkcm9nZW4gTW9sZWN1bGFyIEJpb2xvZ3kgYW5kIE1lZGljaW5lICgyMDE1KTwvdGV4dD48Y2lyY2xlIGN4PSI0MDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDA2NmNjIiBvcGFjaXR5PSIwLjciLz48Y2lyY2xlIGN4PSIzNDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDAzMzY2IiBvcGFjaXR5PSIwLjciLz48bGluZSB4MT0iMzcwIiB5MT0iMzgwIiB4Mj0iNDMwIiB5Mj0iMzgwIiBzdHJva2U9IiMwMDMzNjYiIHN0cm9rZS13aWR0aD0iNCIvPjwvc3ZnPg==";
   
   // Enhanced helper function to process image URLs correctly and handle all edge cases
   const getProcessedImageUrl = (study?: Study) => {
-    if (!study) return fallbackImageUrl;
+    if (!study) return fallbackImageBase64;
     
     // Special handling for study #1000
     if (studyId === 1000) {
-      return study1000ImageUrl;
+      return study1000ImageBase64;
     }
     
     // Check for both camelCase and snake_case property names
     const imageUrl = study.imageUrl || study.image_url;
     
     // If no URL provided or it's null/empty, use fallback
-    if (!imageUrl || imageUrl.trim() === '') return fallbackImageUrl;
+    if (!imageUrl || imageUrl.trim() === '') return fallbackImageBase64;
+    
+    // If it's already a data URI, use it directly
+    if (imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
     
     // If it's already a fully qualified URL (starts with http/https), use it directly
     if (imageUrl.startsWith('http')) {
-      // Sometimes external URLs might have issues, if it's a placeholder service, use our local fallback
+      // Sometimes external URLs might have issues, if it's a placeholder service, use our embedded fallback
       if (imageUrl.includes('placehold.co')) {
-        return fallbackImageUrl;
+        return fallbackImageBase64;
       }
       return imageUrl;
     }
     
-    // If it's a root-relative URL (starts with /), use it as is
-    if (imageUrl.startsWith('/')) return imageUrl;
-    
-    // For any other case, prepend / to make it a root-relative URL
-    return `/${imageUrl}`;
+    // For any other case, use our embedded fallback to ensure something always displays
+    return fallbackImageBase64;
   };
   
   // Mutation for generating an AI image for this study
@@ -189,7 +191,7 @@ const StudyPage = () => {
         <meta property="og:description" content={study.abstract?.substring(0, 200) + "..."} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />
-        <meta property="og:image" content={study.imageUrl || fallbackImageUrl} />
+        <meta property="og:image" content={study.imageUrl || study.image_url || fallbackImageBase64} />
         <meta property="article:published_time" content={study.publishDate} />
         <meta property="article:section" content={study.category} />
         
@@ -197,7 +199,7 @@ const StudyPage = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={study.title} />
         <meta name="twitter:description" content={study.abstract?.substring(0, 200) + "..."} />
-        <meta name="twitter:image" content={study.imageUrl || fallbackImageUrl} />
+        <meta name="twitter:image" content={study.imageUrl || study.image_url || fallbackImageBase64} />
       </Helmet>
       
       {/* Structured Data */}
@@ -291,43 +293,43 @@ const StudyPage = () => {
                   <figure className="mb-8 rounded-lg overflow-hidden">
                     {/* Image with fallback */}
                     <div className="relative">
-                      {/* Direct image element with robust fallback system */}
-                      {studyId === 1000 ? (
-                        <img 
-                          src="https://d18e5e2b-bbfe-4588-9c10-a5e2efc25a8e-00-19md0w0nv1ssf.spock.replit.dev/images/study-1000-fallback.svg"
-                          alt={`Scientific visualization for Future Directions in Hydrogen Studies (Study #1000)`}
-                          className="w-full h-auto object-cover shadow-sm rounded-md"
-                          itemProp="image"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.onerror = null;
-                            console.log("Study 1000 fallback image failed, using text placeholder");
-                            target.src = `https://placehold.co/800x500/e2f3ff/003366?text=Future+Directions+in+Hydrogen+Studies`;
-                          }}
-                        />
-                      ) : (
-                        <img 
-                          src={getProcessedImageUrl(study)}
-                          alt={study.imageAlt || study.image_alt || `Scientific visualization of hydrogen therapy research: ${study.title}`}
-                          className="w-full h-auto object-cover shadow-sm rounded-md" 
-                          itemProp="image"
-                          onError={(e) => {
-                            // Fallback if the image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.onerror = null; // Prevent infinite loop
-                            console.log("Image load error, using text placeholder");
-                            
-                            // Use a direct placeholder service that's reliable
-                            target.src = `https://placehold.co/800x500/e2f3ff/003366?text=${encodeURIComponent(study?.title || 'Hydrogen Research Study')}`;
-                            
-                            // Update alt text for accessibility
-                            target.alt = `Scientific visualization of hydrogen therapy research: ${study?.title}`;
-                          }}
-                        />
-                      )}
+                      {/* Single guaranteed image implementation with no external dependencies */}
+                      <div 
+                        className="w-full h-96 bg-sky-50 rounded-md shadow-sm flex flex-col items-center justify-center text-center p-6"
+                        style={{background: '#e2f3ff'}}
+                      >
+                        {/* Study title section */}
+                        <div className="text-blue-900 text-lg font-semibold mb-2">
+                          {studyId === 1000 ? "Study #1000" : `Study #${studyId}`}
+                        </div>
+                        
+                        {/* Title */}
+                        <h3 className="text-blue-900 text-xl font-bold mb-4 max-w-lg">
+                          {study?.title || "Hydrogen Research Study"}
+                        </h3>
+                        
+                        {/* Authors */}
+                        <p className="text-blue-800 mb-4">
+                          {study?.authors || "Hydrogen Researchers"}
+                        </p>
+                        
+                        {/* Publication info */}
+                        <p className="text-blue-700 text-sm mb-6">
+                          {study?.journal || "Scientific Journal"} ({study?.publishYear || new Date().getFullYear()})
+                        </p>
+                        
+                        {/* Hydrogen molecules visualization */}
+                        <div className="flex items-center justify-center mt-4">
+                          <div className="w-16 h-16 rounded-full bg-blue-700 opacity-70 mr-8"></div>
+                          <div className="relative">
+                            <div className="w-16 h-16 rounded-full bg-blue-900 opacity-70"></div>
+                            <div className="absolute top-1/2 left-0 h-1 w-16 bg-blue-900"></div>
+                          </div>
+                        </div>
+                      </div>
                       
                       {/* Generate Image Button - Only show if image is missing or using fallback */}
-                      {(!(study.imageUrl || study.image_url) || (study.imageUrl === fallbackImageUrl || study.image_url === fallbackImageUrl)) && (
+                      {(!(study.imageUrl || study.image_url) || (study.imageUrl?.includes('placehold.co') || study.image_url?.includes('placehold.co'))) && (
                         <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
                           <Button 
                             variant="secondary"
