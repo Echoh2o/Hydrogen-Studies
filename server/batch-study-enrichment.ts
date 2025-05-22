@@ -177,12 +177,12 @@ async function processBatchInBackground(studies: any[]): Promise<void> {
 async function getAllStudiesForEnrichment(): Promise<any[]> {
   try {
     // Try to get studies from database first
-    const studies = await storage.getAllStudies();
-    return studies.filter(study => study.doi && study.doi.trim() !== '');
+    const studies = await storage.getStudies();
+    return studies.filter((study: any) => study.doi && study.doi.trim() !== '');
   } catch (error) {
     console.log('📦 Database not ready, using storage fallback');
-    const studies = await storage.getAllStudies();
-    return studies.filter(study => study.doi && study.doi.trim() !== '');
+    const studies = await storage.getStudies();
+    return studies.filter((study: any) => study.doi && study.doi.trim() !== '');
   }
 }
 
@@ -401,9 +401,9 @@ export async function getEnrichmentStats(): Promise<{
   pendingEnrichment: number;
 }> {
   try {
-    const studies = await storage.getAllStudies();
-    const studiesWithDoi = studies.filter(s => s.doi && s.doi.trim() !== '').length;
-    const enrichedStudies = studies.filter(s => s.crossrefData || s.pubmedId || s.aiSimplifiedExplanation).length;
+    const studies = await storage.getStudies();
+    const studiesWithDoi = studies.filter((s: any) => s.doi && s.doi.trim() !== '').length;
+    const enrichedStudies = studies.filter((s: any) => s.crossrefData || s.pubmedId || s.aiSimplifiedExplanation).length;
 
     return {
       totalStudies: studies.length,

@@ -2239,6 +2239,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use comprehensive enrichment routes
   app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
   
+  // Import batch enrichment routes
+  const batchEnrichmentRoutes = (await import('./routes/batch-enrichment-routes')).default;
+  
   // Use batch enrichment routes
   app.use('/api/batch-enrichment', batchEnrichmentRoutes);
 
