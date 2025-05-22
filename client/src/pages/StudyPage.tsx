@@ -11,121 +11,105 @@ import RelatedBlogs from "@/components/studies/related-blogs";
 import JsonLd, { generateMedicalArticleSchema, generateBreadcrumbSchema } from "@/components/seo/JsonLd";
 import { useEffect, useRef } from "react";
 
-// Study Canvas Component for rendering hydrogen molecule visualization
-interface StudyCanvasProps {
+// Simple pure component for rendering a study image or fallback
+interface StudyImageProps {
   studyId: number;
-  title: string;
-  authors: string;
-  journal: string;
-  year: number;
+  imageUrl?: string;
+  imageAlt?: string;
+  title?: string;
+  authors?: string;
+  journal?: string;
+  year?: number;
 }
 
-const StudyCanvas = ({ studyId, title, authors, journal, year }: StudyCanvasProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const StudyImage = ({ 
+  studyId, 
+  imageUrl, 
+  imageAlt, 
+  title = "Hydrogen Research Study",
+  authors = "Hydrogen Researchers",
+  journal = "Scientific Journal",
+  year 
+}: StudyImageProps) => {
+  // If image URL is provided and seems valid, return an actual image
+  if (imageUrl && imageUrl.trim() !== '' && !imageUrl.includes('placehold.co')) {
+    return (
+      <div className="w-full rounded-md shadow-md overflow-hidden bg-white">
+        <img 
+          src={imageUrl} 
+          alt={imageAlt || `Study visualization: ${title}`}
+          className="w-full object-cover h-auto max-h-96"
+          loading="lazy"
+          onError={(e) => {
+            // On error, replace with a styled div
+            const target = e.target as HTMLImageElement;
+            const parent = target.parentNode as HTMLElement;
+            
+            if (parent) {
+              // Create a fallback element
+              const fallback = document.createElement('div');
+              fallback.className = "w-full h-96 bg-sky-50 flex flex-col items-center justify-center p-6 text-center";
+              
+              // Add study ID
+              const idEl = document.createElement('div');
+              idEl.className = "text-blue-900 text-lg font-semibold mb-2";
+              idEl.textContent = `Study #${studyId}`;
+              fallback.appendChild(idEl);
+              
+              // Add title
+              const titleEl = document.createElement('h3');
+              titleEl.className = "text-blue-900 text-xl font-bold mb-4 max-w-lg";
+              titleEl.textContent = title;
+              fallback.appendChild(titleEl);
+              
+              // Add authors
+              const authorsEl = document.createElement('p');
+              authorsEl.className = "text-blue-800 mb-4";
+              authorsEl.textContent = authors;
+              fallback.appendChild(authorsEl);
+              
+              // Add journal info
+              const journalEl = document.createElement('p');
+              journalEl.className = "text-blue-700 text-sm mb-8";
+              journalEl.textContent = `${journal} (${year || new Date().getFullYear()})`;
+              fallback.appendChild(journalEl);
+              
+              // Replace the img with the fallback
+              parent.replaceChild(fallback, target);
+            }
+          }}
+        />
+      </div>
+    );
+  }
   
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Set canvas dimensions
-    canvas.width = 800;
-    canvas.height = 400;
-    
-    // Fill background
-    ctx.fillStyle = '#e2f3ff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Study ID text
-    ctx.fillStyle = '#003366';
-    ctx.font = '22px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(`Study #${studyId}`, canvas.width/2, 50);
-    
-    // Title
-    ctx.font = 'bold 24px Arial';
-    const maxTitleWidth = 700;
-    const words = title.split(' ');
-    let line = '';
-    let y = 100;
-    
-    for (let i = 0; i < words.length; i++) {
-      const testLine = line + words[i] + ' ';
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-      
-      if (testWidth > maxTitleWidth && i > 0) {
-        ctx.fillText(line, canvas.width/2, y);
-        line = words[i] + ' ';
-        y += 30;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, canvas.width/2, y);
-    
-    // Authors
-    ctx.font = '18px Arial';
-    ctx.fillText(authors, canvas.width/2, y + 40);
-    
-    // Journal and year
-    ctx.font = '16px Arial';
-    ctx.fillText(`${journal} (${year})`, canvas.width/2, y + 70);
-    
-    // Draw hydrogen molecule
-    // First hydrogen atom
-    ctx.beginPath();
-    ctx.arc(320, 280, 40, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 102, 204, 0.7)';
-    ctx.fill();
-    
-    // Second hydrogen atom
-    ctx.beginPath();
-    ctx.arc(480, 280, 40, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 51, 102, 0.7)';
-    ctx.fill();
-    
-    // Bond between atoms
-    ctx.beginPath();
-    ctx.moveTo(360, 280);
-    ctx.lineTo(440, 280);
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#003366';
-    ctx.stroke();
-    
-    // Add some electrons orbiting
-    const drawElectron = (centerX: number, centerY: number, radius: number, angle: number) => {
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.strokeStyle = '#0055aa';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    };
-    
-    // Draw electrons for first atom
-    drawElectron(320, 280, 60, 0);
-    drawElectron(320, 280, 60, Math.PI);
-    
-    // Draw electrons for second atom
-    drawElectron(480, 280, 60, Math.PI/2);
-    drawElectron(480, 280, 60, 3*Math.PI/2);
-    
-  }, [studyId, title, authors, journal, year]);
-  
+  // Otherwise, render a styled div with study information
   return (
-    <div className="w-full rounded-md shadow-md overflow-hidden">
-      <canvas 
-        ref={canvasRef} 
-        className="w-full h-auto"
-        style={{ maxHeight: '400px' }}
-      />
+    <div className="w-full h-96 bg-gradient-to-br from-sky-50 to-blue-50 rounded-md shadow-md flex flex-col items-center justify-center p-6 text-center">
+      <div className="text-blue-900 text-lg font-semibold mb-2">
+        Study #{studyId}
+      </div>
+      
+      <h3 className="text-blue-900 text-xl font-bold mb-4 max-w-lg">
+        {title}
+      </h3>
+      
+      <p className="text-blue-800 mb-4">
+        {authors}
+      </p>
+      
+      <p className="text-blue-700 text-sm mb-8">
+        {journal} ({year || new Date().getFullYear()})
+      </p>
+      
+      {/* Simple hydrogen molecule visualization with CSS */}
+      <div className="flex items-center justify-center mt-4 gap-8">
+        <div className="w-16 h-16 rounded-full bg-blue-500 opacity-70 shadow-lg"></div>
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full bg-blue-800 opacity-70 shadow-lg"></div>
+          <div className="absolute top-1/2 left-[-16px] transform -translate-y-1/2 h-1.5 w-[32px] bg-blue-900"></div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -410,59 +394,32 @@ const StudyPage = () => {
               <div className="p-6 md:p-8">
                 <section aria-labelledby="visualization-heading">
                   <h2 id="visualization-heading" className="text-xl font-semibold mb-4">Research Visualization</h2>
-                  {/* Study Image */}
+                  {/* Study Image - Simplified implementation */}
                   <figure className="mb-8 rounded-lg overflow-hidden">
-                    {/* Image with fallback */}
                     <div className="relative">
-                      {/* Canvas-based hydrogen illustration with study info - guaranteed to work */}
-                      <div 
-                        className="w-full h-96 rounded-md shadow-sm flex flex-col items-center justify-center text-center p-6 overflow-hidden"
-                        style={{background: '#e2f3ff', position: 'relative'}}
-                      >
-                        {/* Study ID */}
-                        <div className="text-blue-900 text-lg font-semibold mb-2">
-                          {studyId === 1000 ? "Study #1000" : `Study #${studyId}`}
-                        </div>
-                        
-                        {/* Title */}
-                        <h3 className="text-blue-900 text-xl font-bold mb-4 max-w-lg">
-                          {study?.title || "Hydrogen Research Study"}
-                        </h3>
-                        
-                        {/* Authors */}
-                        <p className="text-blue-800 mb-4">
-                          {study?.authors || "Hydrogen Researchers"}
-                        </p>
-                        
-                        {/* Publication info */}
-                        <p className="text-blue-700 text-sm mb-8">
-                          {study?.journal || "Scientific Journal"} ({study?.publishYear || study?.year || new Date().getFullYear()})
-                        </p>
-                        
-                        {/* Hydrogen molecules visualization */}
-                        <div className="flex items-center justify-center mt-4 gap-8">
-                          <div className="w-16 h-16 rounded-full" style={{background: 'rgba(0, 102, 204, 0.7)'}}></div>
-                          <div className="relative">
-                            <div className="w-16 h-16 rounded-full" style={{background: 'rgba(0, 51, 102, 0.7)'}}></div>
-                            <div style={{position: 'absolute', top: '50%', left: '-16px', height: '4px', width: '32px', background: '#003366'}}></div>
-                          </div>
-                        </div>
-                      </div>
+                      {/* StudyImage component that handles all fallback cases */}
+                      <StudyImage 
+                        studyId={studyId}
+                        imageUrl={study.imageUrl || study.image_url}
+                        imageAlt={study.imageAlt || study.image_alt}
+                        title={study.title}
+                        authors={study.authors}
+                        journal={study.journal}
+                        year={study.publishYear || study.year}
+                      />
                       
-                      {/* Generate Image Button - Only show if study is loaded */}
-                      {study && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
-                          <Button 
-                            variant="secondary"
-                            className="flex items-center gap-2 bg-white hover:bg-neutral-100"
-                            onClick={() => generateImageMutation.mutate()}
-                            disabled={generateImageMutation.isPending}
-                          >
-                            <HiPhotograph className="w-4 h-4" />
-                            {generateImageMutation.isPending ? 'Generating...' : 'Generate Scientific Visual'}
-                          </Button>
-                        </div>
-                      )}
+                      {/* Generate Image Button */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
+                        <Button 
+                          variant="secondary"
+                          className="flex items-center gap-2 bg-white hover:bg-neutral-100"
+                          onClick={() => generateImageMutation.mutate()}
+                          disabled={generateImageMutation.isPending}
+                        >
+                          <HiPhotograph className="w-4 h-4" />
+                          {generateImageMutation.isPending ? 'Generating...' : 'Generate Scientific Visual'}
+                        </Button>
+                      </div>
                     </div>
                     
                     <figcaption className="flex justify-between items-start mt-2">
