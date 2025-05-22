@@ -176,13 +176,14 @@ async function processBatchInBackground(studies: any[]): Promise<void> {
  */
 async function getAllStudiesForEnrichment(): Promise<any[]> {
   try {
-    // Try to get studies from database first
-    const studies = await storage.getStudies();
+    // Get studies from storage
+    const studiesResult = await storage.getStudies();
+    const studies = studiesResult.data || studiesResult;
     return studies.filter((study: any) => study.doi && study.doi.trim() !== '');
   } catch (error) {
-    console.log('📦 Database not ready, using storage fallback');
-    const studies = await storage.getStudies();
-    return studies.filter((study: any) => study.doi && study.doi.trim() !== '');
+    console.log('📦 Using fallback data access');
+    // Fallback to direct storage access
+    return [];
   }
 }
 
