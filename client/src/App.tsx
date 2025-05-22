@@ -11,7 +11,7 @@ import CookieConsent from "@/components/ui/cookie-consent";
 // Pages
 import Home from "@/pages/home";
 import Studies from "@/pages/studies";
-import StudyDetails from "@/pages/study-details";
+import SimpleStudyPage from "@/pages/SimpleStudyPage";
 import Categories from "@/pages/categories";
 import CategoryDetails from "@/pages/category-details";
 import About from "@/pages/about";
@@ -84,8 +84,8 @@ function Router() {
       {/* Public Routes */}
       <Route path="/" component={Home} />
       <Route path="/studies" component={Studies} />
-      <Route path="/study/:id" component={StudyDetails} />
-      <Route path="/studies/:id/:slug?" component={StudyDetails} />
+      <Route path="/study/:id" component={SimpleStudyPage} />
+      <Route path="/studies/:id/:slug?" component={SimpleStudyPage} />
       <Route path="/share-insight/:id" component={ShareInsightCard} />
       <Route path="/blog/:id/:slug?" component={BlogPage} />
       <Route path="/categories" component={Categories} />
