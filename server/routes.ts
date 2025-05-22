@@ -2238,6 +2238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Use comprehensive enrichment routes
   app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
+  app.use('/api/recommendations', recommendationRoutes);
   
   // ChatGPT Study Enhancement Routes
   app.post('/api/enhance-study/:studyId', async (req, res) => {
