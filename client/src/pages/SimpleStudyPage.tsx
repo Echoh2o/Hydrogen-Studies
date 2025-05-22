@@ -10,7 +10,7 @@ const SimpleStudyPage = () => {
   const { id } = useParams();
   const studyId = id ? parseInt(id) : 0;
 
-  const { data: study, isLoading, error } = useQuery({
+  const { data: study, isLoading, error } = useQuery<any>({
     queryKey: [`/api/studies/${studyId}`],
   });
 
