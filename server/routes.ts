@@ -2236,6 +2236,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Use comprehensive enrichment routes
+  app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
+
   // Initialize sample data (only in development)
   if (process.env.NODE_ENV === 'development') {
     try {
