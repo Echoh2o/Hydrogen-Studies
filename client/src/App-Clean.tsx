@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import CookieConsent from "@/components/ui/cookie-consent";
@@ -20,30 +20,15 @@ import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
 import RecommendationsPage from "@/pages/RecommendationsPage";
 
-// Educational content pages
-import HydrogenTherapyGuide from "@/pages/educational/HydrogenTherapyGuide";
-
-// New organization structure pages
-import ExploreByBenefit from "@/pages/ExploreByBenefit";
+// Research Exploration Pages
 import ExploreByCondition from "@/pages/ExploreByCondition";
 import ConditionCategoryPage from "@/pages/ConditionCategoryPage";
 import ExploreByBodySystem from "@/pages/ExploreByBodySystem";
 import BodySystemCategoryPage from "@/pages/BodySystemCategoryPage";
 import ExploreByLifeStage from "@/pages/ExploreByLifeStage";
 import LifeStageCategoryPage from "@/pages/LifeStageCategoryPage";
-import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/ExploreByDemographic";
-import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
-import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
 
-// Admin pages - old
-import AdminPage from "@/pages/admin/AdminPage";
-import ImportPage from "@/pages/admin/ImportPage";
-import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
-import EuropePmcPage from "@/pages/admin/EuropePmcPage";
-import SemanticScholarPage from "@/pages/admin/SemanticScholarPage";
-import CrossRefPage from "@/pages/admin/CrossRefPage";
-
-// Admin pages - new layout
+// Admin Pages
 import DashboardPage from "@/pages/admin/DashboardPage";
 import StudiesManagementPage from "@/pages/admin/StudiesManagementPage";
 import AddStudyPage from "@/pages/admin/AddStudyPage";
@@ -52,16 +37,8 @@ import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
 import BlogGeneratePage from "@/pages/admin/BlogGeneratePage";
 import BlogAddPage from "@/pages/admin/BlogAddPage";
 import BlogEditPage from "@/pages/admin/BlogEditPage";
-import ResearchImportPage from "@/pages/admin/ResearchImportPage";
-import DataImportPage from "@/pages/admin/DataImportPage";
-import ResearchDatabasePage from "@/pages/admin/ResearchDatabasePage";
-import JournalDateUpdater from "@/pages/admin/JournalDateUpdater";
-import ContentEnrichmentPage from "@/pages/admin/ContentEnrichmentPage";
-import BatchEnrichmentPage from "@/pages/admin/BatchEnrichmentPage";
-import BatchCategorizationPage from "@/pages/admin/BatchCategorizationPage";
-import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
 import EnhancementPage from "@/pages/admin/EnhancementPage";
-import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
+import DataImportPage from "@/pages/admin/DataImportPage";
 
 function ScrollToTop() {
   const [location] = useLocation();

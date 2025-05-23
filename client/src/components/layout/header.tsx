@@ -5,29 +5,19 @@ import { Menu, X, ChevronDown } from "lucide-react";
 
 const navigationLinks = [
   { href: "/", label: "Home" },
-  { 
-    href: "/studies",
-    label: "Studies",
-    id: "studies-menu"
-  },
-  { 
-    href: "/categories",
-    label: "Categories",
-    id: "categories-menu"
-  },
+  { href: "/studies", label: "Studies" },
   {
     href: "/explore-by-condition",
     label: "Explore",
     id: "explore-menu",
     dropdown: [
-      { href: "/benefits", label: "Health Benefits" },
       { href: "/explore-by-condition", label: "Health Conditions" },
       { href: "/explore-by-body-system", label: "Body Systems" },
       { href: "/explore-by-life-stage", label: "Life Stages" }
     ]
   },
-  { href: "/improved-search", label: "Search", id: "search-menu" },
-  { href: "/chat", label: "AI Assistant", id: "chat-menu" },
+  { href: "/search", label: "Search" },
+  { href: "/chat", label: "AI Assistant" },
   { href: "/about", label: "About" }
 ];
 
