@@ -134,8 +134,13 @@ export async function generateChatResponse(
     }
     
     // 1. Search your hydrogen studies database for relevant research
+    console.log(`Searching for hydrogen studies with query: "${userQuery}"`);
     const relevantResults = await searchStudiesDatabase(userQuery, 5);
     console.log(`Found ${relevantResults.length} relevant studies for query: ${userQuery}`);
+    
+    if (relevantResults.length > 0) {
+      console.log(`First study found: ${relevantResults[0].title}`);
+    }
     
     if (!relevantResults || relevantResults.length === 0) {
       // Try a broader search with individual keywords
@@ -291,7 +296,34 @@ function generateStudyBasedAnswer(studies: any[], query: string): string {
   } catch (error) {
     console.error('Error generating chat response:', error);
     
-    // Fallback to a simpler response
+    // Always try to search studies even if there's an error
+    try {
+      const emergencyResults = await searchStudiesDatabase(userQuery, 3);
+      if (emergencyResults.length > 0) {
+        const emergencyAnswer = generateStudyBasedAnswer(emergencyResults, userQuery);
+        
+        if (userId && conversationId) {
+          await saveMessage(conversationId, 'user', userQuery);
+          await saveMessage(conversationId, 'assistant', emergencyAnswer);
+        }
+        
+        return {
+          answer: emergencyAnswer,
+          sources: emergencyResults.map(result => ({
+            title: result.title,
+            doi: result.doi || "No DOI available",
+            authors: result.authors || "Not specified",
+            publishDate: result.publishDate || "Not specified"
+          })),
+          relatedQuestions: generateDefaultRelatedQuestions(),
+          conversationId
+        };
+      }
+    } catch (searchError) {
+      console.error('Emergency search also failed:', searchError);
+    }
+    
+    // Fallback to a simpler response only if everything fails
     const fallbackAnswer = "I'm experiencing some technical difficulties right now. Please try asking your question again, or contact our support team if the issue persists.";
     
     if (userId && conversationId) {
