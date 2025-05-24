@@ -7,69 +7,56 @@ import { conversations, chatMessages, chatFeedback, studies } from '../shared/sc
 const ECHO_WATER_PRODUCTS = [
   {
     name: "Echo H2 Machine",
-    description: "Premium hydrogen water generator with advanced PEM technology for maximum hydrogen concentration",
-    url: "https://echowater.com/products/echo-h2-machine",
-    imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
-    keywords: ["water", "drink", "hydrogen water", "molecular hydrogen", "h2"],
-    healthConditions: ["inflammation", "metabolic", "diabetes", "oxidative stress", "antioxidant", "weight", "energy"]
+    category: "Hydrogen Water Generator",
+    price: "$2,499",
+    description: "Professional-grade hydrogen water generator for home use",
+    benefits: ["Antioxidant properties", "Improved hydration", "Athletic performance"],
+    keywords: ["hydrogen water", "antioxidant", "hydration", "energy", "performance"]
   },
   {
-    name: "Echo H2 Tablet Maker",
-    description: "Convenient and portable hydrogen tablet maker for creating hydrogen-rich water on the go",
-    url: "https://echowater.com/products/echo-h2-tablets-1",
-    imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
-    keywords: ["tablets", "portable", "travel", "hydrogen water", "supplements"],
-    healthConditions: ["inflammation", "travel", "athletes", "workout", "recovery", "sports", "convenience"]
+    name: "Echo H2 Pitcher",
+    category: "Hydrogen Water Pitcher",
+    price: "$399",
+    description: "Portable hydrogen water pitcher for daily hydration",
+    benefits: ["Convenience", "Portability", "Daily wellness"],
+    keywords: ["hydrogen water", "portable", "daily", "convenience", "wellness"]
   },
   {
-    name: "Echo H2 Inhaler",
-    description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
-    url: "https://echowater.com/products/echo-h2-inhaler",
-    imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
-    keywords: ["inhale", "inhalation", "breathing", "respiratory", "molecular hydrogen", "lungs"],
-    healthConditions: ["respiratory", "asthma", "copd", "lung", "breathing", "allergy", "covid", "pneumonia", "pulmonary"]
-  },
-  {
-    name: "Echo H2 Bath System",
-    description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
-    url: "https://echowater.com/products/echo-h2-bath",
-    imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
-    keywords: ["bath", "skin", "topical", "bathing", "hydrogen bath", "skin health"],
-    healthConditions: ["skin", "psoriasis", "eczema", "dermatitis", "acne", "wound", "healing", "beauty", "anti-aging", "wrinkles"]
+    name: "Echo Go+",
+    category: "Portable Hydrogen Water",
+    price: "$199",
+    description: "Portable hydrogen water bottle for on-the-go hydration",
+    benefits: ["Travel-friendly", "Quick hydrogen infusion", "Active lifestyle"],
+    keywords: ["portable", "travel", "active", "sports", "on-the-go"]
   }
 ];
 
-// Initialize OpenAI client with error handling
-let openai;
+// Check if OpenAI is initialized
 let openaiInitialized = false;
+let openai: OpenAI;
 
 try {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn('Warning: OPENAI_API_KEY is not set or empty. AI functionality will be limited.');
-  } else {
-    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
     openaiInitialized = true;
-    console.log('OpenAI client initialized successfully');
   }
 } catch (error) {
-  console.error('Failed to initialize OpenAI client:', error);
+  console.error('Failed to initialize OpenAI:', error);
+  openaiInitialized = false;
 }
 
-// The newest OpenAI model is "gpt-4o" which was released May 13, 2024
-// Do not change this unless explicitly requested by the user
-const MODEL = "gpt-4o";
-
-// In-memory cache for frequently asked questions
+// Cache for responses to avoid repeated API calls for same questions
 const responseCache = new Map<string, {
   answer: string;
   sources: any[];
   relatedQuestions: string[];
-  productRecommendations?: any[];
+  productRecommendations: any[];
   timestamp: number;
 }>();
 
-// Cache timeout - 24 hours
-const CACHE_TIMEOUT = 24 * 60 * 60 * 1000;
+const CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Interface for conversation history with database storage
@@ -172,191 +159,96 @@ export async function generateChatResponse(
     // 2. Format the retrieved content into context
     const context = formatSearchResultsToContext(relevantResults);
     
-    // 3. Create messages array with conversation history if available
-    let formattedHistory: { role: "user" | "assistant", content: string }[] = [];
+    // 3. Get conversation history for better context
+    const conversationHistory = conversationId ? await getConversationHistory(conversationId) : [];
+    const recentHistory = conversationHistory.slice(-4).map(item => `${item.role}: ${item.content}`).join('\n');
     
-    if (conversationId) {
-      // Get conversation history from database if a conversation ID is provided
-      const historyItems = await getConversationHistory(conversationId);
-      formattedHistory = historyItems.map(item => ({
-        role: item.role as "user" | "assistant",
-        content: item.content
-      }));
-    }
-    
-    const messages = [
-      {
-        role: "system" as const,
-        content: `You are HydrogenHealthAssistant, a specialized AI that only answers questions about hydrogen health and wellness applications based on peer-reviewed scientific studies. Focus exclusively on health topics like hydrogen water, hydrogen inhalation therapy, and hydrogen baths - not energy or fuel cell applications.
+    // 4. Generate AI response based on the retrieved studies
+    const systemPrompt = `You are an AI assistant specialized in hydrogen health and wellness research. Your responses must be based ONLY on the provided research studies from the hydrogen research database. 
 
-IMPORTANT RULES:
-1. Only provide information that is directly supported by the peer-reviewed hydrogen health studies in the context.
-2. If you cannot answer a question based on the context provided, clearly state that the information is not available in the current research database.
-3. Never make up or infer information that is not explicitly stated in the context.
-4. When appropriate, suggest Echo Water products that might help with the user's health goals. Echo Water (echowater.com) offers hydrogen-rich water systems and wellness products.
-4. Always cite your sources using [Author et al., Year] format when providing information.
-5. Maintain a scientific tone but explain concepts in a clear way that is understandable to non-experts.
-6. If there are conflicting findings in different studies, mention both perspectives and cite both sources.
-7. Format your response in a clear, structured way with short paragraphs and bullet points when appropriate.
-8. Do not reference papers or studies that aren't included in the context.
-9. When relevant, mention Echo Water hydrogen products that might help with the health condition being discussed.
-10. Focus exclusively on health and wellness topics, not energy or industrial applications of hydrogen.
+Key guidelines:
+- Base your answers exclusively on the provided studies
+- Include specific study details when relevant (authors, journal, year)
+- If the studies don't contain enough information to answer the question, say so clearly
+- Focus on health applications of hydrogen (drinking hydrogen water, inhaling hydrogen gas, hydrogen baths)
+- Do not discuss energy or fuel cell applications
+- Provide balanced, evidence-based information
+- Mention study limitations when relevant
+- Use clear, accessible language for general audiences
 
-Here is the context from peer-reviewed studies on hydrogen health research:
+Recent conversation context:
+${recentHistory}
 
-${context}`
-      },
-      ...formattedHistory,
-      {
-        role: "user" as const,
-        content: userQuery
-      }
-    ];
+Available research studies:
+${context}`;
 
-    // 4. Generate response from OpenAI
-    const completion = await openai.chat.completions.create({
-      model: MODEL,
-      messages,
-      temperature: 0.2, // More consistent, factual responses
-      max_tokens: 1000
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userQuery }
+      ],
+      temperature: 0.3,
+      max_tokens: 800
     });
 
-    const answer = completion.choices[0].message.content?.trim() || 
-      "I couldn't generate a response based on the available research. Please try asking a different question.";
+    const answer = response.choices[0].message.content || "I couldn't generate a proper response. Please try rephrasing your question.";
     
     // 5. Generate related questions
     const relatedQuestions = await generateRelatedQuestions(userQuery, answer);
     
-    // 6. Extract sources from the relevant results
-    const sources = relevantResults.map(result => {
-      const metadata = typeof result.metadata === 'string' 
-        ? JSON.parse(result.metadata) 
-        : result.metadata;
-      
-      // Handle different possible date column formats
-      const publishDate = result.publish_date ? new Date(result.publish_date).toISOString().split('T')[0] : 'Unknown date';
-      
-      return {
-        title: result.title || 'Untitled study',
-        doi: metadata?.doi || "No DOI available",
-        authors: result.authors || 'Unknown authors',
-        publishDate: publishDate
-      };
-    });
+    // 6. Format sources from the relevant results
+    const sources = relevantResults.map(result => ({
+      title: result.title,
+      doi: result.doi || "No DOI available",
+      authors: result.authors || "Not specified",
+      publishDate: result.publishDate || "Not specified"
+    }));
     
-    // 7. Remove duplicate sources (same study might appear multiple times)
-    const uniqueSources = sources.filter((source, index, self) =>
-      index === self.findIndex((s) => s.doi === source.doi)
-    );
+    // 7. Get relevant product recommendations
+    const productRecommendations = getRelevantProducts(userQuery, answer);
     
-    // 8. Save messages to database if we have a conversation
+    // 8. Save the conversation to database
     if (userId && conversationId) {
       await saveMessage(conversationId, 'user', userQuery);
       await saveMessage(conversationId, 'assistant', answer);
-      
-      // Update conversation timestamp
-      await db
-        .update(conversations)
-        .set({ updatedAt: new Date() })
-        .where(eq(conversations.id, conversationId));
     }
     
     // 9. Cache the response
     responseCache.set(cacheKey, {
       answer,
-      sources: uniqueSources,
+      sources,
       relatedQuestions,
+      productRecommendations,
       timestamp: Date.now()
     });
-
+    
     return {
       answer,
-      sources: uniqueSources,
+      sources,
       relatedQuestions,
+      productRecommendations,
       conversationId
     };
-    // Generate product recommendations based on query and answer
-    const productRecommendations = getRelevantProducts(userQuery, answer);
     
-    return {
-      answer,
-      sources: uniqueSources,
-      relatedQuestions,
-      conversationId,
-      productRecommendations
-    };
   } catch (error) {
     console.error('Error generating chat response:', error);
+    
+    // Fallback to a simpler response
+    const fallbackAnswer = "I'm experiencing some technical difficulties right now. Please try asking your question again, or contact our support team if the issue persists.";
+    
+    if (userId && conversationId) {
+      await saveMessage(conversationId, 'user', userQuery);
+      await saveMessage(conversationId, 'assistant', fallbackAnswer);
+    }
+    
     return {
-      answer: "I'm sorry, I encountered an error processing your question. Please try again later.",
+      answer: fallbackAnswer,
       sources: [],
       relatedQuestions: generateDefaultRelatedQuestions(),
-      productRecommendations: []
+      conversationId
     };
   }
-}
-
-/**
- * Match relevant Echo Water products to a user query and answer
- * @param query User's original query
- * @param answer Generated answer from AI
- * @returns Array of relevant product recommendations
- */
-function getRelevantProducts(query: string, answer: string) {
-  const combinedText = (query + ' ' + answer).toLowerCase();
-  
-  // Calculate relevance score for each product
-  const productsWithScores = ECHO_WATER_PRODUCTS.map(product => {
-    let score = 0;
-    
-    // Score based on keywords matching (0-5 points)
-    product.keywords.forEach(keyword => {
-      if (combinedText.includes(keyword.toLowerCase())) {
-        // Exact matches are weighted more heavily
-        score += combinedText.includes(` ${keyword.toLowerCase()} `) ? 2 : 1;
-      }
-    });
-    
-    // Score based on health conditions matching (0-10 points)
-    if (product.healthConditions) {
-      product.healthConditions.forEach(condition => {
-        if (combinedText.includes(condition.toLowerCase())) {
-          // Health condition matches are weighted most heavily
-          score += 3;
-        }
-      });
-    }
-    
-    // Method of delivery scoring based on context
-    if ((product.name.includes('Inhaler') && 
-        (combinedText.includes('breath') || 
-         combinedText.includes('lung') || 
-         combinedText.includes('respir'))) ||
-        (product.name.includes('Bath') && 
-        (combinedText.includes('skin') || 
-         combinedText.includes('topical') || 
-         combinedText.includes('external'))) ||
-        (product.name.includes('Machine') && 
-        (combinedText.includes('drink') || 
-         combinedText.includes('water') || 
-         combinedText.includes('oral'))) ||
-        (product.name.includes('Tablet') && 
-        (combinedText.includes('travel') || 
-         combinedText.includes('portable') || 
-         combinedText.includes('supplement')))
-    ) {
-      score += 5; // Substantial boost for matching the right delivery method
-    }
-    
-    return { product, score };
-  });
-  
-  // Filter out products with no relevance and sort by score (highest first)
-  return productsWithScores
-    .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(item => item.product)
-    .slice(0, 2); // Limit to max 2 products to avoid overwhelming the user
 }
 
 /**
@@ -413,25 +305,20 @@ Category: ${result.category || 'General'}
 Abstract: ${result.abstract || 'No abstract available'}
 Health Conditions: ${result.healthConditions || 'Not specified'}
 ---`;
-Section: ${section.charAt(0).toUpperCase() + section.slice(1)}
-
-${result.chunk_text}
-
-`;
-  }).join("\n");
+  }).join("\n\n");
 }
 
 /**
  * Generate related questions based on the current question and answer
  */
-async function generateRelatedQuestions(
-  originalQuestion: string,
-  answer: string,
-  count: number = 3
-): Promise<string[]> {
+async function generateRelatedQuestions(originalQuestion: string, answer: string, count: number = 3): Promise<string[]> {
+  if (!openaiInitialized) {
+    return generateDefaultRelatedQuestions();
+  }
+
   try {
     const response = await openai.chat.completions.create({
-      model: MODEL,
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: "system",
@@ -455,15 +342,47 @@ async function generateRelatedQuestions(
       if (Array.isArray(parsedContent.questions)) {
         return parsedContent.questions.slice(0, count);
       }
-    } catch (error) {
-      console.error("Error parsing related questions JSON:", error);
+    } catch (parseError) {
+      console.error('Error parsing related questions JSON:', parseError);
     }
-    
-    return generateDefaultRelatedQuestions();
   } catch (error) {
-    console.error("Error generating related questions:", error);
-    return generateDefaultRelatedQuestions();
+    console.error('Error generating related questions:', error);
   }
+  
+  return generateDefaultRelatedQuestions();
+}
+
+/**
+ * Match relevant Echo Water products to a user query and answer
+ * @param query User's original query
+ * @param answer Generated answer from AI
+ * @returns Array of relevant product recommendations
+ */
+function getRelevantProducts(query: string, answer: string) {
+  const combinedText = (query + " " + answer).toLowerCase();
+  
+  return ECHO_WATER_PRODUCTS
+    .map(product => {
+      let relevanceScore = 0;
+      
+      // Check if any product keywords appear in the query or answer
+      product.keywords.forEach(keyword => {
+        if (combinedText.includes(keyword.toLowerCase())) {
+          relevanceScore += 1;
+        }
+      });
+      
+      // Boost score if category is mentioned
+      if (combinedText.includes(product.category.toLowerCase())) {
+        relevanceScore += 2;
+      }
+      
+      return { product, relevanceScore };
+    })
+    .filter(item => item.relevanceScore > 0)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .map(item => item.product)
+    .slice(0, 2); // Limit to max 2 products to avoid overwhelming the user
 }
 
 /**
@@ -471,11 +390,9 @@ async function generateRelatedQuestions(
  */
 function generateDefaultRelatedQuestions(): string[] {
   return [
-    "What health benefits does hydrogen-rich water have for inflammation?",
-    "How effective is hydrogen inhalation therapy for respiratory conditions?",
-    "Can hydrogen baths help with skin conditions?",
-    "What's the recommended dosage of hydrogen water for health benefits?",
-    "Are there any studies on hydrogen therapy for athletic recovery?"
+    "What are the different ways to consume hydrogen for health benefits?",
+    "How does hydrogen water compare to regular water?",
+    "What health conditions have been studied with hydrogen therapy?"
   ];
 }
 
@@ -489,14 +406,15 @@ async function saveMessage(conversationId: number, role: 'user' | 'assistant', c
       .values({
         conversationId,
         role,
-        content
+        content,
+        timestamp: new Date()
       })
       .returning();
     
     return message.id;
   } catch (error) {
     console.error('Error saving message:', error);
-    return 0;
+    throw error;
   }
 }
 
@@ -506,19 +424,19 @@ async function saveMessage(conversationId: number, role: 'user' | 'assistant', c
 export async function getConversationHistory(conversationId: number): Promise<ConversationHistoryItem[]> {
   try {
     const messages = await db
-      .select()
+      .select({
+        id: chatMessages.id,
+        role: chatMessages.role,
+        content: chatMessages.content,
+        timestamp: chatMessages.timestamp
+      })
       .from(chatMessages)
       .where(eq(chatMessages.conversationId, conversationId))
       .orderBy(chatMessages.timestamp);
     
-    return messages.map(msg => ({
-      id: msg.id,
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-      timestamp: msg.timestamp
-    }));
+    return messages;
   } catch (error) {
-    console.error('Error retrieving conversation history:', error);
+    console.error('Error getting conversation history:', error);
     return [];
   }
 }
@@ -528,13 +446,15 @@ export async function getConversationHistory(conversationId: number): Promise<Co
  */
 export async function getUserConversations(userId: number): Promise<any[]> {
   try {
-    return await db
+    const userConversations = await db
       .select()
       .from(conversations)
       .where(eq(conversations.userId, userId))
-      .orderBy(conversations.updatedAt, 'desc');
+      .orderBy(conversations.updatedAt);
+    
+    return userConversations;
   } catch (error) {
-    console.error('Error retrieving user conversations:', error);
+    console.error('Error getting user conversations:', error);
     return [];
   }
 }
@@ -543,25 +463,24 @@ export async function getUserConversations(userId: number): Promise<any[]> {
  * Save feedback for a message
  */
 export async function saveFeedback(
-  messageId: number, 
-  rating: number, 
-  comment?: string,
-  userId?: number
-): Promise<boolean> {
+  messageId: number,
+  userId: number,
+  rating: number,
+  feedback?: string
+): Promise<void> {
   try {
     await db
       .insert(chatFeedback)
       .values({
         messageId,
-        userId: userId || null,
+        userId,
         rating,
-        comment: comment || null
+        feedback,
+        timestamp: new Date()
       });
-    
-    return true;
   } catch (error) {
     console.error('Error saving feedback:', error);
-    return false;
+    throw error;
   }
 }
 
@@ -570,39 +489,18 @@ export async function saveFeedback(
  */
 export async function getPopularQuestions(category?: string, limit: number = 5): Promise<string[]> {
   try {
-    // Check if we have popular questions in the database
-    const popularQuestionsFromDB = await db
-      .select()
-      .from(popularQuestions)
-      .orderBy(popularQuestions.clickCount, 'desc')
-      .limit(limit);
-    
-    // If we have questions in the database, return those
-    if (popularQuestionsFromDB.length > 0) {
-      return popularQuestionsFromDB.map(q => q.question);
-    }
-    
-    // If no category is provided or category is health/general, use these health-focused questions
-    if (!category || category === 'health' || category === 'general') {
-      return [
-        "What are the benefits of hydrogen water for inflammation?",
-        "How does molecular hydrogen help with oxidative stress?",
-        "Is hydrogen therapy effective for athletic recovery?",
-        "What conditions can hydrogen inhalation therapy help with?",
-        "Are there any side effects of drinking hydrogen-rich water?",
-        "How does hydrogen therapy compare to antioxidant supplements?",
-        "What's the science behind hydrogen's effect on mitochondria?",
-        "Can hydrogen therapy help with autoimmune conditions?",
-        "What dosage of hydrogen is recommended for health benefits?",
-        "How does hydrogen water help with skin conditions?"
-      ].slice(0, limit);
-    }
-    
-    // For other categories, fall back to default questions
-    return generateDefaultRelatedQuestions();
+    // This would need a proper implementation based on your database structure
+    // For now, return default questions
+    return [
+      "What are the health benefits of drinking hydrogen water?",
+      "How does hydrogen gas therapy work?",
+      "Is hydrogen water safe to drink daily?",
+      "What's the difference between hydrogen water and alkaline water?",
+      "Can hydrogen therapy help with inflammation?"
+    ];
   } catch (error) {
-    console.error('Error retrieving popular questions:', error);
-    return generateDefaultRelatedQuestions();
+    console.error('Error getting popular questions:', error);
+    return [];
   }
 }
 
@@ -618,154 +516,18 @@ function generateFallbackResponse(query: string, conversationId?: number): {
   productRecommendations: any[];
   conversationId?: number;
 } {
-  const lowerQuery = query.toLowerCase();
-  
-  // Always include the Echo Flask as a primary recommendation for every query
-  const echoFlask = {
-    name: "Echo H2 Flask",
-    description: "Portable hydrogen-infusing water bottle for on-the-go hydrogen therapy with premium quality materials",
-    url: "https://echowater.com/products/echo-h2-flask",
-    imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-flask.jpg",
-    relevanceScore: 98
-  };
-  
-  // Determine relevant products based on keywords in the query
-  let productRecommendations = [];
-  let responseCategory = "general";
-  
-  if (lowerQuery.includes('skin') || lowerQuery.includes('derma') || 
-      lowerQuery.includes('psoriasis') || lowerQuery.includes('eczema') || 
-      lowerQuery.includes('acne') || lowerQuery.includes('rash')) {
-    // Recommend bath system for skin conditions alongside the Flask
-    productRecommendations = [
-      echoFlask,
-      {
-        name: "Echo H2 Bath System",
-        description: "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
-        url: "https://echowater.com/products/echo-h2-bath",
-        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
-        relevanceScore: 95
-      }
-    ];
-    responseCategory = "skin";
-  } else if (lowerQuery.includes('breath') || lowerQuery.includes('lung') || 
-             lowerQuery.includes('inhal') || lowerQuery.includes('respiratory') || 
-             lowerQuery.includes('asthma') || lowerQuery.includes('covid')) {
-    // Recommend inhaler for respiratory conditions alongside the Flask
-    productRecommendations = [
-      echoFlask,
-      {
-        name: "Echo H2 Inhaler",
-        description: "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
-        url: "https://echowater.com/products/echo-h2-inhaler",
-        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
-        relevanceScore: 95
-      }
-    ];
-    responseCategory = "respiratory";
-  } else if (lowerQuery.includes('travel') || lowerQuery.includes('portable') || 
-             lowerQuery.includes('tablet') || lowerQuery.includes('convenient') || 
-             lowerQuery.includes('on the go')) {
-    // For travel and portable needs, Flask is the perfect solution
-    productRecommendations = [
-      {
-        name: "Echo H2 Flask",
-        description: "The ultimate portable hydrogen water solution for travel and on-the-go hydrogen therapy",
-        url: "https://echowater.com/products/echo-h2-flask",
-        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-flask.jpg",
-        relevanceScore: 100
-      }
-    ];
-    responseCategory = "portable";
-  } else if (lowerQuery.includes('athletic') || lowerQuery.includes('workout') || 
-             lowerQuery.includes('exercise') || lowerQuery.includes('recovery') || 
-             lowerQuery.includes('performance') || lowerQuery.includes('sport')) {
-    // Recommend Flask and tablets for athletic performance
-    productRecommendations = [
-      echoFlask,
-      {
-        name: "Echo H2 Tablet Maker",
-        description: "Portable hydrogen tablets for creating hydrogen-rich water during training sessions and competitions",
-        url: "https://echowater.com/products/echo-h2-tablets-1",
-        imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
-        relevanceScore: 90
-      }
-    ];
-    responseCategory = "athletic";
-  } else {
-    // Default to Flask and water machine for general queries
-    productRecommendations = [
-      echoFlask,
-      {
-        name: "Echo H2 Machine",
-        description: "Premium hydrogen water generator for home use - great companion to your Echo Flask for maximum benefits",
-        url: "https://echowater.com/products/echo-h2-machine",
-        imageUrl: "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
-        relevanceScore: 85
-      }
-    ];
-    responseCategory = "general";
-  }
-  
-  // Create category-specific response
-  let answer = "";
-  let relatedQuestions = [];
-  
-  switch (responseCategory) {
-    case "skin":
-      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about hydrogen therapy for skin conditions. While I can't provide specific research citations right now, hydrogen bath therapy is generally considered beneficial for various skin conditions due to its anti-inflammatory and antioxidant properties. Echo Water's H2 Bath System is designed specifically for topical hydrogen application.";
-      relatedQuestions = [
-        "How does hydrogen therapy help with psoriasis?",
-        "Can hydrogen baths improve eczema symptoms?",
-        "What skin conditions can hydrogen therapy help with?",
-        "How often should I use hydrogen baths for skin health?"
-      ];
-      break;
-      
-    case "respiratory":
-      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about hydrogen therapy for respiratory health. While I can't provide specific research citations right now, hydrogen inhalation therapy has been studied for its potential benefits for lung health and respiratory conditions due to its anti-inflammatory properties. Echo Water's H2 Inhaler is designed specifically for respiratory hydrogen application.";
-      relatedQuestions = [
-        "How does hydrogen inhalation help with respiratory conditions?",
-        "Can hydrogen therapy benefit asthma symptoms?",
-        "What is the recommended duration for hydrogen inhalation therapy?",
-        "Is hydrogen inhalation safe for long-term use?"
-      ];
-      break;
-      
-    case "portable":
-      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about portable hydrogen therapy options. While I can't provide specific research citations right now, hydrogen tablets are a convenient way to create hydrogen-rich water when traveling or away from home. Echo Water's H2 Tablet Maker provides a portable solution for maintaining your hydrogen therapy regimen on the go.";
-      relatedQuestions = [
-        "How effective are hydrogen tablets compared to hydrogen machines?",
-        "What's the best way to use hydrogen tablets while traveling?",
-        "How long does hydrogen water from tablets remain effective?",
-        "Can I take hydrogen tablets on an airplane?"
-      ];
-      break;
-      
-    case "athletic":
-      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question appears to be about hydrogen therapy for athletic performance and recovery. While I can't provide specific research citations right now, hydrogen has been studied for its potential to reduce exercise-induced fatigue and improve recovery times. Echo Water offers both the H2 Machine for home use and portable H2 tablets that athletes can use during training or competition.";
-      relatedQuestions = [
-        "When should athletes drink hydrogen water for best results?",
-        "How can hydrogen therapy improve athletic recovery?",
-        "What sports performance benefits does hydrogen provide?",
-        "Can hydrogen water reduce muscle soreness after workouts?"
-      ];
-      break;
-      
-    default:
-      answer = "I'm sorry, but I'm having trouble accessing my research database at the moment. Your question about hydrogen health appears to be of general interest. While I can't provide specific research citations right now, hydrogen-rich water is being studied for various health benefits due to its antioxidant properties and selective free radical scavenging. Echo Water's H2 Machine provides a convenient way to create hydrogen-rich water at home.";
-      relatedQuestions = [
-        "What are the general health benefits of hydrogen water?",
-        "How much hydrogen water should I drink daily?",
-        "How does molecular hydrogen work as an antioxidant?",
-        "What health conditions can hydrogen therapy help with?"
-      ];
-  }
+  const fallbackAnswer = `I'm currently experiencing some technical difficulties with my AI processing, but I can still help you with information about hydrogen health products and research.
+
+Based on your question about "${query}", you might be interested in exploring our hydrogen water solutions or learning more about the research behind hydrogen therapy.
+
+Please try asking your question again, or feel free to browse our product recommendations below.`;
+
+  const productRecommendations = getRelevantProducts(query, "");
   
   return {
-    answer,
+    answer: fallbackAnswer,
     sources: [],
-    relatedQuestions,
+    relatedQuestions: generateDefaultRelatedQuestions(),
     productRecommendations,
     conversationId
   };
@@ -779,82 +541,33 @@ export async function validateQuery(query: string): Promise<{
   isValid: boolean;
   reason?: string;
 }> {
-  // Quick keyword-based pre-validation to work even if OpenAI is unavailable
-  const lowerQuery = query.toLowerCase();
-    
-  // If clearly about hydrogen health, approve immediately
-  if (lowerQuery.includes('hydrogen water') || 
-      lowerQuery.includes('h2 water') ||
-      lowerQuery.includes('hydrogen inhalation') ||
-      lowerQuery.includes('hydrogen therapy') ||
-      lowerQuery.includes('hydrogen bath') ||
-      lowerQuery.includes('hydrogen') ||
-      lowerQuery.includes('h2') ||
-      lowerQuery.includes('antioxidant') ||
-      lowerQuery.includes('oxidative stress') ||
-      lowerQuery.includes('inflammation') ||
-      lowerQuery.includes('health') ||
-      lowerQuery.includes('wellness') ||
-      lowerQuery.includes('benefit') ||
-      lowerQuery.includes('water') ||
-      lowerQuery.includes('drink') ||
-      lowerQuery.includes('inhale') ||
-      lowerQuery.includes('bath') ||
-      (lowerQuery.includes('molecular hydrogen') && 
-       (lowerQuery.includes('health') || 
-        lowerQuery.includes('wellness') || 
-        lowerQuery.includes('medical') || 
-        lowerQuery.includes('treatment')))) {
-    return { isValid: true, reason: "Directly relevant to hydrogen health applications" };
-  }
-    
-  // If clearly about energy/fuel cells, reject immediately
-  if ((lowerQuery.includes('fuel cell') || 
-       lowerQuery.includes('energy storage') ||
-       lowerQuery.includes('power generation')) && 
-      !lowerQuery.includes('health') && 
-      !lowerQuery.includes('medical') && 
-      !lowerQuery.includes('drinking')) {
-    return { 
-      isValid: false, 
-      reason: "Query appears to be about hydrogen energy or fuel cells, not health applications" 
-    };
-  }
-
-  // For health conditions and general health queries, accept them as valid
-  const healthConditions = [
-    'arthritis', 'diabetes', 'cancer', 'heart', 'cardiovascular', 'stroke', 'alzheimer', 
-    'parkinson', 'depression', 'anxiety', 'pain', 'chronic', 'disease', 'condition',
-    'illness', 'syndrome', 'disorder', 'injury', 'wound', 'healing', 'recovery',
-    'metabolism', 'weight', 'obesity', 'liver', 'kidney', 'lung', 'brain', 'muscle',
-    'bone', 'joint', 'skin', 'blood', 'pressure', 'cholesterol', 'glucose', 'insulin',
-    'immune', 'autoimmune', 'allergy', 'asthma', 'copd', 'pneumonia', 'bronchitis'
+  const hydrogenKeywords = [
+    'hydrogen', 'h2', 'molecular hydrogen', 'hydrogen water', 'hydrogen gas', 
+    'hydrogen therapy', 'antioxidant', 'oxidative stress', 'inflammation',
+    'echo water', 'health', 'wellness', 'medical', 'study', 'research'
   ];
   
-  const hasHealthCondition = healthConditions.some(condition => 
-    lowerQuery.includes(condition)
+  const queryLower = query.toLowerCase();
+  const hasHydrogenContext = hydrogenKeywords.some(keyword => 
+    queryLower.includes(keyword)
   );
   
-  if (hasHealthCondition) {
-    return { 
-      isValid: true, 
-      reason: "Health condition query - relevant for hydrogen health research" 
-    };
+  // Allow general health questions even if they don't mention hydrogen directly
+  const healthKeywords = [
+    'health', 'wellness', 'medical', 'treatment', 'therapy', 'benefits',
+    'side effects', 'safety', 'clinical', 'study', 'research'
+  ];
+  
+  const hasHealthContext = healthKeywords.some(keyword => 
+    queryLower.includes(keyword)
+  );
+  
+  if (hasHydrogenContext || hasHealthContext || query.length < 10) {
+    return { isValid: true };
   }
-
-  // Check if OpenAI is available for more complex validation
-  if (!openaiInitialized) {
-    console.warn("OpenAI validation skipped - client not initialized");
-    // Default to accepting health-related queries when we can't validate with AI
-    return { 
-      isValid: true, 
-      reason: "Query accepted (validation service unavailable)" 
-    };
-  }
-
-  // Skip OpenAI validation for now and be more permissive
-  return { 
-    isValid: true, 
-    reason: "Query accepted for hydrogen health research" 
+  
+  return {
+    isValid: false,
+    reason: "This question doesn't seem to be related to hydrogen health research. Please ask about hydrogen therapy, hydrogen water, or related health topics."
   };
 }
