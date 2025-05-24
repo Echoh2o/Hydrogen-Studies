@@ -300,7 +300,7 @@ function generateStudyBasedAnswer(studies: any[], query: string): string {
     try {
       const emergencyResults = await searchStudiesDatabase(userQuery, 3);
       if (emergencyResults.length > 0) {
-        const emergencyAnswer = generateStudyBasedAnswer(emergencyResults, userQuery);
+        const emergencyAnswer = formatSearchResultsToContext(emergencyResults);
         
         if (userId && conversationId) {
           await saveMessage(conversationId, 'user', userQuery);
@@ -347,7 +347,18 @@ async function searchStudiesDatabase(query: string, limit: number = 5): Promise<
   try {
     const searchTerms = query.toLowerCase();
     
-    // Search through your studies database
+    // Search through your studies database with broader search terms
+    const keywords = searchTerms.split(' ').filter(word => word.length > 2);
+    const searchConditions = keywords.map(keyword => 
+      or(
+        ilike(studies.title, `%${keyword}%`),
+        ilike(studies.abstract, `%${keyword}%`),
+        ilike(studies.healthConditions, `%${keyword}%`),
+        ilike(studies.category, `%${keyword}%`),
+        ilike(studies.keywords, `%${keyword}%`)
+      )
+    );
+
     const results = await db
       .select({
         id: studies.id,
@@ -362,14 +373,7 @@ async function searchStudiesDatabase(query: string, limit: number = 5): Promise<
         keywords: studies.keywords
       })
       .from(studies)
-      .where(
-        or(
-          ilike(studies.title, `%${searchTerms}%`),
-          ilike(studies.abstract, `%${searchTerms}%`),
-          ilike(studies.healthConditions, `%${searchTerms}%`),
-          ilike(studies.category, `%${searchTerms}%`)
-        )
-      )
+      .where(or(...searchConditions))
       .limit(limit);
     
     return results;
