@@ -110,30 +110,10 @@ export async function generateFreshChatResponse(query: string) {
  */
 async function searchHydrogenDatabase(query: string, limit: number = 5) {
   try {
-    // Extract search terms (words longer than 2 characters)
-    const searchTerms = query.toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(term => term.length > 2);
+    // Use a simple SQL approach that works with your database
+    const searchTerm = `%${query.toLowerCase()}%`;
     
-    if (searchTerms.length === 0) {
-      console.log(`⚠️ No valid search terms found in query: "${query}"`);
-      return [];
-    }
-
-    console.log(`🔍 Search terms: ${searchTerms.join(', ')}`);
-
-    // Create comprehensive search conditions
-    const searchConditions = [];
-    
-    searchTerms.forEach(term => {
-      searchConditions.push(
-        ilike(studies.title, `%${term}%`),
-        ilike(studies.abstract, `%${term}%`),
-        ilike(studies.category, `%${term}%`),
-        ilike(studies.authors, `%${term}%`)
-      );
-    });
+    console.log(`🔍 Searching for: "${query}"`);
 
     const results = await db
       .select({
@@ -144,12 +124,16 @@ async function searchHydrogenDatabase(query: string, limit: number = 5) {
         journal: studies.journal,
         publishDate: studies.publishDate,
         doi: studies.doi,
-        category: studies.category,
-        healthConditions: studies.healthConditions,
-        keywords: studies.keywords
+        category: studies.category
       })
       .from(studies)
-      .where(or(...searchConditions))
+      .where(
+        or(
+          ilike(studies.title, searchTerm),
+          ilike(studies.abstract, searchTerm),
+          ilike(studies.category, searchTerm)
+        )
+      )
       .limit(limit);
 
     console.log(`📊 Database returned ${results.length} studies`);
