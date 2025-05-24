@@ -1926,10 +1926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const response = await generateUltraSimpleChatResponse(query);
         console.log(`✅ Ultra-simple chatbot completed successfully`);
         
-        res.json({
-          success: true,
-          data: response
-        });
+        res.json(response);
       } catch (apiError) {
         console.error('API Error in chat processing:', apiError);
         
