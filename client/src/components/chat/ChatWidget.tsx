@@ -236,16 +236,20 @@ export const ChatWidget: React.FC = () => {
         
         const data = await response.json();
         
-        if (data.success && data.data) {
+        // Handle both possible response formats from the backend
+        const responseData = data.success && data.data ? 
+          (data.data.data ? data.data.data : data.data) : null;
+          
+        if (responseData && responseData.answer) {
           // Update conversation ID if this is a new conversation
-          if (data.data.conversationId && !conversationId) {
-            setConversationId(data.data.conversationId);
-            console.log('New conversation created with ID:', data.data.conversationId);
+          if (responseData.conversationId && !conversationId) {
+            setConversationId(responseData.conversationId);
+            console.log('New conversation created with ID:', responseData.conversationId);
             
             // Add this new conversation to the list if it's not already there
-            if (!conversations.some(c => c.id === data.data.conversationId)) {
+            if (!conversations.some(c => c.id === responseData.conversationId)) {
               const newConversation: Conversation = {
-                id: data.data.conversationId!,
+                id: responseData.conversationId!,
                 title: userMessage.substring(0, 30) + (userMessage.length > 30 ? '...' : ''),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -258,7 +262,7 @@ export const ChatWidget: React.FC = () => {
           // Add assistant response to chat
           const assistantMessage: ChatMessage = { 
             role: 'assistant', 
-            content: data.data.answer,
+            content: responseData.answer,
             id: Math.floor(Math.random() * 10000) // Temporary ID for testing feedback
           };
           
@@ -266,11 +270,11 @@ export const ChatWidget: React.FC = () => {
           setLastMessageId(assistantMessage.id || null);
           
           // Update sources, related questions, and product recommendations
-          setCurrentSources(data.data.sources || []);
-          setRelatedQuestions(data.data.relatedQuestions || []);
-          setProductRecommendations(data.data.productRecommendations || []);
+          setCurrentSources(responseData.sources || []);
+          setRelatedQuestions(responseData.relatedQuestions || []);
+          setProductRecommendations(responseData.productRecommendations || []);
           
-          console.log('Chat response received with sources:', data.data.sources?.length);
+          console.log('Chat response received with sources:', responseData.sources?.length);
         } else {
           throw new Error('Invalid response format from server');
         }
