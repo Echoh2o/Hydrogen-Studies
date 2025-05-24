@@ -1,8 +1,7 @@
 import OpenAI from "openai";
-import { semanticSearch } from './vector-database';
 import { db } from './db';
-import { eq } from 'drizzle-orm';
-import { conversations, chatMessages, chatFeedback } from '../shared/schema';
+import { eq, or, ilike } from 'drizzle-orm';
+import { conversations, chatMessages, chatFeedback, studies } from '../shared/schema';
 
 // Sample products database - Can be replaced with a real database or API call to Echo Water
 const ECHO_WATER_PRODUCTS = [
@@ -150,11 +149,11 @@ export async function generateChatResponse(
       }
     }
     
-    // 1. Retrieve relevant content from vector DB
-    const relevantResults = await semanticSearch(userQuery, 5);
+    // 1. Search your hydrogen studies database for relevant research
+    const relevantResults = await searchStudiesDatabase(userQuery, 5);
     
     if (!relevantResults || relevantResults.length === 0) {
-      const noResultsAnswer = "I couldn't find any relevant information about that in our hydrogen research database. Could you try rephrasing your question or asking about a different aspect of hydrogen research?";
+      const noResultsAnswer = "I couldn't find specific studies about that in our hydrogen research database. However, I can provide general information about hydrogen therapy. Could you try asking about specific health conditions, study types, or hydrogen delivery methods?";
       
       // Save the conversation even when no results
       if (userId && conversationId) {
@@ -361,20 +360,59 @@ function getRelevantProducts(query: string, answer: string) {
 }
 
 /**
+ * Search your hydrogen studies database for relevant research
+ */
+async function searchStudiesDatabase(query: string, limit: number = 5): Promise<any[]> {
+  try {
+    const searchTerms = query.toLowerCase();
+    
+    // Search through your studies database
+    const results = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        authors: studies.authors,
+        journal: studies.journal,
+        publishDate: studies.publishDate,
+        doi: studies.doi,
+        category: studies.category,
+        healthConditions: studies.healthConditions,
+        keywords: studies.keywords
+      })
+      .from(studies)
+      .where(
+        or(
+          ilike(studies.title, `%${searchTerms}%`),
+          ilike(studies.abstract, `%${searchTerms}%`),
+          ilike(studies.healthConditions, `%${searchTerms}%`),
+          ilike(studies.category, `%${searchTerms}%`)
+        )
+      )
+      .limit(limit);
+    
+    return results;
+  } catch (error) {
+    console.error('Error searching studies database:', error);
+    return [];
+  }
+}
+
+/**
  * Format search results into context for the AI
  */
 function formatSearchResultsToContext(results: any[]): string {
   return results.map(result => {
-    const metadata = typeof result.metadata === 'string' 
-      ? JSON.parse(result.metadata) 
-      : result.metadata;
-    
-    const section = metadata?.section || "content";
-    const doi = metadata?.doi || "No DOI available";
-    
-    return `--- Document [${result.title}] (DOI: ${doi}) ---
-Authors: ${result.authors}
-Published: ${result.publishDate}
+    return `
+Study: ${result.title}
+Authors: ${result.authors || 'Not specified'}
+Journal: ${result.journal || 'Not specified'}
+Publication Date: ${result.publishDate || 'Not specified'}
+DOI: ${result.doi || 'No DOI available'}
+Category: ${result.category || 'General'}
+Abstract: ${result.abstract || 'No abstract available'}
+Health Conditions: ${result.healthConditions || 'Not specified'}
+---`;
 Section: ${section.charAt(0).toUpperCase() + section.slice(1)}
 
 ${result.chunk_text}
