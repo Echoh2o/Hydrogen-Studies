@@ -1919,9 +1919,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
+        console.log(`Chat API: Processing query "${query}"`);
         // Use the simple, reliable chat response function that searches your hydrogen studies database
         const { generateSimpleChatResponse } = await import('./simple-chat-bot');
         const response = await generateSimpleChatResponse(query, conversationId, userId);
+        console.log(`Chat API: Generated response with ${response.sources?.length || 0} sources`);
         
         res.json({
           success: true,
