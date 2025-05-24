@@ -84,11 +84,8 @@ export async function generateChatResponse(
   productRecommendations?: any[];
   conversationId?: number;
 }> {
-  // Check if OpenAI is properly initialized
-  if (!openaiInitialized) {
-    console.warn("OpenAI client not initialized - using fallback response");
-    return generateFallbackResponse(userQuery, conversationId);
-  }
+  // Always search your database first, even if OpenAI has issues
+  console.log("Searching hydrogen studies database for:", userQuery);
   
   try {
     // Check cache for recent identical query
@@ -138,22 +135,40 @@ export async function generateChatResponse(
     
     // 1. Search your hydrogen studies database for relevant research
     const relevantResults = await searchStudiesDatabase(userQuery, 5);
+    console.log(`Found ${relevantResults.length} relevant studies for query: ${userQuery}`);
     
     if (!relevantResults || relevantResults.length === 0) {
-      const noResultsAnswer = "I couldn't find specific studies about that in our hydrogen research database. However, I can provide general information about hydrogen therapy. Could you try asking about specific health conditions, study types, or hydrogen delivery methods?";
+      // Try a broader search with individual keywords
+      const keywords = userQuery.toLowerCase().split(' ').filter(word => word.length > 3);
+      let broaderResults: any[] = [];
       
-      // Save the conversation even when no results
-      if (userId && conversationId) {
-        await saveMessage(conversationId, 'user', userQuery);
-        await saveMessage(conversationId, 'assistant', noResultsAnswer);
+      for (const keyword of keywords) {
+        const keywordResults = await searchStudiesDatabase(keyword, 2);
+        broaderResults = broaderResults.concat(keywordResults);
+        if (broaderResults.length >= 3) break;
       }
       
-      return {
-        answer: noResultsAnswer,
-        sources: [],
-        relatedQuestions: generateDefaultRelatedQuestions(),
-        conversationId
-      };
+      if (broaderResults.length === 0) {
+        const noResultsAnswer = "I couldn't find specific studies about that in our hydrogen research database. However, I can provide general information about hydrogen therapy. Could you try asking about specific health conditions, study types, or hydrogen delivery methods?";
+        
+        if (userId && conversationId) {
+          await saveMessage(conversationId, 'user', userQuery);
+          await saveMessage(conversationId, 'assistant', noResultsAnswer);
+        }
+        
+        return {
+          answer: noResultsAnswer,
+          sources: [],
+          relatedQuestions: generateDefaultRelatedQuestions(),
+          conversationId
+        };
+      }
+      
+      // Use broader results if found
+      const uniqueResults = broaderResults.filter((result, index, self) => 
+        index === self.findIndex(r => r.id === result.id)
+      );
+      relevantResults.push(...uniqueResults.slice(0, 3));
     }
     
     // 2. Format the retrieved content into context
@@ -164,7 +179,11 @@ export async function generateChatResponse(
     const recentHistory = conversationHistory.slice(-4).map(item => `${item.role}: ${item.content}`).join('\n');
     
     // 4. Generate AI response based on the retrieved studies
-    const systemPrompt = `You are an AI assistant specialized in hydrogen health and wellness research. Your responses must be based ONLY on the provided research studies from the hydrogen research database. 
+    let answer = "";
+    
+    if (openaiInitialized) {
+      try {
+        const systemPrompt = `You are an AI assistant specialized in hydrogen health and wellness research. Your responses must be based ONLY on the provided research studies from the hydrogen research database. 
 
 Key guidelines:
 - Base your answers exclusively on the provided studies
@@ -182,17 +201,55 @@ ${recentHistory}
 Available research studies:
 ${context}`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userQuery }
-      ],
-      temperature: 0.3,
-      max_tokens: 800
-    });
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userQuery }
+          ],
+          temperature: 0.3,
+          max_tokens: 800
+        });
 
-    const answer = response.choices[0].message.content || "I couldn't generate a proper response. Please try rephrasing your question.";
+        answer = response.choices[0].message.content || "I couldn't generate a proper response based on the studies found.";
+      } catch (error) {
+        console.error('OpenAI API error:', error);
+        // Generate answer based on studies without AI assistance
+        answer = generateStudyBasedAnswer(relevantResults, userQuery);
+      }
+    } else {
+      // Generate answer based on studies without AI assistance
+      answer = generateStudyBasedAnswer(relevantResults, userQuery);
+    }
+
+/**
+ * Generate answer based on study results when AI is not available
+ */
+function generateStudyBasedAnswer(studies: any[], query: string): string {
+  if (!studies || studies.length === 0) {
+    return "I couldn't find specific studies related to your question in our database.";
+  }
+
+  let answer = `Based on ${studies.length} relevant hydrogen research studies from our database:\n\n`;
+  
+  studies.forEach((study, index) => {
+    answer += `**Study ${index + 1}: ${study.title}**\n`;
+    if (study.authors) answer += `Authors: ${study.authors}\n`;
+    if (study.journal) answer += `Journal: ${study.journal}\n`;
+    if (study.publishDate) answer += `Published: ${study.publishDate}\n`;
+    if (study.abstract) {
+      const shortAbstract = study.abstract.length > 200 
+        ? study.abstract.substring(0, 200) + "..." 
+        : study.abstract;
+      answer += `Summary: ${shortAbstract}\n`;
+    }
+    answer += "\n";
+  });
+
+  answer += "These studies from our hydrogen research database provide scientific evidence related to your question. For more detailed information, you can explore the individual studies.";
+  
+  return answer;
+}
     
     // 5. Generate related questions
     const relatedQuestions = await generateRelatedQuestions(userQuery, answer);

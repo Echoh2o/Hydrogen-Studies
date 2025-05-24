@@ -1919,8 +1919,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Skip complex validation and use simple search-based responses
-        const response = await generateSimpleChatResponse(query, conversationId);
+        // Use the fixed chat response function that searches your hydrogen studies database
+        const response = await generateChatResponse(query, conversationId, userId);
         
         res.json({
           success: true,
