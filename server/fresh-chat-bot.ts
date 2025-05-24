@@ -112,30 +112,86 @@ async function searchHydrogenDatabase(query: string, limit: number = 5) {
   try {
     console.log(`🔍 Searching for: "${query}"`);
     
-    // Use raw SQL to avoid field compatibility issues
-    const searchTerm = `%${query.toLowerCase()}%`;
-    const sqlQuery = `
-      SELECT id, title, abstract, authors, journal, publish_date, doi, category
-      FROM studies 
-      WHERE LOWER(title) LIKE $1 
-         OR LOWER(abstract) LIKE $1
-      LIMIT $2
-    `;
+    // Extract meaningful search terms
+    const searchTerms = query.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(term => term.length > 2 && !['the', 'and', 'are', 'for', 'with', 'what', 'how', 'can', 'does'].includes(term));
     
-    const results = await db.execute(sql`
-      SELECT id, title, abstract, authors, journal, publish_date, doi, category
-      FROM studies 
-      WHERE LOWER(title) LIKE ${searchTerm} 
-         OR LOWER(abstract) LIKE ${searchTerm}
-      LIMIT ${limit}
-    `);
+    if (searchTerms.length === 0) {
+      console.log(`⚠️ No meaningful search terms found`);
+      return [];
+    }
+
+    console.log(`🔍 Search terms: ${searchTerms.join(', ')}`);
     
-    console.log(`📊 Database returned ${results.length} studies`);
-    return results;
+    // Use multiple search approaches for better results
+    const searchResults = [];
+    
+    // First try: exact phrase search in title
+    for (const term of searchTerms) {
+      try {
+        const titleResults = await db.execute(sql`
+          SELECT id, title, abstract, journal, doi
+          FROM studies 
+          WHERE LOWER(title) LIKE ${'%' + term + '%'}
+          LIMIT ${Math.ceil(limit / 2)}
+        `);
+        searchResults.push(...titleResults.rows);
+      } catch (err) {
+        console.log(`⚠️ Title search failed for term: ${term}`);
+      }
+    }
+    
+    // Second try: abstract search for remaining slots
+    if (searchResults.length < limit) {
+      for (const term of searchTerms.slice(0, 2)) {
+        try {
+          const abstractResults = await db.execute(sql`
+            SELECT id, title, abstract, journal, doi
+            FROM studies 
+            WHERE LOWER(abstract) LIKE ${'%' + term + '%'}
+            AND id NOT IN (${searchResults.map(r => r.id).join(',') || '0'})
+            LIMIT ${limit - searchResults.length}
+          `);
+          searchResults.push(...abstractResults.rows);
+          if (searchResults.length >= limit) break;
+        } catch (err) {
+          console.log(`⚠️ Abstract search failed for term: ${term}`);
+        }
+      }
+    }
+    
+    // Remove duplicates and limit results
+    const uniqueResults = Array.from(
+      new Map(searchResults.map(study => [study.id, study])).values()
+    ).slice(0, limit);
+    
+    console.log(`📊 Database returned ${uniqueResults.length} studies`);
+    return uniqueResults;
     
   } catch (error) {
     console.error(`❌ Database search error:`, error);
-    return [];
+    
+    // Fallback: simple search without complex conditions
+    try {
+      const fallbackTerm = query.toLowerCase().includes('hydrogen') ? 'hydrogen' : 
+                           query.toLowerCase().includes('water') ? 'water' :
+                           query.toLowerCase().includes('antioxidant') ? 'antioxidant' : 'health';
+      
+      const fallbackResults = await db.execute(sql`
+        SELECT id, title, abstract, journal, doi
+        FROM studies 
+        WHERE LOWER(title) LIKE ${'%' + fallbackTerm + '%'}
+        LIMIT ${limit}
+      `);
+      
+      console.log(`📊 Fallback search returned ${fallbackResults.rows.length} studies`);
+      return fallbackResults.rows;
+    } catch (fallbackError) {
+      console.error(`❌ Fallback search also failed:`, fallbackError);
+      return [];
+    }
   }
 }
 
