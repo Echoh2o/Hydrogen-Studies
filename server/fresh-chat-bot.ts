@@ -1,6 +1,6 @@
 import { db } from './db';
 import { studies } from '../shared/schema';
-import { ilike, or } from 'drizzle-orm';
+import { ilike, or, sql } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -110,32 +110,26 @@ export async function generateFreshChatResponse(query: string) {
  */
 async function searchHydrogenDatabase(query: string, limit: number = 5) {
   try {
-    // Use a simple SQL approach that works with your database
-    const searchTerm = `%${query.toLowerCase()}%`;
-    
     console.log(`🔍 Searching for: "${query}"`);
-
-    const results = await db
-      .select({
-        id: studies.id,
-        title: studies.title,
-        abstract: studies.abstract,
-        authors: studies.authors,
-        journal: studies.journal,
-        publishDate: studies.publishDate,
-        doi: studies.doi,
-        category: studies.category
-      })
-      .from(studies)
-      .where(
-        or(
-          ilike(studies.title, searchTerm),
-          ilike(studies.abstract, searchTerm),
-          ilike(studies.category, searchTerm)
-        )
-      )
-      .limit(limit);
-
+    
+    // Use raw SQL to avoid field compatibility issues
+    const searchTerm = `%${query.toLowerCase()}%`;
+    const sqlQuery = `
+      SELECT id, title, abstract, authors, journal, publish_date, doi, category
+      FROM studies 
+      WHERE LOWER(title) LIKE $1 
+         OR LOWER(abstract) LIKE $1
+      LIMIT $2
+    `;
+    
+    const results = await db.execute(sql`
+      SELECT id, title, abstract, authors, journal, publish_date, doi, category
+      FROM studies 
+      WHERE LOWER(title) LIKE ${searchTerm} 
+         OR LOWER(abstract) LIKE ${searchTerm}
+      LIMIT ${limit}
+    `);
+    
     console.log(`📊 Database returned ${results.length} studies`);
     return results;
     
