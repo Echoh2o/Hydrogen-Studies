@@ -1919,12 +1919,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        console.log(`🚀 Starting fresh chatbot for query: "${query}"`);
-        // Use the fresh, reliable chatbot that directly searches your hydrogen studies database
-        const { generateFreshChatResponse } = await import('./fresh-chat-bot');
-        console.log(`✅ Successfully imported fresh chatbot function`);
-        const response = await generateFreshChatResponse(query);
-        console.log(`✅ Fresh chatbot completed successfully`);
+        console.log(`🚀 Starting ultra-simple chatbot for query: "${query}"`);
+        // Use the ultra-simple, reliable chatbot that directly searches your hydrogen studies database
+        const { generateUltraSimpleChatResponse } = await import('./ultra-simple-chat-bot');
+        console.log(`✅ Successfully imported ultra-simple chatbot function`);
+        const response = await generateUltraSimpleChatResponse(query);
+        console.log(`✅ Ultra-simple chatbot completed successfully`);
         
         res.json({
           success: true,
