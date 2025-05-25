@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiDocumentText, HiClipboardCheck, HiPhotograph } from "react-icons/hi";
+import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiDocumentText, HiClipboardCheck, HiPhotograph, HiShare, HiHeart } from "react-icons/hi";
 import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
@@ -358,40 +358,43 @@ const StudyPage = () => {
               </ol>
             </nav>
 
-            {/* Study Header */}
-            <header className="mb-8">
-              <div className="flex items-center mb-3">
-                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/15">
+            {/* Mobile-Optimized Study Header */}
+            <header className="mb-6 md:mb-8">
+              {/* Mobile-first category and date */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/15 w-fit">
                   {study.category}
                 </Badge>
                 {study.year && (
-                  <time dateTime={study.year.toString()} className="ml-4 text-neutral-500 flex items-center">
-                    <HiCalendar className="mr-1" aria-hidden="true" /> {study.year}
+                  <time dateTime={study.year.toString()} className="text-neutral-500 flex items-center text-sm">
+                    <HiCalendar className="mr-1 w-4 h-4" aria-hidden="true" /> {study.year}
                   </time>
                 )}
               </div>
               
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{study.title}</h1>
+              {/* Mobile-optimized title */}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 leading-tight">{study.title}</h1>
               
-              <div className="flex flex-wrap items-center text-neutral-600 gap-y-2">
-                <span className="flex items-center mr-6">
-                  <HiUser className="mr-1" aria-hidden="true" /> 
-                  <span itemProp="author">{study.authors}</span>
-                </span>
-                <span className="flex items-center mr-6">
-                  <HiBookOpen className="mr-1" aria-hidden="true" /> 
-                  <span itemProp="publisher">{study.journal}</span>
-                </span>
-                <span className="flex items-center">
-                  <HiDocumentText className="mr-1" aria-hidden="true" /> 
+              {/* Mobile-friendly metadata stack */}
+              <div className="space-y-2 md:space-y-0 md:flex md:flex-wrap md:items-center text-neutral-600 text-sm">
+                <div className="flex items-center">
+                  <HiUser className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
+                  <span itemProp="author" className="line-clamp-1">{study.authors}</span>
+                </div>
+                <div className="flex items-center md:ml-6">
+                  <HiBookOpen className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
+                  <span itemProp="publisher" className="line-clamp-1">{study.journal}</span>
+                </div>
+                <div className="flex items-center md:ml-6">
+                  <HiDocumentText className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
                   <span>{study.citations || "0"} citations</span>
-                </span>
+                </div>
               </div>
             </header>
 
-            {/* Study Content */}
-            <article className="bg-white border border-neutral-200 rounded-xl shadow-sm mb-10" itemScope itemType="https://schema.org/MedicalScholarlyArticle">
-              <div className="p-6 md:p-8">
+            {/* Mobile-Optimized Study Content */}
+            <article className="bg-white border border-neutral-200 rounded-lg md:rounded-xl shadow-sm mb-6 md:mb-10" itemScope itemType="https://schema.org/MedicalScholarlyArticle">
+              <div className="p-4 sm:p-6 md:p-8">
                 <section aria-labelledby="visualization-heading">
                   <h2 id="visualization-heading" className="text-xl font-semibold mb-4">Research Visualization</h2>
                   {/* Study Image - Simplified implementation */}
@@ -439,26 +442,26 @@ const StudyPage = () => {
                   </figure>
                 </section>
 
-                {/* Simple Summary Section */}
+                {/* Mobile-Optimized Simple Summary Section */}
                 {(study as any).summaryMarkdown && (
-                  <section aria-labelledby="summary-heading" className="mb-8">
-                    <h2 id="summary-heading" className="text-xl font-semibold mb-4 text-blue-600">What This Study Means for You</h2>
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
-                      <div className="prose max-w-none prose-blue">
+                  <section aria-labelledby="summary-heading" className="mb-6 md:mb-8">
+                    <h2 id="summary-heading" className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-blue-600">What This Study Means for You</h2>
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 md:p-6 rounded-r-lg">
+                      <div className="prose prose-sm md:prose max-w-none prose-blue">
                         <div dangerouslySetInnerHTML={{ __html: (study as any).summaryMarkdown }} />
                       </div>
                     </div>
                   </section>
                 )}
 
-                {/* Key Benefits Section */}
+                {/* Mobile-Optimized Key Benefits Section */}
                 {((study as any).keywords && (study as any).keywords.length > 0) && (
-                  <section aria-labelledby="benefits-heading" className="mb-8">
-                    <h2 id="benefits-heading" className="text-xl font-semibold mb-4 text-green-600">Key Health Benefits Found</h2>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <section aria-labelledby="benefits-heading" className="mb-6 md:mb-8">
+                    <h2 id="benefits-heading" className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-green-600">Key Health Benefits Found</h2>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 md:p-6">
                       <div className="flex flex-wrap gap-2">
                         {(study as any).keywords.slice(0, 6).map((keyword: string, index: number) => (
-                          <Badge key={index} variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                          <Badge key={index} variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs md:text-sm">
                             {keyword}
                           </Badge>
                         ))}
@@ -497,40 +500,40 @@ const StudyPage = () => {
                 )}
 
                 {/* Conclusion Section */}
-                {/* Practical Application Section */}
-                <section aria-labelledby="practical-heading" className="mb-8">
-                  <h2 id="practical-heading" className="text-xl font-semibold mb-4 text-purple-600">How to Apply This Research</h2>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                {/* Mobile-Optimized Practical Application Section */}
+                <section aria-labelledby="practical-heading" className="mb-6 md:mb-8">
+                  <h2 id="practical-heading" className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-purple-600">How to Apply This Research</h2>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 md:p-6">
                     <div className="space-y-4">
                       <div className="flex items-start space-x-3">
-                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-sm font-semibold">💧</span>
+                        <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-purple-600 text-base md:text-sm font-semibold">💧</span>
                         </div>
-                        <div>
-                          <h3 className="font-medium text-purple-800">Hydrogen Water</h3>
-                          <p className="text-sm text-purple-700">This research suggests drinking hydrogen-rich water may provide health benefits. Look for hydrogen water products or hydrogen tablets.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start space-x-3">
-                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-sm font-semibold">🫁</span>
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-purple-800">Hydrogen Inhalation</h3>
-                          <p className="text-sm text-purple-700">Some studies show benefits from breathing hydrogen gas. This requires special equipment and should be done safely.</p>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-purple-800 text-sm md:text-base">Hydrogen Water</h3>
+                          <p className="text-xs md:text-sm text-purple-700 leading-relaxed">This research suggests drinking hydrogen-rich water may provide health benefits. Look for hydrogen water products or hydrogen tablets.</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
-                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-sm font-semibold">🛁</span>
+                        <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-purple-600 text-base md:text-sm font-semibold">🫁</span>
                         </div>
-                        <div>
-                          <h3 className="font-medium text-purple-800">Hydrogen Baths</h3>
-                          <p className="text-sm text-purple-700">Bathing in hydrogen-enriched water may provide skin and overall health benefits through absorption.</p>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-purple-800 text-sm md:text-base">Hydrogen Inhalation</h3>
+                          <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Some studies show benefits from breathing hydrogen gas. This requires special equipment and should be done safely.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-purple-600 text-base md:text-sm font-semibold">🛁</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-purple-800 text-sm md:text-base">Hydrogen Baths</h3>
+                          <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Bathing in hydrogen-enriched water may provide skin and overall health benefits through absorption.</p>
                         </div>
                       </div>
                       <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                        <p className="text-sm text-yellow-800">
+                        <p className="text-xs md:text-sm text-yellow-800 leading-relaxed">
                           <strong>Remember:</strong> Always talk to your doctor before starting any new health routine. These are research findings, not medical advice.
                         </p>
                       </div>
@@ -606,20 +609,20 @@ const StudyPage = () => {
               </div>
             </article>
 
-            {/* Related Studies Section */}
+            {/* Mobile-Optimized Related Studies Section */}
             {relatedStudies.length > 0 && (
-              <section aria-labelledby="related-studies-heading" className="mt-12">
-                <h2 id="related-studies-heading" className="text-2xl font-bold mb-6">Related Studies</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <section aria-labelledby="related-studies-heading" className="mt-8 md:mt-12">
+                <h2 id="related-studies-heading" className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Related Studies</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   {relatedStudies.map((relatedStudy: any) => (
                     <Link key={relatedStudy.id} href={`/study/${relatedStudy.id}`}>
                       <Card className="h-full hover:shadow-md transition-shadow">
-                        <CardContent className="p-5">
-                          <Badge variant="outline" className="mb-3">
+                        <CardContent className="p-4 md:p-5">
+                          <Badge variant="outline" className="mb-2 md:mb-3 text-xs">
                             {relatedStudy.category}
                           </Badge>
-                          <h3 className="font-bold mb-2 line-clamp-2">{relatedStudy.title}</h3>
-                          <p className="text-sm text-neutral-600 line-clamp-3">{relatedStudy.abstract}</p>
+                          <h3 className="font-bold mb-2 line-clamp-2 text-sm md:text-base">{relatedStudy.title}</h3>
+                          <p className="text-xs md:text-sm text-neutral-600 line-clamp-3">{relatedStudy.abstract}</p>
                         </CardContent>
                       </Card>
                     </Link>
@@ -627,6 +630,33 @@ const StudyPage = () => {
                 </div>
               </section>
             )}
+
+            {/* Mobile Floating Action Button */}
+            <div className="fixed bottom-6 right-4 md:hidden z-40">
+              <div className="flex flex-col gap-3">
+                <Button
+                  size="icon"
+                  className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: study.title,
+                        text: `Check out this hydrogen research study: ${study.title}`,
+                        url: window.location.href
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast({
+                        title: "Link Copied!",
+                        description: "Study link copied to clipboard",
+                      });
+                    }
+                  }}
+                >
+                  <HiShare className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
 
             {/* Related Blogs */}
             <section aria-labelledby="related-blogs-heading" className="mt-12">
