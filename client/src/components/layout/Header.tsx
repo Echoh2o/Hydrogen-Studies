@@ -1,19 +1,36 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Search, MessageCircle } from 'lucide-react';
+import { Menu, X, Search, MessageCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 export default function Header() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
 
   const navigation = [
-    { name: 'Studies', href: '/studies' },
     { name: 'Learn', href: '/learn' },
     { name: 'Blog', href: '/blog' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' }
+  ];
+
+  const studiesDropdownItems = [
+    { name: 'All Studies', href: '/studies' },
+    { name: 'Recent Studies', href: '/recent-studies' },
+    { name: 'By Health Condition', href: '/explore-by-condition' },
+    { name: 'By Body System', href: '/explore-by-body-system' },
+    { name: 'By Life Stage', href: '/explore-by-life-stage' },
+    { name: 'By Delivery Method', href: '/explore-by-delivery-method' },
+    { name: 'By Health Benefit', href: '/explore-by-benefit' },
+    { name: 'Research Insights', href: '/insights' },
   ];
 
   const isActive = (href: string) => {
@@ -38,6 +55,33 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
+            {/* Studies Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                    location.startsWith('/studies') || location.startsWith('/explore') || location === '/insights'
+                      ? 'text-blue-600 border-b-2 border-blue-600 pb-1' 
+                      : 'text-gray-700'
+                  }`}
+                >
+                  Studies
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                {studiesDropdownItems.map((item) => (
+                  <DropdownMenuItem key={item.name} asChild>
+                    <Link href={item.href} className="cursor-pointer">
+                      {item.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Regular Navigation Items */}
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -79,6 +123,22 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <div className="flex flex-col space-y-4 mt-8">
+                  {/* Studies Section in Mobile */}
+                  <div className="space-y-2">
+                    <div className="text-lg font-medium text-gray-900 border-b pb-2">Studies</div>
+                    {studiesDropdownItems.map((item) => (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className="block text-base text-gray-600 hover:text-blue-600 pl-4 py-1"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                  
+                  {/* Regular Navigation */}
                   {navigation.map((item) => (
                     <Link
                       key={item.name}
