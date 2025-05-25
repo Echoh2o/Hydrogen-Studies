@@ -1,0 +1,81 @@
+GOALS
+	•	Create an intuitive, modern, and credible design that matches the scientific authority and accessibility of the site.
+	•	Improve navigation and discoverability of hydrogen studies.
+	•	Integrate AI chatbot for guided discovery.
+	•	Add editorial content areas (blog, articles).
+	•	Support SEO, fast load times, mobile optimization.
+
+TECH STACK / TOOLS
+	•	Frontend: React - Next.js
+	•	Backend/API: Node.js
+	•	CMS: Sanity.io
+	•	Search: Algolia
+
+
+SITE STRUCTURE & PAGE TYPES
+
+Homepage
+	•	Hero section with value proposition: “Understand the Science of Hydrogen for Health”
+	•	Search bar front and center
+	•	Featured studies or categories (e.g., “Brain Health,” “Anti-Inflammatory”)
+
+	•	include ai chatbot
+Include study visualization that was built.
+
+
+Study Browser Page
+	•	Filter sidebar:
+	•	Category (Disease type, Body system)
+	•	Study type (Animal, Human, In vitro)
+	•	Publication year
+	•	Outcome (Positive/Neutral/Negative)
+	•	Sort by: Date, Relevance, Study strength
+	•	Card grid of studies:
+	•	Title, short abstract, key tags, link to full page
+
+Articles Page (Editorial Content)
+	•	List view of editorial articles analyzing trends, compiling groups of studies (e.g., “Top 5 Hydrogen Studies on Gut Health”)
+	•	Tag-based navigation
+	•	Author profiles
+
+Blog Page
+	•	Posts from the EchoWater team or guest writers
+	•	Date-sorted list, with optional categories (Company News, Product Applications, etc.)
+
+About Us Page
+	•	Mission statement
+	•	Team bios
+	•	Link to EchoWater and HydrogenStudies partnership purpose
+
+Contact Page
+	•	Secure form submission (with spam protection)
+	•	embedded Zendesk support chat for support.echowater.com (Sales, Research Question, Feedback)
+
+404 / Empty Search Result Page
+	•	Smart suggestions: top searches, AI chatbot, popular studies
+
+NAVIGATION & UX
+	•	Persistent header navigation with dropdowns:
+	•	Studies
+	•	Learn
+	•	Blog
+	•	About
+	•	Contact
+	•	Mobile hamburger menu
+	•	Footer with social links, newsletter signup, sitemap
+
+SEARCH & FILTERS
+	•	Algolia or ElasticSearch-based full-text search
+	•	Instant suggestions
+	•	Filters for:
+	•	Topic (Brain, Inflammation, Metabolism, etc.)
+	•	Study type (Animal/Human/In vitro)
+	•	Tags
+	•	Date
+	•	Synonym support and typo tolerance
+
+ADDITIONAL FEATURES
+	•	Dark mode toggle
+	•	SEO metadata per page
+	•	Social sharing buttons
+	•	Structured data (Schema.org) for all studies and blog posts

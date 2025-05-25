@@ -1,268 +1,116 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
-import { HiMenu, HiX } from "react-icons/hi";
-import { Brain, Droplet, Users, Zap, ChevronDown, Lightbulb } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import logoPath from "../../assets/hydrogen-studies-logo.svg";
+import React from 'react';
+import { Link, useLocation } from 'wouter';
+import { Menu, X, Search, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-const Header = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+export default function Header() {
   const [location] = useLocation();
+  const [isOpen, setIsOpen] = React.useState(false);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(prev => !prev);
-  };
+  const navigation = [
+    { name: 'Studies', href: '/studies' },
+    { name: 'Learn', href: '/learn' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' }
+  ];
 
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
-  const isActiveLink = (path: string) => {
-    return location === path;
+  const isActive = (href: string) => {
+    if (href === '/' && location === '/') return true;
+    if (href !== '/' && location.startsWith(href)) return true;
+    return false;
   };
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo and Site Title */}
+    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <img 
-                src="./src/assets/hydrogen-studies-logo.svg" 
-                alt="Hydrogen Studies Research Database" 
-                className="h-12 mr-3"
-              />
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-primary leading-tight">HydrogenStudies</span>
-                <span className="text-xs text-neutral-600">Part of the EchoWater Ecosystem</span>
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H₂</span>
               </div>
+              <span className="font-bold text-xl text-gray-900">HydrogenStudies</span>
             </Link>
           </div>
-
-          {/* Mobile Navigation Toggle */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleMobileMenu}
-            className="md:hidden"
-            aria-label="Toggle Menu"
-          >
-            {isMobileMenuOpen ? (
-              <HiX className="text-xl text-neutral-700" />
-            ) : (
-              <HiMenu className="text-xl text-neutral-700" />
-            )}
-          </Button>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            <Link href="/">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                Home
-              </a>
-            </Link>
-            
-            {/* Explore Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <a className={`px-3 py-2 font-medium rounded-md flex items-center cursor-pointer ${
-                  location.startsWith('/benefits') || 
-                  location.startsWith('/demographics') || 
-                  location.startsWith('/mechanisms') || 
-                  location.startsWith('/delivery-methods') 
-                  ? 'text-primary' 
-                  : 'text-neutral-800 hover:text-primary'
-                }`}>
-                  Explore <ChevronDown className="ml-1 h-4 w-4" />
-                </a>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <Link href="/explore-by-condition">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Brain className="mr-2 h-4 w-4" />
-                    <span>By Health Condition</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/benefits">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Brain className="mr-2 h-4 w-4" />
-                    <span>By Health Benefit</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/demographics">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>By Demographic</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/mechanisms">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Zap className="mr-2 h-4 w-4" />
-                    <span>By Mechanism</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/delivery-methods">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Droplet className="mr-2 h-4 w-4" />
-                    <span>By Delivery Method</span>
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <Link href="/studies">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/studies') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                All Studies
-              </a>
-            </Link>
-            <Link href="/about">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/about') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                About
-              </a>
+          <nav className="hidden md:flex items-center space-x-8">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  isActive(item.href) 
+                    ? 'text-blue-600 border-b-2 border-blue-600 pb-1' 
+                    : 'text-gray-700'
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Action Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link href="/search">
+              <Button variant="ghost" size="sm" className="text-gray-700 hover:text-blue-600">
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
             </Link>
             <Link href="/chat">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/chat') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <MessageCircle className="h-4 w-4 mr-2" />
                 Ask AI
-              </a>
+              </Button>
             </Link>
-            <Link href="/research-suggestions">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/research-suggestions') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                <span className="flex items-center">
-                  <Lightbulb className="mr-1 h-4 w-4" />
-                  Research Wizard
-                </span>
-              </a>
-            </Link>
-            <Link href="/contact">
-              <a className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/contact') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}>
-                Contact
-              </a>
-            </Link>
-          </nav>
-        </div>
-      </div>
+          </div>
 
-      {/* Mobile Navigation Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-b shadow-lg">
-          <div className="container mx-auto px-4 py-2">
-            <nav className="flex flex-col space-y-2 py-3">
-              <Link href="/">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  Home
-                </a>
-              </Link>
-              
-              <div className="px-3 py-2 font-medium text-neutral-800">
-                <div className="mb-1 font-semibold">Explore Studies By:</div>
-                <div className="ml-2 space-y-2 mt-2">
-                  <Link href="/explore-by-condition">
-                    <a 
-                      className={`flex items-center ${isActiveLink('/explore-by-condition') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
-                      onClick={closeMobileMenu}
+          {/* Mobile Menu */}
+          <div className="md:hidden">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <div className="flex flex-col space-y-4 mt-8">
+                  {navigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={`text-lg font-medium transition-colors hover:text-blue-600 ${
+                        isActive(item.href) ? 'text-blue-600' : 'text-gray-700'
+                      }`}
                     >
-                      <Brain className="mr-2 h-4 w-4" />
-                      Health Conditions
-                    </a>
-                  </Link>
-                  <Link href="/benefits">
-                    <a 
-                      className={`flex items-center ${isActiveLink('/benefits') || location.startsWith('/benefits/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
-                      onClick={closeMobileMenu}
-                    >
-                      <Brain className="mr-2 h-4 w-4" />
-                      Health Benefits
-                    </a>
-                  </Link>
-                  <Link href="/demographics">
-                    <a 
-                      className={`flex items-center ${isActiveLink('/demographics') || location.startsWith('/demographics/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
-                      onClick={closeMobileMenu}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      Demographics
-                    </a>
-                  </Link>
-                  <Link href="/mechanisms">
-                    <a 
-                      className={`flex items-center ${isActiveLink('/mechanisms') || location.startsWith('/mechanisms/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
-                      onClick={closeMobileMenu}
-                    >
-                      <Zap className="mr-2 h-4 w-4" />
-                      Mechanisms
-                    </a>
-                  </Link>
-                  <Link href="/delivery-methods">
-                    <a 
-                      className={`flex items-center ${isActiveLink('/delivery-methods') || location.startsWith('/delivery-methods/') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
-                      onClick={closeMobileMenu}
-                    >
-                      <Droplet className="mr-2 h-4 w-4" />
-                      Delivery Methods
-                    </a>
-                  </Link>
+                      {item.name}
+                    </Link>
+                  ))}
+                  <div className="border-t pt-4 space-y-2">
+                    <Link href="/search" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full justify-start">
+                        <Search className="h-4 w-4 mr-2" />
+                        Search Studies
+                      </Button>
+                    </Link>
+                    <Link href="/chat" onClick={() => setIsOpen(false)}>
+                      <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Ask AI Assistant
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
-              
-              <Link href="/studies">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/studies') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  All Studies
-                </a>
-              </Link>
-              <Link href="/about">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/about') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  About
-                </a>
-              </Link>
-              <Link href="/chat">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/chat') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  Ask AI
-                </a>
-              </Link>
-              <Link href="/research-suggestions">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/research-suggestions') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  <span className="flex items-center">
-                    <Lightbulb className="mr-2 h-4 w-4" />
-                    Research Suggestions Wizard
-                  </span>
-                </a>
-              </Link>
-              <Link href="/contact">
-                <a 
-                  className={`px-3 py-2 font-medium rounded-md ${isActiveLink('/contact') ? 'text-primary' : 'text-neutral-800 hover:text-primary'}`}
-                  onClick={closeMobileMenu}
-                >
-                  Contact
-                </a>
-              </Link>
-            </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
-};
-
-export default Header;
+}
