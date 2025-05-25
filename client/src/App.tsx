@@ -86,6 +86,7 @@ function Router() {
       <Route path="/search" component={EnhancedSearchPage} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
       
       {/* Research Exploration */}
