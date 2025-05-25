@@ -95,83 +95,101 @@ function Header() {
 
           {/* Mobile Menu */}
           <div className="md:hidden">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <div className="flex flex-col space-y-4 mt-8">
-                  {/* Studies Section in Mobile */}
-                  <div className="space-y-2 mb-4">
-                    <button
-                      onClick={() => setStudiesExpanded(!studiesExpanded)}
-                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 border-b pb-2 hover:text-blue-600"
+            <button 
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 rounded-md text-gray-700 hover:text-blue-600"
+              aria-label="Toggle menu"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+
+            {/* Mobile Menu Overlay */}
+            {isOpen && (
+              <>
+                <div className="fixed inset-0 z-40 bg-black bg-opacity-25" onClick={() => setIsOpen(false)} />
+                <div className="fixed top-0 right-0 z-50 h-full w-80 bg-white shadow-xl">
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <span className="text-lg font-semibold">Menu</span>
+                    <button 
+                      onClick={() => setIsOpen(false)}
+                      className="p-2 rounded-md text-gray-500 hover:text-gray-700"
                     >
-                      Studies
-                      {studiesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      <X className="h-5 w-5" />
                     </button>
-                    {studiesExpanded && (
-                      <div className="space-y-1 pl-4">
-                        <Link href="/studies" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          All Studies
-                        </Link>
-                        <Link href="/recent-studies" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          Recent Studies
-                        </Link>
-                        <Link href="/explore-by-condition" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          By Health Condition
-                        </Link>
-                        <Link href="/explore-by-body-system" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          By Body System
-                        </Link>
-                        <Link href="/explore-by-life-stage" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          By Life Stage
-                        </Link>
-                        <Link href="/explore-by-delivery-method" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          By Delivery Method
-                        </Link>
-                        <Link href="/explore-by-benefit" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          By Health Benefit
-                        </Link>
-                        <Link href="/insights" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
-                          Research Insights
-                        </Link>
-                      </div>
-                    )}
                   </div>
                   
-                  {/* Regular Navigation */}
-                  {navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`text-lg font-medium transition-colors hover:text-blue-600 ${
-                        isActive(item.href) ? 'text-blue-600' : 'text-gray-700'
-                      }`}
-                    >
-                      {item.name}
+                  <div className="flex flex-col p-4 space-y-4">
+                    {/* Studies Section */}
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setStudiesExpanded(!studiesExpanded)}
+                        className="flex items-center justify-between w-full text-left text-lg font-semibold text-gray-900 py-2 border-b"
+                      >
+                        Studies
+                        {studiesExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                      </button>
+                      {studiesExpanded && (
+                        <div className="pl-4 space-y-2">
+                          <Link href="/studies" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            All Studies
+                          </Link>
+                          <Link href="/recent-studies" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            Recent Studies
+                          </Link>
+                          <Link href="/explore-by-condition" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            By Health Condition
+                          </Link>
+                          <Link href="/explore-by-body-system" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            By Body System
+                          </Link>
+                          <Link href="/explore-by-life-stage" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            By Life Stage
+                          </Link>
+                          <Link href="/explore-by-delivery-method" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            By Delivery Method
+                          </Link>
+                          <Link href="/explore-by-benefit" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            By Health Benefit
+                          </Link>
+                          <Link href="/insights" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                            Research Insights
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Other Navigation */}
+                    <Link href="/learn" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                      Learn
                     </Link>
-                  ))}
-                  <div className="border-t pt-4 space-y-2">
-                    <Link href="/search" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full justify-start">
-                        <Search className="h-4 w-4 mr-2" />
-                        Search Studies
-                      </Button>
+                    <Link href="/blog" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                      Blog
                     </Link>
-                    <Link href="/chat" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Ask AI Assistant
-                      </Button>
+                    <Link href="/about" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                      About
                     </Link>
+                    <Link href="/contact" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                      Contact
+                    </Link>
+
+                    <div className="border-t pt-4 space-y-2">
+                      <Link href="/search" onClick={() => setIsOpen(false)}>
+                        <button className="w-full flex items-center justify-start px-4 py-2 text-left bg-gray-100 rounded-lg hover:bg-gray-200">
+                          <Search className="h-4 w-4 mr-2" />
+                          Search Studies
+                        </button>
+                      </Link>
+                      <Link href="/chat" onClick={() => setIsOpen(false)}>
+                        <button className="w-full flex items-center justify-start px-4 py-2 text-left bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Ask AI Assistant
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </SheetContent>
-            </Sheet>
+              </>
+            )}
           </div>
         </div>
       </div>
