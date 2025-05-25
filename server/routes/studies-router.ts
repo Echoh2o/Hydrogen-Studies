@@ -331,7 +331,7 @@ router.get("/", async (req, res) => {
       // Build search query for your real 1,326 hydrogen studies using existing columns
       let searchQuery = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-               category, doi, url, image_url as "imageUrl"
+               category, doi, source_url as "sourceUrl", image_url as "imageUrl"
         FROM studies 
         WHERE 1=1
       `;
