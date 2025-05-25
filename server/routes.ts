@@ -2227,7 +2227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Research visualization endpoints for insights dashboard
   app.get("/api/studies/trends", async (req, res) => {
     try {
-      const { pool } = require('./db');
+      const { pool } = await import('./db');
       
       // Get yearly publication trends from your real hydrogen research data
       const yearlyTrendsQuery = `
@@ -2287,7 +2287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health outcomes visualization endpoint
   app.get("/api/studies/health-outcomes", async (req, res) => {
     try {
-      const { pool } = require('./db');
+      const { pool } = await import('./db');
 
       // Get cardiovascular studies from your hydrogen research database
       const cardiovascularQuery = `
