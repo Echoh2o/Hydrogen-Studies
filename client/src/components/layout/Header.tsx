@@ -118,7 +118,7 @@ function Header() {
                     </button>
                   </div>
                   
-                  <div className="flex flex-col p-4 space-y-4">
+                  <div className="flex flex-col p-4 space-y-4 bg-white h-full" style={{backgroundColor: '#ffffff'}}>
                     {/* Studies Section */}
                     <div className="space-y-2">
                       <button
