@@ -71,6 +71,7 @@ import priorityEnrichmentRoutes from "./routes/priority-enrichment-routes";
 import batchImageFixRoutes from "./routes/batch-image-fix-routes";
 import quickImageFixRoutes from "./routes/quick-image-fix";
 import recommendationRoutes from "./routes/recommendation-routes";
+import fullEnrichmentRoutes from "./routes/full-enrichment-routes";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
 import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
@@ -2221,6 +2222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use comprehensive enrichment routes
   app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
   app.use('/api/recommendations', recommendationRoutes);
+  app.use('/api/full-enrichment', fullEnrichmentRoutes);
   
   // ChatGPT Study Enhancement Routes
   app.post('/api/enhance-study/:studyId', async (req, res) => {
