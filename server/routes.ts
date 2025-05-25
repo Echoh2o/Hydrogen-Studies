@@ -2227,7 +2227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/full-enrichment', fullEnrichmentRoutes);
   app.use('/api/enrichment', enrichmentRoutes);
   // Direct search endpoints to bypass routing issues
-  app.post('/api/search-v2/search', async (req, res) => {
+  app.post('/api/hydrogen-search/search', async (req, res) => {
     try {
       const { query = '', page = 1, limit = 20 } = req.body;
       const offset = (page - 1) * limit;
@@ -2297,7 +2297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/search-v2/suggestions', async (req, res) => {
+  app.get('/api/hydrogen-search/suggestions', async (req, res) => {
     try {
       const { q = '' } = req.query;
       
@@ -2318,7 +2318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/search-v2/popular-terms', async (req, res) => {
+  app.get('/api/hydrogen-search/popular-terms', async (req, res) => {
     try {
       res.json([
         'hydrogen water',
