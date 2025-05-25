@@ -11,6 +11,9 @@ import CookieConsent from "@/components/ui/cookie-consent";
 // Core Pages
 import Home from "@/pages/home";
 import NewHomePage from "@/pages/NewHomePage";
+import LearnPage from "@/pages/LearnPage";
+import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
+import HealthBenefitsPage from "@/pages/HealthBenefitsPage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
@@ -86,6 +89,9 @@ function Router() {
       <Route path="/search" component={EnhancedSearchPage} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/learn" component={LearnPage} />
+      <Route path="/learn/basics" component={HydrogenBasicsPage} />
+      <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
       <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
       
