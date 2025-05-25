@@ -2232,12 +2232,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get yearly publication trends from your real hydrogen research data
       const yearlyTrendsQuery = `
         SELECT 
-          EXTRACT(YEAR FROM publish_date) as year,
+          EXTRACT(YEAR FROM publish_date::timestamp) as year,
           COUNT(*) as count
         FROM studies 
         WHERE publish_date IS NOT NULL 
-          AND EXTRACT(YEAR FROM publish_date) >= 2000
-        GROUP BY EXTRACT(YEAR FROM publish_date)
+          AND publish_date != ''
+          AND EXTRACT(YEAR FROM publish_date::timestamp) >= 2000
+        GROUP BY EXTRACT(YEAR FROM publish_date::timestamp)
         ORDER BY year
       `;
 
