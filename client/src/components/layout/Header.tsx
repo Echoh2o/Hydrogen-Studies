@@ -1,22 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Search, MessageCircle, ChevronDown } from 'lucide-react';
+import { Menu, X, Search, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 
 export default function Header() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
-  
-  // Force re-render to clear any caching issues
-  const [forceUpdate, setForceUpdate] = React.useState(0);
+  const [studiesExpanded, setStudiesExpanded] = React.useState(false);
 
   const navigation = [
     { name: 'Learn', href: '/learn' },
@@ -58,31 +49,17 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {/* Studies Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className={`text-sm font-medium transition-colors hover:text-blue-600 ${
-                    location.startsWith('/studies') || location.startsWith('/explore') || location === '/insights'
-                      ? 'text-blue-600 border-b-2 border-blue-600 pb-1' 
-                      : 'text-gray-700'
-                  }`}
-                >
-                  Studies
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
-                {studiesDropdownItems.map((item) => (
-                  <DropdownMenuItem key={item.name} asChild>
-                    <Link href={item.href} className="cursor-pointer">
-                      {item.name}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Studies Link for Desktop */}
+            <Link
+              href="/studies"
+              className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                location.startsWith('/studies') || location.startsWith('/explore') || location === '/insights'
+                  ? 'text-blue-600 border-b-2 border-blue-600 pb-1' 
+                  : 'text-gray-700'
+              }`}
+            >
+              Studies
+            </Link>
 
             {/* Regular Navigation Items */}
             {navigation.map((item) => (
@@ -128,17 +105,41 @@ export default function Header() {
                 <div className="flex flex-col space-y-4 mt-8">
                   {/* Studies Section in Mobile */}
                   <div className="space-y-2 mb-4">
-                    <div className="text-lg font-semibold text-gray-900 border-b pb-2">Studies</div>
-                    {studiesDropdownItems.map((item) => (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        onClick={() => setIsOpen(false)}
-                        className="block text-base text-gray-600 hover:text-blue-600 pl-4 py-1"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
+                    <button
+                      onClick={() => setStudiesExpanded(!studiesExpanded)}
+                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 border-b pb-2"
+                    >
+                      Studies
+                      {studiesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </button>
+                    {studiesExpanded && (
+                      <div className="space-y-1 pl-4">
+                        <Link href="/studies" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          All Studies
+                        </Link>
+                        <Link href="/recent-studies" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          Recent Studies
+                        </Link>
+                        <Link href="/explore-by-condition" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          By Health Condition
+                        </Link>
+                        <Link href="/explore-by-body-system" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          By Body System
+                        </Link>
+                        <Link href="/explore-by-life-stage" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          By Life Stage
+                        </Link>
+                        <Link href="/explore-by-delivery-method" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          By Delivery Method
+                        </Link>
+                        <Link href="/explore-by-benefit" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          By Health Benefit
+                        </Link>
+                        <Link href="/insights" onClick={() => setIsOpen(false)} className="block text-base text-gray-600 hover:text-blue-600 py-1">
+                          Research Insights
+                        </Link>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Regular Navigation */}
