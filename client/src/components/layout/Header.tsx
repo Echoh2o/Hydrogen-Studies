@@ -4,7 +4,7 @@ import { Menu, X, Search, MessageCircle, ChevronDown, ChevronUp } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-export default function Header() {
+function Header() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
   const [studiesExpanded, setStudiesExpanded] = React.useState(false);
@@ -107,7 +107,7 @@ export default function Header() {
                   <div className="space-y-2 mb-4">
                     <button
                       onClick={() => setStudiesExpanded(!studiesExpanded)}
-                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 border-b pb-2"
+                      className="flex items-center justify-between w-full text-lg font-semibold text-gray-900 border-b pb-2 hover:text-blue-600"
                     >
                       Studies
                       {studiesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -178,3 +178,5 @@ export default function Header() {
     </header>
   );
 }
+
+export default Header;
