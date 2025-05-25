@@ -14,6 +14,9 @@ import {
 export default function Header() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
+  
+  // Force re-render to clear any caching issues
+  const [forceUpdate, setForceUpdate] = React.useState(0);
 
   const navigation = [
     { name: 'Learn', href: '/learn' },
