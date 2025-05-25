@@ -58,6 +58,7 @@ import doiEnhancementRoutes from "./routes/doi-enhancement-routes";
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
 import consumerCategoriesRoutes from "./routes/consumer-categories-routes";
 import advancedSearchRouter from "./routes/advanced-search-router";
+import enrichmentRoutes from "./routes/enrichment-routes";
 import improvedSearchRouter from "./routes/improved-search-router";
 import studiesRouter from "./routes/studies-router";
 import batchEnrichmentRoutes from "./routes/batch-enrichment-routes";
@@ -2223,6 +2224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/comprehensive-enrichment', comprehensiveEnrichmentRoutes);
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api/full-enrichment', fullEnrichmentRoutes);
+  app.use('/api/enrichment', enrichmentRoutes);
 
   // Research visualization endpoints for insights dashboard
   app.get("/api/studies/trends", async (req, res) => {
