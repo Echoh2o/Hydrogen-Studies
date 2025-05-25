@@ -324,25 +324,159 @@ router.get("/", async (req, res) => {
       sortBy
     });
     
-    // Use the storage interface to get studies with filtering
-    const result = await storage.getStudies({
-      query: query as string,
-      keyword: keyword as string,
-      author: author as string,
-      yearFrom: yearFrom as string,
-      yearTo: yearTo as string,
-      category: category as string,
-      isPeerReviewed: isPeerReviewed === "true" ? true : isPeerReviewed === "false" ? false : undefined,
-      hasHealthImplications: hasHealthImplications === "true" ? true : hasHealthImplications === "false" ? false : undefined,
-      hasMedia: hasMedia === "true" ? true : hasMedia === "false" ? false : undefined,
-      dateFrom: dateFrom as string,
-      dateTo: dateTo as string,
-      page: Number(page),
-      pageSize: Number(pageSize),
-      sortField: sortField as string,
-      sortOrder: sortOrder as 'asc' | 'desc',
-      sortBy: sortBy as string
-    });
+    // Connect directly to your authentic hydrogen research database
+    let result;
+    
+    try {
+      // Build search query for your real 1,326 hydrogen studies using existing columns
+      let searchQuery = `
+        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+               category, doi, url, image_url as "imageUrl"
+        FROM studies 
+        WHERE 1=1
+      `;
+      const queryParams = [];
+      let paramCount = 0;
+      
+      // Add search filters for your authentic research data
+      if (query) {
+        paramCount++;
+        searchQuery += ` AND (title ILIKE $${paramCount} OR abstract ILIKE $${paramCount} OR authors ILIKE $${paramCount})`;
+        queryParams.push(`%${query}%`);
+      }
+      
+      if (keyword) {
+        paramCount++;
+        searchQuery += ` AND (title ILIKE $${paramCount} OR abstract ILIKE $${paramCount})`;
+        queryParams.push(`%${keyword}%`);
+      }
+      
+      if (author) {
+        paramCount++;
+        searchQuery += ` AND authors ILIKE $${paramCount}`;
+        queryParams.push(`%${author}%`);
+      }
+      
+      if (category) {
+        paramCount++;
+        searchQuery += ` AND category ILIKE $${paramCount}`;
+        queryParams.push(`%${category}%`);
+      }
+      
+      if (yearFrom) {
+        paramCount++;
+        searchQuery += ` AND EXTRACT(YEAR FROM publish_date::date) >= $${paramCount}`;
+        queryParams.push(parseInt(yearFrom));
+      }
+      
+      if (yearTo) {
+        paramCount++;
+        searchQuery += ` AND EXTRACT(YEAR FROM publish_date::date) <= $${paramCount}`;
+        queryParams.push(parseInt(yearTo));
+      }
+      
+      // Add sorting
+      if (sortBy === 'date') {
+        searchQuery += ` ORDER BY publish_date DESC NULLS LAST`;
+      } else if (sortBy === 'title') {
+        searchQuery += ` ORDER BY title ASC`;
+      } else if (sortBy === 'author') {
+        searchQuery += ` ORDER BY authors ASC`;
+      } else {
+        searchQuery += ` ORDER BY id DESC`;
+      }
+      
+      // Add pagination
+      const pageNum = Math.max(1, Number(page) || 1);
+      const pageSizeNum = Math.min(50, Math.max(1, Number(pageSize) || 20));
+      const offset = (pageNum - 1) * pageSizeNum;
+      
+      paramCount++;
+      searchQuery += ` LIMIT $${paramCount}`;
+      queryParams.push(pageSizeNum);
+      
+      paramCount++;
+      searchQuery += ` OFFSET $${paramCount}`;
+      queryParams.push(offset);
+      
+      // Execute search on your authentic hydrogen research database
+      const { pool } = await import('../db');
+      const searchResult = await pool.query(searchQuery, queryParams);
+      
+      // Get total count for pagination
+      let countQuery = `SELECT COUNT(*) as total FROM studies WHERE 1=1`;
+      const countParams = [];
+      let countParamCount = 0;
+      
+      if (query) {
+        countParamCount++;
+        countQuery += ` AND (title ILIKE $${countParamCount} OR abstract ILIKE $${countParamCount} OR authors ILIKE $${countParamCount})`;
+        countParams.push(`%${query}%`);
+      }
+      
+      if (keyword) {
+        countParamCount++;
+        countQuery += ` AND (title ILIKE $${countParamCount} OR abstract ILIKE $${countParamCount})`;
+        countParams.push(`%${keyword}%`);
+      }
+      
+      if (author) {
+        countParamCount++;
+        countQuery += ` AND authors ILIKE $${countParamCount}`;
+        countParams.push(`%${author}%`);
+      }
+      
+      if (category) {
+        countParamCount++;
+        countQuery += ` AND category ILIKE $${countParamCount}`;
+        countParams.push(`%${category}%`);
+      }
+      
+      if (yearFrom) {
+        countParamCount++;
+        countQuery += ` AND EXTRACT(YEAR FROM publish_date::timestamp) >= $${countParamCount}`;
+        countParams.push(parseInt(yearFrom));
+      }
+      
+      if (yearTo) {
+        countParamCount++;
+        countQuery += ` AND EXTRACT(YEAR FROM publish_date::timestamp) <= $${countParamCount}`;
+        countParams.push(parseInt(yearTo));
+      }
+      
+      const countResult = await pool.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0]?.total || 0);
+      
+      result = {
+        data: searchResult.rows,
+        total,
+        page: pageNum,
+        pageSize: pageSizeNum,
+        totalPages: Math.ceil(total / pageSizeNum)
+      };
+      
+    } catch (dbError) {
+      console.error("Database search failed, using storage fallback:", dbError);
+      // Only fallback to storage if database completely fails
+      result = await storage.getStudies({
+        query: query as string,
+        keyword: keyword as string,
+        author: author as string,
+        yearFrom: yearFrom as string,
+        yearTo: yearTo as string,
+        category: category as string,
+        isPeerReviewed: isPeerReviewed === "true" ? true : isPeerReviewed === "false" ? false : undefined,
+        hasHealthImplications: hasHealthImplications === "true" ? true : hasHealthImplications === "false" ? false : undefined,
+        hasMedia: hasMedia === "true" ? true : hasMedia === "false" ? false : undefined,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+        page: Number(page),
+        pageSize: Number(pageSize),
+        sortField: sortField as string,
+        sortOrder: sortOrder as 'asc' | 'desc',
+        sortBy: sortBy as string
+      });
+    }
     
     // If storage returns paginated results (likely from database implementation)
     if (result && 'data' in result) {
@@ -376,18 +510,26 @@ router.get("/latest", async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
     
-    // Direct database access if needed
-    if (process.env.DATABASE_URL && db) {
-      try {
-        // Try to get latest studies directly from the database
-        const latestStudies = await db.select().from(studies).orderBy(studies.createdAt).limit(limit);
-        
-        if (latestStudies && latestStudies.length > 0) {
-          return res.json(latestStudies);
-        }
-      } catch (err) {
-        console.log("Error fetching latest studies from database, falling back to storage:", err);
+    // Direct database access using your authentic hydrogen research data
+    try {
+      const { pool } = await import('../db');
+      
+      // Query your actual 1,326 hydrogen studies using existing columns only
+      const latestStudiesQuery = `
+        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+               category, doi, url, image_url as "imageUrl"
+        FROM studies 
+        ORDER BY id DESC 
+        LIMIT $1
+      `;
+      
+      const result = await pool.query(latestStudiesQuery, [limit]);
+      
+      if (result.rows && result.rows.length > 0) {
+        return res.json(result.rows);
       }
+    } catch (err) {
+      console.log("Error fetching latest studies from database, falling back to storage:", err);
     }
     
     // Otherwise use the storage interface
@@ -411,27 +553,33 @@ router.get("/:id", async (req, res) => {
     // Log DOI information for debugging
     console.log(`Study ${id} DOI data:`, await storage.getStudyDoi(id));
     
-    // First try to get the study directly from the database
-    if (db) {
-      try {
-        const [studyFromDb] = await db.select().from(studies).where(eq(studies.id, id));
+    // Get study directly from your authentic hydrogen research database
+    try {
+      const { pool } = await import('../db');
+      
+      // Query your real hydrogen study using existing columns only
+      const studyQuery = `
+        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+               category, doi, url, image_url as "imageUrl"
+        FROM studies 
+        WHERE id = $1
+      `;
+      
+      const result = await pool.query(studyQuery, [id]);
+      
+      if (result.rows && result.rows.length > 0) {
+        const study = result.rows[0];
         
-        if (studyFromDb) {
-          // Log full study data
-          console.log(`Study ${id} full data:`, studyFromDb);
-          
-          // Ensure study has an image URL
-          if (!studyFromDb.imageUrl) {
-            // Generate a dynamic image related to the study topic
-            const topic = studyFromDb.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
-            studyFromDb.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${topic}`;
-          }
-          
-          return res.json(studyFromDb);
+        // Ensure study has an image URL for display
+        if (!study.imageUrl) {
+          const topic = study.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
+          study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${topic}`;
         }
-      } catch (dbError) {
-        console.log("Database error fetching study, falling back to storage:", dbError);
+        
+        return res.json(study);
       }
+    } catch (dbError) {
+      console.log("Database error fetching study, falling back to storage:", dbError);
     }
     
     // If no result from database, try with the storage interface
