@@ -124,8 +124,8 @@ export default function Header() {
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <div className="flex flex-col space-y-4 mt-8">
                   {/* Studies Section in Mobile */}
-                  <div className="space-y-2">
-                    <div className="text-lg font-medium text-gray-900 border-b pb-2">Studies</div>
+                  <div className="space-y-2 mb-4">
+                    <div className="text-lg font-semibold text-gray-900 border-b pb-2">Studies</div>
                     {studiesDropdownItems.map((item) => (
                       <Link
                         key={item.name}
