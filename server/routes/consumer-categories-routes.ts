@@ -237,11 +237,18 @@ router.get('/studies', async (req, res) => {
       const likeTerms = categoryKeywords.map(keyword => `%${keyword}%`);
       const result = await pool.query(query, [likeTerms, likeTerms]);
       const studyResults = result.rows;
-    
-    return res.json({
-      success: true,
-      data: studyResults
-    });
+      
+      return res.json({
+        success: true,
+        data: studyResults
+      });
+    } catch (error) {
+      console.error('Error fetching studies by category:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch studies'
+      });
+    }
   } catch (error) {
     console.error('Error fetching studies by category:', error);
     return res.status(500).json({
