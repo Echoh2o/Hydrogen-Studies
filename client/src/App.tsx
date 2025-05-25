@@ -14,6 +14,8 @@ import NewHomePage from "@/pages/NewHomePage";
 import LearnPage from "@/pages/LearnPage";
 import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
 import HealthBenefitsPage from "@/pages/HealthBenefitsPage";
+import BlogListPage from "@/pages/BlogListPage";
+import BlogArticlePage from "@/pages/BlogArticlePage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
@@ -92,6 +94,8 @@ function Router() {
       <Route path="/learn" component={LearnPage} />
       <Route path="/learn/basics" component={HydrogenBasicsPage} />
       <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
+      <Route path="/blog" component={BlogListPage} />
+      <Route path="/blog/:id" component={BlogArticlePage} />
       <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
       
