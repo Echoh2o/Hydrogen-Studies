@@ -164,7 +164,7 @@ export default function EnhancedSearchPage() {
             
             <div className="grid gap-6">
               {studies.map((study: Study) => (
-                <StudyCard key={study.id} study={study} />
+                <EnhancedStudyCard key={study.id} study={study} />
               ))}
             </div>
           </>
