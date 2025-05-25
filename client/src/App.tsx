@@ -98,6 +98,7 @@ function Router() {
       <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
       <Route path="/blog" component={BlogListPage} />
       <Route path="/blog/:id" component={BlogArticlePage} />
+      <Route path="/categories/:category" component={ConditionCategoryPage} />
       <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
       
