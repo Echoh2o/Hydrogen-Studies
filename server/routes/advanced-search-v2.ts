@@ -64,21 +64,7 @@ router.post('/search', async (req, res) => {
       .select({
         ...studies,
         // Relevance score calculation
-        relevanceScore: sql<number>`
-          COALESCE(
-            (CASE 
-              WHEN ${query} != '' THEN
-                (ts_rank_cd(
-                  setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
-                  setweight(to_tsvector('english', COALESCE(abstract, '')), 'B') ||
-                  setweight(to_tsvector('english', COALESCE(authors, '')), 'C') ||
-                  setweight(to_tsvector('english', COALESCE(keywords, '')), 'D'),
-                  plainto_tsquery('english', ${query})
-                ) * 100)
-              ELSE 0
-            END), 0
-          ) AS relevance_score
-        `
+        relevanceScore: sql<number>`0 AS relevance_score`
       })
       .from(studies);
 
@@ -88,28 +74,15 @@ router.post('/search', async (req, res) => {
     // Text search with ranking
     if (query.trim()) {
       conditions.push(
-        sql`(
-          to_tsvector('english', COALESCE(title, '') || ' ' || COALESCE(abstract, '') || ' ' || COALESCE(authors, '') || ' ' || COALESCE(keywords, '')) 
-          @@ plainto_tsquery('english', ${query})
-        )`
+        or(
+          ilike(studies.title, `%${query}%`),
+          ilike(studies.abstract, `%${query}%`),
+          ilike(studies.authors, `%${query}%`)
+        )
       );
     }
 
-    // Health conditions filter
-    if (healthConditions.length > 0) {
-      const healthConditionsFilter = healthConditions.map(condition => 
-        sql`LOWER(health_conditions::text) LIKE LOWER(${'%' + condition + '%'})`
-      );
-      conditions.push(or(...healthConditionsFilter));
-    }
-
-    // Body systems filter
-    if (bodySystems.length > 0) {
-      const bodySystemsFilter = bodySystems.map(system => 
-        sql`LOWER(body_systems::text) LIKE LOWER(${'%' + system + '%'})`
-      );
-      conditions.push(or(...bodySystemsFilter));
-    }
+    // Skip health conditions and body systems filters for now - they'll be enabled once enrichment completes
 
     // Study types filter
     if (studyTypes.length > 0) {
@@ -129,10 +102,7 @@ router.post('/search', async (req, res) => {
       );
     }
 
-    // Data completeness filters
-    if (hasFullText === true) {
-      conditions.push(sql`full_text IS NOT NULL AND full_text != ''`);
-    }
+    // Data completeness filters using correct field names
     if (hasImages === true) {
       conditions.push(sql`image_url IS NOT NULL AND image_url != ''`);
     }
