@@ -106,8 +106,8 @@ function Header() {
             {/* Mobile Menu Overlay */}
             {isOpen && (
               <>
-                <div className="fixed inset-0 z-40 bg-black bg-opacity-25" onClick={() => setIsOpen(false)} />
-                <div className="fixed top-0 right-0 z-50 h-full w-80 bg-white shadow-xl">
+                <div className="fixed inset-0 z-40 bg-black bg-opacity-50" onClick={() => setIsOpen(false)} />
+                <div className="fixed top-0 right-0 z-50 h-full w-80 bg-white shadow-2xl border-l border-gray-200">
                   <div className="flex items-center justify-between p-4 border-b">
                     <span className="text-lg font-semibold">Menu</span>
                     <button 
