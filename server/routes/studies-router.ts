@@ -517,7 +517,7 @@ router.get("/latest", async (req, res) => {
       // Query your actual 1,326 hydrogen studies using existing columns only
       const latestStudiesQuery = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-               category, doi, url, image_url as "imageUrl"
+               category, doi, image_url as "imageUrl"
         FROM studies 
         ORDER BY id DESC 
         LIMIT $1
@@ -560,7 +560,7 @@ router.get("/:id", async (req, res) => {
       // Query your real hydrogen study using existing columns only
       const studyQuery = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-               category, doi, url, image_url as "imageUrl"
+               category, doi, image_url as "imageUrl"
         FROM studies 
         WHERE id = $1
       `;

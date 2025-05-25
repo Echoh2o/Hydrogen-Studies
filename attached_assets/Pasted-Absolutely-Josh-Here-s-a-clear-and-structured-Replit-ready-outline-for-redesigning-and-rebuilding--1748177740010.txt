@@ -1,0 +1,119 @@
+Absolutely, Josh. Here’s a clear and structured Replit-ready outline for redesigning and rebuilding HydrogenStudies.com, covering UI/UX, navigation, AI chatbot integration, and content structure—all with clarity so your Replit team can execute confidently.
+
+⸻
+
+HydrogenStudies.com Redesign & Rebuild Outline for Replit
+
+⸻
+
+1. GOALS
+	•	Create an intuitive, modern, and credible design that matches the scientific authority and accessibility of the site.
+	•	Improve navigation and discoverability of hydrogen health studies.
+	•	Integrate AI chatbot for guided discovery.
+	•	Add editorial content areas (blog, articles).
+	•	Support SEO, fast load times, mobile optimization.
+
+⸻
+
+2. TECH STACK / TOOLS
+	•	Frontend: React (Next.js recommended)
+	•	Backend/API: Node.js or Python (for API endpoints and DB interaction)
+	•	CMS: Consider Sanity, Contentful, or a lightweight MDX blog system
+	•	Search: Algolia or ElasticSearch for intelligent, faceted search
+	•	AI: Existing chatbot embedded via iframe or custom component
+	•	Hosting: Vercel or Replit’s deployment environment
+
+⸻
+
+3. SITE STRUCTURE & PAGE TYPES
+
+A. Homepage
+	•	Hero section with value proposition: “Understand the Science of Hydrogen for Health”
+	•	Search bar front and center
+	•	Featured studies or categories (e.g., “Brain Health,” “Anti-Inflammatory”)
+	•	Links to: Chatbot, Articles, Blog, About, Contact
+
+B. Study Browser Page
+	•	Filter sidebar:
+	•	Category (Disease type, Body system)
+	•	Study type (Animal, Human, In vitro)
+	•	Publication year
+	•	Outcome (Positive/Neutral/Negative)
+	•	Sort by: Date, Relevance, Study strength
+	•	Card grid of studies:
+	•	Title, short abstract, key tags, link to full page
+
+C. Individual Study Page
+	•	Study metadata (title, authors, journal, date)
+	•	Full abstract
+	•	Plain-language summary
+	•	Related tags and links to similar studies
+	•	AI chatbot quick summary suggestion: “Explain this to me like I’m a teenager”
+
+D. Articles Page (Editorial Content)
+	•	List view of editorial articles analyzing trends, compiling groups of studies (e.g., “Top 5 Hydrogen Studies on Gut Health”)
+	•	Tag-based navigation
+	•	Author profiles
+
+E. Blog Page
+	•	Posts from the EchoWater team or guest writers
+	•	Date-sorted list, with optional categories (Company News, Product Applications, etc.)
+
+F. About Us Page
+	•	Mission statement
+	•	Team bios
+	•	Link to EchoWater and HydrogenStudies partnership purpose
+
+G. Contact Page
+	•	Secure form submission (with spam protection)
+	•	Optional chatbot assistant for routing inquiry (Sales, Research Question, Feedback)
+
+H. 404 / Empty Search Result Page
+	•	Smart suggestions: top searches, links to chatbot, popular studies
+
+⸻
+
+4. NAVIGATION & UX
+	•	Persistent header navigation with dropdowns:
+	•	Studies
+	•	Articles
+	•	Blog
+	•	About
+	•	Contact
+	•	Mobile hamburger menu
+	•	Footer with social links, newsletter signup, sitemap
+
+⸻
+
+5. SEARCH & FILTERS
+	•	Algolia or ElasticSearch-based full-text search
+	•	Instant suggestions
+	•	Filters for:
+	•	Topic (Brain, Inflammation, Metabolism, etc.)
+	•	Study type (Animal/Human/In vitro)
+	•	Tags
+	•	Date
+	•	Synonym support and typo tolerance
+
+⸻
+
+6. AI CHATBOT INTEGRATION
+	•	Persistent or floating button UI
+	•	Conversation starter suggestions:
+	•	“Find me studies about hydrogen and anxiety”
+	•	“Summarize the newest findings in layman’s terms”
+	•	Hand-off from study pages to chatbot for deeper interaction
+
+⸻
+
+7. ADDITIONAL FEATURES
+	•	Dark mode toggle
+	•	SEO metadata per page
+	•	Social sharing buttons
+	•	Structured data (Schema.org) for all studies and blog posts
+	•	Email subscription modal or sidebar for new studies/articles
+	•	Admin backend to upload and tag studies (or Replit CMS workflow)
+
+⸻
+
+Let me know if you’d like this turned into a Figma wireframe or if you’d like me to generate component code for parts of it (e.g., search page, chatbot widget).

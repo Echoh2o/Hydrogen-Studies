@@ -1,156 +1,145 @@
-import { Link } from "wouter";
-import { FaTwitter, FaLinkedin, FaFacebook, FaArrowRight } from "react-icons/fa";
+import React from 'react';
+import { Link } from 'wouter';
+import { Mail, Twitter, Linkedin, Github } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
-const Footer = () => {
+export default function Footer() {
+  const [email, setEmail] = React.useState('');
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Newsletter signup logic would go here
+    console.log('Newsletter signup:', email);
+    setEmail('');
+  };
+
   return (
-    <footer className="bg-neutral-800 text-white pt-12 pb-6">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div className="md:col-span-1">
-            <Link href="/" className="inline-block mb-4">
-              <img 
-                src="./src/assets/hydrogen-studies-logo.svg" 
-                alt="Hydrogen Studies Research Database" 
-                className="h-12 mb-2"
-              />
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-white">HydrogenStudies</span>
-                <span className="text-xs text-neutral-400">Part of the EchoWater Ecosystem</span>
+    <footer className="bg-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Company Info */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">H₂</span>
               </div>
-            </Link>
-            <p className="text-neutral-400 mb-4">The comprehensive database for hydrogen water research and its scientifically-verified health benefits.</p>
-            <div className="flex items-center space-x-4 mb-4">
-              <a href="https://www.echowater.com" target="_blank" rel="noopener" className="text-white hover:text-primary-light transition flex items-center bg-neutral-700 py-1 px-3 rounded">
-                <span className="mr-2">Visit EchoWater.com</span>
-                <FaArrowRight size={12} />
-              </a>
+              <span className="font-bold text-xl">HydrogenStudies</span>
             </div>
+            <p className="text-gray-300 text-sm">
+              The world's most comprehensive database of peer-reviewed hydrogen health research. 
+              Making scientific knowledge accessible to everyone.
+            </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-neutral-400 hover:text-white transition">
-                <FaTwitter size={18} />
-              </a>
-              <a href="#" className="text-neutral-400 hover:text-white transition">
-                <FaLinkedin size={18} />
-              </a>
-              <a href="#" className="text-neutral-400 hover:text-white transition">
-                <FaFacebook size={18} />
-              </a>
+              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white p-2">
+                <Twitter className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white p-2">
+                <Linkedin className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white p-2">
+                <Github className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-          
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Explore</h3>
+            <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/">
-                  <a className="text-neutral-400 hover:text-white transition">Home</a>
+                <Link href="/studies" className="text-gray-300 hover:text-white transition-colors">
+                  Browse Studies
                 </Link>
               </li>
               <li>
-                <Link href="/about">
-                  <a className="text-neutral-400 hover:text-white transition">About</a>
+                <Link href="/search" className="text-gray-300 hover:text-white transition-colors">
+                  Advanced Search
                 </Link>
               </li>
               <li>
-                <Link href="/categories">
-                  <a className="text-neutral-400 hover:text-white transition">Categories</a>
+                <Link href="/insights" className="text-gray-300 hover:text-white transition-colors">
+                  Research Insights
                 </Link>
               </li>
               <li>
-                <Link href="/recent">
-                  <a className="text-neutral-400 hover:text-white transition">Recent Studies</a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact">
-                  <a className="text-neutral-400 hover:text-white transition">Contact</a>
+                <Link href="/chat" className="text-gray-300 hover:text-white transition-colors">
+                  AI Assistant
                 </Link>
               </li>
             </ul>
           </div>
-          
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Categories</h4>
-            <ul className="space-y-2">
+
+          {/* Learn */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Learn</h3>
+            <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/category/neurology">
-                  <a className="text-neutral-400 hover:text-white transition">Neurology</a>
+                <Link href="/learn" className="text-gray-300 hover:text-white transition-colors">
+                  Hydrogen Basics
                 </Link>
               </li>
               <li>
-                <Link href="/category/cardiology">
-                  <a className="text-neutral-400 hover:text-white transition">Cardiology</a>
+                <Link href="/blog" className="text-gray-300 hover:text-white transition-colors">
+                  Research Blog
                 </Link>
               </li>
               <li>
-                <Link href="/category/immunology">
-                  <a className="text-neutral-400 hover:text-white transition">Immunology</a>
+                <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
+                  About Us
                 </Link>
               </li>
               <li>
-                <Link href="/category/metabolism">
-                  <a className="text-neutral-400 hover:text-white transition">Metabolism</a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/clinical-trials">
-                  <a className="text-neutral-400 hover:text-white transition">Clinical Trials</a>
+                <Link href="/contact" className="text-gray-300 hover:text-white transition-colors">
+                  Contact
                 </Link>
               </li>
             </ul>
           </div>
-          
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Resources</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/resources/beginners-guide">
-                  <a className="text-neutral-400 hover:text-white transition">Beginner's Guide</a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/resources/research-methods">
-                  <a className="text-neutral-400 hover:text-white transition">Research Methods</a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/resources/clinical-applications">
-                  <a className="text-neutral-400 hover:text-white transition">Clinical Applications</a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq">
-                  <a className="text-neutral-400 hover:text-white transition">FAQ</a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/glossary">
-                  <a className="text-neutral-400 hover:text-white transition">Glossary</a>
-                </Link>
-              </li>
-            </ul>
+
+          {/* Newsletter */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Stay Updated</h3>
+            <p className="text-gray-300 text-sm">
+              Get the latest hydrogen research updates delivered to your inbox.
+            </p>
+            <form onSubmit={handleNewsletterSubmit} className="space-y-2">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                required
+              />
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+                Subscribe
+              </Button>
+            </form>
           </div>
         </div>
-        
-        <div className="border-t border-neutral-700 pt-6 mt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-neutral-500 text-sm mb-4 md:mb-0">&copy; {new Date().getFullYear()} HydrogenStudies.com. All rights reserved.</p>
-            <div className="flex space-x-6">
-              <Link href="/privacy">
-                <a className="text-neutral-500 hover:text-white text-sm transition">Privacy Policy</a>
-              </Link>
-              <Link href="/terms">
-                <a className="text-neutral-500 hover:text-white text-sm transition">Terms of Service</a>
-              </Link>
-              <Link href="/sitemap">
-                <a className="text-neutral-500 hover:text-white text-sm transition">Sitemap</a>
-              </Link>
-            </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+          <div className="text-sm text-gray-400">
+            © 2024 HydrogenStudies. All rights reserved. 
+            <span className="ml-2">
+              Powered by <Link href="https://echowater.com" className="text-blue-400 hover:text-blue-300">EchoWater</Link>
+            </span>
+          </div>
+          <div className="flex space-x-6 mt-4 md:mt-0">
+            <Link href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <Link href="/sitemap" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Sitemap
+            </Link>
           </div>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

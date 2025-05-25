@@ -10,6 +10,7 @@ import CookieConsent from "@/components/ui/cookie-consent";
 
 // Core Pages
 import Home from "@/pages/home";
+import NewHomePage from "@/pages/NewHomePage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
@@ -78,7 +79,8 @@ function Router() {
   return (
     <Switch>
       {/* Core Public Routes */}
-      <Route path="/" component={Home} />
+      <Route path="/" component={NewHomePage} />
+      <Route path="/old-home" component={Home} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={EnhancedStudyPage} />
       <Route path="/search" component={EnhancedSearchPage} />
