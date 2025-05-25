@@ -21,6 +21,7 @@ import ContactUsPage from "@/pages/ContactUsPage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
+import AdvancedSearchPage from "@/pages/AdvancedSearchPage";
 import About from "@/pages/about";
 import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={EnhancedStudyPage} />
       <Route path="/search" component={EnhancedSearchPage} />
+      <Route path="/advanced-search" component={AdvancedSearchPage} />
       <Route path="/about" component={AboutUsPage} />
       <Route path="/contact" component={ContactUsPage} />
       <Route path="/learn" component={LearnPage} />
