@@ -59,9 +59,9 @@ export default function AdvancedSearchPage() {
 
   // Search query
   const { data: searchResults, isLoading: isSearching, error } = useQuery<SearchResult>({
-    queryKey: ['/api/search-v2/search', filters],
+    queryKey: ['/api/hydrogen-search/search', filters],
     queryFn: async () => {
-      const response = await fetch('/api/search-v2/search', {
+      const response = await fetch('/api/hydrogen-search/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(filters)
@@ -74,10 +74,10 @@ export default function AdvancedSearchPage() {
 
   // Suggestions query
   const { data: suggestionsData } = useQuery({
-    queryKey: ['/api/search-v2/suggestions', filters.query],
+    queryKey: ['/api/hydrogen-search/suggestions', filters.query],
     queryFn: async () => {
-      if (!filters.query || filters.query.length < 2) return { suggestions: [] };
-      const response = await fetch(`/api/search-v2/suggestions?q=${encodeURIComponent(filters.query)}`);
+      if (!filters.query || filters.query.length < 2) return [];
+      const response = await fetch(`/api/hydrogen-search/suggestions?q=${encodeURIComponent(filters.query)}`);
       return response.json();
     },
     enabled: filters.query.length >= 2
@@ -85,16 +85,16 @@ export default function AdvancedSearchPage() {
 
   // Popular terms query
   const { data: popularTerms } = useQuery({
-    queryKey: ['/api/search-v2/popular-terms'],
+    queryKey: ['/api/hydrogen-search/popular-terms'],
     queryFn: async () => {
-      const response = await fetch('/api/search-v2/popular-terms');
+      const response = await fetch('/api/hydrogen-search/popular-terms');
       return response.json();
     }
   });
 
   useEffect(() => {
-    if (suggestionsData?.suggestions) {
-      setSuggestions(suggestionsData.suggestions);
+    if (suggestionsData && Array.isArray(suggestionsData)) {
+      setSuggestions(suggestionsData);
     }
   }, [suggestionsData]);
 
