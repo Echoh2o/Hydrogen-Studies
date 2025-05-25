@@ -159,16 +159,16 @@ function Header() {
                     </div>
 
                     {/* Other Navigation */}
-                    <Link href="/learn" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                    <Link href="/learn" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
                       Learn
                     </Link>
-                    <Link href="/blog" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                    <Link href="/blog" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
                       Blog
                     </Link>
-                    <Link href="/about" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                    <Link href="/about" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
                       About
                     </Link>
-                    <Link href="/contact" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600">
+                    <Link href="/contact" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
                       Contact
                     </Link>
 
