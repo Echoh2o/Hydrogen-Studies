@@ -218,17 +218,25 @@ router.get('/studies', async (req, res) => {
     // Get relevant keywords for this category
     const categoryKeywords = getKeywords(model as string, categoryName);
     
-    // Build SQL conditions for each keyword
-    const keywordConditions = categoryKeywords.map(keyword => 
-      sql`${studies.title} ILIKE ${`%${keyword}%`} OR ${studies.abstract} ILIKE ${`%${keyword}%`}`
-    );
-    
-    // Execute the query with keyword conditions
-    const studyResults = await db
-      .select()
-      .from(studies)
-      .where(sql`(${sql.join(keywordConditions, sql` OR `)})`)
-      .limit(20);
+    // Use direct database query to avoid column issues
+    try {
+      const { pool } = await import('../db');
+      
+      // Create search terms for brain health category
+      const searchTerms = categoryKeywords.join('|');
+      
+      const query = `
+        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+               category, doi, image_url as "imageUrl"
+        FROM studies 
+        WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($2)
+        ORDER BY id DESC
+        LIMIT 20
+      `;
+      
+      const likeTerms = categoryKeywords.map(keyword => `%${keyword}%`);
+      const result = await pool.query(query, [likeTerms, likeTerms]);
+      const studyResults = result.rows;
     
     return res.json({
       success: true,
