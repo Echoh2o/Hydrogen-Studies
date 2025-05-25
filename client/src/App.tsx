@@ -16,6 +16,8 @@ import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
 import HealthBenefitsPage from "@/pages/HealthBenefitsPage";
 import BlogListPage from "@/pages/BlogListPage";
 import BlogArticlePage from "@/pages/BlogArticlePage";
+import AboutUsPage from "@/pages/AboutUsPage";
+import ContactUsPage from "@/pages/ContactUsPage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
@@ -89,8 +91,8 @@ function Router() {
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={EnhancedStudyPage} />
       <Route path="/search" component={EnhancedSearchPage} />
-      <Route path="/about" component={About} />
-      <Route path="/contact" component={Contact} />
+      <Route path="/about" component={AboutUsPage} />
+      <Route path="/contact" component={ContactUsPage} />
       <Route path="/learn" component={LearnPage} />
       <Route path="/learn/basics" component={HydrogenBasicsPage} />
       <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
