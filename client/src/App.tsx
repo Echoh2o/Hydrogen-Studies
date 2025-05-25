@@ -19,6 +19,7 @@ import NotFound from "@/pages/not-found";
 import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
 import RecommendationsPage from "@/pages/RecommendationsPage";
+import ResearchInsightsPage from "@/pages/ResearchInsightsPage";
 
 // Educational content pages
 import HydrogenTherapyGuide from "@/pages/educational/HydrogenTherapyGuide";
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/search" component={EnhancedSearchPage} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/research-insights" component={ResearchInsightsPage} />
       
       {/* Research Exploration */}
       <Route path="/explore-by-condition" component={ExploreByCondition} />
