@@ -2251,9 +2251,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(limit)
         .offset(offset);
 
-      // Get total count for pagination
-      const totalResults = await searchQuery;
-      const totalCount = totalResults.length;
+      // Get total count for pagination  
+      const countQuery = db.select({ count: sql`count(*)` }).from(studies);
+      if (query.trim()) {
+        countQuery.where(
+          or(
+            ilike(studies.title, `%${query}%`),
+            ilike(studies.abstract, `%${query}%`),
+            ilike(studies.authors, `%${query}%`)
+          )
+        );
+      }
+      const [{ count }] = await countQuery;
+      const totalCount = Number(count);
 
       // Return search results
       res.json({
