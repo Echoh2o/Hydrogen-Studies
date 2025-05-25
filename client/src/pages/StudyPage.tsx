@@ -439,8 +439,36 @@ const StudyPage = () => {
                   </figure>
                 </section>
 
+                {/* Simple Summary Section */}
+                {(study as any).summaryMarkdown && (
+                  <section aria-labelledby="summary-heading" className="mb-8">
+                    <h2 id="summary-heading" className="text-xl font-semibold mb-4 text-blue-600">What This Study Means for You</h2>
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
+                      <div className="prose max-w-none prose-blue">
+                        <div dangerouslySetInnerHTML={{ __html: (study as any).summaryMarkdown }} />
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* Key Benefits Section */}
+                {((study as any).keywords && (study as any).keywords.length > 0) && (
+                  <section aria-labelledby="benefits-heading" className="mb-8">
+                    <h2 id="benefits-heading" className="text-xl font-semibold mb-4 text-green-600">Key Health Benefits Found</h2>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                      <div className="flex flex-wrap gap-2">
+                        {(study as any).keywords.slice(0, 6).map((keyword: string, index: number) => (
+                          <Badge key={index} variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                )}
+
                 <section aria-labelledby="abstract-heading">
-                  <h2 id="abstract-heading" className="text-xl font-semibold mb-4">Abstract</h2>
+                  <h2 id="abstract-heading" className="text-xl font-semibold mb-4">Research Abstract</h2>
                   <div className="prose max-w-none prose-neutral mb-8">
                     <p className="text-lg leading-relaxed" itemProp="abstract">{study.abstract}</p>
                   </div>
@@ -469,10 +497,51 @@ const StudyPage = () => {
                 )}
 
                 {/* Conclusion Section */}
+                {/* Practical Application Section */}
+                <section aria-labelledby="practical-heading" className="mb-8">
+                  <h2 id="practical-heading" className="text-xl font-semibold mb-4 text-purple-600">How to Apply This Research</h2>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-purple-600 text-sm font-semibold">💧</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-purple-800">Hydrogen Water</h3>
+                          <p className="text-sm text-purple-700">This research suggests drinking hydrogen-rich water may provide health benefits. Look for hydrogen water products or hydrogen tablets.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-purple-600 text-sm font-semibold">🫁</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-purple-800">Hydrogen Inhalation</h3>
+                          <p className="text-sm text-purple-700">Some studies show benefits from breathing hydrogen gas. This requires special equipment and should be done safely.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-purple-600 text-sm font-semibold">🛁</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-purple-800">Hydrogen Baths</h3>
+                          <p className="text-sm text-purple-700">Bathing in hydrogen-enriched water may provide skin and overall health benefits through absorption.</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Remember:</strong> Always talk to your doctor before starting any new health routine. These are research findings, not medical advice.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
                 {study.conclusion && (
                   <section aria-labelledby="conclusion-heading">
                     <Separator className="my-6" />
-                    <h2 id="conclusion-heading" className="text-xl font-semibold mb-4">Conclusion</h2>
+                    <h2 id="conclusion-heading" className="text-xl font-semibold mb-4">Research Conclusion</h2>
                     <div className="prose max-w-none prose-neutral mb-6" itemProp="conclusion">
                       <p>{study.conclusion}</p>
                     </div>
