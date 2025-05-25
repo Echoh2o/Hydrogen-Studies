@@ -105,11 +105,15 @@ function Header() {
 
             {/* Mobile Menu Overlay */}
             {isOpen && (
-              <>
-                <div className="fixed inset-0 z-40 bg-black bg-opacity-50" onClick={() => setIsOpen(false)} />
-                <div className="fixed top-0 right-0 z-50 h-full w-80 bg-white/100 backdrop-blur-sm shadow-2xl border-l border-gray-300" style={{backgroundColor: '#ffffff'}}>
-                  <div className="flex items-center justify-between p-4 border-b">
-                    <span className="text-lg font-semibold">Menu</span>
+              <div className="fixed inset-0 z-50">
+                {/* Dark backdrop */}
+                <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsOpen(false)} />
+                
+                {/* Menu panel */}
+                <div className="absolute top-0 right-0 h-full w-80 bg-white shadow-xl">
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-4 border-b bg-white">
+                    <span className="text-lg font-semibold text-gray-900">Menu</span>
                     <button 
                       onClick={() => setIsOpen(false)}
                       className="p-2 rounded-md text-gray-500 hover:text-gray-700"
@@ -118,40 +122,41 @@ function Header() {
                     </button>
                   </div>
                   
-                  <div className="flex flex-col p-4 space-y-4 bg-white h-full" style={{backgroundColor: '#ffffff'}}>
+                  {/* Content */}
+                  <div className="p-4 space-y-4 bg-white h-full overflow-y-auto">
                     {/* Studies Section */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 bg-white p-2 rounded-lg">
                       <button
                         onClick={() => setStudiesExpanded(!studiesExpanded)}
-                        className="flex items-center justify-between w-full text-left text-lg font-semibold text-gray-900 py-2 border-b"
+                        className="flex items-center justify-between w-full text-left text-lg font-semibold text-gray-900 py-2 border-b bg-white"
                       >
                         Studies
                         {studiesExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                       </button>
                       {studiesExpanded && (
-                        <div className="pl-4 space-y-2">
-                          <Link href="/studies" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                        <div className="pl-4 space-y-2 bg-white">
+                          <Link href="/studies" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             All Studies
                           </Link>
-                          <Link href="/recent-studies" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                          <Link href="/recent-studies" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             Recent Studies
                           </Link>
-                          <Link href="/explore-by-condition" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                          <Link href="/explore-by-condition" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             By Health Condition
                           </Link>
-                          <Link href="/explore-by-body-system" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                          <Link href="/explore-by-body-system" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             By Body System
                           </Link>
-                          <Link href="/explore-by-life-stage" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                          <Link href="/explore-by-life-stage" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             By Life Stage
                           </Link>
-                          <Link href="/explore-by-delivery-method" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                          <Link href="/explore-by-delivery-method" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             By Delivery Method
                           </Link>
-                          <Link href="/explore-by-benefit" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                          <Link href="/explore-by-benefit" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             By Health Benefit
                           </Link>
-                          <Link href="/insights" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600">
+                          <Link href="/insights" onClick={() => setIsOpen(false)} className="block py-2 text-gray-600 hover:text-blue-600 bg-white">
                             Research Insights
                           </Link>
                         </div>
@@ -159,20 +164,23 @@ function Header() {
                     </div>
 
                     {/* Other Navigation */}
-                    <Link href="/learn" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
-                      Learn
-                    </Link>
-                    <Link href="/blog" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
-                      Blog
-                    </Link>
-                    <Link href="/about" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
-                      About
-                    </Link>
-                    <Link href="/contact" onClick={() => setIsOpen(false)} className="text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white" style={{backgroundColor: '#ffffff'}}>
-                      Contact
-                    </Link>
+                    <div className="space-y-2 bg-white p-2 rounded-lg">
+                      <Link href="/learn" onClick={() => setIsOpen(false)} className="block text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white">
+                        Learn
+                      </Link>
+                      <Link href="/blog" onClick={() => setIsOpen(false)} className="block text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white">
+                        Blog
+                      </Link>
+                      <Link href="/about" onClick={() => setIsOpen(false)} className="block text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white">
+                        About
+                      </Link>
+                      <Link href="/contact" onClick={() => setIsOpen(false)} className="block text-lg font-medium py-2 text-gray-700 hover:text-blue-600 bg-white">
+                        Contact
+                      </Link>
+                    </div>
 
-                    <div className="border-t pt-4 space-y-2">
+                    {/* Action Buttons */}
+                    <div className="space-y-2 bg-white p-2 rounded-lg">
                       <Link href="/search" onClick={() => setIsOpen(false)}>
                         <button className="w-full flex items-center justify-start px-4 py-2 text-left bg-gray-100 rounded-lg hover:bg-gray-200">
                           <Search className="h-4 w-4 mr-2" />
@@ -188,7 +196,7 @@ function Header() {
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
