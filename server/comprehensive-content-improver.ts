@@ -1,8 +1,8 @@
 /**
- * Simple AI Content Improver
+ * Comprehensive AI Content Improver
  * 
- * Generates missing content for hydrogen studies using AI while
- * working with the actual database schema (no full_text column issues)
+ * Processes ALL hydrogen studies in the database to add missing content sections
+ * with proper spacing and progress tracking for the entire collection
  */
 
 import { db } from './db';
@@ -14,32 +14,45 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-interface ContentImprovementStats {
-  totalProcessed: number;
+interface ComprehensiveStats {
+  totalStudiesInDatabase: number;
+  studiesNeedingImprovement: number;
+  processed: number;
   methodsGenerated: number;
   resultsGenerated: number;
   conclusionsGenerated: number;
   summariesGenerated: number;
   errors: string[];
+  startTime: Date;
+  estimatedCompletionTime?: Date;
 }
 
 /**
- * Start content improvement for studies missing key sections
+ * Process ALL studies in the database for content improvement
  */
-export async function improveStudyContent(maxStudies: number = 1000): Promise<ContentImprovementStats> {
-  console.log('🚀 Starting AI Content Improvement...');
+export async function improveAllStudyContent(): Promise<ComprehensiveStats> {
+  console.log('🚀 Starting Comprehensive AI Content Improvement for ALL Hydrogen Studies...');
   
-  const stats: ContentImprovementStats = {
-    totalProcessed: 0,
+  const stats: ComprehensiveStats = {
+    totalStudiesInDatabase: 0,
+    studiesNeedingImprovement: 0,
+    processed: 0,
     methodsGenerated: 0,
     resultsGenerated: 0,
     conclusionsGenerated: 0,
     summariesGenerated: 0,
-    errors: []
+    errors: [],
+    startTime: new Date()
   };
 
   try {
-    // Find studies that need content improvement (using only existing columns)
+    // Get total count first
+    const totalCount = await db.select({ count: sql<number>`count(*)` }).from(studies);
+    stats.totalStudiesInDatabase = totalCount[0].count;
+    
+    console.log(`📊 Total studies in database: ${stats.totalStudiesInDatabase}`);
+
+    // Find ALL studies that need content improvement
     const incompleteStudies = await db.select({
       id: studies.id,
       title: studies.title,
@@ -49,7 +62,8 @@ export async function improveStudyContent(maxStudies: number = 1000): Promise<Co
       methods: studies.methods,
       results: studies.results,
       conclusion: studies.conclusion,
-      doi: studies.doi
+      doi: studies.doi,
+      summaryMarkdown: studies.summaryMarkdown
     })
     .from(studies)
     .where(
@@ -59,16 +73,27 @@ export async function improveStudyContent(maxStudies: number = 1000): Promise<Co
         isNull(studies.results),
         eq(studies.results, ''),
         isNull(studies.conclusion),
-        eq(studies.conclusion, '')
+        eq(studies.conclusion, ''),
+        isNull(studies.summaryMarkdown)
       )
-    )
-    .limit(maxStudies);
+    );
 
-    console.log(`📊 Found ${incompleteStudies.length} studies needing content improvement`);
+    stats.studiesNeedingImprovement = incompleteStudies.length;
+    console.log(`🎯 Found ${stats.studiesNeedingImprovement} studies needing content improvement`);
+    
+    // Calculate estimated completion time (4 seconds per study + AI processing time)
+    const estimatedMinutes = Math.ceil((stats.studiesNeedingImprovement * 6) / 60); // 6 seconds average per study
+    stats.estimatedCompletionTime = new Date(Date.now() + estimatedMinutes * 60000);
+    
+    console.log(`⏱️ Estimated completion time: ${stats.estimatedCompletionTime.toLocaleTimeString()}`);
+    console.log(`📈 Processing ${stats.studiesNeedingImprovement} studies with 3-second delays...`);
 
-    for (const study of incompleteStudies) {
+    // Process each study
+    for (let i = 0; i < incompleteStudies.length; i++) {
+      const study = incompleteStudies[i];
+      
       try {
-        console.log(`\n🔄 Processing: "${study.title}"`);
+        console.log(`\n🔄 [${i + 1}/${incompleteStudies.length}] Processing: "${study.title.substring(0, 80)}..."`);
         
         const updates: any = {};
         let hasUpdates = false;
@@ -106,13 +131,13 @@ export async function improveStudyContent(maxStudies: number = 1000): Promise<Co
           }
         }
 
-        // Generate summary if we have good content now
-        if (hasUpdates || (study.methods && study.results && study.conclusion)) {
+        // Generate or update summary markdown
+        if (!study.summaryMarkdown || hasUpdates) {
           const summary = await generateSummaryMarkdown(study, updates);
           if (summary) {
             updates.summaryMarkdown = summary;
             stats.summariesGenerated++;
-            console.log('  ✅ Generated markdown summary');
+            console.log('  ✅ Generated comprehensive summary');
           }
         }
 
@@ -123,11 +148,20 @@ export async function improveStudyContent(maxStudies: number = 1000): Promise<Co
             .where(eq(studies.id, study.id));
           
           console.log(`  💾 Updated study ${study.id} in database`);
+        } else {
+          console.log('  ℹ️ Study already complete, skipped');
         }
 
-        stats.totalProcessed++;
+        stats.processed++;
 
-        // Add delay to respect rate limits (3 seconds between studies)
+        // Progress update every 10 studies
+        if (stats.processed % 10 === 0) {
+          const progressPercent = Math.round((stats.processed / stats.studiesNeedingImprovement) * 100);
+          const elapsed = Math.round((Date.now() - stats.startTime.getTime()) / 60000);
+          console.log(`\n📊 Progress: ${stats.processed}/${stats.studiesNeedingImprovement} (${progressPercent}%) - ${elapsed} minutes elapsed`);
+        }
+
+        // Respectful delay to avoid overwhelming the API
         await new Promise(resolve => setTimeout(resolve, 3000));
 
       } catch (error) {
@@ -137,13 +171,26 @@ export async function improveStudyContent(maxStudies: number = 1000): Promise<Co
       }
     }
 
-    console.log('\n✅ Content improvement completed!');
-    console.log(`📈 Final Stats:`, stats);
+    const totalTime = Math.round((Date.now() - stats.startTime.getTime()) / 60000);
+    console.log('\n🎉 Comprehensive content improvement completed!');
+    console.log(`⏱️ Total processing time: ${totalTime} minutes`);
+    console.log('📊 Final Statistics:');
+    console.log(`  - Total studies in database: ${stats.totalStudiesInDatabase}`);
+    console.log(`  - Studies needing improvement: ${stats.studiesNeedingImprovement}`);
+    console.log(`  - Studies processed: ${stats.processed}`);
+    console.log(`  - Methods sections generated: ${stats.methodsGenerated}`);
+    console.log(`  - Results sections generated: ${stats.resultsGenerated}`);
+    console.log(`  - Conclusions generated: ${stats.conclusionsGenerated}`);
+    console.log(`  - Summaries created: ${stats.summariesGenerated}`);
+    
+    if (stats.errors.length > 0) {
+      console.log(`  - Errors encountered: ${stats.errors.length}`);
+    }
     
     return stats;
 
   } catch (error) {
-    console.error('❌ Error in content improvement process:', error);
+    console.error('❌ Error in comprehensive content improvement:', error);
     throw error;
   }
 }
@@ -281,7 +328,7 @@ ${results ? `## Results\n${results}\n` : ''}
 ${conclusion ? `## Conclusion\n${conclusion}\n` : ''}
 
 ---
-*This summary was generated to provide comprehensive study information for hydrogen health research.*`;
+*This comprehensive summary was generated to provide complete study information for hydrogen health research.*`;
 
     return summary;
 
