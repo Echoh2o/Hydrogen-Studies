@@ -323,5 +323,15 @@ app.use((req, res, next) => {
     }, 15 * 60 * 1000); // Check every 15 minutes
     
     console.log('Keyword monitoring scheduler started');
+    
+    // Auto-start content enhancement on application startup
+    setTimeout(async () => {
+      try {
+        const { autoStartContentEnhancement } = await import('./auto-content-enhancer');
+        await autoStartContentEnhancement();
+      } catch (error) {
+        console.error('Error auto-starting content enhancement:', error);
+      }
+    }, 5000); // Wait 5 seconds after startup for stability
   });
 })();
