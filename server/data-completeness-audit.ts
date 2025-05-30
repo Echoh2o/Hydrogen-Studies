@@ -24,6 +24,9 @@ interface DataQualityMetrics {
   researchLinks: FieldCompleteness[];
   contentFields: FieldCompleteness[];
   metadata: FieldCompleteness[];
+  aiEnhancements: FieldCompleteness[];
+  seoFeatures: FieldCompleteness[];
+  userExperience: FieldCompleteness[];
 }
 
 async function auditDataCompleteness(): Promise<DataQualityMetrics> {
@@ -86,8 +89,33 @@ async function auditDataCompleteness(): Promise<DataQualityMetrics> {
     { name: 'consumer_categories', required: false }
   ], totalStudies);
 
-  // Calculate overall completeness
-  const allFields = [...coreFields, ...enhancedFields, ...researchLinks, ...contentFields, ...metadata];
+  // AI Enhancements and Generated Content
+  const aiEnhancements = await auditFieldGroup([
+    { name: 'auto_generated_image', required: false },
+    { name: 'images', required: false },
+    { name: 'image_captions', required: false }
+  ], totalStudies);
+
+  // SEO and Discoverability Features
+  const seoFeatures = await auditFieldGroup([
+    { name: 'primary_topic', required: false },
+    { name: 'secondary_topic', required: false },
+    { name: 'tertiary_topic', required: false },
+    { name: 'rank', required: false }
+  ], totalStudies);
+
+  // User Experience and Accessibility
+  const userExperience = await auditFieldGroup([
+    { name: 'view_count', required: false },
+    { name: 'has_full_text', required: false },
+    { name: 'citation_count', required: false }
+  ], totalStudies);
+
+  // Add plain language and consumer accessibility features
+  const specialFields = await auditSpecialFields(totalStudies);
+
+  // Calculate overall completeness including new categories
+  const allFields = [...coreFields, ...enhancedFields, ...researchLinks, ...contentFields, ...metadata, ...aiEnhancements, ...seoFeatures, ...userExperience];
   const overallCompleteness = allFields.reduce((sum, field) => sum + field.completionPercentage, 0) / allFields.length;
 
   return {
@@ -97,7 +125,10 @@ async function auditDataCompleteness(): Promise<DataQualityMetrics> {
     enhancedFields,
     researchLinks,
     contentFields,
-    metadata
+    metadata,
+    aiEnhancements,
+    seoFeatures,
+    userExperience
   };
 }
 
@@ -200,6 +231,157 @@ async function auditFieldGroup(fields: Array<{ name: string; required: boolean }
   return results;
 }
 
+async function auditSpecialFields(totalStudies: number): Promise<{
+  plainLanguage: FieldCompleteness[];
+  aiGeneratedContent: FieldCompleteness[];
+  seoOptimization: FieldCompleteness[];
+}> {
+  // Audit plain language accessibility
+  const plainLanguageResult = await db.execute(sql`
+    SELECT 
+      COUNT(CASE WHEN 
+        summary_markdown IS NOT NULL 
+        AND summary_markdown != '' 
+        AND LENGTH(summary_markdown) > 500 
+      THEN 1 END) as comprehensive_summaries,
+      COUNT(CASE WHEN 
+        methods_short IS NOT NULL 
+        AND methods_short != '' 
+        AND LENGTH(methods_short) < 1000 
+      THEN 1 END) as digestible_methods,
+      COUNT(CASE WHEN 
+        health_conditions IS NOT NULL 
+        AND health_conditions != '' 
+      THEN 1 END) as health_categorization
+    FROM studies
+  `);
+
+  // Audit AI-generated content
+  const aiContentResult = await db.execute(sql`
+    SELECT 
+      COUNT(CASE WHEN auto_generated_image = true THEN 1 END) as ai_images,
+      COUNT(CASE WHEN 
+        images IS NOT NULL 
+        AND array_length(images, 1) > 0 
+      THEN 1 END) as multiple_images,
+      COUNT(CASE WHEN 
+        image_captions IS NOT NULL 
+        AND array_length(image_captions, 1) > 0 
+      THEN 1 END) as image_descriptions,
+      COUNT(CASE WHEN 
+        summary_markdown IS NOT NULL 
+        AND summary_markdown LIKE '%#%' 
+      THEN 1 END) as structured_summaries
+    FROM studies
+  `);
+
+  // Audit SEO optimization
+  const seoResult = await db.execute(sql`
+    SELECT 
+      COUNT(CASE WHEN LENGTH(title) BETWEEN 40 AND 70 THEN 1 END) as seo_title_length,
+      COUNT(CASE WHEN LENGTH(abstract) BETWEEN 150 AND 300 THEN 1 END) as seo_description_length,
+      COUNT(CASE WHEN 
+        keywords IS NOT NULL 
+        AND array_length(keywords, 1) >= 5 
+      THEN 1 END) as keyword_rich,
+      COUNT(CASE WHEN 
+        primary_topic IS NOT NULL 
+        AND secondary_topic IS NOT NULL 
+      THEN 1 END) as topic_classification
+    FROM studies
+  `);
+
+  const plainLang = plainLanguageResult.rows[0];
+  const aiContent = aiContentResult.rows[0];
+  const seoOpt = seoResult.rows[0];
+
+  return {
+    plainLanguage: [
+      {
+        fieldName: 'comprehensive_summaries',
+        totalStudies,
+        completedStudies: Number(plainLang.comprehensive_summaries),
+        completionPercentage: Math.round((Number(plainLang.comprehensive_summaries) / totalStudies) * 10000) / 100,
+        sampleValues: ['Detailed markdown summaries over 500 characters']
+      },
+      {
+        fieldName: 'digestible_methods',
+        totalStudies,
+        completedStudies: Number(plainLang.digestible_methods),
+        completionPercentage: Math.round((Number(plainLang.digestible_methods) / totalStudies) * 10000) / 100,
+        sampleValues: ['Concise method descriptions under 1000 characters']
+      },
+      {
+        fieldName: 'health_categorization',
+        totalStudies,
+        completedStudies: Number(plainLang.health_categorization),
+        completionPercentage: Math.round((Number(plainLang.health_categorization) / totalStudies) * 10000) / 100,
+        sampleValues: ['Clear health condition classifications']
+      }
+    ],
+    aiGeneratedContent: [
+      {
+        fieldName: 'ai_generated_images',
+        totalStudies,
+        completedStudies: Number(aiContent.ai_images),
+        completionPercentage: Math.round((Number(aiContent.ai_images) / totalStudies) * 10000) / 100,
+        sampleValues: ['AI-generated scientific illustrations']
+      },
+      {
+        fieldName: 'multiple_images',
+        totalStudies,
+        completedStudies: Number(aiContent.multiple_images),
+        completionPercentage: Math.round((Number(aiContent.multiple_images) / totalStudies) * 10000) / 100,
+        sampleValues: ['Studies with multiple visual aids']
+      },
+      {
+        fieldName: 'image_descriptions',
+        totalStudies,
+        completedStudies: Number(aiContent.image_descriptions),
+        completionPercentage: Math.round((Number(aiContent.image_descriptions) / totalStudies) * 10000) / 100,
+        sampleValues: ['Accessible image captions and descriptions']
+      },
+      {
+        fieldName: 'structured_summaries',
+        totalStudies,
+        completedStudies: Number(aiContent.structured_summaries),
+        completionPercentage: Math.round((Number(aiContent.structured_summaries) / totalStudies) * 10000) / 100,
+        sampleValues: ['Markdown-formatted structured content']
+      }
+    ],
+    seoOptimization: [
+      {
+        fieldName: 'seo_optimized_titles',
+        totalStudies,
+        completedStudies: Number(seoOpt.seo_title_length),
+        completionPercentage: Math.round((Number(seoOpt.seo_title_length) / totalStudies) * 10000) / 100,
+        sampleValues: ['Titles optimized for search engines (40-70 chars)']
+      },
+      {
+        fieldName: 'seo_description_length',
+        totalStudies,
+        completedStudies: Number(seoOpt.seo_description_length),
+        completionPercentage: Math.round((Number(seoOpt.seo_description_length) / totalStudies) * 10000) / 100,
+        sampleValues: ['Abstracts optimized for meta descriptions (150-300 chars)']
+      },
+      {
+        fieldName: 'keyword_rich_content',
+        totalStudies,
+        completedStudies: Number(seoOpt.keyword_rich),
+        completionPercentage: Math.round((Number(seoOpt.keyword_rich) / totalStudies) * 10000) / 100,
+        sampleValues: ['Studies with 5+ relevant keywords']
+      },
+      {
+        fieldName: 'topic_classification',
+        totalStudies,
+        completedStudies: Number(seoOpt.topic_classification),
+        completionPercentage: Math.round((Number(seoOpt.topic_classification) / totalStudies) * 10000) / 100,
+        sampleValues: ['Hierarchical topic classification system']
+      }
+    ]
+  };
+}
+
 function displayAuditResults(metrics: DataQualityMetrics) {
   console.log('\n='.repeat(80));
   console.log('DATA COMPLETENESS AUDIT REPORT');
@@ -213,7 +395,10 @@ function displayAuditResults(metrics: DataQualityMetrics) {
     { name: 'ENHANCED CONTENT FIELDS', fields: metrics.enhancedFields },
     { name: 'RESEARCH LINKS & VERIFICATION', fields: metrics.researchLinks },
     { name: 'CONTENT & MEDIA', fields: metrics.contentFields },
-    { name: 'METADATA & CLASSIFICATION', fields: metrics.metadata }
+    { name: 'METADATA & CLASSIFICATION', fields: metrics.metadata },
+    { name: 'AI ENHANCEMENTS & GENERATED CONTENT', fields: metrics.aiEnhancements },
+    { name: 'SEO & DISCOVERABILITY FEATURES', fields: metrics.seoFeatures },
+    { name: 'USER EXPERIENCE & ANALYTICS', fields: metrics.userExperience }
   ];
 
   sections.forEach(section => {
