@@ -2623,6 +2623,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Visual Enhancement endpoints (Phase 3)
+  app.post('/api/admin/generate-study-images', async (req, res) => {
+    try {
+      const { generateAllStudyImages } = await import('./visual-enhancement');
+      const results = await generateAllStudyImages();
+      res.json(results);
+    } catch (error) {
+      console.error('Visual enhancement error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate study images',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get('/api/admin/image-coverage-stats', async (req, res) => {
+    try {
+      const { getImageCoverage } = await import('./visual-enhancement');
+      const stats = await getImageCoverage();
+      res.json(stats);
+    } catch (error) {
+      console.error('Image coverage stats error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get image coverage statistics',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Content Enhancement Coordination
+  app.get('/api/admin/enhancement-progress', async (req, res) => {
+    try {
+      const { getOverallEnhancementProgress } = await import('./content-enhancement-coordinator');
+      const progress = await getOverallEnhancementProgress();
+      res.json(progress);
+    } catch (error) {
+      console.error('Enhancement progress error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get enhancement progress',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get('/api/admin/enhancement-report', async (req, res) => {
+    try {
+      const { generateEnhancementReport } = await import('./content-enhancement-coordinator');
+      const report = await generateEnhancementReport();
+      res.json(report);
+    } catch (error) {
+      console.error('Enhancement report error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate enhancement report',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get enhanced study data
   app.get('/api/enhanced-study/:studyId', async (req, res) => {
     try {
