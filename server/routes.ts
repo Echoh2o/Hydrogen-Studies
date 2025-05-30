@@ -2609,6 +2609,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Accelerated Consumer Content Generation
+  app.post('/api/admin/generate-consumer-content-fast', async (req, res) => {
+    try {
+      const { generateConsumerContentFast } = await import('./accelerated-consumer-content');
+      const results = await generateConsumerContentFast();
+      res.json(results);
+    } catch (error) {
+      console.error('Accelerated consumer content generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate consumer content (accelerated)',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   app.get('/api/admin/consumer-content-stats', async (req, res) => {
     try {
       const { getConsumerContentCoverage } = await import('./consumer-content-generator');
