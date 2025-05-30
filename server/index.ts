@@ -333,5 +333,15 @@ app.use((req, res, next) => {
         console.error('Error auto-starting content enhancement:', error);
       }
     }, 5000); // Wait 5 seconds after startup for stability
+    
+    // Auto-start research enrichment on application startup
+    setTimeout(async () => {
+      try {
+        const { autoStartResearchEnrichment } = await import('./auto-research-enrichment');
+        await autoStartResearchEnrichment();
+      } catch (error) {
+        console.error('Error auto-starting research enrichment:', error);
+      }
+    }, 10000); // Wait 10 seconds after startup for stability
   });
 })();
