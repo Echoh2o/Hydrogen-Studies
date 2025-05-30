@@ -2594,6 +2594,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Consumer Content Generation endpoints
+  app.post('/api/admin/generate-consumer-content', async (req, res) => {
+    try {
+      const { generateAllConsumerContent } = await import('./consumer-content-generator');
+      const results = await generateAllConsumerContent();
+      res.json(results);
+    } catch (error) {
+      console.error('Consumer content generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate consumer content',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get('/api/admin/consumer-content-stats', async (req, res) => {
+    try {
+      const { getConsumerContentCoverage } = await import('./consumer-content-generator');
+      const stats = await getConsumerContentCoverage();
+      res.json(stats);
+    } catch (error) {
+      console.error('Consumer content stats error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get consumer content statistics',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get enhanced study data
   app.get('/api/enhanced-study/:studyId', async (req, res) => {
     try {
