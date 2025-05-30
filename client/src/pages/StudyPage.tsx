@@ -124,6 +124,8 @@ const StudyPage = () => {
   interface Study {
     id: number;
     title: string;
+    plainLanguageTitle?: string;
+    plain_language_title?: string; // Added to handle snake_case from API
     abstract: string;
     authors: string;
     journal: string;
@@ -284,7 +286,7 @@ const StudyPage = () => {
   return (
     <>
       <Helmet>
-        <title>{study.title} | Hydrogen Studies Research</title>
+        <title>{(study.plainLanguageTitle || study.plain_language_title || study.title)} | Hydrogen Studies Research</title>
         <meta name="description" content={study.abstract?.substring(0, 160) + "..."} />
         <meta name="keywords" content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, research study, scientific evidence, health effects`} />
         <meta name="author" content={study.authors} />
@@ -292,7 +294,7 @@ const StudyPage = () => {
         <link rel="canonical" href={`https://hydrogenstudies.com/study/${study.id}`} />
         
         {/* Open Graph Tags */}
-        <meta property="og:title" content={`${study.title} | Hydrogen Studies`} />
+        <meta property="og:title" content={`${(study.plainLanguageTitle || study.plain_language_title || study.title)} | Hydrogen Studies`} />
         <meta property="og:description" content={study.abstract?.substring(0, 200) + "..."} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />
@@ -302,7 +304,7 @@ const StudyPage = () => {
         
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={study.title} />
+        <meta name="twitter:title" content={study.plainLanguageTitle || study.plain_language_title || study.title} />
         <meta name="twitter:description" content={study.abstract?.substring(0, 200) + "..."} />
         <meta name="twitter:image" content={study.imageUrl || study.image_url || fallbackImageBase64} />
       </Helmet>
@@ -372,8 +374,19 @@ const StudyPage = () => {
                 )}
               </div>
               
-              {/* Mobile-optimized title */}
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 leading-tight">{study.title}</h1>
+              {/* SEO-optimized main title with academic subtitle */}
+              {(study.plainLanguageTitle || study.plain_language_title) ? (
+                <div className="mb-4">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight text-primary">
+                    {study.plainLanguageTitle || study.plain_language_title}
+                  </h1>
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-neutral-700 leading-snug">
+                    {study.title}
+                  </h2>
+                </div>
+              ) : (
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 leading-tight">{study.title}</h1>
+              )}
               
               {/* Mobile-friendly metadata stack */}
               <div className="space-y-2 md:space-y-0 md:flex md:flex-wrap md:items-center text-neutral-600 text-sm">

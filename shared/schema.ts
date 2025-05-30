@@ -214,6 +214,7 @@ export const studies = pgTable("studies", {
   // === CHATGPT AI ENHANCEMENT FIELDS ===
   // Consumer-friendly content
   simplifiedExplanation: text("simplified_explanation"), // Plain language explanation
+  plainLanguageTitle: text("plain_language_title"), // SEO-optimized consumer-friendly title
   seoTitle: text("seo_title"), // Search-optimized title
   seoDescription: text("seo_description"), // Meta description for SEO
   seoKeywords: text("seo_keywords").array(), // SEO keyword array
