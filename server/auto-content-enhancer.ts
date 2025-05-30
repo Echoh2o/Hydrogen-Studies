@@ -42,21 +42,8 @@ export async function autoStartContentEnhancement() {
     console.log(`  - Total improvements needed: ${totalNeeded}`);
 
     if (totalNeeded > 0) {
-      console.log('🚀 Auto-starting content enhancement process...');
-      isRunning = true;
-      
-      // Start the enhancement process in the background
-      completeAllContent()
-        .then(() => {
-          console.log('✅ Auto content enhancement completed successfully!');
-          isRunning = false;
-        })
-        .catch((error) => {
-          console.error('❌ Auto content enhancement failed:', error);
-          isRunning = false;
-        });
-      
-      console.log('🔄 Content enhancement running in background...');
+      console.log('📊 Content enhancement needed but auto-start disabled to prevent redundant processing');
+      console.log('💡 Content can be completed using direct database operations instead of slow AI processing');
     } else {
       console.log('✅ All content areas complete - no enhancement needed!');
     }
