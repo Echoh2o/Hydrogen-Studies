@@ -209,15 +209,5 @@ export async function getPlainLanguageTitleStats() {
   };
 }
 
-// If running directly, start the generation process
-if (require.main === module) {
-  generateAllPlainLanguageTitles()
-    .then(results => {
-      console.log("\nFinal Results:", results);
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error("Error:", error);
-      process.exit(1);
-    });
-}
+// Export functions for use in routes
+export { generateAllPlainLanguageTitles, getPlainLanguageTitleStats };

@@ -2551,6 +2551,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SEO Title Generation endpoints
+  app.post('/api/admin/generate-plain-titles', async (req, res) => {
+    try {
+      const { generateAllPlainLanguageTitles } = await import('./seo-title-generator');
+      const results = await generateAllPlainLanguageTitles();
+      res.json(results);
+    } catch (error) {
+      console.error('Plain title generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate plain language titles',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get('/api/admin/plain-title-stats', async (req, res) => {
+    try {
+      const { getPlainLanguageTitleStats } = await import('./seo-title-generator');
+      const stats = await getPlainLanguageTitleStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Plain title stats error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get plain language title statistics',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get enhanced study data
   app.get('/api/enhanced-study/:studyId', async (req, res) => {
     try {
