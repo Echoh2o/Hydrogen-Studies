@@ -2709,6 +2709,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin monitoring endpoints
+  app.get("/api/admin/monitoring/status", async (req, res) => {
+    try {
+      const { getMonitoringStatus } = await import('./admin-monitor');
+      const status = getMonitoringStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting monitoring status:', error);
+      res.status(500).json({ error: 'Failed to get monitoring status' });
+    }
+  });
+
+  app.get("/api/admin/monitoring/analyze", async (req, res) => {
+    try {
+      const { analyzeContentCompleteness } = await import('./admin-monitor');
+      const stats = await analyzeContentCompleteness();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error analyzing content:', error);
+      res.status(500).json({ error: 'Failed to analyze content completeness' });
+    }
+  });
+
+  app.post("/api/admin/trigger/consumer-content", async (req, res) => {
+    try {
+      const { triggerConsumerContentGeneration } = await import('./admin-monitor');
+      const result = await triggerConsumerContentGeneration();
+      res.json(result);
+    } catch (error) {
+      console.error('Error triggering consumer content:', error);
+      res.status(500).json({ error: 'Failed to trigger consumer content generation' });
+    }
+  });
+
+  app.post("/api/admin/trigger/research-enrichment", async (req, res) => {
+    try {
+      const { triggerResearchEnrichment } = await import('./admin-monitor');
+      const result = await triggerResearchEnrichment();
+      res.json(result);
+    } catch (error) {
+      console.error('Error triggering research enrichment:', error);
+      res.status(500).json({ error: 'Failed to trigger research enrichment' });
+    }
+  });
+
+  app.post("/api/admin/trigger/visual-enhancement", async (req, res) => {
+    try {
+      const { triggerVisualEnhancement } = await import('./admin-monitor');
+      const result = await triggerVisualEnhancement();
+      res.json(result);
+    } catch (error) {
+      console.error('Error triggering visual enhancement:', error);
+      res.status(500).json({ error: 'Failed to trigger visual enhancement' });
+    }
+  });
+
+  app.post("/api/admin/stop-processes", async (req, res) => {
+    try {
+      const { stopAllProcesses } = await import('./admin-monitor');
+      const result = stopAllProcesses();
+      res.json(result);
+    } catch (error) {
+      console.error('Error stopping processes:', error);
+      res.status(500).json({ error: 'Failed to stop processes' });
+    }
+  });
+
   // Initialize sample data (only in development)
   if (process.env.NODE_ENV === 'development') {
     try {
