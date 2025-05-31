@@ -48,6 +48,7 @@ import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/E
 // Admin pages - old
 import AdminPage from "@/pages/admin/AdminPage";
 import ImportPage from "@/pages/admin/ImportPage";
+import AdminMonitoringPage from "@/pages/admin/AdminMonitoringPage";
 import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
 import EuropePmcPage from "@/pages/admin/EuropePmcPage";
 import SemanticScholarPage from "@/pages/admin/SemanticScholarPage";
@@ -119,6 +120,7 @@ function Router() {
       
       {/* Admin Dashboard */}
       <Route path="/admin" component={DashboardPage} />
+      <Route path="/admin/monitoring" component={AdminMonitoringPage} />
       <Route path="/admin/studies" component={StudiesManagementPage} />
       <Route path="/admin/studies/add" component={AddStudyPage} />
       <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
