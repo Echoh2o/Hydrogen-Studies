@@ -343,5 +343,15 @@ app.use((req, res, next) => {
         console.error('Error auto-starting research enrichment:', error);
       }
     }, 10000); // Wait 10 seconds after startup for stability
+    
+    // Auto-start consumer content generation on application startup
+    setTimeout(async () => {
+      try {
+        const { autoStartConsumerContent } = await import('./auto-restart-consumer-content');
+        await autoStartConsumerContent();
+      } catch (error) {
+        console.error('Error auto-starting consumer content generation:', error);
+      }
+    }, 15000); // Wait 15 seconds after startup for stability
   });
 })();
