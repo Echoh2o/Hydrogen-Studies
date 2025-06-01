@@ -11,6 +11,7 @@ import {
 import { eq, like, and, or, sql, desc, asc, count, isNull, isNotNull } from "drizzle-orm";
 import { db } from "./db";
 import { StudyFilters, PaginatedResults, IStorage } from "./storage";
+import { expandQuery } from "./search-enhancement";
 
 /**
  * Database implementation of the storage interface
@@ -32,38 +33,49 @@ export class DatabaseStorage implements Partial<IStorage> {
       // Start building the query with conditions
       let whereConditions = [];
       
-      // Apply enhanced multi-field text search
+      // Apply enhanced multi-field text search with semantic expansion
       if (filters.query) {
-        const searchTerm = `%${filters.query.toLowerCase()}%`;
+        console.log(`Semantic search for: "${filters.query}"`);
         
-        // Build comprehensive search across all content fields
-        let searchFields = [
-          sql`LOWER(${studies.title}) LIKE ${searchTerm}`,
-          sql`LOWER(${studies.abstract}) LIKE ${searchTerm}`,
-          sql`LOWER(${studies.authors}) LIKE ${searchTerm}`,
-          sql`LOWER(${studies.keywords}) LIKE ${searchTerm}`
-        ];
+        // Expand query with related terms for better semantic matching
+        const expandedTerms = expandQuery(filters.query);
+        console.log(`Expanded to include: ${expandedTerms.join(', ')}`);
         
-        // Include rich content fields when available and enabled
-        if (filters.searchInMethods !== false) {
-          searchFields.push(sql`LOWER(${studies.methods}) LIKE ${searchTerm}`);
-        }
+        // Build comprehensive search conditions for all expanded terms
+        const allSearchConditions = expandedTerms.map(term => {
+          const searchTerm = `%${term.toLowerCase()}%`;
+          
+          let searchFields = [
+            sql`LOWER(${studies.title}) LIKE ${searchTerm}`,
+            sql`LOWER(${studies.abstract}) LIKE ${searchTerm}`,
+            sql`LOWER(${studies.authors}) LIKE ${searchTerm}`,
+            sql`LOWER(${studies.keywords}) LIKE ${searchTerm}`
+          ];
+          
+          // Include rich content fields when available and enabled
+          if (filters.searchInMethods !== false) {
+            searchFields.push(sql`LOWER(${studies.methods}) LIKE ${searchTerm}`);
+          }
+          
+          if (filters.searchInResults !== false) {
+            searchFields.push(sql`LOWER(${studies.results}) LIKE ${searchTerm}`);
+          }
+          
+          if (filters.searchInConclusion !== false) {
+            searchFields.push(sql`LOWER(${studies.conclusion}) LIKE ${searchTerm}`);
+          }
+          
+          // Also search in objectives and summary fields
+          searchFields.push(
+            sql`LOWER(${studies.objective}) LIKE ${searchTerm}`,
+            sql`LOWER(${studies.summaryMarkdown}) LIKE ${searchTerm}`
+          );
+          
+          return or(...searchFields);
+        });
         
-        if (filters.searchInResults !== false) {
-          searchFields.push(sql`LOWER(${studies.results}) LIKE ${searchTerm}`);
-        }
-        
-        if (filters.searchInConclusion !== false) {
-          searchFields.push(sql`LOWER(${studies.conclusion}) LIKE ${searchTerm}`);
-        }
-        
-        // Also search in objectives and summary fields
-        searchFields.push(
-          sql`LOWER(${studies.objective}) LIKE ${searchTerm}`,
-          sql`LOWER(${studies.summaryMarkdown}) LIKE ${searchTerm}`
-        );
-        
-        whereConditions.push(or(...searchFields));
+        // Combine all semantic search conditions
+        whereConditions.push(or(...allSearchConditions));
       }
       
       // Apply enhanced keyword filter across all content
