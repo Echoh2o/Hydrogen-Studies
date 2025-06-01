@@ -202,7 +202,7 @@ export async function triggerVisualEnhancement(): Promise<{ started: boolean; me
     processStatus.visualEnhancement.isRunning = true;
     processStatus.visualEnhancement.lastRun = new Date();
 
-    // Import and run visual enhancement
+    // Check how many studies need images
     const studiesNeedingImages = await db.execute(sql`
       SELECT COUNT(*) as count FROM studies 
       WHERE image_url IS NULL OR image_url = ''
@@ -210,7 +210,16 @@ export async function triggerVisualEnhancement(): Promise<{ started: boolean; me
 
     const count = Number(studiesNeedingImages.rows[0]?.count) || 0;
     
-    return { started: true, message: `Visual enhancement started for ${count} studies` };
+    if (count === 0) {
+      processStatus.visualEnhancement.isRunning = false;
+      return { started: false, message: 'All studies already have images - visual content is 100% complete!' };
+    }
+
+    // Start visual content completion
+    const { startVisualContentCompletion } = await import('./complete-visual-content');
+    await startVisualContentCompletion();
+    
+    return { started: true, message: `Visual content generation started for ${count} studies. This requires OpenAI API access for image generation.` };
   } catch (error) {
     processStatus.visualEnhancement.isRunning = false;
     return { started: false, message: `Failed to start visual enhancement: ${error}` };
