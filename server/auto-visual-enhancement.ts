@@ -35,15 +35,15 @@ let globalStatus: VisualEnhancementStatus = {
  */
 async function checkVisualContentStatus() {
   try {
-    const results = await db
-      .select({
-        total: sql<number>`count(*)`,
-        withImages: sql<number>`count(case when ${studies.imageUrl} is not null then 1 end)`,
-        withoutImages: sql<number>`count(case when ${studies.imageUrl} is null then 1 end)`
-      })
-      .from(studies);
+    const results = await db.execute(
+      sql`SELECT 
+        count(*) as total,
+        count(case when image_url is not null then 1 end) as withImages,
+        count(case when image_url is null then 1 end) as withoutImages
+      FROM studies`
+    );
 
-    const stats = results[0];
+    const stats = results.rows[0];
     globalStatus.totalRemaining = stats.withoutImages;
     
     console.log(`📊 Visual Content Status: ${stats.withImages}/${stats.total} complete (${stats.withoutImages} remaining)`);
@@ -71,19 +71,18 @@ async function generateStudyImage(study: any): Promise<boolean> {
     const imageResult = await generateImageForStudy(study);
     
     if (imageResult?.success && imageResult.imageUrl) {
-      // Update study with generated image
-      await db
-        .update(studies)
-        .set({ 
-          imageUrl: imageResult.imageUrl,
-          imageAlt: imageResult.imagePath || `Visual representation of ${study.title}`
-        })
-        .where(sql`${studies.id} = ${study.id}`);
+      // Update study with generated image using raw SQL
+      await db.execute(
+        sql`UPDATE studies 
+            SET image_url = ${imageResult.imageUrl}, 
+                image_alt = ${imageResult.imagePath || `Visual representation of ${study.title}`}
+            WHERE id = ${study.id}`
+      );
       
       globalStatus.totalGenerated++;
       globalStatus.lastActivity = new Date();
       
-      console.log(`✅ Generated image for study ${study.id}: ${study.title.substring(0, 60)}...`);
+      console.log(`✅ Generated image for study ${study.id}: ${study.title?.substring(0, 60)}...`);
       return true;
     }
     
@@ -99,12 +98,15 @@ async function generateStudyImage(study: any): Promise<boolean> {
  */
 async function processBatchWithoutImages(): Promise<void> {
   try {
-    // Get batch of studies without images
-    const studiesWithoutImages = await db
-      .select()
-      .from(studies)
-      .where(isNull(studies.imageUrl))
-      .limit(globalStatus.batchSize);
+    // Get batch of studies without images using raw SQL
+    const results = await db.execute(
+      sql`SELECT id, title, abstract, category, image_url 
+          FROM studies 
+          WHERE image_url IS NULL 
+          LIMIT ${globalStatus.batchSize}`
+    );
+    
+    const studiesWithoutImages = results.rows;
 
     if (studiesWithoutImages.length === 0) {
       console.log('✅ All studies now have images - visual enhancement complete!');
