@@ -180,11 +180,11 @@ export async function triggerResearchEnrichment(): Promise<{ started: boolean; m
       return { started: false, message: 'Research enrichment is already running' };
     }
 
-    const { autoStartResearchEnrichment } = await import('./auto-research-enrichment');
+    const { manualStartResearchEnrichment } = await import('./auto-research-enrichment');
     processStatus.researchEnrichment.isRunning = true;
     processStatus.researchEnrichment.lastRun = new Date();
 
-    await autoStartResearchEnrichment();
+    const result = await manualStartResearchEnrichment();
     
     return { started: true, message: 'Research enrichment started successfully' };
   } catch (error) {

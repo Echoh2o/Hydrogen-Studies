@@ -24,9 +24,9 @@ let enrichmentStatus: EnrichmentStatus = {
 };
 
 /**
- * Check if research enrichment is needed and start automatically
+ * Check if research enrichment is needed (status only - no auto-start)
  */
-export async function autoStartResearchEnrichment() {
+export async function checkEnrichmentStatus() {
   try {
     // Check current enrichment coverage
     const studiesData = await db
@@ -46,16 +46,40 @@ export async function autoStartResearchEnrichment() {
 
     if (studiesNeedingEnrichment.length > 0) {
       console.log(`🔍 Found ${studiesNeedingEnrichment.length} studies needing research enrichment`);
-      console.log('🚀 Auto-starting research enrichment process...');
-      
-      // Start enrichment in background
-      startBackgroundEnrichment();
+      console.log('⏸️ Auto-start disabled - manual start required via admin dashboard');
     } else {
       console.log('✅ All studies have research citations - no enrichment needed');
     }
+    
+    return {
+      needsEnrichment: studiesNeedingEnrichment.length > 0,
+      studiesNeedingEnrichment: studiesNeedingEnrichment.length,
+      totalStudies: studiesData.length
+    };
   } catch (error) {
     console.log('⚠️ Could not check enrichment status:', error);
+    return {
+      needsEnrichment: false,
+      studiesNeedingEnrichment: 0,
+      totalStudies: 0
+    };
   }
+}
+
+/**
+ * Manual start research enrichment (only via admin trigger)
+ */
+export async function manualStartResearchEnrichment() {
+  if (enrichmentStatus.isRunning) {
+    console.log('📊 Research enrichment already running');
+    return { started: false, message: 'Research enrichment already running' };
+  }
+
+  console.log('🚀 Manual start: research enrichment process...');
+  
+  // Start enrichment in background
+  startBackgroundEnrichment();
+  return { started: true, message: 'Research enrichment started manually' };
 }
 
 /**
