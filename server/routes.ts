@@ -177,6 +177,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // We've moved table initialization to the main server startup process
   // This avoids redundant operations on each startup and improves performance
   
+  // Search enhancement endpoints
+  app.get('/api/search/suggestions', async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.json([]);
+      }
+      
+      const { getSearchSuggestions } = await import('./search-enhancement');
+      const suggestions = getSearchSuggestions(q);
+      res.json(suggestions);
+    } catch (error) {
+      console.error('Error getting search suggestions:', error);
+      res.status(500).json({ message: 'Failed to get search suggestions' });
+    }
+  });
+
+  app.get('/api/search/expand', async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.json({ original: '', expanded: [] });
+      }
+      
+      const { expandQuery } = await import('./search-enhancement');
+      const expandedTerms = expandQuery(q);
+      res.json({ 
+        original: q, 
+        expanded: expandedTerms,
+        message: `Query "${q}" expanded to include ${expandedTerms.length} terms`
+      });
+    } catch (error) {
+      console.error('Error expanding query:', error);
+      res.status(500).json({ message: 'Failed to expand query' });
+    }
+  });
+
   // Register studies routes for the main study search and retrieval
   app.use('/api/studies', studiesRouter);
   
