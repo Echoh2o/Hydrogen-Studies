@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import OpenAI from 'openai';
 import { db } from './db';
 import { studies as studiesTable, blogArticles } from '../shared/schema';
-import { eq, isNull } from 'drizzle-orm';
+import { eq, isNull, or } from 'drizzle-orm';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -432,11 +432,14 @@ function determineHydrogenDeliveryMethod(content: string): string {
  */
 export async function findStudiesNeedingImages(limit: number = 20): Promise<number[]> {
   try {
-    // Find studies that have no images
+    // Find studies that have no images (both NULL and empty string values)
     const studiesWithoutImages = await db?.select({ id: studiesTable.id })
       .from(studiesTable)
       .where(
-        isNull(studiesTable.imageUrl)
+        or(
+          isNull(studiesTable.imageUrl),
+          eq(studiesTable.imageUrl, '')
+        )
       )
       .limit(limit);
       
