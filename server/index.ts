@@ -334,13 +334,13 @@ app.use((req, res, next) => {
       }
     }, 5000); // Wait 5 seconds after startup for stability
     
-    // Auto-start research enrichment on application startup
+    // Check research enrichment status (manual start only)
     setTimeout(async () => {
       try {
-        const { autoStartResearchEnrichment } = await import('./auto-research-enrichment');
-        await autoStartResearchEnrichment();
+        const { checkEnrichmentStatus } = await import('./auto-research-enrichment');
+        await checkEnrichmentStatus();
       } catch (error) {
-        console.error('Error auto-starting research enrichment:', error);
+        console.error('Error checking research enrichment status:', error);
       }
     }, 10000); // Wait 10 seconds after startup for stability
     
