@@ -931,7 +931,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error scraping hydrogen studies:", error);
-      res.status(500).json({ message: "Failed to scrape studies", error: error.message });
+      res.status(500).json({ 
+        message: "Failed to scrape studies", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
   
@@ -987,7 +990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error importing studies:", error);
-      res.status(500).json({ message: "Failed to import studies", error: error.message });
+      res.status(500).json({ message: "Failed to import studies", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
