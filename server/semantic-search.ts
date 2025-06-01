@@ -125,7 +125,7 @@ export async function semanticSearch(query: string, limit: number = 20) {
     }).join(' + ')}
   )`;
   
-  const query = db
+  const searchQuery = db
     .select({
       id: studies.id,
       title: studies.title,
