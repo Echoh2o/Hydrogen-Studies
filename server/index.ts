@@ -353,5 +353,15 @@ app.use((req, res, next) => {
         console.error('Error auto-starting consumer content generation:', error);
       }
     }, 15000); // Wait 15 seconds after startup for stability
+    
+    // Auto-start visual enhancement on application startup
+    setTimeout(async () => {
+      try {
+        const { autoStartVisualEnhancement } = await import('./auto-visual-enhancement');
+        await autoStartVisualEnhancement();
+      } catch (error) {
+        console.error('Error auto-starting visual enhancement:', error);
+      }
+    }, 20000); // Wait 20 seconds after startup for stability
   });
 })();

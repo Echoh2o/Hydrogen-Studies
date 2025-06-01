@@ -2199,7 +2199,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Call the image generation service
-      const result = await // generateImageForStudy // TODO: implement(studyId);
+      const { generateImageForStudy } = await import('./image-generator');
+      const result = await generateImageForStudy({ id: studyId, title: 'Study', abstract: 'Abstract' });
       
       return res.json(result);
     } catch (error) {
@@ -2835,6 +2836,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error getting visual completion status:', error);
       res.status(500).json({ error: 'Failed to get visual completion status' });
+    }
+  });
+
+  // Auto-visual enhancement monitoring endpoints
+  app.get('/api/admin/auto-visual-enhancement/status', async (req, res) => {
+    try {
+      const { getVisualEnhancementStatus } = await import('./auto-visual-enhancement');
+      const status = getVisualEnhancementStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting auto-visual enhancement status:', error);
+      res.status(500).json({ error: 'Failed to get auto-visual enhancement status' });
+    }
+  });
+
+  app.post('/api/admin/auto-visual-enhancement/start', async (req, res) => {
+    try {
+      const { manualStartVisualEnhancement } = await import('./auto-visual-enhancement');
+      const status = await manualStartVisualEnhancement();
+      res.json({ success: true, status });
+    } catch (error) {
+      console.error('Error starting auto-visual enhancement:', error);
+      res.status(500).json({ error: 'Failed to start auto-visual enhancement' });
+    }
+  });
+
+  app.post('/api/admin/auto-visual-enhancement/stop', async (req, res) => {
+    try {
+      const { stopVisualEnhancement } = await import('./auto-visual-enhancement');
+      stopVisualEnhancement();
+      res.json({ success: true, message: 'Auto-visual enhancement stopped' });
+    } catch (error) {
+      console.error('Error stopping auto-visual enhancement:', error);
+      res.status(500).json({ error: 'Failed to stop auto-visual enhancement' });
     }
   });
 
