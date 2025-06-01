@@ -111,13 +111,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add all studies
-      const allStudies = await db.select({ id: studies.id, updatedAt: studies.updatedAt })
+      const allStudies = await db.select({ id: studies.id, createdAt: studies.createdAt })
         .from(studies)
-        .orderBy(desc(studies.updatedAt))
+        .orderBy(desc(studies.createdAt))
         .limit(1000);  // Limit to avoid massive sitemaps
       
       for (const study of allStudies) {
-        const lastmod = study.updatedAt ? new Date(study.updatedAt).toISOString() : new Date().toISOString();
+        const lastmod = study.createdAt ? new Date(study.createdAt).toISOString() : new Date().toISOString();
         sitemap += `  <url>\n    <loc>${baseUrl}/studies/${study.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <priority>0.7</priority>\n  </url>\n`;
       }
       
