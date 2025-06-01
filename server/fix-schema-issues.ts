@@ -60,13 +60,10 @@ async function runSchemaFixes() {
 }
 
 // Run if called directly
-if (require.main === module) {
-  runSchemaFixes()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error('Fatal error:', error);
-      process.exit(1);
-    });
-}
+runSchemaFixes()
+  .then(() => console.log('Schema fixes completed'))
+  .catch((error) => {
+    console.error('Fatal error:', error);
+  });
 
 export { runSchemaFixes, createBasicConsumerCategories };
