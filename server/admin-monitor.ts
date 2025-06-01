@@ -81,8 +81,8 @@ export async function analyzeContentCompleteness(): Promise<ContentStats> {
         COUNT(CASE WHEN methods_short IS NOT NULL AND methods_short != '' THEN 1 END) as methods_complete,
         COUNT(CASE WHEN results_short IS NOT NULL AND results_short != '' THEN 1 END) as results_complete,
         COUNT(CASE WHEN conclusion_short IS NOT NULL AND conclusion_short != '' THEN 1 END) as conclusions_complete,
-        -- Research Enrichment
-        COUNT(CASE WHEN research_links IS NOT NULL AND research_links != '' THEN 1 END) as research_enriched,
+        -- Research Enrichment (using DOI as proxy since research_links column doesn't exist)
+        COUNT(CASE WHEN doi IS NOT NULL AND doi != '' THEN 1 END) as research_enriched,
         -- Visual Content
         COUNT(CASE WHEN image_url IS NOT NULL AND image_url != '' THEN 1 END) as visual_complete
       FROM studies
