@@ -18,8 +18,7 @@ import { fromZodError } from "zod-validation-error";
 import { upload, getFileType } from "./upload";
 import { 
   generateScientificImage, 
-  generateBlogImage,
-  generateImageForStudy
+  generateBlogImage
 } from "./image-generator";
 import { generateBlogArticlesForStudy, saveBlogArticles, getBlogArticlesForStudy } from "./blog-generator";
 import { generateContentSuggestion, generateTitleSuggestions, SuggestionType } from "./blog-content-helper";
@@ -77,7 +76,7 @@ import recommendationRoutes from "./routes/recommendation-routes";
 import fullEnrichmentRoutes from "./routes/full-enrichment-routes";
 
 import { generateStandardizedSummary, updateStudyWithStandardizedSummary } from "../shared/schema-updates";
-import { generateImageForStudy, batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
+import { batchGenerateImagesForStudies, findStudiesNeedingImages } from "./image-generator";
 
 // Import routers
 import consumerCategoriesRouter from './routes/consumer-categories-routes';
@@ -893,8 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.submitContactMessage({
               name: validatedData.name,
               email: validatedData.email,
-              message: validatedData.message,
-              subject: req.body.subject || "Contact Form Submission"
+              message: validatedData.message
             });
           } catch (dbError) {
             console.warn("Failed to store contact message in database, but email was sent:", dbError);

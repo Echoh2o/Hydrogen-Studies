@@ -307,6 +307,18 @@ export const studyCollections = pgTable("study_collections", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Consumer categories table for categorization system
+export const consumerCategories = pgTable("consumer_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  categoryModel: text("category_model").notNull(), // 'condition', 'body_system', 'life_stage'
+  slug: text("slug").notNull().unique(),
+  studyCount: integer("study_count").default(0),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Collection studies mapping table
 export const collectionStudies = pgTable("collection_studies", {
   collectionId: integer("collection_id").notNull().references(() => studyCollections.id),
