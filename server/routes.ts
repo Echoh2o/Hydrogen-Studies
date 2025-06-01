@@ -32,6 +32,7 @@ import {
   getPopularQuestions 
 } from "./chat-bot";
 import { setupVectorExtension, processStudyForVectorDB, processAllStudiesForVectorDB, semanticSearch } from "./vector-database";
+import { semanticSearch as enhancedSemanticSearch, getRelatedStudies, getSearchSuggestions } from "./semantic-search";
 import { sendContactEmail } from "./sendgrid";
 import { imageGenerationRoutes } from "./routes/image-generation-routes";
 import { comprehensiveEnrichmentRoutes } from "./routes/comprehensive-enrichment-routes";
