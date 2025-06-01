@@ -143,7 +143,7 @@ export async function semanticSearch(query: string, limit: number = 20) {
     })
     .from(studies);
     
-  query.where(or(...searchConditions));
+  searchQuery.where(or(...searchConditions));
   
   const results = await query
     .orderBy(sql`${relevanceScore} DESC`)

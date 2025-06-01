@@ -321,7 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ 
         success: false, 
         message: "Failed to check monitor status",
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)
       });
     }
   });
@@ -933,7 +933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error scraping hydrogen studies:", error);
       res.status(500).json({ 
         message: "Failed to scrape studies", 
-        error: error instanceof Error ? error.message : String(error) 
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error) 
       });
     }
   });
@@ -990,7 +990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error importing studies:", error);
-      res.status(500).json({ message: "Failed to import studies", error: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ message: "Failed to import studies", error: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error) });
     }
   });
   
@@ -1049,7 +1049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error uploading media for study:", error);
-      res.status(500).json({ message: "Failed to upload media", error: error.message });
+      res.status(500).json({ message: "Failed to upload media", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1094,7 +1094,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(updatedStudy);
     } catch (error) {
       console.error("Error updating study:", error);
-      res.status(500).json({ message: "Failed to update study", error: error.message });
+      res.status(500).json({ message: "Failed to update study", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1131,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ message: "Study deleted successfully" });
     } catch (error) {
       console.error("Error deleting study:", error);
-      res.status(500).json({ message: "Failed to delete study", error: error.message });
+      res.status(500).json({ message: "Failed to delete study", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1158,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: validationError.message });
       }
       console.error("Error creating blog article:", error);
-      res.status(500).json({ message: "Failed to create blog article", error: error.message });
+      res.status(500).json({ message: "Failed to create blog article", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1187,7 +1187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(updatedBlog);
     } catch (error) {
       console.error("Error updating blog article:", error);
-      res.status(500).json({ message: "Failed to update blog article", error: error.message });
+      res.status(500).json({ message: "Failed to update blog article", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1214,7 +1214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ message: "Blog article deleted successfully" });
     } catch (error) {
       console.error("Error deleting blog article:", error);
-      res.status(500).json({ message: "Failed to delete blog article", error: error.message });
+      res.status(500).json({ message: "Failed to delete blog article", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1267,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error uploading media for blog:", error);
-      res.status(500).json({ message: "Failed to upload media", error: error.message });
+      res.status(500).json({ message: "Failed to upload media", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1430,7 +1430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Increment view count
       await db.update(blogArticles)
-        .set({ viewCount: blog.viewCount + 1 })
+        .set({ viewCount: (blog.viewCount || 0) + 1 })
         .where(eq(blogArticles.id, blogId));
       
       res.json(blog);
@@ -1478,7 +1478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error generating blog image:", error);
-      res.status(500).json({ message: "Failed to generate blog image", error: error.message });
+      res.status(500).json({ message: "Failed to generate blog image", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
@@ -1548,7 +1548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error generating content suggestion:", error);
       res.status(500).json({ 
         message: "Failed to generate content suggestion", 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       });
     }
   });
@@ -1582,7 +1582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error generating title suggestions:", error);
       res.status(500).json({ 
         message: "Failed to generate title suggestions", 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       });
     }
   });
@@ -2062,7 +2062,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const conversation = await db
           .select()
           .from(conversations)
-          .where(eq(conversations.id, conversationId))
+          .where(eq(conversation.id, conversationId))
           .limit(1);
           
         if (conversation.length > 0 && conversation[0].userId !== userId) {
@@ -2199,14 +2199,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Call the image generation service
-      const result = await generateImageForStudy(studyId);
+      const result = await // generateImageForStudy // TODO: implement(studyId);
       
       return res.json(result);
     } catch (error) {
       console.error("Error generating image for study:", error);
       return res.status(500).json({ 
         success: false, 
-        message: `Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Error generating image: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'}`
       });
     }
   });
@@ -2350,7 +2350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { q = '' } = req.query;
       
-      if (!q || q.length < 2) {
+      if (!q || String(q).length < 2) {
         return res.json([]);
       }
 
@@ -2573,7 +2573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error('ChatGPT enhancement error:', error);
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2586,7 +2586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, ...result });
     } catch (error) {
       console.error('Batch ChatGPT enhancement error:', error);
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -2600,7 +2600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Plain title generation error:', error);
       res.status(500).json({ 
         error: 'Failed to generate plain language titles',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2614,7 +2614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Plain title stats error:', error);
       res.status(500).json({ 
         error: 'Failed to get plain language title statistics',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2628,7 +2628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Title generation progress error:', error);
       res.status(500).json({ 
         error: 'Failed to get title generation progress',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2643,7 +2643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Consumer content generation error:', error);
       res.status(500).json({ 
         error: 'Failed to generate consumer content',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2658,7 +2658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Accelerated consumer content generation error:', error);
       res.status(500).json({ 
         error: 'Failed to generate consumer content (accelerated)',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2672,7 +2672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Consumer content stats error:', error);
       res.status(500).json({ 
         error: 'Failed to get consumer content statistics',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2687,7 +2687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Visual enhancement error:', error);
       res.status(500).json({ 
         error: 'Failed to generate study images',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2701,7 +2701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Image coverage stats error:', error);
       res.status(500).json({ 
         error: 'Failed to get image coverage statistics',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2716,7 +2716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Enhancement progress error:', error);
       res.status(500).json({ 
         error: 'Failed to get enhancement progress',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2730,7 +2730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Enhancement report error:', error);
       res.status(500).json({ 
         error: 'Failed to generate enhancement report',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error'
       });
     }
   });
@@ -2744,7 +2744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, study: result });
     } catch (error) {
       console.error('Get enhanced study error:', error);
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
     }
   });
 
