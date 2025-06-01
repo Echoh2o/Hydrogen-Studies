@@ -32,25 +32,52 @@ export class DatabaseStorage implements Partial<IStorage> {
       // Start building the query with conditions
       let whereConditions = [];
       
-      // Apply basic text search
+      // Apply enhanced multi-field text search
       if (filters.query) {
         const searchTerm = `%${filters.query.toLowerCase()}%`;
-        whereConditions.push(
-          or(
-            sql`LOWER(${studies.title}) LIKE ${searchTerm}`,
-            sql`LOWER(${studies.abstract}) LIKE ${searchTerm}`,
-            sql`LOWER(${studies.authors}) LIKE ${searchTerm}`
-          )
+        
+        // Build comprehensive search across all content fields
+        let searchFields = [
+          sql`LOWER(${studies.title}) LIKE ${searchTerm}`,
+          sql`LOWER(${studies.abstract}) LIKE ${searchTerm}`,
+          sql`LOWER(${studies.authors}) LIKE ${searchTerm}`,
+          sql`LOWER(${studies.keywords}) LIKE ${searchTerm}`
+        ];
+        
+        // Include rich content fields when available and enabled
+        if (filters.searchInMethods !== false) {
+          searchFields.push(sql`LOWER(${studies.methods}) LIKE ${searchTerm}`);
+        }
+        
+        if (filters.searchInResults !== false) {
+          searchFields.push(sql`LOWER(${studies.results}) LIKE ${searchTerm}`);
+        }
+        
+        if (filters.searchInConclusion !== false) {
+          searchFields.push(sql`LOWER(${studies.conclusion}) LIKE ${searchTerm}`);
+        }
+        
+        // Also search in objectives and summary fields
+        searchFields.push(
+          sql`LOWER(${studies.objective}) LIKE ${searchTerm}`,
+          sql`LOWER(${studies.summaryMarkdown}) LIKE ${searchTerm}`
         );
+        
+        whereConditions.push(or(...searchFields));
       }
       
-      // Apply keyword filter
+      // Apply enhanced keyword filter across all content
       if (filters.keyword) {
         const keywordTerm = `%${filters.keyword.toLowerCase()}%`;
         whereConditions.push(
           or(
             sql`LOWER(${studies.title}) LIKE ${keywordTerm}`,
-            sql`LOWER(${studies.abstract}) LIKE ${keywordTerm}`
+            sql`LOWER(${studies.abstract}) LIKE ${keywordTerm}`,
+            sql`LOWER(${studies.keywords}) LIKE ${keywordTerm}`,
+            sql`LOWER(${studies.methods}) LIKE ${keywordTerm}`,
+            sql`LOWER(${studies.results}) LIKE ${keywordTerm}`,
+            sql`LOWER(${studies.conclusion}) LIKE ${keywordTerm}`,
+            sql`LOWER(${studies.objective}) LIKE ${keywordTerm}`
           )
         );
       }
@@ -127,11 +154,12 @@ export class DatabaseStorage implements Partial<IStorage> {
       
       // Build the main query
       const studiesQuery = db.select().from(studies);
+      
       if (whereConditions.length > 0) {
         studiesQuery.where(and(...whereConditions));
       }
       
-      // Apply sorting
+      // Apply sorting with relevance priority for search queries
       const sortField = filters.sortField || filters.sortBy || 'publishDate';
       const sortOrder = filters.sortOrder || 'desc';
       
