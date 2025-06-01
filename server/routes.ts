@@ -2839,37 +2839,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auto-visual enhancement monitoring endpoints
-  app.get('/api/admin/auto-visual-enhancement/status', async (req, res) => {
+  // Visual enhancement monitoring endpoints
+  app.get('/api/admin/visual-enhancement/status', async (req, res) => {
     try {
-      const { getVisualEnhancementStatus } = await import('./auto-visual-enhancement');
+      const { getVisualEnhancementStatus } = await import('./simple-visual-enhancement');
       const status = getVisualEnhancementStatus();
       res.json(status);
     } catch (error) {
-      console.error('Error getting auto-visual enhancement status:', error);
-      res.status(500).json({ error: 'Failed to get auto-visual enhancement status' });
+      console.error('Error getting visual enhancement status:', error);
+      res.status(500).json({ error: 'Failed to get visual enhancement status' });
     }
   });
 
-  app.post('/api/admin/auto-visual-enhancement/start', async (req, res) => {
+  app.post('/api/admin/visual-enhancement/start', async (req, res) => {
     try {
-      const { manualStartVisualEnhancement } = await import('./auto-visual-enhancement');
-      const status = await manualStartVisualEnhancement();
+      const { startVisualEnhancement } = await import('./simple-visual-enhancement');
+      await startVisualEnhancement();
+      const { getVisualEnhancementStatus } = await import('./simple-visual-enhancement');
+      const status = getVisualEnhancementStatus();
       res.json({ success: true, status });
     } catch (error) {
-      console.error('Error starting auto-visual enhancement:', error);
-      res.status(500).json({ error: 'Failed to start auto-visual enhancement' });
+      console.error('Error starting visual enhancement:', error);
+      res.status(500).json({ error: 'Failed to start visual enhancement' });
     }
   });
 
-  app.post('/api/admin/auto-visual-enhancement/stop', async (req, res) => {
+  app.post('/api/admin/visual-enhancement/stop', async (req, res) => {
     try {
-      const { stopVisualEnhancement } = await import('./auto-visual-enhancement');
+      const { stopVisualEnhancement } = await import('./simple-visual-enhancement');
       stopVisualEnhancement();
-      res.json({ success: true, message: 'Auto-visual enhancement stopped' });
+      res.json({ success: true, message: 'Visual enhancement stopped' });
     } catch (error) {
-      console.error('Error stopping auto-visual enhancement:', error);
-      res.status(500).json({ error: 'Failed to stop auto-visual enhancement' });
+      console.error('Error stopping visual enhancement:', error);
+      res.status(500).json({ error: 'Failed to stop visual enhancement' });
     }
   });
 

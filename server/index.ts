@@ -357,7 +357,7 @@ app.use((req, res, next) => {
     // Auto-start visual enhancement on application startup
     setTimeout(async () => {
       try {
-        const { autoStartVisualEnhancement } = await import('./auto-visual-enhancement');
+        const { autoStartVisualEnhancement } = await import('./simple-visual-enhancement');
         await autoStartVisualEnhancement();
       } catch (error) {
         console.error('Error auto-starting visual enhancement:', error);
