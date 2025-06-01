@@ -2776,6 +2776,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/maintenance-mode", async (req, res) => {
+    try {
+      const { initializeMaintenanceMode, getMaintenanceStatus } = await import('./maintenance-mode');
+      initializeMaintenanceMode();
+      const status = getMaintenanceStatus();
+      res.json({ enabled: true, status });
+    } catch (error) {
+      console.error('Error enabling maintenance mode:', error);
+      res.status(500).json({ error: 'Failed to enable maintenance mode' });
+    }
+  });
+
+  app.get("/api/admin/visual-completion/status", async (req, res) => {
+    try {
+      const { getVisualCompletionStats } = await import('./complete-visual-content');
+      const stats = getVisualCompletionStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting visual completion status:', error);
+      res.status(500).json({ error: 'Failed to get visual completion status' });
+    }
+  });
+
+  app.post("/api/admin/visual-completion/start", async (req, res) => {
+    try {
+      const { startVisualContentCompletion } = await import('./complete-visual-content');
+      await startVisualContentCompletion();
+      res.json({ started: true, message: 'Visual content completion started' });
+    } catch (error) {
+      console.error('Error starting visual completion:', error);
+      res.status(500).json({ started: false, error: 'Failed to start visual content completion' });
+    }
+  });
+
   // Initialize sample data (only in development)
   if (process.env.NODE_ENV === 'development') {
     try {
