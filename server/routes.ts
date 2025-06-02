@@ -17,7 +17,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
-import { getDuplicateStatus, testTitleFix, fixTitlesForGroup, processAllDuplicates } from "./simple-title-fix";
+// Removed redundant deduplication imports
 import { 
   initializeTaggingSystem, 
   tagSingleStudy, 
