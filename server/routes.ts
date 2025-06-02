@@ -317,6 +317,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import tag search routes
+  const tagSearchRoutes = await import('./tag-search-routes.js');
+  const {
+    getAllTags,
+    getTagCategories,
+    searchStudiesByTags,
+    getRelatedTags,
+    getPopularTagsByCategory
+  } = tagSearchRoutes;
+
+  // Tag-based search and filtering routes
+  app.get('/api/tags', getAllTags);
+  app.get('/api/tags/categories', getTagCategories);
+  app.get('/api/search/by-tags', searchStudiesByTags);
+  app.get('/api/tags/related', getRelatedTags);
+  app.get('/api/tags/popular-by-category', getPopularTagsByCategory);
+
   const httpServer = createServer(app);
   return httpServer;
 }
