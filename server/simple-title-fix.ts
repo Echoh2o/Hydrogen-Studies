@@ -58,7 +58,11 @@ export async function fixTitlesForGroup(duplicateTitle: string): Promise<{
   
   // Get all studies with this duplicate title
   const duplicateStudies = await db
-    .select()
+    .select({
+      id: studies.id,
+      title: studies.title,
+      doi: studies.doi
+    })
     .from(studies)
     .where(eq(studies.title, duplicateTitle));
 
