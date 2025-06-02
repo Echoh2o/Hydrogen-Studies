@@ -122,15 +122,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let query = db.select().from(studies);
       
       if (category) {
-        query = db
+        const categoryResults = await db
           .select()
           .from(studies)
           .innerJoin(studyCategories, eq(studies.id, studyCategories.studyId))
           .innerJoin(categories, eq(studyCategories.categoryId, categories.id))
           .where(eq(categories.name, category));
+        
+        return res.json(categoryResults.map(result => result.studies));
       }
 
-      const allStudies = await query
+      const allStudies = await db.select().from(studies)
         .orderBy(desc(studies.id))
         .limit(limit)
         .offset(offset);
