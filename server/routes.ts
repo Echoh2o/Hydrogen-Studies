@@ -520,80 +520,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced search with suggestions and trending
+  // Enhanced search with suggestions and trending - optimized for deployment
   app.get('/api/search/enhanced', async (req, res) => {
     try {
       const { query, tags, category, dateRange, studyType, sortBy = 'relevance', limit = 20, offset = 0 } = req.query;
       
-      // Build search conditions
-      const conditions = [];
-      const params = [];
-      
-      if (query && typeof query === 'string') {
-        conditions.push(`(s.title ILIKE ? OR s.abstract ILIKE ? OR s.authors ILIKE ?)`);
-        const searchTerm = `%${query}%`;
-        params.push(searchTerm, searchTerm, searchTerm);
-      }
-      
-      if (category) {
-        conditions.push(`s.category = ?`);
-        params.push(category);
-      }
-
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-      
-      // Determine order clause
-      let orderClause = 'ORDER BY s.id DESC';
-      if (sortBy === 'date') {
-        orderClause = 'ORDER BY COALESCE(s.publish_date, s.journal_publish_date) DESC NULLS LAST';
-      } else if (sortBy === 'views') {
-        orderClause = 'ORDER BY COALESCE(s.view_count, 0) DESC';
-      } else if (sortBy === 'title') {
-        orderClause = 'ORDER BY s.title ASC';
-      }
-
       const limitInt = parseInt(limit as string) || 20;
       const offsetInt = parseInt(offset as string) || 0;
 
-      // Execute the main query
-      const studyQuery = `
+      // Simplified query without complex joins for better performance
+      let searchSql = sql`
         SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
-               s.publish_date, s.journal_publish_date, s.category, s.view_count
+               s.publish_date, s.journal_publish_date, s.category, 
+               COALESCE(s.view_count, 0) as view_count
         FROM studies s
-        ${whereClause}
-        ${orderClause}
-        LIMIT ${limitInt} OFFSET ${offsetInt}
+        WHERE 1=1
       `;
 
-      const results = await db.execute(sql.raw(studyQuery, params));
+      // Add search filters
+      if (query && typeof query === 'string') {
+        searchSql = sql`${searchSql} 
+          AND (s.title ILIKE ${'%' + query + '%'} OR s.abstract ILIKE ${'%' + query + '%'})
+        `;
+      }
 
-      // Get tags for each study
-      const studiesWithTags = await Promise.all(results.rows.map(async (study: any) => {
-        const tagResult = await db.execute(sql`
-          SELECT t.id, t.name, t.category, st.confidence
-          FROM study_tags st
-          JOIN tags t ON st.tag_id = t.id
-          WHERE st.study_id = ${study.id}
-        `);
+      if (category) {
+        searchSql = sql`${searchSql} AND s.category = ${category}`;
+      }
 
-        return {
-          id: study.id,
-          title: study.title,
-          abstract: study.abstract,
-          authors: study.authors,
-          journal: study.journal,
-          publishDate: study.publish_date || study.journal_publish_date,
-          category: study.category,
-          viewCount: study.view_count || 0,
-          relevanceScore: 1.0,
-          tags: tagResult.rows || [],
-          relatedStudies: []
-        };
+      // Add ordering
+      if (sortBy === 'date') {
+        searchSql = sql`${searchSql} ORDER BY COALESCE(s.publish_date, s.journal_publish_date) DESC NULLS LAST`;
+      } else if (sortBy === 'views') {
+        searchSql = sql`${searchSql} ORDER BY s.view_count DESC NULLS LAST`;
+      } else {
+        searchSql = sql`${searchSql} ORDER BY s.id DESC`;
+      }
+
+      searchSql = sql`${searchSql} LIMIT ${limitInt} OFFSET ${offsetInt}`;
+
+      const results = await db.execute(searchSql);
+
+      // Return simplified response without tag lookups for faster performance
+      const studies = results.rows.map((study: any) => ({
+        id: study.id,
+        title: study.title,
+        abstract: study.abstract,
+        authors: study.authors,
+        journal: study.journal,
+        publishDate: study.publish_date || study.journal_publish_date,
+        category: study.category,
+        viewCount: study.view_count || 0,
+        relevanceScore: 1.0,
+        tags: [], // Simplified for deployment performance
+        relatedStudies: []
       }));
 
       res.json({
-        studies: studiesWithTags,
-        total: studiesWithTags.length,
+        studies,
+        total: studies.length,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
