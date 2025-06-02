@@ -196,7 +196,7 @@ export default function EnhancedStudyPage() {
 
           {/* Study Tags */}
           <div className="flex flex-wrap gap-2">
-            {study.tags.map((tag) => (
+            {study.tags && study.tags.length > 0 ? study.tags.map((tag) => (
               <Badge 
                 key={tag.id}
                 variant="outline"
@@ -208,7 +208,9 @@ export default function EnhancedStudyPage() {
                   {Math.round(tag.confidence * 100)}%
                 </span>
               </Badge>
-            ))}
+            )) : (
+              <span className="text-sm text-muted-foreground">No tags available</span>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -379,11 +381,15 @@ export default function EnhancedStudyPage() {
                 <div className="flex justify-between text-sm">
                   <span>Tag Confidence</span>
                   <span className="font-medium">
-                    {Math.round((study.tags.reduce((sum, tag) => sum + tag.confidence, 0) / study.tags.length) * 100)}%
+                    {study.tags && study.tags.length > 0 
+                      ? Math.round((study.tags.reduce((sum, tag) => sum + tag.confidence, 0) / study.tags.length) * 100)
+                      : 0}%
                   </span>
                 </div>
                 <Progress 
-                  value={(study.tags.reduce((sum, tag) => sum + tag.confidence, 0) / study.tags.length) * 100} 
+                  value={study.tags && study.tags.length > 0 
+                    ? (study.tags.reduce((sum, tag) => sum + tag.confidence, 0) / study.tags.length) * 100
+                    : 0} 
                   className="h-2" 
                 />
               </div>
@@ -393,7 +399,7 @@ export default function EnhancedStudyPage() {
               <div className="text-sm">
                 <div className="font-medium mb-1">Category</div>
                 <Badge variant="outline" className={getCategoryColor(study.category)}>
-                  {study.category.replace(/_/g, ' ')}
+                  {study.category ? study.category.replace(/_/g, ' ') : 'Uncategorized'}
                 </Badge>
               </div>
 
