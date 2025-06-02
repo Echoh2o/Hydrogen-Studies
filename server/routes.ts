@@ -195,55 +195,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api', studyDetailsRoutes);
 
-  // Title deduplication routes
-  app.get('/api/admin/duplicate-status', async (req, res) => {
+  // Admin status routes
+  app.get('/api/admin/status', async (req, res) => {
     try {
-      const status = await getDuplicateStatus();
-      res.json(status);
-    } catch (error) {
-      console.error('Error checking duplicate status:', error);
-      res.status(500).json({ message: 'Failed to check duplicate status' });
-    }
-  });
-
-  app.post('/api/admin/test-title-fix', async (req, res) => {
-    try {
-      console.log('Testing title deduplication system...');
+      const totalStudies = await db.select({ count: sql<number>`count(*)` }).from(studies);
+      const totalCategories = await db.select({ count: sql<number>`count(*)` }).from(categories);
       
-      // Run test in background
-      testTitleFix()
-        .then(() => console.log('Title fix test completed'))
-        .catch(error => console.error('Title fix test failed:', error));
-      
-      res.json({ 
-        success: true, 
-        message: 'Title fix test started in background' 
+      res.json({
+        success: true,
+        totalStudies: totalStudies[0]?.count || 0,
+        totalCategories: totalCategories[0]?.count || 0,
+        message: 'System status retrieved successfully'
       });
     } catch (error) {
-      console.error('Error starting title fix test:', error);
-      res.status(500).json({ message: 'Failed to start title fix test' });
-    }
-  });
-
-  app.post('/api/admin/process-all-duplicates', async (req, res) => {
-    try {
-      console.log('Starting full deduplication process for all duplicate groups...');
-      
-      // Run full deduplication in background
-      processAllDuplicates()
-        .then((result) => {
-          console.log('Full deduplication process completed');
-          console.log(`Final results: ${result.totalTitlesFixed} titles fixed across ${result.totalGroups} groups`);
-        })
-        .catch(error => console.error('Full deduplication process failed:', error));
-      
-      res.json({ 
-        success: true, 
-        message: 'Full deduplication process started in background' 
-      });
-    } catch (error) {
-      console.error('Error starting full deduplication process:', error);
-      res.status(500).json({ message: 'Failed to start full deduplication process' });
+      console.error('Error checking system status:', error);
+      res.status(500).json({ message: 'Failed to check system status' });
     }
   });
 
@@ -346,32 +312,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get duplicate status
-  app.get('/api/admin/duplicate-status', async (req, res) => {
+  // Database statistics
+  app.get('/api/admin/database-stats', async (req, res) => {
     try {
-      const status = await getDuplicateStatus();
-      res.json(status);
-    } catch (error) {
-      console.error('Error getting duplicate status:', error);
-      res.status(500).json({ message: 'Failed to get duplicate status' });
-    }
-  });
-
-  // Process all duplicates
-  app.post('/api/admin/process-all-duplicates', async (req, res) => {
-    try {
-      // Start background processing
-      processAllDuplicates().catch(error => {
-        console.error('Background duplicate processing failed:', error);
+      const studyCount = await db.select({ count: sql<number>`count(*)` }).from(studies);
+      const categoryCount = await db.select({ count: sql<number>`count(*)` }).from(categories);
+      
+      res.json({
+        success: true,
+        studies: studyCount[0]?.count || 0,
+        categories: categoryCount[0]?.count || 0,
+        message: 'Database statistics retrieved successfully'
       });
-
-      res.json({ 
-        success: true, 
-        message: 'Duplicate processing started in background' 
-      });
-    } catch (error) {
-      console.error('Error starting duplicate processing:', error);
-      res.status(500).json({ message: 'Failed to start duplicate processing' });
+    } catch (error: any) {
+      console.error('Error getting database statistics:', error);
+      res.status(500).json({ message: 'Failed to get database statistics' });
     }
   });
 
