@@ -29,12 +29,12 @@ router.post('/research/discover', async (req, res) => {
     // Default to searching for hydrogen studies if no keywords provided
     const searchTerms = keywords || 'hydrogen therapy molecular hydrogen hydrogen water hydrogen gas';
     
-    let articles = [];
+    let articles: any[] = [];
     
     // Search PubMed for articles
     if (source === 'pubmed' || source === 'all') {
       const pubmedArticles = await searchPubMed(searchTerms, limit);
-      articles = [...articles, ...pubmedArticles];
+      articles = [...articles, ...pubmedArticles.results || []];
     }
     
     return res.json({
@@ -67,8 +67,8 @@ router.post('/research/import', async (req, res) => {
     
     // Check if article already exists
     const existingStudy = await db.query.studies.findFirst({
-      where: (studies, { like }) => {
-        return like(studies.url, `%${pmid}%`);
+      where: (studiesTable, { like }) => {
+        return like(studiesTable.url, `%${pmid}%`);
       }
     });
     
@@ -87,11 +87,9 @@ router.post('/research/import', async (req, res) => {
         url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
         abstract: '',
         journal: '',
-        year: null,
         authors: '',
-        categoryId: 1, // Default category
-        createdAt: new Date(),
-        updatedAt: new Date()
+        category: 'Pending Classification',
+        publishDate: new Date().toISOString().split('T')[0]
       })
       .returning();
     

@@ -95,6 +95,7 @@ export const studies = pgTable("studies", {
   results: text("results"),
   conclusion: text("conclusion"),
   doi: text("doi"),
+  url: text("url"),
   pdfUrl: text("pdf_url"),
   citationUrl: text("citation_url"),
   peerReviewed: boolean("peer_reviewed").notNull().default(true),
