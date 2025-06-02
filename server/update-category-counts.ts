@@ -1,23 +1,23 @@
 import { db } from "./db";
-import { studies, categories } from "@shared/schema";
+import { categories, studyCategories } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 
 /**
  * Updates the study counts for all categories based on the actual number
- * of studies assigned to each category in the database
+ * of studies assigned to each category in the new multi-category system
  */
 export async function updateCategoryCounts(): Promise<void> {
   try {
     console.log("Starting category count update...");
     
-    // Get counts of studies by category
+    // Get counts of studies by category using the junction table
     const categoryCounts = await db
       .select({
-        category: studies.category,
-        count: sql<number>`count(*)::int`
+        categoryId: studyCategories.categoryId,
+        count: sql<number>`count(distinct ${studyCategories.studyId})::int`
       })
-      .from(studies)
-      .groupBy(studies.category);
+      .from(studyCategories)
+      .groupBy(studyCategories.categoryId);
     
     console.log("Category counts:", categoryCounts);
     
