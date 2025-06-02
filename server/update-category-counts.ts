@@ -40,18 +40,8 @@ export async function updateCategoryCounts(): Promise<void> {
         .update(categories)
         .set({ studyCount: count })
         .where(eq(categories.id, categoryId));
-      
-      if (categoryRecord) {
-        // Update the study count
-        await db
-          .update(categories)
-          .set({ studyCount: count })
-          .where(eq(categories.id, categoryRecord.id));
           
-        console.log(`Updated count for category '${categoryName}' to ${count}`);
-      } else {
-        console.log(`Category '${categoryName}' not found in categories table`);
-      }
+      console.log(`Updated count for category ID ${categoryId} to ${count}`);
     }
     
     console.log("Category count update completed");
@@ -64,37 +54,27 @@ export async function updateCategoryCounts(): Promise<void> {
 /**
  * Updates the study count for a specific category
  */
-export async function updateSingleCategoryCount(categoryName: string): Promise<void> {
+export async function updateSingleCategoryCount(categoryId: number): Promise<void> {
   try {
-    // Count studies with this category
+    // Count studies with this category using the junction table
     const [countResult] = await db
       .select({
-        count: sql<number>`count(*)::int`
+        count: sql<number>`count(distinct ${studyCategories.studyId})::int`
       })
-      .from(studies)
-      .where(eq(studies.category, categoryName));
+      .from(studyCategories)
+      .where(eq(studyCategories.categoryId, categoryId));
     
     const count = countResult?.count || 0;
     
-    // Find the category by name
-    const [categoryRecord] = await db
-      .select()
-      .from(categories)
-      .where(eq(categories.name, categoryName));
-    
-    if (categoryRecord) {
-      // Update the study count
-      await db
-        .update(categories)
-        .set({ studyCount: count })
-        .where(eq(categories.id, categoryRecord.id));
-        
-      console.log(`Updated count for category '${categoryName}' to ${count}`);
-    } else {
-      console.log(`Category '${categoryName}' not found in categories table`);
-    }
+    // Update the study count
+    await db
+      .update(categories)
+      .set({ studyCount: count })
+      .where(eq(categories.id, categoryId));
+      
+    console.log(`Updated count for category ID ${categoryId} to ${count}`);
   } catch (error) {
-    console.error(`Error updating count for category '${categoryName}':`, error);
+    console.error(`Error updating count for category ID ${categoryId}:`, error);
     throw error;
   }
 }
