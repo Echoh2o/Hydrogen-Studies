@@ -141,7 +141,6 @@ export const studies = pgTable("studies", {
   
   // Author information (enhanced)
   authorAffiliations: text("author_affiliations").array(), // Institutional affiliations
-  correspondingAuthor: text("corresponding_author"), // Email/contact of corresponding author
   authorOrcids: text("author_orcids").array(), // ORCID IDs for authors
   authorInstitutions: text("author_institutions").array(), // Institution names
   
