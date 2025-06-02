@@ -422,9 +422,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         viewCount: studyData.view_count || 0,
         tags: studyData.tags || [],
         citationInfo: {
-          apa: `${studyData.authors} (${studyData.publish_date || studyData.journal_publish_date ? new Date(studyData.publish_date || studyData.journal_publish_date).getFullYear() : 'n.d.'}). ${studyData.title}. ${studyData.journal}.`,
-          mla: `${studyData.authors}. "${studyData.title}." ${studyData.journal}, ${studyData.publish_date || studyData.journal_publish_date ? new Date(studyData.publish_date || studyData.journal_publish_date).getFullYear() : 'n.d.'}.`,
-          chicago: `${studyData.authors}. "${studyData.title}." ${studyData.journal} (${studyData.publish_date || studyData.journal_publish_date ? new Date(studyData.publish_date || studyData.journal_publish_date).getFullYear() : 'n.d.'}).`
+          apa: `${studyData.authors} (${studyData.publish_date || studyData.journal_publish_date ? new Date(String(studyData.publish_date || studyData.journal_publish_date)).getFullYear() : 'n.d.'}). ${studyData.title}. ${studyData.journal}.`,
+          mla: `${studyData.authors}. "${studyData.title}." ${studyData.journal}, ${studyData.publish_date || studyData.journal_publish_date ? new Date(String(studyData.publish_date || studyData.journal_publish_date)).getFullYear() : 'n.d.'}.`,
+          chicago: `${studyData.authors}. "${studyData.title}." ${studyData.journal} (${studyData.publish_date || studyData.journal_publish_date ? new Date(String(studyData.publish_date || studyData.journal_publish_date)).getFullYear() : 'n.d.'}).`
         }
       };
 
@@ -525,61 +525,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { query, tags, category, dateRange, studyType, sortBy = 'relevance', limit = 20, offset = 0 } = req.query;
       
-      // First get basic studies without JSON aggregation
-      let searchQuery = sql`
-        SELECT DISTINCT s.id, s.title, s.abstract, s.authors, s.journal, 
+      // Build search conditions
+      const conditions = [];
+      const params = [];
+      
+      if (query && typeof query === 'string') {
+        conditions.push(`(s.title ILIKE ? OR s.abstract ILIKE ? OR s.authors ILIKE ?)`);
+        const searchTerm = `%${query}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
+      }
+      
+      if (category) {
+        conditions.push(`s.category = ?`);
+        params.push(category);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      
+      // Determine order clause
+      let orderClause = 'ORDER BY s.id DESC';
+      if (sortBy === 'date') {
+        orderClause = 'ORDER BY COALESCE(s.publish_date, s.journal_publish_date) DESC NULLS LAST';
+      } else if (sortBy === 'views') {
+        orderClause = 'ORDER BY COALESCE(s.view_count, 0) DESC';
+      } else if (sortBy === 'title') {
+        orderClause = 'ORDER BY s.title ASC';
+      }
+
+      const limitInt = parseInt(limit as string) || 20;
+      const offsetInt = parseInt(offset as string) || 0;
+
+      // Execute the main query
+      const studyQuery = `
+        SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
                s.publish_date, s.journal_publish_date, s.category, s.view_count
         FROM studies s
-        WHERE 1=1
+        ${whereClause}
+        ${orderClause}
+        LIMIT ${limitInt} OFFSET ${offsetInt}
       `;
 
-      // Add text search if query provided
-      if (query && typeof query === 'string') {
-        searchQuery = sql`${searchQuery} 
-          AND (
-            s.title ILIKE ${'%' + query + '%'} OR 
-            s.abstract ILIKE ${'%' + query + '%'} OR
-            s.authors ILIKE ${'%' + query + '%'}
-          )
-        `;
-      }
+      const results = await db.execute(sql.raw(studyQuery, params));
 
-      // Add category filter
-      if (category) {
-        searchQuery = sql`${searchQuery} AND s.category = ${category}`;
-      }
-
-      // Add date range filter
-      if (dateRange && dateRange !== 'all') {
-        const years: { [key: string]: number } = {
-          '1year': 1,
-          '3years': 3,
-          '5years': 5
-        };
-        const yearBack = years[dateRange as string];
-        if (yearBack) {
-          searchQuery = sql`${searchQuery} 
-            AND (s.publish_date >= CURRENT_DATE - INTERVAL '${yearBack} years' OR 
-                 s.journal_publish_date >= CURRENT_DATE - INTERVAL '${yearBack} years')
-          `;
-        }
-      }
-
-      // Order and limit
-      const orderClause = sortBy === 'date' ? sql`COALESCE(s.publish_date, s.journal_publish_date) DESC NULLS LAST` :
-                         sortBy === 'views' ? sql`COALESCE(s.view_count, 0) DESC` :
-                         sortBy === 'title' ? sql`s.title ASC` :
-                         sql`COALESCE(s.view_count, 0) DESC, s.id DESC`;
-
-      searchQuery = sql`${searchQuery}
-        ORDER BY ${orderClause}
-        LIMIT ${parseInt(limit as string) || 20} OFFSET ${parseInt(offset as string) || 0}
-      `;
-
-      const results = await db.execute(searchQuery);
-
-      // Get tags for each study separately
-      const studiesWithTags = await Promise.all(results.rows.map(async (study) => {
+      // Get tags for each study
+      const studiesWithTags = await Promise.all(results.rows.map(async (study: any) => {
         const tagResult = await db.execute(sql`
           SELECT t.id, t.name, t.category, st.confidence
           FROM study_tags st
@@ -597,7 +586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           category: study.category,
           viewCount: study.view_count || 0,
           relevanceScore: 1.0,
-          tags: tagResult.rows,
+          tags: tagResult.rows || [],
           relatedStudies: []
         };
       }));
