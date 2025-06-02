@@ -18,6 +18,12 @@ import { fromZodError } from "zod-validation-error";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
 import { getDuplicateStatus, testTitleFix, fixTitlesForGroup, processAllDuplicates } from "./simple-title-fix";
+import { 
+  initializeTaggingSystem, 
+  tagSingleStudy, 
+  processAllStudiesForTagging, 
+  getTaggingStats 
+} from "./automated-tagging-system";
 
 // Import only the working routes
 import educationalRoutes from "./routes/educational";
@@ -238,6 +244,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error starting full deduplication process:', error);
       res.status(500).json({ message: 'Failed to start full deduplication process' });
+    }
+  });
+
+  // ===== AUTOMATED TAGGING SYSTEM ROUTES =====
+  
+  // Initialize tagging system
+  app.post('/api/admin/tagging/initialize', async (req, res) => {
+    try {
+      console.log('Initializing automated tagging system...');
+      await initializeTaggingSystem();
+      res.json({ 
+        success: true, 
+        message: 'Tagging system initialized successfully' 
+      });
+    } catch (error) {
+      console.error('Error initializing tagging system:', error);
+      res.status(500).json({ message: 'Failed to initialize tagging system' });
+    }
+  });
+
+  // Process all studies for tagging
+  app.post('/api/admin/tagging/process-all', async (req, res) => {
+    try {
+      console.log('Starting automated tagging for all studies...');
+      
+      // Run tagging process in background
+      processAllStudiesForTagging()
+        .then((result) => {
+          console.log('Automated tagging process completed');
+          console.log(`Final results: ${result.totalTagsAdded} tags added to ${result.successfullyTagged} studies`);
+        })
+        .catch(error => console.error('Automated tagging process failed:', error));
+      
+      res.json({ 
+        success: true, 
+        message: 'Automated tagging process started in background' 
+      });
+    } catch (error) {
+      console.error('Error starting automated tagging process:', error);
+      res.status(500).json({ message: 'Failed to start automated tagging process' });
+    }
+  });
+
+  // Tag a single study
+  app.post('/api/admin/tagging/tag-study/:id', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      if (isNaN(studyId)) {
+        return res.status(400).json({ message: 'Invalid study ID' });
+      }
+
+      const result = await tagSingleStudy(studyId);
+      res.json({
+        success: true,
+        result
+      });
+    } catch (error) {
+      console.error('Error tagging single study:', error);
+      res.status(500).json({ message: 'Failed to tag study' });
+    }
+  });
+
+  // Get tagging statistics
+  app.get('/api/admin/tagging/stats', async (req, res) => {
+    try {
+      const stats = await getTaggingStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting tagging stats:', error);
+      res.status(500).json({ message: 'Failed to get tagging stats' });
     }
   });
 
