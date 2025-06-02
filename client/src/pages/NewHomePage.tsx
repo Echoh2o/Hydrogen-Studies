@@ -25,7 +25,7 @@ export default function NewHomePage() {
     queryKey: ["/api/search/enhanced", { sortBy: 'date', limit: 6 }],
   });
 
-  const featuredCategories = categories?.categories || [
+  const featuredCategories = (categories as any)?.categories || [
     {
       name: 'Brain Health',
       description: 'Cognitive function, neuroprotection, and neurological conditions',
