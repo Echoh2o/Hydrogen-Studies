@@ -335,36 +335,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const studyId = parseInt(req.params.id);
       
-      // Get study data first
+      // Get study data using correct schema field names
       const studyResult = await db.select().from(studies).where(eq(studies.id, studyId));
       
       if (studyResult.length === 0) {
         return res.status(404).json({ error: 'Study not found' });
       }
       
-      const studyData = studyResult[0];
+      const study = studyResult[0];
       
-      // Format the response with proper field mapping
+      // Format response to match frontend expectations
       const response = {
-        id: studyData.id,
-        title: studyData.title,
-        abstract: studyData.abstract,
-        authors: studyData.authors,
-        journal: studyData.journal,
-        publishDate: studyData.publish_date || studyData.journal_publish_date,
-        doi: studyData.doi,
-        category: studyData.category,
-        methods: studyData.methods,
-        results: studyData.results,
-        conclusion: studyData.conclusion,
-        keywords: studyData.keywords && typeof studyData.keywords === 'string' ? studyData.keywords.split(',').map((k: string) => k.trim()) : [],
-        imageUrl: studyData.image_url,
-        viewCount: studyData.view_count || 0,
-        tags: studyData.tags || [],
+        id: study.id,
+        title: study.title,
+        abstract: study.abstract,
+        authors: study.authors,
+        journal: study.journal,
+        publishDate: study.publishDate || study.journalPublishDate,
+        doi: study.doi,
+        category: study.category,
+        methods: study.methods,
+        results: study.results,
+        conclusion: study.conclusion,
+        keywords: study.keywords && Array.isArray(study.keywords) ? study.keywords : [],
+        imageUrl: study.imageUrl,
+        viewCount: study.viewCount || 0,
+        tags: [],
+        relatedStudies: [],
         citationInfo: {
-          apa: `${studyData.authors} (${studyData.publish_date || studyData.journal_publish_date ? new Date(String(studyData.publish_date || studyData.journal_publish_date)).getFullYear() : 'n.d.'}). ${studyData.title}. ${studyData.journal}.`,
-          mla: `${studyData.authors}. "${studyData.title}." ${studyData.journal}, ${studyData.publish_date || studyData.journal_publish_date ? new Date(String(studyData.publish_date || studyData.journal_publish_date)).getFullYear() : 'n.d.'}.`,
-          chicago: `${studyData.authors}. "${studyData.title}." ${studyData.journal} (${studyData.publish_date || studyData.journal_publish_date ? new Date(String(studyData.publish_date || studyData.journal_publish_date)).getFullYear() : 'n.d.'}).`
+          apa: `${study.authors} (${study.publishDate || study.journalPublishDate ? new Date(String(study.publishDate || study.journalPublishDate)).getFullYear() : 'n.d.'}). ${study.title}. ${study.journal}.`,
+          mla: `${study.authors}. "${study.title}." ${study.journal}, ${study.publishDate || study.journalPublishDate ? new Date(String(study.publishDate || study.journalPublishDate)).getFullYear() : 'n.d.'}.`,
+          chicago: `${study.authors}. "${study.title}." ${study.journal} (${study.publishDate || study.journalPublishDate ? new Date(String(study.publishDate || study.journalPublishDate)).getFullYear() : 'n.d.'}).`
         }
       };
 
