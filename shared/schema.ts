@@ -683,6 +683,92 @@ export type InsertKeywordGroupMapping = z.infer<typeof insertKeywordGroupMapping
 export type InsertMonitorSchedule = z.infer<typeof insertMonitorScheduleSchema>;
 export type InsertMonitorResult = z.infer<typeof insertMonitorResultSchema>;
 
+// ===== AUTOMATED TAGGING SYSTEM =====
+
+// Tags table - stores all available tags
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  category: text("category").notNull(), // health_condition, body_system, methodology, outcome, etc.
+  color: text("color"), // For UI display
+  usageCount: integer("usage_count").default(0),
+  isSystemGenerated: boolean("is_system_generated").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Study-tag relationships (many-to-many)
+export const studyTags = pgTable("study_tags", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").references(() => studies.id, { onDelete: "cascade" }).notNull(),
+  tagId: integer("tag_id").references(() => tags.id, { onDelete: "cascade" }).notNull(),
+  confidence: integer("confidence").default(100), // AI confidence score 0-100
+  source: text("source").notNull(), // 'title', 'abstract', 'keywords', 'content', 'manual'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    uniqueStudyTag: unique().on(table.studyId, table.tagId),
+    studyIdx: index("study_tags_study_idx").on(table.studyId),
+    tagIdx: index("study_tags_tag_idx").on(table.tagId),
+  }
+});
+
+// Tag categories for organization
+export const tagCategories = pgTable("tag_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  color: text("color"),
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Tag synonyms for better matching
+export const tagSynonyms = pgTable("tag_synonyms", {
+  id: serial("id").primaryKey(),
+  tagId: integer("tag_id").references(() => tags.id, { onDelete: "cascade" }).notNull(),
+  synonym: text("synonym").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    uniqueSynonym: unique().on(table.tagId, table.synonym),
+  }
+});
+
+// Create insertion schemas for tagging system
+export const insertTagSchema = createInsertSchema(tags).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  usageCount: true
+});
+export const insertStudyTagSchema = createInsertSchema(studyTags).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertTagCategorySchema = createInsertSchema(tagCategories).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertTagSynonymSchema = createInsertSchema(tagSynonyms).omit({ 
+  id: true, 
+  createdAt: true 
+});
+
+// Types for tagging system
+export type Tag = typeof tags.$inferSelect;
+export type StudyTag = typeof studyTags.$inferSelect;
+export type TagCategory = typeof tagCategories.$inferSelect;
+export type TagSynonym = typeof tagSynonyms.$inferSelect;
+export type InsertTag = z.infer<typeof insertTagSchema>;
+export type InsertStudyTag = z.infer<typeof insertStudyTagSchema>;
+export type InsertTagCategory = z.infer<typeof insertTagCategorySchema>;
+export type InsertTagSynonym = z.infer<typeof insertTagSynonymSchema>;
+
 // Study category types
 export type StudyCategory = typeof studyCategories.$inferSelect;
 export type InsertStudyCategory = typeof studyCategories.$inferInsert;
