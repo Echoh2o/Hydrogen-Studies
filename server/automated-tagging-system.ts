@@ -369,9 +369,19 @@ export async function tagSingleStudy(studyId: number): Promise<TaggingResult> {
   const startTime = Date.now();
   
   try {
-    // Get study data
+    // Get study data - only select fields that exist
     const [study] = await db
-      .select()
+      .select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        keywords: studies.keywords,
+        methods: studies.methods,
+        results: studies.results,
+        conclusion: studies.conclusion,
+        category: studies.category,
+        studyType: studies.studyType
+      })
       .from(studies)
       .where(eq(studies.id, studyId));
 
