@@ -493,23 +493,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `;
 
       // Add search filters
-      if (query && typeof query === 'string') {
+      if (query && typeof query === 'string' && query.trim().length > 0) {
         searchSql = sql`${searchSql} 
-          AND (s.title ILIKE ${'%' + query + '%'} OR s.abstract ILIKE ${'%' + query + '%'})
+          AND (s.title ILIKE ${'%' + query.trim() + '%'} 
+               OR s.abstract ILIKE ${'%' + query.trim() + '%'}
+               OR s.authors ILIKE ${'%' + query.trim() + '%'}
+               OR s.journal ILIKE ${'%' + query.trim() + '%'})
         `;
       }
 
-      if (category) {
+      if (category && category !== '') {
         searchSql = sql`${searchSql} AND s.category = ${category}`;
       }
 
-      // Add ordering
+      // Add ordering with proper relevance scoring
       if (sortBy === 'date') {
         searchSql = sql`${searchSql} ORDER BY COALESCE(s.publish_date, s.journal_publish_date) DESC NULLS LAST`;
       } else if (sortBy === 'views') {
         searchSql = sql`${searchSql} ORDER BY s.view_count DESC NULLS LAST`;
+      } else if (query && typeof query === 'string' && query.trim().length > 0) {
+        // Relevance-based ordering when there's a search query
+        searchSql = sql`${searchSql} 
+          ORDER BY 
+            CASE 
+              WHEN s.title ILIKE ${'%' + query.trim() + '%'} THEN 1
+              WHEN s.abstract ILIKE ${'%' + query.trim() + '%'} THEN 2
+              WHEN s.authors ILIKE ${'%' + query.trim() + '%'} THEN 3
+              ELSE 4
+            END,
+            s.view_count DESC NULLS LAST
+        `;
       } else {
-        searchSql = sql`${searchSql} ORDER BY s.id DESC`;
+        // Default ordering when no search query
+        searchSql = sql`${searchSql} ORDER BY s.view_count DESC NULLS LAST, s.id DESC`;
       }
 
       searchSql = sql`${searchSql} LIMIT ${limitInt} OFFSET ${offsetInt}`;
