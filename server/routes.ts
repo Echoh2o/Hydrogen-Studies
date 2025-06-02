@@ -17,7 +17,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
-import { fixDuplicateTitlesInBatches, checkDuplicateStatus } from "./title-deduplication";
+import { getDuplicateStatus, testTitleFix, fixTitlesForGroup } from "./simple-title-fix";
 
 // Import only the working routes
 import educationalRoutes from "./routes/educational";
@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Title deduplication routes
   app.get('/api/admin/duplicate-status', async (req, res) => {
     try {
-      const status = await checkDuplicateStatus();
+      const status = await getDuplicateStatus();
       res.json(status);
     } catch (error) {
       console.error('Error checking duplicate status:', error);
@@ -200,22 +200,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/fix-duplicate-titles', async (req, res) => {
+  app.post('/api/admin/test-title-fix', async (req, res) => {
     try {
-      console.log('Starting title deduplication process...');
+      console.log('Testing title deduplication system...');
       
-      // Run the deduplication process in the background
-      fixDuplicateTitlesInBatches()
-        .then(() => console.log('Title deduplication completed'))
-        .catch(error => console.error('Title deduplication failed:', error));
+      // Run test in background
+      testTitleFix()
+        .then(() => console.log('Title fix test completed'))
+        .catch(error => console.error('Title fix test failed:', error));
       
       res.json({ 
         success: true, 
-        message: 'Title deduplication process started in background' 
+        message: 'Title fix test started in background' 
       });
     } catch (error) {
-      console.error('Error starting title deduplication:', error);
-      res.status(500).json({ message: 'Failed to start title deduplication' });
+      console.error('Error starting title fix test:', error);
+      res.status(500).json({ message: 'Failed to start title fix test' });
     }
   });
 

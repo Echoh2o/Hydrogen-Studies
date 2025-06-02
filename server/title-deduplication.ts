@@ -181,8 +181,8 @@ export async function checkDuplicateStatus(): Promise<{
   duplicateGroups: number;
   totalDuplicates: number;
 }> {
-  const [totalResult] = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
-  const totalStudies = totalResult.total as number;
+  const totalResult = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
+  const totalStudies = Number(totalResult.rows?.[0]?.total) || 0;
 
   const duplicateResult = await db.execute(sql`
     SELECT 
@@ -197,8 +197,8 @@ export async function checkDuplicateStatus(): Promise<{
     ) AS duplicate_counts
   `);
 
-  const duplicateGroups = (duplicateResult.rows[0]?.duplicate_groups as number) || 0;
-  const totalDuplicates = (duplicateResult.rows[0]?.total_duplicates as number) || 0;
+  const duplicateGroups = Number(duplicateResult.rows?.[0]?.duplicate_groups) || 0;
+  const totalDuplicates = Number(duplicateResult.rows?.[0]?.total_duplicates) || 0;
 
   return {
     totalStudies,
