@@ -525,25 +525,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { query, tags, category, dateRange, studyType, sortBy = 'relevance', limit = 20, offset = 0 } = req.query;
       
+      // First get basic studies without JSON aggregation
       let searchQuery = sql`
-        SELECT DISTINCT s.*, 
-               json_agg(DISTINCT 
-                 json_build_object(
-                   'id', t.id,
-                   'name', t.name,
-                   'category', t.category,
-                   'confidence', st.confidence
-                 )
-               ) FILTER (WHERE t.id IS NOT NULL) as tags,
-               1.0 as relevance_score
+        SELECT DISTINCT s.id, s.title, s.abstract, s.authors, s.journal, 
+               s.publish_date, s.journal_publish_date, s.category, s.view_count
         FROM studies s
-        LEFT JOIN study_tags st ON s.id = st.study_id
-        LEFT JOIN tags t ON st.tag_id = t.id
         WHERE 1=1
       `;
 
       // Add text search if query provided
-      if (query) {
+      if (query && typeof query === 'string') {
         searchQuery = sql`${searchQuery} 
           AND (
             s.title ILIKE ${'%' + query + '%'} OR 
@@ -560,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add date range filter
       if (dateRange && dateRange !== 'all') {
-        const years = {
+        const years: { [key: string]: number } = {
           '1year': 1,
           '3years': 3,
           '5years': 5
@@ -574,41 +565,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Group and order
+      // Order and limit
+      const orderClause = sortBy === 'date' ? sql`COALESCE(s.publish_date, s.journal_publish_date) DESC NULLS LAST` :
+                         sortBy === 'views' ? sql`COALESCE(s.view_count, 0) DESC` :
+                         sortBy === 'title' ? sql`s.title ASC` :
+                         sql`COALESCE(s.view_count, 0) DESC, s.id DESC`;
+
       searchQuery = sql`${searchQuery}
-        GROUP BY s.id
-        ORDER BY ${sortBy === 'date' ? sql`COALESCE(s.publish_date, s.journal_publish_date) DESC` :
-                  sortBy === 'views' ? sql`s.view_count DESC NULLS LAST` :
-                  sortBy === 'title' ? sql`s.title ASC` :
-                  sql`s.view_count DESC NULLS LAST, s.id DESC`}
-        LIMIT ${limit} OFFSET ${offset}
+        ORDER BY ${orderClause}
+        LIMIT ${parseInt(limit as string) || 20} OFFSET ${parseInt(offset as string) || 0}
       `;
 
       const results = await db.execute(searchQuery);
 
-      // Get facets for filtering
-      const facets = {
-        tags: [],
-        journals: [],
-        years: []
-      };
+      // Get tags for each study separately
+      const studiesWithTags = await Promise.all(results.rows.map(async (study) => {
+        const tagResult = await db.execute(sql`
+          SELECT t.id, t.name, t.category, st.confidence
+          FROM study_tags st
+          JOIN tags t ON st.tag_id = t.id
+          WHERE st.study_id = ${study.id}
+        `);
+
+        return {
+          id: study.id,
+          title: study.title,
+          abstract: study.abstract,
+          authors: study.authors,
+          journal: study.journal,
+          publishDate: study.publish_date || study.journal_publish_date,
+          category: study.category,
+          viewCount: study.view_count || 0,
+          relevanceScore: 1.0,
+          tags: tagResult.rows,
+          relatedStudies: []
+        };
+      }));
 
       res.json({
-        studies: results.rows.map(row => ({
-          id: row.id,
-          title: row.title,
-          abstract: row.abstract,
-          authors: row.authors,
-          journal: row.journal,
-          publishDate: row.publish_date || row.journal_publish_date,
-          category: row.category,
-          viewCount: row.view_count || 0,
-          relevanceScore: row.relevance_score || 1.0,
-          tags: row.tags || [],
-          relatedStudies: []
-        })),
-        total: results.rows.length,
-        facets,
+        studies: studiesWithTags,
+        total: studiesWithTags.length,
+        facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
       });
@@ -623,7 +620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { query } = req.query;
       
-      if (!query || query.length < 2) {
+      if (!query || typeof query !== 'string' || query.length < 2) {
         return res.json([]);
       }
 
