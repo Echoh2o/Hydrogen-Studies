@@ -74,13 +74,13 @@ export default function EnhancedStudyPage() {
 
   // Get study details with enhanced content
   const { data: study, isLoading: studyLoading, error } = useQuery<StudyDetails>({
-    queryKey: ["/api/studies", studyId, "detailed"],
+    queryKey: [`/api/studies/${studyId}/detailed`],
     enabled: !!studyId,
   });
 
   // Get personalized recommendations based on this study
   const { data: recommendations } = useQuery<StudyRecommendations>({
-    queryKey: ["/api/studies", studyId, "recommendations"],
+    queryKey: [`/api/studies/${studyId}/recommendations`],
     enabled: !!studyId,
   });
 
