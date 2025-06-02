@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'wouter';
-import { Search, MessageCircle, TrendingUp, Users, Award, ChevronRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, MessageCircle, TrendingUp, Users, Award, ChevronRight, Sparkles, Tag, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,22 @@ import { Badge } from '@/components/ui/badge';
 export default function NewHomePage() {
   const [searchQuery, setSearchQuery] = React.useState('');
 
-  const featuredCategories = [
+  // Get trending topics from our automated tagging system
+  const { data: trendingData } = useQuery({
+    queryKey: ["/api/search/trending"],
+  });
+
+  // Get tag categories with real counts
+  const { data: categories } = useQuery({
+    queryKey: ["/api/tags/categories"],
+  });
+
+  // Get recent studies with tags
+  const { data: recentStudiesData } = useQuery({
+    queryKey: ["/api/search/enhanced", { sortBy: 'date', limit: 6 }],
+  });
+
+  const featuredCategories = categories?.categories || [
     {
       name: 'Brain Health',
       description: 'Cognitive function, neuroprotection, and neurological conditions',

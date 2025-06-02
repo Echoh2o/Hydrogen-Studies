@@ -375,6 +375,294 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced study details with recommendations
+  app.get('/api/studies/:id/detailed', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      
+      const study = await db.execute(sql`
+        SELECT s.*, 
+               json_agg(DISTINCT 
+                 json_build_object(
+                   'id', t.id,
+                   'name', t.name,
+                   'category', t.category,
+                   'confidence', st.confidence,
+                   'source', st.source
+                 )
+               ) FILTER (WHERE t.id IS NOT NULL) as tags
+        FROM studies s
+        LEFT JOIN study_tags st ON s.id = st.study_id
+        LEFT JOIN tags t ON st.tag_id = t.id
+        WHERE s.id = ${studyId}
+        GROUP BY s.id
+      `);
+
+      if (study.rows.length === 0) {
+        return res.status(404).json({ error: 'Study not found' });
+      }
+
+      const studyData = study.rows[0];
+      
+      // Format the response with proper field mapping
+      const response = {
+        id: studyData.id,
+        title: studyData.title,
+        abstract: studyData.abstract,
+        authors: studyData.authors,
+        journal: studyData.journal,
+        publishDate: studyData.publish_date || studyData.journal_publish_date,
+        doi: studyData.doi,
+        category: studyData.category,
+        methods: studyData.methods,
+        results: studyData.results,
+        conclusion: studyData.conclusion,
+        keywords: studyData.keywords && typeof studyData.keywords === 'string' ? studyData.keywords.split(',').map((k: string) => k.trim()) : [],
+        imageUrl: studyData.image_url,
+        viewCount: studyData.view_count || 0,
+        tags: studyData.tags || [],
+        citationInfo: {
+          apa: `${studyData.authors} (${studyData.publish_date || studyData.journal_publish_date ? new Date(studyData.publish_date || studyData.journal_publish_date).getFullYear() : 'n.d.'}). ${studyData.title}. ${studyData.journal}.`,
+          mla: `${studyData.authors}. "${studyData.title}." ${studyData.journal}, ${studyData.publish_date || studyData.journal_publish_date ? new Date(studyData.publish_date || studyData.journal_publish_date).getFullYear() : 'n.d.'}.`,
+          chicago: `${studyData.authors}. "${studyData.title}." ${studyData.journal} (${studyData.publish_date || studyData.journal_publish_date ? new Date(studyData.publish_date || studyData.journal_publish_date).getFullYear() : 'n.d.'}).`
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching study details:', error);
+      res.status(500).json({ error: 'Failed to fetch study details' });
+    }
+  });
+
+  // Study recommendations based on tags
+  app.get('/api/studies/:id/recommendations', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      
+      // Get similar studies based on shared tags
+      const similarStudies = await db.execute(sql`
+        WITH study_tags_cte AS (
+          SELECT tag_id
+          FROM study_tags 
+          WHERE study_id = ${studyId}
+        ),
+        similar_studies AS (
+          SELECT s.id, s.title, s.authors,
+                 COUNT(st.tag_id) as shared_tags,
+                 COUNT(st.tag_id)::float / (
+                   SELECT COUNT(*) FROM study_tags_cte
+                 ) as relevance_score
+          FROM studies s
+          INNER JOIN study_tags st ON s.id = st.study_id
+          INNER JOIN study_tags_cte stc ON st.tag_id = stc.tag_id
+          WHERE s.id != ${studyId}
+          GROUP BY s.id, s.title, s.authors
+          HAVING COUNT(st.tag_id) >= 1
+          ORDER BY shared_tags DESC, relevance_score DESC
+          LIMIT 8
+        )
+        SELECT *, 
+               CASE 
+                 WHEN shared_tags >= 3 THEN 'Similar tags'
+                 WHEN shared_tags >= 2 THEN 'Related topics'
+                 ELSE 'Shared category'
+               END as reason
+        FROM similar_studies
+      `);
+
+      // Get trending studies in the same category
+      const trendingInCategory = await db.execute(sql`
+        SELECT s.id, s.title, s.view_count
+        FROM studies s
+        WHERE s.category = (SELECT category FROM studies WHERE id = ${studyId})
+          AND s.id != ${studyId}
+        ORDER BY s.view_count DESC NULLS LAST
+        LIMIT 5
+      `);
+
+      res.json({
+        similarStudies: similarStudies.rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          authors: row.authors,
+          relevanceScore: row.relevance_score || 0,
+          reason: row.reason
+        })),
+        trendingInCategory: trendingInCategory.rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          viewCount: row.view_count || 0
+        })),
+        relatedTopics: []
+      });
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      res.status(500).json({ error: 'Failed to fetch recommendations' });
+    }
+  });
+
+  // Track study views
+  app.post('/api/studies/:id/view', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      
+      await db.execute(sql`
+        UPDATE studies 
+        SET view_count = COALESCE(view_count, 0) + 1
+        WHERE id = ${studyId}
+      `);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error recording view:', error);
+      res.status(500).json({ error: 'Failed to record view' });
+    }
+  });
+
+  // Enhanced search with suggestions and trending
+  app.get('/api/search/enhanced', async (req, res) => {
+    try {
+      const { query, tags, category, dateRange, studyType, sortBy = 'relevance', limit = 20, offset = 0 } = req.query;
+      
+      let searchQuery = sql`
+        SELECT DISTINCT s.*, 
+               json_agg(DISTINCT 
+                 json_build_object(
+                   'id', t.id,
+                   'name', t.name,
+                   'category', t.category,
+                   'confidence', st.confidence
+                 )
+               ) FILTER (WHERE t.id IS NOT NULL) as tags,
+               1.0 as relevance_score
+        FROM studies s
+        LEFT JOIN study_tags st ON s.id = st.study_id
+        LEFT JOIN tags t ON st.tag_id = t.id
+        WHERE 1=1
+      `;
+
+      // Add text search if query provided
+      if (query) {
+        searchQuery = sql`${searchQuery} 
+          AND (
+            s.title ILIKE ${'%' + query + '%'} OR 
+            s.abstract ILIKE ${'%' + query + '%'} OR
+            s.authors ILIKE ${'%' + query + '%'}
+          )
+        `;
+      }
+
+      // Add category filter
+      if (category) {
+        searchQuery = sql`${searchQuery} AND s.category = ${category}`;
+      }
+
+      // Add date range filter
+      if (dateRange && dateRange !== 'all') {
+        const years = {
+          '1year': 1,
+          '3years': 3,
+          '5years': 5
+        };
+        const yearBack = years[dateRange as string];
+        if (yearBack) {
+          searchQuery = sql`${searchQuery} 
+            AND (s.publish_date >= CURRENT_DATE - INTERVAL '${yearBack} years' OR 
+                 s.journal_publish_date >= CURRENT_DATE - INTERVAL '${yearBack} years')
+          `;
+        }
+      }
+
+      // Group and order
+      searchQuery = sql`${searchQuery}
+        GROUP BY s.id
+        ORDER BY ${sortBy === 'date' ? sql`COALESCE(s.publish_date, s.journal_publish_date) DESC` :
+                  sortBy === 'views' ? sql`s.view_count DESC NULLS LAST` :
+                  sortBy === 'title' ? sql`s.title ASC` :
+                  sql`s.view_count DESC NULLS LAST, s.id DESC`}
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+
+      const results = await db.execute(searchQuery);
+
+      // Get facets for filtering
+      const facets = {
+        tags: [],
+        journals: [],
+        years: []
+      };
+
+      res.json({
+        studies: results.rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          abstract: row.abstract,
+          authors: row.authors,
+          journal: row.journal,
+          publishDate: row.publish_date || row.journal_publish_date,
+          category: row.category,
+          viewCount: row.view_count || 0,
+          relevanceScore: row.relevance_score || 1.0,
+          tags: row.tags || [],
+          relatedStudies: []
+        })),
+        total: results.rows.length,
+        facets,
+        suggestions: [],
+        trending: []
+      });
+    } catch (error) {
+      console.error('Error in enhanced search:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search suggestions
+  app.get('/api/search/suggestions', async (req, res) => {
+    try {
+      const { query } = req.query;
+      
+      if (!query || query.length < 2) {
+        return res.json([]);
+      }
+
+      const suggestions = await db.execute(sql`
+        SELECT DISTINCT name 
+        FROM tags 
+        WHERE name ILIKE ${'%' + query + '%'}
+        ORDER BY name
+        LIMIT 10
+      `);
+
+      res.json(suggestions.rows.map(row => row.name));
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      res.status(500).json({ error: 'Failed to fetch suggestions' });
+    }
+  });
+
+  // Trending topics
+  app.get('/api/search/trending', async (req, res) => {
+    try {
+      const trending = await db.execute(sql`
+        SELECT t.name, COUNT(st.study_id) as usage_count
+        FROM tags t
+        INNER JOIN study_tags st ON t.id = st.tag_id
+        GROUP BY t.id, t.name
+        ORDER BY usage_count DESC
+        LIMIT 10
+      `);
+
+      res.json({
+        trending: trending.rows.map(row => row.name)
+      });
+    } catch (error) {
+      console.error('Error fetching trending topics:', error);
+      res.status(500).json({ error: 'Failed to fetch trending topics' });
+    }
+  });
+
   // Import tag search routes
   const tagSearchRoutes = await import('./tag-search-routes.js');
   const {
