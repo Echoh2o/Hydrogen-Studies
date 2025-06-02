@@ -133,7 +133,7 @@ export async function searchPubMed(query: string, page: number = 1, pageSize: nu
       db: 'pubmed',
       term: query,
       retmode: 'json',
-      retmax: limit,
+      retmax: pageSize,
       api_key: apiKey
     };
     
@@ -141,7 +141,7 @@ export async function searchPubMed(query: string, page: number = 1, pageSize: nu
     const idList = searchResponse.data.esearchresult.idlist;
     
     if (!idList || idList.length === 0) {
-      return [];
+      return { results: [], total: 0 };
     }
     
     // Then, get summaries for those IDs
@@ -175,10 +175,10 @@ export async function searchPubMed(query: string, page: number = 1, pageSize: nu
       };
     }).filter(Boolean);
     
-    return articles;
+    return { results: articles, total: articles.length };
   } catch (error) {
     console.error('Error searching PubMed:', error);
-    return [];
+    return { results: [], total: 0 };
   }
 }
 
