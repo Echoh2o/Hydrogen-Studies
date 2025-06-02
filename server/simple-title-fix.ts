@@ -165,3 +165,99 @@ export async function testTitleFix(): Promise<void> {
     console.log('No duplicate titles found to test');
   }
 }
+
+/**
+ * Process all duplicate groups in the database
+ */
+export async function processAllDuplicates(): Promise<{
+  totalGroups: number;
+  totalStudiesProcessed: number;
+  totalTitlesFixed: number;
+  totalErrors: number;
+  processedGroups: Array<{
+    title: string;
+    count: number;
+    processed: number;
+    fixed: number;
+    errors: number;
+  }>;
+}> {
+  console.log('Starting full deduplication process for all duplicate groups...');
+  
+  // Get all duplicate groups
+  const duplicateGroups = await db.execute(
+    `SELECT title, COUNT(*) as count 
+     FROM studies 
+     WHERE title IS NOT NULL 
+     GROUP BY title 
+     HAVING COUNT(*) > 1 
+     ORDER BY COUNT(*) DESC`
+  );
+
+  const groups = (duplicateGroups.rows || []).map(row => ({
+    title: row.title as string,
+    count: Number(row.count)
+  }));
+
+  console.log(`Found ${groups.length} duplicate groups to process`);
+
+  let totalStudiesProcessed = 0;
+  let totalTitlesFixed = 0;
+  let totalErrors = 0;
+  const processedGroups = [];
+
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i];
+    console.log(`\n[${i + 1}/${groups.length}] Processing group: "${group.title}" (${group.count} copies)`);
+    
+    try {
+      const result = await fixTitlesForGroup(group.title);
+      
+      totalStudiesProcessed += result.processed;
+      totalTitlesFixed += result.fixed;
+      totalErrors += result.errors;
+      
+      processedGroups.push({
+        title: group.title,
+        count: group.count,
+        processed: result.processed,
+        fixed: result.fixed,
+        errors: result.errors
+      });
+      
+      console.log(`  Group result: ${result.processed} processed, ${result.fixed} fixed, ${result.errors} errors`);
+      
+      // Add delay between groups to be respectful to APIs
+      if (i < groups.length - 1) {
+        console.log('  Waiting 2 seconds before next group...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+    } catch (error) {
+      console.error(`  Error processing group "${group.title}":`, error);
+      totalErrors++;
+      
+      processedGroups.push({
+        title: group.title,
+        count: group.count,
+        processed: 0,
+        fixed: 0,
+        errors: 1
+      });
+    }
+  }
+
+  console.log('\n=== FULL DEDUPLICATION PROCESS COMPLETE ===');
+  console.log(`Total groups processed: ${groups.length}`);
+  console.log(`Total studies processed: ${totalStudiesProcessed}`);
+  console.log(`Total titles fixed: ${totalTitlesFixed}`);
+  console.log(`Total errors: ${totalErrors}`);
+
+  return {
+    totalGroups: groups.length,
+    totalStudiesProcessed,
+    totalTitlesFixed,
+    totalErrors,
+    processedGroups
+  };
+}

@@ -17,7 +17,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
-import { getDuplicateStatus, testTitleFix, fixTitlesForGroup } from "./simple-title-fix";
+import { getDuplicateStatus, testTitleFix, fixTitlesForGroup, processAllDuplicates } from "./simple-title-fix";
 
 // Import only the working routes
 import educationalRoutes from "./routes/educational";
@@ -216,6 +216,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error starting title fix test:', error);
       res.status(500).json({ message: 'Failed to start title fix test' });
+    }
+  });
+
+  app.post('/api/admin/process-all-duplicates', async (req, res) => {
+    try {
+      console.log('Starting full deduplication process for all duplicate groups...');
+      
+      // Run full deduplication in background
+      processAllDuplicates()
+        .then((result) => {
+          console.log('Full deduplication process completed');
+          console.log(`Final results: ${result.totalTitlesFixed} titles fixed across ${result.totalGroups} groups`);
+        })
+        .catch(error => console.error('Full deduplication process failed:', error));
+      
+      res.json({ 
+        success: true, 
+        message: 'Full deduplication process started in background' 
+      });
+    } catch (error) {
+      console.error('Error starting full deduplication process:', error);
+      res.status(500).json({ message: 'Failed to start full deduplication process' });
     }
   });
 
