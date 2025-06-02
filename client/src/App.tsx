@@ -45,9 +45,13 @@ import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/Explore
 import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
 import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
 
-// Admin pages - old
+// Admin pages - updated
+import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminPage from "@/pages/admin/AdminPage";
 import ImportPage from "@/pages/admin/ImportPage";
+
+// Tag-based navigation
+import TaggedStudiesPage from "@/pages/TaggedStudiesPage";
 import AdminMonitoringPage from "@/pages/admin/AdminMonitoringPage";
 import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
 import EuropePmcPage from "@/pages/admin/EuropePmcPage";
@@ -118,18 +122,16 @@ function Router() {
       <Route path="/recommendations" component={RecommendationsPage} />
       <Route path="/chat" component={ChatPage} />
       
-      {/* Admin Dashboard */}
-      <Route path="/admin" component={DashboardPage} />
-      <Route path="/admin/monitoring" component={AdminMonitoringPage} />
-      <Route path="/admin/studies" component={StudiesManagementPage} />
-      <Route path="/admin/studies/add" component={AddStudyPage} />
-      <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
-      <Route path="/admin/blogs" component={BlogsManagementPage} />
-      <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
-      <Route path="/admin/blogs/add" component={BlogAddPage} />
-      <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
-      <Route path="/admin/enrichment" component={EnhancementPage} />
-      <Route path="/admin/data-import" component={DataImportPage} />
+      {/* Admin Dashboard - Updated */}
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/legacy" component={AdminPage} />
+      <Route path="/admin/import" component={ImportPage} />
+      
+      {/* Tag-based Navigation */}
+      <Route path="/studies/tags" component={TaggedStudiesPage} />
+      <Route path="/studies/tags/:category" component={TaggedStudiesPage} />
+      <Route path="/browse-by-tags" component={TaggedStudiesPage} />
       
       {/* Legacy route redirects */}
       <Route path="/categories" component={() => { window.location.replace('/explore-by-condition'); return null; }} />
