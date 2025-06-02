@@ -108,7 +108,7 @@ export async function fixDuplicateTitles(): Promise<{
   let fixed = 0;
   let errors = 0;
 
-  for (const group of duplicateGroups.rows) {
+  for (const group of duplicateGroups.rows || []) {
     const title = group.title as string;
     const studyIds = (group.study_ids as string).split(',').map(id => parseInt(id.trim()));
     
@@ -118,7 +118,7 @@ export async function fixDuplicateTitles(): Promise<{
     const duplicateStudies = await db
       .select()
       .from(studies)
-      .where(sql`id = ANY(${studyIds})`);
+      .where(sql`id = ANY(ARRAY[${studyIds.join(',')}])`);
 
     for (const study of duplicateStudies) {
       processed++;
