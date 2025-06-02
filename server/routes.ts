@@ -335,29 +335,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const studyId = parseInt(req.params.id);
       
-      const study = await db.execute(sql`
-        SELECT s.*, 
-               json_agg(DISTINCT 
-                 json_build_object(
-                   'id', t.id,
-                   'name', t.name,
-                   'category', t.category,
-                   'confidence', st.confidence,
-                   'source', st.source
-                 )
-               ) FILTER (WHERE t.id IS NOT NULL) as tags
-        FROM studies s
-        LEFT JOIN study_tags st ON s.id = st.study_id
-        LEFT JOIN tags t ON st.tag_id = t.id
-        WHERE s.id = ${studyId}
-        GROUP BY s.id
-      `);
-
-      if (study.rows.length === 0) {
+      // Get study data first
+      const studyResult = await db.select().from(studies).where(eq(studies.id, studyId));
+      
+      if (studyResult.length === 0) {
         return res.status(404).json({ error: 'Study not found' });
       }
-
-      const studyData = study.rows[0];
+      
+      const studyData = studyResult[0];
       
       // Format the response with proper field mapping
       const response = {

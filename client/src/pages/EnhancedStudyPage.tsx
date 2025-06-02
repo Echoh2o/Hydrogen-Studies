@@ -66,7 +66,7 @@ interface StudyRecommendations {
 }
 
 export default function EnhancedStudyPage() {
-  const [match, params] = useRoute("/study/:id");
+  const [match, params] = useRoute("/studies/:id");
   const [activeTab, setActiveTab] = useState("overview");
   const queryClient = useQueryClient();
   
