@@ -1,319 +1,406 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RecommendationEngine from "@/components/RecommendationEngine";
-import { Helmet } from "react-helmet";
-import { 
-  Sparkles, 
-  Target, 
-  TrendingUp, 
-  Clock, 
-  Heart,
-  Brain,
-  Activity,
-  Zap,
-  Shield,
-  Eye
-} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Star, TrendingUp, Clock, Users, BookOpen, Target } from "lucide-react";
 
-const healthFocusAreas = [
-  {
-    id: "cardiovascular",
-    name: "Cardiovascular Health",
-    icon: <Heart className="h-5 w-5 text-red-500" />,
-    description: "Studies on heart health, blood pressure, and circulation",
-    benefits: ["Heart Function", "Blood Circulation", "Cardiovascular Protection"]
-  },
-  {
-    id: "neurological",
-    name: "Brain & Cognitive Health",
-    icon: <Brain className="h-5 w-5 text-blue-500" />,
-    description: "Research on brain function, memory, and neuroprotection",
-    benefits: ["Memory Enhancement", "Neuroprotection", "Cognitive Function"]
-  },
-  {
-    id: "metabolic",
-    name: "Metabolic Health",
-    icon: <Activity className="h-5 w-5 text-green-500" />,
-    description: "Studies on metabolism, diabetes, and energy production",
-    benefits: ["Blood Sugar Control", "Metabolic Function", "Energy Production"]
-  },
-  {
-    id: "athletic",
-    name: "Athletic Performance",
-    icon: <Zap className="h-5 w-5 text-orange-500" />,
-    description: "Research on exercise performance and recovery",
-    benefits: ["Exercise Performance", "Recovery Enhancement", "Endurance"]
-  },
-  {
-    id: "inflammation",
-    name: "Anti-Inflammatory",
-    icon: <Shield className="h-5 w-5 text-purple-500" />,
-    description: "Studies on reducing inflammation and oxidative stress",
-    benefits: ["Inflammation Reduction", "Antioxidant Effects", "Cellular Protection"]
-  },
-  {
-    id: "aging",
-    name: "Healthy Aging",
-    icon: <Eye className="h-5 w-5 text-indigo-500" />,
-    description: "Research on longevity and age-related health",
-    benefits: ["Longevity", "Age-Related Protection", "Cellular Health"]
-  }
-];
+interface RecommendedStudy {
+  id: number;
+  title: string;
+  abstract: string;
+  authors: string;
+  journal: string;
+  publishDate: string;
+  relevanceScore: number;
+  recommendationReason: string;
+  tags: Array<{
+    id: number;
+    name: string;
+    category: string;
+  }>;
+  viewCount: number;
+}
+
+interface PersonalizedRecommendations {
+  trending: RecommendedStudy[];
+  recentlyViewed: RecommendedStudy[];
+  similarToViewed: RecommendedStudy[];
+  topRated: RecommendedStudy[];
+  forYou: RecommendedStudy[];
+}
+
+interface UserInterests {
+  tags: Array<{
+    name: string;
+    weight: number;
+    category: string;
+  }>;
+  categories: Array<{
+    name: string;
+    percentage: number;
+  }>;
+  recentActivity: Array<{
+    studyId: number;
+    title: string;
+    viewedAt: string;
+  }>;
+}
 
 export default function RecommendationsPage() {
-  const [selectedFocus, setSelectedFocus] = useState<string | null>(null);
-  
-  // In a real app, this would come from user authentication
-  const userId = undefined; // Set to actual user ID when authenticated
+  const [activeTab, setActiveTab] = useState("for-you");
+
+  // Get personalized recommendations based on user behavior and tagging
+  const { data: recommendations, isLoading: recommendationsLoading } = useQuery<PersonalizedRecommendations>({
+    queryKey: ["/api/recommendations/personalized"],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Get user interests profile
+  const { data: userInterests } = useQuery<UserInterests>({
+    queryKey: ["/api/recommendations/user-interests"],
+  });
+
+  // Get curated collections based on tags
+  const { data: collections } = useQuery({
+    queryKey: ["/api/recommendations/collections"],
+  });
+
+  const getRecommendationReasonColor = (reason: string) => {
+    switch (reason.toLowerCase()) {
+      case 'trending': return "bg-orange-100 text-orange-800";
+      case 'similar tags': return "bg-blue-100 text-blue-800";
+      case 'high rated': return "bg-green-100 text-green-800";
+      case 'recent research': return "bg-purple-100 text-purple-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const renderStudyCard = (study: RecommendedStudy, showReason = true) => (
+    <Card key={study.id} className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between">
+            <h3 className="font-semibold text-lg leading-tight flex-1">
+              {study.title}
+            </h3>
+            {showReason && (
+              <Badge 
+                variant="outline" 
+                className={`ml-2 text-xs ${getRecommendationReasonColor(study.recommendationReason)}`}
+              >
+                {study.recommendationReason}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="text-sm text-muted-foreground">
+            <span className="font-medium">{study.authors}</span>
+            {" • "}
+            <span>{study.journal}</span>
+            {" • "}
+            <span>{study.publishDate}</span>
+          </div>
+
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {study.abstract}
+          </p>
+
+          <div className="flex flex-wrap gap-1">
+            {study.tags.slice(0, 5).map((tag) => (
+              <Badge key={tag.id} variant="outline" className="text-xs">
+                {tag.name}
+              </Badge>
+            ))}
+            {study.tags.length > 5 && (
+              <Badge variant="outline" className="text-xs">
+                +{study.tags.length - 5} more
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+              <span className="flex items-center">
+                <Users className="h-3 w-3 mr-1" />
+                {study.viewCount} views
+              </span>
+              <span className="flex items-center">
+                <Star className="h-3 w-3 mr-1" />
+                {Math.round(study.relevanceScore * 100)}% match
+              </span>
+            </div>
+            <Button variant="outline" size="sm">
+              View Study
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Helmet>
-        <title>Personalized Study Recommendations | Hydrogen Studies</title>
-        <meta name="description" content="Discover hydrogen research studies tailored to your health interests with our AI-powered recommendation engine" />
-      </Helmet>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-2">
+          Recommended for You
+        </h1>
+        <p className="text-muted-foreground">
+          Personalized study recommendations based on your interests and research patterns
+        </p>
+      </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-3">
-            <Sparkles className="h-10 w-10 text-purple-500" />
-            Personalized Research Recommendations
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Discover hydrogen health studies tailored to your interests using our AI-powered recommendation engine
-          </p>
-        </div>
-
-        {/* Health Focus Areas */}
-        <Card className="mb-8">
+      {/* User Interest Profile */}
+      {userInterests && (
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Target className="h-6 w-6 text-blue-500" />
-              Explore by Health Focus
+            <CardTitle className="flex items-center space-x-2">
+              <Target className="h-5 w-5" />
+              <span>Your Research Interests</span>
             </CardTitle>
-            <p className="text-gray-600">
-              Get targeted recommendations based on specific health areas
-            </p>
+            <CardDescription>
+              Based on your viewing history and interaction patterns
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {healthFocusAreas.map((area) => (
-                <Card 
-                  key={area.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${
-                    selectedFocus === area.id 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedFocus(selectedFocus === area.id ? null : area.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3 mb-3">
-                      {area.icon}
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{area.name}</h3>
-                        <p className="text-sm text-gray-600">{area.description}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-medium mb-3">Top Interest Categories</h4>
+                <div className="space-y-2">
+                  {userInterests.categories.slice(0, 5).map((category, index) => (
+                    <div key={category.name} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="capitalize">{category.name.replace(/_/g, ' ')}</span>
+                        <span>{category.percentage}%</span>
                       </div>
+                      <Progress value={category.percentage} className="h-2" />
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {area.benefits.map((benefit) => (
-                        <Badge key={benefit} variant="secondary" className="text-xs">
-                          {benefit}
-                        </Badge>
-                      ))}
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-3">Frequently Viewed Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {userInterests.tags.slice(0, 10).map((tag, index) => (
+                    <Badge 
+                      key={tag.name} 
+                      variant="secondary"
+                      className="text-xs"
+                      style={{ opacity: Math.max(0.5, tag.weight) }}
+                    >
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommendation Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="for-you" className="flex items-center space-x-1">
+            <Target className="h-4 w-4" />
+            <span>For You</span>
+          </TabsTrigger>
+          <TabsTrigger value="trending" className="flex items-center space-x-1">
+            <TrendingUp className="h-4 w-4" />
+            <span>Trending</span>
+          </TabsTrigger>
+          <TabsTrigger value="recent" className="flex items-center space-x-1">
+            <Clock className="h-4 w-4" />
+            <span>Recent</span>
+          </TabsTrigger>
+          <TabsTrigger value="top-rated" className="flex items-center space-x-1">
+            <Star className="h-4 w-4" />
+            <span>Top Rated</span>
+          </TabsTrigger>
+          <TabsTrigger value="collections" className="flex items-center space-x-1">
+            <BookOpen className="h-4 w-4" />
+            <span>Collections</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="for-you" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Personalized Recommendations</h2>
+            <Badge variant="outline">AI-Powered</Badge>
+          </div>
+          
+          {recommendationsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-            {selectedFocus && (
-              <div className="mt-4 text-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setSelectedFocus(null)}
-                  className="text-blue-600"
-                >
-                  Clear Selection
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Main Recommendations */}
-        <div className="space-y-8">
-          {selectedFocus ? (
-            /* Health Focus Specific Recommendations */
-            <div>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  {healthFocusAreas.find(area => area.id === selectedFocus)?.icon}
-                  {healthFocusAreas.find(area => area.id === selectedFocus)?.name} Studies
-                </h2>
-                <p className="text-gray-600">
-                  Curated research focused on {healthFocusAreas.find(area => area.id === selectedFocus)?.name.toLowerCase()}
-                </p>
-              </div>
-              <RecommendationEngine
-                userId={userId}
-                maxResults={12}
-                showTabs={false}
-                variant="full"
-                healthFocus={selectedFocus}
-              />
+          ) : recommendations?.forYou ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recommendations.forYou.map((study) => renderStudyCard(study))}
             </div>
           ) : (
-            /* General Recommendations with Tabs */
-            <Tabs defaultValue="personalized" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-5">
-                <TabsTrigger value="personalized" className="flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  <span className="hidden sm:inline">For You</span>
-                </TabsTrigger>
-                <TabsTrigger value="trending" className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="hidden sm:inline">Trending</span>
-                </TabsTrigger>
-                <TabsTrigger value="recent" className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span className="hidden sm:inline">Recent</span>
-                </TabsTrigger>
-                <TabsTrigger value="discovery" className="flex items-center gap-2">
-                  <Heart className="h-4 w-4" />
-                  <span className="hidden sm:inline">Discover</span>
-                </TabsTrigger>
-                <TabsTrigger value="comprehensive" className="flex items-center gap-2 hidden lg:flex">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="hidden sm:inline">All</span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="personalized">
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Target className="h-5 w-5 text-blue-500" />
-                      Personalized for You
-                    </CardTitle>
-                    <p className="text-gray-600">
-                      Studies matched to your reading history and preferences
-                    </p>
-                  </CardHeader>
-                </Card>
-                <RecommendationEngine
-                  userId={userId}
-                  maxResults={12}
-                  showTabs={false}
-                  variant="full"
-                />
-              </TabsContent>
-
-              <TabsContent value="trending">
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-orange-500" />
-                      Trending Studies
-                    </CardTitle>
-                    <p className="text-gray-600">
-                      Popular studies that are gaining attention in the hydrogen research community
-                    </p>
-                  </CardHeader>
-                </Card>
-                <RecommendationEngine
-                  userId={userId}
-                  maxResults={12}
-                  showTabs={false}
-                  variant="full"
-                />
-              </TabsContent>
-
-              <TabsContent value="recent">
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-green-500" />
-                      Recent Research
-                    </CardTitle>
-                    <p className="text-gray-600">
-                      Latest hydrogen health studies from leading researchers worldwide
-                    </p>
-                  </CardHeader>
-                </Card>
-                <RecommendationEngine
-                  userId={userId}
-                  maxResults={12}
-                  showTabs={false}
-                  variant="full"
-                />
-              </TabsContent>
-
-              <TabsContent value="discovery">
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Heart className="h-5 w-5 text-red-500" />
-                      Health Discovery
-                    </CardTitle>
-                    <p className="text-gray-600">
-                      Explore diverse areas of hydrogen health research to broaden your knowledge
-                    </p>
-                  </CardHeader>
-                </Card>
-                <RecommendationEngine
-                  userId={userId}
-                  maxResults={15}
-                  showTabs={false}
-                  variant="full"
-                />
-              </TabsContent>
-
-              <TabsContent value="comprehensive" className="hidden lg:block">
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-purple-500" />
-                      Comprehensive Recommendations
-                    </CardTitle>
-                    <p className="text-gray-600">
-                      A curated mix of personalized, trending, and recent studies for comprehensive discovery
-                    </p>
-                  </CardHeader>
-                </Card>
-                <RecommendationEngine
-                  userId={userId}
-                  maxResults={20}
-                  showTabs={false}
-                  variant="full"
-                />
-              </TabsContent>
-            </Tabs>
-          )}
-        </div>
-
-        {/* Information Banner */}
-        <Card className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <Sparkles className="h-8 w-8 text-purple-500 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  How Our Recommendation Engine Works
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  Our AI-powered system analyzes your reading patterns, health interests, and study characteristics to provide 
-                  personalized recommendations. The more you explore, the better our recommendations become. All recommendations 
-                  are based on peer-reviewed hydrogen health research with AI-enhanced summaries for easier understanding.
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Building your profile</h3>
+                <p className="text-muted-foreground">
+                  Browse some studies to get personalized recommendations
                 </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="trending" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Trending Research</h2>
+            <Badge variant="outline">Popular This Week</Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations?.trending?.map((study) => renderStudyCard(study)) || 
+             [...Array(6)].map((_, i) => (
+               <Card key={i}>
+                 <CardContent className="p-6">
+                   <div className="space-y-2">
+                     <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                     <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                     <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                   </div>
+                 </CardContent>
+               </Card>
+             ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="recent" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Recently Published</h2>
+            <Badge variant="outline">Latest Research</Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations?.recentlyViewed?.map((study) => renderStudyCard(study)) || 
+             [...Array(6)].map((_, i) => (
+               <Card key={i}>
+                 <CardContent className="p-6">
+                   <div className="space-y-2">
+                     <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                     <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                     <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                   </div>
+                 </CardContent>
+               </Card>
+             ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="top-rated" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Highly Rated Studies</h2>
+            <Badge variant="outline">Community Favorites</Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations?.topRated?.map((study) => renderStudyCard(study)) || 
+             [...Array(6)].map((_, i) => (
+               <Card key={i}>
+                 <CardContent className="p-6">
+                   <div className="space-y-2">
+                     <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                     <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                     <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                   </div>
+                 </CardContent>
+               </Card>
+             ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="collections" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Curated Collections</h2>
+            <Badge variant="outline">Expert Selected</Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                title: "Cardiovascular Health",
+                description: "Studies on heart health and circulation benefits",
+                studyCount: 18,
+                tags: ["Cardiovascular Disease", "Heart Health", "Blood Pressure"]
+              },
+              {
+                title: "Brain & Cognitive Function",
+                description: "Neuroprotection and cognitive enhancement research",
+                studyCount: 24,
+                tags: ["Neuroprotection", "Cognitive Function", "Brain Health"]
+              },
+              {
+                title: "Athletic Performance",
+                description: "Sports medicine and performance optimization",
+                studyCount: 12,
+                tags: ["Athletic Performance", "Recovery", "Exercise"]
+              },
+              {
+                title: "Anti-Aging Research",
+                description: "Longevity and cellular health studies",
+                studyCount: 16,
+                tags: ["Anti-Aging", "Oxidative Stress", "Cellular Health"]
+              },
+              {
+                title: "Metabolic Health",
+                description: "Diabetes, metabolism, and weight management",
+                studyCount: 21,
+                tags: ["Diabetes", "Metabolism", "Weight Management"]
+              },
+              {
+                title: "Inflammatory Conditions",
+                description: "Anti-inflammatory effects and immune support",
+                studyCount: 19,
+                tags: ["Anti-inflammatory", "Immune System", "Inflammation"]
+              }
+            ].map((collection, index) => (
+              <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg">{collection.title}</CardTitle>
+                  <CardDescription>{collection.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{collection.studyCount} studies</span>
+                      <Button variant="outline" size="sm">
+                        Explore
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {collection.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
