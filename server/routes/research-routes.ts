@@ -5,7 +5,7 @@ import { db } from '../db';
 import { studies } from '../../shared/schema';
 import { sql } from 'drizzle-orm';
 import { enrichStudyFromPubMed } from '../pubmed-enricher';
-import { scrapeStudyFromUrl, saveScrapedStudy } from '../direct-scraper';
+// Note: Direct scraper functionality removed during cleanup
 
 // Check if PubMed API key is available
 const PUBMED_API_KEY = process.env.PUBMED_API_KEY;
@@ -380,65 +380,23 @@ async function checkArticlesInDatabase(pmids: string[]): Promise<string[]> {
 }
 
 /**
- * Scrape study data directly from a URL
+ * Scrape study data directly from a URL (disabled during cleanup)
  */
 router.post('/research/scrape-url', async (req, res) => {
-  try {
-    const { url } = req.body;
-    
-    if (!url) {
-      return res.status(400).json({
-        success: false,
-        message: 'URL is required'
-      });
-    }
-    
-    const result = await saveScrapedStudy(url);
-    
-    return res.json(result);
-  } catch (error: any) {
-    console.error('Error scraping URL:', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to scrape URL'
-    });
-  }
+  return res.status(503).json({
+    success: false,
+    message: 'Direct scraping functionality temporarily disabled during system cleanup'
+  });
 });
 
 /**
- * Preview study data from a URL without saving
+ * Preview study data from a URL without saving (disabled during cleanup)
  */
 router.post('/research/preview-url', async (req, res) => {
-  try {
-    const { url } = req.body;
-    
-    if (!url) {
-      return res.status(400).json({
-        success: false,
-        message: 'URL is required'
-      });
-    }
-    
-    const study = await scrapeStudyFromUrl(url);
-    
-    if (!study) {
-      return res.status(404).json({
-        success: false,
-        message: 'Could not extract study data from the provided URL'
-      });
-    }
-    
-    return res.json({
-      success: true,
-      study
-    });
-  } catch (error: any) {
-    console.error('Error previewing URL:', error);
-    return res.status(500).json({
-      success: false, 
-      message: error.message || 'Failed to extract study data from URL'
-    });
-  }
+  return res.status(503).json({
+    success: false,
+    message: 'URL preview functionality temporarily disabled during system cleanup'
+  });
 });
 
 export default router;
