@@ -317,6 +317,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Initialize tagging system
+  app.post('/api/admin/tagging/initialize', async (req, res) => {
+    try {
+      await initializeTaggingSystem();
+      res.json({ success: true, message: 'Tagging system initialized successfully' });
+    } catch (error) {
+      console.error('Error initializing tagging system:', error);
+      res.status(500).json({ message: 'Failed to initialize tagging system' });
+    }
+  });
+
+  // Process all studies for tagging
+  app.post('/api/admin/tagging/process-all', async (req, res) => {
+    try {
+      // Start background processing
+      processAllStudiesForTagging().catch(error => {
+        console.error('Background tagging process failed:', error);
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Automated tagging process started in background' 
+      });
+    } catch (error) {
+      console.error('Error starting tagging process:', error);
+      res.status(500).json({ message: 'Failed to start tagging process' });
+    }
+  });
+
+  // Get duplicate status
+  app.get('/api/admin/duplicate-status', async (req, res) => {
+    try {
+      const status = await getDuplicateStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting duplicate status:', error);
+      res.status(500).json({ message: 'Failed to get duplicate status' });
+    }
+  });
+
+  // Process all duplicates
+  app.post('/api/admin/process-all-duplicates', async (req, res) => {
+    try {
+      // Start background processing
+      processAllDuplicates().catch(error => {
+        console.error('Background duplicate processing failed:', error);
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Duplicate processing started in background' 
+      });
+    } catch (error) {
+      console.error('Error starting duplicate processing:', error);
+      res.status(500).json({ message: 'Failed to start duplicate processing' });
+    }
+  });
+
   // Import tag search routes
   const tagSearchRoutes = await import('./tag-search-routes.js');
   const {
