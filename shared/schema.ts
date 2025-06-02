@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, primaryKey, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey, varchar, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -257,6 +257,15 @@ export const categories = pgTable("categories", {
   description: text("description").notNull(),
   icon: text("icon"),
   studyCount: integer("study_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Study categories junction table for many-to-many relationships
+export const studyCategories = pgTable("study_categories", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull().references(() => studies.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  isPrimary: boolean("is_primary").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -672,3 +681,7 @@ export type InsertKeywordGroup = z.infer<typeof insertKeywordGroupSchema>;
 export type InsertKeywordGroupMapping = z.infer<typeof insertKeywordGroupMappingSchema>;
 export type InsertMonitorSchedule = z.infer<typeof insertMonitorScheduleSchema>;
 export type InsertMonitorResult = z.infer<typeof insertMonitorResultSchema>;
+
+// Study category types
+export type StudyCategory = typeof studyCategories.$inferSelect;
+export type InsertStudyCategory = typeof studyCategories.$inferInsert;
