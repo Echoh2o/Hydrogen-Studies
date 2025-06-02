@@ -74,13 +74,13 @@ export default function EnhancedSearchPage() {
   });
 
   // Get search suggestions as user types
-  const { data: suggestions } = useQuery({
+  const { data: suggestions } = useQuery<string[]>({
     queryKey: ["/api/search/suggestions", { query: filters.query }],
     enabled: filters.query.length > 2,
   });
 
   // Popular searches and trending topics
-  const { data: trendingData } = useQuery({
+  const { data: trendingData } = useQuery<{ trending: string[] }>({
     queryKey: ["/api/search/trending"],
   });
 
@@ -160,7 +160,7 @@ export default function EnhancedSearchPage() {
           </div>
 
           {/* Search Suggestions */}
-          {suggestions && suggestions.length > 0 && (
+          {suggestions && Array.isArray(suggestions) && suggestions.length > 0 && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Suggestions</label>
               <div className="flex flex-wrap gap-2">
