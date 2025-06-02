@@ -338,7 +338,7 @@ export default function EnhancedSearchPage() {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => setLocation(`/studies/${study.id}`)}
+                              onClick={() => setLocation(`/study/${study.id}`)}
                             >
                               View Study
                             </Button>
