@@ -17,6 +17,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
+import { fixDuplicateTitlesInBatches, checkDuplicateStatus } from "./title-deduplication";
 
 // Import only the working routes
 import educationalRoutes from "./routes/educational";
@@ -187,6 +188,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/export', exportRoutes);
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api', studyDetailsRoutes);
+
+  // Title deduplication routes
+  app.get('/api/admin/duplicate-status', async (req, res) => {
+    try {
+      const status = await checkDuplicateStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error checking duplicate status:', error);
+      res.status(500).json({ message: 'Failed to check duplicate status' });
+    }
+  });
+
+  app.post('/api/admin/fix-duplicate-titles', async (req, res) => {
+    try {
+      console.log('Starting title deduplication process...');
+      
+      // Run the deduplication process in the background
+      fixDuplicateTitlesInBatches()
+        .then(() => console.log('Title deduplication completed'))
+        .catch(error => console.error('Title deduplication failed:', error));
+      
+      res.json({ 
+        success: true, 
+        message: 'Title deduplication process started in background' 
+      });
+    } catch (error) {
+      console.error('Error starting title deduplication:', error);
+      res.status(500).json({ message: 'Failed to start title deduplication' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
