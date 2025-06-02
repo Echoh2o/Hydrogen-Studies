@@ -32,14 +32,14 @@ export async function updateCategoryCounts(): Promise<void> {
     
     // Update each category with its actual count
     for (const countData of categoryCounts) {
-      const categoryName = countData.category;
+      const categoryId = countData.categoryId;
       const count = countData.count;
       
-      // Find the category by name
-      const [categoryRecord] = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.name, categoryName));
+      // Update the study count directly using category ID
+      await db
+        .update(categories)
+        .set({ studyCount: count })
+        .where(eq(categories.id, categoryId));
       
       if (categoryRecord) {
         // Update the study count

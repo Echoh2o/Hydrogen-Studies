@@ -324,44 +324,7 @@ app.use((req, res, next) => {
     
     console.log('Keyword monitoring scheduler started');
     
-    // Auto-start content enhancement on application startup
-    setTimeout(async () => {
-      try {
-        const { autoStartContentEnhancement } = await import('./auto-content-enhancer');
-        await autoStartContentEnhancement();
-      } catch (error) {
-        console.error('Error auto-starting content enhancement:', error);
-      }
-    }, 5000); // Wait 5 seconds after startup for stability
-    
-    // Check research enrichment status (manual start only)
-    setTimeout(async () => {
-      try {
-        const { checkEnrichmentStatus } = await import('./auto-research-enrichment');
-        await checkEnrichmentStatus();
-      } catch (error) {
-        console.error('Error checking research enrichment status:', error);
-      }
-    }, 10000); // Wait 10 seconds after startup for stability
-    
-    // Auto-start consumer content generation on application startup
-    setTimeout(async () => {
-      try {
-        const { autoStartConsumerContent } = await import('./auto-restart-consumer-content');
-        await autoStartConsumerContent();
-      } catch (error) {
-        console.error('Error auto-starting consumer content generation:', error);
-      }
-    }, 15000); // Wait 15 seconds after startup for stability
-    
-    // Auto-start visual enhancement on application startup
-    setTimeout(async () => {
-      try {
-        const { autoStartVisualEnhancement } = await import('./simple-visual-enhancement');
-        await autoStartVisualEnhancement();
-      } catch (error) {
-        console.error('Error auto-starting visual enhancement:', error);
-      }
-    }, 20000); // Wait 20 seconds after startup for stability
+    // Content enhancement services removed during cleanup
+    console.log('Application startup complete - content enhancement services can be manually triggered via admin panel');
   });
 })();
