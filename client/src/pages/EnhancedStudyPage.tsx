@@ -72,11 +72,15 @@ export default function EnhancedStudyPage() {
   
   const studyId = params?.id ? parseInt(params.id) : null;
 
+  console.log("EnhancedStudyPage - match:", match, "params:", params, "studyId:", studyId);
+
   // Get study details with enhanced content
   const { data: study, isLoading: studyLoading, error } = useQuery<StudyDetails>({
     queryKey: [`/api/studies/${studyId}/detailed`],
     enabled: !!studyId,
   });
+
+  console.log("Study query - loading:", studyLoading, "error:", error, "study:", study);
 
   // Get personalized recommendations based on this study
   const { data: recommendations } = useQuery<StudyRecommendations>({
