@@ -1,16 +1,7 @@
-# Replit Deployment Configuration
-# Fixes the deployment errors with proper build and session configuration
-
 [deployment]
-run = "npm start"
 deploymentTarget = "cloudrun"
+httpPort = 5000
+entrypoint = "node production-server.js"
 
-[deployment.environment]
+[deployment.env]
 NODE_ENV = "production"
-
-[deployment.build]
-run = "npm run build"
-
-[deployment.cloudrun]
-autoscaling_min_instances = 1
-autoscaling_max_instances = 3
