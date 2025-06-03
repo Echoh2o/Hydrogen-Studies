@@ -20,6 +20,7 @@ import AboutUsPage from "@/pages/AboutUsPage";
 import ContactUsPage from "@/pages/ContactUsPage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
+import SEOStudyPage from "@/pages/SEOStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
 import About from "@/pages/about";
 import Contact from "@/pages/ContactPage";
@@ -169,6 +170,10 @@ function Router() {
       <Route path="/resources" component={() => { window.location.replace('/recommendations'); return null; }} />
       <Route path="/learn" component={() => { window.location.replace('/about'); return null; }} />
       <Route path="/improved-search" component={() => { window.location.replace('/search'); return null; }} />
+      
+      {/* SEO-optimized study routes */}
+      <Route path="/study/:slug" component={SEOStudyPage} />
+      <Route path="/study/id/:id" component={SEOStudyPage} />
       
       {/* Legacy studies route - redirect to study */}
       <Route path="/studies/:id/:slug?" component={EnhancedStudyPage} />
