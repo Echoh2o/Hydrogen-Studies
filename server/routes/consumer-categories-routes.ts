@@ -218,25 +218,41 @@ router.get('/studies', async (req, res) => {
     // Get relevant keywords for this category
     const categoryKeywords = getKeywords(model as string, categoryName);
     
-    // Use direct database query to avoid column issues
+    // Use the actual consumer_categories JSON field to find properly categorized studies
     try {
       const { pool } = await import('../db');
       
-      // Create search terms for brain health category
-      const searchTerms = categoryKeywords.join('|');
+      // Map model names to JSON field names
+      let jsonField: string;
+      switch(model) {
+        case 'condition':
+          jsonField = 'condition';
+          break;
+        case 'body_system':
+          jsonField = 'bodySystem';
+          break;
+        case 'life_stage':
+          jsonField = 'lifeStage';
+          break;
+        default:
+          jsonField = 'condition';
+      }
       
+      // Query for studies that have the exact category in their consumer_categories JSON
       const query = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-               category, doi, image_url as "imageUrl"
+               category, doi, image_url as "imageUrl", consumer_categories
         FROM studies 
-        WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($2)
+        WHERE consumer_categories IS NOT NULL 
+        AND consumer_categories::jsonb -> $1 ? $2
         ORDER BY id DESC
-        LIMIT 20
+        LIMIT 50
       `;
       
-      const likeTerms = categoryKeywords.map(keyword => `%${keyword}%`);
-      const result = await pool.query(query, [likeTerms, likeTerms]);
+      const result = await pool.query(query, [jsonField, categoryName]);
       const studyResults = result.rows;
+      
+      console.log(`Found ${studyResults.length} studies for ${model} category: ${categoryName}`);
       
       return res.json({
         success: true,
@@ -244,10 +260,34 @@ router.get('/studies', async (req, res) => {
       });
     } catch (error) {
       console.error('Error fetching studies by category:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch studies'
-      });
+      
+      // Fallback to keyword search if JSON query fails
+      try {
+        const { pool } = await import('../db');
+        const likeTerms = categoryKeywords.map(keyword => `%${keyword}%`);
+        const fallbackQuery = `
+          SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+                 category, doi, image_url as "imageUrl"
+          FROM studies 
+          WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($2)
+          ORDER BY id DESC
+          LIMIT 20
+        `;
+        
+        const result = await pool.query(fallbackQuery, [likeTerms, likeTerms]);
+        console.log(`Fallback keyword search returned ${result.rows.length} studies`);
+        
+        return res.json({
+          success: true,
+          data: result.rows
+        });
+      } catch (fallbackError) {
+        console.error('Fallback search also failed:', fallbackError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch studies'
+        });
+      }
     }
   } catch (error) {
     console.error('Error fetching studies by category:', error);
