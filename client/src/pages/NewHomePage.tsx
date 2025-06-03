@@ -157,7 +157,7 @@ export default function NewHomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredCategories.map((category) => (
-              <Link key={category.name} href={`/categories/${category.name.toLowerCase().replace(' ', '-')}`}>
+              <Link key={category.name} href="/explore-by-condition">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200">
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
@@ -202,7 +202,7 @@ export default function NewHomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Latest Research</h2>
-            <Link href="/studies">
+            <Link href="/search">
               <Button variant="outline" className="flex items-center">
                 View All Studies <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
@@ -211,7 +211,7 @@ export default function NewHomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {recentStudies.map((study) => (
-              <Link key={study.id} href={`/studies/${study.id}`}>
+              <Link key={study.id} href={`/study/${study.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
