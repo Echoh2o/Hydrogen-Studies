@@ -16,7 +16,8 @@ import {
   RefreshCcw,
   Home,
   Folders, 
-  KeyRound
+  KeyRound,
+  FolderTree
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -70,7 +71,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { 
       name: 'Batch Categorization', 
       path: '/admin/batch-categorization', 
-      icon: <Category className="h-5 w-5" /> 
+      icon: <FolderTree className="h-5 w-5" /> 
     },
     { 
       name: 'Image Generation', 
