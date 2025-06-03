@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { Pool } from "@neondatabase/serverless";
@@ -195,16 +196,40 @@ app.post('/direct-enhance/:id', async (req, res) => {
   }
 });
 
-// Configure session middleware
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'hydrogen-studies-dev-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-  }
-}));
+// Configure session middleware with production-ready PostgreSQL storage
+if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+  const pgStore = connectPg(session);
+  app.use(session({
+    store: new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+      ttl: 7 * 24 * 60 * 60, // 7 days in seconds
+      tableName: 'sessions'
+    }),
+    secret: process.env.SESSION_SECRET || 'hydrogen-studies-production-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true,
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+      sameSite: 'strict'
+    },
+    name: 'hydrogenstudies.sid'
+  }));
+} else {
+  // Development session configuration
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'hydrogen-studies-dev-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    }
+  }));
+}
 
 app.use((req, res, next) => {
   const start = Date.now();
