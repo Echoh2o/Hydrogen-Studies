@@ -124,9 +124,39 @@ function Router() {
       
       {/* Admin Dashboard - Updated */}
       <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/dashboard" component={DashboardPage} />
       <Route path="/admin/legacy" component={AdminPage} />
       <Route path="/admin/import" component={ImportPage} />
+      
+      {/* Admin Management Pages */}
+      <Route path="/admin/studies" component={StudiesManagementPage} />
+      <Route path="/admin/studies/add" component={AddStudyPage} />
+      <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
+      <Route path="/admin/blogs" component={BlogsManagementPage} />
+      <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
+      <Route path="/admin/blogs/add" component={BlogAddPage} />
+      <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
+      
+      {/* Admin Import & Data Pages */}
+      <Route path="/admin/research-import" component={ResearchImportPage} />
+      <Route path="/admin/data-import" component={DataImportPage} />
+      <Route path="/admin/research-database" component={ResearchDatabasePage} />
+      <Route path="/admin/journal-date-updater" component={JournalDateUpdater} />
+      
+      {/* Admin Enhancement Pages */}
+      <Route path="/admin/content-enrichment" component={ContentEnrichmentPage} />
+      <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
+      <Route path="/admin/batch-categorization" component={BatchCategorizationPage} />
+      <Route path="/admin/image-generation" component={ImageGenerationPage} />
+      <Route path="/admin/enhancement" component={EnhancementPage} />
+      <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
+      
+      {/* Admin Monitoring Pages */}
+      <Route path="/admin/monitoring" component={AdminMonitoringPage} />
+      <Route path="/admin/article-search" component={ArticleSearchPage} />
+      <Route path="/admin/europe-pmc" component={EuropePmcPage} />
+      <Route path="/admin/semantic-scholar" component={SemanticScholarPage} />
+      <Route path="/admin/crossref" component={CrossRefPage} />
       
       {/* Tag-based Navigation */}
       <Route path="/studies/tags" component={TaggedStudiesPage} />
