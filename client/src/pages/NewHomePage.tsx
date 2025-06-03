@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { Search, MessageCircle, TrendingUp, Users, Award, ChevronRight, Sparkles, Tag, Database } from 'lucide-react';
+import { Search, MessageCircle, TrendingUp, Users, Award, ChevronRight, Sparkles, Tag, Database, Heart, Clock, Calendar, Star, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,9 +15,9 @@ export default function NewHomePage() {
     queryKey: ["/api/search/trending"],
   });
 
-  // Get tag categories with real counts
-  const { data: categories } = useQuery({
-    queryKey: ["/api/tags/categories"],
+  // Get consumer-friendly categories with real counts
+  const { data: consumerCategories } = useQuery({
+    queryKey: ["/api/consumer-categories/counts"],
   });
 
   // Get recent studies with tags
@@ -25,36 +25,14 @@ export default function NewHomePage() {
     queryKey: ["/api/search/enhanced", { sortBy: 'date', limit: 6 }],
   });
 
-  const featuredCategories = (categories as any)?.categories || [
-    {
-      name: 'Brain Health',
-      description: 'Cognitive function, neuroprotection, and neurological conditions',
-      count: 34,
-      color: 'bg-blue-100 text-blue-800',
-      icon: '🧠'
-    },
-    {
-      name: 'Anti-Inflammatory',
-      description: 'Inflammation reduction and immune system support',
-      count: 21,
-      color: 'bg-green-100 text-green-800',
-      icon: '🔥'
-    },
-    {
-      name: 'Cardiovascular',
-      description: 'Heart health, circulation, and vascular function',
-      count: 18,
-      color: 'bg-red-100 text-red-800',
-      icon: '❤️'
-    },
-    {
-      name: 'Respiratory',
-      description: 'Lung function, breathing, and respiratory conditions',
-      count: 19,
-      color: 'bg-purple-100 text-purple-800',
-      icon: '🫁'
-    }
-  ];
+  // Featured health conditions from actual database
+  const featuredConditions = (consumerCategories as any)?.data?.condition?.slice(0, 4) || [];
+  
+  // Featured body systems from actual database  
+  const featuredBodySystems = (consumerCategories as any)?.data?.body_system?.slice(0, 4) || [];
+  
+  // Featured life stages from actual database
+  const featuredLifeStages = (consumerCategories as any)?.data?.life_stage || [];
 
   const recentStudies = [
     {
@@ -143,38 +121,149 @@ export default function NewHomePage() {
         </div>
       </section>
 
-      {/* Featured Categories */}
+      {/* Research Exploration Hub */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Explore Research by Health Focus
+              Explore 1,326+ Hydrogen Health Studies
             </h2>
             <p className="text-lg text-gray-600">
-              Discover how hydrogen research addresses specific health areas
+              Discover research organized by health conditions, body systems, and life stages
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredCategories.map((category) => (
-              <Link key={category.name} href="/explore-by-condition">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200">
-                  <CardHeader>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl">{category.icon}</span>
-                      <Badge className={category.color}>{category.count} studies</Badge>
-                    </div>
-                    <CardTitle className="text-lg">{category.name}</CardTitle>
-                    <CardDescription>{category.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center text-blue-600 font-medium">
-                      Explore research <ChevronRight className="h-4 w-4 ml-1" />
-                    </div>
-                  </CardContent>
-                </Card>
+          {/* Three-Section Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Health Conditions */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Heart className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Health Conditions</h3>
+                <p className="text-gray-600 mb-6">Research by specific health concerns</p>
+              </div>
+              
+              <div className="space-y-3">
+                {featuredConditions.slice(0, 4).map((condition: any) => (
+                  <Link key={condition.name} href="/explore-by-condition">
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer border hover:border-blue-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900">{condition.name}</span>
+                          <Badge variant="secondary">{condition.count}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+              
+              <Link href="/explore-by-condition">
+                <Button variant="outline" className="w-full mt-4">
+                  View All Conditions <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </Link>
-            ))}
+            </div>
+
+            {/* Body Systems */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Body Systems</h3>
+                <p className="text-gray-600 mb-6">Research by anatomical systems</p>
+              </div>
+              
+              <div className="space-y-3">
+                {featuredBodySystems.slice(0, 4).map((system: any) => (
+                  <Link key={system.name} href="/explore-by-body-system">
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer border hover:border-green-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900">{system.name}</span>
+                          <Badge variant="secondary">{system.count}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+              
+              <Link href="/explore-by-body-system">
+                <Button variant="outline" className="w-full mt-4">
+                  View All Systems <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Life Stages */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Clock className="h-8 w-8 text-purple-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Life Stages</h3>
+                <p className="text-gray-600 mb-6">Research by age and demographics</p>
+              </div>
+              
+              <div className="space-y-3">
+                {featuredLifeStages.map((stage: any) => (
+                  <Link key={stage.name} href="/explore-by-life-stage">
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer border hover:border-purple-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900">{stage.name}</span>
+                          <Badge variant="secondary">{stage.count}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+              
+              <Link href="/explore-by-life-stage">
+                <Button variant="outline" className="w-full mt-4">
+                  View All Life Stages <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick Access Bar */}
+          <div className="mt-12 p-6 bg-gray-50 rounded-xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Link href="/search?sortBy=date">
+                <Button variant="ghost" className="h-auto p-4 flex flex-col items-center space-y-2">
+                  <Calendar className="h-6 w-6 text-blue-600" />
+                  <span className="text-sm font-medium">Latest Studies</span>
+                </Button>
+              </Link>
+              
+              <Link href="/search?sortBy=citations">
+                <Button variant="ghost" className="h-auto p-4 flex flex-col items-center space-y-2">
+                  <Star className="h-6 w-6 text-yellow-600" />
+                  <span className="text-sm font-medium">Most Cited</span>
+                </Button>
+              </Link>
+              
+              <Link href="/studies/tags">
+                <Button variant="ghost" className="h-auto p-4 flex flex-col items-center space-y-2">
+                  <BookOpen className="h-6 w-6 text-green-600" />
+                  <span className="text-sm font-medium">Browse by Tags</span>
+                </Button>
+              </Link>
+              
+              <Link href="/insights">
+                <Button variant="ghost" className="h-auto p-4 flex flex-col items-center space-y-2">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                  <span className="text-sm font-medium">Research Trends</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
