@@ -1,13 +1,23 @@
 {
-  "name": "hydrogen-research-platform",
-  "build": {
-    "command": "echo 'Skipping complex build - using direct deployment'"
+  "name": "hydrogen-studies-production",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "start-production.js",
+  "scripts": {
+    "start": "node start-production.js",
+    "build": "node simple-build.js",
+    "health": "curl -f http://localhost:5000/health || exit 1"
   },
-  "start": {
-    "command": "NODE_ENV=production tsx server/index.ts"
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "env": {
-    "NODE_ENV": "production",
-    "PORT": "5000"
+  "deployment": {
+    "environment": "production",
+    "port": 5000,
+    "features": {
+      "session_storage": "postgresql",
+      "ai_categorization": "enabled",
+      "study_database": "1326_studies"
+    }
   }
 }
