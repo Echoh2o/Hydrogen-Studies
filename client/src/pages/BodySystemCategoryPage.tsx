@@ -22,7 +22,21 @@ interface Study {
 const BodySystemCategoryPage = () => {
   const { name } = useParams();
   const decodedName = name ? decodeURIComponent(name) : '';
-  const displayName = decodedName.charAt(0).toUpperCase() + decodedName.slice(1);
+  
+  // Map URL slugs to exact database category names
+  const categoryMap: Record<string, string> = {
+    'cardiovascular-system': 'Cardiovascular System',
+    'nervous-system': 'Nervous System',
+    'respiratory-system': 'Respiratory System',
+    'digestive-system': 'Digestive System',
+    'immune-system': 'Immune System',
+    'musculoskeletal-system': 'Musculoskeletal System',
+    'renal-system': 'Renal System',
+    'integumentary-system': 'Integumentary System'
+  };
+  
+  const exactCategoryName = categoryMap[decodedName] || decodedName;
+  const displayName = exactCategoryName;
   
   const [studies, setStudies] = useState<Study[]>([]);
   const [isLoading, setIsLoading] = useState(true);

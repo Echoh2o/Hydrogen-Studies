@@ -22,7 +22,20 @@ interface Study {
 const ConditionCategoryPage = () => {
   const { name } = useParams();
   const decodedName = name ? decodeURIComponent(name) : '';
-  const displayName = decodedName.charAt(0).toUpperCase() + decodedName.slice(1);
+  
+  // Map URL slugs to exact database category names
+  const categoryMap: Record<string, string> = {
+    'heart-disease-hypertension': 'Heart Disease & Hypertension',
+    'brain-neurological-disorders': 'Brain & Neurological Disorders', 
+    'diabetes-metabolic-health': 'Diabetes & Metabolic Health',
+    'arthritis-inflammation': 'Arthritis & Inflammation',
+    'lung-respiratory-conditions': 'Lung & Respiratory Conditions',
+    'digestive-health-gut-liver': 'Digestive Health (Gut/Liver)',
+    'cancer-supportive-care': 'Cancer Supportive Care'
+  };
+  
+  const exactCategoryName = categoryMap[decodedName] || decodedName;
+  const displayName = exactCategoryName;
   
   const [studies, setStudies] = useState<Study[]>([]);
   const [isLoading, setIsLoading] = useState(true);
