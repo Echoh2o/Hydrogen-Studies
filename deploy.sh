@@ -1,12 +1,62 @@
 #!/bin/bash
 
-# Simple deployment script that builds only the frontend
-echo "Building frontend assets..."
+# Production deployment script for Hydrogen Studies
+# Fixes deployment issues with Vite and session storage
 
-# Build only the frontend (Vite build)
-npx vite build --outDir=public
+set -e
 
-echo "Frontend build complete. Starting production server..."
+echo "🚀 Starting production deployment..."
 
-# Start the server with tsx (no bundling needed)
-NODE_ENV=production tsx server/index.ts
+# Install production dependencies
+echo "📦 Installing dependencies..."
+npm ci --only=production
+
+# Ensure client directory structure is correct
+echo "🔍 Checking client structure..."
+if [ ! -f "client/src/main.tsx" ]; then
+    echo "❌ Error: client/src/main.tsx not found"
+    echo "Current directory structure:"
+    ls -la client/src/ || echo "client/src directory not found"
+    exit 1
+fi
+
+# Build frontend
+echo "🏗️ Building frontend..."
+export NODE_ENV=production
+npx vite build --mode production
+
+# Build backend
+echo "🔧 Building backend..."
+npx esbuild server/index.ts \
+    --platform=node \
+    --packages=external \
+    --bundle \
+    --format=esm \
+    --outdir=dist \
+    --target=node18 \
+    --sourcemap
+
+# Copy static files
+echo "📁 Copying static files..."
+cp -r public dist/ 2>/dev/null || echo "No public directory to copy"
+
+# Create production package.json
+echo "📋 Creating production configuration..."
+cat > dist/package.json << EOF
+{
+  "name": "hydrogen-studies-production",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "NODE_ENV=production node index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+EOF
+
+echo "✅ Production build complete!"
+echo "📁 Built files are in the dist/ directory"
+echo "🚀 To deploy: NODE_ENV=production node dist/index.js"

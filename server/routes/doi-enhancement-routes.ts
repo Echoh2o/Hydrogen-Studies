@@ -4,7 +4,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { ZodError } from 'zod';
-import { fromZodError } from 'zod-validation-error';
+import { fromZodError } from 'zod-validation-error/lib';
 import { 
   enhanceStudyWithDoi, 
   batchEnhanceStudiesWithDoi, 
