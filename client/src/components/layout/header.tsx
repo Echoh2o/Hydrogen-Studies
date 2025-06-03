@@ -5,7 +5,7 @@ import { Menu, X, ChevronDown } from "lucide-react";
 
 const navigationLinks = [
   { href: "/", label: "Home" },
-  { href: "/studies", label: "Studies" },
+  { href: "/search", label: "Studies" },
   {
     href: "/explore-by-condition",
     label: "Explore",
@@ -16,7 +16,6 @@ const navigationLinks = [
       { href: "/explore-by-life-stage", label: "Life Stages" }
     ]
   },
-  { href: "/search", label: "Search" },
   { href: "/chat", label: "AI Assistant" },
   { href: "/about", label: "About" }
 ];

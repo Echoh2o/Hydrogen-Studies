@@ -41,9 +41,9 @@ export default function Footer() {
             <h3 className="text-white font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
-              <li><Link href="/studies" className="hover:text-white transition-colors">Search Studies</Link></li>
-              <li><Link href="/categories" className="hover:text-white transition-colors">Research Categories</Link></li>
-              <li><Link href="/studies" className="hover:text-white transition-colors">Latest Publications</Link></li>
+              <li><Link href="/search" className="hover:text-white transition-colors">Search Studies</Link></li>
+              <li><Link href="/explore-by-condition" className="hover:text-white transition-colors">Research Categories</Link></li>
+              <li><Link href="/search" className="hover:text-white transition-colors">Latest Publications</Link></li>
               <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
             </ul>
           </div>
@@ -51,11 +51,11 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-bold mb-4">Categories</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/category/neurodegenerative" className="hover:text-white transition-colors">Neurodegenerative</Link></li>
-              <li><Link href="/category/cardiovascular" className="hover:text-white transition-colors">Cardiovascular</Link></li>
-              <li><Link href="/category/metabolism" className="hover:text-white transition-colors">Metabolism & Diabetes</Link></li>
-              <li><Link href="/category/inflammation" className="hover:text-white transition-colors">Inflammation</Link></li>
-              <li><Link href="/category/cancer" className="hover:text-white transition-colors">Cancer Research</Link></li>
+              <li><Link href="/condition/neurodegenerative-diseases" className="hover:text-white transition-colors">Neurodegenerative</Link></li>
+              <li><Link href="/condition/cardiovascular-health" className="hover:text-white transition-colors">Cardiovascular</Link></li>
+              <li><Link href="/condition/metabolic-disorders" className="hover:text-white transition-colors">Metabolism & Diabetes</Link></li>
+              <li><Link href="/condition/inflammation" className="hover:text-white transition-colors">Inflammation</Link></li>
+              <li><Link href="/condition/cancer" className="hover:text-white transition-colors">Cancer Research</Link></li>
             </ul>
           </div>
           
