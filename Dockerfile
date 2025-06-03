@@ -1,5 +1,4 @@
-# Simple deployment configuration for Replit
-FROM node:20-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -7,13 +6,29 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --only=production
 
 # Copy source code
 COPY . .
 
+# Build the application
+RUN npm run build
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Change ownership of app directory
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
 # Expose port
 EXPOSE 5000
 
-# Start the application directly with tsx
-CMD ["npx", "tsx", "server/index.ts"]
+# Set production environment
+ENV NODE_ENV=production
+
+# Start the application
+CMD ["npm", "start"]
