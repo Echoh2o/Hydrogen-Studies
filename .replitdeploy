@@ -1,0 +1,9 @@
+[build]
+command = "npx vite build --outDir=public"
+
+[run]
+command = "NODE_ENV=production tsx server/index.ts"
+
+[env]
+NODE_ENV = "production"
+PORT = "5000"
