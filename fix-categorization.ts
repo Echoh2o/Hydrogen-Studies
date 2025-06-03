@@ -120,7 +120,7 @@ async function main() {
   const studies = await db.select()
     .from(studiesTable)
     .where(eq(studiesTable.consumerCategories, 'General Wellness'))
-    .limit(20); // Start with 20 studies
+    .limit(50); // Process more studies
 
   console.log(`📊 Found ${studies.length} studies to categorize`);
 
