@@ -1,0 +1,13 @@
+{
+  "name": "hydrogen-research-platform",
+  "build": {
+    "command": "echo 'Skipping complex build - using direct deployment'"
+  },
+  "start": {
+    "command": "NODE_ENV=production tsx server/index.ts"
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "5000"
+  }
+}
