@@ -280,25 +280,15 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Add a specific route for the homepage to ensure it's not intercepted by API routes
-  app.get('/', (req, res, next) => {
-    // Force sending HTML content for the homepage
-    if (app.get("env") === "development") {
-      // Let Vite handle rendering in development
-      next();
-    } else {
-      // In production, serve the index.html directly
-      res.sendFile(path.resolve(__dirname, '../public/index.html'));
-    }
-  });
-
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // In production, always use Vite middleware for serving frontend
+    // This ensures the React app loads correctly even without a full build
+    await setupVite(app, server);
   }
 
   // ALWAYS serve the app on port 5000
