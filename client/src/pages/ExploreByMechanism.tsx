@@ -224,7 +224,7 @@ export const MechanismDetailPage: React.FC = () => {
 // Study card component for displaying study info
 const StudyCard: React.FC<{ study: any }> = ({ study }) => {
   return (
-    <Link href={`/studies/${study.id}`}>
+    <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
       <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="pb-2">
           <div className="flex justify-between">
