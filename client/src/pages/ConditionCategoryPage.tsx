@@ -132,7 +132,7 @@ const ConditionCategoryPage = () => {
               "itemListElement": studies.map((study, index) => ({
                 "@type": "ListItem",
                 "position": index + 1,
-                "url": `https://hydrogenstudies.com/studies/${study.id}`,
+                "url": `https://hydrogenstudies.com/study/${study.id}`,
                 "name": study.title
               }))
             },
@@ -199,7 +199,7 @@ const ConditionCategoryPage = () => {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link href={`/studies/${study.id}`}>
+                    <Link href={`/study/${study.id}`}>
                       <Button>View Full Study</Button>
                     </Link>
                   </CardFooter>
