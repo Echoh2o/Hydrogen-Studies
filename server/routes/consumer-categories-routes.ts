@@ -241,10 +241,13 @@ router.get('/studies', async (req, res) => {
       // Query for studies that have the exact category in their consumer_categories JSON
       const query = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-               category, doi, image_url as "imageUrl", consumer_categories
+               category, doi, image_url as "imageUrl", slug, consumer_categories
         FROM studies 
         WHERE consumer_categories IS NOT NULL 
-        AND consumer_categories::jsonb -> $1 ? $2
+        AND (
+          consumer_categories::text LIKE '%"' || $2 || '"%' OR
+          consumer_categories::text LIKE '%' || $2 || '%'
+        )
         ORDER BY id DESC
         LIMIT 50
       `;
@@ -267,7 +270,7 @@ router.get('/studies', async (req, res) => {
         const likeTerms = categoryKeywords.map(keyword => `%${keyword}%`);
         const fallbackQuery = `
           SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-                 category, doi, image_url as "imageUrl"
+                 category, doi, image_url as "imageUrl", slug
           FROM studies 
           WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($2)
           ORDER BY id DESC
