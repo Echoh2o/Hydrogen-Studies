@@ -628,7 +628,7 @@ const StudyPage = () => {
                 <h2 id="related-studies-heading" className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Related Studies</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   {relatedStudies.map((relatedStudy: any) => (
-                    <Link key={relatedStudy.id} href={`/study/${relatedStudy.id}`}>
+                    <Link key={relatedStudy.id} href={relatedStudy.slug ? `/study/${relatedStudy.slug}` : `/study/id/${relatedStudy.id}`}>
                       <Card className="h-full hover:shadow-md transition-shadow">
                         <CardContent className="p-4 md:p-5">
                           <Badge variant="outline" className="mb-2 md:mb-3 text-xs">
