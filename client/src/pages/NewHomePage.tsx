@@ -148,7 +148,7 @@ export default function NewHomePage() {
               
               <div className="space-y-3">
                 {featuredConditions.slice(0, 4).map((condition: any) => (
-                  <Link key={condition.name} href="/explore-by-condition">
+                  <Link key={condition.name} href={`/condition/${condition.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`}>
                     <Card className="hover:shadow-md transition-shadow cursor-pointer border hover:border-blue-200">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -180,7 +180,7 @@ export default function NewHomePage() {
               
               <div className="space-y-3">
                 {featuredBodySystems.slice(0, 4).map((system: any) => (
-                  <Link key={system.name} href="/explore-by-body-system">
+                  <Link key={system.name} href={`/body-system/${system.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`}>
                     <Card className="hover:shadow-md transition-shadow cursor-pointer border hover:border-green-200">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -212,7 +212,7 @@ export default function NewHomePage() {
               
               <div className="space-y-3">
                 {featuredLifeStages.map((stage: any) => (
-                  <Link key={stage.name} href="/explore-by-life-stage">
+                  <Link key={stage.name} href={`/life-stage/${stage.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`}>
                     <Card className="hover:shadow-md transition-shadow cursor-pointer border hover:border-purple-200">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
