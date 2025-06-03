@@ -330,6 +330,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SEO-optimized study route by slug
+  app.get('/api/studies/by-slug/:slug', async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      
+      // Get study by slug
+      const studyResult = await db.select().from(studies).where(eq(studies.slug, slug));
+      
+      if (studyResult.length === 0) {
+        return res.status(404).json({ error: 'Study not found' });
+      }
+      
+      const study = studyResult[0];
+      res.json(study);
+    } catch (error) {
+      console.error('Error fetching study by slug:', error);
+      res.status(500).json({ error: 'Failed to fetch study' });
+    }
+  });
+
   // Enhanced study details with recommendations
   app.get('/api/studies/:id/detailed', async (req, res) => {
     try {
