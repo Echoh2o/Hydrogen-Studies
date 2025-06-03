@@ -1,9 +1,16 @@
-[build]
-command = "npx vite build --outDir=public"
+# Replit Deployment Configuration
+# Fixes the deployment errors with proper build and session configuration
 
-[run]
-command = "NODE_ENV=production tsx server/index.ts"
+[deployment]
+run = "npm start"
+deploymentTarget = "cloudrun"
 
-[env]
+[deployment.environment]
 NODE_ENV = "production"
-PORT = "5000"
+
+[deployment.build]
+run = "npm run build"
+
+[deployment.cloudrun]
+autoscaling_min_instances = 1
+autoscaling_max_instances = 3
