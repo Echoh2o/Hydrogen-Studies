@@ -18,6 +18,7 @@ interface Study {
   year?: number;
   citations?: number;
   imageUrl?: string;
+  slug?: string;
 }
 
 // Category type definition

@@ -119,6 +119,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recent studies endpoint for homepage
+  app.get('/api/recent-studies', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 6;
+      
+      const recentStudies = await db.select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        authors: studies.authors,
+        journal: studies.journal,
+        publishDate: studies.publishDate,
+        category: studies.category,
+        imageUrl: studies.imageUrl,
+        slug: studies.slug,
+        year: sql<number>`EXTRACT(YEAR FROM ${studies.publishDate}::date)::int`
+      })
+      .from(studies)
+      .where(sql`${studies.title} IS NOT NULL AND ${studies.abstract} IS NOT NULL`)
+      .orderBy(desc(studies.id))
+      .limit(limit);
+
+      res.json(recentStudies);
+    } catch (error) {
+      console.error('Error fetching recent studies:', error);
+      res.status(500).json({ message: 'Failed to fetch recent studies' });
+    }
+  });
+
   // Basic study endpoints
   app.get('/api/studies', async (req, res) => {
     try {
