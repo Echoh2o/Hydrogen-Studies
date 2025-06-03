@@ -135,6 +135,7 @@ export const studies = pgTable("studies", {
   // Only include fields that exist in the database
   keywords: text("keywords").array(), // Author-provided keywords
   plainLanguageTitle: text("plain_language_title"), // SEO-optimized consumer-friendly title
+  slug: text("slug"), // URL-friendly slug generated from plain language title
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
