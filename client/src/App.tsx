@@ -20,8 +20,9 @@ import AboutUsPage from "@/pages/AboutUsPage";
 import ContactUsPage from "@/pages/ContactUsPage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
-import SEOStudyPage from "@/pages/SEOStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
+
+import SEOStudyPage from "@/pages/SEOStudyPage";
 import About from "@/pages/about";
 import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";

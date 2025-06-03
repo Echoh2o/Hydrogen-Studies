@@ -91,7 +91,7 @@ const RecentStudiesSection = () => {
                   <span className="text-neutral-500 text-sm">{study.year}</span>
                 </div>
                 <h3 className="text-lg font-semibold mb-2 line-clamp-2">
-                  <Link href={`/study/${study.id}`}>
+                  <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                     <a className="hover:text-primary">{study.title}</a>
                   </Link>
                 </h3>
