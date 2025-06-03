@@ -4,7 +4,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { ZodError } from 'zod';
-import { fromZodError } from 'zod-validation-error/lib';
+import { handleValidationError } from '../simple-error-handler';
 import { 
   enhanceStudyWithDoi, 
   batchEnhanceStudiesWithDoi, 
@@ -187,10 +187,10 @@ router.post('/enhance', async (req: Request, res: Response) => {
       });
     } catch (zodError) {
       if (zodError instanceof ZodError) {
-        const validationError = fromZodError(zodError);
+        // Validation error handling
         return res.status(400).json({
           success: false,
-          message: validationError.message
+          message: zodError.message
         });
       }
       throw zodError;
@@ -320,10 +320,10 @@ router.post('/enhance/batch', async (req: Request, res: Response) => {
       }
     } catch (zodError) {
       if (zodError instanceof ZodError) {
-        const validationError = fromZodError(zodError);
+        // Validation error handling
         return res.status(400).json({
           success: false,
-          message: validationError.message
+          message: zodError.message
         });
       }
       throw zodError;
@@ -400,10 +400,10 @@ router.post('/find-needing-enhancement', async (req: Request, res: Response) => 
       }
     } catch (zodError) {
       if (zodError instanceof ZodError) {
-        const validationError = fromZodError(zodError);
+        // Validation error handling
         return res.status(400).json({
           success: false,
-          message: validationError.message
+          message: zodError.message
         });
       }
       throw zodError;

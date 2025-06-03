@@ -14,7 +14,7 @@ import {
   studyCategories
 } from "@shared/schema";
 import { ZodError } from "zod";
-import { fromZodError } from "zod-validation-error";
+// import { fromZodError } from "zod-validation-error";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
 // Removed redundant deduplication imports
