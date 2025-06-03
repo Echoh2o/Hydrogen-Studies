@@ -219,7 +219,7 @@ const BodySystemCategoryPage = () => {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link href={`/studies/${study.id}`}>
+                    <Link href={`/study/${study.id}`}>
                       <Button>View Full Study</Button>
                     </Link>
                   </CardFooter>
