@@ -111,7 +111,7 @@ export default function TaggedStudiesPage() {
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
     setSelectedTags([]);
-    setLocation(`/studies/tags/${category}`);
+    setLocation(`/study/tags/${category}`);
   };
 
   const getCategoryIcon = (category: string) => {

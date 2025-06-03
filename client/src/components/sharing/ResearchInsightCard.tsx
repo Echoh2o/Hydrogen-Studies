@@ -153,7 +153,7 @@ const ResearchInsightCard: React.FC<ResearchInsightCardProps> = ({ study }) => {
         const data = {
           files: [file],
           title: 'Hydrogen Research Insight',
-          text: `${title}\n\nSource: hydrogenstudies.com/studies/${study.id}`,
+          text: `${title}\n\nSource: hydrogenstudies.com/study/${study.id}`,
         };
         
         if (navigator.canShare && navigator.canShare(data)) {
