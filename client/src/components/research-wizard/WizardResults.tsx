@@ -150,7 +150,7 @@ const WizardResults = ({ results, onReset, selections }: WizardResultsProps) => 
                     </div>
                     <div className="space-y-2">
                       {suggestion.relatedStudies.slice(0, 3).map((study) => (
-                        <Link href={`/studies/${study.id}`} key={study.id}>
+                        <Link href={`/study/id/${study.id}`} key={study.id}>
                           <a className="block p-3 border rounded-md hover:bg-muted transition-colors">
                             <h5 className="font-medium text-sm mb-1 line-clamp-1">{study.title}</h5>
                             <div className="flex items-center text-xs text-muted-foreground gap-2">

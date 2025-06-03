@@ -291,7 +291,7 @@ For those interested in diving deeper into the research, here are key studies re
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {article.relatedStudies.slice(0, 3).map((studyId, index) => (
-                <Link key={index} href={`/studies/${studyId}`}>
+                <Link key={index} href={`/study/id/${studyId}`}>
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
                     <CardHeader>
                       <CardTitle className="text-sm">Study #{studyId}</CardTitle>

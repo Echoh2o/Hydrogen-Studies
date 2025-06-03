@@ -169,7 +169,7 @@ const CategoryPage = () => {
             // Studies list
             <div className="space-y-6">
               {currentStudies.map((study) => (
-                <Link key={study.id} href={`/study/${study.id}`}>
+                <Link key={study.id} href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                   <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-neutral-100">
                     <div className="flex items-start mb-3">
                       <div className="bg-primary/10 text-primary text-xs px-2 py-1 rounded font-medium">
