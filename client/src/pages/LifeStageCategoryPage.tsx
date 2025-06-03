@@ -22,7 +22,18 @@ interface Study {
 const LifeStageCategoryPage = () => {
   const { name } = useParams();
   const decodedName = name ? decodeURIComponent(name) : '';
-  const displayName = decodedName.charAt(0).toUpperCase() + decodedName.slice(1);
+  
+  // Map URL slugs to exact database category names
+  const categoryMap: Record<string, string> = {
+    'infants-newborns': 'Infants & Newborns',
+    'children-adolescents': 'Children & Adolescents',
+    'adults': 'Adults',
+    'older-adults': 'Older Adults',
+    'athletes-fitness': 'Athletes & Fitness'
+  };
+  
+  const exactCategoryName = categoryMap[decodedName] || decodedName;
+  const displayName = exactCategoryName;
   
   const [studies, setStudies] = useState<Study[]>([]);
   const [isLoading, setIsLoading] = useState(true);
