@@ -48,7 +48,7 @@ export default function Footer() {
             <h3 className="font-semibold text-lg">Explore</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/studies" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/search" className="text-gray-300 hover:text-white transition-colors">
                   Browse Studies
                 </Link>
               </li>
