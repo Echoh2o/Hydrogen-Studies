@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useRoute } from "wouter";
+import { useLocation, useRoute, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -371,9 +371,11 @@ export default function TaggedStudiesPage() {
                                 <span className="text-xs text-muted-foreground">
                                   {study.viewCount} views
                                 </span>
-                                <Button variant="outline" size="sm">
-                                  View Study
-                                </Button>
+                                <Link href={`/study/${study.id}`}>
+                                  <Button variant="outline" size="sm">
+                                    View Study
+                                  </Button>
+                                </Link>
                               </div>
                             </div>
                           </CardContent>

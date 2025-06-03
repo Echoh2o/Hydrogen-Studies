@@ -138,6 +138,8 @@ function Router() {
       <Route path="/resources" component={() => { window.location.replace('/recommendations'); return null; }} />
       <Route path="/learn" component={() => { window.location.replace('/about'); return null; }} />
       <Route path="/improved-search" component={() => { window.location.replace('/search'); return null; }} />
+      
+      {/* Legacy studies route - redirect to study */}
       <Route path="/studies/:id/:slug?" component={EnhancedStudyPage} />
       
       {/* 404 - Must be last */}
