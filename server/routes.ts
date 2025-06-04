@@ -180,8 +180,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Study by slug endpoint for SEO URLs
-  app.get('/api/studies/slug/:slug', async (req, res) => {
+  // Study by slug endpoint for SEO URLs - moved to bypass Vite catch-all
+  app.get('/api/study-by-slug/:slug', async (req, res) => {
     try {
       const slug = req.params.slug;
       const [study] = await db.select().from(studies).where(eq(studies.slug, slug));
