@@ -96,7 +96,7 @@ function Router() {
       <Route path="/" component={NewHomePage} />
       <Route path="/old-home" component={Home} />
       <Route path="/studies" component={Studies} />
-      <Route path="/study/:id" component={EnhancedStudyPage} />
+      <Route path="/study/:slug" component={SEOStudyPage} />
       <Route path="/search" component={EnhancedSearchPage} />
       <Route path="/advanced-search" component={EnhancedSearchPage} />
       <Route path="/about" component={AboutUsPage} />

@@ -49,7 +49,7 @@ export default function SEOStudyPage() {
   
   // Fetch study data based on route type
   const { data: study, isLoading, error } = useQuery<Study>({
-    queryKey: isSlugRoute ? [`/api/studies/by-slug/${identifier}`] : [`/api/studies/${identifier}`],
+    queryKey: isSlugRoute ? [`/api/studies/slug/${identifier}`] : [`/api/studies/${identifier}`],
     enabled: !!identifier,
   });
 
