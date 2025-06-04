@@ -8,6 +8,9 @@ const RecentStudiesSection = () => {
     queryKey: ["/api/recent-studies"],
   });
 
+  // Debug log to check actual data structure
+  console.log("Recent studies data:", recentStudies);
+
   // If loading, show a loading state with placeholder cards
   if (isLoading) {
     return (
