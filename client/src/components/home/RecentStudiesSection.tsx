@@ -114,7 +114,7 @@ const RecentStudiesSection = () => {
                     <HiDocument className="mr-1" /> {study.fullTextAvailable ? "Full text" : "Abstract only"}
                   </span>
                 </div>
-                <Link href={`/study/${study.id}`}>
+                <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                   <a className="text-primary hover:text-primary-dark transition">
                     <HiArrowRight />
                   </a>

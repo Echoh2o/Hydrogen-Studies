@@ -291,13 +291,13 @@ const StudyPage = () => {
         <meta name="keywords" content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, research study, scientific evidence, health effects`} />
         <meta name="author" content={study.authors} />
         <meta name="date" content={study.publishDate} />
-        <link rel="canonical" href={`https://hydrogenstudies.com/study/${study.id}`} />
+        <link rel="canonical" href={`https://hydrogenstudies.com/study/${study.slug || study.id}`} />
         
         {/* Open Graph Tags */}
         <meta property="og:title" content={`${(study.plainLanguageTitle || study.plain_language_title || study.title)} | Hydrogen Studies`} />
         <meta property="og:description" content={study.abstract?.substring(0, 200) + "..."} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.id}`} />
+        <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.slug || study.id}`} />
         <meta property="og:image" content={study.imageUrl || study.image_url || fallbackImageBase64} />
         <meta property="article:published_time" content={study.publishDate} />
         <meta property="article:section" content={study.category} />
@@ -322,7 +322,7 @@ const StudyPage = () => {
           { name: 'Home', url: 'https://hydrogenstudies.com' },
           { name: 'Research Studies', url: 'https://hydrogenstudies.com/studies' },
           { name: study.category, url: `https://hydrogenstudies.com/category/${encodeURIComponent(study.category)}` },
-          { name: study.title, url: `https://hydrogenstudies.com/study/${study.id}` }
+          { name: study.title, url: `https://hydrogenstudies.com/study/${study.slug || study.id}` }
         ])}
       />
 
