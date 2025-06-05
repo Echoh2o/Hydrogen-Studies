@@ -9,7 +9,7 @@
 
 import { db } from './server/db';
 import { studies as studiesTable } from './shared/schema';
-import { eq, isNull } from 'drizzle-orm';
+import { eq, isNull, sql } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -116,11 +116,13 @@ async function main() {
     process.exit(1);
   }
 
-  // Get studies that need categorization (currently marked as "General Wellness")
+  // Get studies that need categorization (NULL, empty, or "General Wellness")
   const studies = await db.select()
     .from(studiesTable)
-    .where(eq(studiesTable.consumerCategories, 'General Wellness'))
-    .limit(50); // Process more studies
+    .where(
+      sql`consumer_categories IS NULL OR consumer_categories = 'General Wellness' OR consumer_categories = ''`
+    )
+    .limit(100); // Process more studies in batches
 
   console.log(`📊 Found ${studies.length} studies to categorize`);
 

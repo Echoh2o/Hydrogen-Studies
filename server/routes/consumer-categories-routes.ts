@@ -106,7 +106,7 @@ router.get('/counts', async (req, res) => {
     ];
 
     // Function to get actual count for a category
-    const getCategoryCount = async (categoryName, jsonField) => {
+    const getCategoryCount = async (categoryName: string, jsonField: string) => {
       const query = `
         SELECT COUNT(*) as count
         FROM studies 
