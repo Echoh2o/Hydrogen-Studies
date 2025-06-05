@@ -158,9 +158,12 @@ export default function SEOStudyPage() {
 
       <section className="bg-white py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            {/* Breadcrumb */}
-            <nav aria-label="Breadcrumb" className="mb-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Content Column */}
+              <div className="lg:col-span-2">
+                {/* Breadcrumb */}
+                <nav aria-label="Breadcrumb" className="mb-6">
               <ol className="flex items-center text-sm text-neutral-500">
                 <li className="inline-flex items-center">
                   <Link href="/">
