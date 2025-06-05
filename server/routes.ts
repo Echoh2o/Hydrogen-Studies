@@ -49,6 +49,7 @@ import studiesRouter from "./routes/studies-router";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
 import { testEnrichStudy, populateStudyWithRealData } from "./test-pubmed-enrichment";
+import { enrichStudyDirect } from "./direct-pubmed-enrichment";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
 import exportRoutes from "./routes/export-routes";
@@ -747,6 +748,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: 'Data population failed'
+      });
+    }
+  });
+
+  app.post('/api/enrich-direct/:id', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      console.log(`Direct enrichment for study ${studyId}`);
+      
+      const success = await enrichStudyDirect(studyId);
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: `Study ${studyId} enriched with authentic PubMed data`
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: `No data found for study ${studyId}`
+        });
+      }
+    } catch (error) {
+      console.error('Error in direct enrichment:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Direct enrichment failed'
       });
     }
   });
