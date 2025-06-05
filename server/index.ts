@@ -11,6 +11,7 @@ import { runDatabaseMigrations, initializeSampleCategoriesData } from "./schema-
 import { initializeData } from "./initialize-data";
 import { updateCategoryCounts } from "./update-category-counts";
 import { addConsumerCategoriesColumn } from "./migrations/add-consumer-categories";
+import { addResearchDataFields } from "./migrations/add-research-data-fields";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
