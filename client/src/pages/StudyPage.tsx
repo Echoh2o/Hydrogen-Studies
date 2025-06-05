@@ -369,7 +369,8 @@ const StudyPage = () => {
                 </Badge>
                 {study.year && (
                   <time dateTime={study.year.toString()} className="text-neutral-500 flex items-center text-sm">
-                    <HiCalendar className="mr-1 w-4 h-4" aria-hidden="true" /> {study.year}
+                    <HiCalendar className="mr-1 w-4 h-4" aria-hidden="true" /> 
+                    {study.publishDate ? new Date(study.publishDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : study.year}
                   </time>
                 )}
               </div>
@@ -399,8 +400,8 @@ const StudyPage = () => {
                   <span itemProp="publisher" className="line-clamp-1">{study.journal}</span>
                 </div>
                 <div className="flex items-center md:ml-6">
-                  <HiDocumentText className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
-                  <span>{study.citations || "0"} citations</span>
+                  <HiCalendar className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
+                  <span>{study.publishDate ? new Date(study.publishDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : study.year || 'Date not available'}</span>
                 </div>
               </div>
             </header>
