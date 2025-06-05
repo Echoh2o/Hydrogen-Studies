@@ -238,21 +238,27 @@ router.get('/studies', async (req, res) => {
           jsonField = 'condition';
       }
       
-      // Query for studies that have the exact category in their consumer_categories JSON
+      // Query for studies that have the category in their consumer_categories
+      // Handle both JSON format and simple string format
       const query = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
                category, doi, image_url as "imageUrl", slug, consumer_categories
         FROM studies 
         WHERE consumer_categories IS NOT NULL 
+        AND consumer_categories != 'General Wellness'
         AND (
-          consumer_categories::text LIKE '%"' || $1 || '"%' OR
-          consumer_categories::text LIKE '%' || $1 || '%'
+          -- Handle JSON format
+          (consumer_categories LIKE '{%' AND 
+           consumer_categories::jsonb -> $1 ? $2) OR
+          -- Handle simple string format
+          (consumer_categories NOT LIKE '{%' AND 
+           consumer_categories ILIKE '%' || $2 || '%')
         )
         ORDER BY id DESC
         LIMIT 50
       `;
       
-      const result = await pool.query(query, [categoryName]);
+      const result = await pool.query(query, [jsonField, categoryName]);
       const studyResults = result.rows;
       
       console.log(`Found ${studyResults.length} studies for ${model} category: ${categoryName}`);
