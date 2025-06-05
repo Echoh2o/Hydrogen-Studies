@@ -64,53 +64,96 @@ router.get('/counts', async (req, res) => {
   // Set content type to JSON explicitly
   res.setHeader('Content-Type', 'application/json');
   try {
-    // Health condition categories matching those in the database 
-    const healthConditionCounts = [
-      { name: "Heart Disease & Hypertension", count: 18 },
-      { name: "Brain & Neurological Disorders", count: 34 },
-      { name: "Diabetes & Metabolic Health", count: 21 },
-      { name: "Arthritis & Inflammation", count: 9 },
-      { name: "Lung & Respiratory Conditions", count: 19 },
-      { name: "Digestive Health (Gut/Liver)", count: 24 },
-      { name: "Cancer Supportive Care", count: 10 },
-      { name: "Cardiovascular Health", count: 18 },
-      { name: "Neurological Health", count: 34 },
-      { name: "Metabolic Health", count: 21 },
-      { name: "Inflammation", count: 9 },
-      { name: "Respiratory Health", count: 19 },
-      { name: "Kidney Health", count: 8 },
-      { name: "Skin Health", count: 17 },
-      { name: "Healthy Aging", count: 12 },
-      { name: "General Wellness", count: 30 }
+    const { pool } = await import('../db');
+    
+    // Define categories to count
+    const conditionCategories = [
+      "Heart Disease & Hypertension",
+      "Brain & Neurological Disorders", 
+      "Diabetes & Metabolic Health",
+      "Arthritis & Inflammation",
+      "Lung & Respiratory Conditions",
+      "Digestive Health (Gut/Liver)",
+      "Cancer Supportive Care",
+      "Cardiovascular Health",
+      "Neurological Health", 
+      "Metabolic Health",
+      "Inflammation",
+      "Respiratory Health",
+      "Kidney Health",
+      "Skin Health",
+      "Healthy Aging",
+      "General Wellness"
     ];
 
-    // Body system categories with accurate names and counts
-    const bodySystemCounts = [
-      { name: "Cardiovascular System", count: 18 },
-      { name: "Nervous System", count: 35 },
-      { name: "Respiratory System", count: 19 },
-      { name: "Digestive System", count: 24 }, // Combined Gastrointestinal (16) and Liver (8)
-      { name: "Immune System", count: 15 },
-      { name: "Musculoskeletal System", count: 10 },
-      { name: "Renal System", count: 8 }, // Kidney
-      { name: "Integumentary System", count: 17 } // Dermatology/Skin
+    const bodySystemCategories = [
+      "Cardiovascular System",
+      "Nervous System",
+      "Respiratory System", 
+      "Digestive System",
+      "Immune System",
+      "Musculoskeletal System",
+      "Renal System",
+      "Integumentary System"
     ];
     
-    // Life stage categories with refined names and counts
     const lifeStageCategories = [
-      { name: "Infants & Newborns", count: 5 },
-      { name: "Children & Adolescents", count: 8 },
-      { name: "Adults", count: 45 },
-      { name: "Older Adults", count: 28 },
-      { name: "Athletes & Fitness", count: 18 }
+      "Infants & Newborns",
+      "Children & Adolescents", 
+      "Adults",
+      "Older Adults",
+      "Athletes & Fitness"
     ];
+
+    // Function to get actual count for a category
+    const getCategoryCount = async (categoryName, jsonField) => {
+      const query = `
+        SELECT COUNT(*) as count
+        FROM studies 
+        WHERE consumer_categories IS NOT NULL 
+        AND consumer_categories != 'General Wellness'
+        AND (
+          -- Handle JSON format
+          (consumer_categories LIKE '{%' AND 
+           consumer_categories::jsonb -> $1 ? $2) OR
+          -- Handle simple string format
+          (consumer_categories NOT LIKE '{%' AND 
+           consumer_categories ILIKE '%' || $2 || '%')
+        )
+      `;
+      
+      const result = await pool.query(query, [jsonField, categoryName]);
+      return parseInt(result.rows[0].count);
+    };
+
+    // Get actual counts for each category type
+    const healthConditionCounts = await Promise.all(
+      conditionCategories.map(async (name) => ({
+        name,
+        count: await getCategoryCount(name, 'condition')
+      }))
+    );
+
+    const bodySystemCounts = await Promise.all(
+      bodySystemCategories.map(async (name) => ({
+        name, 
+        count: await getCategoryCount(name, 'bodySystem')
+      }))
+    );
+    
+    const lifeStageCount = await Promise.all(
+      lifeStageCategories.map(async (name) => ({
+        name,
+        count: await getCategoryCount(name, 'lifeStage')
+      }))
+    );
     
     return res.json({
       success: true,
       data: {
         condition: healthConditionCounts,
         body_system: bodySystemCounts,
-        life_stage: lifeStageCategories 
+        life_stage: lifeStageCount 
       }
     });
   } catch (error) {
