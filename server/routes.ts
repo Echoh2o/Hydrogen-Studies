@@ -48,7 +48,7 @@ import enrichmentRoutes from "./routes/enrichment-routes";
 import studiesRouter from "./routes/studies-router";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
-import { enrichStudyWithFullData, enrichStudiesBatch, enrichAllIncompleteStudies } from "./pubmed-full-enrichment";
+import { testEnrichStudy, populateStudyWithRealData } from "./test-pubmed-enrichment";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
 import exportRoutes from "./routes/export-routes";
@@ -702,6 +702,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/search/by-tags', searchStudiesByTags);
   app.get('/api/tags/related', getRelatedTags);
   app.get('/api/tags/popular-by-category', getPopularTagsByCategory);
+
+  // PubMed Data Enrichment Routes
+  app.post('/api/test-enrich/:id', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      console.log(`Testing PubMed APIs for study ${studyId}`);
+      
+      await testEnrichStudy(studyId);
+      
+      res.json({ 
+        success: true, 
+        message: `API test completed for study ${studyId} - check console logs`
+      });
+    } catch (error) {
+      console.error('Error testing enrichment:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'API test failed'
+      });
+    }
+  });
+
+  app.post('/api/populate-study/:id', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      console.log(`Populating study ${studyId} with authentic PubMed data`);
+      
+      const success = await populateStudyWithRealData(studyId);
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: `Study ${studyId} populated with authentic research data`
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: `No additional data found for study ${studyId}`
+        });
+      }
+    } catch (error) {
+      console.error('Error populating study:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Data population failed'
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

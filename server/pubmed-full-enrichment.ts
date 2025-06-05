@@ -36,8 +36,8 @@ export async function enrichStudyWithFullData(studyId: number): Promise<boolean>
     console.log(`Enriching study ${studyId}: ${study.title}`);
 
     // Fetch data from multiple sources
-    const pubmedData = await fetchPubMedData(study.doi);
-    const crossrefData = await fetchCrossRefData(study.doi);
+    const pubmedData = await fetchPubMedData(study.doi || undefined);
+    const crossrefData = await fetchCrossRefData(study.doi || undefined);
     const semanticData = await fetchSemanticScholarData(study.title, study.authors);
 
     // Combine data sources
@@ -57,16 +57,16 @@ export async function enrichStudyWithFullData(studyId: number): Promise<boolean>
     // Update database with enriched data
     await db.update(studies)
       .set({
-        fullText: enrichedData.fullText,
-        fullTextHtml: enrichedData.fullTextHtml,
-        authorAffiliations: enrichedData.authorAffiliations,
-        fundingSources: enrichedData.fundingSources,
-        ethicalApproval: enrichedData.ethicalApproval,
-        trialRegistration: enrichedData.trialRegistration,
-        statisticalMethods: enrichedData.statisticalMethods,
-        supplementaryMaterials: enrichedData.supplementaryMaterials,
+        full_text: enrichedData.fullText,
+        full_text_html: enrichedData.fullTextHtml,
+        author_affiliations: enrichedData.authorAffiliations,
+        funding_sources: enrichedData.fundingSources,
+        ethical_approval: enrichedData.ethicalApproval,
+        trial_registration: enrichedData.trialRegistration,
+        statistical_methods: enrichedData.statisticalMethods,
+        supplementary_materials: enrichedData.supplementaryMaterials,
         keywords: enrichedData.keywords,
-        citationCount: enrichedData.citationCount
+        citation_count: enrichedData.citationCount
       })
       .where(eq(studies.id, studyId));
 
@@ -238,10 +238,10 @@ export async function enrichAllIncompleteStudies(): Promise<void> {
     // Find studies missing full data
     const incompleteStudies = await db.select({ id: studies.id })
       .from(studies)
-      .where(eq(studies.fullText, null))
+      .where(isNull(studies.full_text))
       .limit(50); // Process 50 at a time
 
-    const studyIds = incompleteStudies.map(s => s.id);
+    const studyIds = incompleteStudies.map((s: any) => s.id);
     console.log(`Found ${studyIds.length} studies to enrich`);
 
     await enrichStudiesBatch(studyIds);
