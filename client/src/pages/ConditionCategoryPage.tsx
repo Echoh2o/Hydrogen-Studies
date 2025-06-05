@@ -199,7 +199,7 @@ const ConditionCategoryPage = () => {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link href={`/study/${study.id}`}>
+                    <Link href={`/study/${study.slug || study.id}`}>
                       <Button>View Full Study</Button>
                     </Link>
                   </CardFooter>

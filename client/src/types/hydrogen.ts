@@ -66,6 +66,7 @@ export interface Study {
   id: number;
   title: string;
   abstract: string;
+  slug?: string;
   doi?: string;
   pmid?: string;
   authors?: string;

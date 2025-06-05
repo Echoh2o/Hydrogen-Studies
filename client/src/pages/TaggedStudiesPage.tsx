@@ -35,6 +35,7 @@ interface StudyWithTags {
   journal: string;
   publishDate: string;
   category: string;
+  slug?: string;
   imageUrl?: string;
   viewCount: number;
   tags: Array<{
