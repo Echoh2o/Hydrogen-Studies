@@ -239,11 +239,16 @@ export default function SEOStudyPage() {
               <div className="p-4 sm:p-6 md:p-8">
                 {/* Study Image */}
                 {(study.imageUrl || study.image_url) && 
-                 !(study.imageUrl || study.image_url)?.includes('placehold.co') && (
+                 !(study.imageUrl || study.image_url)?.includes('placehold.co') && 
+                 !(study.imageUrl || study.image_url)?.includes('placeholder') && (
                   <section className="mb-8">
                     <figure className="rounded-lg overflow-hidden shadow-md">
                       <img 
-                        src={study.imageUrl || study.image_url} 
+                        src={
+                          (study.imageUrl || study.image_url)?.startsWith('http') 
+                            ? (study.imageUrl || study.image_url)
+                            : `/${study.imageUrl || study.image_url}`
+                        }
                         alt={study.imageAlt || study.image_alt || `Scientific visualization for ${study.title}`}
                         className="w-full h-auto max-h-96 object-cover"
                         onError={(e) => {
