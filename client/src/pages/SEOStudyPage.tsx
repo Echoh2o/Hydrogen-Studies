@@ -343,11 +343,43 @@ export default function SEOStudyPage() {
 
                 {(study.fullText || study.full_text) && (
                   <section className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4 text-primary">Full Text</h3>
-                    <div className="text-neutral-700 leading-relaxed max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
-                      <div className="whitespace-pre-wrap text-sm">
-                        {(study.fullText || study.full_text)?.substring(0, 5000)}
-                        {(study.fullText || study.full_text)?.length > 5000 && '...'}
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Full Research Text</h3>
+                    <div className="bg-white border border-neutral-200 rounded-lg shadow-sm">
+                      <div className="p-6">
+                        <div className="prose prose-neutral max-w-none text-neutral-800 leading-relaxed">
+                          <div className="text-base whitespace-pre-line">
+                            {(study.fullText || study.full_text)?.substring(0, 8000)}
+                            {(study.fullText || study.full_text)?.length > 8000 && (
+                              <span className="text-neutral-500 italic">
+                                ... [Content continues in original publication]
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {(study.fullText || study.full_text)?.length > 8000 && (
+                          <div className="mt-6 pt-4 border-t border-neutral-200">
+                            <p className="text-sm text-neutral-600 mb-3">
+                              This is a preview of the full research text. For the complete study including detailed methodology, statistical analysis, and references:
+                            </p>
+                            <div className="flex gap-3">
+                              {study.doi && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={`https://doi.org/${study.doi}`} target="_blank" rel="noopener noreferrer">
+                                    Read Complete Study
+                                  </a>
+                                </Button>
+                              )}
+                              {study.pdfUrl && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={study.pdfUrl} target="_blank" rel="noopener noreferrer">
+                                    Download PDF
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>
