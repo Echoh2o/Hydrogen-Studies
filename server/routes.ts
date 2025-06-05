@@ -447,6 +447,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Related studies endpoint
+  app.get('/api/metadata/related/:studyId', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.studyId);
+      
+      // Get the current study to find related ones
+      const currentStudy = await db.select().from(studies).where(eq(studies.id, studyId)).limit(1);
+      
+      if (currentStudy.length === 0) {
+        return res.status(404).json({ error: 'Study not found' });
+      }
+      
+      const study = currentStudy[0];
+      
+      // Find related studies based on health conditions, body systems, and categories
+      const relatedStudies = await db.select({
+        id: studies.id,
+        title: studies.title,
+        plainLanguageTitle: studies.plainLanguageTitle,
+        journal: studies.journal,
+        publishDate: studies.publishDate,
+        journalPublishDate: studies.journalPublishDate,
+        slug: studies.slug,
+        healthConditions: studies.healthConditions,
+        bodySystems: studies.bodySystems
+      })
+      .from(studies)
+      .where(
+        and(
+          ne(studies.id, studyId),
+          or(
+            eq(studies.healthConditions, study.healthConditions),
+            eq(studies.bodySystems, study.bodySystems),
+            ilike(studies.consumerCategories, `%${study.healthConditions || 'Acne'}%`)
+          )
+        )
+      )
+      .limit(8);
+      
+      res.json(relatedStudies);
+    } catch (error) {
+      console.error('Error fetching related studies:', error);
+      res.status(500).json({ error: 'Failed to fetch related studies' });
+    }
+  });
+
   // Enhanced study details with recommendations
   app.get('/api/studies/:id/detailed', async (req, res) => {
     try {

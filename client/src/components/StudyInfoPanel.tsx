@@ -69,6 +69,11 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
 
   const { data: relatedStudiesData } = useQuery({
     queryKey: ['/api/metadata/related', study.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/metadata/related/${study.id}`);
+      if (!response.ok) throw new Error('Failed to fetch related studies');
+      return response.json();
+    },
     enabled: !!study.id
   });
 
