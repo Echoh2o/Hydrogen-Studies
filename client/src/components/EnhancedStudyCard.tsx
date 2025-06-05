@@ -12,6 +12,7 @@ interface Study {
   journal: string;
   publishDate: string;
   category: string;
+  slug?: string;
   healthCondition?: string;
   intervention?: string;
   population?: string;
