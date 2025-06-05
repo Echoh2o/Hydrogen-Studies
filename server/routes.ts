@@ -490,6 +490,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Image generation routes
+  app.post('/api/admin/generate-image/:studyId', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.studyId);
+      const { generateStudyImage } = await import('./enhanced-image-generator');
+      
+      const result = await generateStudyImage(studyId);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          imageUrl: result.imageUrl,
+          prompt: result.prompt,
+          message: `Image generated successfully for study ${studyId}`
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          message: `Failed to generate image for study ${studyId}`
+        });
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Internal server error',
+        message: 'Failed to generate image' 
+      });
+    }
+  });
+
+  app.post('/api/admin/generate-images-batch', async (req, res) => {
+    try {
+      const { studyIds, batchSize = 3 } = req.body;
+      const { generateImagesForStudies } = await import('./enhanced-image-generator');
+      
+      if (!Array.isArray(studyIds) || studyIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid studyIds array provided'
+        });
+      }
+      
+      // Start batch generation (this will run in background)
+      generateImagesForStudies(studyIds, batchSize).catch(console.error);
+      
+      res.json({
+        success: true,
+        message: `Started batch image generation for ${studyIds.length} studies`,
+        batchSize
+      });
+    } catch (error) {
+      console.error('Error starting batch image generation:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to start batch generation' 
+      });
+    }
+  });
+
+  app.post('/api/admin/generate-all-images', async (req, res) => {
+    try {
+      const { generateImagesForAllStudies } = await import('./enhanced-image-generator');
+      
+      // Start generation for all studies (runs in background)
+      generateImagesForAllStudies().catch(console.error);
+      
+      res.json({
+        success: true,
+        message: 'Started image generation for all studies without images'
+      });
+    } catch (error) {
+      console.error('Error starting full image generation:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to start image generation' 
+      });
+    }
+  });
+
+  app.get('/api/admin/test-image-generation/:studyId?', async (req, res) => {
+    try {
+      const studyId = req.params.studyId ? parseInt(req.params.studyId) : undefined;
+      const { testImageGeneration } = await import('./enhanced-image-generator');
+      
+      const result = await testImageGeneration(studyId);
+      
+      res.json({
+        success: result.success,
+        imageUrl: result.imageUrl,
+        prompt: result.prompt,
+        error: result.error,
+        studyId: result.studyId
+      });
+    } catch (error) {
+      console.error('Error testing image generation:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to test image generation' 
+      });
+    }
+  });
+
   // Enhanced study details with recommendations
   app.get('/api/studies/:id/detailed', async (req, res) => {
     try {
