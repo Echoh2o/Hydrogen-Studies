@@ -149,6 +149,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
             icon={HiTag}
             items={keywords}
             linkPrefix="/search?keywords="
+            countsData={keywordCounts}
             emptyMessage="Keywords being processed from research paper"
           />
           
@@ -159,6 +160,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
             icon={HiHeart}
             items={consumerCategories}
             linkPrefix="/category/"
+            countsData={categoryCounts}
             emptyMessage="General Wellness"
           />
           
