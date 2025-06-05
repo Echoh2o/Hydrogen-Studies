@@ -184,12 +184,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/study-by-slug/:slug', async (req, res) => {
     try {
       const slug = req.params.slug;
-      const [study] = await db.select().from(studies).where(eq(studies.slug, slug));
+      console.log(`Looking up study by slug: ${slug}`);
+      
+      // First try to find by slug
+      let [study] = await db.select().from(studies).where(eq(studies.slug, slug));
+      
+      // If not found by slug and the slug looks like a number, try finding by ID
+      if (!study && /^\d+$/.test(slug)) {
+        const id = parseInt(slug);
+        console.log(`Slug appears to be an ID (${id}), trying ID lookup...`);
+        [study] = await db.select().from(studies).where(eq(studies.id, id));
+        
+        // If found by ID, redirect to proper slug URL if slug exists
+        if (study && study.slug) {
+          console.log(`Found study by ID, redirecting to slug: ${study.slug}`);
+          return res.redirect(301, `/api/study-by-slug/${study.slug}`);
+        }
+      }
       
       if (!study) {
+        console.log(`Study not found for slug: ${slug}`);
         return res.status(404).json({ message: 'Study not found' });
       }
 
+      // Ensure study has an image URL if found
+      if (study && !study.imageUrl) {
+        // Generate a dynamic image related to the study topic
+        const topic = study.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
+        // Make sure we properly encode the text to avoid URL issues
+        const encodedTopic = encodeURIComponent(topic);
+        study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${encodedTopic}`;
+        console.log(`Generated image URL for study ${study.id}: ${study.imageUrl}`);
+      }
+
+      console.log(`Successfully found study: ${study.title}`);
       res.json(study);
     } catch (error) {
       console.error('Error fetching study by slug:', error);
