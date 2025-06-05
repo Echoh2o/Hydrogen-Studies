@@ -13,6 +13,7 @@ import {
   HiGlobe, 
   HiDocumentText,
   HiTrendingUp,
+  HiExternalLink,
   HiClock,
   HiBeaker,
   HiCheck
@@ -45,7 +46,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
 
   const keywords = Array.isArray(study.keywords) ? study.keywords : parseJsonField(study.keywords || '');
   const consumerCategories = study.consumerCategories ? 
-    study.consumerCategories.split(',').map(cat => cat.trim()) : [];
+    study.consumerCategories.split(',').map(cat => cat.trim()).filter(cat => cat !== 'General Wellness') : [];
   
   // Parse funding sources
   const fundingSources = study.fundingSources ? 
@@ -161,7 +162,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
             items={consumerCategories}
             linkPrefix="/category/"
             countsData={categoryCounts}
-            emptyMessage="General Wellness"
+            emptyMessage="Health categories being processed"
           />
           
           <Separator />
@@ -195,6 +196,63 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
           <CardTitle className="text-base">Research Context</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Study Details */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+              <HiDocumentText className="w-4 h-4" />
+              Study Information
+            </div>
+            
+            <div className="space-y-2">
+              <div>
+                <span className="text-xs text-neutral-500">Title:</span>
+                <p className="text-xs text-neutral-800 font-medium leading-relaxed">
+                  {study.title}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-xs text-neutral-500">Author(s):</span>
+                  <p className="text-xs text-neutral-700">
+                    {study.authors}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-neutral-500">Date:</span>
+                  <p className="text-xs text-neutral-700">
+                    {study.publishDate || study.journalPublishDate || 'Not specified'}
+                  </p>
+                </div>
+              </div>
+              
+              {study.doi && (
+                <div>
+                  <span className="text-xs text-neutral-500">DOI:</span>
+                  <p className="text-xs text-blue-600 font-mono">
+                    {study.doi}
+                  </p>
+                </div>
+              )}
+              
+              {(study.url || study.doi) && (
+                <div>
+                  <a 
+                    href={study.url || `https://doi.org/${study.doi}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    <HiExternalLink className="w-3 h-3" />
+                    View Original Study
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Author Affiliations */}
           {authorAffiliations.length > 0 && (
             <>
@@ -302,36 +360,37 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
         </Card>
       )}
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Explore Further</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-            <Link href={`/search?author=${encodeURIComponent(study.authors.split(',')[0].trim())}`}>
-              <HiUser className="w-4 h-4 mr-2" />
-              More by Author
-            </Link>
-          </Button>
-          
-          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-            <Link href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}>
-              <HiHeart className="w-4 h-4 mr-2" />
-              Similar Studies
-            </Link>
-          </Button>
-          
-          {study.publishYear && (
-            <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-              <Link href={`/search?year=${study.publishYear}`}>
-                <HiClock className="w-4 h-4 mr-2" />
-                Studies from {study.publishYear}
-              </Link>
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      {/* Similar Studies */}
+      {relatedStudiesData && relatedStudiesData.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Similar Studies</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {relatedStudiesData.slice(0, 4).map((relatedStudy: any) => (
+                <Link key={relatedStudy.id} href={`/study/${relatedStudy.slug || relatedStudy.id}`}>
+                  <div className="p-3 border border-neutral-200 rounded-lg hover:border-primary hover:bg-neutral-50 transition-colors cursor-pointer">
+                    <h4 className="text-sm font-medium line-clamp-2 mb-1">
+                      {relatedStudy.plainLanguageTitle || relatedStudy.title}
+                    </h4>
+                    <p className="text-xs text-neutral-500">
+                      {relatedStudy.journal} • {relatedStudy.publishDate?.slice(0, 4) || relatedStudy.journalPublishDate?.slice(0, 4) || 'Year not specified'}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+              {relatedStudiesData.length > 4 && (
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link href={`/search?related=${study.id}`}>
+                    View All {relatedStudiesData.length} Similar Studies
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
