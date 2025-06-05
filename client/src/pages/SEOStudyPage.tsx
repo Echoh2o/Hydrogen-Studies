@@ -227,25 +227,46 @@ export default function SEOStudyPage() {
                   <p className="text-neutral-700 leading-relaxed">{study.abstract}</p>
                 </section>
 
-                {/* Methods, Results, Conclusion if available */}
+                {/* Enhanced Methods, Results, Conclusion sections */}
                 {study.methods && (
                   <section className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Methods</h3>
-                    <p className="text-neutral-700 leading-relaxed">{study.methods}</p>
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Methods</h3>
+                    <div className="text-neutral-700 leading-relaxed prose prose-neutral max-w-none">
+                      <div dangerouslySetInnerHTML={{ 
+                        __html: study.methods
+                          .replace(/###\s/g, '<h4 class="text-lg font-semibold mt-6 mb-3 text-neutral-800">')
+                          .replace(/####\s/g, '<h5 class="text-base font-medium mt-4 mb-2 text-neutral-800">')
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\n\n/g, '</p><p class="mb-4">')
+                          .replace(/^/, '<p class="mb-4">')
+                          .replace(/$/, '</p>')
+                      }} />
+                    </div>
                   </section>
                 )}
 
                 {study.results && (
                   <section className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Results</h3>
-                    <p className="text-neutral-700 leading-relaxed">{study.results}</p>
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Results</h3>
+                    <div className="text-neutral-700 leading-relaxed prose prose-neutral max-w-none">
+                      <div dangerouslySetInnerHTML={{ 
+                        __html: study.results
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*\s/g, '<li>')
+                          .replace(/\n\n/g, '</p><p class="mb-4">')
+                          .replace(/^/, '<p class="mb-4">')
+                          .replace(/$/, '</p>')
+                      }} />
+                    </div>
                   </section>
                 )}
 
                 {study.conclusion && (
                   <section className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Conclusion</h3>
-                    <p className="text-neutral-700 leading-relaxed">{study.conclusion}</p>
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Conclusion</h3>
+                    <div className="text-neutral-700 leading-relaxed bg-neutral-50 p-4 rounded-lg border-l-4 border-primary">
+                      <p>{study.conclusion}</p>
+                    </div>
                   </section>
                 )}
 
