@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   HiTag, 
   HiHeart, 
@@ -16,7 +17,9 @@ import {
   HiBeaker,
   HiCheck
 } from "react-icons/hi";
-import { Study } from "@shared/schema";
+import { type studies } from "@shared/schema";
+
+type Study = typeof studies.$inferSelect;
 
 interface StudyInfoPanelProps {
   study: Study;
@@ -52,18 +55,36 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
   const authorAffiliations = study.authorAffiliations ? 
     study.authorAffiliations.split(';').map(affil => affil.trim()).filter(Boolean) : [];
 
-  // Create clickable info items with counts (simulated for now)
+  // Fetch real data counts
+  const { data: keywordCounts } = useQuery({
+    queryKey: ['/api/metadata/keywords/counts'],
+    enabled: keywords.length > 0
+  });
+
+  const { data: categoryCounts } = useQuery({
+    queryKey: ['/api/metadata/consumer-categories/counts'],
+    enabled: consumerCategories.length > 0
+  });
+
+  const { data: relatedStudiesData } = useQuery({
+    queryKey: ['/api/metadata/related', study.id],
+    enabled: !!study.id
+  });
+
+  // Create clickable info items with authentic counts
   const InfoSection = ({ 
     title, 
     icon: Icon, 
     items, 
     linkPrefix,
+    countsData,
     emptyMessage = "Not specified"
   }: {
     title: string;
     icon: React.ComponentType<{ className?: string }>;
     items: string[];
     linkPrefix: string;
+    countsData?: Array<{ keyword?: string; category?: string; count: number }>;
     emptyMessage?: string;
   }) => {
     if (items.length === 0) {
@@ -77,6 +98,15 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
         </div>
       );
     }
+
+    const getCount = (item: string) => {
+      if (!countsData) return 1;
+      const match = countsData.find(c => 
+        (c.keyword && c.keyword.toLowerCase() === item.toLowerCase()) ||
+        (c.category && c.category.toLowerCase() === item.toLowerCase())
+      );
+      return match?.count || 1;
+    };
 
     return (
       <div className="space-y-2">
@@ -96,7 +126,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
               >
                 {item}
                 <span className="ml-1 text-xs opacity-70">
-                  ({Math.floor(Math.random() * 50) + 1})
+                  ({getCount(item)})
                 </span>
               </Badge>
             </Link>

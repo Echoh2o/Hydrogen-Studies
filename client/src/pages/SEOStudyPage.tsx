@@ -462,7 +462,7 @@ export default function SEOStudyPage() {
 
               {/* Study Information Panel - Sidebar */}
               <div className="lg:col-span-1">
-                <StudyInfoPanel study={study} relatedStudies={relatedStudies} />
+                <StudyInfoPanel study={study} relatedStudies={[]} />
               </div>
             </div>
           </div>
