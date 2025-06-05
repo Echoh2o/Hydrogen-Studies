@@ -48,6 +48,7 @@ import enrichmentRoutes from "./routes/enrichment-routes";
 import studiesRouter from "./routes/studies-router";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
+import { enrichStudyWithFullData, enrichStudiesBatch, enrichAllIncompleteStudies } from "./pubmed-full-enrichment";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
 import exportRoutes from "./routes/export-routes";
