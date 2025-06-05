@@ -66,7 +66,36 @@ router.get('/counts', async (req, res) => {
   try {
     const { pool } = await import('../db');
     
-    // Define categories to count
+    // Map consumer-friendly names to database category names
+    const categoryMapping = {
+      "Heart Disease & Hypertension": "Cardiovascular",
+      "Brain & Neurological Disorders": "Neurological", 
+      "Diabetes & Metabolic Health": "Metabolic",
+      "Arthritis & Inflammation": "Inflammation",
+      "Lung & Respiratory Conditions": "Respiratory",
+      "Digestive Health (Gut/Liver)": "Gastrointestinal",
+      "Cancer Supportive Care": "Cancer Research",
+      "Cardiovascular Health": "Cardiovascular",
+      "Neurological Health": "Neurological", 
+      "Metabolic Health": "Metabolic",
+      "Inflammation": "Inflammation",
+      "Respiratory Health": "Respiratory",
+      "Kidney Health": "Kidney",
+      "Skin Health": "Dermatology",
+      "Healthy Aging": "Aging",
+      "Cardiovascular System": "Cardiovascular",
+      "Nervous System": "Neurological",
+      "Respiratory System": "Respiratory", 
+      "Digestive System": "Gastrointestinal",
+      "Immune System": "Inflammation",
+      "Musculoskeletal System": "Inflammation",
+      "Renal System": "Kidney",
+      "Integumentary System": "Dermatology",
+      "Adults": "Aging",
+      "Older Adults": "Aging",
+      "Athletes & Fitness": "Fitness"
+    };
+
     const conditionCategories = [
       "Heart Disease & Hypertension",
       "Brain & Neurological Disorders", 
@@ -74,16 +103,7 @@ router.get('/counts', async (req, res) => {
       "Arthritis & Inflammation",
       "Lung & Respiratory Conditions",
       "Digestive Health (Gut/Liver)",
-      "Cancer Supportive Care",
-      "Cardiovascular Health",
-      "Neurological Health", 
-      "Metabolic Health",
-      "Inflammation",
-      "Respiratory Health",
-      "Kidney Health",
-      "Skin Health",
-      "Healthy Aging",
-      "General Wellness"
+      "Cancer Supportive Care"
     ];
 
     const bodySystemCategories = [
@@ -98,8 +118,6 @@ router.get('/counts', async (req, res) => {
     ];
     
     const lifeStageCategories = [
-      "Infants & Newborns",
-      "Children & Adolescents", 
       "Adults",
       "Older Adults",
       "Athletes & Fitness"
@@ -107,15 +125,16 @@ router.get('/counts', async (req, res) => {
 
     // Function to get actual count for a category using authentic relational data
     const getCategoryCount = async (categoryName: string) => {
+      const dbCategoryName = categoryMapping[categoryName] || categoryName;
       const query = `
         SELECT COUNT(DISTINCT s.id) as count
         FROM studies s
         INNER JOIN study_categories sc ON s.id = sc.study_id
         INNER JOIN categories c ON sc.category_id = c.id
-        WHERE c.name ILIKE $1
+        WHERE c.name = $1
       `;
       
-      const result = await pool.query(query, [`%${categoryName}%`]);
+      const result = await pool.query(query, [dbCategoryName]);
       return parseInt(result.rows[0].count);
     };
 
@@ -274,6 +293,30 @@ router.get('/studies', async (req, res) => {
           jsonField = 'condition';
       }
       
+      // Map consumer-friendly name to database category name
+      const categoryMapping = {
+        "Heart Disease & Hypertension": "Cardiovascular",
+        "Brain & Neurological Disorders": "Neurological", 
+        "Diabetes & Metabolic Health": "Metabolic",
+        "Arthritis & Inflammation": "Inflammation",
+        "Lung & Respiratory Conditions": "Respiratory",
+        "Digestive Health (Gut/Liver)": "Gastrointestinal",
+        "Cancer Supportive Care": "Cancer Research",
+        "Cardiovascular System": "Cardiovascular",
+        "Nervous System": "Neurological",
+        "Respiratory System": "Respiratory", 
+        "Digestive System": "Gastrointestinal",
+        "Immune System": "Inflammation",
+        "Musculoskeletal System": "Inflammation",
+        "Renal System": "Kidney",
+        "Integumentary System": "Dermatology",
+        "Adults": "Aging",
+        "Older Adults": "Aging",
+        "Athletes & Fitness": "Fitness"
+      };
+
+      const dbCategoryName = categoryMapping[categoryName] || categoryName;
+
       // Query for studies using authentic relational data
       const query = `
         SELECT DISTINCT s.id, s.title, s.abstract, s.authors, s.journal, 
@@ -282,12 +325,12 @@ router.get('/studies', async (req, res) => {
         FROM studies s
         INNER JOIN study_categories sc ON s.id = sc.study_id
         INNER JOIN categories c ON sc.category_id = c.id
-        WHERE c.name ILIKE $1
+        WHERE c.name = $1
         ORDER BY s.id DESC
         LIMIT 50
       `;
       
-      const result = await pool.query(query, [`%${categoryName}%`]);
+      const result = await pool.query(query, [dbCategoryName]);
       const studyResults = result.rows;
       
       console.log(`Found ${studyResults.length} studies for ${model} category: ${categoryName}`);
