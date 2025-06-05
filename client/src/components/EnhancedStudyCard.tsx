@@ -131,7 +131,7 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
               </div>
               
               <CardTitle className="text-xl font-bold text-gray-900 leading-tight mb-3">
-                <Link href={`/study/${study.id}`} className="hover:text-blue-600 transition-colors">
+                <Link href={`/study/${study.slug || study.id}`} className="hover:text-blue-600 transition-colors">
                   {study.seoTitle || study.title}
                 </Link>
               </CardTitle>
@@ -274,7 +274,7 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
             </div>
             
             <CardTitle className="text-lg font-semibold text-gray-900 leading-tight mb-2">
-              <Link href={`/study/${study.id}`} className="hover:text-blue-600 transition-colors">
+              <Link href={`/study/${study.slug || study.id}`} className="hover:text-blue-600 transition-colors">
                 {study.title}
               </Link>
             </CardTitle>
