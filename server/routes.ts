@@ -807,6 +807,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch enrichment routes
+  app.post('/api/batch-enrichment/start', async (req, res) => {
+    try {
+      const { startBatchEnrichment, isBatchRunning } = await import('./batch-enrichment-system');
+      
+      if (isBatchRunning()) {
+        return res.status(409).json({
+          success: false,
+          message: 'Batch enrichment is already running'
+        });
+      }
+
+      // Start batch enrichment in background
+      startBatchEnrichment().catch(error => {
+        console.error('Batch enrichment error:', error);
+      });
+
+      res.json({
+        success: true,
+        message: 'Batch enrichment started successfully'
+      });
+    } catch (error) {
+      console.error('Error starting batch enrichment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start batch enrichment'
+      });
+    }
+  });
+
+  app.get('/api/batch-enrichment/progress', async (req, res) => {
+    try {
+      const { getBatchProgress, isBatchRunning } = await import('./batch-enrichment-system');
+      
+      const progress = getBatchProgress();
+      const isRunning = isBatchRunning();
+
+      res.json({
+        isRunning,
+        progress
+      });
+    } catch (error) {
+      console.error('Error getting batch progress:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get batch progress'
+      });
+    }
+  });
+
+  app.post('/api/batch-enrichment/stop', async (req, res) => {
+    try {
+      const { stopBatchEnrichment, isBatchRunning } = await import('./batch-enrichment-system');
+      
+      if (!isBatchRunning()) {
+        return res.status(409).json({
+          success: false,
+          message: 'No batch enrichment is currently running'
+        });
+      }
+
+      await stopBatchEnrichment();
+
+      res.json({
+        success: true,
+        message: 'Batch enrichment stopped successfully'
+      });
+    } catch (error) {
+      console.error('Error stopping batch enrichment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to stop batch enrichment'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
