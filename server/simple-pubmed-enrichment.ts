@@ -86,11 +86,11 @@ async function fetchEuropePMCData(doi: string) {
     if (article.authorList?.author) {
       const affiliations = article.authorList.author
         .map((a: any) => `${a.fullName}${a.affiliation ? ` (${a.affiliation})` : ''}`)
-        .filter(af => af.trim().length > 0)
+        .filter((af: any) => af.trim().length > 0)
         .join('; ');
       
       if (affiliations.length > 0) {
-        enrichment.author_affiliations = affiliations;
+        enrichment.authorAffiliations = affiliations;
         console.log('Authentic author affiliations:', affiliations);
       }
     }
@@ -99,11 +99,11 @@ async function fetchEuropePMCData(doi: string) {
     if (article.grantsList?.grant) {
       const funding = article.grantsList.grant
         .map((g: any) => `${g.agency}${g.grantId ? ` (${g.grantId})` : ''}`)
-        .filter(f => f.trim().length > 0)
+        .filter((f: any) => f.trim().length > 0)
         .join('; ');
       
       if (funding.length > 0) {
-        enrichment.funding_sources = funding;
+        enrichment.fundingSources = funding;
         console.log('Authentic funding sources:', funding);
       }
     }
@@ -133,7 +133,7 @@ async function fetchEuropePMCData(doi: string) {
               .replace(/\s+/g, ' ')
               .trim()
               .substring(0, 1000);
-            enrichment.statistical_methods = methodsText;
+            enrichment.statisticalMethods = methodsText;
             console.log('Extracted statistical methods from full text');
           }
           
@@ -145,7 +145,7 @@ async function fetchEuropePMCData(doi: string) {
               .replace(/\s+/g, ' ')
               .trim()
               .substring(0, 500);
-            enrichment.ethical_approval = ethicsText;
+            enrichment.ethicalApproval = ethicsText;
             console.log('Extracted ethical approval information');
           }
           
@@ -154,7 +154,7 @@ async function fetchEuropePMCData(doi: string) {
             .replace(/<[^>]*>/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
-          enrichment.full_text = cleanText.substring(0, 5000);
+          enrichment.fullText = cleanText.substring(0, 5000);
           console.log('Extracted full text content');
         }
       } catch (error) {
@@ -181,19 +181,19 @@ async function fetchCrossRefData(doi: string) {
     
     // Citation count from authentic source
     if (work['is-referenced-by-count']) {
-      enrichment.citation_count = work['is-referenced-by-count'];
-      console.log('Authentic citation count:', enrichment.citation_count);
+      enrichment.citationCount = work['is-referenced-by-count'];
+      console.log('Authentic citation count:', enrichment.citationCount);
     }
 
     // Additional funding sources from authentic source
     if (work.funder && work.funder.length > 0) {
       const crossrefFunding = work.funder
         .map((f: any) => f.name)
-        .filter(name => name && name.trim().length > 0)
+        .filter((name: any) => name && name.trim().length > 0)
         .join('; ');
       
-      if (crossrefFunding.length > 0 && !enrichment.funding_sources) {
-        enrichment.funding_sources = crossrefFunding;
+      if (crossrefFunding.length > 0 && !enrichment.fundingSources) {
+        enrichment.fundingSources = crossrefFunding;
         console.log('Authentic CrossRef funding:', crossrefFunding);
       }
     }
