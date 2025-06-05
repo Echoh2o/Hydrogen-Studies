@@ -40,7 +40,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
     }
   };
 
-  const keywords = Array.isArray(study.keywords) ? study.keywords : parseJsonField(study.keywords as string);
+  const keywords = Array.isArray(study.keywords) ? study.keywords : parseJsonField(study.keywords || '');
   const consumerCategories = study.consumerCategories ? 
     study.consumerCategories.split(',').map(cat => cat.trim()) : [];
   
@@ -149,7 +149,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
               <div className="space-y-1">
                 <span className="text-neutral-500">Citations:</span>
                 <Badge variant="outline" className="text-xs">
-                  {study.citationCount || study.citations || 0}
+                  {study.citationCount || 0}
                 </Badge>
               </div>
             </div>
@@ -221,9 +221,9 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
             </div>
             <div className="space-y-1">
               <p className="text-xs text-neutral-600">{study.journal}</p>
-              {(study.year || study.publishYear) && (
+              {study.publishYear && (
                 <p className="text-xs text-neutral-500">
-                  Published: {study.year || study.publishYear}
+                  Published: {study.publishYear}
                 </p>
               )}
               {study.doi && (
@@ -253,7 +253,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
                       {relatedStudy.plainLanguageTitle || relatedStudy.title}
                     </h4>
                     <p className="text-xs text-neutral-500">
-                      {relatedStudy.journal} • {relatedStudy.year || relatedStudy.publishYear}
+                      {relatedStudy.journal} • {relatedStudy.publishYear}
                     </p>
                   </div>
                 </Link>
