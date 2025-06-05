@@ -105,46 +105,39 @@ router.get('/counts', async (req, res) => {
       "Athletes & Fitness"
     ];
 
-    // Function to get actual count for a category
-    const getCategoryCount = async (categoryName: string, jsonField: string) => {
+    // Function to get actual count for a category using authentic relational data
+    const getCategoryCount = async (categoryName: string) => {
       const query = `
-        SELECT COUNT(*) as count
-        FROM studies 
-        WHERE consumer_categories IS NOT NULL 
-        AND consumer_categories != 'General Wellness'
-        AND (
-          -- Handle JSON format
-          (consumer_categories LIKE '{%' AND 
-           consumer_categories::jsonb -> $1 ? $2) OR
-          -- Handle simple string format
-          (consumer_categories NOT LIKE '{%' AND 
-           consumer_categories ILIKE '%' || $2 || '%')
-        )
+        SELECT COUNT(DISTINCT s.id) as count
+        FROM studies s
+        INNER JOIN study_categories sc ON s.id = sc.study_id
+        INNER JOIN categories c ON sc.category_id = c.id
+        WHERE c.name ILIKE $1
       `;
       
-      const result = await pool.query(query, [jsonField, categoryName]);
+      const result = await pool.query(query, [`%${categoryName}%`]);
       return parseInt(result.rows[0].count);
     };
 
-    // Get actual counts for each category type
+    // Get actual counts for each category type using authentic data
     const healthConditionCounts = await Promise.all(
       conditionCategories.map(async (name) => ({
         name,
-        count: await getCategoryCount(name, 'condition')
+        count: await getCategoryCount(name)
       }))
     );
 
     const bodySystemCounts = await Promise.all(
       bodySystemCategories.map(async (name) => ({
         name, 
-        count: await getCategoryCount(name, 'bodySystem')
+        count: await getCategoryCount(name)
       }))
     );
     
     const lifeStageCount = await Promise.all(
       lifeStageCategories.map(async (name) => ({
         name,
-        count: await getCategoryCount(name, 'lifeStage')
+        count: await getCategoryCount(name)
       }))
     );
     
@@ -281,27 +274,20 @@ router.get('/studies', async (req, res) => {
           jsonField = 'condition';
       }
       
-      // Query for studies that have the category in their consumer_categories
-      // Handle both JSON format and simple string format
+      // Query for studies using authentic relational data
       const query = `
-        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-               category, doi, image_url as "imageUrl", slug, consumer_categories
-        FROM studies 
-        WHERE consumer_categories IS NOT NULL 
-        AND consumer_categories != 'General Wellness'
-        AND (
-          -- Handle JSON format
-          (consumer_categories LIKE '{%' AND 
-           consumer_categories::jsonb -> $1 ? $2) OR
-          -- Handle simple string format
-          (consumer_categories NOT LIKE '{%' AND 
-           consumer_categories ILIKE '%' || $2 || '%')
-        )
-        ORDER BY id DESC
+        SELECT DISTINCT s.id, s.title, s.abstract, s.authors, s.journal, 
+               s.publish_date as "publishDate", s.category, s.doi, 
+               s.image_url as "imageUrl", s.slug, s.consumer_categories
+        FROM studies s
+        INNER JOIN study_categories sc ON s.id = sc.study_id
+        INNER JOIN categories c ON sc.category_id = c.id
+        WHERE c.name ILIKE $1
+        ORDER BY s.id DESC
         LIMIT 50
       `;
       
-      const result = await pool.query(query, [jsonField, categoryName]);
+      const result = await pool.query(query, [`%${categoryName}%`]);
       const studyResults = result.rows;
       
       console.log(`Found ${studyResults.length} studies for ${model} category: ${categoryName}`);
