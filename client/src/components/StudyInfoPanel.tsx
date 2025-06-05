@@ -408,6 +408,113 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
           </CardContent>
         </Card>
       )}
+
+      {/* Study Methodology */}
+      {((study as any).sample_size || (study as any).duration || (study as any).vehicle || (study as any).ph) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Study Methodology</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(study as any).sample_size && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">Sample Size:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(study as any).sample_size}
+                  </Badge>
+                </div>
+              )}
+              {(study as any).duration && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">Duration:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(study as any).duration}
+                  </Badge>
+                </div>
+              )}
+              {(study as any).vehicle && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">Delivery Method:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(study as any).vehicle}
+                  </Badge>
+                </div>
+              )}
+              {(study as any).ph && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">pH Level:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(study as any).ph}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Study Quality Indicators */}
+      {((study as any).citation_count > 0 || (study as any).peer_reviewed || (study as any).has_full_text) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Quality Indicators</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(study as any).peer_reviewed && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-neutral-700">Peer Reviewed</span>
+                </div>
+              )}
+              {(study as any).citation_count > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">Citations:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(study as any).citation_count}
+                  </Badge>
+                </div>
+              )}
+              {(study as any).has_full_text && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm text-neutral-700">Full Text Available</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Geographic Information */}
+      {((study as any).country || (study as any).region) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Geographic Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(study as any).country && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">Country:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(study as any).country}
+                  </Badge>
+                </div>
+              )}
+              {(study as any).region && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-600">Region:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(study as any).region}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
