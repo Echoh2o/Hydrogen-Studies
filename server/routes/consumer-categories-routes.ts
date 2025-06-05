@@ -245,14 +245,14 @@ router.get('/studies', async (req, res) => {
         FROM studies 
         WHERE consumer_categories IS NOT NULL 
         AND (
-          consumer_categories::text LIKE '%"' || $2 || '"%' OR
-          consumer_categories::text LIKE '%' || $2 || '%'
+          consumer_categories::text LIKE '%"' || $1 || '"%' OR
+          consumer_categories::text LIKE '%' || $1 || '%'
         )
         ORDER BY id DESC
         LIMIT 50
       `;
       
-      const result = await pool.query(query, [jsonField, categoryName]);
+      const result = await pool.query(query, [categoryName]);
       const studyResults = result.rows;
       
       console.log(`Found ${studyResults.length} studies for ${model} category: ${categoryName}`);
