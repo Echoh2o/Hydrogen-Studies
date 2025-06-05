@@ -47,8 +47,13 @@ export async function enrichStudySimple(studyId: number): Promise<boolean> {
     if (Object.keys(enrichmentData).length > 0) {
       console.log('Updating database with authentic data:', Object.keys(enrichmentData));
       
+      // Clean up duplicate field names - keep only underscore versions
+      const cleanData = { ...enrichmentData };
+      delete cleanData.citationCount;
+      delete cleanData.fundingSources;
+      
       await db.update(studies)
-        .set(enrichmentData)
+        .set(cleanData)
         .where(eq(studies.id, studyId));
       
       console.log(`Successfully updated study ${studyId} with authentic research data`);
@@ -176,8 +181,8 @@ async function fetchCrossRefData(doi: string) {
     
     // Citation count from authentic source
     if (work['is-referenced-by-count']) {
-      enrichment.citationCount = work['is-referenced-by-count'];
-      console.log('Authentic citation count:', enrichment.citationCount);
+      enrichment.citation_count = work['is-referenced-by-count'];
+      console.log('Authentic citation count:', enrichment.citation_count);
     }
 
     // Additional funding sources from authentic source
@@ -187,8 +192,8 @@ async function fetchCrossRefData(doi: string) {
         .filter(name => name && name.trim().length > 0)
         .join('; ');
       
-      if (crossrefFunding.length > 0 && !enrichment.fundingSources) {
-        enrichment.fundingSources = crossrefFunding;
+      if (crossrefFunding.length > 0 && !enrichment.funding_sources) {
+        enrichment.funding_sources = crossrefFunding;
         console.log('Authentic CrossRef funding:', crossrefFunding);
       }
     }
