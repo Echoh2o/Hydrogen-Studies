@@ -101,7 +101,7 @@ export async function enrichStudyDirect(studyId: number): Promise<boolean> {
         console.log('Executing SQL:', query);
         console.log('With values:', values);
         
-        await db.execute(query, values);
+        await db.execute(sql.raw(query, values));
         
         console.log(`Successfully updated study ${studyId}`);
         return true;
