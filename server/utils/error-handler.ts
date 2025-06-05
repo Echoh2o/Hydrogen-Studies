@@ -41,7 +41,16 @@ export function handleApiError(
   statusCode: number = 500,
   message?: string
 ): void {
-  console.error(`API Error [${errorType}]:`, error);
+  // Enhanced logging with more context
+  console.error(`API Error [${errorType}] at ${new Date().toISOString()}:`, {
+    message: error.message,
+    stack: error.stack,
+    url: res.req?.url,
+    method: res.req?.method,
+    body: res.req?.body,
+    params: res.req?.params,
+    query: res.req?.query
+  });
   
   const errorResponse: ErrorResponse = {
     success: false,
@@ -50,10 +59,13 @@ export function handleApiError(
     timestamp: new Date().toISOString(),
   };
   
-  // Add stack trace in development mode
+  // Add comprehensive debugging info in development
   if (process.env.NODE_ENV === 'development' && error instanceof Error) {
     errorResponse.details = {
       stack: error.stack,
+      url: res.req?.url,
+      method: res.req?.method,
+      originalError: error.toString()
     };
   }
   
