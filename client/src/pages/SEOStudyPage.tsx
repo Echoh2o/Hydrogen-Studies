@@ -37,6 +37,22 @@ interface Study {
   citation_count?: number;
   viewCount?: number;
   view_count?: number;
+  authorAffiliations?: string;
+  author_affiliations?: string;
+  fundingSources?: string;
+  funding_sources?: string;
+  ethicalApproval?: string;
+  ethical_approval?: string;
+  trialRegistration?: string;
+  trial_registration?: string;
+  statisticalMethods?: string;
+  statistical_methods?: string;
+  supplementaryMaterials?: string;
+  supplementary_materials?: string;
+  fullText?: string;
+  full_text?: string;
+  fullTextHtml?: string;
+  full_text_html?: string;
 }
 
 export default function SEOStudyPage() {
@@ -266,6 +282,73 @@ export default function SEOStudyPage() {
                     <h3 className="text-xl font-semibold mb-4 text-primary">Conclusion</h3>
                     <div className="text-neutral-700 leading-relaxed bg-neutral-50 p-4 rounded-lg border-l-4 border-primary">
                       <p>{study.conclusion}</p>
+                    </div>
+                  </section>
+                )}
+
+                {/* Additional Research Information Sections */}
+                {(study.authorAffiliations || study.author_affiliations) && (
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Author Affiliations</h3>
+                    <div className="text-neutral-700 leading-relaxed bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                      <p>{study.authorAffiliations || study.author_affiliations}</p>
+                    </div>
+                  </section>
+                )}
+
+                {(study.fundingSources || study.funding_sources) && (
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Funding Sources</h3>
+                    <div className="text-neutral-700 leading-relaxed bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
+                      <p>{study.fundingSources || study.funding_sources}</p>
+                    </div>
+                  </section>
+                )}
+
+                {(study.statisticalMethods || study.statistical_methods) && (
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Statistical Methods</h3>
+                    <div className="text-neutral-700 leading-relaxed">
+                      <p>{study.statisticalMethods || study.statistical_methods}</p>
+                    </div>
+                  </section>
+                )}
+
+                {(study.ethicalApproval || study.ethical_approval) && (
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Ethical Approval</h3>
+                    <div className="text-neutral-700 leading-relaxed bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                      <p>{study.ethicalApproval || study.ethical_approval}</p>
+                    </div>
+                  </section>
+                )}
+
+                {(study.trialRegistration || study.trial_registration) && (
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Trial Registration</h3>
+                    <div className="text-neutral-700 leading-relaxed">
+                      <p>{study.trialRegistration || study.trial_registration}</p>
+                    </div>
+                  </section>
+                )}
+
+                {(study.supplementaryMaterials || study.supplementary_materials) && (
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Supplementary Materials</h3>
+                    <div className="text-neutral-700 leading-relaxed">
+                      <p>{study.supplementaryMaterials || study.supplementary_materials}</p>
+                    </div>
+                  </section>
+                )}
+
+                {(study.fullText || study.full_text) && (
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-primary">Full Text</h3>
+                    <div className="text-neutral-700 leading-relaxed max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
+                      <div className="whitespace-pre-wrap text-sm">
+                        {(study.fullText || study.full_text)?.substring(0, 5000)}
+                        {(study.fullText || study.full_text)?.length > 5000 && '...'}
+                      </div>
                     </div>
                   </section>
                 )}
