@@ -502,6 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           success: true,
           imageUrl: result.imageUrl,
+          imageDescription: result.imageDescription,
           prompt: result.prompt,
           message: `Image generated successfully for study ${studyId}`
         });
