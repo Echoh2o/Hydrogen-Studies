@@ -85,7 +85,7 @@ async function fetchEuropePMCData(doi: string) {
         .join('; ');
       
       if (affiliations.length > 0) {
-        enrichment.authorAffiliations = affiliations;
+        enrichment.author_affiliations = affiliations;
         console.log('Authentic author affiliations:', affiliations);
       }
     }
@@ -98,7 +98,7 @@ async function fetchEuropePMCData(doi: string) {
         .join('; ');
       
       if (funding.length > 0) {
-        enrichment.fundingSources = funding;
+        enrichment.funding_sources = funding;
         console.log('Authentic funding sources:', funding);
       }
     }
@@ -128,7 +128,7 @@ async function fetchEuropePMCData(doi: string) {
               .replace(/\s+/g, ' ')
               .trim()
               .substring(0, 1000);
-            enrichment.statisticalMethods = methodsText;
+            enrichment.statistical_methods = methodsText;
             console.log('Extracted statistical methods from full text');
           }
           
@@ -140,7 +140,7 @@ async function fetchEuropePMCData(doi: string) {
               .replace(/\s+/g, ' ')
               .trim()
               .substring(0, 500);
-            enrichment.ethicalApproval = ethicsText;
+            enrichment.ethical_approval = ethicsText;
             console.log('Extracted ethical approval information');
           }
           
@@ -149,7 +149,7 @@ async function fetchEuropePMCData(doi: string) {
             .replace(/<[^>]*>/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
-          enrichment.fullText = cleanText.substring(0, 5000);
+          enrichment.full_text = cleanText.substring(0, 5000);
           console.log('Extracted full text content');
         }
       } catch (error) {
