@@ -137,6 +137,13 @@ export const studies = pgTable("studies", {
   plainLanguageTitle: text("plain_language_title"), // SEO-optimized consumer-friendly title
   slug: text("slug"), // URL-friendly slug generated from plain language title
   
+  // Authentic research data fields from PubMed/CrossRef APIs
+  authorAffiliations: text("author_affiliations"), // Real institutional affiliations
+  fundingSources: text("funding_sources"), // Actual grant information
+  statisticalMethods: text("statistical_methods"), // Research methodology details
+  ethicalApproval: text("ethical_approval"), // Ethics committee information
+  fullText: text("full_text"), // Full research paper content when available
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
