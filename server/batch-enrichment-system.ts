@@ -63,10 +63,10 @@ export async function startBatchEnrichment(): Promise<void> {
 
     for (const study of studiesToEnrich) {
       try {
-        currentBatchProgress.currentStudy = study.title;
+        currentBatchProgress.currentStudy = study.title as string;
         console.log(`Enriching study ${completed + 1}/${total}: ${study.title}`);
         
-        const success = await enrichStudySimple(study.id);
+        const success = await enrichStudySimple(study.id as number);
         
         if (success) {
           completed++;

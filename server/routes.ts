@@ -883,6 +883,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/enrichment-stats', async (req, res) => {
+    try {
+      const { getEnrichmentStats } = await import('./auto-enrichment-manager');
+      const stats = await getEnrichmentStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting enrichment stats:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get enrichment stats'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

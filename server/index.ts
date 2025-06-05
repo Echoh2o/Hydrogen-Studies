@@ -12,6 +12,7 @@ import { initializeData } from "./initialize-data";
 import { updateCategoryCounts } from "./update-category-counts";
 import { addConsumerCategoriesColumn } from "./migrations/add-consumer-categories";
 import { addResearchDataFields } from "./migrations/add-research-data-fields";
+import { initializeAutoEnrichment } from "./auto-enrichment-manager";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
@@ -296,6 +297,11 @@ app.use((req, res, next) => {
     console.log('Category counts updated successfully');
     
     console.log('Sample data initialized successfully');
+    
+    // Initialize auto-enrichment system
+    console.log('Initializing auto-enrichment system...');
+    await initializeAutoEnrichment();
+    
   } catch (error) {
     console.error('Error running database migrations:', error);
   }
