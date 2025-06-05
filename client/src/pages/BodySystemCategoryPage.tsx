@@ -11,6 +11,7 @@ interface Study {
   abstract: string;
   publishDate: string;
   journal: string;
+  slug?: string;
   doi?: string | null;
   fullText?: string | null;
   methods?: string | null;
