@@ -474,15 +474,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })
       .from(studies)
       .where(
-        and(
-          sql`${studies.id} != ${studyId}`,
-          or(
-            eq(studies.category, study.category),
-            ilike(studies.title, `%acne%`),
-            ilike(studies.title, `%skin%`),
-            ilike(studies.abstract, `%dermatological%`)
-          )
-        )
+        sql`${studies.id} != ${studyId} AND (
+          ${studies.category} = ${study.category} OR 
+          ${studies.title} ILIKE '%acne%' OR 
+          ${studies.title} ILIKE '%skin%' OR 
+          ${studies.abstract} ILIKE '%dermatological%'
+        )`
       )
       .limit(8);
       
