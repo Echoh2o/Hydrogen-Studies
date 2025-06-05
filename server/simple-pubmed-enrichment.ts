@@ -47,10 +47,30 @@ export async function enrichStudySimple(studyId: number): Promise<boolean> {
     if (Object.keys(enrichmentData).length > 0) {
       console.log('Updating database with authentic data:', Object.keys(enrichmentData));
       
-      // Clean up duplicate field names - keep only underscore versions
-      const cleanData = { ...enrichmentData };
-      delete cleanData.citationCount;
-      delete cleanData.fundingSources;
+      // Map camelCase fields to database schema field names
+      const cleanData: any = {};
+      
+      if (enrichmentData.citationCount !== undefined) {
+        cleanData.citationCount = enrichmentData.citationCount;
+      }
+      if (enrichmentData.fundingSources !== undefined) {
+        cleanData.fundingSources = enrichmentData.fundingSources;
+      }
+      if (enrichmentData.authorAffiliations !== undefined) {
+        cleanData.authorAffiliations = enrichmentData.authorAffiliations;
+      }
+      if (enrichmentData.statisticalMethods !== undefined) {
+        cleanData.statisticalMethods = enrichmentData.statisticalMethods;
+      }
+      if (enrichmentData.ethicalApproval !== undefined) {
+        cleanData.ethicalApproval = enrichmentData.ethicalApproval;
+      }
+      if (enrichmentData.fullText !== undefined) {
+        cleanData.fullText = enrichmentData.fullText;
+      }
+      if (enrichmentData.keywords !== undefined) {
+        cleanData.keywords = enrichmentData.keywords;
+      }
       
       await db.update(studies)
         .set(cleanData)
