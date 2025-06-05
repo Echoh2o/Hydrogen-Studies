@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const study = currentStudy[0];
       
-      // Find related studies based on health conditions, body systems, and categories
+      // Find related studies based on categories and similar content
       const relatedStudies = await db.select({
         id: studies.id,
         title: studies.title,
@@ -470,17 +470,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         publishDate: studies.publishDate,
         journalPublishDate: studies.journalPublishDate,
         slug: studies.slug,
-        healthConditions: studies.healthConditions,
-        bodySystems: studies.bodySystems
+        category: studies.category
       })
       .from(studies)
       .where(
         and(
-          ne(studies.id, studyId),
+          sql`${studies.id} != ${studyId}`,
           or(
-            eq(studies.healthConditions, study.healthConditions),
-            eq(studies.bodySystems, study.bodySystems),
-            ilike(studies.consumerCategories, `%${study.healthConditions || 'Acne'}%`)
+            eq(studies.category, study.category),
+            ilike(studies.title, `%acne%`),
+            ilike(studies.title, `%skin%`),
+            ilike(studies.abstract, `%dermatological%`)
           )
         )
       )
