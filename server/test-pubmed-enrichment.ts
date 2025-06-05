@@ -211,15 +211,19 @@ async function fetchEuropePmcData(doi: string): Promise<any> {
       const updateData: any = {};
 
       if (article.authorList?.author) {
-        updateData.author_affiliations = article.authorList.author
+        const affiliations = article.authorList.author
           .map((a: any) => `${a.fullName}${a.affiliation ? ` (${a.affiliation})` : ''}`)
           .join('; ');
+        updateData.author_affiliations = affiliations;
+        console.log('Author affiliations found:', affiliations);
       }
 
       if (article.grantsList?.grant) {
-        updateData.funding_sources = article.grantsList.grant
+        const funding = article.grantsList.grant
           .map((g: any) => `${g.agency}${g.grantId ? ` (${g.grantId})` : ''}`)
           .join('; ');
+        updateData.funding_sources = funding;
+        console.log('Funding sources found:', funding);
       }
 
       if (article.keywordList?.keyword) {
