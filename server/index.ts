@@ -286,6 +286,10 @@ app.use((req, res, next) => {
     console.log('Running migration for consumer-friendly categories...');
     await addConsumerCategoriesColumn();
     
+    // Run the migration to add authentic research data fields
+    console.log('Running migration for authentic research data fields...');
+    await addResearchDataFields();
+    
     // Update category counts to ensure accurate data
     console.log('Updating category counts...');
     await updateCategoryCounts();
