@@ -45,8 +45,20 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
   };
 
   const keywords = Array.isArray(study.keywords) ? study.keywords : parseJsonField(study.keywords || '');
-  const consumerCategories = study.consumerCategories ? 
-    study.consumerCategories.split(',').map(cat => cat.trim()).filter(cat => cat !== 'General Wellness') : [];
+  
+  // Use health conditions and body systems instead of outdated consumer categories
+  const healthCategories = [];
+  if ((study as any).health_conditions && (study as any).health_conditions !== 'General Wellness') {
+    healthCategories.push((study as any).health_conditions);
+  }
+  if ((study as any).body_systems && (study as any).body_systems !== 'General Wellness') {
+    healthCategories.push((study as any).body_systems);
+  }
+  if (study.category && study.category !== 'General Wellness') {
+    healthCategories.push(study.category);
+  }
+  
+  const consumerCategories = healthCategories.length > 0 ? healthCategories : [];
   
   // Parse funding sources
   const fundingSources = study.fundingSources ? 
@@ -167,7 +179,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
             items={consumerCategories}
             linkPrefix="/category/"
             countsData={categoryCounts}
-            emptyMessage="Health categories being processed"
+            emptyMessage="No specific health categories"
           />
           
           <Separator />
