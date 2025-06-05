@@ -27,27 +27,39 @@ interface ImageGenerationResult {
  * Generate a contextual prompt based on study data
  */
 function generateStudyPrompt(study: any): string {
-  const healthCondition = study.healthConditions || study.category || 'general health';
-  const bodySystem = study.bodySystems || 'human body';
+  // Map complex categories to simple, visual body systems
+  const categoryToBodySystem = {
+    'Cardiovascular': 'heart and blood vessels',
+    'Liver': 'liver and digestive system',
+    'Gastrointestinal': 'digestive system and stomach',
+    'Respiratory': 'lungs and respiratory system',
+    'Neurological': 'brain and nervous system',
+    'Kidney': 'kidneys and urinary system',
+    'Metabolic': 'metabolism and cellular energy',
+    'Cancer Research': 'cellular health and immune system',
+    'Dermatology': 'skin and tissue health',
+    'Fitness': 'muscles and exercise physiology',
+    'Aging': 'healthy aging and cellular renewal',
+    'Inflammation': 'immune system and healing'
+  };
   
-  // Clean up condition and system names for better prompts
-  const cleanCondition = healthCondition.replace(/[^a-zA-Z\s]/g, '').trim();
-  const cleanBodySystem = bodySystem.replace(/[^a-zA-Z\s]/g, '').trim();
+  // Get the simple, visual body system
+  const bodySystem = categoryToBodySystem[study.category] || 'human health and wellness';
   
-  // Base prompt with your improved structure
-  let prompt = `Professional medical illustration showing ${cleanCondition} and related ${cleanBodySystem}, clean scientific minimalist style, medical journal quality, blue and white color scheme, no text overlays`;
+  // Create simple, clear base prompt
+  let prompt = `Clean medical illustration of ${bodySystem}, professional healthcare style, blue and white colors, simple and clear`;
   
-  // Add specific context based on study content
-  if (study.title.toLowerCase().includes('hydrogen water')) {
-    prompt += ', molecular hydrogen therapy concept';
+  // Add hydrogen therapy context based on study content
+  if (study.title.toLowerCase().includes('water') || study.title.toLowerCase().includes('drinking')) {
+    prompt += ', showing hydrogen-rich water therapy';
   } else if (study.title.toLowerCase().includes('gas') || study.title.toLowerCase().includes('inhalation')) {
-    prompt += ', therapeutic gas delivery concept';
-  } else if (study.vehicle && study.vehicle.toLowerCase().includes('water')) {
-    prompt += ', hydrogen-enriched water treatment';
+    prompt += ', showing hydrogen gas therapy';
+  } else {
+    prompt += ', showing hydrogen therapy benefits';
   }
   
-  // Ensure medical accuracy
-  prompt += ', anatomically accurate, professional medical illustration';
+  // Keep it medical but simple
+  prompt += ', medical textbook style, no text or labels';
   
   return prompt;
 }
