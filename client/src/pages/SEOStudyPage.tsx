@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiDocumentText } from "react-icons/hi";
 import { Helmet } from "react-helmet";
 import { useEffect } from "react";
+import { StudyInfoPanel } from "@/components/StudyInfoPanel";
 
 interface Study {
   id: number;
@@ -456,6 +457,13 @@ export default function SEOStudyPage() {
                   Back to Recent Studies
                 </Button>
               </Link>
+            </div>
+              </div>
+
+              {/* Study Information Panel - Sidebar */}
+              <div className="lg:col-span-1">
+                <StudyInfoPanel study={study} relatedStudies={relatedStudies} />
+              </div>
             </div>
           </div>
         </div>
