@@ -39,10 +39,6 @@ app.get('/health', (req, res) => {
 });
 
 // Database-connected API routes for production
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
-import { sql } from 'drizzle-orm';
-
 const connectionString = process.env.DATABASE_URL;
 let db;
 
@@ -54,7 +50,7 @@ if (connectionString) {
   console.warn('⚠️ No DATABASE_URL found, using fallback routes');
 }
 
-// Consumer categories endpoint
+// Consumer categories endpoint - using actual categories table
 app.get('/api/consumer-categories/counts', async (req, res) => {
   try {
     if (!db) {
@@ -67,11 +63,11 @@ app.get('/api/consumer-categories/counts', async (req, res) => {
         c.name,
         c.description,
         c.icon,
-        c.color,
-        c.count
-      FROM consumer_categories c
-      WHERE c.count > 0
-      ORDER BY c.count DESC
+        'default' as color,
+        c.study_count as count
+      FROM categories c
+      WHERE c.study_count > 0
+      ORDER BY c.study_count DESC
     `);
     
     res.json(results.rows);
@@ -96,10 +92,10 @@ app.get('/api/tags/categories', async (req, res) => {
     const results = await db.execute(sql`
       SELECT 
         c.name,
-        c.count
-      FROM consumer_categories c
-      WHERE c.count > 0
-      ORDER BY c.count DESC
+        c.study_count as count
+      FROM categories c
+      WHERE c.study_count > 0
+      ORDER BY c.study_count DESC
       LIMIT 10
     `);
     
