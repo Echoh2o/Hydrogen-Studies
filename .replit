@@ -97,3 +97,37 @@ args = "echo \"✅ Build complete - starting staging server\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "NODE_ENV=production node start-production.js"
+
+[[workflows.workflow]]
+name = "Development Server"
+author = 42758343
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"tsx server/index.ts\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Clean Restart"
+author = 42758343
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"tsx server/index.ts\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"node start-production.js\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧹 Cleaned existing processes\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
