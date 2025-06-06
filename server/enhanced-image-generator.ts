@@ -69,44 +69,82 @@ function generateStudyPrompt(study: any): string {
  */
 async function generateImageDescription(study: any, prompt: string): Promise<string> {
   try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an SEO expert creating alt text descriptions for medical research images. Create concise, descriptive alt text that includes relevant keywords while being natural and informative."
-        },
-        {
-          role: "user",
-          content: `Create SEO-optimized alt text for a medical illustration based on this research study:
-
-Title: ${study.title}
-Health Condition: ${study.healthConditions || study.category}
-Body System: ${study.bodySystems || 'general'}
-Abstract: ${study.abstract?.substring(0, 200)}...
-
-Image prompt used: ${prompt}
-
-Create alt text that:
-1. Describes what the image shows
-2. Includes key medical terms from the study
-3. Is 150 characters or less
-4. Is natural and readable
-5. Helps with SEO for hydrogen research
-
-Return only the alt text, no quotes or extra text.`
-        }
-      ],
-      max_tokens: 100
-    });
-
-    return response.choices[0].message.content?.trim() || `Medical illustration for ${study.healthConditions || study.category} hydrogen research study`;
+    // Extract key terms from study
+    const healthCondition = study.healthConditions || study.category || 'general health';
+    const bodySystem = study.bodySystems || '';
+    const studyType = extractStudyType(study.title);
+    const therapyType = extractTherapyType(study.title);
+    
+    // Create SEO-optimized description based on study content
+    const baseDescription = `Medical illustration showing ${getBodySystemDescription(healthCondition)} with ${therapyType} for ${healthCondition.toLowerCase()}`;
+    
+    // Add specific study context if available
+    let specificContext = '';
+    if (study.abstract) {
+      const abstract = study.abstract.toLowerCase();
+      if (abstract.includes('randomized') || abstract.includes('clinical trial')) {
+        specificContext = ' from clinical trial research';
+      } else if (abstract.includes('systematic review') || abstract.includes('meta-analysis')) {
+        specificContext = ' from systematic review';
+      } else if (abstract.includes('animal') || abstract.includes('rats') || abstract.includes('mice')) {
+        specificContext = ' from preclinical study';
+      }
+    }
+    
+    const fullDescription = `${baseDescription}${specificContext}`;
+    
+    // Ensure description is under 160 characters for SEO
+    if (fullDescription.length > 160) {
+      return `${getBodySystemDescription(healthCondition)} hydrogen therapy illustration for ${healthCondition.toLowerCase()}`;
+    }
+    
+    return fullDescription;
   } catch (error) {
     console.error('Error generating image description:', error);
-    // Fallback description
-    return `Medical illustration for ${study.healthConditions || study.category} hydrogen research study`;
+    // Fallback to specific description
+    const condition = study.healthConditions || study.category || 'general health';
+    return `Medical illustration of hydrogen therapy benefits for ${condition.toLowerCase()} treatment`;
   }
+}
+
+function getBodySystemDescription(category: string): string {
+  const categoryMap: Record<string, string> = {
+    'Cardiovascular': 'heart and cardiovascular system',
+    'Respiratory': 'lungs and respiratory system',
+    'Liver': 'liver and hepatic system',
+    'Neurological': 'brain and nervous system',
+    'Gastrointestinal': 'digestive system',
+    'Metabolic': 'metabolic processes',
+    'Inflammation': 'immune system and anti-inflammatory effects',
+    'Athletic Performance': 'exercise performance and recovery',
+    'General Wellness': 'overall health and wellness'
+  };
+  
+  return categoryMap[category] || 'therapeutic effects';
+}
+
+function extractStudyType(title: string): string {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('randomized') || titleLower.includes('clinical trial')) {
+    return 'clinical trial';
+  } else if (titleLower.includes('systematic review') || titleLower.includes('meta-analysis')) {
+    return 'systematic review';
+  } else if (titleLower.includes('animal') || titleLower.includes('rats') || titleLower.includes('mice')) {
+    return 'preclinical study';
+  }
+  return 'research study';
+}
+
+function extractTherapyType(title: string): string {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('water') || titleLower.includes('drinking')) {
+    return 'hydrogen-rich water therapy';
+  } else if (titleLower.includes('gas') || titleLower.includes('inhalation')) {
+    return 'hydrogen gas therapy';
+  } else if (titleLower.includes('saline')) {
+    return 'hydrogen saline therapy';
+  }
+  return 'hydrogen therapy';
 }
 
 /**
