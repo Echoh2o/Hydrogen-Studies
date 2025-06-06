@@ -80,15 +80,14 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes instead of Infinity for better cache management
-      retry: false,
-      cacheTime: 10 * 60 * 1000, // 10 minutes
-      // Add performance optimization options
-      keepPreviousData: true, // Reduce loading flashes
-      refetchOnMount: true, // Fetch fresh data on component mount for improved data accuracy
+      staleTime: 10 * 60 * 1000, // 10 minutes for better performance
+      retry: 1, // Single retry for better reliability
+      gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
+      keepPreviousData: true,
+      refetchOnMount: false, // Reduce unnecessary requests
     },
     mutations: {
-      retry: false,
+      retry: 1,
     },
   },
 });
