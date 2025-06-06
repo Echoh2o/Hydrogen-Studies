@@ -1,83 +1,162 @@
 #!/usr/bin/env node
 
-import express from 'express';
-import { dirname, join } from 'path';
+/**
+ * Production Server for Hydrogen Research Platform
+ * Uses the built application from dist/index.js
+ */
+
 import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { existsSync } from 'fs';
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
-import { sql } from 'drizzle-orm';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const app = express();
-const port = process.env.PORT || 5000;
 
-// Graceful error handling
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error.message);
+// Check if built application exists
+const distIndexPath = join(__dirname, 'dist', 'index.js');
+
+if (existsSync(distIndexPath)) {
+  console.log('Starting production server from built application...');
+  
+  // Set production environment
+  process.env.NODE_ENV = 'production';
+  
+  // Import and run the built application
+  try {
+    await import('./dist/index.js');
+  } catch (error) {
+    console.error('Failed to start built application:', error);
+    console.log('Falling back to simplified server...');
+    
+    // Fallback simplified server
+    await startFallbackServer();
+  }
+} else {
+  console.log('Built application not found, building first...');
+  console.log('Run: npm run build');
   process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection:', reason);
-});
-
-// Essential middleware only
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: false, limit: '5mb' }));
-
-// Static file serving with caching
-const distPath = join(__dirname, 'dist');
-if (existsSync(distPath)) {
-  app.use(express.static(distPath, { 
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-  }));
-  console.log('Static files available from:', distPath);
 }
 
-// Database connection - lazy initialization
-let db = null;
-const getDatabase = () => {
-  if (!db && process.env.DATABASE_URL) {
-    try {
-      const client = neon(process.env.DATABASE_URL);
-      db = drizzle(client);
-      console.log('Database connected');
-    } catch (error) {
-      console.error('Database connection error:', error.message);
-    }
+/**
+ * Fallback server if built application fails
+ */
+async function startFallbackServer() {
+  const express = (await import('express')).default;
+  const { drizzle } = await import('drizzle-orm/neon-http');
+  const { neon } = await import('@neondatabase/serverless');
+  const { sql } = await import('drizzle-orm');
+  
+  const app = express();
+  const port = process.env.PORT || 5000;
+
+  // Essential middleware only
+  app.use(express.json({ limit: '5mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '5mb' }));
+
+  // Static file serving with caching
+  const distPath = join(__dirname, 'dist');
+  if (existsSync(distPath)) {
+    app.use(express.static(distPath, { 
+      maxAge: '1d',
+      etag: true,
+      lastModified: true
+    }));
+    console.log('Static files available from:', distPath);
   }
-  return db;
-};
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime()),
-    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+  // Database connection - lazy initialization
+  let db = null;
+  const getDatabase = () => {
+    if (!db && process.env.DATABASE_URL) {
+      try {
+        const client = neon(process.env.DATABASE_URL);
+        db = drizzle(client);
+        console.log('Database connected');
+      } catch (error) {
+        console.error('Database connection error:', error.message);
+      }
+    }
+    return db;
+  };
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({ 
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+    });
   });
-});
 
-// Consumer categories endpoint - optimized for stability
-app.get('/api/consumer-categories/counts', async (req, res) => {
-  try {
-    const database = getDatabase();
-    if (!database) {
-      return res.json({ 
-        success: true, 
+  // Fallback API endpoints - basic functionality only
+  app.get('/api/search/trending', (req, res) => {
+    res.json({ 
+      trending: ["hydrogen water", "antioxidant", "inflammation", "brain health", "oxidative stress", "neuroprotection"] 
+    });
+  });
+
+  app.get('/api/consumer-categories/counts', async (req, res) => {
+    try {
+      const database = getDatabase();
+      if (!database) {
+        return res.json({ 
+          success: true, 
+          data: { condition: [], body_system: [], life_stage: [] }
+        });
+      }
+
+      const results = await database.execute(sql`
+        SELECT name, study_count as count, description
+        FROM categories 
+        WHERE study_count > 0 
+        ORDER BY study_count DESC
+        LIMIT 15
+      `);
+
+      const categories = results.rows.map(row => ({
+        name: row.name,
+        count: row.count,
+        description: row.description || ''
+      }));
+
+      res.json({ 
+        success: true,
         data: {
-          condition: [],
-          body_system: [],
-          life_stage: []
+          condition: categories.filter(cat => 
+            ['Respiratory', 'Inflammation', 'Neurological', 'Metabolic', 'Cardiovascular'].includes(cat.name)
+          ).slice(0, 5),
+          body_system: categories.filter(cat => 
+            ['Liver', 'Gastrointestinal', 'Kidney', 'Cancer Research'].includes(cat.name)
+          ).slice(0, 4),
+          life_stage: categories.filter(cat => 
+            ['Aging', 'Fitness', 'Dermatology'].includes(cat.name)
+          ).slice(0, 3)
         }
       });
+    } catch (error) {
+      console.error('Categories error:', error.message);
+      res.json({ 
+        success: false, 
+        data: { condition: [], body_system: [], life_stage: [] }
+      });
     }
+  });
 
-    const results = await database.execute(sql`
+  // Catch-all for SPA routing
+  app.get('*', (req, res) => {
+    const indexPath = join(__dirname, 'dist', 'index.html');
+    if (existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Application not found');
+    }
+  });
+
+  // Start fallback server
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Fallback server running on port ${port}`);
+  });
+}
       SELECT name, study_count as count, description
       FROM categories 
       WHERE study_count > 0 
