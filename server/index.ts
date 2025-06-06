@@ -13,6 +13,7 @@ import { updateCategoryCounts } from "./update-category-counts";
 import { addConsumerCategoriesColumn } from "./migrations/add-consumer-categories";
 import { addResearchDataFields } from "./migrations/add-research-data-fields";
 import { initializeAutoEnrichment } from "./auto-enrichment-manager";
+import { initializePersistentImageGeneration } from "./persistent-image-generator";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
@@ -301,6 +302,10 @@ app.use((req, res, next) => {
     // Initialize auto-enrichment system
     console.log('Initializing auto-enrichment system...');
     await initializeAutoEnrichment();
+    
+    // Initialize persistent image generation system
+    console.log('Initializing persistent image generation system...');
+    await initializePersistentImageGeneration();
     
   } catch (error) {
     console.error('Error running database migrations:', error);
