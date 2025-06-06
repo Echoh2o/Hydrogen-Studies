@@ -1,0 +1,223 @@
+2025-06-05 20:44:58.91
+2bee3fc7
+User
+syscall: 'listen',
+2025-06-05 20:44:58.91
+2bee3fc7
+User
+address: '0.0.0.0',
+2025-06-05 20:44:58.91
+2bee3fc7
+User
+port: 5000
+2025-06-05 20:44:58.91
+2bee3fc7
+User
+}
+2025-06-05 20:44:58.91
+2bee3fc7
+User
+2025-06-05 20:44:58.91
+2bee3fc7
+User
+Node.js v20.18.1
+2025-06-05 20:44:58.93
+2bee3fc7
+System
+error proxying request error=read tcp 127.0.0.1:57728->127.0.0.1:5000: read: connection reset by peer
+2025-06-05 20:44:58.93
+2bee3fc7
+System
+command finished with error [sh -c node start-production.js]: exit status 1
+2025-06-05 20:44:59.01
+2bee3fc7
+System
+error proxying request error=dial tcp 127.0.0.1:5000: connect: connection refused
+2025-06-05 20:45:02.05
+2bee3fc7
+System
+error proxying request error=dial tcp 127.0.0.1:5000: connect: connection refused
+2025-06-05 20:45:02.12
+2bee3fc7
+System
+error proxying request error=dial tcp 127.0.0.1:5000: connect: connection refused
+2025-06-05 20:45:04.06
+2bee3fc7
+System
+error proxying request error=dial tcp 127.0.0.1:5000: connect: connection refused
+2025-06-05 20:45:04.13
+2bee3fc7
+System
+error proxying request error=dial tcp 127.0.0.1:5000: connect: connection refused
+2025-06-05 20:45:05.33
+2bee3fc7
+System
+error proxying request error=dial tcp 127.0.0.1:5000: connect: connection refused
+2025-06-05 20:45:13.65
+0864d494
+User
+node:events:496
+2025-06-05 20:45:13.65
+0864d494
+User
+throw er; // Unhandled 'error' event
+2025-06-05 20:45:13.65
+0864d494
+User
+^
+2025-06-05 20:45:13.65
+0864d494
+User
+2025-06-05 20:45:13.65
+0864d494
+User
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+2025-06-05 20:45:13.65
+0864d494
+User
+at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+2025-06-05 20:45:13.65
+0864d494
+User
+at listenInCluster (node:net:1965:12)
+2025-06-05 20:45:13.65
+0864d494
+User
+at doListen (node:net:2139:7)
+2025-06-05 20:45:13.65
+0864d494
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+2025-06-05 20:45:13.65
+0864d494
+User
+Emitted 'error' event on Server instance at:
+2025-06-05 20:45:13.65
+0864d494
+User
+at emitErrorNT (node:net:1944:8)
+2025-06-05 20:45:13.65
+0864d494
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+2025-06-05 20:45:13.65
+0864d494
+User
+code: 'EADDRINUSE',
+2025-06-05 20:45:13.65
+0864d494
+User
+errno: -98,
+2025-06-05 20:45:13.65
+0864d494
+User
+syscall: 'listen',
+2025-06-05 20:45:13.65
+0864d494
+User
+address: '0.0.0.0',
+2025-06-05 20:45:13.65
+0864d494
+User
+port: 5000
+2025-06-05 20:45:13.65
+0864d494
+User
+}
+2025-06-05 20:45:13.65
+0864d494
+User
+2025-06-05 20:45:13.65
+0864d494
+User
+Node.js v20.18.1
+2025-06-05 20:45:15.95
+0864d494
+System
+command finished with error [sh -c node start-production.js]: exit status 1
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+node:events:496
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+throw er; // Unhandled 'error' event
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+^
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+at listenInCluster (node:net:1965:12)
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+at doListen (node:net:2139:7)
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+Emitted 'error' event on Server instance at:
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+at emitErrorNT (node:net:1944:8)
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+code: 'EADDRINUSE',
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+errno: -98,
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+syscall: 'listen',
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+address: '0.0.0.0',
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+port: 5000
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+}
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+2025-06-05 20:45:18.75
+2bee3fc7
+User
+Node.js v20.18.1
+2025-06-05 20:45:20.42
+2bee3fc7
+System
+error proxying request error=read tcp 127.0.0.1:33014->127.0.0.1:5000: read: connection reset by peer
+2025-06-05 20:45:20.42
+2bee3fc7
+System
+command finished with error [sh -c node start-production.js]: exit status 1
