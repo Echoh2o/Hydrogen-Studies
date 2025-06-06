@@ -115,7 +115,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(limit)
         .offset(offset);
 
-      res.json({ studies: categoryStudies, limit, offset });
+      // Get total count for this category
+      const [{ count: total }] = await db
+        .select({ count: sql`count(*)` })
+        .from(studies)
+        .innerJoin(studyCategories, eq(studies.id, studyCategories.studyId))
+        .where(eq(studyCategories.categoryId, categoryId));
+
+      res.json({ 
+        data: categoryStudies, 
+        total: parseInt(String(total)),
+        page: Math.floor(offset / limit) + 1,
+        pageSize: limit,
+        pageCount: Math.ceil(parseInt(String(total)) / limit)
+      });
     } catch (error) {
       console.error('Error fetching category studies:', error);
       res.status(500).json({ message: 'Failed to fetch category studies' });
@@ -176,7 +189,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(limit)
         .offset(offset);
 
-      res.json({ studies: allStudies, limit, offset });
+      // Get total count for pagination
+      const [{ count: total }] = await db.select({ count: sql`count(*)` }).from(studies);
+
+      res.json({ 
+        data: allStudies, 
+        total: parseInt(String(total)),
+        page: Math.floor(offset / limit) + 1,
+        pageSize: limit,
+        pageCount: Math.ceil(parseInt(String(total)) / limit)
+      });
     } catch (error) {
       console.error('Error fetching studies:', error);
       res.status(500).json({ message: 'Failed to fetch studies' });
