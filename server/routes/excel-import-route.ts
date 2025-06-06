@@ -213,11 +213,23 @@ router.post('/import-excel', upload.single('file'), async (req, res) => {
           updatedAt: new Date()
         };
         
+        // Define allowed database fields to prevent prototype pollution
+        const allowedDbFields = new Set([
+          'title', 'abstract', 'url', 'journal', 'year', 'authors', 
+          'methods', 'model', 'type', 'country', 'peerReviewed', 'categoryId'
+        ]);
+
         // If we have column mappings, use them to map data
         if (columnMappings.length > 0) {
           for (const mapping of columnMappings) {
             // Skip if the mapping is empty (do not import this column)
             if (!mapping.dbField) continue;
+            
+            // Security check: only allow whitelisted database fields
+            if (!allowedDbFields.has(mapping.dbField)) {
+              console.warn(`Ignoring unauthorized field mapping: ${mapping.dbField}`);
+              continue;
+            }
             
             // Get the value from the row using the Excel column name
             if (row[mapping.excelColumn] !== undefined) {
@@ -345,11 +357,23 @@ router.post('/import-from-url', async (req, res) => {
           updatedAt: new Date()
         };
         
+        // Define allowed database fields to prevent prototype pollution
+        const allowedDbFields = new Set([
+          'title', 'abstract', 'url', 'journal', 'year', 'authors', 
+          'methods', 'model', 'type', 'country', 'peerReviewed', 'categoryId'
+        ]);
+
         // If we have column mappings, use them to map data
         if (columnMappings && columnMappings.length > 0) {
           for (const mapping of columnMappings) {
             // Skip if the mapping is empty (do not import this column)
             if (!mapping.dbField) continue;
+            
+            // Security check: only allow whitelisted database fields
+            if (!allowedDbFields.has(mapping.dbField)) {
+              console.warn(`Ignoring unauthorized field mapping: ${mapping.dbField}`);
+              continue;
+            }
             
             // Get the value from the row using the Excel column name
             if (row[mapping.excelColumn] !== undefined) {
