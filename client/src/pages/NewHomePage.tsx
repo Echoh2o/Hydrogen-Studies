@@ -26,13 +26,13 @@ export default function NewHomePage() {
   });
 
   // Featured health conditions from actual database
-  const featuredConditions = (consumerCategories as any)?.data?.condition?.slice(0, 4) || [];
+  const featuredConditions = consumerCategories?.data?.condition?.slice(0, 4) || [];
   
   // Featured body systems from actual database  
-  const featuredBodySystems = (consumerCategories as any)?.data?.body_system?.slice(0, 4) || [];
+  const featuredBodySystems = consumerCategories?.data?.body_system?.slice(0, 4) || [];
   
   // Featured life stages from actual database
-  const featuredLifeStages = (consumerCategories as any)?.data?.life_stage || [];
+  const featuredLifeStages = consumerCategories?.data?.life_stage?.slice(0, 4) || [];
 
   const recentStudies = [
     {
