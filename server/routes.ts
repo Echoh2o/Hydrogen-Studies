@@ -50,6 +50,7 @@ import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
 import seoRoutes from "./routes/seo-routes";
 import performanceRoutes from "./routes/performance-routes";
+import advancedSearchRoutes from "./routes/advanced-search-routes";
 import { testEnrichStudy, populateStudyWithRealData } from "./test-pubmed-enrichment";
 import { enrichStudyDirect } from "./direct-pubmed-enrichment";
 import { enrichStudySimple } from "./simple-pubmed-enrichment";
@@ -1094,6 +1095,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add performance monitoring routes
   app.use('/', performanceRoutes);
+  
+  // Add advanced search routes
+  app.use('/', advancedSearchRoutes);
 
   const httpServer = createServer(app);
   return httpServer;
