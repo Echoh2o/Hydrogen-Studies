@@ -40,7 +40,7 @@ localPort = 5007
 externalPort = 5000
 
 [workflows]
-runButton = "Project"
+runButton = "Test Production Build"
 
 [[workflows.workflow]]
 name = "Project"
@@ -59,3 +59,37 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Test Production Build"
+author = 42758343
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node start-production.js"
+
+[[workflows.workflow]]
+name = "Staging Environment"
+author = 42758343
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🏗️ Building staging environment that matches production exactly...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Build complete - starting staging server\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=production node start-production.js"
