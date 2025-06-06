@@ -3,9 +3,13 @@
  * Bypasses all heavy initialization for immediate port opening
  */
 
-const express = require('express');
-const { neon } = require('@neondatabase/serverless');
-const path = require('path');
+import express from 'express';
+import { neon } from '@neondatabase/serverless';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
