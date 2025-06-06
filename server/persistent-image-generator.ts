@@ -16,6 +16,7 @@ interface ImageGenerationState {
   startTime: Date;
   lastRunTime: Date;
   forceRegeneration: boolean;
+  processedStudyIds: Set<number>;
 }
 
 let generationState: ImageGenerationState = {
@@ -25,7 +26,8 @@ let generationState: ImageGenerationState = {
   totalStudies: 0,
   startTime: new Date(),
   lastRunTime: new Date(),
-  forceRegeneration: true
+  forceRegeneration: true,
+  processedStudyIds: new Set()
 };
 
 /**
@@ -56,15 +58,31 @@ export async function initializePersistentImageGeneration(): Promise<void> {
 }
 
 /**
- * Get studies that need enhanced image generation (force regeneration mode)
+ * Get studies that need enhanced image generation
+ * Only process studies that haven't been processed in this session
  */
 async function getStudiesNeedingImages(): Promise<any[]> {
-  // Force regeneration of all studies to ensure enhanced SEO descriptions
-  const studiesNeedingEnhancement = await db.select()
-    .from(studies)
-    .limit(1000); // Process in chunks
+  try {
+    // Get all studies that need images, but filter out ones we've already processed
+    const allStudies = await db.select()
+      .from(studies)
+      .where(isNull(studies.imageUrl)) // Only studies that truly need images
+      .orderBy(studies.id)
+      .limit(100);
     
-  return studiesNeedingEnhancement;
+    // Filter out studies we've already processed in this session
+    const unprocessedStudies = allStudies.filter(study => 
+      !generationState.processedStudyIds.has(study.id)
+    );
+    
+    console.log(`Found ${unprocessedStudies.length} unprocessed studies needing images (${generationState.processedStudyIds.size} already processed)`);
+    
+    return unprocessedStudies.slice(0, 7); // Process only 7 at a time for rate limiting
+    
+  } catch (error) {
+    console.error('Error getting studies needing images:', error);
+    return [];
+  }
 }
 
 /**
@@ -120,6 +138,11 @@ async function processImageGeneration(): Promise<void> {
       );
       
       const results = await Promise.all(batchPromises);
+      
+      // Mark all studies in this batch as processed (regardless of success)
+      batch.forEach(study => {
+        generationState.processedStudyIds.add(study.id);
+      });
       
       // Count successful generations
       const successful = results.filter(r => r.success).length;
