@@ -61,6 +61,7 @@ import exportRoutes from "./routes/export-routes";
 import recommendationRoutes from "./routes/recommendation-routes";
 import chatRoutes from "./routes/chat-routes";
 import adminImageRoutes from "./routes/admin-image-routes";
+import adminEnrichmentRoutes from "./routes/admin-enrichment-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = express.Router();
@@ -1108,6 +1109,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add admin image generation routes
   app.use('/api/admin/images', adminImageRoutes);
+  
+  // Add admin enrichment routes
+  app.use('/api/admin/enrichment', adminEnrichmentRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

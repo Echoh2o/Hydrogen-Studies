@@ -351,9 +351,8 @@ app.use((req, res, next) => {
       setTimeout(async () => {
         try {
           console.log('Starting background services...');
-          const { initializeAutoEnrichment } = await import('./auto-enrichment-manager.js');
-          await initializeAutoEnrichment();
-          console.log('Auto-enrichment system initialized in background');
+          // Auto-enrichment is now admin-controlled only
+          console.log('Auto-enrichment system ready for admin control');
           
           // Image generation is now admin-controlled only
           console.log('Image generation system ready for admin control');
