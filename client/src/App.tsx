@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
+import { initGA } from "./lib/analytics";
+import { useAnalytics } from "./hooks/use-analytics";
 
 // Core Pages
 import Home from "@/pages/home";
@@ -90,6 +92,9 @@ function ScrollToTop() {
 }
 
 function Router() {
+  // Track page views when routes change
+  useAnalytics();
+  
   return (
     <Switch>
       {/* Core Public Routes */}
@@ -188,6 +193,16 @@ function Router() {
 function App() {
   const [location] = useLocation();
   const isAdminRoute = location.startsWith('/admin');
+  
+  // Initialize Google Analytics when app loads
+  useEffect(() => {
+    // Verify required environment variable is present
+    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+    } else {
+      initGA();
+    }
+  }, []);
   
   return (
     <QueryClientProvider client={queryClient}>
