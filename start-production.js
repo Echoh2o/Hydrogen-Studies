@@ -503,10 +503,16 @@ app.get('/api/studies', async (req, res) => {
     const totalResult = await database.execute(sql.raw(countQuery));
     const total = parseInt(totalResult.rows[0]?.total || 0);
 
-    res.json({ studies, total });
+    res.json({ 
+      data: studies, 
+      total,
+      page: Math.floor(offsetInt / limitInt) + 1,
+      pageSize: limitInt,
+      pageCount: Math.ceil(total / limitInt)
+    });
   } catch (error) {
     console.error('Studies API error:', error.message);
-    res.status(500).json({ error: 'Failed to load studies', studies: [], total: 0 });
+    res.status(500).json({ error: 'Failed to load studies', data: [], total: 0 });
   }
 });
 
@@ -597,10 +603,16 @@ app.get('/api/studies/condition/:condition', async (req, res) => {
     const totalResult = await database.execute(sql.raw(countQuery));
     const total = parseInt(totalResult.rows[0]?.total || 0);
 
-    res.json({ studies, total });
+    res.json({ 
+      data: studies, 
+      total,
+      page: Math.floor(offsetInt / limitInt) + 1,
+      pageSize: limitInt,
+      pageCount: Math.ceil(total / limitInt)
+    });
   } catch (error) {
     console.error('Condition studies error:', error.message);
-    res.status(500).json({ error: 'Failed to load studies for condition', studies: [], total: 0 });
+    res.status(500).json({ error: 'Failed to load studies for condition', data: [], total: 0 });
   }
 });
 
