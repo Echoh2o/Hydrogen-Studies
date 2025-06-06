@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 import express from 'express';
@@ -35,18 +36,24 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Basic API routes for deployment
-app.get('/api/search/trending', (req, res) => {
-  res.json({ trending: ["hydrogen water", "antioxidant", "inflammation", "brain health"] });
-});
-
-app.get('/api/tags/categories', (req, res) => {
-  res.json({ categories: [] });
-});
-
-app.get('/api/search/enhanced', (req, res) => {
-  res.json({ studies: [], total: 0 });
-});
+// API routes - import your server routes
+try {
+  const { setupFastDeploymentRoutes } = await import('./server/fast-deployment-routes.js');
+  setupFastDeploymentRoutes(app);
+  console.log('✅ API routes loaded');
+} catch (error) {
+  console.warn('⚠️ Could not load API routes:', error.message);
+  // Provide basic fallback routes
+  app.get('/api/search/trending', (req, res) => {
+    res.json({ trending: ["hydrogen water", "antioxidant", "inflammation", "brain health"] });
+  });
+  app.get('/api/tags/categories', (req, res) => {
+    res.json({ categories: [] });
+  });
+  app.get('/api/search/enhanced', (req, res) => {
+    res.json({ studies: [], total: 0 });
+  });
+}
 
 // SPA fallback - serve index.html for all non-API routes
 app.get('*', (req, res) => {
