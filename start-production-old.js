@@ -28,7 +28,17 @@ if (existsSync(distPath)) {
   console.error(`❌ Build directory not found: ${distPath}`);
 }
 
-// Database connection
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    buildExists: existsSync(distPath)
+  });
+});
+
+// Database-connected API routes for production
 const connectionString = process.env.DATABASE_URL;
 let db;
 
@@ -40,20 +50,12 @@ if (connectionString) {
   console.warn('⚠️ No DATABASE_URL found, using fallback routes');
 }
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    buildExists: existsSync(distPath)
-  });
-});
-
-// Consumer categories endpoint
+// Consumer categories endpoint - using actual categories table
 app.get('/api/consumer-categories/counts', async (req, res) => {
   try {
-    if (!db) return res.json([]);
+    if (!db) {
+      return res.json([]);
+    }
     
     const results = await db.execute(sql`
       SELECT 
@@ -83,10 +85,14 @@ app.get('/api/search/trending', (req, res) => {
 // Legacy categories endpoint
 app.get('/api/tags/categories', async (req, res) => {
   try {
-    if (!db) return res.json({ categories: [] });
+    if (!db) {
+      return res.json({ categories: [] });
+    }
     
     const results = await db.execute(sql`
-      SELECT c.name, c.study_count as count
+      SELECT 
+        c.name,
+        c.study_count as count
       FROM categories c
       WHERE c.study_count > 0
       ORDER BY c.study_count DESC
@@ -108,7 +114,9 @@ app.get('/api/tags/categories', async (req, res) => {
 // Enhanced search endpoint
 app.get('/api/search/enhanced', async (req, res) => {
   try {
-    if (!db) return res.json({ studies: [], total: 0 });
+    if (!db) {
+      return res.json({ studies: [], total: 0 });
+    }
     
     const { 
       q = '', 
@@ -245,15 +253,7 @@ app.get('/api/studies/:id', async (req, res) => {
     }
 
     const study = results.rows[0];
-    
-    // Update view count
-    await db.execute(sql`
-      UPDATE studies 
-      SET view_count = COALESCE(view_count, 0) + 1 
-      WHERE id = ${studyId}
-    `);
-
-    res.json({
+    const studyData = {
       id: study.id,
       title: study.title || 'Untitled Study',
       abstract: study.abstract || '',
@@ -267,22 +267,24 @@ app.get('/api/studies/:id', async (req, res) => {
       viewCount: study.view_count || 0,
       slug: study.slug,
       doi: study.doi,
+      pmid: study.pmid,
       keywords: study.keywords,
       authorAffiliations: study.author_affiliations,
       fundingSources: study.funding_sources,
       statisticalMethods: study.statistical_methods,
       ethicalApproval: study.ethical_approval,
-      methods: study.methods,
-      results: study.results,
-      conclusion: study.conclusion,
-      objective: study.objective,
-      sampleSize: study.sample_size,
-      studyType: study.study_type,
-      url: study.url,
-      pdfUrl: study.pdf_url,
       tags: [],
       relatedStudies: []
-    });
+    };
+
+    // Update view count
+    await db.execute(sql`
+      UPDATE studies 
+      SET view_count = COALESCE(view_count, 0) + 1 
+      WHERE id = ${studyId}
+    `);
+
+    res.json(studyData);
   } catch (error) {
     console.error('Study detail error:', error);
     res.status(500).json({ error: 'Failed to load study details' });
@@ -306,11 +308,9 @@ app.get('/api/studies/slug/:slug', async (req, res) => {
         id, title, abstract, authors, journal, 
         publish_date, journal_publish_date, category,
         consumer_categories, image_url, image_alt,
-        view_count, slug, doi, keywords,
+        view_count, slug, doi, pmid, keywords,
         author_affiliations, funding_sources,
-        statistical_methods, ethical_approval,
-        methods, results, conclusion, objective,
-        sample_size, study_type, url, pdf_url
+        statistical_methods, ethical_approval
       FROM studies
       WHERE slug = ${slug}
       LIMIT 1
@@ -321,15 +321,7 @@ app.get('/api/studies/slug/:slug', async (req, res) => {
     }
 
     const study = results.rows[0];
-    
-    // Update view count
-    await db.execute(sql`
-      UPDATE studies 
-      SET view_count = COALESCE(view_count, 0) + 1 
-      WHERE id = ${study.id}
-    `);
-
-    res.json({
+    const studyData = {
       id: study.id,
       title: study.title || 'Untitled Study',
       abstract: study.abstract || '',
@@ -343,22 +335,24 @@ app.get('/api/studies/slug/:slug', async (req, res) => {
       viewCount: study.view_count || 0,
       slug: study.slug,
       doi: study.doi,
+      pmid: study.pmid,
       keywords: study.keywords,
       authorAffiliations: study.author_affiliations,
       fundingSources: study.funding_sources,
       statisticalMethods: study.statistical_methods,
       ethicalApproval: study.ethical_approval,
-      methods: study.methods,
-      results: study.results,
-      conclusion: study.conclusion,
-      objective: study.objective,
-      sampleSize: study.sample_size,
-      studyType: study.study_type,
-      url: study.url,
-      pdfUrl: study.pdf_url,
       tags: [],
       relatedStudies: []
-    });
+    };
+
+    // Update view count
+    await db.execute(sql`
+      UPDATE studies 
+      SET view_count = COALESCE(view_count, 0) + 1 
+      WHERE id = ${study.id}
+    `);
+
+    res.json(studyData);
   } catch (error) {
     console.error('Study by slug error:', error);
     res.status(500).json({ error: 'Failed to load study details' });
