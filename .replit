@@ -8,8 +8,8 @@ packages = ["glibcLocales", "jq"]
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+build = ["sh", "-c", "npm run build"]
+run = ["sh", "-c", "node start-production.js"]
 
 [[ports]]
 localPort = 5000
