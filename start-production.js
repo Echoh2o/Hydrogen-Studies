@@ -84,13 +84,12 @@ const serverBundlePath = join(__dirname, 'dist', 'index.js');
 if (existsSync(serverBundlePath)) {
   try {
     console.log('📦 Loading compiled server bundle...');
-    const { setupRoutes } = await import(serverBundlePath);
-    if (setupRoutes) {
-      setupRoutes(app);
-      console.log('✅ Server bundle routes loaded');
-    }
+    // Import the server bundle but don't expect specific exports
+    await import(serverBundlePath);
+    console.log('✅ Server bundle loaded');
   } catch (error) {
-    console.warn('⚠️ Server bundle available but could not load routes:', error.message);
+    console.warn('⚠️ Server bundle could not be loaded:', error.message);
+    console.log('ℹ️ Continuing with basic API routes only');
   }
 } else {
   console.log('ℹ️ No server bundle found - using basic API routes');
