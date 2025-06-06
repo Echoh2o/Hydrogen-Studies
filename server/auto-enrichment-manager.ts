@@ -35,17 +35,8 @@ export async function initializeAutoEnrichment(): Promise<void> {
       if (!isBatchRunning()) {
         console.log('Starting auto-enrichment process...');
         
-        // Start in background without blocking app startup
-        setTimeout(async () => {
-          try {
-            await startBatchEnrichment();
-            console.log('Auto-enrichment completed successfully');
-          } catch (error) {
-            console.error('Auto-enrichment error:', error);
-            // Retry after 5 minutes on error
-            setTimeout(() => initializeAutoEnrichment(), 5 * 60 * 1000);
-          }
-        }, 10000); // Wait 10 seconds after startup
+        // Disabled automatic enrichment to prevent API errors with placeholder DOIs
+        console.log('Auto-enrichment disabled - studies with valid DOIs can be enriched manually via admin panel');
         
       } else {
         console.log('Batch enrichment already running');
