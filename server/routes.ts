@@ -59,6 +59,7 @@ import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
 import exportRoutes from "./routes/export-routes";
 import recommendationRoutes from "./routes/recommendation-routes";
+import chatRoutes from "./routes/chat-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = express.Router();
@@ -296,6 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/keywords/monitor/schedule', keywordMonitorScheduleRoutes);
   app.use('/api/export', exportRoutes);
   app.use('/api/recommendations', recommendationRoutes);
+  app.use('/api', chatRoutes);
   app.use('/api', studyDetailsRoutes);
 
   // Admin status routes
