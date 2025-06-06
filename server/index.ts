@@ -299,13 +299,8 @@ app.use((req, res, next) => {
     
     console.log('Sample data initialized successfully');
     
-    // Initialize auto-enrichment system
-    console.log('Initializing auto-enrichment system...');
-    await initializeAutoEnrichment();
-    
-    // Initialize persistent image generation system
-    console.log('Initializing persistent image generation system...');
-    await initializePersistentImageGeneration();
+    // Schedule heavy operations for background execution after server starts
+    console.log('Scheduling background services for later initialization...');
     
   } catch (error) {
     console.error('Error running database migrations:', error);
@@ -329,30 +324,60 @@ app.use((req, res, next) => {
   // This ensures the React app loads correctly
   await setupVite(app, server);
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Server startup with port fallback to prevent crashes
   const port = process.env.PORT || 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-    
-    // Set up periodic keyword monitoring checks
-    setInterval(async () => {
-      try {
-        const { checkScheduledSearches } = await import('./keyword-monitor-service');
-        await checkScheduledSearches();
-      } catch (error) {
-        console.error('Error checking scheduled searches:', error);
+  
+  const startServer = (attemptPort: number) => {
+    const serverInstance = server.listen({
+      port: attemptPort,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${attemptPort}`);
+      
+      // Set up periodic keyword monitoring checks
+      setInterval(async () => {
+        try {
+          const { checkScheduledSearches } = await import('./keyword-monitor-service');
+          await checkScheduledSearches();
+        } catch (error) {
+          console.error('Error checking scheduled searches:', error);
+        }
+      }, 15 * 60 * 1000); // Check every 15 minutes
+      
+      console.log('Keyword monitoring scheduler started');
+      
+      // Schedule heavy operations for background execution after server is stable
+      setTimeout(async () => {
+        try {
+          console.log('Starting background services...');
+          const { initializeAutoEnrichment } = await import('./auto-enrichment-manager.js');
+          await initializeAutoEnrichment();
+          console.log('Auto-enrichment system initialized in background');
+          
+          // Initialize image generation after auto-enrichment
+          setTimeout(async () => {
+            const { initializePersistentImageGeneration } = await import('./persistent-image-generator.js');
+            await initializePersistentImageGeneration();
+            console.log('Image generation system initialized in background');
+          }, 30000);
+          
+        } catch (error) {
+          console.error('Background services initialization failed:', error);
+        }
+      }, 15000); // Start 15 seconds after server is ready
+      
+      console.log('Application startup complete - background services will initialize automatically');
+    }).on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.log(`Port ${attemptPort} in use, trying ${attemptPort + 1}`);
+        startServer(attemptPort + 1);
+      } else {
+        console.error('Server error:', error);
+        process.exit(1);
       }
-    }, 15 * 60 * 1000); // Check every 15 minutes
-    
-    console.log('Keyword monitoring scheduler started');
-    
-    // Content enhancement services removed during cleanup
-    console.log('Application startup complete - content enhancement services can be manually triggered via admin panel');
-  });
+    });
+  };
+  
+  startServer(port);
 })();
