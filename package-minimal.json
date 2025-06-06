@@ -1,0 +1,16 @@
+{
+  "name": "hydrogen-research-minimal",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server/lightweight-index.ts",
+    "build": "vite build",
+    "start": "node server/lightweight-index.ts",
+    "stable": "node stable-production.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "drizzle-orm": "^0.29.3",
+    "@neondatabase/serverless": "^0.9.0"
+  }
+}
