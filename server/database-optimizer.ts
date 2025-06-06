@@ -202,7 +202,14 @@ export async function getDatabasePerformanceMetrics() {
 // Query performance analyzer
 export async function analyzeQueryPerformance(sampleQuery: string) {
   try {
-    const plan = await db.execute(sql.raw(`EXPLAIN ANALYZE ${sampleQuery}`));
+    // Validate that the query is a safe SELECT statement
+    const trimmedQuery = sampleQuery.trim().toLowerCase();
+    if (!trimmedQuery.startsWith('select')) {
+      throw new Error('Only SELECT queries are allowed for performance analysis');
+    }
+    
+    // Use parameterized query to prevent SQL injection
+    const plan = await db.execute(sql`EXPLAIN ANALYZE ${sql.raw(sampleQuery)}`);
     return plan;
   } catch (error) {
     console.error('Query analysis failed:', error);
