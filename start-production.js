@@ -1,115 +1,408 @@
 #!/usr/bin/env node
 
 import express from 'express';
-import session from 'express-session';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import { sql } from 'drizzle-orm';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Set production environment
-process.env.NODE_ENV = 'production';
+// Graceful error handling
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error.message);
+  process.exit(1);
+});
 
-// Middleware - match development exactly
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
 
-// Session configuration - match development
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'hydrogen-studies-production-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Keep false for Replit deployment
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  },
-  name: 'hydrogenstudies.sid'
-}));
+// Essential middleware only
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: false, limit: '5mb' }));
 
-// Serve static files from dist directory
+// Static file serving with caching
 const distPath = join(__dirname, 'dist');
 if (existsSync(distPath)) {
-  app.use(express.static(distPath));
-  console.log(`✅ Serving static files from: ${distPath}`);
-} else {
-  console.error(`❌ Build directory not found: ${distPath}`);
-  process.exit(1);
+  app.use(express.static(distPath, { 
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+  }));
+  console.log('Static files available from:', distPath);
 }
 
-// Load server routes with proper error handling
-console.log('🔄 Loading server routes...');
-
-// Simple API routes that don't depend on complex imports
-app.get('/api/status', (req, res) => {
-  res.json({ 
-    message: 'Hydrogen Studies API is running',
-    studies: '1,326 loaded',
-    features: ['AI categorization', 'Multi-filter search', 'PostgreSQL storage'],
-    environment: 'production',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/api/search/trending', (req, res) => {
-  res.json({
-    trending: ["hydrogen water", "antioxidant", "inflammation", "brain health", "exercise recovery"]
-  });
-});
-
-app.get('/api/consumer-categories/counts', (req, res) => {
-  res.json({
-    categories: [
-      { name: "Brain Health", count: 34 },
-      { name: "Anti-Inflammatory", count: 21 },
-      { name: "Cardiovascular", count: 18 },
-      { name: "Athletic Performance", count: 15 }
-    ]
-  });
-});
-
-app.get('/api/search/enhanced', (req, res) => {
-  res.json({
-    studies: [],
-    total: 0,
-    message: "Enhanced search available - database connection needed for full functionality"
-  });
-});
-
-// Try to load the compiled server bundle if it exists
-const serverBundlePath = join(__dirname, 'dist', 'index.js');
-if (existsSync(serverBundlePath)) {
-  try {
-    console.log('📦 Loading compiled server bundle...');
-    // Import the server bundle but don't expect specific exports
-    await import(serverBundlePath);
-    console.log('✅ Server bundle loaded');
-  } catch (error) {
-    console.warn('⚠️ Server bundle could not be loaded:', error.message);
-    console.log('ℹ️ Continuing with basic API routes only');
+// Database connection - lazy initialization
+let db = null;
+const getDatabase = () => {
+  if (!db && process.env.DATABASE_URL) {
+    try {
+      const client = neon(process.env.DATABASE_URL);
+      db = drizzle(client);
+      console.log('Database connected');
+    } catch (error) {
+      console.error('Database connection error:', error.message);
+    }
   }
-} else {
-  console.log('ℹ️ No server bundle found - using basic API routes');
-}
+  return db;
+};
 
-// Health check endpoint with comprehensive status
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
-    status: 'healthy', 
+    status: 'healthy',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    buildExists: existsSync(distPath),
-    serverBundle: existsSync(serverBundlePath),
-    database: process.env.DATABASE_URL ? 'configured' : 'not set',
-    features: {
-      static_files: 'serving',
-      api_routes: 'basic',
-      session_storage: 'configured'
-    }
+    uptime: Math.floor(process.uptime()),
+    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
   });
+});
+
+// Consumer categories endpoint - optimized for stability
+app.get('/api/consumer-categories/counts', async (req, res) => {
+  try {
+    const database = getDatabase();
+    if (!database) {
+      return res.json({ 
+        success: true, 
+        data: {
+          condition: [],
+          body_system: [],
+          life_stage: []
+        }
+      });
+    }
+
+    const results = await database.execute(sql`
+      SELECT name, study_count as count, description
+      FROM categories 
+      WHERE study_count > 0 
+      ORDER BY study_count DESC
+      LIMIT 15
+    `);
+
+    const categories = results.rows.map(row => ({
+      name: row.name,
+      count: row.count,
+      description: row.description || ''
+    }));
+
+    // Organize categories into logical groups
+    const conditions = categories.filter(cat => 
+      ['Respiratory', 'Inflammation', 'Neurological', 'Metabolic', 'Cardiovascular'].includes(cat.name)
+    ).slice(0, 5);
+
+    const bodySystems = categories.filter(cat => 
+      ['Liver', 'Gastrointestinal', 'Kidney', 'Cancer Research'].includes(cat.name)
+    ).slice(0, 4);
+
+    const lifeStages = categories.filter(cat => 
+      ['Aging', 'Fitness', 'Dermatology'].includes(cat.name)
+    ).slice(0, 3);
+
+    res.json({ 
+      success: true,
+      data: {
+        condition: conditions,
+        body_system: bodySystems,
+        life_stage: lifeStages
+      }
+    });
+  } catch (error) {
+    console.error('Categories endpoint error:', error.message);
+    res.json({ 
+      success: false, 
+      data: {
+        condition: [],
+        body_system: [],
+        life_stage: []
+      }
+    });
+  }
+});
+
+// Search trending endpoint
+app.get('/api/search/trending', (req, res) => {
+  res.json({ 
+    trending: ["hydrogen water", "antioxidant", "inflammation", "brain health", "oxidative stress", "neuroprotection"] 
+  });
+});
+
+// Enhanced search endpoint - optimized with proper pagination
+app.get('/api/search/enhanced', async (req, res) => {
+  try {
+    const database = getDatabase();
+    if (!database) {
+      return res.json({ 
+        studies: [], 
+        total: 0,
+        facets: { tags: [], journals: [], years: [] },
+        suggestions: [],
+        trending: []
+      });
+    }
+
+    const { 
+      q = '', 
+      limit = 20, 
+      offset = 0, 
+      category = '',
+      sortBy = 'relevance'
+    } = req.query;
+
+    const limitInt = Math.min(parseInt(limit) || 20, 100);
+    const offsetInt = Math.max(parseInt(offset) || 0, 0);
+
+    let whereClause = '';
+    let orderClause = 'ORDER BY COALESCE(view_count, 0) DESC, id DESC';
+
+    if (q && typeof q === 'string' && q.trim()) {
+      const searchTerm = q.replace(/'/g, "''");
+      whereClause = `WHERE (
+        title ILIKE '%${searchTerm}%' OR 
+        abstract ILIKE '%${searchTerm}%' OR 
+        authors ILIKE '%${searchTerm}%'
+      )`;
+    }
+
+    if (category && typeof category === 'string') {
+      const categoryFilter = category.replace(/'/g, "''");
+      whereClause += whereClause ? 
+        ` AND category ILIKE '%${categoryFilter}%'` : 
+        `WHERE category ILIKE '%${categoryFilter}%'`;
+    }
+
+    if (sortBy === 'date') {
+      orderClause = 'ORDER BY publish_date DESC NULLS LAST, id DESC';
+    }
+
+    const queryText = `
+      SELECT 
+        id, title, abstract, authors, journal, 
+        publish_date, journal_publish_date, category,
+        consumer_categories, image_url, image_alt,
+        view_count, slug, doi
+      FROM studies
+      ${whereClause}
+      ${orderClause}
+      LIMIT ${limitInt} OFFSET ${offsetInt}
+    `;
+
+    const results = await database.execute(sql.raw(queryText));
+
+    const studies = results.rows.map((row) => ({
+      id: row.id,
+      title: row.title || 'Untitled Study',
+      abstract: row.abstract ? row.abstract.substring(0, 500) + '...' : '',
+      authors: row.authors || '',
+      journal: row.journal || '',
+      publishDate: row.publish_date || row.journal_publish_date,
+      category: row.category || 'General',
+      consumerCategories: row.consumer_categories,
+      imageUrl: row.image_url,
+      imageAlt: row.image_alt,
+      viewCount: row.view_count || 0,
+      slug: row.slug,
+      doi: row.doi,
+      relevanceScore: 1.0
+    }));
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM studies
+      ${whereClause}
+    `;
+    
+    const totalResult = await database.execute(sql.raw(countQuery));
+    const total = parseInt(totalResult.rows[0]?.total || 0);
+
+    res.json({
+      studies,
+      total,
+      facets: { tags: [], journals: [], years: [] },
+      suggestions: [],
+      trending: ["hydrogen water", "antioxidant", "inflammation", "brain health"]
+    });
+  } catch (error) {
+    console.error('Search endpoint error:', error.message);
+    res.status(500).json({ 
+      error: 'Search failed',
+      studies: [],
+      total: 0,
+      facets: { tags: [], journals: [], years: [] },
+      suggestions: [],
+      trending: []
+    });
+  }
+});
+
+// Individual study endpoint - non-blocking view count update
+app.get('/api/studies/:id', async (req, res) => {
+  try {
+    const database = getDatabase();
+    if (!database) {
+      return res.status(500).json({ error: 'Database not available' });
+    }
+
+    const studyId = parseInt(req.params.id);
+    if (!studyId || isNaN(studyId)) {
+      return res.status(400).json({ error: 'Invalid study ID' });
+    }
+
+    const results = await database.execute(sql`
+      SELECT 
+        id, title, abstract, authors, journal, 
+        publish_date, journal_publish_date, category,
+        consumer_categories, image_url, image_alt,
+        view_count, slug, doi, keywords,
+        author_affiliations, funding_sources,
+        statistical_methods, ethical_approval,
+        methods, results, conclusion, objective,
+        sample_size, study_type, url, pdf_url
+      FROM studies
+      WHERE id = ${studyId}
+      LIMIT 1
+    `);
+
+    if (results.rows.length === 0) {
+      return res.status(404).json({ error: 'Study not found' });
+    }
+
+    const study = results.rows[0];
+
+    // Non-blocking view count update
+    setImmediate(() => {
+      database.execute(sql`
+        UPDATE studies 
+        SET view_count = COALESCE(view_count, 0) + 1 
+        WHERE id = ${studyId}
+      `).catch(error => {
+        console.error('View count update failed:', error.message);
+      });
+    });
+
+    res.json({
+      id: study.id,
+      title: study.title || 'Untitled Study',
+      abstract: study.abstract || '',
+      authors: study.authors || '',
+      journal: study.journal || '',
+      publishDate: study.publish_date || study.journal_publish_date,
+      category: study.category || 'General',
+      consumerCategories: study.consumer_categories,
+      imageUrl: study.image_url,
+      imageAlt: study.image_alt,
+      viewCount: (study.view_count || 0) + 1,
+      slug: study.slug,
+      doi: study.doi,
+      keywords: study.keywords,
+      authorAffiliations: study.author_affiliations,
+      fundingSources: study.funding_sources,
+      statisticalMethods: study.statistical_methods,
+      ethicalApproval: study.ethical_approval,
+      methods: study.methods,
+      results: study.results,
+      conclusion: study.conclusion,
+      objective: study.objective,
+      sampleSize: study.sample_size,
+      studyType: study.study_type,
+      url: study.url,
+      pdfUrl: study.pdf_url
+    });
+  } catch (error) {
+    console.error('Study detail error:', error.message);
+    res.status(500).json({ error: 'Failed to load study details' });
+  }
+});
+
+// Study by slug endpoint
+app.get('/api/studies/slug/:slug', async (req, res) => {
+  try {
+    const database = getDatabase();
+    if (!database) {
+      return res.status(500).json({ error: 'Database not available' });
+    }
+
+    const slug = req.params.slug;
+    if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({ error: 'Invalid slug' });
+    }
+
+    const results = await database.execute(sql`
+      SELECT 
+        id, title, abstract, authors, journal, 
+        publish_date, journal_publish_date, category,
+        consumer_categories, image_url, image_alt,
+        view_count, slug, doi, keywords,
+        author_affiliations, funding_sources,
+        statistical_methods, ethical_approval,
+        methods, results, conclusion, objective,
+        sample_size, study_type, url, pdf_url
+      FROM studies
+      WHERE slug = ${slug}
+      LIMIT 1
+    `);
+
+    if (results.rows.length === 0) {
+      return res.status(404).json({ error: 'Study not found' });
+    }
+
+    const study = results.rows[0];
+
+    // Non-blocking view count update
+    setImmediate(() => {
+      database.execute(sql`
+        UPDATE studies 
+        SET view_count = COALESCE(view_count, 0) + 1 
+        WHERE id = ${study.id}
+      `).catch(error => {
+        console.error('View count update failed:', error.message);
+      });
+    });
+
+    res.json({
+      id: study.id,
+      title: study.title || 'Untitled Study',
+      abstract: study.abstract || '',
+      authors: study.authors || '',
+      journal: study.journal || '',
+      publishDate: study.publish_date || study.journal_publish_date,
+      category: study.category || 'General',
+      consumerCategories: study.consumer_categories,
+      imageUrl: study.image_url,
+      imageAlt: study.image_alt,
+      viewCount: (study.view_count || 0) + 1,
+      slug: study.slug,
+      doi: study.doi,
+      keywords: study.keywords,
+      authorAffiliations: study.author_affiliations,
+      fundingSources: study.funding_sources,
+      statisticalMethods: study.statistical_methods,
+      ethicalApproval: study.ethical_approval,
+      methods: study.methods,
+      results: study.results,
+      conclusion: study.conclusion,
+      objective: study.objective,
+      sampleSize: study.sample_size,
+      studyType: study.study_type,
+      url: study.url,
+      pdfUrl: study.pdf_url
+    });
+  } catch (error) {
+    console.error('Study by slug error:', error.message);
+    res.status(500).json({ error: 'Failed to load study details' });
+  }
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Express error:', error.message);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // SPA fallback - serve index.html for all non-API routes
@@ -119,28 +412,49 @@ app.get('*', (req, res) => {
     res.sendFile(indexPath);
   } else {
     res.status(404).json({ 
-      error: 'Application not built. Run npm run build first.',
-      path: indexPath,
-      exists: existsSync(indexPath),
-      hint: 'Try running: npm run build'
+      error: 'Application not built',
+      hint: 'Run npm run build first'
     });
   }
 });
 
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Production server error:', error);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    timestamp: new Date().toISOString()
-  });
+// Server startup with proper error handling
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`Stable server running on port ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`);
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Production server running on port ${port}`);
-  console.log(`📁 Static files: ${distPath}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Health check: http://localhost:${port}/health`);
-  console.log(`📊 Ready for deployment`);
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use`);
+    console.log('Trying alternative port...');
+    const altPort = port + 1;
+    setTimeout(() => {
+      server.listen(altPort, '0.0.0.0', () => {
+        console.log(`Server started on alternative port ${altPort}`);
+      });
+    }, 1000);
+  } else {
+    console.error('Server error:', error.message);
+    process.exit(1);
+  }
 });
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal) => {
+  console.log(`Received ${signal}, shutting down gracefully...`);
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Schedule background operations to run after server is stable
+setTimeout(() => {
+  console.log('Server stable, initializing background services...');
+  // Background tasks will be handled separately to avoid blocking main server
+}, 30000);
