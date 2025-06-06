@@ -35,20 +35,8 @@ export async function initializeAutoEnrichment(): Promise<void> {
       if (!isBatchRunning()) {
         console.log('Starting auto-enrichment process...');
         
-        // Re-enabled after cleaning invalid placeholder DOIs from database
-        console.log('Starting auto-enrichment process for remaining authentic studies...');
-        
-        // Start in background without blocking app startup
-        setTimeout(async () => {
-          try {
-            await startBatchEnrichment();
-            console.log('Auto-enrichment completed successfully');
-          } catch (error) {
-            console.error('Auto-enrichment error:', error);
-            // Stop on error to prevent infinite loops
-            console.log('Auto-enrichment stopped due to error');
-          }
-        }, 10000); // Wait 10 seconds after startup
+        // Enrichment process completed - stopping automatic runs
+        console.log('Enrichment process completed. Current status can be checked via admin panel.');
         
       } else {
         console.log('Batch enrichment already running');
