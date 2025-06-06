@@ -9,6 +9,8 @@ import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
 import JsonLd, { generateMedicalArticleSchema, generateBreadcrumbSchema } from "@/components/seo/JsonLd";
+import SEOHead from "@/components/seo/SEOHead";
+import StructuredData from "@/components/seo/StructuredData";
 import { useEffect, useRef } from "react";
 
 // Simple pure component for rendering a study image or fallback
