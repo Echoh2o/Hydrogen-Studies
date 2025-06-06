@@ -355,12 +355,8 @@ app.use((req, res, next) => {
           await initializeAutoEnrichment();
           console.log('Auto-enrichment system initialized in background');
           
-          // Initialize image generation after auto-enrichment
-          setTimeout(async () => {
-            const { initializePersistentImageGeneration } = await import('./persistent-image-generator.js');
-            await initializePersistentImageGeneration();
-            console.log('Image generation system initialized in background');
-          }, 30000);
+          // Image generation is now admin-controlled only
+          console.log('Image generation system ready for admin control');
           
         } catch (error) {
           console.error('Background services initialization failed:', error);
