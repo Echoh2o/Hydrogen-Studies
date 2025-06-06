@@ -19,6 +19,7 @@ interface BatchProgress {
 
 let currentBatchProgress: BatchProgress | null = null;
 let isRunning = false;
+let forceStop = false;
 
 export async function startBatchEnrichment(): Promise<void> {
   if (isRunning) {
