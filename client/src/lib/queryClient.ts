@@ -83,7 +83,7 @@ export const queryClient = new QueryClient({
       staleTime: 10 * 60 * 1000, // 10 minutes for better performance
       retry: 1, // Single retry for better reliability
       gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
-      placeholderData: (previousData) => previousData,
+      placeholderData: (previousData: any) => previousData,
       refetchOnMount: false, // Reduce unnecessary requests
     },
     mutations: {
