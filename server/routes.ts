@@ -60,6 +60,7 @@ import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-rout
 import exportRoutes from "./routes/export-routes";
 import recommendationRoutes from "./routes/recommendation-routes";
 import chatRoutes from "./routes/chat-routes";
+import adminImageRoutes from "./routes/admin-image-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = express.Router();
@@ -1104,6 +1105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add full-text search routes
   app.use('/', fullTextSearchRoutes);
+  
+  // Add admin image generation routes
+  app.use('/api/admin/images', adminImageRoutes);
 
   const httpServer = createServer(app);
   return httpServer;
