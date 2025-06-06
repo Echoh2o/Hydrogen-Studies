@@ -15,14 +15,19 @@ interface EnrichmentState {
 }
 
 let enrichmentState: EnrichmentState = {
-  isEnabled: true,
+  isEnabled: false, // PAUSED: Study enrichment system disabled
   lastRunTime: new Date(),
   totalProcessed: 0,
   targetDaily: 1000 // Target to enrich 1000 studies per day
 };
 
 export async function initializeAutoEnrichment(): Promise<void> {
-  console.log('Initializing auto-enrichment system...');
+  console.log('Auto-enrichment system paused by user request');
+  
+  if (!enrichmentState.isEnabled) {
+    console.log('Study enrichment system is disabled - skipping initialization');
+    return;
+  }
   
   try {
     // Check if enrichment should be running
