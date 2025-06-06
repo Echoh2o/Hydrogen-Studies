@@ -48,6 +48,8 @@ import enrichmentRoutes from "./routes/enrichment-routes";
 import studiesRouter from "./routes/studies-router";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import insightCardRoutes from "./routes/insight-card-routes";
+import seoRoutes from "./routes/seo-routes";
+import performanceRoutes from "./routes/performance-routes";
 import { testEnrichStudy, populateStudyWithRealData } from "./test-pubmed-enrichment";
 import { enrichStudyDirect } from "./direct-pubmed-enrichment";
 import { enrichStudySimple } from "./simple-pubmed-enrichment";
@@ -1086,6 +1088,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Add SEO routes for sitemap and robots.txt
+  app.use('/', seoRoutes);
+  
+  // Add performance monitoring routes
+  app.use('/', performanceRoutes);
 
   const httpServer = createServer(app);
   return httpServer;
