@@ -399,6 +399,211 @@ app.get('/api/studies/slug/:slug', async (req, res) => {
   }
 });
 
+// Core studies API endpoint - MISSING from deployment
+app.get('/api/studies', async (req, res) => {
+  try {
+    const database = getDatabase();
+    if (!database) {
+      return res.json({ studies: [], total: 0 });
+    }
+
+    const { 
+      limit = 20, 
+      offset = 0, 
+      category = '',
+      searchInMethods = false,
+      searchInResults = false,
+      searchInConclusion = false,
+      searchInSimplified = false,
+      tags = '',
+      q = ''
+    } = req.query;
+
+    const limitInt = Math.min(parseInt(limit) || 20, 100);
+    const offsetInt = Math.max(parseInt(offset) || 0, 0);
+
+    let whereClause = '';
+    const searchFields = [];
+    
+    if (q && typeof q === 'string' && q.trim()) {
+      const searchTerm = q.replace(/'/g, "''");
+      searchFields.push(`title ILIKE '%${searchTerm}%'`);
+      searchFields.push(`abstract ILIKE '%${searchTerm}%'`);
+      searchFields.push(`authors ILIKE '%${searchTerm}%'`);
+      
+      if (searchInMethods === 'true') {
+        searchFields.push(`methods ILIKE '%${searchTerm}%'`);
+      }
+      if (searchInResults === 'true') {
+        searchFields.push(`results ILIKE '%${searchTerm}%'`);
+      }
+      if (searchInConclusion === 'true') {
+        searchFields.push(`conclusion ILIKE '%${searchTerm}%'`);
+      }
+      
+      whereClause = `WHERE (${searchFields.join(' OR ')})`;
+    }
+
+    if (category && typeof category === 'string') {
+      const categoryFilter = category.replace(/'/g, "''");
+      whereClause += whereClause ? 
+        ` AND category ILIKE '%${categoryFilter}%'` : 
+        `WHERE category ILIKE '%${categoryFilter}%'`;
+    }
+
+    if (tags && typeof tags === 'string') {
+      const tagFilter = tags.replace(/'/g, "''");
+      whereClause += whereClause ? 
+        ` AND keywords ILIKE '%${tagFilter}%'` : 
+        `WHERE keywords ILIKE '%${tagFilter}%'`;
+    }
+
+    const queryText = `
+      SELECT 
+        id, title, abstract, authors, journal, 
+        publish_date, journal_publish_date, category,
+        consumer_categories, image_url, image_alt,
+        view_count, slug, doi, study_type,
+        methods, results, conclusion
+      FROM studies
+      ${whereClause}
+      ORDER BY COALESCE(view_count, 0) DESC, id DESC
+      LIMIT ${limitInt} OFFSET ${offsetInt}
+    `;
+
+    const results = await database.execute(sql.raw(queryText));
+
+    const studies = results.rows.map((row) => ({
+      id: row.id,
+      title: row.title || 'Untitled Study',
+      abstract: row.abstract ? row.abstract.substring(0, 300) + '...' : '',
+      authors: row.authors || '',
+      journal: row.journal || '',
+      publishDate: row.publish_date || row.journal_publish_date,
+      category: row.category || 'General',
+      consumerCategories: row.consumer_categories,
+      imageUrl: row.image_url,
+      imageAlt: row.image_alt,
+      viewCount: row.view_count || 0,
+      slug: row.slug,
+      doi: row.doi,
+      studyType: row.study_type,
+      methods: row.methods,
+      results: row.results,
+      conclusion: row.conclusion
+    }));
+
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM studies
+      ${whereClause}
+    `;
+    
+    const totalResult = await database.execute(sql.raw(countQuery));
+    const total = parseInt(totalResult.rows[0]?.total || 0);
+
+    res.json({ studies, total });
+  } catch (error) {
+    console.error('Studies API error:', error.message);
+    res.status(500).json({ error: 'Failed to load studies', studies: [], total: 0 });
+  }
+});
+
+// Categories API endpoint - MISSING from deployment
+app.get('/api/categories', async (req, res) => {
+  try {
+    const database = getDatabase();
+    if (!database) {
+      return res.json([]);
+    }
+
+    const results = await database.execute(sql`
+      SELECT id, name, description, study_count
+      FROM categories 
+      WHERE study_count > 0 
+      ORDER BY study_count DESC
+    `);
+
+    const categories = results.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      description: row.description || '',
+      count: row.study_count || 0
+    }));
+
+    res.json(categories);
+  } catch (error) {
+    console.error('Categories API error:', error.message);
+    res.status(500).json([]);
+  }
+});
+
+// Studies by condition endpoint - MISSING from deployment
+app.get('/api/studies/condition/:condition', async (req, res) => {
+  try {
+    const database = getDatabase();
+    if (!database) {
+      return res.json({ studies: [], total: 0 });
+    }
+
+    const condition = req.params.condition;
+    const { limit = 20, offset = 0 } = req.query;
+    
+    const limitInt = Math.min(parseInt(limit) || 20, 100);
+    const offsetInt = Math.max(parseInt(offset) || 0, 0);
+
+    const conditionFilter = condition.replace(/'/g, "''");
+    
+    const queryText = `
+      SELECT 
+        id, title, abstract, authors, journal, 
+        publish_date, journal_publish_date, category,
+        consumer_categories, image_url, image_alt,
+        view_count, slug, doi, study_type
+      FROM studies
+      WHERE category ILIKE '%${conditionFilter}%' 
+         OR consumer_categories ILIKE '%${conditionFilter}%'
+      ORDER BY COALESCE(view_count, 0) DESC, id DESC
+      LIMIT ${limitInt} OFFSET ${offsetInt}
+    `;
+
+    const results = await database.execute(sql.raw(queryText));
+
+    const studies = results.rows.map((row) => ({
+      id: row.id,
+      title: row.title || 'Untitled Study',
+      abstract: row.abstract ? row.abstract.substring(0, 300) + '...' : '',
+      authors: row.authors || '',
+      journal: row.journal || '',
+      publishDate: row.publish_date || row.journal_publish_date,
+      category: row.category || 'General',
+      consumerCategories: row.consumer_categories,
+      imageUrl: row.image_url,
+      imageAlt: row.image_alt,
+      viewCount: row.view_count || 0,
+      slug: row.slug,
+      doi: row.doi,
+      studyType: row.study_type
+    }));
+
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM studies
+      WHERE category ILIKE '%${conditionFilter}%' 
+         OR consumer_categories ILIKE '%${conditionFilter}%'
+    `;
+    
+    const totalResult = await database.execute(sql.raw(countQuery));
+    const total = parseInt(totalResult.rows[0]?.total || 0);
+
+    res.json({ studies, total });
+  } catch (error) {
+    console.error('Condition studies error:', error.message);
+    res.status(500).json({ error: 'Failed to load studies for condition', studies: [], total: 0 });
+  }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Express error:', error.message);
