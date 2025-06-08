@@ -207,7 +207,7 @@ export async function startMinimalServer() {
     // Create HTTP server for Vite integration
     const server = createServer(app);
     
-    // Setup Vite for frontend serving
+    // Setup Vite for frontend serving (after API routes are defined)
     await setupVite(app, server);
 
     server.listen(port, '0.0.0.0', () => {
