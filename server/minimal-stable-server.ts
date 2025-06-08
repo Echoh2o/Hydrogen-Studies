@@ -25,6 +25,9 @@ const __dirname = path.dirname(__filename);
 export async function createMinimalServer() {
   const app = express();
   
+  // Configure trust proxy for rate limiting
+  app.set('trust proxy', 1);
+  
   // Validate environment before starting
   const envErrors = validateEnvironment();
   if (envErrors.length > 0) {
