@@ -74,32 +74,35 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
   const offset = (page - 1) * pageSize;
   
   try {
-    let whereConditions = sql`1=1`;
-
+    // Build WHERE conditions
+    let conditions: string[] = [];
+    
     if (query?.trim()) {
       const searchTerm = `%${query.trim()}%`;
-      whereConditions = sql`${whereConditions} AND (
-        title ILIKE ${searchTerm} OR 
-        abstract ILIKE ${searchTerm} OR
-        keywords ILIKE ${searchTerm}
-      )`;
+      conditions.push(`(
+        title ILIKE '${searchTerm}' OR 
+        abstract ILIKE '${searchTerm}' OR
+        COALESCE(keywords, '') ILIKE '${searchTerm}'
+      )`);
     }
 
     if (filters.condition) {
       const conditionTerm = `%${filters.condition}%`;
-      whereConditions = sql`${whereConditions} AND consumer_categories::text LIKE ${conditionTerm}`;
+      conditions.push(`COALESCE(consumer_categories, '') LIKE '${conditionTerm}'`);
     }
 
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
     const [countResult, studiesResult] = await Promise.all([
-      db.execute(sql`SELECT COUNT(*) as total FROM studies WHERE ${whereConditions}`),
-      db.execute(sql`
+      db.execute(sql.raw(`SELECT COUNT(*) as total FROM studies ${whereClause}`)),
+      db.execute(sql.raw(`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
                doi, keywords, consumer_categories, images
         FROM studies 
-        WHERE ${whereConditions}
+        ${whereClause}
         ORDER BY journal_publish_date DESC NULLS LAST
         LIMIT ${pageSize} OFFSET ${offset}
-      `)
+      `))
     ]);
 
     const total = parseInt((countResult as any).rows[0]?.total || '0');
