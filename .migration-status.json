@@ -1,0 +1,10 @@
+{
+  "consumer_categories_column": true,
+  "journal_publish_date_column": true,
+  "images_column": true,
+  "research_data_fields": true,
+  "table_benefits": true,
+  "table_demographics": true,
+  "full-migration-cycle": true,
+  "category-counts-initialized": true
+}

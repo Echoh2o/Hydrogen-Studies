@@ -6,14 +6,8 @@ import { setupVite, serveStatic, log } from "./vite";
 import { Pool } from "@neondatabase/serverless";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
-import { runMigrations } from "./schema-migrator";
-import { runDatabaseMigrations, initializeSampleCategoriesData } from "./schema-updates";
-import { initializeData } from "./initialize-data";
-import { updateCategoryCounts } from "./update-category-counts";
-import { addConsumerCategoriesColumn } from "./migrations/add-consumer-categories";
-import { addResearchDataFields } from "./migrations/add-research-data-fields";
-import { initializeAutoEnrichment } from "./auto-enrichment-manager";
-import { initializePersistentImageGeneration } from "./persistent-image-generator";
+import { optimizedStartup } from "./startup-optimizer";
+import { initializePerformanceMonitoring } from "./performance-optimizer";
 
 // Check for required environment variables
 if (!process.env.SESSION_SECRET) {
@@ -258,52 +252,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Track schema version in memory to avoid running migrations repeatedly
-  let schemaInitialized = false;
-  
-  // Run database migrations to ensure schema is up to date
   try {
-    console.log('Running database migrations...');
-    await runMigrations();
+    console.log('Starting optimized application startup...');
     
-    // Run additional hydrogen-specific migrations
-    await runDatabaseMigrations();
+    // Use optimized startup that skips redundant operations
+    await optimizedStartup();
     
-    // Run keyword monitoring migrations
-    try {
-      // Import here to avoid circular dependencies
-      const { runKeywordMonitorMigrations } = await import("./migrations/keyword-monitor-migration");
-      await runKeywordMonitorMigrations();
-    } catch (error) {
-      console.error('Error running keyword monitoring migrations:', error);
-    }
-    
-    console.log('Successfully ran database migrations');
-    
-    // Initialize sample data for the hydrogen-specific categories
-    console.log('Initializing sample data in database...');
-    await initializeSampleCategoriesData();
-    
-    // Run the migration to add consumer categories column
-    console.log('Running migration for consumer-friendly categories...');
-    await addConsumerCategoriesColumn();
-    
-    // Run the migration to add authentic research data fields
-    console.log('Running migration for authentic research data fields...');
-    await addResearchDataFields();
-    
-    // Update category counts to ensure accurate data
-    console.log('Updating category counts...');
-    await updateCategoryCounts();
-    console.log('Category counts updated successfully');
-    
-    console.log('Sample data initialized successfully');
-    
-    // Schedule heavy operations for background execution after server starts
-    console.log('Scheduling background services for later initialization...');
+    // Initialize performance monitoring
+    initializePerformanceMonitoring();
     
   } catch (error) {
-    console.error('Error running database migrations:', error);
+    console.error('Startup optimization failed:', error);
+    // Fall back to basic initialization if needed
   }
 
   const server = await registerRoutes(app);
