@@ -10,6 +10,7 @@ import { fastSearch, fastCategoryCounts, fastTrendingSearches, initializeMinimal
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { performanceCache, memoizedQueries, optimizedSearch, connectionMonitor } from "./database-performance-optimizer";
+import { qualityMonitor } from "./database-quality-monitor";
 import { setupVite } from "./vite";
 import { createServer } from "http";
 import path from 'path';
@@ -462,6 +463,39 @@ export async function createMinimalServer() {
       });
     } catch (error) {
       res.status(500).json({ status: 'unhealthy' });
+    }
+  });
+
+  // Database quality monitoring endpoint
+  app.get('/api/admin/database/quality', async (req, res) => {
+    try {
+      const metrics = await qualityMonitor.runQualityChecks();
+      const report = await qualityMonitor.generateQualityReport();
+      
+      res.json({
+        success: true,
+        metrics,
+        report,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Database quality check failed:', error);
+      res.status(500).json({ error: 'Quality check failed' });
+    }
+  });
+
+  // Database auto-repair endpoint
+  app.post('/api/admin/database/repair', async (req, res) => {
+    try {
+      const result = await qualityMonitor.autoRepairIssues();
+      res.json({
+        success: true,
+        ...result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Database repair failed:', error);
+      res.status(500).json({ error: 'Database repair failed' });
     }
   });
 
