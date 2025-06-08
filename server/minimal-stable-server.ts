@@ -156,31 +156,56 @@ export async function createMinimalServer() {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = Math.min(parseInt(req.query.pageSize as string) || 20, 50);
-      const offset = (page - 1) * pageSize;
+      const query = req.query.query as string || '';
+      const category = req.query.category as string || '';
+      const keyword = req.query.keyword as string || '';
+      const author = req.query.author as string || '';
+      
+      console.log('Studies API called with:', { query, category, keyword, author, page, pageSize });
 
-      const [countResult, studiesResult] = await Promise.all([
-        db.execute(sql`SELECT COUNT(*) as total FROM studies`),
-        db.execute(sql`
-          SELECT id, title, abstract, authors, journal, journal_publish_date,
-                 doi, array_to_string(keywords, ', ') as keywords, consumer_categories
-          FROM studies 
-          ORDER BY journal_publish_date DESC NULLS LAST
-          LIMIT ${pageSize} OFFSET ${offset}
-        `)
-      ]);
+      // Use the existing search functionality
+      const filters = { condition: category };
+      const result = await fastSearch(query, filters, page, pageSize);
 
-      const total = parseInt((countResult as any).rows[0]?.total || '0');
-      const studies = (studiesResult as any).rows || [];
-
-      res.json({
-        data: studies,
-        total,
-        page,
-        pageSize,
-        pageCount: Math.ceil(total / pageSize)
-      });
+      res.json(result);
     } catch (error) {
+      console.error('Studies endpoint error:', error);
       res.status(500).json({ error: 'Studies retrieval failed' });
+    }
+  });
+
+  app.get('/api/studies/latest', async (req, res) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
+               doi, consumer_categories, array_to_string(keywords, ', ') as keywords
+        FROM studies 
+        ORDER BY journal_publish_date DESC NULLS LAST
+        LIMIT 10
+      `);
+
+      const studies = (result as any).rows || [];
+      res.json(studies);
+    } catch (error) {
+      res.status(500).json({ error: 'Latest studies retrieval failed' });
+    }
+  });
+
+  app.get('/api/study-by-slug/:slug', async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const result = await db.execute(sql`
+        SELECT * FROM studies WHERE slug = ${slug}
+      `);
+
+      const study = (result as any).rows[0];
+      if (!study) {
+        return res.status(404).json({ error: 'Study not found' });
+      }
+
+      res.json(study);
+    } catch (error) {
+      res.status(500).json({ error: 'Study retrieval failed' });
     }
   });
 
