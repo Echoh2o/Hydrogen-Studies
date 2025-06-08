@@ -224,7 +224,7 @@ export async function createMinimalServer() {
     }
   });
 
-  // Chat API endpoint
+  // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {
       const { query } = req.body;
@@ -236,13 +236,68 @@ export async function createMinimalServer() {
         });
       }
 
-      // Search for relevant studies
-      const searchResults = await fastSearch(query, {}, 1, 10);
-      const studies = searchResults.data || [];
+      // Search for relevant studies using direct database query
+      const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2);
+      
+      let studies: any[] = [];
+      if (searchTerms.length > 0) {
+        const searchTerm = searchTerms[0]; // Use first significant term
+        const result = await db.execute(sql`
+          SELECT id, title, abstract, authors, journal, doi, consumer_categories, 
+                 array_to_string(keywords, ', ') as keywords
+          FROM studies 
+          WHERE LOWER(title) LIKE ${`%${searchTerm}%`} 
+             OR LOWER(abstract) LIKE ${`%${searchTerm}%`}
+             OR LOWER(consumer_categories) LIKE ${`%${searchTerm}%`}
+             OR array_to_string(keywords, ' ') ILIKE ${`%${searchTerm}%`}
+          ORDER BY 
+            CASE WHEN LOWER(title) LIKE ${`%${searchTerm}%`} THEN 1 ELSE 2 END,
+            journal_publish_date DESC NULLS LAST
+          LIMIT 10
+        `);
+        
+        studies = (result as any).rows || [];
+      }
 
-      // Generate AI response (simplified without OpenAI dependency)
+      let aiResponse = '';
+      
+      // Generate AI response using OpenAI if API key is available
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const OpenAI = (await import('openai')).default;
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+          const studyContext = studies.slice(0, 5).map(study => 
+            `Title: ${study.title}\nAbstract: ${study.abstract || 'No abstract available'}\nJournal: ${study.journal || 'Unknown journal'}`
+          ).join('\n\n');
+
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert hydrogen research assistant. Answer questions based on the provided research studies. Be scientific but accessible. Keep responses under 200 words."
+              },
+              {
+                role: "user",
+                content: `Question: ${query}\n\nRelevant Studies:\n${studyContext}\n\nPlease provide a helpful answer based on these hydrogen research studies.`
+              }
+            ],
+            max_tokens: 300,
+            temperature: 0.7
+          });
+
+          aiResponse = response.choices[0]?.message?.content || 'Unable to generate AI response';
+        } catch (openaiError) {
+          console.error('OpenAI API error:', openaiError);
+          aiResponse = `Based on our database of hydrogen research studies, I found ${studies.length} relevant studies related to "${query}". ${studies.length > 0 ? 'These studies explore various aspects of hydrogen therapy and its health benefits.' : 'Try searching for more specific terms like "hydrogen water", "antioxidant effects", or "cardiovascular benefits".'}`;
+        }
+      } else {
+        aiResponse = `Based on our database of hydrogen research studies, I found ${studies.length} relevant studies related to "${query}". ${studies.length > 0 ? 'These studies explore various aspects of hydrogen therapy and its health benefits.' : 'Try searching for more specific terms like "hydrogen water", "antioxidant effects", or "cardiovascular benefits".'}`;
+      }
+
       const response = {
-        answer: `Based on our database of hydrogen research studies, I found ${studies.length} relevant studies related to "${query}". ${studies.length > 0 ? 'These studies explore various aspects of hydrogen therapy and its health benefits.' : 'Try searching for more specific terms like "hydrogen water", "antioxidant effects", or "cardiovascular benefits".'}`,
+        answer: aiResponse,
         sources: studies.slice(0, 5),
         relatedQuestions: [
           "What are the antioxidant effects of hydrogen water?",
