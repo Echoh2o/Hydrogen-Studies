@@ -11,6 +11,8 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { performanceCache, memoizedQueries, optimizedSearch, connectionMonitor } from "./database-performance-optimizer";
 import { qualityMonitor } from "./database-quality-monitor";
+import { globalRateLimit, authRateLimit, searchRateLimit, securityHeaders, validateInput, preventSQLInjection, validateEnvironment, securityMonitor } from "./security-hardening";
+import { reliabilityMonitor, performanceTracker } from "./reliability-stability-monitor";
 import { setupVite } from "./vite";
 import { createServer } from "http";
 import path from 'path';
@@ -23,7 +25,23 @@ const __dirname = path.dirname(__filename);
 export async function createMinimalServer() {
   const app = express();
   
-  // Essential middleware only
+  // Validate environment before starting
+  const envErrors = validateEnvironment();
+  if (envErrors.length > 0) {
+    console.warn('Environment validation warnings:', envErrors);
+  }
+
+  // Security middleware
+  app.use(securityHeaders);
+  app.use(globalRateLimit);
+  app.use(securityMonitor.middleware());
+  app.use(validateInput);
+  app.use(preventSQLInjection);
+  
+  // Performance tracking
+  app.use(performanceTracker(reliabilityMonitor));
+  
+  // Essential middleware
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false }));
 
@@ -496,6 +514,52 @@ export async function createMinimalServer() {
     } catch (error) {
       console.error('Database repair failed:', error);
       res.status(500).json({ error: 'Database repair failed' });
+    }
+  });
+
+  // System reliability monitoring
+  app.get('/api/admin/system/health', async (req, res) => {
+    try {
+      const healthCheck = await reliabilityMonitor.performHealthCheck();
+      res.json({
+        success: true,
+        ...healthCheck
+      });
+    } catch (error) {
+      console.error('Health check failed:', error);
+      res.status(500).json({ error: 'Health check failed' });
+    }
+  });
+
+  // System auto-recovery endpoint
+  app.post('/api/admin/system/recover', async (req, res) => {
+    try {
+      const recovery = await reliabilityMonitor.autoRecovery();
+      res.json({
+        success: true,
+        ...recovery,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Auto-recovery failed:', error);
+      res.status(500).json({ error: 'Auto-recovery failed' });
+    }
+  });
+
+  // System stability report
+  app.get('/api/admin/system/stability', async (req, res) => {
+    try {
+      const report = reliabilityMonitor.generateStabilityReport();
+      const metrics = reliabilityMonitor.getMetrics();
+      res.json({
+        success: true,
+        report,
+        metrics,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Stability report failed:', error);
+      res.status(500).json({ error: 'Stability report failed' });
     }
   });
 
