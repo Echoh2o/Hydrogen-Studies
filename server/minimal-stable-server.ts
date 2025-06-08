@@ -83,6 +83,23 @@ export async function createMinimalServer() {
     }
   });
 
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT DISTINCT consumer_categories as name, COUNT(*) as count 
+        FROM studies 
+        WHERE consumer_categories IS NOT NULL AND consumer_categories != '' 
+        GROUP BY consumer_categories 
+        ORDER BY count DESC
+      `);
+      
+      const categories = (result as any).rows || [];
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ error: 'Categories retrieval failed' });
+    }
+  });
+
   app.get('/api/search/trending', async (req, res) => {
     try {
       const trending = await fastTrendingSearches();
@@ -102,7 +119,7 @@ export async function createMinimalServer() {
         db.execute(sql`SELECT COUNT(*) as total FROM studies`),
         db.execute(sql`
           SELECT id, title, abstract, authors, journal, journal_publish_date,
-                 doi, keywords, consumer_categories, images
+                 doi, array_to_string(keywords, ', ') as keywords, consumer_categories
           FROM studies 
           ORDER BY journal_publish_date DESC NULLS LAST
           LIMIT ${pageSize} OFFSET ${offset}
