@@ -6,6 +6,7 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import fs from 'fs/promises';
 import path from 'path';
+import { optimizeDatabasePerformance } from "./database-performance-optimizer";
 
 // Track migration status to prevent redundant runs
 class MigrationTracker {
@@ -85,6 +86,14 @@ export async function optimizedStartup(): Promise<void> {
     console.log('Initializing category counts...');
     await updateCategoryCountsOptimized();
     MigrationTracker.markCompleted('category-counts-initialized');
+    await MigrationTracker.save();
+  }
+
+  // Optimize database performance with indexes
+  if (!MigrationTracker.isCompleted('database-performance-optimized')) {
+    console.log('Optimizing database performance...');
+    await optimizeDatabasePerformance();
+    MigrationTracker.markCompleted('database-performance-optimized');
     await MigrationTracker.save();
   }
 

@@ -6,5 +6,6 @@
   "table_benefits": true,
   "table_demographics": true,
   "full-migration-cycle": true,
-  "category-counts-initialized": true
+  "category-counts-initialized": true,
+  "database-performance-optimized": true
 }
