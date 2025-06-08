@@ -105,10 +105,7 @@ export async function createMinimalServer() {
     try {
       const { model, category } = req.query;
       
-      console.log('Category API called with:', { model, category });
-      
       if (!model || !category) {
-        console.log('Missing parameters:', { model, category });
         return res.status(400).json({
           success: false,
           error: 'Missing required parameters'
@@ -116,7 +113,6 @@ export async function createMinimalServer() {
       }
 
       const categoryName = category as string;
-      console.log('Searching for category:', categoryName);
       
       const result = await db.execute(sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
@@ -128,7 +124,6 @@ export async function createMinimalServer() {
       `);
 
       const studies = (result as any).rows || [];
-      console.log(`Found ${studies.length} studies for category: ${categoryName}`);
       
       res.json({
         success: true,
@@ -161,8 +156,6 @@ export async function createMinimalServer() {
       const keyword = req.query.keyword as string || '';
       const author = req.query.author as string || '';
       
-      console.log('Studies API called with:', { query, category, keyword, author, page, pageSize });
-
       // Use the existing search functionality
       const filters = { condition: category };
       const result = await fastSearch(query, filters, page, pageSize);
