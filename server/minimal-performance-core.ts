@@ -74,35 +74,43 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
   const offset = (page - 1) * pageSize;
   
   try {
-    // Build WHERE conditions
-    let conditions: string[] = [];
-    
+    let countQuery: any;
+    let studiesQuery: any;
+
     if (query?.trim()) {
       const searchTerm = `%${query.trim()}%`;
-      conditions.push(`(
-        title ILIKE '${searchTerm}' OR 
-        abstract ILIKE '${searchTerm}' OR
-        COALESCE(keywords, '') ILIKE '${searchTerm}'
-      )`);
-    }
-
-    if (filters.condition) {
-      const conditionTerm = `%${filters.condition}%`;
-      conditions.push(`COALESCE(consumer_categories, '') LIKE '${conditionTerm}'`);
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const [countResult, studiesResult] = await Promise.all([
-      db.execute(sql.raw(`SELECT COUNT(*) as total FROM studies ${whereClause}`)),
-      db.execute(sql.raw(`
+      
+      countQuery = sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE title ILIKE ${searchTerm} 
+           OR abstract ILIKE ${searchTerm} 
+           OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
+      `;
+      
+      studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
-               doi, keywords, consumer_categories, images
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
         FROM studies 
-        ${whereClause}
+        WHERE title ILIKE ${searchTerm} 
+           OR abstract ILIKE ${searchTerm} 
+           OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
         ORDER BY journal_publish_date DESC NULLS LAST
         LIMIT ${pageSize} OFFSET ${offset}
-      `))
+      `;
+    } else {
+      countQuery = sql`SELECT COUNT(*) as total FROM studies`;
+      studiesQuery = sql`
+        SELECT id, title, abstract, authors, journal, journal_publish_date, 
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
+        FROM studies 
+        ORDER BY journal_publish_date DESC NULLS LAST
+        LIMIT ${pageSize} OFFSET ${offset}
+      `;
+    }
+
+    const [countResult, studiesResult] = await Promise.all([
+      db.execute(countQuery),
+      db.execute(studiesQuery)
     ]);
 
     const total = parseInt((countResult as any).rows[0]?.total || '0');
