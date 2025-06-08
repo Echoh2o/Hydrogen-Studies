@@ -48,17 +48,17 @@ const ExploreByCondition = () => {
 
     const useStandardConditions = () => {
       const standardConditions = [
-        { name: "Diabetes & Metabolic Health", count: 15 },
-        { name: "Heart Disease & Hypertension", count: 18 },
-        { name: "Brain & Neurological Disorders", count: 34 },
-        { name: "Arthritis & Inflammation", count: 13 },
-        { name: "Lung & Respiratory Conditions", count: 19 },
-        { name: "Digestive Health", count: 24 },
-        { name: "Cancer Supportive Care", count: 10 },
+        { name: "General Wellness", count: 1139 },
+        { name: "Brain & Mental Health", count: 34 },
+        { name: "Energy & Metabolism", count: 22 },
+        { name: "Breathing & Lungs", count: 19 },
+        { name: "Heart Health", count: 18 },
+        { name: "Skin Health", count: 17 },
+        { name: "Digestive Health", count: 16 },
+        { name: "Cancer Support", count: 10 },
         { name: "Kidney Health", count: 8 },
-        { name: "Skin Conditions", count: 17 },
-        { name: "Aging", count: 12 },
-        { name: "General Wellness", count: 22 }
+        { name: "Liver Health", count: 8 },
+        { name: "Athletic Performance", count: 3 }
       ];
       setConditions(standardConditions);
     };
