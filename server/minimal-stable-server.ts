@@ -224,6 +224,50 @@ export async function createMinimalServer() {
     }
   });
 
+  // Chat API endpoint
+  app.post('/api/chat', async (req, res) => {
+    try {
+      const { query } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({
+          success: false,
+          error: 'Query is required'
+        });
+      }
+
+      // Search for relevant studies
+      const searchResults = await fastSearch(query, {}, 1, 10);
+      const studies = searchResults.data || [];
+
+      // Generate AI response (simplified without OpenAI dependency)
+      const response = {
+        answer: `Based on our database of hydrogen research studies, I found ${studies.length} relevant studies related to "${query}". ${studies.length > 0 ? 'These studies explore various aspects of hydrogen therapy and its health benefits.' : 'Try searching for more specific terms like "hydrogen water", "antioxidant effects", or "cardiovascular benefits".'}`,
+        sources: studies.slice(0, 5),
+        relatedQuestions: [
+          "What are the antioxidant effects of hydrogen water?",
+          "How does hydrogen help reduce inflammation?",
+          "What cardiovascular benefits does hydrogen provide?",
+          "Are there studies on hydrogen for athletic performance?",
+          "What are the different ways to use hydrogen therapy?"
+        ],
+        conversationId: Math.floor(Math.random() * 1000000)
+      };
+
+      res.json({
+        success: true,
+        data: response
+      });
+
+    } catch (error) {
+      console.error('Chat API error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process chat request'
+      });
+    }
+  });
+
   // Health check endpoint
   app.get('/health', async (req, res) => {
     try {
