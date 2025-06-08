@@ -9,6 +9,7 @@ import { Pool } from "@neondatabase/serverless";
 import { fastSearch, fastCategoryCounts, fastTrendingSearches, initializeMinimalPerformance, getSimpleStats } from "./minimal-performance-core";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { performanceCache, memoizedQueries, optimizedSearch, connectionMonitor } from "./database-performance-optimizer";
 import { setupVite } from "./vite";
 import { createServer } from "http";
 import path from 'path';
@@ -237,7 +238,7 @@ export async function createMinimalServer() {
       }
 
       // Search for relevant studies using direct database query
-      const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2);
+      const searchTerms = query.toLowerCase().split(/\s+/).filter((term: string) => term.length > 2);
       
       let studies: any[] = [];
       if (searchTerms.length > 0) {

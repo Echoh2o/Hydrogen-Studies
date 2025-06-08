@@ -46,11 +46,11 @@ export class PerformanceCache {
   }
 
   invalidate(pattern: string): void {
-    for (const key of cache.keys()) {
+    cache.forEach((_, key) => {
       if (key.includes(pattern)) {
         cache.delete(key);
       }
-    }
+    });
   }
 
   clear(): void {
