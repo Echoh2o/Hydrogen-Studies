@@ -9,6 +9,8 @@ import { Pool } from "@neondatabase/serverless";
 import { fastSearch, fastCategoryCounts, fastTrendingSearches, initializeMinimalPerformance, getSimpleStats } from "./minimal-performance-core";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { setupVite } from "./vite";
+import { createServer } from "http";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -185,12 +187,18 @@ export async function startMinimalServer() {
     const app = await createMinimalServer();
     const port = parseInt(process.env.PORT || '5000');
 
-    app.listen(port, '0.0.0.0', () => {
+    // Create HTTP server for Vite integration
+    const server = createServer(app);
+    
+    // Setup Vite for frontend serving
+    await setupVite(app, server);
+
+    server.listen(port, '0.0.0.0', () => {
       const duration = Date.now() - startTime;
       console.log(`✓ Minimal server running on port ${port} (${duration}ms startup)`);
     });
 
-    return app;
+    return { app, server };
   } catch (error) {
     console.error('Minimal server startup failed:', error);
     throw error;
