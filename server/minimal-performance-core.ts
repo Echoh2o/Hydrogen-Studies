@@ -77,27 +77,62 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
     let countQuery: any;
     let studiesQuery: any;
 
-    if (query?.trim()) {
+    if (query?.trim() && filters.condition) {
+      // Both search term and category filter
       const searchTerm = `%${query.trim()}%`;
+      const conditionTerm = `%${filters.condition}%`;
       
       countQuery = sql`
         SELECT COUNT(*) as total FROM studies 
-        WHERE title ILIKE ${searchTerm} 
-           OR abstract ILIKE ${searchTerm} 
-           OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
+        WHERE (title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm})
+          AND consumer_categories ILIKE ${conditionTerm}
       `;
       
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
                doi, array_to_string(keywords, ', ') as keywords, consumer_categories
         FROM studies 
-        WHERE title ILIKE ${searchTerm} 
-           OR abstract ILIKE ${searchTerm} 
-           OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
+        WHERE (title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm})
+          AND consumer_categories ILIKE ${conditionTerm}
+        ORDER BY journal_publish_date DESC NULLS LAST
+        LIMIT ${pageSize} OFFSET ${offset}
+      `;
+    } else if (query?.trim()) {
+      // Only search term
+      const searchTerm = `%${query.trim()}%`;
+      
+      countQuery = sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
+      `;
+      
+      studiesQuery = sql`
+        SELECT id, title, abstract, authors, journal, journal_publish_date, 
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
+        FROM studies 
+        WHERE title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
+        ORDER BY journal_publish_date DESC NULLS LAST
+        LIMIT ${pageSize} OFFSET ${offset}
+      `;
+    } else if (filters.condition) {
+      // Only category filter
+      const conditionTerm = `%${filters.condition}%`;
+      
+      countQuery = sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE consumer_categories ILIKE ${conditionTerm}
+      `;
+      
+      studiesQuery = sql`
+        SELECT id, title, abstract, authors, journal, journal_publish_date, 
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
+        FROM studies 
+        WHERE consumer_categories ILIKE ${conditionTerm}
         ORDER BY journal_publish_date DESC NULLS LAST
         LIMIT ${pageSize} OFFSET ${offset}
       `;
     } else {
+      // No filters
       countQuery = sql`SELECT COUNT(*) as total FROM studies`;
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
