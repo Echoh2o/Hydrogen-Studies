@@ -268,6 +268,77 @@ export async function createMinimalServer() {
     }
   });
 
+  // Blog API endpoints
+  app.get('/api/blogs', async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = Math.min(parseInt(req.query.pageSize as string) || 20, 50);
+      const offset = (page - 1) * pageSize;
+
+      const result = await db.execute(sql`
+        SELECT b.*, s.title as study_title 
+        FROM blog_articles b
+        LEFT JOIN studies s ON b.study_id = s.id
+        ORDER BY b.created_at DESC
+        LIMIT ${pageSize} OFFSET ${offset}
+      `);
+
+      const countResult = await db.execute(sql`SELECT COUNT(*) as total FROM blog_articles`);
+      const total = (countResult as any).rows[0]?.total || 0;
+
+      res.json({
+        data: (result as any).rows || [],
+        total: parseInt(total),
+        page,
+        pageSize
+      });
+    } catch (error) {
+      console.error('Blog API error:', error);
+      res.status(500).json({ error: 'Failed to fetch blogs' });
+    }
+  });
+
+  app.get('/api/studies/:id/blogs', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      if (isNaN(studyId)) {
+        return res.status(400).json({ error: 'Invalid study ID' });
+      }
+
+      const result = await db.execute(sql`
+        SELECT * FROM blog_articles 
+        WHERE study_id = ${studyId}
+        ORDER BY created_at DESC
+      `);
+
+      res.json((result as any).rows || []);
+    } catch (error) {
+      console.error('Study blogs API error:', error);
+      res.status(500).json({ error: 'Failed to fetch study blogs' });
+    }
+  });
+
+  // Study enhancement endpoints
+  app.post('/api/content-enrichment/study/:id', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      if (isNaN(studyId)) {
+        return res.status(400).json({ error: 'Invalid study ID' });
+      }
+
+      // Simplified enhancement response
+      res.json({
+        success: true,
+        studyId,
+        message: 'Study enhancement feature requires API keys configuration',
+        updates: {}
+      });
+    } catch (error) {
+      console.error('Enhancement API error:', error);
+      res.status(500).json({ error: 'Failed to enhance study' });
+    }
+  });
+
   // Health check endpoint
   app.get('/health', async (req, res) => {
     try {
