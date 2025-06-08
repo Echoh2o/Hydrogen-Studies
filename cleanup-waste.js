@@ -126,30 +126,54 @@ async function cleanupWaste() {
 }
 
 async function checkIfFileIsReferenced(filename) {
-  try {
-    // Check package.json
-    const packageJson = await fs.readFile('package.json', 'utf8');
-    if (packageJson.includes(filename)) return true;
-    
-    // Check .replit
-    const replit = await fs.readFile('.replit', 'utf8');
-    if (replit.includes(filename)) return true;
-    
-    // Check other JS/TS files
-    const codeFiles = await findCodeFiles();
-    for (const file of codeFiles) {
-      try {
-        const content = await fs.readFile(file, 'utf8');
-        if (content.includes(filename)) return true;
-      } catch (error) {
-        // File read error, skip
-      }
-    }
-    
-    return false;
-  } catch (error) {
-    return true; // Preserve if we can't determine usage
-  }
+  // Force removal of known redundant files
+  const forceRemove = [
+    'build-production.js',
+    'corrected-api-server.js', 
+    'fast-startup-server.js',
+    'lightweight-production-server.js',
+    'minimal-production-server.js',
+    'minimal-server.js',
+    'minimal-stable-server.js',
+    'optimized-server.js',
+    'production-optimized-server.js',
+    'production-ready-server.js',
+    'production-server.js',
+    'reliable-server.js',
+    'simple-build.js',
+    'simple-dev-server.js',
+    'stable-production.js',
+    'start-minimal.js',
+    'start-production-backup.js',
+    'start-production-old.js',
+    'ultra-stable-server.js',
+    'package-minimal.json',
+    'package-production.json',
+    'package-stable.json',
+    'corrected-server.log',
+    'fast-server.log',
+    'optimized-server.log',
+    'server.log',
+    'batch-categorize.ts',
+    'fix-categorization.ts',
+    'initialize-tagging.ts',
+    'regenerate-all-images.ts',
+    'optimized-image-regeneration.ts',
+    'test-api.js',
+    'test-homepage.js',
+    'test-image-generation.js',
+    'test-image-generation.ts',
+    'cleanup-summary.md',
+    'deployment-check.md',
+    'system-optimizations.md',
+    'FEATURE_AUDIT_REPORT.md',
+    'RELIABILITY_ASSESSMENT.md',
+    'RELIABILITY_IMPROVEMENTS.md',
+    'STABILITY_IMPROVEMENTS_SUMMARY.md',
+    'SYSTEM_OPTIMIZATIONS_SUMMARY.md'
+  ];
+  
+  return !forceRemove.includes(filename);
 }
 
 async function findCodeFiles() {
