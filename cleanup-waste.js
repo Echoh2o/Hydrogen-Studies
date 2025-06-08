@@ -1,0 +1,221 @@
+#!/usr/bin/env node
+
+/**
+ * Codebase Cleanup - Remove Waste and Redundancy
+ */
+
+import fs from 'fs/promises';
+import path from 'path';
+
+const wastePatterns = [
+  // Duplicate server files
+  'build-production.js',
+  'corrected-api-server.js', 
+  'fast-startup-server.js',
+  'lightweight-production-server.js',
+  'minimal-production-server.js',
+  'minimal-server.js',
+  'minimal-stable-server.js',
+  'optimized-server.js',
+  'production-optimized-server.js',
+  'production-ready-server.js',
+  'production-server.js',
+  'reliable-server.js',
+  'simple-build.js',
+  'simple-dev-server.js',
+  'stable-production.js',
+  'start-minimal.js',
+  'start-production-backup.js',
+  'start-production-old.js',
+  'ultra-stable-server.js',
+  
+  // Duplicate build files
+  'package-minimal.json',
+  'package-production.json',
+  'package-stable.json',
+  
+  // Test/debug files
+  'test-api.js',
+  'test-homepage.js',
+  'test-image-generation.js',
+  'corrected-server.log',
+  'fast-server.log',
+  'optimized-server.log',
+  'server.log',
+  
+  // Temporary scripts
+  'batch-categorize.ts',
+  'fix-categorization.ts',
+  'initialize-tagging.ts',
+  'regenerate-all-images.ts',
+  'optimized-image-regeneration.ts',
+  
+  // Documentation files that are outdated
+  'cleanup-summary.md',
+  'deployment-check.md',
+  'system-optimizations.md',
+  'FEATURE_AUDIT_REPORT.md',
+  'RELIABILITY_ASSESSMENT.md',
+  'RELIABILITY_IMPROVEMENTS.md',
+  'STABILITY_IMPROVEMENTS_SUMMARY.md',
+  'SYSTEM_OPTIMIZATIONS_SUMMARY.md'
+];
+
+async function cleanupWaste() {
+  console.log('Analyzing codebase waste...\n');
+  
+  let removed = [];
+  let preserved = [];
+  let errors = [];
+  
+  for (const file of wastePatterns) {
+    try {
+      await fs.access(file);
+      
+      // Check if file is actually used
+      const isUsed = await checkIfFileIsReferenced(file);
+      
+      if (!isUsed) {
+        await fs.unlink(file);
+        removed.push(file);
+        console.log(`✓ Removed: ${file}`);
+      } else {
+        preserved.push(file);
+        console.log(`→ Preserved: ${file} (referenced)`);
+      }
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        errors.push({ file, error: error.message });
+        console.log(`✗ Error with ${file}: ${error.message}`);
+      }
+    }
+  }
+  
+  // Clean up empty directories
+  const emptyDirs = await findEmptyDirectories();
+  for (const dir of emptyDirs) {
+    try {
+      await fs.rmdir(dir);
+      removed.push(dir);
+      console.log(`✓ Removed empty directory: ${dir}`);
+    } catch (error) {
+      // Directory not empty or other error
+    }
+  }
+  
+  console.log('\n=== CLEANUP SUMMARY ===');
+  console.log(`Files removed: ${removed.length}`);
+  console.log(`Files preserved: ${preserved.length}`);
+  console.log(`Errors: ${errors.length}`);
+  
+  if (removed.length > 0) {
+    console.log('\nRemoved files:');
+    removed.forEach(file => console.log(`  - ${file}`));
+  }
+  
+  // Calculate space saved (estimate)
+  const estimatedSavings = removed.length * 50; // Rough estimate in KB
+  console.log(`\nEstimated space saved: ~${estimatedSavings}KB`);
+  
+  return {
+    removed: removed.length,
+    preserved: preserved.length,
+    errors: errors.length,
+    files: { removed, preserved, errors }
+  };
+}
+
+async function checkIfFileIsReferenced(filename) {
+  try {
+    // Check package.json
+    const packageJson = await fs.readFile('package.json', 'utf8');
+    if (packageJson.includes(filename)) return true;
+    
+    // Check .replit
+    const replit = await fs.readFile('.replit', 'utf8');
+    if (replit.includes(filename)) return true;
+    
+    // Check other JS/TS files
+    const codeFiles = await findCodeFiles();
+    for (const file of codeFiles) {
+      try {
+        const content = await fs.readFile(file, 'utf8');
+        if (content.includes(filename)) return true;
+      } catch (error) {
+        // File read error, skip
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    return true; // Preserve if we can't determine usage
+  }
+}
+
+async function findCodeFiles() {
+  const files = [];
+  
+  async function scan(dir) {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+        
+        const fullPath = path.join(dir, entry.name);
+        
+        if (entry.isDirectory()) {
+          await scan(fullPath);
+        } else if (entry.name.match(/\.(js|ts|tsx|json)$/)) {
+          files.push(fullPath);
+        }
+      }
+    } catch (error) {
+      // Directory access error, skip
+    }
+  }
+  
+  await scan('.');
+  return files;
+}
+
+async function findEmptyDirectories() {
+  const emptyDirs = [];
+  
+  async function scan(dir) {
+    try {
+      const entries = await fs.readdir(dir);
+      
+      if (entries.length === 0) {
+        emptyDirs.push(dir);
+        return;
+      }
+      
+      for (const entry of entries) {
+        if (entry.startsWith('.')) continue;
+        
+        const fullPath = path.join(dir, entry);
+        const stat = await fs.stat(fullPath);
+        
+        if (stat.isDirectory()) {
+          await scan(fullPath);
+        }
+      }
+    } catch (error) {
+      // Directory access error, skip
+    }
+  }
+  
+  await scan('./temp_files');
+  return emptyDirs;
+}
+
+cleanupWaste()
+  .then(result => {
+    console.log('\nCleanup complete.');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('Cleanup failed:', error);
+    process.exit(1);
+  });
