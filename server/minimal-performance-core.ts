@@ -74,36 +74,32 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
   const offset = (page - 1) * pageSize;
   
   try {
-    let whereConditions: string[] = [];
-    const params: any[] = [];
-    let paramIndex = 1;
+    let whereConditions = sql`1=1`;
 
     if (query?.trim()) {
-      whereConditions.push(`(
-        to_tsvector('english', title) @@ plainto_tsquery($${paramIndex}) OR
-        to_tsvector('english', abstract) @@ plainto_tsquery($${paramIndex + 1})
-      )`);
-      params.push(query.trim(), query.trim());
-      paramIndex += 2;
+      const searchTerm = `%${query.trim()}%`;
+      whereConditions = sql`${whereConditions} AND (
+        title ILIKE ${searchTerm} OR 
+        abstract ILIKE ${searchTerm} OR
+        keywords ILIKE ${searchTerm}
+      )`;
     }
 
     if (filters.condition) {
-      whereConditions.push(`consumer_categories::text ILIKE $${paramIndex}`);
-      params.push(`%${filters.condition}%`);
-      paramIndex++;
+      const conditionTerm = `%${filters.condition}%`;
+      whereConditions = sql`${whereConditions} AND consumer_categories::text LIKE ${conditionTerm}`;
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
     const [countResult, studiesResult] = await Promise.all([
-      db.execute(sql.raw(`SELECT COUNT(*) as total FROM studies ${whereClause}`, params)),
-      db.execute(sql.raw(`
+      db.execute(sql`SELECT COUNT(*) as total FROM studies WHERE ${whereConditions}`),
+      db.execute(sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
                doi, keywords, consumer_categories, images
-        FROM studies ${whereClause}
+        FROM studies 
+        WHERE ${whereConditions}
         ORDER BY journal_publish_date DESC NULLS LAST
-        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...params, pageSize, offset]))
+        LIMIT ${pageSize} OFFSET ${offset}
+      `)
     ]);
 
     const total = parseInt((countResult as any).rows[0]?.total || '0');
@@ -132,42 +128,117 @@ export async function fastCategoryCounts(): Promise<any> {
   if (cached) return cached;
 
   try {
-    const result = await db.execute(sql`
+    // Get condition categories
+    const conditionResult = await db.execute(sql`
       SELECT 
         CASE 
-          WHEN consumer_categories::text LIKE '%Heart%' THEN 'Heart Disease & Hypertension'
-          WHEN consumer_categories::text LIKE '%Brain%' THEN 'Brain & Neurological Disorders'
-          WHEN consumer_categories::text LIKE '%Diabetes%' THEN 'Diabetes & Metabolic Health'
-          WHEN consumer_categories::text LIKE '%Inflammation%' THEN 'Arthritis & Inflammation'
-          WHEN consumer_categories::text LIKE '%Respiratory%' THEN 'Lung & Respiratory Conditions'
-          WHEN consumer_categories::text LIKE '%Digestive%' THEN 'Digestive Health (Gut/Liver)'
+          WHEN consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' THEN 'Heart Disease & Hypertension'
+          WHEN consumer_categories::text LIKE '%Brain%' OR consumer_categories::text LIKE '%Neuro%' THEN 'Brain & Neurological Disorders'
+          WHEN consumer_categories::text LIKE '%Diabetes%' OR consumer_categories::text LIKE '%Metabolic%' THEN 'Diabetes & Metabolic Health'
+          WHEN consumer_categories::text LIKE '%Arthritis%' OR consumer_categories::text LIKE '%Inflammation%' THEN 'Arthritis & Inflammation'
+          WHEN consumer_categories::text LIKE '%Lung%' OR consumer_categories::text LIKE '%Respiratory%' THEN 'Lung & Respiratory Conditions'
+          WHEN consumer_categories::text LIKE '%Digestive%' OR consumer_categories::text LIKE '%Gut%' THEN 'Digestive Health (Gut/Liver)'
           WHEN consumer_categories::text LIKE '%Cancer%' THEN 'Cancer Supportive Care'
-          ELSE 'General Wellness'
         END as name,
         COUNT(*) as count
       FROM studies 
       WHERE consumer_categories IS NOT NULL
+        AND (
+          consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' OR
+          consumer_categories::text LIKE '%Brain%' OR consumer_categories::text LIKE '%Neuro%' OR
+          consumer_categories::text LIKE '%Diabetes%' OR consumer_categories::text LIKE '%Metabolic%' OR
+          consumer_categories::text LIKE '%Arthritis%' OR consumer_categories::text LIKE '%Inflammation%' OR
+          consumer_categories::text LIKE '%Lung%' OR consumer_categories::text LIKE '%Respiratory%' OR
+          consumer_categories::text LIKE '%Digestive%' OR consumer_categories::text LIKE '%Gut%' OR
+          consumer_categories::text LIKE '%Cancer%'
+        )
       GROUP BY 
         CASE 
-          WHEN consumer_categories::text LIKE '%Heart%' THEN 'Heart Disease & Hypertension'
-          WHEN consumer_categories::text LIKE '%Brain%' THEN 'Brain & Neurological Disorders'
-          WHEN consumer_categories::text LIKE '%Diabetes%' THEN 'Diabetes & Metabolic Health'
-          WHEN consumer_categories::text LIKE '%Inflammation%' THEN 'Arthritis & Inflammation'
-          WHEN consumer_categories::text LIKE '%Respiratory%' THEN 'Lung & Respiratory Conditions'
-          WHEN consumer_categories::text LIKE '%Digestive%' THEN 'Digestive Health (Gut/Liver)'
+          WHEN consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' THEN 'Heart Disease & Hypertension'
+          WHEN consumer_categories::text LIKE '%Brain%' OR consumer_categories::text LIKE '%Neuro%' THEN 'Brain & Neurological Disorders'
+          WHEN consumer_categories::text LIKE '%Diabetes%' OR consumer_categories::text LIKE '%Metabolic%' THEN 'Diabetes & Metabolic Health'
+          WHEN consumer_categories::text LIKE '%Arthritis%' OR consumer_categories::text LIKE '%Inflammation%' THEN 'Arthritis & Inflammation'
+          WHEN consumer_categories::text LIKE '%Lung%' OR consumer_categories::text LIKE '%Respiratory%' THEN 'Lung & Respiratory Conditions'
+          WHEN consumer_categories::text LIKE '%Digestive%' OR consumer_categories::text LIKE '%Gut%' THEN 'Digestive Health (Gut/Liver)'
           WHEN consumer_categories::text LIKE '%Cancer%' THEN 'Cancer Supportive Care'
-          ELSE 'General Wellness'
         END
+      HAVING COUNT(*) > 0
       ORDER BY count DESC
     `);
 
-    const categories = (result as any).rows || [];
+    // Get body system categories
+    const bodySystemResult = await db.execute(sql`
+      SELECT 
+        CASE 
+          WHEN consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' THEN 'Cardiovascular System'
+          WHEN consumer_categories::text LIKE '%Brain%' OR consumer_categories::text LIKE '%Neuro%' THEN 'Nervous System'
+          WHEN consumer_categories::text LIKE '%Lung%' OR consumer_categories::text LIKE '%Respiratory%' THEN 'Respiratory System'
+          WHEN consumer_categories::text LIKE '%Digestive%' OR consumer_categories::text LIKE '%Gut%' THEN 'Digestive System'
+          WHEN consumer_categories::text LIKE '%Immune%' OR consumer_categories::text LIKE '%Inflammation%' THEN 'Immune System'
+          WHEN consumer_categories::text LIKE '%Muscle%' OR consumer_categories::text LIKE '%Bone%' THEN 'Musculoskeletal System'
+          WHEN consumer_categories::text LIKE '%Kidney%' OR consumer_categories::text LIKE '%Renal%' THEN 'Renal System'
+          WHEN consumer_categories::text LIKE '%Skin%' THEN 'Integumentary System'
+        END as name,
+        COUNT(*) as count
+      FROM studies 
+      WHERE consumer_categories IS NOT NULL
+        AND (
+          consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' OR
+          consumer_categories::text LIKE '%Brain%' OR consumer_categories::text LIKE '%Neuro%' OR
+          consumer_categories::text LIKE '%Lung%' OR consumer_categories::text LIKE '%Respiratory%' OR
+          consumer_categories::text LIKE '%Digestive%' OR consumer_categories::text LIKE '%Gut%' OR
+          consumer_categories::text LIKE '%Immune%' OR consumer_categories::text LIKE '%Inflammation%' OR
+          consumer_categories::text LIKE '%Muscle%' OR consumer_categories::text LIKE '%Bone%' OR
+          consumer_categories::text LIKE '%Kidney%' OR consumer_categories::text LIKE '%Renal%' OR
+          consumer_categories::text LIKE '%Skin%'
+        )
+      GROUP BY 
+        CASE 
+          WHEN consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' THEN 'Cardiovascular System'
+          WHEN consumer_categories::text LIKE '%Brain%' OR consumer_categories::text LIKE '%Neuro%' THEN 'Nervous System'
+          WHEN consumer_categories::text LIKE '%Lung%' OR consumer_categories::text LIKE '%Respiratory%' THEN 'Respiratory System'
+          WHEN consumer_categories::text LIKE '%Digestive%' OR consumer_categories::text LIKE '%Gut%' THEN 'Digestive System'
+          WHEN consumer_categories::text LIKE '%Immune%' OR consumer_categories::text LIKE '%Inflammation%' THEN 'Immune System'
+          WHEN consumer_categories::text LIKE '%Muscle%' OR consumer_categories::text LIKE '%Bone%' THEN 'Musculoskeletal System'
+          WHEN consumer_categories::text LIKE '%Kidney%' OR consumer_categories::text LIKE '%Renal%' THEN 'Renal System'
+          WHEN consumer_categories::text LIKE '%Skin%' THEN 'Integumentary System'
+        END
+      HAVING COUNT(*) > 0
+      ORDER BY count DESC
+    `);
+
+    // Get life stage categories
+    const lifeStageResult = await db.execute(sql`
+      SELECT 
+        CASE 
+          WHEN consumer_categories::text LIKE '%Adult%' AND NOT consumer_categories::text LIKE '%Older%' THEN 'Adults'
+          WHEN consumer_categories::text LIKE '%Older%' OR consumer_categories::text LIKE '%Senior%' THEN 'Older Adults'
+          WHEN consumer_categories::text LIKE '%Athletic%' OR consumer_categories::text LIKE '%Fitness%' THEN 'Athletes & Fitness'
+        END as name,
+        COUNT(*) as count
+      FROM studies 
+      WHERE consumer_categories IS NOT NULL
+        AND (
+          (consumer_categories::text LIKE '%Adult%' AND NOT consumer_categories::text LIKE '%Older%') OR
+          consumer_categories::text LIKE '%Older%' OR consumer_categories::text LIKE '%Senior%' OR
+          consumer_categories::text LIKE '%Athletic%' OR consumer_categories::text LIKE '%Fitness%'
+        )
+      GROUP BY 
+        CASE 
+          WHEN consumer_categories::text LIKE '%Adult%' AND NOT consumer_categories::text LIKE '%Older%' THEN 'Adults'
+          WHEN consumer_categories::text LIKE '%Older%' OR consumer_categories::text LIKE '%Senior%' THEN 'Older Adults'
+          WHEN consumer_categories::text LIKE '%Athletic%' OR consumer_categories::text LIKE '%Fitness%' THEN 'Athletes & Fitness'
+        END
+      HAVING COUNT(*) > 0
+      ORDER BY count DESC
+    `);
+
     const response = {
       success: true,
       data: {
-        condition: categories,
-        body_system: categories,
-        life_stage: categories.slice(0, 3)
+        condition: (conditionResult as any).rows || [],
+        body_system: (bodySystemResult as any).rows || [],
+        life_stage: (lifeStageResult as any).rows || []
       }
     };
 
