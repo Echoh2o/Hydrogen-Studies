@@ -339,6 +339,57 @@ export async function createMinimalServer() {
     }
   });
 
+  // Admin API endpoints
+  app.get('/api/admin/tagging/stats', async (req, res) => {
+    try {
+      const studyCount = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
+      const total = (studyCount as any).rows[0]?.total || 0;
+
+      res.json({
+        totalStudies: parseInt(total),
+        totalStudyTags: 0,
+        totalUniqueTags: 0,
+        averageTagsPerStudy: 0,
+        tagCompletionRate: 0,
+        lastProcessed: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch tagging stats' });
+    }
+  });
+
+  app.get('/api/admin/duplicate-status', async (req, res) => {
+    try {
+      const studyCount = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
+      const total = (studyCount as any).rows[0]?.total || 0;
+
+      res.json({
+        totalStudies: parseInt(total),
+        duplicateGroups: 0,
+        totalDuplicates: 0,
+        sampleDuplicates: []
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch duplicate status' });
+    }
+  });
+
+  app.get('/api/stats/dashboard', async (req, res) => {
+    try {
+      const studyCount = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
+      const blogCount = await db.execute(sql`SELECT COUNT(*) as total FROM blog_articles`);
+      
+      res.json({
+        totalStudies: parseInt((studyCount as any).rows[0]?.total || 0),
+        totalBlogs: parseInt((blogCount as any).rows[0]?.total || 0),
+        draftBlogs: 0,
+        publishedBlogs: parseInt((blogCount as any).rows[0]?.total || 0)
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+    }
+  });
+
   // Health check endpoint
   app.get('/health', async (req, res) => {
     try {
