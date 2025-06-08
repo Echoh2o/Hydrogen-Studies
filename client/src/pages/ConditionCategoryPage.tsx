@@ -26,13 +26,19 @@ const ConditionCategoryPage = () => {
   
   // Map URL slugs to exact database category names
   const categoryMap: Record<string, string> = {
-    'heart-disease-hypertension': 'Heart Disease & Hypertension',
-    'brain-neurological-disorders': 'Brain & Neurological Disorders', 
-    'diabetes-metabolic-health': 'Diabetes & Metabolic Health',
-    'arthritis-inflammation': 'Arthritis & Inflammation',
-    'lung-respiratory-conditions': 'Lung & Respiratory Conditions',
-    'digestive-health-gut-liver': 'Digestive Health (Gut/Liver)',
-    'cancer-supportive-care': 'Cancer Supportive Care'
+    'general-wellness': 'General Wellness',
+    'brain-mental-health': 'Brain & Mental Health',
+    'energy-metabolism': 'Energy & Metabolism',
+    'breathing-lungs': 'Breathing & Lungs',
+    'heart-health': 'Heart Health',
+    'skin-health': 'Skin Health',
+    'digestive-health': 'Digestive Health',
+    'cancer-support': 'Cancer Support',
+    'kidney-health': 'Kidney Health',
+    'liver-health': 'Liver Health',
+    'athletic-performance': 'Athletic Performance',
+    'anti-aging': 'Anti-Aging',
+    'inflammation-support': 'Inflammation Support'
   };
   
   const exactCategoryName = categoryMap[decodedName] || decodedName;

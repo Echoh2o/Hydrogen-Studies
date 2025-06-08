@@ -101,6 +101,43 @@ export async function createMinimalServer() {
     }
   });
 
+  app.get('/api/consumer-categories/studies', async (req, res) => {
+    try {
+      const { model, category } = req.query;
+      
+      if (!model || !category) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required parameters'
+        });
+      }
+
+      const categoryName = category as string;
+      
+      const result = await db.execute(sql`
+        SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
+               doi, consumer_categories, array_to_string(keywords, ', ') as keywords
+        FROM studies 
+        WHERE consumer_categories = ${categoryName}
+        ORDER BY journal_publish_date DESC NULLS LAST
+        LIMIT 50
+      `);
+
+      const studies = (result as any).rows || [];
+      
+      res.json({
+        success: true,
+        data: studies
+      });
+    } catch (error) {
+      console.error('Error fetching studies by category:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch studies'
+      });
+    }
+  });
+
   app.get('/api/search/trending', async (req, res) => {
     try {
       const trending = await fastTrendingSearches();
@@ -208,7 +245,7 @@ export async function startMinimalServer() {
     // Create HTTP server for Vite integration
     const server = createServer(app);
     
-    // Setup Vite for frontend serving (after API routes are defined)
+    // Setup Vite for frontend serving (after all API routes are defined)
     await setupVite(app, server);
 
     server.listen(port, '0.0.0.0', () => {
