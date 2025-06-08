@@ -15,38 +15,30 @@ import { Loader2 } from 'lucide-react';
 
 // Condition-focused categories
 const conditionCategories = [
-  'Diabetes & Metabolic Health',
-  'Heart Disease & Hypertension',
-  'Brain & Neurological Disorders',
-  'Arthritis & Inflammation',
-  'Lung & Respiratory Conditions',
-  'Digestive Health (Gut/Liver)',
-  'Cancer Supportive Care'
+  'General Wellness',
+  'Brain & Mental Health',
+  'Energy & Metabolism',
+  'Breathing & Lungs',
+  'Heart Health',
+  'Skin Health',
+  'Digestive Health'
 ];
 
 // Define icons for each category
 const categoryIcons: Record<string, string> = {
-  'Diabetes & Metabolic Health': '🩸',
-  'Heart Disease & Hypertension': '❤️',
-  'Brain & Neurological Disorders': '🧠',
-  'Arthritis & Inflammation': '🦴',
-  'Lung & Respiratory Conditions': '🫁',
-  'Digestive Health (Gut/Liver)': '🍽️',
-  'Cancer Supportive Care': '🎗️',
-  'Cardiovascular Health': '❤️',
-  'Neurological Health': '🧠',
-  'Respiratory Health': '🫁',
-  'Digestive Health': '🍽️',
-  'Immune System & Allergies': '🛡️',
-  'Musculoskeletal Health': '🦴',
-  'Skin & Dermatological Health': '👩‍🦰',
-  'Endocrine & Hormonal Health': '⚡',
-  'Women\'s Health': '👩',
-  'Men\'s Health': '👨',
-  'Children\'s Health': '👶',
-  'Senior Health (Healthy Aging)': '👵',
-  'Athletic Performance & Recovery': '🏃',
-  'General Wellness & Prevention': '✨'
+  'General Wellness': '🌟',
+  'Brain & Mental Health': '🧠',
+  'Energy & Metabolism': '⚡',
+  'Breathing & Lungs': '🫁',
+  'Heart Health': '❤️',
+  'Skin Health': '✨',
+  'Digestive Health': '🍃',
+  'Cancer Support': '🎗️',
+  'Kidney Health': '🩺',
+  'Liver Health': '🔬',
+  'Athletic Performance': '🏃',
+  'Anti-Aging': '⏰',
+  'Inflammation Support': '🛡️'
 };
 
 // TypeScript interfaces for our data structures

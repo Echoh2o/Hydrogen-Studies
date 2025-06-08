@@ -67,8 +67,6 @@ export async function createMinimalServer() {
       const pageSize = Math.min(parseInt(req.query.pageSize as string) || 20, 50);
       const filters = { condition: req.query.condition as string };
       
-      console.log('Search params:', { query, filters, page, pageSize });
-      
       const result = await fastSearch(query, filters, page, pageSize);
       res.json(result);
     } catch (error) {
