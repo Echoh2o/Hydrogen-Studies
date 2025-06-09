@@ -881,105 +881,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/search/enhanced', async (req, res) => {
     try {
       const { query, limit = 20, offset = 0 } = req.query;
-      const limitInt = parseInt(limit as string) || 20;
+      const limitInt = Math.min(parseInt(limit as string) || 20, 100);
       const offsetInt = parseInt(offset as string) || 0;
+      
+      // If no query provided, return recent studies
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        const allResults = await db.select().from(studies).orderBy(desc(studies.id)).limit(limitInt).offset(offsetInt);
+        const totalResults = await db.select({ total: count() }).from(studies);
 
-      if (query && typeof query === 'string' && query.trim().length > 0) {
-        const searchTerm = query.trim().toLowerCase();
-        
-        // Direct SQL search for reliable results
-        const searchSql = sql`
-          SELECT s.* FROM studies s 
-          WHERE LOWER(s.title) LIKE ${`%${searchTerm}%`} 
-             OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
-             OR LOWER(s.authors) LIKE ${`%${searchTerm}%`}
-          ORDER BY 
-            CASE 
-              WHEN LOWER(s.title) LIKE ${`%${searchTerm}%`} THEN 1
-              WHEN LOWER(s.abstract) LIKE ${`%${searchTerm}%`} THEN 2
-              ELSE 3
-            END,
-            s.view_count DESC NULLS LAST,
-            s.id DESC
-          LIMIT ${limitInt} OFFSET ${offsetInt}
-        `;
-        
-        const countSql = sql`
-          SELECT COUNT(*) as total FROM studies s 
-          WHERE LOWER(s.title) LIKE ${`%${searchTerm}%`} 
-             OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
-             OR LOWER(s.authors) LIKE ${`%${searchTerm}%`}
-        `;
-
-        const [searchResults, countResults] = await Promise.all([
-          db.execute(searchSql),
-          db.execute(countSql)
-        ]);
-
-        const mappedResults = searchResults.rows.map((study: any) => ({
-          id: study.id,
-          title: study.title,
-          abstract: study.abstract,
-          authors: study.authors,
-          journal: study.journal,
-          publishDate: study.publish_date || study.journal_publish_date,
-          category: study.category,
-          viewCount: study.view_count || 0,
-          relevanceScore: 0.9,
-          tags: [],
-          relatedStudies: []
-        }));
-
-        const result = {
-          data: mappedResults,
-          total: countResults.rows[0]?.total || 0,
+        return res.json({
+          data: allResults.map(study => ({
+            id: study.id,
+            title: study.title,
+            abstract: study.abstract,
+            authors: study.authors,
+            journal: study.journal,
+            publishDate: study.publishDate || study.journalPublishDate,
+            category: study.category,
+            viewCount: study.viewCount || 0,
+            relevanceScore: 0.5,
+            tags: [],
+            relatedStudies: []
+          })),
+          total: totalResults[0]?.total || 0,
           facets: { tags: [], journals: [], years: [] },
           suggestions: [],
           trending: []
-        };
-
-        return res.json(result);
+        });
       }
 
-      // No search query - return latest studies
-      const allSql = sql`
-        SELECT s.* FROM studies s 
-        ORDER BY s.id DESC 
-        LIMIT ${limitInt} OFFSET ${offsetInt}
-      `;
+      const searchTerm = query.trim().toLowerCase();
       
-      const totalSql = sql`SELECT COUNT(*) as total FROM studies`;
+      // Execute search with Drizzle ORM
+      const searchResults = await db
+        .select()
+        .from(studies)
+        .where(
+          or(
+            ilike(studies.title, `%${searchTerm}%`),
+            ilike(studies.abstract, `%${searchTerm}%`),
+            ilike(studies.authors, `%${searchTerm}%`)
+          )
+        )
+        .orderBy(
+          sql`CASE 
+            WHEN LOWER(${studies.title}) LIKE ${`%${searchTerm}%`} THEN 1
+            WHEN LOWER(${studies.abstract}) LIKE ${`%${searchTerm}%`} THEN 2
+            ELSE 3
+          END`,
+          desc(studies.viewCount),
+          desc(studies.id)
+        )
+        .limit(limitInt)
+        .offset(offsetInt);
 
-      const [allResults, totalResults] = await Promise.all([
-        db.execute(allSql),
-        db.execute(totalSql)
-      ]);
+      const countResults = await db
+        .select({ total: count() })
+        .from(studies)
+        .where(
+          or(
+            ilike(studies.title, `%${searchTerm}%`),
+            ilike(studies.abstract, `%${searchTerm}%`),
+            ilike(studies.authors, `%${searchTerm}%`)
+          )
+        );
 
-      const mappedResults = allResults.rows.map((study: any) => ({
+      const mappedResults = searchResults.map(study => ({
         id: study.id,
         title: study.title,
         abstract: study.abstract,
         authors: study.authors,
         journal: study.journal,
-        publishDate: study.publish_date || study.journal_publish_date,
+        publishDate: study.publishDate || study.journalPublishDate,
         category: study.category,
-        viewCount: study.view_count || 0,
-        relevanceScore: 0.5,
+        viewCount: study.viewCount || 0,
+        relevanceScore: 0.9,
         tags: [],
         relatedStudies: []
       }));
 
-      const result = {
+      res.json({
         data: mappedResults,
-        total: totalResults.rows[0]?.total || 0,
+        total: countResults[0]?.total || 0,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
-      };
+      });
 
-      res.json(result);
     } catch (error) {
-      console.error('Error in enhanced search:', error);
+      console.error('Search error:', error);
       res.status(500).json({ error: 'Search failed' });
     }
   });
