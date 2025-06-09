@@ -136,6 +136,7 @@ export async function createMinimalServer() {
             journal: study.journal,
             publishDate: study.journal_publish_date,
             category: study.consumer_categories,
+            slug: study.slug,
             viewCount: 0,
             relevanceScore: relevanceScore / 100, // Convert to 0-1 scale
             tags: [],
