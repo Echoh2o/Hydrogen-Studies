@@ -5,6 +5,11 @@ import { sql } from 'drizzle-orm';
 
 const router = express.Router();
 
+// High-performance cache for category counts
+let categoryCountsCache = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 // Get consumer categories' names - use specific path to avoid conflict with homepage
 router.get('/list', async (req, res) => {
   // Set content type to JSON explicitly
@@ -63,11 +68,18 @@ router.get('/list', async (req, res) => {
 router.get('/counts', async (req, res) => {
   // Set content type to JSON explicitly
   res.setHeader('Content-Type', 'application/json');
+  
+  // Check cache first for immediate response
+  const now = Date.now();
+  if (categoryCountsCache && (now - cacheTimestamp) < CACHE_TTL) {
+    return res.json(categoryCountsCache);
+  }
+  
   try {
     const { pool } = await import('../db');
     
     // Map consumer-friendly names to database category names
-    const categoryMapping = {
+    const categoryMapping: Record<string, string> = {
       "Heart Disease & Hypertension": "Cardiovascular",
       "Brain & Neurological Disorders": "Neurological", 
       "Diabetes & Metabolic Health": "Metabolic",
@@ -123,42 +135,41 @@ router.get('/counts', async (req, res) => {
       "Athletes & Fitness"
     ];
 
-    // Function to get actual count for a category using authentic relational data
-    const getCategoryCount = async (categoryName: string) => {
-      const dbCategoryName = categoryMapping[categoryName] || categoryName;
-      const query = `
-        SELECT COUNT(DISTINCT s.id) as count
-        FROM studies s
-        INNER JOIN study_categories sc ON s.id = sc.study_id
-        INNER JOIN categories c ON sc.category_id = c.id
-        WHERE c.name = $1
-      `;
-      
-      const result = await pool.query(query, [dbCategoryName]);
-      return parseInt(result.rows[0].count);
-    };
+    // Single optimized query to get all category counts at once
+    const allCounts = await pool.query(`
+      SELECT c.name, COUNT(DISTINCT s.id) as count
+      FROM studies s
+      INNER JOIN study_categories sc ON s.id = sc.study_id
+      INNER JOIN categories c ON sc.category_id = c.id
+      WHERE c.name IN (
+        'Cardiovascular', 'Neurological', 'Metabolic', 'Inflammation', 
+        'Respiratory', 'Gastrointestinal', 'Cancer Research', 'Kidney', 
+        'Dermatology', 'Aging', 'Fitness'
+      )
+      GROUP BY c.name
+    `);
 
-    // Get actual counts for each category type using authentic data
-    const healthConditionCounts = await Promise.all(
-      conditionCategories.map(async (name) => ({
-        name,
-        count: await getCategoryCount(name)
-      }))
-    );
+    // Create lookup map for fast access
+    const countMap: Record<string, number> = {};
+    allCounts.rows.forEach((row: any) => {
+      countMap[row.name] = parseInt(row.count);
+    });
 
-    const bodySystemCounts = await Promise.all(
-      bodySystemCategories.map(async (name) => ({
-        name, 
-        count: await getCategoryCount(name)
-      }))
-    );
+    // Map to consumer-friendly names with authentic counts
+    const healthConditionCounts = conditionCategories.map(name => ({
+      name,
+      count: (countMap[categoryMapping[name]] || 0).toString()
+    }));
+
+    const bodySystemCounts = bodySystemCategories.map(name => ({
+      name,
+      count: (countMap[categoryMapping[name]] || 0).toString()
+    }));
     
-    const lifeStageCount = await Promise.all(
-      lifeStageCategories.map(async (name) => ({
-        name,
-        count: await getCategoryCount(name)
-      }))
-    );
+    const lifeStageCount = lifeStageCategories.map(name => ({
+      name,
+      count: (countMap[categoryMapping[name]] || 0).toString()
+    }));
     
     return res.json({
       success: true,
