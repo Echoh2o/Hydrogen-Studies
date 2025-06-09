@@ -93,7 +93,7 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
       
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
-               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories, slug
         FROM studies 
         WHERE (title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm})
           AND consumer_categories ILIKE ${conditionTerm}
@@ -112,7 +112,7 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
       
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
-               doi, array_to_string(keywords, ', ') as keywords, consumer_categories,
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories, slug,
                CASE 
                  WHEN title ILIKE ${searchTerm} AND abstract ILIKE ${searchTerm} THEN 95
                  WHEN title ILIKE ${searchTerm} THEN 90
@@ -146,7 +146,7 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
       
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
-               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories, slug
         FROM studies 
         WHERE consumer_categories ILIKE ${conditionTerm}
         ORDER BY journal_publish_date DESC NULLS LAST
@@ -157,7 +157,7 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
       countQuery = sql`SELECT COUNT(*) as total FROM studies`;
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
-               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories, slug
         FROM studies 
         ORDER BY journal_publish_date DESC NULLS LAST
         LIMIT ${pageSize} OFFSET ${offset}
