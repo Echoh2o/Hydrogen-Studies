@@ -161,6 +161,104 @@ export async function createMinimalServer() {
     }
   });
 
+  app.get('/api/search/enhanced', async (req, res) => {
+    try {
+      const { query, limit = 20, offset = 0 } = req.query;
+      const limitInt = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetInt = parseInt(offset as string) || 0;
+      
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        // Return recent studies when no query
+        const result = await db.execute(sql`
+          SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
+                 doi, consumer_categories, array_to_string(keywords, ', ') as keywords
+          FROM studies 
+          ORDER BY id DESC 
+          LIMIT ${limitInt} OFFSET ${offsetInt}
+        `);
+        
+        const countResult = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
+        
+        return res.json({
+          data: (result as any).rows.map((study: any) => ({
+            id: study.id,
+            title: study.title,
+            abstract: study.abstract,
+            authors: study.authors,
+            journal: study.journal,
+            publishDate: study.publishDate,
+            category: study.consumer_categories,
+            viewCount: 0,
+            relevanceScore: 0.5,
+            tags: [],
+            relatedStudies: []
+          })),
+          total: parseInt((countResult as any).rows[0]?.total) || 0,
+          facets: { tags: [], journals: [], years: [] },
+          suggestions: [],
+          trending: []
+        });
+      }
+
+      const searchTerm = query.trim().toLowerCase();
+      
+      // Execute search with proper filtering
+      const searchResult = await db.execute(sql`
+        SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
+               doi, consumer_categories, array_to_string(keywords, ', ') as keywords
+        FROM studies 
+        WHERE LOWER(title) LIKE ${`%${searchTerm}%`} 
+           OR LOWER(abstract) LIKE ${`%${searchTerm}%`}
+           OR LOWER(authors) LIKE ${`%${searchTerm}%`}
+           OR LOWER(consumer_categories) LIKE ${`%${searchTerm}%`}
+           OR array_to_string(keywords, ' ') ILIKE ${`%${searchTerm}%`}
+        ORDER BY 
+          CASE 
+            WHEN LOWER(title) LIKE ${`%${searchTerm}%`} THEN 1
+            WHEN LOWER(abstract) LIKE ${`%${searchTerm}%`} THEN 2
+            ELSE 3
+          END,
+          journal_publish_date DESC NULLS LAST
+        LIMIT ${limitInt} OFFSET ${offsetInt}
+      `);
+
+      const countResult = await db.execute(sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE LOWER(title) LIKE ${`%${searchTerm}%`} 
+           OR LOWER(abstract) LIKE ${`%${searchTerm}%`}
+           OR LOWER(authors) LIKE ${`%${searchTerm}%`}
+           OR LOWER(consumer_categories) LIKE ${`%${searchTerm}%`}
+           OR array_to_string(keywords, ' ') ILIKE ${`%${searchTerm}%`}
+      `);
+
+      const mappedResults = (searchResult as any).rows.map((study: any) => ({
+        id: study.id,
+        title: study.title,
+        abstract: study.abstract,
+        authors: study.authors,
+        journal: study.journal,
+        publishDate: study.publishDate,
+        category: study.consumer_categories,
+        viewCount: 0,
+        relevanceScore: 0.9,
+        tags: [],
+        relatedStudies: []
+      }));
+
+      res.json({
+        data: mappedResults,
+        total: parseInt((countResult as any).rows[0]?.total) || 0,
+        facets: { tags: [], journals: [], years: [] },
+        suggestions: [],
+        trending: []
+      });
+
+    } catch (error) {
+      console.error('Search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
   app.get('/api/search/trending', async (req, res) => {
     try {
       const trending = await fastTrendingSearches();
