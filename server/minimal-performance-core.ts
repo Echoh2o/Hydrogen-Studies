@@ -66,10 +66,13 @@ export async function createEssentialIndexes(): Promise<void> {
 
 // Optimized search function
 export async function fastSearch(query: string, filters: any = {}, page = 1, pageSize = 20): Promise<any> {
+  console.log('FastSearch called with:', {query, queryType: typeof query, queryLength: query?.length, filters, page, pageSize});
+  
   const cacheKey = `search_${JSON.stringify({query, filters, page, pageSize})}`;
   
-  const cached = cache.get(cacheKey);
-  if (cached) return cached;
+  // Temporarily disable cache for debugging search issues
+  // const cached = cache.get(cacheKey);
+  // if (cached) return cached;
 
   const offset = (page - 1) * pageSize;
   
@@ -97,9 +100,10 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
         ORDER BY journal_publish_date DESC NULLS LAST
         LIMIT ${pageSize} OFFSET ${offset}
       `;
-    } else if (query?.trim()) {
+    } else if (query && query.trim() && query.trim().length > 0) {
       // Only search term
       const searchTerm = `%${query.trim()}%`;
+      console.log('FastSearch executing with search term:', searchTerm);
       
       countQuery = sql`
         SELECT COUNT(*) as total FROM studies 
