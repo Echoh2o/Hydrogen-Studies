@@ -112,10 +112,27 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
       
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
-               doi, array_to_string(keywords, ', ') as keywords, consumer_categories
+               doi, array_to_string(keywords, ', ') as keywords, consumer_categories,
+               CASE 
+                 WHEN title ILIKE ${searchTerm} AND abstract ILIKE ${searchTerm} THEN 95
+                 WHEN title ILIKE ${searchTerm} THEN 90
+                 WHEN abstract ILIKE ${searchTerm} AND array_to_string(keywords, ' ') ILIKE ${searchTerm} THEN 80
+                 WHEN abstract ILIKE ${searchTerm} THEN 75
+                 WHEN array_to_string(keywords, ' ') ILIKE ${searchTerm} THEN 60
+                 ELSE 50
+               END as relevance_score
         FROM studies 
         WHERE title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
-        ORDER BY journal_publish_date DESC NULLS LAST
+        ORDER BY 
+          CASE 
+            WHEN title ILIKE ${searchTerm} AND abstract ILIKE ${searchTerm} THEN 1
+            WHEN title ILIKE ${searchTerm} THEN 2
+            WHEN abstract ILIKE ${searchTerm} AND array_to_string(keywords, ' ') ILIKE ${searchTerm} THEN 3
+            WHEN abstract ILIKE ${searchTerm} THEN 4
+            WHEN array_to_string(keywords, ' ') ILIKE ${searchTerm} THEN 5
+            ELSE 6
+          END,
+          journal_publish_date DESC NULLS LAST
         LIMIT ${pageSize} OFFSET ${offset}
       `;
     } else if (filters.condition) {
@@ -154,6 +171,12 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
 
     const total = parseInt((countResult as any).rows[0]?.total || '0');
     const studies = (studiesResult as any).rows || [];
+    
+    // Debug: Log the first study to see what fields are available
+    if (studies.length > 0) {
+      console.log('Sample study data:', Object.keys(studies[0]));
+      console.log('Sample relevance_score:', studies[0].relevance_score);
+    }
 
     const result = {
       data: studies,

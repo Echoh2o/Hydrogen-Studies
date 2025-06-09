@@ -100,9 +100,21 @@ export async function createMinimalServer() {
       
       const result = await fastSearch(query, filters, page, pageSize);
       
-      // Format response to match expected structure
+      // Format response to match expected structure with relevance scores
       const formattedResult = {
-        data: result.data || [],
+        data: (result.data || []).map((study: any) => ({
+          id: study.id,
+          title: study.title,
+          abstract: study.abstract,
+          authors: study.authors,
+          journal: study.journal,
+          publishDate: study.journal_publish_date,
+          category: study.consumer_categories,
+          viewCount: 0,
+          relevanceScore: (study.relevance_score || 50) / 100, // Convert to 0-1 scale
+          tags: [],
+          relatedStudies: []
+        })),
         total: result.total || 0,
         page: page,
         pageSize: pageSize,
