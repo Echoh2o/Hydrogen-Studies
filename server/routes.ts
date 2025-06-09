@@ -330,6 +330,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/keywords', keywordMonitorRoutes);
   app.use('/api/keywords/monitor/schedule', keywordMonitorScheduleRoutes);
   app.use('/api/export', exportRoutes);
+
+  // Performance monitoring endpoints
+  app.get('/api/admin/performance-stats', async (req, res) => {
+    try {
+      const { performanceMonitor } = await import('./performance-monitor');
+      const stats = performanceMonitor.getPerformanceSummary();
+      res.json({
+        success: true,
+        data: stats,
+        message: 'Performance statistics retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error getting performance stats:', error);
+      res.status(500).json({ error: 'Failed to get performance statistics' });
+    }
+  });
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api', chatRoutes);
   app.use('/api', studyDetailsRoutes);
@@ -804,6 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check cache first for immediate response
       if (searchCache.has(cacheKey) && (now - searchCacheTimestamp) < SEARCH_CACHE_TTL) {
+        res.setHeader('X-Cache-Hit', 'true');
         return res.json(searchCache.get(cacheKey));
       }
       
@@ -874,6 +891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Cache the result
       searchCache.set(cacheKey, result);
       searchCacheTimestamp = now;
+      res.setHeader('X-Cache-Hit', 'false');
 
       // Clean cache if it gets too large
       if (searchCache.size > 100) {
