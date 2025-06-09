@@ -26,6 +26,19 @@ const CategoriesSection = () => {
     return 'flask';
   };
 
+  const getCategorySlug = (categoryName: string) => {
+    const slugMap: Record<string, string> = {
+      'Brain & Neurological Disorders': 'brain-neurological-disorders',
+      'Heart Disease & Hypertension': 'heart-disease-hypertension',
+      'Lung & Respiratory Conditions': 'lung-respiratory-conditions',
+      'Digestive Health (Gut/Liver)': 'digestive-health-gut-liver',
+      'Diabetes & Metabolic Health': 'diabetes-metabolic-health',
+      'Cancer Supportive Care': 'cancer-supportive-care',
+      'Arthritis & Inflammation': 'arthritis-inflammation'
+    };
+    return slugMap[categoryName] || categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  };
+
   // Transform the API response to match the expected format
   const categories = (categoriesResponse as any)?.data?.condition?.map((cat: any, index: number) => ({
     id: index + 1,
@@ -101,7 +114,7 @@ const CategoriesSection = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories?.map((category: Category) => (
-            <Link key={category.id} href={`/category/${category.name.toLowerCase()}`}>
+            <Link key={category.id} href={`/condition/${getCategorySlug(category.name)}`}>
               <a className="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden group">
                 <div className="p-5">
                   <div className="bg-primary/10 rounded-full w-12 h-12 flex items-center justify-center mb-4 text-primary group-hover:bg-primary group-hover:text-white transition">

@@ -28,6 +28,13 @@ const ConditionCategoryPage = () => {
   const categoryMap: Record<string, string> = {
     'general-wellness': 'General Wellness',
     'brain-mental-health': 'Brain & Mental Health',
+    'brain-neurological-disorders': 'Brain & Neurological Disorders',
+    'heart-disease-hypertension': 'Heart Disease & Hypertension',
+    'lung-respiratory-conditions': 'Lung & Respiratory Conditions',
+    'digestive-health-gut-liver': 'Digestive Health (Gut/Liver)',
+    'diabetes-metabolic-health': 'Diabetes & Metabolic Health',
+    'cancer-supportive-care': 'Cancer Supportive Care',
+    'arthritis-inflammation': 'Arthritis & Inflammation',
     'energy-metabolism': 'Energy & Metabolism',
     'breathing-lungs': 'Breathing & Lungs',
     'heart-health': 'Heart Health',
