@@ -354,7 +354,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
           <CardContent>
             <div className="space-y-3">
               {relatedStudies.slice(0, 3).map((relatedStudy) => (
-                <Link key={relatedStudy.id} href={`/study/${relatedStudy.id}`}>
+                <Link key={relatedStudy.id} href={relatedStudy.slug ? `/study/${relatedStudy.slug}` : `/study/${relatedStudy.id}`}>
                   <div className="p-3 border border-neutral-200 rounded-lg hover:border-primary hover:bg-neutral-50 transition-colors cursor-pointer">
                     <h4 className="text-sm font-medium line-clamp-2 mb-1">
                       {relatedStudy.plainLanguageTitle || relatedStudy.title}
