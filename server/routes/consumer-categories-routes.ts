@@ -6,7 +6,7 @@ import { sql } from 'drizzle-orm';
 const router = express.Router();
 
 // High-performance cache for category counts
-let categoryCountsCache = null;
+let categoryCountsCache: any = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
