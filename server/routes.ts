@@ -171,6 +171,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // High-performance cache for studies listing
+  let studiesCache = new Map();
+  let studiesCacheTimestamp = 0;
+  const STUDIES_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   // Basic study endpoints
   app.get('/api/studies', async (req, res) => {
     try {
@@ -178,7 +183,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const offset = parseInt(req.query.offset as string) || 0;
       const category = req.query.category as string;
 
-      let query = db.select().from(studies);
+      // Create cache key
+      const cacheKey = JSON.stringify({ category, limit, offset });
+      const now = Date.now();
+      
+      // Check cache first
+      if (studiesCache.has(cacheKey) && (now - studiesCacheTimestamp) < STUDIES_CACHE_TTL) {
+        return res.json(studiesCache.get(cacheKey));
+      }
       
       if (category) {
         const categoryResults = await db
@@ -188,24 +200,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .innerJoin(categories, eq(studyCategories.categoryId, categories.id))
           .where(eq(categories.name, category));
         
-        return res.json(categoryResults.map(result => result.studies));
+        const result = categoryResults.map(result => result.studies);
+        studiesCache.set(cacheKey, result);
+        studiesCacheTimestamp = now;
+        return res.json(result);
       }
 
-      const allStudies = await db.select().from(studies)
-        .orderBy(desc(studies.id))
-        .limit(limit)
-        .offset(offset);
+      // Use window function for efficient pagination with count
+      const results = await db.execute(sql`
+        SELECT *, COUNT(*) OVER() as total_count
+        FROM studies 
+        ORDER BY id DESC 
+        LIMIT ${limit} OFFSET ${offset}
+      `);
 
-      // Get total count for pagination
-      const [{ count: total }] = await db.select({ count: sql`count(*)` }).from(studies);
+      const allStudies = results.rows;
+      const total = allStudies.length > 0 ? parseInt(allStudies[0].total_count) : 0;
 
-      res.json({ 
-        data: allStudies, 
-        total: parseInt(String(total)),
+      // Remove total_count from individual records
+      const cleanStudies = allStudies.map(({ total_count, ...study }) => study);
+
+      const result = { 
+        data: cleanStudies, 
+        total,
         page: Math.floor(offset / limit) + 1,
         pageSize: limit,
-        pageCount: Math.ceil(parseInt(String(total)) / limit)
-      });
+        pageCount: Math.ceil(total / limit)
+      };
+
+      // Cache the result
+      studiesCache.set(cacheKey, result);
+      studiesCacheTimestamp = now;
+
+      // Clean cache if it gets too large
+      if (studiesCache.size > 50) {
+        studiesCache.clear();
+      }
+
+      res.json(result);
     } catch (error) {
       console.error('Error fetching studies:', error);
       res.status(500).json({ message: 'Failed to fetch studies' });
