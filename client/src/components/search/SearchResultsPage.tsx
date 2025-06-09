@@ -394,7 +394,7 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                         </span>
                       </div>
                       
-                      <Link href={`/studies/${study.id}`}>
+                      <Link href={study.slug ? `/study/${study.slug}` : `/study/${study.id}`}>
                         <Button variant="outline" size="sm">
                           View Study
                         </Button>

@@ -742,6 +742,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Process expired image URLs
+  app.post('/api/admin/process-expired-images', async (req, res) => {
+    try {
+      const { processExpiredImages } = await import('./image-url-handler');
+      const limit = parseInt(req.body.limit) || 10;
+      
+      const result = await processExpiredImages(limit);
+      
+      res.json({
+        success: true,
+        message: `Processed ${result.processed} studies, updated ${result.updated} images, ${result.failed} failed`,
+        ...result
+      });
+    } catch (error) {
+      console.error('Error processing expired images:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to process expired images' 
+      });
+    }
+  });
+
+  // Validate image URL for a specific study
+  app.get('/api/studies/:id/validate-image', async (req, res) => {
+    try {
+      const studyId = parseInt(req.params.id);
+      const { getValidImageUrl } = await import('./image-url-handler');
+      
+      const result = await getValidImageUrl(studyId);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error validating image URL:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to validate image URL' 
+      });
+    }
+  });
+
   // Enhanced study details with recommendations
   app.get('/api/studies/:id/detailed', async (req, res) => {
     try {
