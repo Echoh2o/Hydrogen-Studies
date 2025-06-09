@@ -92,29 +92,56 @@ export async function createMinimalServer() {
       const pageSize = Math.min(limit, 50);
       const filters = { condition: req.query.condition as string };
       
-      console.log('=== SEARCH DEBUG ===');
-      console.log('Raw req.query:', req.query);
-      console.log('Extracted query:', query);
-      console.log('Query length:', query.length);
-      console.log('About to call fastSearch with:', { query, filters, page, pageSize });
+      // Debug logging (can be disabled in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Search query:', query, 'Results limit:', pageSize);
+      }
       
       const result = await fastSearch(query, filters, page, pageSize);
       
       // Format response to match expected structure with relevance scores
       const formattedResult = {
-        data: (result.data || []).map((study: any) => ({
-          id: study.id,
-          title: study.title,
-          abstract: study.abstract,
-          authors: study.authors,
-          journal: study.journal,
-          publishDate: study.journal_publish_date,
-          category: study.consumer_categories,
-          viewCount: 0,
-          relevanceScore: (study.relevance_score || 50) / 100, // Convert to 0-1 scale
-          tags: [],
-          relatedStudies: []
-        })),
+        data: (result.data || []).map((study: any) => {
+          // Calculate relevance score based on search term matches
+          let relevanceScore = 50; // Default score
+          
+          if (query && query.trim()) {
+            const searchTerm = query.toLowerCase();
+            const title = (study.title || '').toLowerCase();
+            const abstract = (study.abstract || '').toLowerCase();
+            const keywords = (study.keywords || '').toLowerCase();
+            
+            // Use database score if available, otherwise calculate
+            if (study.relevance_score) {
+              relevanceScore = study.relevance_score;
+            } else {
+              // Calculate based on matches
+              const titleMatch = title.includes(searchTerm);
+              const abstractMatch = abstract.includes(searchTerm);
+              const keywordMatch = keywords.includes(searchTerm);
+              
+              if (titleMatch && abstractMatch) relevanceScore = 95;
+              else if (titleMatch) relevanceScore = 90;
+              else if (abstractMatch && keywordMatch) relevanceScore = 80;
+              else if (abstractMatch) relevanceScore = 75;
+              else if (keywordMatch) relevanceScore = 60;
+            }
+          }
+          
+          return {
+            id: study.id,
+            title: study.title,
+            abstract: study.abstract,
+            authors: study.authors,
+            journal: study.journal,
+            publishDate: study.journal_publish_date,
+            category: study.consumer_categories,
+            viewCount: 0,
+            relevanceScore: relevanceScore / 100, // Convert to 0-1 scale
+            tags: [],
+            relatedStudies: []
+          };
+        }),
         total: result.total || 0,
         page: page,
         pageSize: pageSize,

@@ -172,11 +172,7 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
     const total = parseInt((countResult as any).rows[0]?.total || '0');
     const studies = (studiesResult as any).rows || [];
     
-    // Debug: Log the first study to see what fields are available
-    if (studies.length > 0) {
-      console.log('Sample study data:', Object.keys(studies[0]));
-      console.log('Sample relevance_score:', studies[0].relevance_score);
-    }
+    // Production optimization: Remove debug logging for better performance
 
     const result = {
       data: studies,
