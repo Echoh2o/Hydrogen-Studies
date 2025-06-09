@@ -26,21 +26,26 @@ interface SearchResult {
   abstract: string;
   authors: string;
   journal: string;
-  publishDate: string;
+  publishDate?: string;
+  journal_publish_date?: string;
   category: string;
-  viewCount: number;
-  relevanceScore: number;
-  tags: Array<{
+  viewCount?: number;
+  relevanceScore?: number;
+  doi?: string;
+  keywords?: string;
+  consumer_categories?: string;
+  tags?: Array<{
     id: number;
     name: string;
     category: string;
     confidence: number;
   }>;
-  relatedStudies: number[];
+  relatedStudies?: number[];
+  slug?: string;
 }
 
 interface SearchResponse {
-  studies: SearchResult[];
+  data: SearchResult[];
   total: number;
   facets: {
     tags: Array<{ name: string; count: number }>;
@@ -249,7 +254,7 @@ export default function EnhancedSearchPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Search Results */}
         <div className="lg:col-span-3">
-          {searchResults?.studies ? (
+          {searchResults?.data ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">
@@ -277,7 +282,7 @@ export default function EnhancedSearchPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {searchResults.studies.map((study) => (
+                  {searchResults.data.map((study) => (
                     <Card key={study.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
                         <div className="space-y-3">
