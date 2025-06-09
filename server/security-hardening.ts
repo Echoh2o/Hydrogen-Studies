@@ -84,10 +84,10 @@ export function validateInput(req: Request, res: Response, next: NextFunction) {
     }
   }
 
-  // Sanitize query parameters
+  // Sanitize query parameters (skip 'query' parameter for search functionality)
   if (req.query && typeof req.query === 'object') {
     for (const key in req.query) {
-      if (typeof req.query[key] === 'string') {
+      if (typeof req.query[key] === 'string' && key !== 'query') {
         req.query[key] = sanitizeString(req.query[key] as string);
       }
     }

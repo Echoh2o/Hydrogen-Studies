@@ -163,9 +163,13 @@ export async function createMinimalServer() {
 
   app.get('/api/search/enhanced', async (req, res) => {
     try {
+      console.log('=== SEARCH ENDPOINT DEBUG ===');
+      console.log('Raw req.query:', req.query);
+      console.log('req.url:', req.url);
+      
       const { query, limit = 20, offset = 0 } = req.query;
-      console.log('Search endpoint called with query:', query, 'Type:', typeof query);
-      console.log('Full req.query:', req.query);
+      console.log('Extracted query:', query, 'Type:', typeof query);
+      console.log('Query length:', query ? (query as string).length : 'null/undefined');
       
       const limitInt = Math.min(parseInt(limit as string) || 20, 100);
       const offsetInt = parseInt(offset as string) || 0;
