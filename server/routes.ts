@@ -880,58 +880,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/search/enhanced', async (req, res) => {
     try {
-      const { query, tags, category, dateRange, studyType, sortBy = 'relevance', limit = 20, offset = 0 } = req.query;
-      
-      // Disable cache for debugging
-      console.log('Enhanced search query params:', { query, tags, category, dateRange, studyType, sortBy, limit, offset });
-      
+      const { query, limit = 20, offset = 0 } = req.query;
       const limitInt = parseInt(limit as string) || 20;
       const offsetInt = parseInt(offset as string) || 0;
 
-      // Optimized query with reduced complexity
-      let searchSql;
-      
       if (query && typeof query === 'string' && query.trim().length > 0) {
         const searchTerm = query.trim().toLowerCase();
-        console.log('Search term:', searchTerm);
         
-        // Use simple ILIKE search for PostgreSQL
-        const searchResults = await db.select({
-          id: studies.id,
-          title: studies.title,
-          abstract: studies.abstract,
-          authors: studies.authors,
-          journal: studies.journal,
-          publish_date: studies.publishDate,
-          journal_publish_date: studies.journalPublishDate,
-          category: studies.category,
-          view_count: studies.viewCount
-        })
-        .from(studies)
-        .where(
-          or(
-            ilike(studies.title, `%${searchTerm}%`),
-            ilike(studies.abstract, `%${searchTerm}%`),
-            ilike(studies.authors, `%${searchTerm}%`)
-          )
-        )
-        .orderBy(desc(studies.viewCount))
-        .limit(limitInt)
-        .offset(offsetInt);
-
-        console.log('Search results count:', searchResults.length);
+        // Direct SQL search for reliable results
+        const searchSql = sql`
+          SELECT s.* FROM studies s 
+          WHERE LOWER(s.title) LIKE ${`%${searchTerm}%`} 
+             OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
+             OR LOWER(s.authors) LIKE ${`%${searchTerm}%`}
+          ORDER BY 
+            CASE 
+              WHEN LOWER(s.title) LIKE ${`%${searchTerm}%`} THEN 1
+              WHEN LOWER(s.abstract) LIKE ${`%${searchTerm}%`} THEN 2
+              ELSE 3
+            END,
+            s.view_count DESC NULLS LAST,
+            s.id DESC
+          LIMIT ${limitInt} OFFSET ${offsetInt}
+        `;
         
-        const totalResults = await db.select({ count: sql<number>`count(*)` })
-          .from(studies)
-          .where(
-            or(
-              ilike(studies.title, `%${searchTerm}%`),
-              ilike(studies.abstract, `%${searchTerm}%`),
-              ilike(studies.authors, `%${searchTerm}%`)
-            )
-          );
+        const countSql = sql`
+          SELECT COUNT(*) as total FROM studies s 
+          WHERE LOWER(s.title) LIKE ${`%${searchTerm}%`} 
+             OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
+             OR LOWER(s.authors) LIKE ${`%${searchTerm}%`}
+        `;
 
-        const mappedStudies = searchResults.map((study) => ({
+        const [searchResults, countResults] = await Promise.all([
+          db.execute(searchSql),
+          db.execute(countSql)
+        ]);
+
+        const mappedResults = searchResults.rows.map((study: any) => ({
           id: study.id,
           title: study.title,
           abstract: study.abstract,
@@ -940,37 +925,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           publishDate: study.publish_date || study.journal_publish_date,
           category: study.category,
           viewCount: study.view_count || 0,
-          relevanceScore: 0.8,
+          relevanceScore: 0.9,
           tags: [],
           relatedStudies: []
         }));
 
         const result = {
-          data: mappedStudies,
-          total: totalResults[0]?.count || 0,
+          data: mappedResults,
+          total: countResults.rows[0]?.total || 0,
           facets: { tags: [], journals: [], years: [] },
           suggestions: [],
           trending: []
         };
 
         return res.json(result);
-      } else {
-        // No search query - return latest studies
-        searchSql = sql`
-          SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
-                 s.publish_date, s.journal_publish_date, s.category, 
-                 COALESCE(s.view_count, 0) as view_count
-          FROM studies s
-          ${category && category !== '' ? sql`WHERE s.category = ${category}` : sql`WHERE 1=1`}
-          ORDER BY s.id DESC
-          LIMIT ${limitInt} OFFSET ${offsetInt}
-        `;
       }
 
-      const results = await db.execute(searchSql);
+      // No search query - return latest studies
+      const allSql = sql`
+        SELECT s.* FROM studies s 
+        ORDER BY s.id DESC 
+        LIMIT ${limitInt} OFFSET ${offsetInt}
+      `;
+      
+      const totalSql = sql`SELECT COUNT(*) as total FROM studies`;
 
-      // Simplified response for maximum speed
-      const studies = results.rows.map((study: any) => ({
+      const [allResults, totalResults] = await Promise.all([
+        db.execute(allSql),
+        db.execute(totalSql)
+      ]);
+
+      const mappedResults = allResults.rows.map((study: any) => ({
         id: study.id,
         title: study.title,
         abstract: study.abstract,
@@ -979,37 +964,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         publishDate: study.publish_date || study.journal_publish_date,
         category: study.category,
         viewCount: study.view_count || 0,
-        relevanceScore: study.relevance_rank || 1.0,
+        relevanceScore: 0.5,
         tags: [],
         relatedStudies: []
       }));
 
-      // Get total count for search
-      let countSql;
-      if (query && typeof query === 'string' && query.trim().length > 0) {
-        const searchTerm = query.trim().toLowerCase();
-        countSql = sql`
-          SELECT COUNT(*) as total
-          FROM studies s
-          WHERE (LOWER(s.title) LIKE ${`%${searchTerm}%`} 
-                 OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
-                 OR LOWER(s.authors) LIKE ${`%${searchTerm}%`})
-          ${category && category !== '' ? sql`AND s.category = ${category}` : sql``}
-        `;
-      } else {
-        countSql = sql`
-          SELECT COUNT(*) as total
-          FROM studies s
-          ${category && category !== '' ? sql`WHERE s.category = ${category}` : sql`WHERE 1=1`}
-        `;
-      }
-      
-      const countResult = await db.execute(countSql);
-      const total = countResult.rows[0]?.total || 0;
-
       const result = {
-        data: studies,
-        total: total,
+        data: mappedResults,
+        total: totalResults.rows[0]?.total || 0,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
