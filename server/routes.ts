@@ -182,14 +182,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = parseInt(req.query.offset as string) || 0;
       const category = req.query.category as string;
+      const query = req.query.query as string;
 
-      // Create cache key
-      const cacheKey = JSON.stringify({ category, limit, offset });
+      // Create cache key including query parameter
+      const cacheKey = JSON.stringify({ category, query, limit, offset });
       const now = Date.now();
       
       // Check cache first
       if (studiesCache.has(cacheKey) && (now - studiesCacheTimestamp) < STUDIES_CACHE_TTL) {
         return res.json(studiesCache.get(cacheKey));
+      }
+      
+      // Handle search functionality
+      if (query && typeof query === 'string' && query.trim().length > 0) {
+        const searchTerm = query.trim().toLowerCase();
+        
+        const searchResults = await db.execute(sql`
+          SELECT *, COUNT(*) OVER() as total_count
+          FROM studies 
+          WHERE (LOWER(title) LIKE ${`%${searchTerm}%`} 
+                 OR LOWER(abstract) LIKE ${`%${searchTerm}%`}
+                 OR LOWER(authors) LIKE ${`%${searchTerm}%`})
+          ${category ? sql`AND category = ${category}` : sql``}
+          ORDER BY 
+            CASE 
+              WHEN LOWER(title) LIKE ${`%${searchTerm}%`} THEN 1
+              WHEN LOWER(abstract) LIKE ${`%${searchTerm}%`} THEN 2
+              ELSE 3
+            END,
+            view_count DESC NULLS LAST
+          LIMIT ${limit} OFFSET ${offset}
+        `);
+        
+        const searchStudies = searchResults.rows;
+        const searchTotal = searchStudies.length > 0 ? parseInt(searchStudies[0].total_count) : 0;
+        
+        // Remove total_count from individual records
+        const cleanSearchStudies = searchStudies.map(({ total_count, ...study }) => study);
+        
+        const searchResult = { 
+          data: cleanSearchStudies, 
+          total: searchTotal,
+          page: Math.floor(offset / limit) + 1,
+          pageSize: limit,
+          pageCount: Math.ceil(searchTotal / limit)
+        };
+        
+        // Cache the search result
+        studiesCache.set(cacheKey, searchResult);
+        studiesCacheTimestamp = now;
+        
+        return res.json(searchResult);
       }
       
       if (category) {
