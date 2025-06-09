@@ -292,9 +292,9 @@ export default function EnhancedSearchPage() {
                             </h3>
                             <Badge 
                               variant="outline" 
-                              className={`ml-2 ${getRelevanceColor(study.relevanceScore)}`}
+                              className={`ml-2 ${getRelevanceColor(study.relevanceScore || 0.5)}`}
                             >
-                              {Math.round(study.relevanceScore * 100)}% match
+                              {Math.round((study.relevanceScore || 0.5) * 100)}% match
                             </Badge>
                           </div>
                           
@@ -311,19 +311,27 @@ export default function EnhancedSearchPage() {
                           </p>
 
                           <div className="flex flex-wrap gap-1">
-                            {study.tags.slice(0, 6).map((tag) => (
-                              <Badge 
-                                key={tag.id}
-                                variant="outline"
-                                className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground"
-                                onClick={() => handleTagSelect(tag.id)}
-                              >
-                                {tag.name}
-                              </Badge>
-                            ))}
-                            {study.tags.length > 6 && (
+                            {study.tags && study.tags.length > 0 ? (
+                              <>
+                                {study.tags.slice(0, 6).map((tag) => (
+                                  <Badge 
+                                    key={tag.id}
+                                    variant="outline"
+                                    className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                                    onClick={() => handleTagSelect(tag.id)}
+                                  >
+                                    {tag.name}
+                                  </Badge>
+                                ))}
+                                {study.tags.length > 6 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{study.tags.length - 6} more
+                                  </Badge>
+                                )}
+                              </>
+                            ) : (
                               <Badge variant="outline" className="text-xs">
-                                +{study.tags.length - 6} more
+                                {study.category}
                               </Badge>
                             )}
                           </div>
@@ -332,9 +340,9 @@ export default function EnhancedSearchPage() {
                             <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                               <span className="flex items-center">
                                 <Users className="h-3 w-3 mr-1" />
-                                {study.viewCount} views
+                                {study.viewCount || 0} views
                               </span>
-                              {study.relatedStudies.length > 0 && (
+                              {study.relatedStudies && study.relatedStudies.length > 0 && (
                                 <span>
                                   {study.relatedStudies.length} related studies
                                 </span>
