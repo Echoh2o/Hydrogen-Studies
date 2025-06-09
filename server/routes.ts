@@ -17,6 +17,7 @@ import { ZodError } from "zod";
 // import { fromZodError } from "zod-validation-error";
 import { db } from "./db";
 import { eq, desc, or, asc, ilike, sql } from "drizzle-orm";
+import { count } from "drizzle-orm";
 // Removed redundant deduplication imports
 import { 
   initializeTaggingSystem, 
@@ -886,24 +887,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If no query provided, return recent studies
       if (!query || typeof query !== 'string' || query.trim().length === 0) {
-        const allResults = await db.select().from(studies).orderBy(desc(studies.id)).limit(limitInt).offset(offsetInt);
-        const totalResults = await db.select({ total: count() }).from(studies);
+        const allResults = await db.execute(sql`
+          SELECT * FROM studies 
+          ORDER BY id DESC 
+          LIMIT ${limitInt} OFFSET ${offsetInt}
+        `);
+        
+        const totalResults = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
 
         return res.json({
-          data: allResults.map(study => ({
+          data: allResults.rows.map((study: any) => ({
             id: study.id,
             title: study.title,
             abstract: study.abstract,
             authors: study.authors,
             journal: study.journal,
-            publishDate: study.publishDate || study.journalPublishDate,
+            publishDate: study.publish_date || study.journal_publish_date,
             category: study.category,
-            viewCount: study.viewCount || 0,
+            viewCount: study.view_count || 0,
             relevanceScore: 0.5,
             tags: [],
             relatedStudies: []
           })),
-          total: totalResults[0]?.total || 0,
+          total: parseInt(totalResults.rows[0]?.total) || 0,
           facets: { tags: [], journals: [], years: [] },
           suggestions: [],
           trending: []
@@ -912,49 +918,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const searchTerm = query.trim().toLowerCase();
       
-      // Execute search with Drizzle ORM
-      const searchResults = await db
-        .select()
-        .from(studies)
-        .where(
-          or(
-            ilike(studies.title, `%${searchTerm}%`),
-            ilike(studies.abstract, `%${searchTerm}%`),
-            ilike(studies.authors, `%${searchTerm}%`)
-          )
-        )
-        .orderBy(
-          sql`CASE 
-            WHEN LOWER(${studies.title}) LIKE ${`%${searchTerm}%`} THEN 1
-            WHEN LOWER(${studies.abstract}) LIKE ${`%${searchTerm}%`} THEN 2
+      // Direct SQL search to bypass field mapping issues
+      const searchResults = await db.execute(sql`
+        SELECT * FROM studies s 
+        WHERE LOWER(s.title) LIKE LOWER(${`%${searchTerm}%`}) 
+           OR LOWER(s.abstract) LIKE LOWER(${`%${searchTerm}%`})
+           OR LOWER(s.authors) LIKE LOWER(${`%${searchTerm}%`})
+        ORDER BY 
+          CASE 
+            WHEN LOWER(s.title) LIKE LOWER(${`%${searchTerm}%`}) THEN 1
+            WHEN LOWER(s.abstract) LIKE LOWER(${`%${searchTerm}%`}) THEN 2
             ELSE 3
-          END`,
-          desc(studies.viewCount),
-          desc(studies.id)
-        )
-        .limit(limitInt)
-        .offset(offsetInt);
+          END,
+          s.view_count DESC NULLS LAST,
+          s.id DESC
+        LIMIT ${limitInt} OFFSET ${offsetInt}
+      `);
 
-      const countResults = await db
-        .select({ total: count() })
-        .from(studies)
-        .where(
-          or(
-            ilike(studies.title, `%${searchTerm}%`),
-            ilike(studies.abstract, `%${searchTerm}%`),
-            ilike(studies.authors, `%${searchTerm}%`)
-          )
-        );
+      const countResults = await db.execute(sql`
+        SELECT COUNT(*) as total FROM studies s 
+        WHERE LOWER(s.title) LIKE LOWER(${`%${searchTerm}%`}) 
+           OR LOWER(s.abstract) LIKE LOWER(${`%${searchTerm}%`})
+           OR LOWER(s.authors) LIKE LOWER(${`%${searchTerm}%`})
+      `);
 
-      const mappedResults = searchResults.map(study => ({
+      const mappedResults = searchResults.rows.map((study: any) => ({
         id: study.id,
         title: study.title,
         abstract: study.abstract,
         authors: study.authors,
         journal: study.journal,
-        publishDate: study.publishDate || study.journalPublishDate,
+        publishDate: study.publish_date || study.journal_publish_date,
         category: study.category,
-        viewCount: study.viewCount || 0,
+        viewCount: study.view_count || 0,
         relevanceScore: 0.9,
         tags: [],
         relatedStudies: []
@@ -962,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         data: mappedResults,
-        total: countResults[0]?.total || 0,
+        total: parseInt(countResults.rows[0]?.total) || 0,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
