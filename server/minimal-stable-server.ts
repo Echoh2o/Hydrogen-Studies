@@ -199,9 +199,10 @@ export async function createMinimalServer() {
       
       const result = await db.execute(sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
-               doi, consumer_categories, array_to_string(keywords, ', ') as keywords
+               doi, consumer_categories, array_to_string(keywords, ', ') as keywords, slug,
+               image_url, imageUrl
         FROM studies 
-        WHERE consumer_categories = ${categoryName}
+        WHERE consumer_categories ILIKE ${`%${categoryName}%`}
         ORDER BY journal_publish_date DESC NULLS LAST
         LIMIT 50
       `);
