@@ -289,13 +289,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // High-performance cache for individual studies
+  let studyCache = new Map();
+  let studyCacheTimestamp = 0;
+  const STUDY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
   app.get('/api/studies/:id', async (req, res) => {
     try {
       const studyId = parseInt(req.params.id);
+      
+      // Check cache first
+      const cacheKey = `study_${studyId}`;
+      const now = Date.now();
+      
+      if (studyCache.has(cacheKey) && (now - studyCacheTimestamp) < STUDY_CACHE_TTL) {
+        res.setHeader('X-Cache-Hit', 'true');
+        return res.json(studyCache.get(cacheKey));
+      }
+
       const [study] = await db.select().from(studies).where(eq(studies.id, studyId));
       
       if (!study) {
         return res.status(404).json({ message: 'Study not found' });
+      }
+
+      // Cache the result
+      studyCache.set(cacheKey, study);
+      studyCacheTimestamp = now;
+      res.setHeader('X-Cache-Hit', 'false');
+
+      // Clean cache if it gets too large
+      if (studyCache.size > 200) {
+        studyCache.clear();
       }
 
       res.json(study);
