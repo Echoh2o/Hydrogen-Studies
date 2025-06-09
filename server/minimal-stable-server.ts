@@ -310,28 +310,28 @@ export async function createMinimalServer() {
     }
   });
 
-  // Image refresh endpoints
-  app.post('/api/refresh-images', async (req, res) => {
+  // Local image storage endpoints
+  app.post('/api/download-images', async (req, res) => {
     try {
-      const { refreshAllExpiredImages } = await import('./image-refresh-system');
-      const results = await refreshAllExpiredImages();
+      const { downloadAllOpenAIImages } = await import('./local-image-storage');
+      const results = await downloadAllOpenAIImages();
       
       res.json({
         success: true,
-        refreshed: results.filter(r => r.success).length,
+        downloaded: results.filter(r => r.success).length,
         failed: results.filter(r => !r.success).length,
         results
       });
     } catch (error) {
-      console.error('Error refreshing images:', error);
-      res.status(500).json({ success: false, error: 'Image refresh failed' });
+      console.error('Error downloading images:', error);
+      res.status(500).json({ success: false, error: 'Image download failed' });
     }
   });
 
   app.get('/api/image-stats', async (req, res) => {
     try {
-      const { getImageRefreshStats } = await import('./image-refresh-system');
-      const stats = await getImageRefreshStats();
+      const { getLocalImageStats } = await import('./local-image-storage');
+      const stats = await getLocalImageStats();
       res.json(stats);
     } catch (error) {
       console.error('Error getting image stats:', error);
