@@ -59,7 +59,7 @@ export async function downloadStudyImage(studyId: number): Promise<ImageDownload
   try {
     // Get current study data
     const result = await db.execute(sql`
-      SELECT id, title, image_url, imageUrl FROM studies WHERE id = ${studyId}
+      SELECT id, title, image_url FROM studies WHERE id = ${studyId}
     `);
     
     const study = (result as any).rows[0];
@@ -71,7 +71,7 @@ export async function downloadStudyImage(studyId: number): Promise<ImageDownload
       };
     }
 
-    const currentImageUrl = study.image_url || study.imageUrl;
+    const currentImageUrl = study.image_url;
     
     if (!currentImageUrl) {
       return {
@@ -125,12 +125,11 @@ export async function downloadAllOpenAIImages(): Promise<ImageDownloadResult[]> 
   try {
     // Get all studies with OpenAI image URLs that aren't already local
     const result = await db.execute(sql`
-      SELECT id, title, image_url, imageUrl 
+      SELECT id, title, image_url 
       FROM studies 
-      WHERE (image_url IS NOT NULL OR imageUrl IS NOT NULL)
-      AND (image_url LIKE '%oaidalleapiprodscus.blob.core.windows.net%' 
-           OR imageUrl LIKE '%oaidalleapiprodscus.blob.core.windows.net%')
-      AND (image_url NOT LIKE '/uploads/%' AND imageUrl NOT LIKE '/uploads/%')
+      WHERE image_url IS NOT NULL
+      AND image_url LIKE '%oaidalleapiprodscus.blob.core.windows.net%'
+      AND image_url NOT LIKE '/uploads/%'
       LIMIT 50
     `);
 
@@ -168,28 +167,26 @@ export async function getLocalImageStats(): Promise<{
     const totalResult = await db.execute(sql`
       SELECT COUNT(*) as count 
       FROM studies 
-      WHERE image_url IS NOT NULL OR imageUrl IS NOT NULL
+      WHERE image_url IS NOT NULL
     `);
 
     const localResult = await db.execute(sql`
       SELECT COUNT(*) as count 
       FROM studies 
-      WHERE (image_url LIKE '/uploads/%' OR imageUrl LIKE '/uploads/%')
+      WHERE image_url LIKE '/uploads/%'
     `);
 
     const openaiResult = await db.execute(sql`
       SELECT COUNT(*) as count 
       FROM studies 
-      WHERE (image_url LIKE '%oaidalleapiprodscus.blob.core.windows.net%' 
-             OR imageUrl LIKE '%oaidalleapiprodscus.blob.core.windows.net%')
+      WHERE image_url LIKE '%oaidalleapiprodscus.blob.core.windows.net%'
     `);
 
     const needsDownloadResult = await db.execute(sql`
       SELECT COUNT(*) as count 
       FROM studies 
-      WHERE (image_url LIKE '%oaidalleapiprodscus.blob.core.windows.net%' 
-             OR imageUrl LIKE '%oaidalleapiprodscus.blob.core.windows.net%')
-      AND (image_url NOT LIKE '/uploads/%' AND imageUrl NOT LIKE '/uploads/%')
+      WHERE image_url LIKE '%oaidalleapiprodscus.blob.core.windows.net%'
+      AND image_url NOT LIKE '/uploads/%'
     `);
 
     return {
