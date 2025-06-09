@@ -164,11 +164,15 @@ export async function createMinimalServer() {
   app.get('/api/search/enhanced', async (req, res) => {
     try {
       const { query, limit = 20, offset = 0 } = req.query;
+      console.log('Search endpoint called with query:', query, 'Type:', typeof query);
+      console.log('Full req.query:', req.query);
+      
       const limitInt = Math.min(parseInt(limit as string) || 20, 100);
       const offsetInt = parseInt(offset as string) || 0;
       
       // If no search query, return recent studies
       if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        console.log('No valid query, returning recent studies');
         const result = await fastSearch('', {}, 1, limitInt);
         return res.json({
           data: result.data.map((study: any) => ({
@@ -193,6 +197,7 @@ export async function createMinimalServer() {
 
       // Use the working fastSearch function with proper filtering
       const searchTerm = query.trim();
+      console.log('Search endpoint - passing term to fastSearch:', searchTerm);
       const result = await fastSearch(searchTerm, {}, 1, limitInt);
 
       res.json({
