@@ -367,7 +367,7 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                 <Card key={study.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="py-6">
                     <div className="flex justify-between items-start mb-3">
-                      <Link href={`/studies/${study.id}`}>
+                      <Link href={study.slug ? `/study/${study.slug}` : `/study/${study.id}`}>
                         <h3 className="text-lg font-semibold text-blue-600 hover:text-blue-800 cursor-pointer">
                           {study.title}
                         </h3>
