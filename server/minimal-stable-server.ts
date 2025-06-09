@@ -339,20 +339,23 @@ export async function createMinimalServer() {
     }
   });
 
-  app.post('/api/refresh-study-image/:id', async (req, res) => {
+  app.post('/api/cleanup-expired-images', async (req, res) => {
     try {
-      const { refreshStudyImage } = await import('./image-refresh-system');
-      const studyId = parseInt(req.params.id);
+      // Clear all expired OpenAI DALL-E image URLs from database
+      const result = await db.execute(sql`
+        UPDATE studies 
+        SET image_url = NULL
+        WHERE image_url LIKE '%oaidalleapiprodscus.blob.core.windows.net%'
+        AND image_url LIKE '%se=2025-06-06%'
+      `);
       
-      if (isNaN(studyId)) {
-        return res.status(400).json({ error: 'Invalid study ID' });
-      }
-
-      const result = await refreshStudyImage(studyId);
-      res.json(result);
+      res.json({
+        success: true,
+        cleared: (result as any).rowCount || 0
+      });
     } catch (error) {
-      console.error('Error refreshing study image:', error);
-      res.status(500).json({ error: 'Study image refresh failed' });
+      console.error('Error cleaning up expired images:', error);
+      res.status(500).json({ error: 'Cleanup failed' });
     }
   });
 
