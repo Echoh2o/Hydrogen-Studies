@@ -85,13 +85,33 @@ export async function createMinimalServer() {
   // Core API endpoints with minimal implementation
   app.get('/api/search/enhanced', async (req, res) => {
     try {
-      const query = req.query.q as string || '';
+      // Accept both 'query' and 'q' parameters for compatibility
+      const query = (req.query.query as string) || (req.query.q as string) || '';
+      const limit = parseInt(req.query.limit as string) || 20;
       const page = parseInt(req.query.page as string) || 1;
-      const pageSize = Math.min(parseInt(req.query.pageSize as string) || 20, 50);
+      const pageSize = Math.min(limit, 50);
       const filters = { condition: req.query.condition as string };
       
+      console.log('=== SEARCH DEBUG ===');
+      console.log('Raw req.query:', req.query);
+      console.log('Extracted query:', query);
+      console.log('Query length:', query.length);
+      console.log('About to call fastSearch with:', { query, filters, page, pageSize });
+      
       const result = await fastSearch(query, filters, page, pageSize);
-      res.json(result);
+      
+      // Format response to match expected structure
+      const formattedResult = {
+        data: result.data || [],
+        total: result.total || 0,
+        page: page,
+        pageSize: pageSize,
+        facets: { tags: [], journals: [], years: [] },
+        suggestions: [],
+        trending: []
+      };
+      
+      res.json(formattedResult);
     } catch (error) {
       console.error('Search endpoint error:', error);
       res.status(500).json({ error: 'Search failed' });
@@ -161,74 +181,7 @@ export async function createMinimalServer() {
     }
   });
 
-  app.get('/api/search/enhanced', async (req, res) => {
-    try {
-      console.log('=== SEARCH ENDPOINT DEBUG ===');
-      console.log('Raw req.query:', req.query);
-      console.log('req.url:', req.url);
-      
-      const { query, limit = 20, offset = 0 } = req.query;
-      console.log('Extracted query:', query, 'Type:', typeof query);
-      console.log('Query length:', query ? (query as string).length : 'null/undefined');
-      
-      const limitInt = Math.min(parseInt(limit as string) || 20, 100);
-      const offsetInt = parseInt(offset as string) || 0;
-      
-      // If no search query, return recent studies
-      if (!query || typeof query !== 'string' || query.trim().length === 0) {
-        console.log('No valid query, returning recent studies');
-        const result = await fastSearch('', {}, 1, limitInt);
-        return res.json({
-          data: result.data.map((study: any) => ({
-            id: study.id,
-            title: study.title,
-            abstract: study.abstract,
-            authors: study.authors,
-            journal: study.journal,
-            publishDate: study.journal_publish_date || study.publishDate,
-            category: study.consumer_categories,
-            viewCount: 0,
-            relevanceScore: 0.5,
-            tags: [],
-            relatedStudies: []
-          })),
-          total: result.total,
-          facets: { tags: [], journals: [], years: [] },
-          suggestions: [],
-          trending: []
-        });
-      }
 
-      // Use the working fastSearch function with proper filtering
-      const searchTerm = query.trim();
-      console.log('Search endpoint - passing term to fastSearch:', searchTerm);
-      const result = await fastSearch(searchTerm, {}, 1, limitInt);
-
-      res.json({
-        data: result.data.map((study: any) => ({
-          id: study.id,
-          title: study.title,
-          abstract: study.abstract,
-          authors: study.authors,
-          journal: study.journal,
-          publishDate: study.journal_publish_date || study.publishDate,
-          category: study.consumer_categories,
-          viewCount: 0,
-          relevanceScore: 0.9,
-          tags: [],
-          relatedStudies: []
-        })),
-        total: result.total,
-        facets: { tags: [], journals: [], years: [] },
-        suggestions: [],
-        trending: []
-      });
-
-    } catch (error) {
-      console.error('Search error:', error);
-      res.status(500).json({ error: 'Search failed' });
-    }
-  });
 
   app.get('/api/search/trending', async (req, res) => {
     try {
