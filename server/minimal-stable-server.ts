@@ -310,6 +310,52 @@ export async function createMinimalServer() {
     }
   });
 
+  // Image refresh endpoints
+  app.post('/api/refresh-images', async (req, res) => {
+    try {
+      const { refreshAllExpiredImages } = await import('./image-refresh-system');
+      const results = await refreshAllExpiredImages();
+      
+      res.json({
+        success: true,
+        refreshed: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results
+      });
+    } catch (error) {
+      console.error('Error refreshing images:', error);
+      res.status(500).json({ success: false, error: 'Image refresh failed' });
+    }
+  });
+
+  app.get('/api/image-stats', async (req, res) => {
+    try {
+      const { getImageRefreshStats } = await import('./image-refresh-system');
+      const stats = await getImageRefreshStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting image stats:', error);
+      res.status(500).json({ error: 'Failed to get image stats' });
+    }
+  });
+
+  app.post('/api/refresh-study-image/:id', async (req, res) => {
+    try {
+      const { refreshStudyImage } = await import('./image-refresh-system');
+      const studyId = parseInt(req.params.id);
+      
+      if (isNaN(studyId)) {
+        return res.status(400).json({ error: 'Invalid study ID' });
+      }
+
+      const result = await refreshStudyImage(studyId);
+      res.json(result);
+    } catch (error) {
+      console.error('Error refreshing study image:', error);
+      res.status(500).json({ error: 'Study image refresh failed' });
+    }
+  });
+
   // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {
