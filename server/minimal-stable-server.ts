@@ -167,87 +167,49 @@ export async function createMinimalServer() {
       const limitInt = Math.min(parseInt(limit as string) || 20, 100);
       const offsetInt = parseInt(offset as string) || 0;
       
+      // If no search query, return recent studies
       if (!query || typeof query !== 'string' || query.trim().length === 0) {
-        // Return recent studies when no query
-        const result = await db.execute(sql`
-          SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
-                 doi, consumer_categories, array_to_string(keywords, ', ') as keywords
-          FROM studies 
-          ORDER BY id DESC 
-          LIMIT ${limitInt} OFFSET ${offsetInt}
-        `);
-        
-        const countResult = await db.execute(sql`SELECT COUNT(*) as total FROM studies`);
-        
+        const result = await fastSearch('', {}, 1, limitInt);
         return res.json({
-          data: (result as any).rows.map((study: any) => ({
+          data: result.data.map((study: any) => ({
             id: study.id,
             title: study.title,
             abstract: study.abstract,
             authors: study.authors,
             journal: study.journal,
-            publishDate: study.publishDate,
+            publishDate: study.journal_publish_date || study.publishDate,
             category: study.consumer_categories,
             viewCount: 0,
             relevanceScore: 0.5,
             tags: [],
             relatedStudies: []
           })),
-          total: parseInt((countResult as any).rows[0]?.total) || 0,
+          total: result.total,
           facets: { tags: [], journals: [], years: [] },
           suggestions: [],
           trending: []
         });
       }
 
-      const searchTerm = query.trim().toLowerCase();
-      
-      // Execute search with proper filtering
-      const searchResult = await db.execute(sql`
-        SELECT id, title, abstract, authors, journal, journal_publish_date as "publishDate",
-               doi, consumer_categories, array_to_string(keywords, ', ') as keywords
-        FROM studies 
-        WHERE LOWER(title) LIKE ${`%${searchTerm}%`} 
-           OR LOWER(abstract) LIKE ${`%${searchTerm}%`}
-           OR LOWER(authors) LIKE ${`%${searchTerm}%`}
-           OR LOWER(consumer_categories) LIKE ${`%${searchTerm}%`}
-           OR array_to_string(keywords, ' ') ILIKE ${`%${searchTerm}%`}
-        ORDER BY 
-          CASE 
-            WHEN LOWER(title) LIKE ${`%${searchTerm}%`} THEN 1
-            WHEN LOWER(abstract) LIKE ${`%${searchTerm}%`} THEN 2
-            ELSE 3
-          END,
-          journal_publish_date DESC NULLS LAST
-        LIMIT ${limitInt} OFFSET ${offsetInt}
-      `);
-
-      const countResult = await db.execute(sql`
-        SELECT COUNT(*) as total FROM studies 
-        WHERE LOWER(title) LIKE ${`%${searchTerm}%`} 
-           OR LOWER(abstract) LIKE ${`%${searchTerm}%`}
-           OR LOWER(authors) LIKE ${`%${searchTerm}%`}
-           OR LOWER(consumer_categories) LIKE ${`%${searchTerm}%`}
-           OR array_to_string(keywords, ' ') ILIKE ${`%${searchTerm}%`}
-      `);
-
-      const mappedResults = (searchResult as any).rows.map((study: any) => ({
-        id: study.id,
-        title: study.title,
-        abstract: study.abstract,
-        authors: study.authors,
-        journal: study.journal,
-        publishDate: study.publishDate,
-        category: study.consumer_categories,
-        viewCount: 0,
-        relevanceScore: 0.9,
-        tags: [],
-        relatedStudies: []
-      }));
+      // Use the working fastSearch function with proper filtering
+      const searchTerm = query.trim();
+      const result = await fastSearch(searchTerm, {}, 1, limitInt);
 
       res.json({
-        data: mappedResults,
-        total: parseInt((countResult as any).rows[0]?.total) || 0,
+        data: result.data.map((study: any) => ({
+          id: study.id,
+          title: study.title,
+          abstract: study.abstract,
+          authors: study.authors,
+          journal: study.journal,
+          publishDate: study.journal_publish_date || study.publishDate,
+          category: study.consumer_categories,
+          viewCount: 0,
+          relevanceScore: 0.9,
+          tags: [],
+          relatedStudies: []
+        })),
+        total: result.total,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
