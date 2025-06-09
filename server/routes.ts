@@ -882,15 +882,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { query, tags, category, dateRange, studyType, sortBy = 'relevance', limit = 20, offset = 0 } = req.query;
       
-      // Create cache key
-      const cacheKey = JSON.stringify({ query, tags, category, dateRange, studyType, sortBy, limit, offset });
-      const now = Date.now();
-      
-      // Check cache first for immediate response
-      if (searchCache.has(cacheKey) && (now - searchCacheTimestamp) < SEARCH_CACHE_TTL) {
-        res.setHeader('X-Cache-Hit', 'true');
-        return res.json(searchCache.get(cacheKey));
-      }
+      // Disable cache for debugging
+      console.log('Enhanced search query params:', { query, tags, category, dateRange, studyType, sortBy, limit, offset });
       
       const limitInt = parseInt(limit as string) || 20;
       const offsetInt = parseInt(offset as string) || 0;
@@ -900,24 +893,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (query && typeof query === 'string' && query.trim().length > 0) {
         const searchTerm = query.trim().toLowerCase();
-        // Use more efficient text search
-        searchSql = sql`
-          SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
-                 s.publish_date, s.journal_publish_date, s.category, 
-                 COALESCE(s.view_count, 0) as view_count,
-                 CASE 
-                   WHEN LOWER(s.title) LIKE ${`%${searchTerm}%`} THEN 1
-                   WHEN LOWER(s.abstract) LIKE ${`%${searchTerm}%`} THEN 2
-                   ELSE 3
-                 END as relevance_rank
-          FROM studies s
-          WHERE (LOWER(s.title) LIKE ${`%${searchTerm}%`} 
-                 OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
-                 OR LOWER(s.authors) LIKE ${`%${searchTerm}%`})
-          ${category && category !== '' ? sql`AND s.category = ${category}` : sql``}
-          ORDER BY relevance_rank, s.view_count DESC NULLS LAST
-          LIMIT ${limitInt} OFFSET ${offsetInt}
-        `;
+        console.log('Search term:', searchTerm);
+        
+        // Use simple ILIKE search for PostgreSQL
+        const searchResults = await db.select({
+          id: studies.id,
+          title: studies.title,
+          abstract: studies.abstract,
+          authors: studies.authors,
+          journal: studies.journal,
+          publish_date: studies.publishDate,
+          journal_publish_date: studies.journalPublishDate,
+          category: studies.category,
+          view_count: studies.viewCount
+        })
+        .from(studies)
+        .where(
+          or(
+            ilike(studies.title, `%${searchTerm}%`),
+            ilike(studies.abstract, `%${searchTerm}%`),
+            ilike(studies.authors, `%${searchTerm}%`)
+          )
+        )
+        .orderBy(desc(studies.viewCount))
+        .limit(limitInt)
+        .offset(offsetInt);
+
+        console.log('Search results count:', searchResults.length);
+        
+        const totalResults = await db.select({ count: sql<number>`count(*)` })
+          .from(studies)
+          .where(
+            or(
+              ilike(studies.title, `%${searchTerm}%`),
+              ilike(studies.abstract, `%${searchTerm}%`),
+              ilike(studies.authors, `%${searchTerm}%`)
+            )
+          );
+
+        const mappedStudies = searchResults.map((study) => ({
+          id: study.id,
+          title: study.title,
+          abstract: study.abstract,
+          authors: study.authors,
+          journal: study.journal,
+          publishDate: study.publish_date || study.journal_publish_date,
+          category: study.category,
+          viewCount: study.view_count || 0,
+          relevanceScore: 0.8,
+          tags: [],
+          relatedStudies: []
+        }));
+
+        const result = {
+          data: mappedStudies,
+          total: totalResults[0]?.count || 0,
+          facets: { tags: [], journals: [], years: [] },
+          suggestions: [],
+          trending: []
+        };
+
+        return res.json(result);
       } else {
         // No search query - return latest studies
         searchSql = sql`
@@ -948,23 +984,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relatedStudies: []
       }));
 
+      // Get total count for search
+      let countSql;
+      if (query && typeof query === 'string' && query.trim().length > 0) {
+        const searchTerm = query.trim().toLowerCase();
+        countSql = sql`
+          SELECT COUNT(*) as total
+          FROM studies s
+          WHERE (LOWER(s.title) LIKE ${`%${searchTerm}%`} 
+                 OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
+                 OR LOWER(s.authors) LIKE ${`%${searchTerm}%`})
+          ${category && category !== '' ? sql`AND s.category = ${category}` : sql``}
+        `;
+      } else {
+        countSql = sql`
+          SELECT COUNT(*) as total
+          FROM studies s
+          ${category && category !== '' ? sql`WHERE s.category = ${category}` : sql`WHERE 1=1`}
+        `;
+      }
+      
+      const countResult = await db.execute(countSql);
+      const total = countResult.rows[0]?.total || 0;
+
       const result = {
         data: studies,
-        total: studies.length,
+        total: total,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
       };
-
-      // Cache the result
-      searchCache.set(cacheKey, result);
-      searchCacheTimestamp = now;
-      res.setHeader('X-Cache-Hit', 'false');
-
-      // Clean cache if it gets too large
-      if (searchCache.size > 100) {
-        searchCache.clear();
-      }
 
       res.json(result);
     } catch (error) {
