@@ -171,14 +171,20 @@ router.get('/counts', async (req, res) => {
       count: (countMap[categoryMapping[name]] || 0).toString()
     }));
     
-    return res.json({
+    const result = {
       success: true,
       data: {
         condition: healthConditionCounts,
         body_system: bodySystemCounts,
         life_stage: lifeStageCount 
       }
-    });
+    };
+
+    // Cache the result for fast subsequent requests
+    categoryCountsCache = result;
+    cacheTimestamp = now;
+
+    return res.json(result);
   } catch (error) {
     console.error('Error fetching category counts:', error);
     return res.status(500).json({

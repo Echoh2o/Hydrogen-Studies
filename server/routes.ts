@@ -757,63 +757,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced search with suggestions and trending - optimized for deployment
+  // High-performance search cache
+  let searchCache = new Map();
+  let searchCacheTimestamp = 0;
+  const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   app.get('/api/search/enhanced', async (req, res) => {
     try {
       const { query, tags, category, dateRange, studyType, sortBy = 'relevance', limit = 20, offset = 0 } = req.query;
       
+      // Create cache key
+      const cacheKey = JSON.stringify({ query, tags, category, dateRange, studyType, sortBy, limit, offset });
+      const now = Date.now();
+      
+      // Check cache first for immediate response
+      if (searchCache.has(cacheKey) && (now - searchCacheTimestamp) < SEARCH_CACHE_TTL) {
+        return res.json(searchCache.get(cacheKey));
+      }
+      
       const limitInt = parseInt(limit as string) || 20;
       const offsetInt = parseInt(offset as string) || 0;
 
-      // Simplified query without complex joins for better performance
-      let searchSql = sql`
-        SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
-               s.publish_date, s.journal_publish_date, s.category, 
-               COALESCE(s.view_count, 0) as view_count
-        FROM studies s
-        WHERE 1=1
-      `;
-
-      // Add search filters
+      // Optimized query with reduced complexity
+      let searchSql;
+      
       if (query && typeof query === 'string' && query.trim().length > 0) {
-        searchSql = sql`${searchSql} 
-          AND (s.title ILIKE ${'%' + query.trim() + '%'} 
-               OR s.abstract ILIKE ${'%' + query.trim() + '%'}
-               OR s.authors ILIKE ${'%' + query.trim() + '%'}
-               OR s.journal ILIKE ${'%' + query.trim() + '%'})
-        `;
-      }
-
-      if (category && category !== '') {
-        searchSql = sql`${searchSql} AND s.category = ${category}`;
-      }
-
-      // Add ordering with proper relevance scoring
-      if (sortBy === 'date') {
-        searchSql = sql`${searchSql} ORDER BY COALESCE(s.publish_date, s.journal_publish_date) DESC NULLS LAST`;
-      } else if (sortBy === 'views') {
-        searchSql = sql`${searchSql} ORDER BY s.view_count DESC NULLS LAST`;
-      } else if (query && typeof query === 'string' && query.trim().length > 0) {
-        // Relevance-based ordering when there's a search query
-        searchSql = sql`${searchSql} 
-          ORDER BY 
-            CASE 
-              WHEN s.title ILIKE ${'%' + query.trim() + '%'} THEN 1
-              WHEN s.abstract ILIKE ${'%' + query.trim() + '%'} THEN 2
-              WHEN s.authors ILIKE ${'%' + query.trim() + '%'} THEN 3
-              ELSE 4
-            END,
-            s.view_count DESC NULLS LAST
+        const searchTerm = query.trim().toLowerCase();
+        // Use more efficient text search
+        searchSql = sql`
+          SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
+                 s.publish_date, s.journal_publish_date, s.category, 
+                 COALESCE(s.view_count, 0) as view_count,
+                 CASE 
+                   WHEN LOWER(s.title) LIKE ${`%${searchTerm}%`} THEN 1
+                   WHEN LOWER(s.abstract) LIKE ${`%${searchTerm}%`} THEN 2
+                   ELSE 3
+                 END as relevance_rank
+          FROM studies s
+          WHERE (LOWER(s.title) LIKE ${`%${searchTerm}%`} 
+                 OR LOWER(s.abstract) LIKE ${`%${searchTerm}%`}
+                 OR LOWER(s.authors) LIKE ${`%${searchTerm}%`})
+          ${category && category !== '' ? sql`AND s.category = ${category}` : sql``}
+          ORDER BY relevance_rank, s.view_count DESC NULLS LAST
+          LIMIT ${limitInt} OFFSET ${offsetInt}
         `;
       } else {
-        // Default ordering when no search query
-        searchSql = sql`${searchSql} ORDER BY s.view_count DESC NULLS LAST, s.id DESC`;
+        // No search query - simple category/all results
+        searchSql = sql`
+          SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
+                 s.publish_date, s.journal_publish_date, s.category, 
+                 COALESCE(s.view_count, 0) as view_count
+          FROM studies s
+          ${category && category !== '' ? sql`WHERE s.category = ${category}` : sql`WHERE 1=1`}
+          ORDER BY s.view_count DESC NULLS LAST, s.id DESC
+          LIMIT ${limitInt} OFFSET ${offsetInt}
+        `;
       }
-
-      searchSql = sql`${searchSql} LIMIT ${limitInt} OFFSET ${offsetInt}`;
 
       const results = await db.execute(searchSql);
 
-      // Return simplified response without tag lookups for faster performance
+      // Simplified response for maximum speed
       const studies = results.rows.map((study: any) => ({
         id: study.id,
         title: study.title,
@@ -823,18 +826,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         publishDate: study.publish_date || study.journal_publish_date,
         category: study.category,
         viewCount: study.view_count || 0,
-        relevanceScore: 1.0,
-        tags: [], // Simplified for deployment performance
+        relevanceScore: study.relevance_rank || 1.0,
+        tags: [],
         relatedStudies: []
       }));
 
-      res.json({
+      const result = {
         studies,
         total: studies.length,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
         trending: []
-      });
+      };
+
+      // Cache the result
+      searchCache.set(cacheKey, result);
+      searchCacheTimestamp = now;
+
+      // Clean cache if it gets too large
+      if (searchCache.size > 100) {
+        searchCache.clear();
+      }
+
+      res.json(result);
     } catch (error) {
       console.error('Error in enhanced search:', error);
       res.status(500).json({ error: 'Search failed' });
