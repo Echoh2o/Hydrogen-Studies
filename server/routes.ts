@@ -876,7 +876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // High-performance search cache
   let searchCache = new Map();
   let searchCacheTimestamp = 0;
-  const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const SEARCH_CACHE_TTL = 30 * 1000; // 30 seconds for debugging
 
   app.get('/api/search/enhanced', async (req, res) => {
     try {
@@ -919,14 +919,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           LIMIT ${limitInt} OFFSET ${offsetInt}
         `;
       } else {
-        // No search query - simple category/all results
+        // No search query - return latest studies
         searchSql = sql`
           SELECT s.id, s.title, s.abstract, s.authors, s.journal, 
                  s.publish_date, s.journal_publish_date, s.category, 
                  COALESCE(s.view_count, 0) as view_count
           FROM studies s
           ${category && category !== '' ? sql`WHERE s.category = ${category}` : sql`WHERE 1=1`}
-          ORDER BY s.view_count DESC NULLS LAST, s.id DESC
+          ORDER BY s.id DESC
           LIMIT ${limitInt} OFFSET ${offsetInt}
         `;
       }
