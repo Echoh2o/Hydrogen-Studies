@@ -4,23 +4,41 @@ import { Button } from "@/components/ui/button";
 import { type Category } from "@/types";
 import { HiArrowRight } from "react-icons/hi";
 import { 
-  HiBrain, 
   HiHeart, 
   HiShieldExclamation, 
   HiDatabase, 
   HiClock, 
-  HiBeaker
+  HiBeaker,
+  HiChip
 } from "react-icons/hi";
 
 const CategoriesSection = () => {
-  const { data: categories, isLoading, error } = useQuery({
-    queryKey: ["/api/categories"],
+  const { data: categoriesResponse, isLoading, error } = useQuery({
+    queryKey: ["/api/consumer-categories/counts"],
   });
+
+  const getCategoryIconName = (categoryName: string) => {
+    if (categoryName.includes('Brain') || categoryName.includes('Neurological')) return 'brain';
+    if (categoryName.includes('Heart') || categoryName.includes('Cardiovascular')) return 'heartbeat';
+    if (categoryName.includes('Cancer') || categoryName.includes('Immune')) return 'shield-virus';
+    if (categoryName.includes('Diabetes') || categoryName.includes('Metabolic')) return 'dna';
+    if (categoryName.includes('Lung') || categoryName.includes('Respiratory')) return 'hourglass-half';
+    return 'flask';
+  };
+
+  // Transform the API response to match the expected format
+  const categories = (categoriesResponse as any)?.data?.condition?.map((cat: any, index: number) => ({
+    id: index + 1,
+    name: cat.name,
+    description: `${cat.count} studies available`,
+    icon: getCategoryIconName(cat.name),
+    count: parseInt(cat.count)
+  })) || [];
 
   const getCategoryIcon = (iconName: string) => {
     switch (iconName) {
       case "brain":
-        return <HiBrain className="text-xl" />;
+        return <HiChip className="text-xl" />;
       case "heartbeat":
         return <HiHeart className="text-xl" />;
       case "shield-virus":
@@ -87,7 +105,7 @@ const CategoriesSection = () => {
               <a className="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden group">
                 <div className="p-5">
                   <div className="bg-primary/10 rounded-full w-12 h-12 flex items-center justify-center mb-4 text-primary group-hover:bg-primary group-hover:text-white transition">
-                    {getCategoryIcon(category.icon)}
+                    {getCategoryIcon(category.icon || 'flask')}
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{category.name}</h3>
                   <p className="text-neutral-600 mb-3">{category.description}</p>
