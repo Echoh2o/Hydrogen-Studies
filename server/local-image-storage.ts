@@ -90,6 +90,33 @@ export async function downloadStudyImage(studyId: number): Promise<ImageDownload
       };
     }
 
+    // Check if OpenAI URL is expired
+    if (currentImageUrl.includes('oaidalleapiprodscus.blob.core.windows.net')) {
+      try {
+        const url = new URL(currentImageUrl);
+        const seParam = url.searchParams.get('se');
+        if (seParam) {
+          const expirationTime = new Date(seParam);
+          const now = new Date();
+          if (now > expirationTime) {
+            // Clear expired image URL from database
+            await db.execute(sql`
+              UPDATE studies 
+              SET image_url = NULL
+              WHERE id = ${studyId}
+            `);
+            return {
+              studyId,
+              success: true,
+              localPath: null
+            };
+          }
+        }
+      } catch (error) {
+        console.error('Error checking expiration:', error);
+      }
+    }
+
     // Download and save the image
     const localPath = await downloadAndSaveImage(currentImageUrl, studyId);
     
