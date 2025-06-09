@@ -949,7 +949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
 
       const result = {
-        studies,
+        data: studies,
         total: studies.length,
         facets: { tags: [], journals: [], years: [] },
         suggestions: [],
