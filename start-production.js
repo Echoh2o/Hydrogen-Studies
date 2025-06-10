@@ -11,7 +11,7 @@ console.log('Starting Hydrogen Research Platform in production mode...');
 // Use tsx to run the production server
 import { spawn } from 'child_process';
 
-const server = spawn('node', ['server/simple-production.js'], {
+const server = spawn('node', ['server/deployment-server.js'], {
   env: {
     ...process.env,
     NODE_ENV: 'production',
