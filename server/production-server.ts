@@ -1,6 +1,6 @@
 /**
- * Dedicated Production Server
- * Handles static files, API routes, and SPA routing for deployment
+ * Simplified Production Server
+ * Handles static files, essential API routes, and SPA routing for deployment
  */
 
 import express from 'express';
@@ -8,7 +8,6 @@ import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
-import { sql } from 'drizzle-orm';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,7 +23,7 @@ export async function createProductionServer() {
     throw new Error('DATABASE_URL is required for production');
   }
   
-  const db = neon(process.env.DATABASE_URL);
+  const sql = neon(process.env.DATABASE_URL);
   
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));
@@ -52,7 +51,7 @@ export async function createProductionServer() {
   app.get('/health', async (req, res) => {
     try {
       const start = Date.now();
-      await db.execute(sql`SELECT 1`);
+      await sql('SELECT 1');
       const dbLatency = Date.now() - start;
       
       res.json({
@@ -76,15 +75,15 @@ export async function createProductionServer() {
       const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
       const offset = (page - 1) * limit;
       
-      const result = await db.execute(sql`
+      const result = await sql(`
         SELECT id, title, abstract, category, image_url, publication_date, 
                authors, journal, doi, health_conditions, delivery_method
         FROM studies 
         ORDER BY id 
-        LIMIT ${limit} OFFSET ${offset}
-      `);
+        LIMIT $1 OFFSET $2
+      `, [limit, offset]);
       
-      const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM studies`);
+      const countResult = await sql('SELECT COUNT(*) as count FROM studies');
       
       res.json({
         studies: (result as any).rows || [],
