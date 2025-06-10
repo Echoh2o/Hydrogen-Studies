@@ -1102,10 +1102,60 @@ export async function createMinimalServer() {
     }
   });
 
-  // Error handling
+  // Production health endpoint
+  app.get('/health', async (req, res) => {
+    try {
+      const start = Date.now();
+      await db.execute(sql`SELECT 1`);
+      const dbLatency = Date.now() - start;
+      
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        database: { latency: `${dbLatency}ms` },
+        version: '1.0.0'
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Database connection failed'
+      });
+    }
+  });
+
+  // Root endpoint
+  app.get('/', (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+      res.json({ 
+        message: 'Hydrogen Research Platform API', 
+        status: 'running',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.json({ 
+        message: 'Hydrogen Research Platform API', 
+        status: 'running',
+        endpoints: ['/api/studies', '/api/search', '/health']
+      });
+    }
+  });
+
+  // Enhanced error handling
   app.use((error: any, req: any, res: any, next: any) => {
-    console.error('Server error:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Server error:', error);
+    
+    if (res.headersSent) {
+      return next(error);
+    }
+    
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: isDevelopment ? error.message : 'Something went wrong',
+      timestamp: new Date().toISOString()
+    });
   });
 
   return app;
