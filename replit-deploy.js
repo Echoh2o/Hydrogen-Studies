@@ -160,18 +160,12 @@ app.get('/api', (req, res) => {
 app.get('*', (req, res) => {
   console.log(`[DEPLOY] Serving route: ${req.path}`);
   
-  // Try production HTML first, then fallback to development
+  // Always use production HTML for deployment
   const productionPath = path.join(process.cwd(), 'public', 'production-index.html');
-  const developmentPath = path.join(process.cwd(), 'public', 'index.html');
   
-  let htmlPath = productionPath;
-  if (!fs.existsSync(productionPath)) {
-    console.log('[DEPLOY] Production HTML not found, using fallback');
-    htmlPath = null; // Force fallback HTML
-  }
-  
-  if (htmlPath && fs.existsSync(htmlPath)) {
-    let html = fs.readFileSync(htmlPath, 'utf8');
+  if (fs.existsSync(productionPath)) {
+    console.log('[DEPLOY] Serving production HTML');
+    const html = fs.readFileSync(productionPath, 'utf8');
     res.send(html);
   } else {
     // Fallback HTML with working interface
