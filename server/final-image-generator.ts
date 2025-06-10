@@ -6,6 +6,7 @@
 import { sql } from 'drizzle-orm';
 import path from 'path';
 import fs from 'fs';
+import OpenAI from 'openai';
 
 interface GenerationProgress {
   isActive: boolean;
@@ -27,13 +28,143 @@ let progress: GenerationProgress = {
   startTime: new Date()
 };
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+/**
+ * Create an advanced image prompt using AI and category-specific optimizations
+ */
+async function createAdvancedImagePrompt(study: any): Promise<string> {
+  const category = study.category || 'General';
+  const title = study.title || '';
+  const abstract = study.abstract || '';
+  
+  // Determine hydrogen delivery method
+  const deliveryMethod = determineHydrogenDeliveryMethod(title + ' ' + abstract);
+  
+  try {
+    // Use AI to generate detailed prompt
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert scientific illustrator specializing in hydrogen health research. 
+          Create detailed, scientifically accurate prompts for generating medical/scientific illustrations.
+          Focus on creating prompts that would yield realistic, professional images suitable for scientific publications.
+          Do not include text labels in the image description as they will appear distorted.
+          Avoid references to specific people, brands, or copyrighted concepts.`
+        },
+        {
+          role: "user",
+          content: `Create a detailed prompt for generating a scientific illustration for a hydrogen health study:
+          
+          TITLE: ${title}
+          ABSTRACT: ${abstract.substring(0, 300)}
+          CATEGORY: ${category}
+          DELIVERY METHOD: ${deliveryMethod}
+          
+          The image should be:
+          1. Scientifically accurate and professionally styled
+          2. Suitable for a medical or scientific publication
+          3. Clear and focused on the hydrogen therapy mechanism
+          4. Without any text labels or annotations
+          5. In a modern scientific illustration style with a clean background
+          
+          Provide only the image generation prompt with no additional explanation.`
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7,
+    });
+
+    const generatedPrompt = response.choices[0]?.message.content?.trim();
+    
+    if (generatedPrompt) {
+      return `Scientific illustration for hydrogen therapy research: ${generatedPrompt}. Professional medical illustration in a hyper-realistic style with clean lighting and neutral background. No text or labels.`;
+    }
+  } catch (error) {
+    console.error('Error creating AI-enhanced prompt:', error);
+  }
+  
+  // Fallback to category-specific prompt
+  return createCategoryOptimizedPrompt(study, deliveryMethod);
+}
+
+/**
+ * Create category-optimized prompt as fallback
+ */
+function createCategoryOptimizedPrompt(study: any, deliveryMethod: string): string {
+  const category = study.category || 'General';
+  let basePrompt = "Professional medical illustration, clean and modern style, ";
+  
+  // Add category-specific elements
+  switch (category.toLowerCase()) {
+    case 'cardiovascular':
+      basePrompt += "heart and cardiovascular system, ";
+      break;
+    case 'neurological':
+      basePrompt += "brain and nervous system, ";
+      break;
+    case 'respiratory':
+      basePrompt += "lungs and respiratory system, ";
+      break;
+    case 'gastrointestinal':
+      basePrompt += "digestive system, ";
+      break;
+    case 'cancer research':
+      basePrompt += "cellular health and protection, ";
+      break;
+    case 'metabolic':
+      basePrompt += "metabolism and cellular energy, ";
+      break;
+    case 'dermatology':
+      basePrompt += "skin health and cellular regeneration, ";
+      break;
+    default:
+      basePrompt += "general health and wellness, ";
+  }
+
+  // Add delivery method context
+  if (deliveryMethod.toLowerCase().includes('water')) {
+    basePrompt += "hydrogen-rich water therapy, ";
+  } else if (deliveryMethod.toLowerCase().includes('inhalation')) {
+    basePrompt += "hydrogen gas inhalation therapy, ";
+  } else {
+    basePrompt += "hydrogen therapy, ";
+  }
+  
+  basePrompt += `molecular hydrogen (H2) interacting with cells, reducing oxidative stress, therapeutic benefits. Clean background, no text labels, scientifically accurate, medical research publication quality.`;
+  
+  return basePrompt;
+}
+
+/**
+ * Determine hydrogen delivery method from study content
+ */
+function determineHydrogenDeliveryMethod(content: string): string {
+  const lowerContent = content.toLowerCase();
+  
+  if (lowerContent.includes('hydrogen-rich water') || lowerContent.includes('hydrogen water') || lowerContent.includes('drinking')) {
+    return 'Hydrogen-rich water';
+  } else if (lowerContent.includes('inhalation') || lowerContent.includes('breathing') || lowerContent.includes('gas')) {
+    return 'Hydrogen gas inhalation';
+  } else if (lowerContent.includes('injection') || lowerContent.includes('infusion')) {
+    return 'Hydrogen injection/infusion';
+  } else if (lowerContent.includes('bath') || lowerContent.includes('topical')) {
+    return 'Hydrogen bath/topical';
+  } else {
+    return 'General hydrogen therapy';
+  }
+}
+
 async function generateImage(study: any, db: any): Promise<boolean> {
   if (!process.env.OPENAI_API_KEY) {
     console.log('No OpenAI API key - skipping image generation');
     return false;
   }
 
-  const prompt = `Medical research illustration: hydrogen therapy mechanisms for "${study.title}". Professional scientific visualization showing H2 molecular interactions with cells, oxidative stress reduction, therapeutic benefits. Clean medical research style.`;
+  // Use our fine-tuned advanced prompt system
+  const prompt = await createAdvancedImagePrompt(study);
 
   try {
     const response = await fetch('https://api.openai.com/v1/images/generations', {

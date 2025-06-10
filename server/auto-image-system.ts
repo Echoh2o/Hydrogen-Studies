@@ -87,12 +87,19 @@ async function startGenerationIfNeeded(db: any): Promise<void> {
   }
 
   try {
+    // Stop any running generation first
+    const { stopFinalGeneration } = await import('./final-image-generator');
+    stopFinalGeneration();
+    
+    // Wait a moment then start fresh
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     const { startFinalGeneration } = await import('./final-image-generator');
     const result = await startFinalGeneration(db);
     
     if (result.success) {
       systemState.generationActive = true;
-      console.log('Auto-started image generation:', result.message);
+      console.log('Auto-started image generation with fine-tuned prompts:', result.message);
     } else {
       console.log('Failed to auto-start generation:', result.message);
     }
