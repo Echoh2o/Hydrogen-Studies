@@ -652,6 +652,54 @@ export async function createMinimalServer() {
     }
   });
 
+  app.post('/api/image-generation/optimal', async (req, res) => {
+    try {
+      const { startOptimalGeneration } = await import('./optimal-image-generator');
+      const result = await startOptimalGeneration(db);
+      res.json(result);
+    } catch (error) {
+      console.error('Error starting optimal generation:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start optimal generation'
+      });
+    }
+  });
+
+  app.get('/api/image-generation/optimal-status', async (req, res) => {
+    try {
+      const { getOptimalStatus } = await import('./optimal-image-generator');
+      const status = getOptimalStatus();
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get optimal status' });
+    }
+  });
+
+  app.post('/api/image-generation/final', async (req, res) => {
+    try {
+      const { startFinalGeneration } = await import('./final-image-generator');
+      const result = await startFinalGeneration(db);
+      res.json(result);
+    } catch (error) {
+      console.error('Error starting final generation:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start final generation'
+      });
+    }
+  });
+
+  app.get('/api/image-generation/final-progress', async (req, res) => {
+    try {
+      const { getFinalProgress } = await import('./final-image-generator');
+      const progress = getFinalProgress();
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get final progress' });
+    }
+  });
+
   // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {
