@@ -89,8 +89,8 @@ async function processBatchFast(studies: any[], db: any, batchId: number): Promi
   
   for (const study of studies) {
     await generateStudyImageFast(study, db);
-    // Minimal rate limiting - 1.5 seconds
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Optimal rate limiting to avoid 429 errors - 4 seconds
+    await new Promise(resolve => setTimeout(resolve, 4000));
   }
   
   activeBatches--;
