@@ -97,12 +97,17 @@ export async function createMinimalServer() {
   // Configure trust proxy for rate limiting
   app.set('trust proxy', 1);
   
+  // Validate critical environment variables
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+  
   // Validate environment before starting
   const envErrors = validateEnvironment();
   if (envErrors.length > 0) {
     console.warn('Environment validation warnings:', envErrors);
   }
-
+  
   // Security middleware
   app.use(securityHeaders);
   app.use(globalRateLimit);
