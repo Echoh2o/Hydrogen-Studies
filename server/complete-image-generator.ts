@@ -134,7 +134,7 @@ export async function startCompleteImageGeneration(db: any): Promise<{success: b
       FROM studies 
       WHERE image_url IS NULL
       ORDER BY id
-      LIMIT 50
+      LIMIT 100
     `);
     
     const studies = (result as any).rows || [];
@@ -149,8 +149,8 @@ export async function startCompleteImageGeneration(db: any): Promise<{success: b
         
         await generateStudyImage(study, db);
         
-        // Rate limit: 3 seconds between requests
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Rate limit: 2 seconds between requests
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
       
       isGenerating = false;
