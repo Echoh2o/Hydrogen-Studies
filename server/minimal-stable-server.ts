@@ -75,8 +75,7 @@ async function generateStudyImageWithOpenAI(study: any): Promise<void> {
     await db.execute(sql`
       UPDATE studies 
       SET image_url = ${webPath},
-          auto_generated_image = true,
-          updated_at = NOW()
+          auto_generated_image = true
       WHERE id = ${study.id}
     `);
 
