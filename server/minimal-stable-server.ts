@@ -724,6 +724,60 @@ export async function createMinimalServer() {
     }
   });
 
+  // Auto-image system endpoints
+  app.get('/api/auto-image/status', async (req, res) => {
+    try {
+      const { getAutoImageSystemStatus } = await import('./auto-image-system');
+      const status = getAutoImageSystemStatus();
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get auto-image status' });
+    }
+  });
+
+  app.post('/api/auto-image/enable', async (req, res) => {
+    try {
+      const { enableAutoImageSystem } = await import('./auto-image-system');
+      const result = await enableAutoImageSystem(db);
+      res.json(result);
+    } catch (error) {
+      console.error('Error enabling auto-image system:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to enable auto-image system'
+      });
+    }
+  });
+
+  app.post('/api/auto-image/disable', async (req, res) => {
+    try {
+      const { disableAutoImageSystem } = await import('./auto-image-system');
+      const result = disableAutoImageSystem();
+      res.json(result);
+    } catch (error) {
+      console.error('Error disabling auto-image system:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to disable auto-image system'
+      });
+    }
+  });
+
+  app.post('/api/auto-image/check-new-studies', async (req, res) => {
+    try {
+      const { checkForNewStudies } = await import('./auto-image-system');
+      const result = await checkForNewStudies(db);
+      res.json(result);
+    } catch (error) {
+      console.error('Error checking for new studies:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check for new studies',
+        newStudies: 0
+      });
+    }
+  });
+
   // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {
@@ -1071,9 +1125,17 @@ export async function startMinimalServer() {
     // Setup Vite for frontend serving (after all API routes are defined)
     await setupVite(app, server);
 
-    server.listen(port, '0.0.0.0', () => {
+    server.listen(port, '0.0.0.0', async () => {
       const duration = Date.now() - startTime;
       console.log(`✓ Minimal server running on port ${port} (${duration}ms startup)`);
+      
+      // Initialize auto-image system after server startup
+      try {
+        const { initializeAutoImageSystem } = await import('./auto-image-system');
+        await initializeAutoImageSystem(db);
+      } catch (error) {
+        console.error('Failed to initialize auto-image system:', error);
+      }
     });
 
     return { app, server };
