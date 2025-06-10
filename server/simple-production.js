@@ -5,6 +5,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
 
@@ -42,7 +43,18 @@ app.use((req, res, next) => {
 
 // Static files
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Serve built frontend assets from dist directory if it exists, otherwise fallback to public
+const distPath = path.join(process.cwd(), 'dist');
+const publicPath = path.join(process.cwd(), 'public');
+
+if (fs.existsSync(distPath)) {
+  console.log('Serving built assets from dist/');
+  app.use(express.static(distPath));
+} else {
+  console.log('Serving development assets from public/');
+  app.use(express.static(publicPath));
+}
 
 // Health check
 app.get('/health', async (req, res) => {
