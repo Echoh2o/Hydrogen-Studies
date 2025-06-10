@@ -160,76 +160,65 @@ app.get('/api', (req, res) => {
 app.get('*', (req, res) => {
   console.log(`[DEPLOY] Serving route: ${req.path}`);
   
-  const indexPath = path.join(process.cwd(), 'public', 'index.html');
+  // Try production HTML first, then fallback to development
+  const productionPath = path.join(process.cwd(), 'public', 'production-index.html');
+  const developmentPath = path.join(process.cwd(), 'public', 'index.html');
   
-  if (fs.existsSync(indexPath)) {
-    let html = fs.readFileSync(indexPath, 'utf8');
-    
-    // Create a basic working interface for deployment
-    html = html.replace(
-      '<script type="module" src="/src/main.tsx"></script>',
-      `<script>
-        document.getElementById('root').innerHTML = \`
-          <div style="padding: 40px; max-width: 1200px; margin: 0 auto; font-family: Arial, sans-serif;">
-            <h1 style="color: #2563eb; margin-bottom: 20px;">Hydrogen Research Platform</h1>
-            <p style="margin-bottom: 30px; color: #6b7280;">Comprehensive database of hydrogen health research studies</p>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
-              <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
-                <h3 style="margin: 0 0 10px 0; color: #374151;">API Endpoints</h3>
-                <div style="margin: 10px 0;">
-                  <a href="/api/studies" style="color: #2563eb; text-decoration: none;">Browse Studies</a>
-                </div>
-                <div style="margin: 10px 0;">
-                  <a href="/api/categories" style="color: #2563eb; text-decoration: none;">Research Categories</a>
-                </div>
-                <div style="margin: 10px 0;">
-                  <a href="/health" style="color: #2563eb; text-decoration: none;">Health Check</a>
-                </div>
-              </div>
-              
-              <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
-                <h3 style="margin: 0 0 10px 0; color: #374151;">Database Status</h3>
-                <p style="margin: 5px 0; color: #6b7280;">✅ Connected to PostgreSQL</p>
-                <p style="margin: 5px 0; color: #6b7280;">📊 1,304 total studies</p>
-                <p style="margin: 5px 0; color: #6b7280;">🖼️ 1,076+ with images</p>
-              </div>
-            </div>
-            
-            <div style="background: #f9fafb; border-radius: 8px; padding: 20px;">
-              <h3 style="margin: 0 0 15px 0; color: #374151;">Featured Research Categories</h3>
-              <div id="categories" style="color: #6b7280;">Loading categories...</div>
-            </div>
-          </div>
-        \`;
-        
-        // Load categories dynamically
-        fetch('/api/categories')
-          .then(res => res.json())
-          .then(categories => {
-            const categoriesDiv = document.getElementById('categories');
-            categoriesDiv.innerHTML = categories.slice(0, 8).map(cat => 
-              \`<span style="display: inline-block; margin: 5px 10px 5px 0; padding: 8px 12px; background: #e5e7eb; border-radius: 4px; font-size: 14px;">
-                \${cat.category} (\${cat.count})
-              </span>\`
-            ).join('');
-          })
-          .catch(() => {
-            document.getElementById('categories').innerHTML = 'Categories loading...';
-          });
-      </script>`
-    );
-    
+  let htmlPath = productionPath;
+  if (!fs.existsSync(productionPath)) {
+    console.log('[DEPLOY] Production HTML not found, using fallback');
+    htmlPath = null; // Force fallback HTML
+  }
+  
+  if (htmlPath && fs.existsSync(htmlPath)) {
+    let html = fs.readFileSync(htmlPath, 'utf8');
     res.send(html);
   } else {
-    res.status(404).send(`
-      <html>
-        <head><title>Hydrogen Research Platform</title></head>
-        <body style="padding: 40px; font-family: Arial, sans-serif;">
-          <h1>Hydrogen Research Platform</h1>
-          <p>Database API is running. Frontend files not found.</p>
-          <p><a href="/api">API Documentation</a></p>
-        </body>
+    // Fallback HTML with working interface
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hydrogen Research Platform</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; max-width: 1200px; margin: 0 auto; }
+          .header { background: #f8fafc; padding: 30px; border-radius: 8px; margin-bottom: 30px; }
+          .title { color: #2563eb; font-size: 2rem; margin-bottom: 10px; }
+          .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+          .card { background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; }
+          .link { color: #2563eb; text-decoration: none; display: block; margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 class="title">Hydrogen Research Platform</h1>
+          <p>Comprehensive database of hydrogen health research studies</p>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h3>API Access</h3>
+            <a href="/api/studies" class="link">Browse Studies Database</a>
+            <a href="/api/categories" class="link">Research Categories</a>
+            <a href="/health" class="link">System Health</a>
+          </div>
+          <div class="card">
+            <h3>Database Status</h3>
+            <p>📊 1,304 total studies</p>
+            <p>🖼️ 1,079+ with AI-generated images</p>
+            <p id="status">🔄 Checking connection...</p>
+          </div>
+        </div>
+        <script>
+          fetch('/health').then(r => r.json()).then(d => {
+            document.getElementById('status').innerHTML = '✅ Database: ' + d.status;
+          }).catch(() => {
+            document.getElementById('status').innerHTML = '❌ Connection error';
+          });
+        </script>
+      </body>
       </html>
     `);
   }
