@@ -103,9 +103,7 @@ export async function createProductionServer() {
     try {
       const id = parseInt(req.params.id);
       
-      const result = await db.execute(sql`
-        SELECT * FROM studies WHERE id = ${id}
-      `);
+      const result = await sql('SELECT * FROM studies WHERE id = $1', [id]);
       
       const study = (result as any).rows?.[0];
       
@@ -129,60 +127,60 @@ export async function createProductionServer() {
       const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
       const offset = (page - 1) * limit;
       
-      let searchSql;
-      let countSql;
+      // Query logic is handled in the next section with proper SQL calls
+      
+      let result, countResult;
       
       if (query && category) {
-        searchSql = sql`
+        result = await sql(`
           SELECT id, title, abstract, category, image_url, publication_date,
                  authors, journal, doi, health_conditions, delivery_method
           FROM studies 
-          WHERE (title ILIKE ${`%${query}%`} OR abstract ILIKE ${`%${query}%`})
-            AND category = ${category}
+          WHERE (title ILIKE $1 OR abstract ILIKE $1) AND category = $2
           ORDER BY id 
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-        countSql = sql`
+          LIMIT $3 OFFSET $4
+        `, [`%${query}%`, category, limit, offset]);
+        
+        countResult = await sql(`
           SELECT COUNT(*) as count FROM studies 
-          WHERE (title ILIKE ${`%${query}%`} OR abstract ILIKE ${`%${query}%`})
-            AND category = ${category}
-        `;
+          WHERE (title ILIKE $1 OR abstract ILIKE $1) AND category = $2
+        `, [`%${query}%`, category]);
       } else if (query) {
-        searchSql = sql`
+        result = await sql(`
           SELECT id, title, abstract, category, image_url, publication_date,
                  authors, journal, doi, health_conditions, delivery_method
           FROM studies 
-          WHERE title ILIKE ${`%${query}%`} OR abstract ILIKE ${`%${query}%`}
+          WHERE title ILIKE $1 OR abstract ILIKE $1
           ORDER BY id 
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-        countSql = sql`
+          LIMIT $2 OFFSET $3
+        `, [`%${query}%`, limit, offset]);
+        
+        countResult = await sql(`
           SELECT COUNT(*) as count FROM studies 
-          WHERE title ILIKE ${`%${query}%`} OR abstract ILIKE ${`%${query}%`}
-        `;
+          WHERE title ILIKE $1 OR abstract ILIKE $1
+        `, [`%${query}%`]);
       } else if (category) {
-        searchSql = sql`
+        result = await sql(`
           SELECT id, title, abstract, category, image_url, publication_date,
                  authors, journal, doi, health_conditions, delivery_method
           FROM studies 
-          WHERE category = ${category}
+          WHERE category = $1
           ORDER BY id 
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-        countSql = sql`SELECT COUNT(*) as count FROM studies WHERE category = ${category}`;
+          LIMIT $2 OFFSET $3
+        `, [category, limit, offset]);
+        
+        countResult = await sql('SELECT COUNT(*) as count FROM studies WHERE category = $1', [category]);
       } else {
-        searchSql = sql`
+        result = await sql(`
           SELECT id, title, abstract, category, image_url, publication_date,
                  authors, journal, doi, health_conditions, delivery_method
           FROM studies 
           ORDER BY id 
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-        countSql = sql`SELECT COUNT(*) as count FROM studies`;
+          LIMIT $1 OFFSET $2
+        `, [limit, offset]);
+        
+        countResult = await sql('SELECT COUNT(*) as count FROM studies');
       }
-      
-      const result = await db.execute(searchSql);
-      const countResult = await db.execute(countSql);
       
       res.json({
         studies: (result as any).rows || [],
@@ -201,7 +199,7 @@ export async function createProductionServer() {
   // Categories API
   app.get('/api/categories', async (req, res) => {
     try {
-      const result = await db.execute(sql`
+      const result = await sql(`
         SELECT category, COUNT(*) as count 
         FROM studies 
         WHERE category IS NOT NULL 
