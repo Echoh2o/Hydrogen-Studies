@@ -628,6 +628,30 @@ export async function createMinimalServer() {
     }
   });
 
+  app.post('/api/image-generation/accelerated', async (req, res) => {
+    try {
+      const { startAcceleratedGeneration } = await import('./accelerated-image-generator');
+      const result = await startAcceleratedGeneration(db);
+      res.json(result);
+    } catch (error) {
+      console.error('Error starting accelerated generation:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start accelerated generation'
+      });
+    }
+  });
+
+  app.get('/api/image-generation/accelerated-status', async (req, res) => {
+    try {
+      const { getAcceleratedStatus } = await import('./accelerated-image-generator');
+      const status = getAcceleratedStatus();
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get accelerated status' });
+    }
+  });
+
   // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {
