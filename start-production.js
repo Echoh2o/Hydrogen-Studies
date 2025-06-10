@@ -1,35 +1,61 @@
 #!/usr/bin/env node
 
 /**
- * Production Server for Hydrogen Research Platform
- * Uses the built application from dist/index.js or falls back to simplified server
+ * Simple Production Server for Hydrogen Research Platform
+ * Directly runs the server without complex build process
  */
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+// Set production environment
+process.env.NODE_ENV = 'production';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+console.log('Starting production server for Hydrogen Research Platform...');
 
-// Check if built application exists
-const distIndexPath = join(__dirname, 'dist', 'index.js');
-
-if (existsSync(distIndexPath)) {
-  console.log('Starting production server from built application...');
+try {
+  // Use dynamic import to load and start the server
+  const { spawn } = await import('child_process');
   
-  // Set production environment
-  process.env.NODE_ENV = 'production';
+  console.log('Starting server with tsx...');
   
-  // Import and run the built application
-  try {
-    await import('./dist/index.js');
-    console.log('Production server started successfully from built application');
-  } catch (error) {
-    console.error('Failed to start built application:', error);
-    console.log('Deployment will use the fallback production server');
+  const server = spawn('npx', ['tsx', 'server/index.ts'], {
+    env: { 
+      ...process.env, 
+      NODE_ENV: 'production',
+      PORT: process.env.PORT || '5000'
+    },
+    stdio: 'inherit',
+    cwd: process.cwd()
+  });
+  
+  server.on('error', (error) => {
+    console.error('Server process error:', error);
     process.exit(1);
-  }
-} else {
-  console.log('Built application not found - deployment requires npm run build first');
+  });
+  
+  server.on('exit', (code) => {
+    console.log(`Server process exited with code ${code}`);
+    if (code !== 0) {
+      process.exit(code);
+    }
+  });
+  
+  // Handle shutdown signals
+  const shutdown = (signal) => {
+    console.log(`Received ${signal}, shutting down gracefully...`);
+    server.kill('SIGTERM');
+    setTimeout(() => {
+      console.log('Force killing server...');
+      server.kill('SIGKILL');
+      process.exit(1);
+    }, 5000);
+  };
+  
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGUSR2', () => shutdown('SIGUSR2'));
+  
+  console.log('Production server startup initiated');
+  
+} catch (error) {
+  console.error('Failed to start production server:', error);
   process.exit(1);
 }
