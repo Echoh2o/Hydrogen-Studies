@@ -700,6 +700,30 @@ export async function createMinimalServer() {
     }
   });
 
+  app.post('/api/image-generation/fast', async (req, res) => {
+    try {
+      const { startFastGeneration } = await import('./fast-image-generator');
+      const result = await startFastGeneration(db);
+      res.json(result);
+    } catch (error) {
+      console.error('Error starting fast generation:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start fast generation'
+      });
+    }
+  });
+
+  app.get('/api/image-generation/fast-status', async (req, res) => {
+    try {
+      const { getFastStatus } = await import('./fast-image-generator');
+      const status = getFastStatus();
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get fast status' });
+    }
+  });
+
   // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {

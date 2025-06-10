@@ -134,13 +134,13 @@ export async function startFinalGeneration(db: any): Promise<{success: boolean, 
   setTimeout(async () => {
     try {
       while (progress.isActive && progress.completed + progress.failed < progress.totalRemaining) {
-        // Get small batch of 10 studies
+        // Get larger batch of 30 studies for faster processing
         const result = await db.execute(sql`
           SELECT id, title, abstract
           FROM studies 
           WHERE image_url IS NULL
           ORDER BY id
-          LIMIT 10
+          LIMIT 30
         `);
         
         const studies = (result as any).rows || [];
@@ -159,8 +159,8 @@ export async function startFinalGeneration(db: any): Promise<{success: boolean, 
           
           await generateImage(study, db);
           
-          // Conservative rate limiting - 10 seconds between requests
-          await new Promise(resolve => setTimeout(resolve, 10000));
+          // Optimized rate limiting - 4 seconds between requests (15 per minute)
+          await new Promise(resolve => setTimeout(resolve, 4000));
           
           // Update time estimate
           const elapsed = (Date.now() - progress.startTime.getTime()) / 1000 / 60;
@@ -169,10 +169,10 @@ export async function startFinalGeneration(db: any): Promise<{success: boolean, 
           progress.estimatedMinutesRemaining = rate > 0 ? Math.ceil(remaining / rate) : remaining * 0.2;
         }
         
-        // Longer break between batches to be extra conservative
+        // Shorter break between batches for faster processing
         if (studies.length > 0 && progress.isActive) {
-          console.log(`Completed batch ${progress.currentBatch}, waiting 60 seconds before next batch...`);
-          await new Promise(resolve => setTimeout(resolve, 60000));
+          console.log(`Completed batch ${progress.currentBatch}, waiting 10 seconds before next batch...`);
+          await new Promise(resolve => setTimeout(resolve, 10000));
         }
       }
     } catch (error) {
