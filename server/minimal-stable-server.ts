@@ -101,6 +101,10 @@ export async function createMinimalServer() {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL environment variable is required');
   }
+
+  // Serve static files first (before other middleware)
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  app.use(express.static(path.join(process.cwd(), 'public')));
   
   // Validate environment before starting
   const envErrors = validateEnvironment();
@@ -1124,21 +1128,20 @@ export async function createMinimalServer() {
     }
   });
 
-  // Root endpoint
-  app.get('/', (req, res) => {
-    if (process.env.NODE_ENV === 'production') {
-      res.json({ 
-        message: 'Hydrogen Research Platform API', 
-        status: 'running',
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      res.json({ 
-        message: 'Hydrogen Research Platform API', 
-        status: 'running',
-        endpoints: ['/api/studies', '/api/search', '/health']
-      });
+  // Catch-all handler for SPA routing
+  app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/') || req.path === '/health') {
+      return next();
     }
+    
+    // Skip static files
+    if (req.path.includes('.')) {
+      return next();
+    }
+    
+    // Serve index.html for SPA routing
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
   });
 
   // Enhanced error handling
@@ -1178,7 +1181,9 @@ export async function startMinimalServer() {
     const server = createServer(app);
     
     // Setup Vite for frontend serving (after all API routes are defined)
-    await setupVite(app, server);
+    if (process.env.NODE_ENV !== 'production') {
+      await setupVite(app, server);
+    }
 
     server.listen(port, '0.0.0.0', async () => {
       const duration = Date.now() - startTime;
