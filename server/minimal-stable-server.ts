@@ -359,6 +359,76 @@ export async function createMinimalServer() {
     }
   });
 
+  // Image generation endpoints
+  app.post('/api/image-generation/auto-generate-all', async (req, res) => {
+    try {
+      // Get all studies without images
+      const result = await db.execute(sql`
+        SELECT id, title, abstract
+        FROM studies 
+        WHERE image_url IS NULL
+        ORDER BY id
+        LIMIT 100
+      `);
+      
+      const studies = (result as any).rows || [];
+      console.log(`Found ${studies.length} studies without images to process`);
+      
+      if (studies.length === 0) {
+        return res.json({
+          success: true,
+          message: 'All studies already have images'
+        });
+      }
+      
+      // Start background image generation
+      setTimeout(async () => {
+        for (const study of studies) {
+          try {
+            await generateStudyImageWithOpenAI(study);
+            // Rate limiting between requests
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } catch (error) {
+            console.error(`Error generating image for study ${study.id}:`, error);
+          }
+        }
+      }, 100);
+      
+      res.json({
+        success: true,
+        message: `Started generating images for ${studies.length} studies`,
+        count: studies.length
+      });
+    } catch (error) {
+      console.error('Error in auto-generate-all:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to start image generation'
+      });
+    }
+  });
+
+  app.get('/api/image-generation/status', async (req, res) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT 
+          COUNT(*) as total_studies,
+          COUNT(image_url) as studies_with_images,
+          COUNT(*) - COUNT(image_url) as studies_without_images
+        FROM studies
+      `);
+      
+      const stats = (result as any).rows[0];
+      res.json({
+        total: parseInt(stats.total_studies),
+        withImages: parseInt(stats.studies_with_images),
+        withoutImages: parseInt(stats.studies_without_images)
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get status' });
+    }
+  });
+
   // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {
