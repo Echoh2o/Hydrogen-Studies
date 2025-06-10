@@ -563,6 +563,71 @@ export async function createMinimalServer() {
     }
   });
 
+  app.post('/api/image-generation/start-complete-generation', async (req, res) => {
+    try {
+      const { startBulkGeneration, getGenerationStats } = await import('./bulk-image-generator');
+      
+      // Check if already running
+      const currentStats = getGenerationStats();
+      if (currentStats.inProgress) {
+        return res.json({
+          success: false,
+          message: 'Bulk generation already in progress',
+          stats: currentStats
+        });
+      }
+      
+      // Start the comprehensive generation process
+      startBulkGeneration();
+      
+      res.json({
+        success: true,
+        message: 'Started comprehensive bulk image generation for all 771 studies',
+        stats: getGenerationStats()
+      });
+    } catch (error) {
+      console.error('Error starting complete generation:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to start complete generation'
+      });
+    }
+  });
+
+  app.get('/api/image-generation/generation-stats', async (req, res) => {
+    try {
+      const { getGenerationStats } = await import('./bulk-image-generator');
+      const stats = getGenerationStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get generation stats' });
+    }
+  });
+
+  app.post('/api/image-generation/start-bulk', async (req, res) => {
+    try {
+      const { startCompleteImageGeneration } = await import('./complete-image-generator');
+      const result = await startCompleteImageGeneration(db);
+      res.json(result);
+    } catch (error) {
+      console.error('Error starting bulk generation:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start bulk generation'
+      });
+    }
+  });
+
+  app.get('/api/image-generation/bulk-status', async (req, res) => {
+    try {
+      const { getGenerationStatus } = await import('./complete-image-generator');
+      const status = getGenerationStatus();
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get bulk status' });
+    }
+  });
+
   // Chat API endpoint with OpenAI integration
   app.post('/api/chat', async (req, res) => {
     try {
