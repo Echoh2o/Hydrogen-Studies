@@ -156,7 +156,7 @@ export async function createProductionServer() {
           }
 
           if (categories.condition) {
-            categories.condition.forEach(cond => {
+            conditions.condition.forEach(cond => {
               conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
             });
           }
