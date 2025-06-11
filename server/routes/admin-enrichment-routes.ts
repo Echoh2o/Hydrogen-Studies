@@ -85,7 +85,7 @@ router.get('/enrichment-stats', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to get enrichment statistics',
-      error: String(error)
+      error: error instanceof Error ? error.message : String(error)
     });
   }
 });

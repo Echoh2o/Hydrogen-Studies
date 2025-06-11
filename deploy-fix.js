@@ -15,8 +15,8 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-// Use the deployment server
-const serverPath = 'server/deployment-server.js';
+// Use the production server  
+const serverPath = 'start-production.js';
 
 if (!fs.existsSync(serverPath)) {
   console.error(`❌ Server file not found: ${serverPath}`);

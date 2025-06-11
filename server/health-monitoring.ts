@@ -3,10 +3,89 @@
  * Monitors application health and automatically recovers from failures
  */
 
-import { db } from './db.js';
+import { db } from './db';
+import { sql } from 'drizzle-orm';
+
+/**
+ * Health Monitoring and Auto-Recovery System
+ * Monitors application health and automatically recovers from failures
+ */
+
+import { db } from './db';
+import { sql } from 'drizzle-orm';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp: string;
+  errors: string[];
+  uptime: number;
+  database: {
+    connected: boolean;
+    latency: number;
+  };
+}
+
+let healthStatus: HealthStatus = {
+  status: 'healthy',
+  timestamp: new Date().toISOString(),
+  errors: [],
+  uptime: 0,
+  database: {
+    connected: false,
+    latency: 0
+  }
+};
+
+let errorCount = 0;
+const startTime = Date.now();
+
+/**
+ * Perform comprehensive health check
+ */
+export async function performHealthCheck(): Promise<HealthStatus> {
+  const errors: string[] = [];
+
+  try {
+    // Test database connection
+    const dbStart = Date.now();
+    await db.execute(sql`SELECT 1`);
+    const dbLatency = Date.now() - dbStart;
+    
+    healthStatus.database = {
+      connected: true,
+      latency: dbLatency
+    };
+
+    if (dbLatency > 1000) {
+      errors.push('Database response time is slow');
+    }
+  } catch (error) {
+    errors.push(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    healthStatus.database = {
+      connected: false,
+      latency: -1
+    };
+  }
+
+  // Update health status
+  healthStatus = {
+    status: errors.length === 0 ? 'healthy' : errors.length < 3 ? 'degraded' : 'unhealthy',
+    timestamp: new Date().toISOString(),
+    errors,
+    uptime: Date.now() - startTime,
+    database: healthStatus.database
+  };
+
+  return healthStatus;
+}
+
+/**
+ * Log error and increment error count
+ */
+export function logError(error: Error): void {
+  console.error('Health monitoring error:', error);
+  errorCount++;
+}
   database: boolean;
   memory: { used: number; total: number; percentage: number };
   uptime: number;
