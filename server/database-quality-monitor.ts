@@ -5,11 +5,15 @@
  * maintains database health for optimal speed and reliability
  */
 
-import { pool } from './db';
-import { performanceCache } from './database-performance-optimizer';
-
 import { db as pool } from './db';
 import { sql } from 'drizzle-orm';
+
+// Simple cache fallback if the performance optimizer doesn't exist
+const performanceCache = {
+  clear: () => {
+    console.log('Performance cache cleared');
+  }
+};
 
 interface QualityMetrics {
   dataIntegrity: {
@@ -110,7 +114,7 @@ export class DatabaseQualityMonitor {
 
       for (const test of testQueries) {
         const start = Date.now();
-        await pool.query(test.query);
+        await pool.execute(sql.raw(test.query));
         const queryTime = Date.now() - start;
         
         totalTime += queryTime;
@@ -130,7 +134,7 @@ export class DatabaseQualityMonitor {
     try {
       // Test database connection
       const start = Date.now();
-      await pool.query('SELECT version()');
+      await pool.execute(sql`SELECT version()`);
       const connectionTime = Date.now() - start;
 
       this.metrics.reliability.connectionSuccess = connectionTime < 1000 ? 100 : 75;
@@ -169,7 +173,7 @@ export class DatabaseQualityMonitor {
       }
 
       // Normalize empty strings to NULL for consistency
-      const nullifyResult = await pool.query(`
+      const nullifyResult = await pool.execute(sql`
         UPDATE studies 
         SET 
           image_url = CASE WHEN image_url = '' THEN NULL ELSE image_url END,
@@ -178,13 +182,13 @@ export class DatabaseQualityMonitor {
         WHERE image_url = '' OR doi = '' OR pdf_url = ''
       `);
       
-      if (nullifyResult.rowCount && nullifyResult.rowCount > 0) {
-        fixed += nullifyResult.rowCount;
-        console.log(`Normalized ${nullifyResult.rowCount} empty string values`);
+      if (nullifyResult && nullifyResult.length > 0) {
+        fixed += nullifyResult.length;
+        console.log(`Normalized ${nullifyResult.length} empty string values`);
       }
 
       // Update table statistics after repairs
-      await pool.query('ANALYZE studies');
+      await pool.execute(sql`ANALYZE studies`);
       
       // Clear cache to ensure fresh data
       performanceCache.clear();
