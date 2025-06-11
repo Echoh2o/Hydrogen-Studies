@@ -119,7 +119,7 @@ export async function createProductionServer() {
     }
   });
 
-  // Consumer categories API
+  // Consumer categories endpoint
   app.get('/api/consumer-categories/counts', async (req, res) => {
     try {
       // Use existing category data from studies table
@@ -156,7 +156,7 @@ export async function createProductionServer() {
           }
 
           if (categories.condition) {
-            conditions.condition.forEach(cond => {
+            categories.condition.forEach(cond => {
               conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
             });
           }
