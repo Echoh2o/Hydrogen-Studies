@@ -8,6 +8,9 @@
 import { pool } from './db';
 import { performanceCache } from './database-performance-optimizer';
 
+import { db as pool } from './db';
+import { sql } from 'drizzle-orm';
+
 interface QualityMetrics {
   dataIntegrity: {
     duplicateStudies: number;
@@ -48,7 +51,7 @@ export class DatabaseQualityMonitor {
   private async checkDataIntegrity(): Promise<void> {
     try {
       // Check for potential duplicate studies based on DOI
-      const duplicateCheck = await pool.query(`
+      const duplicateCheck = await pool.execute(sql`
         SELECT COUNT(*) as duplicate_count
         FROM (
           SELECT doi
@@ -58,10 +61,10 @@ export class DatabaseQualityMonitor {
           HAVING COUNT(*) > 1
         ) duplicates
       `);
-      this.metrics.dataIntegrity.duplicateStudies = parseInt(duplicateCheck.rows[0].duplicate_count);
+      this.metrics.dataIntegrity.duplicateStudies = parseInt(duplicateCheck[0]?.duplicate_count || '0');
 
       // Check for broken image references
-      const brokenRefs = await pool.query(`
+      const brokenRefs = await pool.execute(sql`
         SELECT COUNT(*) as broken_count
         FROM studies 
         WHERE image_url IS NOT NULL 
@@ -72,10 +75,10 @@ export class DatabaseQualityMonitor {
           image_url LIKE 'https://via.placeholder%'
         )
       `);
-      this.metrics.dataIntegrity.brokenReferences = parseInt(brokenRefs.rows[0].broken_count);
+      this.metrics.dataIntegrity.brokenReferences = parseInt(brokenRefs[0]?.broken_count || '0');
 
       // Check for data consistency issues
-      const inconsistentData = await pool.query(`
+      const inconsistentData = await pool.execute(sql`
         SELECT COUNT(*) as inconsistent_count
         FROM studies 
         WHERE (
@@ -86,7 +89,7 @@ export class DatabaseQualityMonitor {
           (view_count < 0)
         )
       `);
-      this.metrics.dataIntegrity.inconsistentData = parseInt(inconsistentData.rows[0].inconsistent_count);
+      this.metrics.dataIntegrity.inconsistentData = parseInt(inconsistentData[0]?.inconsistent_count || '0');
 
     } catch (error) {
       console.error('Data integrity check failed:', error);
@@ -149,7 +152,7 @@ export class DatabaseQualityMonitor {
 
     try {
       // Clear broken image references
-      const result = await pool.query(`
+      const result = await pool.execute(sql`
         UPDATE studies 
         SET image_url = NULL 
         WHERE image_url IS NOT NULL 
@@ -160,9 +163,9 @@ export class DatabaseQualityMonitor {
         )
       `);
       
-      if (result.rowCount && result.rowCount > 0) {
-        fixed += result.rowCount;
-        console.log(`Fixed ${result.rowCount} broken image references`);
+      if (result && result.length > 0) {
+        fixed += result.length;
+        console.log(`Fixed ${result.length} broken image references`);
       }
 
       // Normalize empty strings to NULL for consistency
