@@ -161,7 +161,7 @@ export class ReliabilityMonitor {
       // Database connection pool refresh
       attempted.push('Database connection health check');
       try {
-        await pool.query('SELECT version()');
+        await pool.execute(sql`SELECT version()`);
         successful.push('Database connection verified');
       } catch (error) {
         failed.push('Database connection failed - manual intervention required');
