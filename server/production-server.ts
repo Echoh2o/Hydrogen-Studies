@@ -75,15 +75,14 @@ export async function createProductionServer() {
       const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
       const offset = (page - 1) * limit;
 
-      const result = await sql(`
-        SELECT id, title, abstract, category, image_url, publication_date, 
-               authors, journal, doi, health_conditions, delivery_method
+      const result = await sql`
+        SELECT id, title, abstract, consumer_categories as category, image_url, journal_publish_date as publication_date, 
+               authors, journal, doi, array_to_string(keywords, ', ') as keywords, slug
         FROM studies 
         ORDER BY id 
-        LIMIT $1 OFFSET $2
-      `, [limit, offset]);
+        LIMIT ${limit} OFFSET ${offset}`;
 
-      const countResult = await sql('SELECT COUNT(*) as count FROM studies');
+      const countResult = await sql`SELECT COUNT(*) as count FROM studies`;
 
       res.json({
         studies: (result as any).rows || [],
@@ -103,7 +102,7 @@ export async function createProductionServer() {
     try {
       const id = parseInt(req.params.id);
 
-      const result = await sql('SELECT * FROM studies WHERE id = $1', [id]);
+      const result = await sql`SELECT * FROM studies WHERE id = ${id}`;
 
       const study = (result as any).rows?.[0];
 
