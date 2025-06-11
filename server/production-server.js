@@ -953,15 +953,26 @@ async function createProductionServer() {
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     });
   });
-  const port = parseInt(process.env.PORT || "5000");
+  const port = parseInt(process.env.PORT || "3000");
   const server = createServer(app);
   return new Promise((resolve, reject) => {
-    server.listen(port, "0.0.0.0", () => {
-      const duration = Date.now() - startTime;
-      console.log(`\u2713 Production server running on port ${port} (${duration}ms startup)`);
-      resolve({ app, server });
-    });
-    server.on("error", reject);
+    const tryPort = (portToTry) => {
+      server.listen(portToTry, "0.0.0.0", () => {
+        const duration = Date.now() - startTime;
+        console.log(`\u2713 Production server running on port ${portToTry} (${duration}ms startup)`);
+        resolve({ app, server });
+      });
+      server.on("error", (error) => {
+        if (error.code === "EADDRINUSE") {
+          console.log(`Port ${portToTry} in use, trying ${portToTry + 1}...`);
+          server.removeAllListeners("error");
+          tryPort(portToTry + 1);
+        } else {
+          reject(error);
+        }
+      });
+    };
+    tryPort(port);
   });
 }
 if (process.argv[1] === __filename) {
