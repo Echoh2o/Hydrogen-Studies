@@ -4,7 +4,7 @@
  * Production Server Startup - ES Module Compatible
  */
 
-import { createProductionServer } from './server/production-server.js';
+import { createProductionServer } from './server/deployment-ready-server.js';
 import { existsSync } from 'fs';
 import { execSync } from 'child_process';
 
