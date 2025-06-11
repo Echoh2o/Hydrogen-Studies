@@ -25,6 +25,7 @@ import {
   performanceTracker
 } from './production-performance-core';
 import studyMetadataRoutes from './routes/study-metadata-routes';
+// Orphaned route imports removed during cleanup
 import performanceRoutes from './routes/performance-routes';
 import comprehensiveImageRoutes from './routes/comprehensive-image-routes';
 async function startServer() {
