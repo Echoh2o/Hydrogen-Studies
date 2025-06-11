@@ -67,24 +67,33 @@ export async function createProductionServer() {
         offset = '0'
       } = req.query;
 
-      let whereConditions = [];
+      let baseQuery = sql`SELECT * FROM studies`;
+      let conditions = [];
       
       if (search) {
-        whereConditions.push(`(title ILIKE '%${search}%' OR abstract ILIKE '%${search}%')`);
+        conditions.push(sql`(title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})`);
       }
       
       if (category) {
-        whereConditions.push(`category = '${category}'`);
+        conditions.push(sql`category = ${category}`);
       }
       
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-      
-      const studies = await sql`
-        SELECT * FROM studies
-        ${whereClause ? sql.unsafe(whereClause) : sql``}
-        ORDER BY created_at DESC
-        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
-      `;
+      let studies;
+      if (conditions.length > 0) {
+        const whereClause = conditions.reduce((acc, condition) => sql`${acc} AND ${condition}`);
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE ${whereClause}
+          ORDER BY created_at DESC
+          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        `;
+      } else {
+        studies = await sql`
+          SELECT * FROM studies
+          ORDER BY created_at DESC
+          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        `;
+      }
       
       res.json(studies);
     } catch (error) {
@@ -98,7 +107,8 @@ export async function createProductionServer() {
     try {
       const categories = await sql`
         SELECT category, COUNT(*) as count
-        FROM study_categories
+        FROM studies
+        WHERE category IS NOT NULL
         GROUP BY category
         ORDER BY count DESC
       `;
@@ -181,24 +191,32 @@ export async function createProductionServer() {
       const { q = '', filters = '{}', limit = '20', offset = '0' } = req.query;
       const parsedFilters = JSON.parse(filters as string);
       
-      let whereConditions = [];
+      let conditions = [];
       
       if (q) {
-        whereConditions.push(`(title ILIKE '%${q}%' OR abstract ILIKE '%${q}%')`);
+        conditions.push(sql`(title ILIKE ${'%' + q + '%'} OR abstract ILIKE ${'%' + q + '%'})`);
       }
       
       if (parsedFilters.category) {
-        whereConditions.push(`category = '${parsedFilters.category}'`);
+        conditions.push(sql`category = ${parsedFilters.category}`);
       }
       
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-      
-      const studies = await sql`
-        SELECT * FROM studies
-        ${whereClause ? sql.unsafe(whereClause) : sql``}
-        ORDER BY created_at DESC
-        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
-      `;
+      let studies;
+      if (conditions.length > 0) {
+        const whereClause = conditions.reduce((acc, condition) => sql`${acc} AND ${condition}`);
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE ${whereClause}
+          ORDER BY created_at DESC
+          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        `;
+      } else {
+        studies = await sql`
+          SELECT * FROM studies
+          ORDER BY created_at DESC
+          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        `;
+      }
       
       res.json({ studies, total: studies.length });
     } catch (error) {
