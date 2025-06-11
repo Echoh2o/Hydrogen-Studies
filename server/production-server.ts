@@ -15,20 +15,20 @@ const __dirname = path.dirname(__filename);
 export async function createProductionServer() {
   const app = express();
   const startTime = Date.now();
-  
+
   console.log('Initializing production server...');
-  
+
   // Validate environment
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is required for production');
   }
-  
+
   const sql = neon(process.env.DATABASE_URL);
-  
+
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
-  
+
   // CORS for production
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -40,20 +40,20 @@ export async function createProductionServer() {
       next();
     }
   });
-  
+
   // Static file serving
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
   app.use(express.static(path.join(process.cwd(), 'public')));
-  
+
   // Essential API endpoints for production
-  
+
   // Health check
   app.get('/health', async (req, res) => {
     try {
       const start = Date.now();
       await sql('SELECT 1');
       const dbLatency = Date.now() - start;
-      
+
       res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -67,14 +67,14 @@ export async function createProductionServer() {
       });
     }
   });
-  
+
   // Studies API
   app.get('/api/studies', async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
       const offset = (page - 1) * limit;
-      
+
       const result = await sql(`
         SELECT id, title, abstract, category, image_url, publication_date, 
                authors, journal, doi, health_conditions, delivery_method
@@ -82,9 +82,9 @@ export async function createProductionServer() {
         ORDER BY id 
         LIMIT $1 OFFSET $2
       `, [limit, offset]);
-      
+
       const countResult = await sql('SELECT COUNT(*) as count FROM studies');
-      
+
       res.json({
         studies: (result as any).rows || [],
         total: (countResult as any).rows?.[0]?.count || 0,
@@ -97,27 +97,27 @@ export async function createProductionServer() {
       res.status(500).json({ error: 'Failed to fetch studies' });
     }
   });
-  
+
   // Single study API
   app.get('/api/studies/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       const result = await sql('SELECT * FROM studies WHERE id = $1', [id]);
-      
+
       const study = (result as any).rows?.[0];
-      
+
       if (!study) {
         return res.status(404).json({ error: 'Study not found' });
       }
-      
+
       res.json(study);
     } catch (error) {
       console.error('Study API error:', error);
       res.status(500).json({ error: 'Failed to fetch study' });
     }
   });
-  
+
   // Search API
   app.get('/api/search', async (req, res) => {
     try {
@@ -126,11 +126,11 @@ export async function createProductionServer() {
       const page = parseInt(req.query.page as string) || 1;
       const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
       const offset = (page - 1) * limit;
-      
+
       // Query logic is handled in the next section with proper SQL calls
-      
+
       let result, countResult;
-      
+
       if (query && category) {
         result = await sql(`
           SELECT id, title, abstract, category, image_url, publication_date,
@@ -140,7 +140,7 @@ export async function createProductionServer() {
           ORDER BY id 
           LIMIT $3 OFFSET $4
         `, [`%${query}%`, category, limit, offset]);
-        
+
         countResult = await sql(`
           SELECT COUNT(*) as count FROM studies 
           WHERE (title ILIKE $1 OR abstract ILIKE $1) AND category = $2
@@ -154,7 +154,7 @@ export async function createProductionServer() {
           ORDER BY id 
           LIMIT $2 OFFSET $3
         `, [`%${query}%`, limit, offset]);
-        
+
         countResult = await sql(`
           SELECT COUNT(*) as count FROM studies 
           WHERE title ILIKE $1 OR abstract ILIKE $1
@@ -168,7 +168,7 @@ export async function createProductionServer() {
           ORDER BY id 
           LIMIT $2 OFFSET $3
         `, [category, limit, offset]);
-        
+
         countResult = await sql('SELECT COUNT(*) as count FROM studies WHERE category = $1', [category]);
       } else {
         result = await sql(`
@@ -178,10 +178,10 @@ export async function createProductionServer() {
           ORDER BY id 
           LIMIT $1 OFFSET $2
         `, [limit, offset]);
-        
+
         countResult = await sql('SELECT COUNT(*) as count FROM studies');
       }
-      
+
       res.json({
         studies: (result as any).rows || [],
         total: (countResult as any).rows?.[0]?.count || 0,
@@ -195,7 +195,7 @@ export async function createProductionServer() {
       res.status(500).json({ error: 'Search failed' });
     }
   });
-  
+
   // Categories API
   app.get('/api/categories', async (req, res) => {
     try {
@@ -206,14 +206,14 @@ export async function createProductionServer() {
         GROUP BY category 
         ORDER BY count DESC
       `);
-      
+
       res.json((result as any).rows || []);
     } catch (error) {
       console.error('Categories API error:', error);
       res.status(500).json({ error: 'Failed to fetch categories' });
     }
   });
-  
+
   // Root API info
   app.get('/api', (req, res) => {
     res.json({
@@ -223,36 +223,36 @@ export async function createProductionServer() {
       endpoints: ['/api/studies', '/api/search', '/api/categories', '/health']
     });
   });
-  
+
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {
     res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
   });
-  
+
   // Error handling
   app.use((error: any, req: any, res: any, next: any) => {
     console.error('Production server error:', error);
-    
+
     if (res.headersSent) {
       return next(error);
     }
-    
+
     res.status(500).json({
       error: 'Internal server error',
       timestamp: new Date().toISOString()
     });
   });
-  
+
   const port = parseInt(process.env.PORT || '5000');
   const server = createServer(app);
-  
+
   return new Promise((resolve, reject) => {
     server.listen(port, '0.0.0.0', () => {
       const duration = Date.now() - startTime;
       console.log(`✓ Production server running on port ${port} (${duration}ms startup)`);
       resolve({ app, server });
     });
-    
+
     server.on('error', reject);
   });
 }

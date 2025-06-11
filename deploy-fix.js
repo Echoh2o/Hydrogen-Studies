@@ -53,4 +53,5 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   console.log('Received SIGINT, shutting down...');
   server.kill('SIGINT');
+});GINT');
 });
