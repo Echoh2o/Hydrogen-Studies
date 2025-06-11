@@ -6,6 +6,14 @@
 import { db } from './db';
 import { sql } from 'drizzle-orm';
 
+/**
+ * Health Monitoring and Auto-Recovery System
+ * Monitors application health and automatically recovers from failures
+ */
+
+import { db } from './db';
+import { sql } from 'drizzle-orm';
+
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
@@ -29,12 +37,12 @@ let healthStatus: HealthStatus = {
 };
 
 let errorCount = 0;
+const startTime = Date.now();
 
 /**
  * Perform comprehensive health check
  */
 export async function performHealthCheck(): Promise<HealthStatus> {
-  const startTime = Date.now();
   const errors: string[] = [];
 
   try {
@@ -74,13 +82,10 @@ export async function performHealthCheck(): Promise<HealthStatus> {
 /**
  * Log error and increment error count
  */
-function logError(error: Error): void {
+export function logError(error: Error): void {
   console.error('Health monitoring error:', error);
   errorCount++;
 }
-
-interface HealthStatus {
-  status: 'healthy' | 'degraded' | 'unhealthy';
   database: boolean;
   memory: { used: number; total: number; percentage: number };
   uptime: number;

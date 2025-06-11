@@ -51,14 +51,14 @@ export function handleApiError(
     params: res.req?.params,
     query: res.req?.query
   });
-  
+
   const errorResponse: ErrorResponse = {
     success: false,
     message: message || (error instanceof Error ? error.message : 'An unknown error occurred'),
     errorType,
     timestamp: new Date().toISOString(),
   };
-  
+
   // Add comprehensive debugging info in development
   if (process.env.NODE_ENV === 'development' && error instanceof Error) {
     errorResponse.details = {
@@ -68,7 +68,7 @@ export function handleApiError(
       originalError: error.toString()
     };
   }
-  
+
   res.status(statusCode).setHeader('Content-Type', 'application/json').json(errorResponse);
 }
 
@@ -117,4 +117,22 @@ export function sendSuccessResponse(res: Response, data: any = null, message: st
     data,
     timestamp: new Date().toISOString()
   });
+}
+
+export function handleError(error: Error | unknown, context?: string): void {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : undefined;
+
+  console.error(`Error ${context ? `in ${context}` : ''}:`, {
+    message: errorMessage,
+    stack: errorStack,
+    timestamp: new Date().toISOString()
+  });
+}
+
+export function isOperationalError(error: Error): boolean {
+  return error.name === 'ValidationError' || 
+         error.name === 'NotFoundError' || 
+         error.message.includes('ENOTFOUND') ||
+         error.message.includes('ECONNREFUSED');
 }

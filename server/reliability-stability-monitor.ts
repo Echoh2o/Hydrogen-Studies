@@ -6,6 +6,7 @@
  */
 
 import { db as pool } from './db';
+import { sql } from 'drizzle-orm';
 
 // Simple cache fallback if the performance optimizer doesn't exist
 const performanceCache = {
@@ -58,7 +59,7 @@ export class ReliabilityMonitor {
     let dbResponseTime = 0;
     try {
       const start = Date.now();
-      await pool.query('SELECT 1');
+      await pool.execute(sql`SELECT 1`);
       dbResponseTime = Date.now() - start;
       
       if (dbResponseTime > 1000) {
