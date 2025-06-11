@@ -3,7 +3,7 @@
  * Monitors application health and automatically recovers from failures
  */
 
-import { db } from './db.js';
+import { db } from './db';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';

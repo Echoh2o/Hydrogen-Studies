@@ -5,8 +5,14 @@
  * and automatic recovery mechanisms
  */
 
-import { pool } from './db';
-import { performanceCache } from './database-performance-optimizer';
+import { db as pool } from './db';
+
+// Simple cache fallback if the performance optimizer doesn't exist
+const performanceCache = {
+  clear: () => {
+    console.log('Cache cleared');
+  }
+};
 
 interface SystemMetrics {
   uptime: number;

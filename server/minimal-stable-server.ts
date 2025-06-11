@@ -1161,7 +1161,7 @@ export async function createMinimalServer() {
     });
   });
 
-  return app;
+  return app;n app;
 }
 
 // Minimal startup with essential optimizations only
@@ -1201,6 +1201,6 @@ export async function startMinimalServer() {
     return { app, server };
   } catch (error) {
     console.error('Minimal server startup failed:', error);
-    throw error;
+    throw error;ror;
   }
 }

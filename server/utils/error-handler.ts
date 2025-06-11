@@ -69,7 +69,7 @@ export function handleApiError(
     };
   }
   
-  res.status(statusCode).json(errorResponse);
+  res.status(statusCode).setHeader('Content-Type', 'application/json').json(errorResponse);
 }
 
 /**
