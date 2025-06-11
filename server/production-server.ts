@@ -177,43 +177,86 @@ export async function createProductionServer() {
     }
   });
 
+  // Basic categories endpoint for legacy support
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const { pool } = await import('./db');
+      const result = await pool.query(`
+        SELECT DISTINCT c.id, c.name, c.description, 
+               COUNT(sc.study_id) as study_count
+        FROM categories c
+        LEFT JOIN study_categories sc ON c.id = sc.category_id
+        GROUP BY c.id, c.name, c.description
+        ORDER BY study_count DESC
+        LIMIT 20
+      `);
+
+      const categories = result.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        description: row.description || `${row.study_count} studies available`,
+        icon: 'flask',
+        count: parseInt(row.study_count)
+      }));
+
+      return res.json(categories);
+    } catch (error) {
+      console.error('Categories error:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch categories'
+      });
+    }
+  }
+  );
+
   // Search API
   app.get('/api/search', async (req, res) => {
     try {
-      const { q = '', filters = '{}', limit = '20', offset = '0' } = req.query;
-      const parsedFilters = JSON.parse(filters as string);
+      const { q, limit = 20, offset = 0 } = req.query;
 
-      let conditions = [];
-
-      if (q) {
-        conditions.push(sql`(title ILIKE ${'%' + q + '%'} OR abstract ILIKE ${'%' + q + '%'})`);
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Search query is required'
+        });
       }
 
-      if (parsedFilters.category) {
-        conditions.push(sql`category = ${parsedFilters.category}`);
-      }
+      const { pool } = await import('./db');
+      const searchQuery = `%${q.toLowerCase()}%`;
 
-      let studies;
-      if (conditions.length > 0) {
-        const whereClause = conditions.reduce((acc, condition) => sql`${acc} AND ${condition}`);
-        studies = await sql`
-          SELECT * FROM studies
-          WHERE ${whereClause}
-          ORDER BY created_at DESC
-          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
-        `;
-      } else {
-        studies = await sql`
-          SELECT * FROM studies
-          ORDER BY created_at DESC
-          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
-        `;
-      }
+      const result = await pool.query(`
+        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+               category, doi, image_url as "imageUrl", slug
+        FROM studies 
+        WHERE LOWER(title) LIKE $1 OR LOWER(abstract) LIKE $2
+        ORDER BY 
+          CASE 
+            WHEN LOWER(title) LIKE $3 THEN 1
+            WHEN LOWER(abstract) LIKE $4 THEN 2
+            ELSE 3
+          END,
+          publish_date DESC
+        LIMIT $5 OFFSET $6
+      `, [searchQuery, searchQuery, searchQuery, searchQuery, limit, offset]);
 
-      res.json({ studies, total: studies.length });
+      const countResult = await pool.query(`
+        SELECT COUNT(*) as total
+        FROM studies 
+        WHERE LOWER(title) LIKE $1 OR LOWER(abstract) LIKE $2
+      `, [searchQuery, searchQuery]);
+
+      return res.json({
+        success: true,
+        studies: result.rows,
+        total: parseInt(countResult.rows[0].total),
+        hasMore: (parseInt(offset) + result.rows.length) < parseInt(countResult.rows[0].total)
+      });
     } catch (error) {
-      console.error('Error in search:', error);
-      res.status(500).json({ error: 'Search failed' });
+      console.error('Search error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Search failed'
+      });
     }
   });
 
