@@ -122,7 +122,9 @@ export async function createProductionServer() {
   // Consumer categories endpoint
   app.get('/api/consumer-categories/counts', async (req, res) => {
     try {
-      // Use existing category data from studies table
+      console.log('Fetching consumer categories...');
+      
+      // Get basic category counts from studies table
       const categoryResults = await sql`
         SELECT category, COUNT(*) as count
         FROM studies
@@ -131,17 +133,25 @@ export async function createProductionServer() {
         ORDER BY count DESC
       `;
 
-      // Parse consumer categories from JSON field if available
-      const consumerCategoriesResults = await sql`
-        SELECT consumer_categories, COUNT(*) as count
-        FROM studies
-        WHERE consumer_categories IS NOT NULL
-        GROUP BY consumer_categories
-      `;
+      console.log(`Found ${categoryResults.length} basic categories`);
+
+      // Try to get consumer categories from JSON field
+      let consumerCategoriesResults = [];
+      try {
+        consumerCategoriesResults = await sql`
+          SELECT consumer_categories, COUNT(*) as count
+          FROM studies
+          WHERE consumer_categories IS NOT NULL AND consumer_categories != ''
+          GROUP BY consumer_categories
+        `;
+        console.log(`Found ${consumerCategoriesResults.length} consumer category entries`);
+      } catch (e) {
+        console.warn('Consumer categories field not available, using basic categories');
+      }
 
       // Process the consumer categories JSON
-      const bodySystemsMap = new Map();
       const conditionsMap = new Map();
+      const bodySystemsMap = new Map();
       const lifeStagesMap = new Map();
 
       consumerCategoriesResults.forEach(row => {
@@ -149,39 +159,72 @@ export async function createProductionServer() {
           const categories = JSON.parse(row.consumer_categories);
           const count = parseInt(row.count);
 
-          if (categories.bodySystem) {
-            categories.bodySystem.forEach(bs => {
-              bodySystemsMap.set(bs, (bodySystemsMap.get(bs) || 0) + count);
-            });
-          }
-
-          if (categories.condition) {
+          if (categories.condition && Array.isArray(categories.condition)) {
             categories.condition.forEach(cond => {
               conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
             });
           }
 
-          if (categories.lifeStage) {
+          if (categories.bodySystem && Array.isArray(categories.bodySystem)) {
+            categories.bodySystem.forEach(bs => {
+              bodySystemsMap.set(bs, (bodySystemsMap.get(bs) || 0) + count);
+            });
+          }
+
+          if (categories.lifeStage && Array.isArray(categories.lifeStage)) {
             categories.lifeStage.forEach(ls => {
               lifeStagesMap.set(ls, (lifeStagesMap.get(ls) || 0) + count);
             });
           }
         } catch (e) {
-          // Skip invalid JSON
+          console.warn('Failed to parse consumer categories JSON:', e.message);
         }
       });
 
-      const categorized = {
-        body_systems: Array.from(bodySystemsMap.entries()).map(([name, count]) => ({ name, count })),
-        conditions: Array.from(conditionsMap.entries()).map(([name, count]) => ({ name, count })),
-        life_stages: Array.from(lifeStagesMap.entries()).map(([name, count]) => ({ name, count })),
-        categories: categoryResults // Include traditional categories
+      // If no consumer categories found, create some from basic categories
+      if (conditionsMap.size === 0) {
+        console.log('No consumer categories found, creating from basic categories');
+        categoryResults.forEach(cat => {
+          const categoryName = cat.category;
+          const count = parseInt(cat.count);
+          
+          // Map basic categories to conditions
+          if (categoryName.toLowerCase().includes('brain') || categoryName.toLowerCase().includes('neuro')) {
+            conditionsMap.set('Neurological', (conditionsMap.get('Neurological') || 0) + count);
+          } else if (categoryName.toLowerCase().includes('heart') || categoryName.toLowerCase().includes('cardio')) {
+            conditionsMap.set('Cardiovascular', (conditionsMap.get('Cardiovascular') || 0) + count);
+          } else if (categoryName.toLowerCase().includes('lung') || categoryName.toLowerCase().includes('respiratory')) {
+            conditionsMap.set('Respiratory', (conditionsMap.get('Respiratory') || 0) + count);
+          } else if (categoryName.toLowerCase().includes('metabolic') || categoryName.toLowerCase().includes('diabetes')) {
+            conditionsMap.set('Metabolic', (conditionsMap.get('Metabolic') || 0) + count);
+          } else if (categoryName.toLowerCase().includes('inflammation')) {
+            conditionsMap.set('Inflammation', (conditionsMap.get('Inflammation') || 0) + count);
+          } else {
+            conditionsMap.set(categoryName, count);
+          }
+        });
+      }
+
+      const response = {
+        data: {
+          condition: Array.from(conditionsMap.entries())
+            .map(([name, count]) => ({ name, count: count.toString() }))
+            .sort((a, b) => parseInt(b.count) - parseInt(a.count)),
+          bodySystem: Array.from(bodySystemsMap.entries())
+            .map(([name, count]) => ({ name, count: count.toString() }))
+            .sort((a, b) => parseInt(b.count) - parseInt(a.count)),
+          lifeStage: Array.from(lifeStagesMap.entries())
+            .map(([name, count]) => ({ name, count: count.toString() }))
+            .sort((a, b) => parseInt(b.count) - parseInt(a.count))
+        }
       };
 
-      res.json(categorized);
+      console.log(`Returning ${response.data.condition.length} conditions, ${response.data.bodySystem.length} body systems, ${response.data.lifeStage.length} life stages`);
+      
+      res.json(response);
     } catch (error) {
       console.error('Error fetching consumer categories:', error);
-      res.status(500).json({ error: 'Failed to fetch consumer categories' });
+      res.status(500).json({ error: 'Failed to fetch consumer categories', details: error.message });
     }
   });
 
@@ -189,39 +232,32 @@ export async function createProductionServer() {
   app.get('/api/search', async (req, res) => {
     try {
       const { q = '', filters = '{}', limit = '20', offset = '0' } = req.query;
-      const parsedFilters = JSON.parse(filters as string);
-
-      let conditions = [];
-
-      if (q) {
-        conditions.push(sql`(title ILIKE ${'%' + q + '%'} OR abstract ILIKE ${'%' + q + '%'})`);
+      
+      if (!q || q.trim() === '') {
+        return res.json({ studies: [], total: 0 });
       }
 
-      if (parsedFilters.category) {
-        conditions.push(sql`category = ${parsedFilters.category}`);
-      }
+      const searchTerm = q.trim();
+      console.log(`Search request for: "${searchTerm}"`);
 
-      let studies;
-      if (conditions.length > 0) {
-        const whereClause = conditions.reduce((acc, condition) => sql`${acc} AND ${condition}`);
-        studies = await sql`
-          SELECT * FROM studies
-          WHERE ${whereClause}
-          ORDER BY created_at DESC
-          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
-        `;
-      } else {
-        studies = await sql`
-          SELECT * FROM studies
-          ORDER BY created_at DESC
-          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
-        `;
-      }
+      const studies = await sql`
+        SELECT * FROM studies
+        WHERE title ILIKE ${'%' + searchTerm + '%'} 
+           OR abstract ILIKE ${'%' + searchTerm + '%'}
+        ORDER BY created_at DESC
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `;
 
-      res.json({ studies, total: studies.length });
+      console.log(`Found ${studies.length} studies for search "${searchTerm}"`);
+
+      res.json({ 
+        studies, 
+        total: studies.length,
+        query: searchTerm 
+      });
     } catch (error) {
       console.error('Error in search:', error);
-      res.status(500).json({ error: 'Search failed' });
+      res.status(500).json({ error: 'Search failed', details: error.message });
     }
   });
 
