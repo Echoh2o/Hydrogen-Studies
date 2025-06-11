@@ -9,11 +9,17 @@ import { db as pool } from './db';
 import { sql } from 'drizzle-orm';
 
 // Simple cache fallback if the performance optimizer doesn't exist
-const performanceCache = {
-  clear: () => {
-    console.log('Cache cleared');
-  }
-};
+let performanceCache: { clear: () => void };
+
+try {
+  performanceCache = require('./database-performance-optimizer').performanceCache;
+} catch (error) {
+  performanceCache = {
+    clear: () => {
+      console.log('Performance cache cleared (fallback)');
+    }
+  };
+}
 
 interface SystemMetrics {
   uptime: number;
