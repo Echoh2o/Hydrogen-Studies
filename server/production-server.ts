@@ -63,25 +63,26 @@ export async function createProductionServer() {
       const {
         search = '',
         category = '',
-        benefit = '',
-        condition = '',
         limit = '50',
         offset = '0'
       } = req.query;
 
+      let whereConditions = [];
+      
+      if (search) {
+        whereConditions.push(`(title ILIKE '%${search}%' OR abstract ILIKE '%${search}%')`);
+      }
+      
+      if (category) {
+        whereConditions.push(`category = '${category}'`);
+      }
+      
+      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+      
       const studies = await sql`
-        SELECT s.*, 
-               array_agg(DISTINCT sc.category) FILTER (WHERE sc.category IS NOT NULL) as categories,
-               array_agg(DISTINCT sb.benefit) FILTER (WHERE sb.benefit IS NOT NULL) as benefits
-        FROM studies s
-        LEFT JOIN study_categories sc ON s.id = sc.study_id
-        LEFT JOIN study_benefits sb ON s.id = sb.study_id
-        WHERE (${search} = '' OR s.title ILIKE ${'%' + search + '%'} OR s.plain_language_summary ILIKE ${'%' + search + '%'})
-          AND (${category} = '' OR sc.category = ${category})
-          AND (${benefit} = '' OR sb.benefit = ${benefit})
-          AND (${condition} = '' OR s.condition ILIKE ${'%' + condition + '%'})
-        GROUP BY s.id
-        ORDER BY s.created_at DESC
+        SELECT * FROM studies
+        ${whereClause ? sql.unsafe(whereClause) : sql``}
+        ORDER BY created_at DESC
         LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
       `;
       
@@ -111,42 +112,60 @@ export async function createProductionServer() {
   // Consumer categories API
   app.get('/api/consumer-categories/counts', async (req, res) => {
     try {
-      const results = await sql`
-        SELECT 
-          'body_systems' as type,
-          body_system as name,
-          COUNT(*) as count
-        FROM studies 
-        WHERE body_system IS NOT NULL 
-        GROUP BY body_system
-        
-        UNION ALL
-        
-        SELECT 
-          'conditions' as type,
-          condition as name,
-          COUNT(*) as count
-        FROM studies 
-        WHERE condition IS NOT NULL 
-        GROUP BY condition
-        
-        UNION ALL
-        
-        SELECT 
-          'life_stages' as type,
-          life_stage as name,
-          COUNT(*) as count
-        FROM studies 
-        WHERE life_stage IS NOT NULL 
-        GROUP BY life_stage
-        
+      // Use existing category data from studies table
+      const categoryResults = await sql`
+        SELECT category, COUNT(*) as count
+        FROM studies
+        WHERE category IS NOT NULL
+        GROUP BY category
         ORDER BY count DESC
       `;
       
+      // Parse consumer categories from JSON field if available
+      const consumerCategoriesResults = await sql`
+        SELECT consumer_categories, COUNT(*) as count
+        FROM studies
+        WHERE consumer_categories IS NOT NULL
+        GROUP BY consumer_categories
+      `;
+      
+      // Process the consumer categories JSON
+      const bodySystemsMap = new Map();
+      const conditionsMap = new Map();
+      const lifeStagesMap = new Map();
+      
+      consumerCategoriesResults.forEach(row => {
+        try {
+          const categories = JSON.parse(row.consumer_categories);
+          const count = parseInt(row.count);
+          
+          if (categories.bodySystem) {
+            categories.bodySystem.forEach(bs => {
+              bodySystemsMap.set(bs, (bodySystemsMap.get(bs) || 0) + count);
+            });
+          }
+          
+          if (categories.condition) {
+            categories.condition.forEach(cond => {
+              conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
+            });
+          }
+          
+          if (categories.lifeStage) {
+            categories.lifeStage.forEach(ls => {
+              lifeStagesMap.set(ls, (lifeStagesMap.get(ls) || 0) + count);
+            });
+          }
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      });
+      
       const categorized = {
-        body_systems: results.filter(r => r.type === 'body_systems'),
-        conditions: results.filter(r => r.type === 'conditions'),
-        life_stages: results.filter(r => r.type === 'life_stages')
+        body_systems: Array.from(bodySystemsMap.entries()).map(([name, count]) => ({ name, count })),
+        conditions: Array.from(conditionsMap.entries()).map(([name, count]) => ({ name, count })),
+        life_stages: Array.from(lifeStagesMap.entries()).map(([name, count]) => ({ name, count })),
+        categories: categoryResults // Include traditional categories
       };
       
       res.json(categorized);
@@ -162,27 +181,22 @@ export async function createProductionServer() {
       const { q = '', filters = '{}', limit = '20', offset = '0' } = req.query;
       const parsedFilters = JSON.parse(filters as string);
       
-      let whereClause = `WHERE 1=1`;
-      const params = [];
+      let whereConditions = [];
       
       if (q) {
-        whereClause += ` AND (s.title ILIKE $${params.length + 1} OR s.plain_language_summary ILIKE $${params.length + 1})`;
-        params.push(`%${q}%`);
+        whereConditions.push(`(title ILIKE '%${q}%' OR abstract ILIKE '%${q}%')`);
       }
       
       if (parsedFilters.category) {
-        whereClause += ` AND sc.category = $${params.length + 1}`;
-        params.push(parsedFilters.category);
+        whereConditions.push(`category = '${parsedFilters.category}'`);
       }
       
+      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+      
       const studies = await sql`
-        SELECT s.*, 
-               array_agg(DISTINCT sc.category) FILTER (WHERE sc.category IS NOT NULL) as categories
-        FROM studies s
-        LEFT JOIN study_categories sc ON s.id = sc.study_id
-        ${sql.unsafe(whereClause)}
-        GROUP BY s.id
-        ORDER BY s.created_at DESC
+        SELECT * FROM studies
+        ${whereClause ? sql.unsafe(whereClause) : sql``}
+        ORDER BY created_at DESC
         LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
       `;
       
