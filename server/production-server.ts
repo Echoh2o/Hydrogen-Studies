@@ -121,173 +121,248 @@ export async function createProductionServer() {
 
   // Consumer categories studies endpoint
   app.get('/api/consumer-categories/studies', async (req, res) => {
+    const { model, category } = req.query;
+
+    if (!model || !category) {
+      return res.status(400).json({ error: 'Model and category are required' });
+    }
+
+    console.log(`Fetching studies for ${model}:${category}`);
+
     try {
-      const { model, category } = req.query;
+      let studies = [];
 
-      if (!model || !category) {
-        return res.json({
-          success: false,
-          message: "Model and category parameters are required"
-        });
+      // Map category to search terms based on actual study content
+      const categorySearchMap = {
+        // Health conditions
+        'Arthritis & Inflammation': ['arthritis', 'inflammation', 'inflammatory'],
+        'Heart Disease & Hypertension': ['heart', 'cardiovascular', 'hypertension', 'cardiac'],
+        'Brain & Neurological Disorders': ['brain', 'neuro', 'alzheimer', 'parkinson', 'cognitive'],
+        'Diabetes & Metabolic Health': ['diabetes', 'metabolic', 'glucose', 'insulin'],
+        'Lung & Respiratory Conditions': ['lung', 'respiratory', 'pulmonary', 'asthma'],
+        'Digestive Health (Gut/Liver)': ['digestive', 'gut', 'liver', 'gastrointestinal'],
+        'Cancer Supportive Care': ['cancer', 'tumor', 'oncology'],
+
+        // Body systems
+        'Cardiovascular System': ['heart', 'cardiovascular', 'cardiac', 'vascular'],
+        'Nervous System': ['brain', 'neuro', 'nerve', 'neural'],
+        'Respiratory System': ['lung', 'respiratory', 'pulmonary', 'breathing'],
+        'Immune System': ['immune', 'inflammation', 'inflammatory', 'antioxidant'],
+        'Musculoskeletal System': ['muscle', 'bone', 'joint', 'arthritis', 'skeletal'],
+        'Digestive System': ['digestive', 'gut', 'intestinal', 'stomach'],
+        'Renal System': ['kidney', 'renal', 'nephro'],
+
+        // Life stages
+        'Adults': ['adult', 'human', 'patient', 'clinical'],
+        'Older Adults': ['elderly', 'senior', 'aging', 'older'],
+        'Athletes & Fitness': ['athlete', 'exercise', 'fitness', 'performance', 'training']
+      };
+
+      const searchTerms = categorySearchMap[category as string];
+
+      if (searchTerms && searchTerms.length > 0) {
+        // Build dynamic search query
+        const searchConditions = searchTerms.map(term => 
+          `title ILIKE '%${term}%' OR abstract ILIKE '%${term}%'`
+        ).join(' OR ');
+
+        studies = await sql`
+          SELECT * FROM studies 
+          WHERE ${sql.raw(searchConditions)}
+          ORDER BY publish_date DESC 
+          LIMIT 20
+        `;
+      } else {
+        // Fallback for unknown categories
+        studies = await sql`
+          SELECT * FROM studies 
+          WHERE title ILIKE ${`%${category}%`} OR abstract ILIKE ${`%${category}%`}
+          ORDER BY publish_date DESC 
+          LIMIT 20
+        `;
       }
 
-      console.log(`Fetching studies for ${model} category: ${category}`);
+      console.log(`Found ${studies.length} studies for category: ${category}`);
 
-      // For condition categories, generate relevant studies
-      if (model === 'condition') {
-        const mockStudies = [
-          {
-            id: 1001,
-            title: `Hydrogen-rich water reduces inflammation in ${category}`,
-            abstract: `This randomized controlled trial investigated the effects of hydrogen-rich water consumption on inflammatory markers in patients with ${category.toLowerCase()}. Results showed significant reduction in pro-inflammatory cytokines and improved quality of life measures.`,
-            publishDate: '2023-08-15',
-            journal: 'Journal of Hydrogen Medicine',
-            authors: 'Smith J, Johnson A, Chen L',
-            doi: '10.1234/hydro.2023.001',
-            imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+${category.replace(/\s+/g, '+').replace(/&/g, 'and')}`
-          },
-          {
-            id: 1002,
-            title: `Molecular hydrogen therapy for ${category}: A clinical study`,
-            abstract: `A 12-week clinical trial examining the therapeutic potential of molecular hydrogen inhalation therapy in managing ${category.toLowerCase()}. Participants showed measurable improvements in pain scores and functional mobility.`,
-            publishDate: '2023-07-20',
-            journal: 'Clinical Hydrogen Research',
-            authors: 'Brown R, Miller J, Wang H',
-            doi: '10.1234/hydro.2023.002',
-            imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Clinical+Study+${category.replace(/\s+/g, '+').replace(/&/g, 'and')}`
-          },
-          {
-            id: 1003,
-            title: `Antioxidant effects of hydrogen gas in ${category} management`,
-            abstract: `This study explores the antioxidant mechanisms of hydrogen gas therapy in addressing oxidative stress associated with ${category.toLowerCase()}. Significant improvements were observed in antioxidant enzyme activity.`,
-            publishDate: '2023-06-10',
-            journal: 'Molecular Medicine International',
-            authors: 'Garcia M, Thompson L, Yamamoto K',
-            doi: '10.1234/hydro.2023.003',
-            imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Antioxidant+${category.replace(/\s+/g, '+').replace(/&/g, 'and')}`
-          }
-        ];
-
-        return res.json({
-          success: true,
-          data: mockStudies
-        });
-      }
-
-      // Default response for other models
-      return res.json({
-        success: true,
-        data: []
+      res.json({
+        data: studies,
+        total: studies.length,
+        page: 1,
+        pageSize: 20
       });
-
     } catch (error) {
-      console.error("Error fetching consumer category studies:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch studies"
-      });
+      console.error('Error fetching consumer category studies:', error);
+      res.status(500).json({ error: 'Failed to fetch studies for category' });
     }
   });
 
   // Consumer categories endpoint
   app.get('/api/consumer-categories/counts', async (req, res) => {
+    // Get all consumer categories with counts from actual studies
+    console.log('Fetching consumer categories with counts from real studies...');
+
     try {
-      // Use existing category data from studies table
+      // Get actual study counts by searching title and abstract content
+      const [conditionsResult, bodySystemsResult, lifeStagesResult] = await Promise.all([
+        // Health conditions - search actual study content
+        sql`
+          SELECT 
+            'Arthritis & Inflammation' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%arthritis%' OR title ILIKE '%inflammation%' OR title ILIKE '%inflammatory%' OR
+            abstract ILIKE '%arthritis%' OR abstract ILIKE '%inflammation%' OR abstract ILIKE '%inflammatory%'
+          UNION ALL
+          SELECT 
+            'Heart Disease & Hypertension' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%heart%' OR title ILIKE '%cardiovascular%' OR title ILIKE '%hypertension%' OR title ILIKE '%cardiac%' OR
+            abstract ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%hypertension%' OR abstract ILIKE '%cardiac%'
+          UNION ALL
+          SELECT 
+            'Brain & Neurological Disorders' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%brain%' OR title ILIKE '%neuro%' OR title ILIKE '%alzheimer%' OR title ILIKE '%parkinson%' OR title ILIKE '%cognitive%' OR
+            abstract ILIKE '%brain%' OR abstract ILIKE '%neuro%' OR abstract ILIKE '%alzheimer%' OR abstract ILIKE '%parkinson%' OR abstract ILIKE '%cognitive%'
+          UNION ALL
+          SELECT 
+            'Diabetes & Metabolic Health' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%diabetes%' OR title ILIKE '%metabolic%' OR title ILIKE '%glucose%' OR title ILIKE '%insulin%' OR
+            abstract ILIKE '%diabetes%' OR abstract ILIKE '%metabolic%' OR abstract ILIKE '%glucose%' OR abstract ILIKE '%insulin%'
+          UNION ALL
+          SELECT 
+            'Lung & Respiratory Conditions' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%lung%' OR title ILIKE '%respiratory%' OR title ILIKE '%pulmonary%' OR title ILIKE '%asthma%' OR
+            abstract ILIKE '%lung%' OR abstract ILIKE '%respiratory%' OR abstract ILIKE '%pulmonary%' OR abstract ILIKE '%asthma%'
+          UNION ALL
+          SELECT 
+            'Digestive Health (Gut/Liver)' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%digestive%' OR title ILIKE '%gut%' OR title ILIKE '%liver%' OR title ILIKE '%gastrointestinal%' OR
+            abstract ILIKE '%digestive%' OR abstract ILIKE '%gut%' OR abstract ILIKE '%liver%' OR abstract ILIKE '%gastrointestinal%'
+          UNION ALL
+          SELECT 
+            'Cancer Supportive Care' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%cancer%' OR title ILIKE '%tumor%' OR title ILIKE '%oncology%' OR
+            abstract ILIKE '%cancer%' OR abstract ILIKE '%tumor%' OR abstract ILIKE '%oncology%'
+        `,
 
-      console.log('Fetching consumer categories...');
+        // Body systems - search actual study content
+        sql`
+          SELECT 
+            'Cardiovascular System' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%heart%' OR title ILIKE '%cardiovascular%' OR title ILIKE '%cardiac%' OR title ILIKE '%vascular%' OR
+            abstract ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%cardiac%' OR abstract ILIKE '%vascular%'
+          UNION ALL
+          SELECT 
+            'Nervous System' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%brain%' OR title ILIKE '%neuro%' OR title ILIKE '%nerve%' OR title ILIKE '%neural%' OR
+            abstract ILIKE '%brain%' OR abstract ILIKE '%neuro%' OR abstract ILIKE '%nerve%' OR abstract ILIKE '%neural%'
+          UNION ALL
+          SELECT 
+            'Respiratory System' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%lung%' OR title ILIKE '%respiratory%' OR title ILIKE '%pulmonary%' OR title ILIKE '%breathing%' OR
+            abstract ILIKE '%lung%' OR abstract ILIKE '%respiratory%' OR abstract ILIKE '%pulmonary%' OR abstract ILIKE '%breathing%'
+          UNION ALL
+          SELECT 
+            'Immune System' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%immune%' OR title ILIKE '%inflammation%' OR title ILIKE '%inflammatory%' OR title ILIKE '%antioxidant%' OR
+            abstract ILIKE '%immune%' OR abstract ILIKE '%inflammation%' OR abstract ILIKE '%inflammatory%' OR abstract ILIKE '%antioxidant%'
+          UNION ALL
+          SELECT 
+            'Musculoskeletal System' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%muscle%' OR title ILIKE '%bone%' OR title ILIKE '%joint%' OR title ILIKE '%arthritis%' OR title ILIKE '%skeletal%' OR
+            abstract ILIKE '%muscle%' OR abstract ILIKE '%bone%' OR abstract ILIKE '%joint%' OR abstract ILIKE '%arthritis%' OR abstract ILIKE '%skeletal%'
+          UNION ALL
+          SELECT 
+            'Digestive System' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%digestive%' OR title ILIKE '%gut%' OR title ILIKE '%intestinal%' OR title ILIKE '%stomach%' OR
+            abstract ILIKE '%digestive%' OR abstract ILIKE '%gut%' OR abstract ILIKE '%intestinal%' OR abstract ILIKE '%stomach%'
+          UNION ALL
+          SELECT 
+            'Renal System' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%kidney%' OR title ILIKE '%renal%' OR title ILIKE '%nephro%' OR
+            abstract ILIKE '%kidney%' OR abstract ILIKE '%renal%' OR abstract ILIKE '%nephro%'
+        `,
 
-      // Get basic category counts from studies table
-      const categoryResults = await sql`
-        SELECT category, COUNT(*) as count
-        FROM studies
-        WHERE category IS NOT NULL
-        GROUP BY category
-        ORDER BY count DESC
-      `;
+        // Life stages - search actual study content
+        sql`
+          SELECT 
+            'Adults' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%adult%' OR title ILIKE '%human%' OR title ILIKE '%patient%' OR title ILIKE '%clinical%' OR
+            abstract ILIKE '%adult%' OR abstract ILIKE '%human%' OR abstract ILIKE '%patient%' OR abstract ILIKE '%clinical%'
+          UNION ALL
+          SELECT 
+            'Older Adults' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%elderly%' OR title ILIKE '%senior%' OR title ILIKE '%aging%' OR title ILIKE '%older%' OR
+            abstract ILIKE '%elderly%' OR abstract ILIKE '%senior%' OR abstract ILIKE '%aging%' OR abstract ILIKE '%older%'
+          UNION ALL
+          SELECT 
+            'Athletes & Fitness' as name,
+            COUNT(*)::text as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%athlete%' OR title ILIKE '%exercise%' OR title ILIKE '%fitness%' OR title ILIKE '%performance%' OR title ILIKE '%training%' OR
+            abstract ILIKE '%athlete%' OR abstract ILIKE '%exercise%' OR abstract ILIKE '%fitness%' OR abstract ILIKE '%performance%' OR abstract ILIKE '%training%'
+        `
+      ]);
 
-      console.log(`Found ${categoryResults.length} basic categories`);
+      const conditionCategories = conditionsResult.filter(row => parseInt(row.count) > 0);
+      const bodySystemCategories = bodySystemsResult.filter(row => parseInt(row.count) > 0);
+      const lifeStageCategories = lifeStagesResult.filter(row => parseInt(row.count) > 0);
 
-      // Try to get consumer categories from JSON field
-      let consumerCategoriesResults = [];
-      try {
-        consumerCategoriesResults = await sql`
-          SELECT consumer_categories, COUNT(*) as count
-          FROM studies
-          WHERE consumer_categories IS NOT NULL AND consumer_categories != ''
-          GROUP BY consumer_categories
-        `;
-        console.log(`Found ${consumerCategoriesResults.length} consumer category entries`);
-      } catch (e) {
-        console.warn('Consumer categories field not available, using basic categories');
-      }
-
-      // Process the consumer categories JSON
-      const conditionsMap = new Map();
-      const bodySystemsMap = new Map();
-      const lifeStagesMap = new Map();
-
-      consumerCategoriesResults.forEach(row => {
-        try {
-          const categories = JSON.parse(row.consumer_categories);
-          const count = parseInt(row.count);
-
-          if (categories.condition && Array.isArray(categories.condition)) {
-            categories.condition.forEach(cond => {
-              conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
-            });
-          }
-
-          if (categories.bodySystem && Array.isArray(categories.bodySystem)) {
-            categories.bodySystem.forEach(bs => {
-              bodySystemsMap.set(bs, (bodySystemsMap.get(bs) || 0) + count);
-            });
-          }
-
-          if (categories.lifeStage && Array.isArray(categories.lifeStage)) {
-            categories.lifeStage.forEach(ls => {
-              lifeStagesMap.set(ls, (lifeStagesMap.get(ls) || 0) + count);
-            });
-          }
-        } catch (e) {
-          console.warn('Failed to parse consumer categories JSON:', e.message);
-        }
-      });
-
-      // If no consumer categories found, create some from basic categories
-      if (conditionsMap.size === 0) {
-        console.log('No consumer categories found, creating from basic categories');
-        categoryResults.forEach(cat => {
-          const categoryName = cat.category;
-          const count = parseInt(cat.count);
-
-          // Map basic categories to conditions
-          if (categoryName.toLowerCase().includes('brain') || categoryName.toLowerCase().includes('neuro')) {
-            conditionsMap.set('Neurological', (conditionsMap.get('Neurological') || 0) + count);
-          } else if (categoryName.toLowerCase().includes('heart') || categoryName.toLowerCase().includes('cardio')) {
-            conditionsMap.set('Cardiovascular', (conditionsMap.get('Cardiovascular') || 0) + count);
-          } else if (categoryName.toLowerCase().includes('lung') || categoryName.toLowerCase().includes('respiratory')) {
-            conditionsMap.set('Respiratory', (conditionsMap.get('Respiratory') || 0) + count);
-          } else if (categoryName.toLowerCase().includes('metabolic') || categoryName.toLowerCase().includes('diabetes')) {
-            conditionsMap.set('Metabolic', (conditionsMap.get('Metabolic') || 0) + count);
-          } else if (categoryName.toLowerCase().includes('inflammation')) {
-            conditionsMap.set('Inflammation', (conditionsMap.get('Inflammation') || 0) + count);
-          } else {
-            conditionsMap.set(categoryName, count);
-          }
-        });
-      }
+      console.log(`Found ${conditionCategories.length} condition categories with real data`);
+      console.log(`Found ${bodySystemCategories.length} body system categories with real data`);
+      console.log(`Found ${lifeStageCategories.length} life stage categories with real data`);
 
       const response = {
         data: {
-          condition: Array.from(conditionsMap.entries())
-            .map(([name, count]) => ({ name, count: count.toString() }))
-            .sort((a, b) => parseInt(b.count) - parseInt(a.count)),
-          bodySystem: Array.from(bodySystemsMap.entries())
-            .map(([name, count]) => ({ name, count: count.toString() }))
-            .sort((a, b) => parseInt(b.count) - parseInt(a.count)),
-          lifeStage: Array.from(lifeStagesMap.entries())
-            .map(([name, count]) => ({ name, count: count.toString() }))
-            .sort((a, b) => parseInt(b.count) - parseInt(a.count))
+          condition: conditionCategories.map(cat => ({ name: cat.name, count: cat.count })),
+          bodySystem: bodySystemCategories.map(cat => ({ name: cat.name, count: cat.count })),
+          lifeStage: lifeStageCategories.map(cat => ({ name: cat.name, count: cat.count }))
         }
       };
 
