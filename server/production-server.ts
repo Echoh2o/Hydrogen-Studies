@@ -42,17 +42,17 @@ export async function createProductionServer() {
     }
   });
 
-  // Static file serving
+  // Static file serving with correct precedence
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
   
-  // Serve built assets from dist
+  // Serve built assets from dist (production assets)
   app.use('/assets', express.static(path.join(process.cwd(), 'dist', 'assets')));
   
-  // Serve static files from public
-  app.use(express.static(path.join(process.cwd(), 'public')));
-  
-  // Serve built files from dist as fallback
+  // Serve built files from dist first (production)
   app.use(express.static(path.join(process.cwd(), 'dist')));
+  
+  // Fallback to public directory (development assets)
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
   // Essential API endpoints for production
 
