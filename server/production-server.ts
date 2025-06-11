@@ -54,55 +54,146 @@ export async function createProductionServer() {
   // Fallback to public directory (development assets)
   app.use(express.static(path.join(process.cwd(), 'public')));
 
-  // Load all API routes
-  try {
-    console.log('Loading API routes...');
+  // Create essential API routes directly
+  console.log('Setting up essential API routes...');
 
-    // Import and use all necessary route modules
-    const studiesRoutes = await import('./routes/studies-routes.js');
-    const consumerCategoriesRoutes = await import('./routes/consumer-categories-routes.js');
-    const advancedSearchRoutes = await import('./routes/advanced-search-routes.js');
+  // Studies API
+  app.get('/api/studies', async (req, res) => {
+    try {
+      const {
+        search = '',
+        category = '',
+        benefit = '',
+        condition = '',
+        limit = '50',
+        offset = '0'
+      } = req.query;
 
-    // Mount the routes
-    app.use('/api/studies', studiesRoutes.default);
-    app.use('/api/consumer-categories', consumerCategoriesRoutes.default);
-    app.use('/api/search', advancedSearchRoutes.default);
+      const studies = await sql`
+        SELECT s.*, 
+               array_agg(DISTINCT sc.category) FILTER (WHERE sc.category IS NOT NULL) as categories,
+               array_agg(DISTINCT sb.benefit) FILTER (WHERE sb.benefit IS NOT NULL) as benefits
+        FROM studies s
+        LEFT JOIN study_categories sc ON s.id = sc.study_id
+        LEFT JOIN study_benefits sb ON s.id = sb.study_id
+        WHERE (${search} = '' OR s.title ILIKE ${'%' + search + '%'} OR s.plain_language_summary ILIKE ${'%' + search + '%'})
+          AND (${category} = '' OR sc.category = ${category})
+          AND (${benefit} = '' OR sb.benefit = ${benefit})
+          AND (${condition} = '' OR s.condition ILIKE ${'%' + condition + '%'})
+        GROUP BY s.id
+        ORDER BY s.created_at DESC
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `;
+      
+      res.json(studies);
+    } catch (error) {
+      console.error('Error fetching studies:', error);
+      res.status(500).json({ error: 'Failed to fetch studies' });
+    }
+  });
 
-    console.log('✓ API routes loaded successfully');
-  } catch (error) {
-    console.error('Error loading API routes:', error);
+  // Categories API
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const categories = await sql`
+        SELECT category, COUNT(*) as count
+        FROM study_categories
+        GROUP BY category
+        ORDER BY count DESC
+      `;
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  });
 
-    // Fallback essential routes
-    app.get('/api/studies', async (req, res) => {
-      try {
-        const studies = await storage.getStudies({});
-        res.json(studies);
-      } catch (error) {
-        console.error('Error fetching studies:', error);
-        res.status(500).json({ error: 'Failed to fetch studies' });
+  // Consumer categories API
+  app.get('/api/consumer-categories/counts', async (req, res) => {
+    try {
+      const results = await sql`
+        SELECT 
+          'body_systems' as type,
+          body_system as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE body_system IS NOT NULL 
+        GROUP BY body_system
+        
+        UNION ALL
+        
+        SELECT 
+          'conditions' as type,
+          condition as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE condition IS NOT NULL 
+        GROUP BY condition
+        
+        UNION ALL
+        
+        SELECT 
+          'life_stages' as type,
+          life_stage as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE life_stage IS NOT NULL 
+        GROUP BY life_stage
+        
+        ORDER BY count DESC
+      `;
+      
+      const categorized = {
+        body_systems: results.filter(r => r.type === 'body_systems'),
+        conditions: results.filter(r => r.type === 'conditions'),
+        life_stages: results.filter(r => r.type === 'life_stages')
+      };
+      
+      res.json(categorized);
+    } catch (error) {
+      console.error('Error fetching consumer categories:', error);
+      res.status(500).json({ error: 'Failed to fetch consumer categories' });
+    }
+  });
+
+  // Search API
+  app.get('/api/search', async (req, res) => {
+    try {
+      const { q = '', filters = '{}', limit = '20', offset = '0' } = req.query;
+      const parsedFilters = JSON.parse(filters as string);
+      
+      let whereClause = `WHERE 1=1`;
+      const params = [];
+      
+      if (q) {
+        whereClause += ` AND (s.title ILIKE $${params.length + 1} OR s.plain_language_summary ILIKE $${params.length + 1})`;
+        params.push(`%${q}%`);
       }
-    });
-
-    app.get('/api/categories', async (req, res) => {
-      try {
-        const categories = await storage.getCategories();
-        res.json(categories);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        res.status(500).json({ error: 'Failed to fetch categories' });
+      
+      if (parsedFilters.category) {
+        whereClause += ` AND sc.category = $${params.length + 1}`;
+        params.push(parsedFilters.category);
       }
-    });
+      
+      const studies = await sql`
+        SELECT s.*, 
+               array_agg(DISTINCT sc.category) FILTER (WHERE sc.category IS NOT NULL) as categories
+        FROM studies s
+        LEFT JOIN study_categories sc ON s.id = sc.study_id
+        ${sql.unsafe(whereClause)}
+        GROUP BY s.id
+        ORDER BY s.created_at DESC
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `;
+      
+      res.json({ studies, total: studies.length });
+    } catch (error) {
+      console.error('Error in search:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
 
-    app.get('/api/consumer-categories/counts', async (req, res) => {
-      try {
-        const categories = await storage.getConsumerCategories();
-        res.json(categories);
-      } catch (error) {
-        console.error('Error fetching consumer categories:', error);
-        res.status(500).json({ error: 'Failed to fetch consumer categories' });
-      }
-    });
-  }
+  console.log('✓ Essential API routes configured');
 
   // Health check
   app.get('/health', (req, res) => {
