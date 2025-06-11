@@ -304,37 +304,148 @@ export async function createProductionServer() {
   app.get('/api/search', async (req, res) => {
     try {
       const { q: query = '', page = 1, pageSize = 20 } = req.query;
+      
+      console.log(`Search request: query="${query}", page=${page}, pageSize=${pageSize}`);
 
-      // Mock search results based on query
-      const mockResults = [
-        {
-          id: 1,
-          title: `Hydrogen therapy research related to "${query}"`,
-          abstract: `This study investigates the therapeutic potential of molecular hydrogen in addressing health conditions related to ${query}. Significant positive outcomes were observed in clinical trials.`,
-          publishDate: '2023-09-15',
-          journal: 'Hydrogen Research Journal',
-          authors: 'Research Team',
-          relevanceScore: 0.95
-        },
-        {
-          id: 2,
-          title: `Clinical applications of hydrogen gas for ${query}`,
-          abstract: `A comprehensive review of hydrogen gas applications in clinical settings, with focus on ${query}-related therapeutic interventions.`,
-          publishDate: '2023-08-10',
-          journal: 'Clinical Hydrogen Medicine',
-          authors: 'Medical Research Group',
-          relevanceScore: 0.87
-        }
-      ];
+      if (!query || query.trim() === '') {
+        return res.json({
+          data: [],
+          total: 0,
+          page: parseInt(page as string),
+          pageSize: parseInt(pageSize as string)
+        });
+      }
+
+      const searchTerm = `%${query.trim()}%`;
+      const offset = (parseInt(page as string) - 1) * parseInt(pageSize as string);
+
+      // Search in title, abstract, and other relevant fields
+      const searchQuery = sql`
+        SELECT * FROM studies 
+        WHERE 
+          title ILIKE ${searchTerm} OR 
+          abstract ILIKE ${searchTerm} OR 
+          authors ILIKE ${searchTerm} OR 
+          journal ILIKE ${searchTerm} OR 
+          category ILIKE ${searchTerm} OR
+          methods ILIKE ${searchTerm} OR
+          results ILIKE ${searchTerm} OR
+          conclusion ILIKE ${searchTerm}
+        ORDER BY 
+          CASE 
+            WHEN title ILIKE ${searchTerm} THEN 1
+            WHEN abstract ILIKE ${searchTerm} THEN 2
+            ELSE 3
+          END,
+          created_at DESC
+        LIMIT ${parseInt(pageSize as string)} 
+        OFFSET ${offset}
+      `;
+
+      const results = await sql(searchQuery);
+
+      // Get total count for pagination
+      const countQuery = sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE 
+          title ILIKE ${searchTerm} OR 
+          abstract ILIKE ${searchTerm} OR 
+          authors ILIKE ${searchTerm} OR 
+          journal ILIKE ${searchTerm} OR 
+          category ILIKE ${searchTerm} OR
+          methods ILIKE ${searchTerm} OR
+          results ILIKE ${searchTerm} OR
+          conclusion ILIKE ${searchTerm}
+      `;
+
+      const countResult = await sql(countQuery);
+      const total = parseInt(countResult[0]?.total || '0');
+
+      console.log(`Search results: found ${results.length} of ${total} total matches for "${query}"`);
 
       res.json({
-        data: mockResults,
-        total: mockResults.length,
+        data: results,
+        total: total,
         page: parseInt(page as string),
         pageSize: parseInt(pageSize as string)
       });
     } catch (error) {
       console.error("Search error:", error);
+      res.status(500).json({ error: "Search failed" });
+    }
+  });
+
+  // Search endpoint (POST version for compatibility)
+  app.post('/api/search', async (req, res) => {
+    try {
+      const { query = '', page = 1, pageSize = 20 } = req.body;
+      
+      console.log(`POST Search request: query="${query}", page=${page}, pageSize=${pageSize}`);
+
+      if (!query || query.trim() === '') {
+        return res.json({
+          data: [],
+          total: 0,
+          page: parseInt(page),
+          pageSize: parseInt(pageSize)
+        });
+      }
+
+      const searchTerm = `%${query.trim()}%`;
+      const offset = (parseInt(page) - 1) * parseInt(pageSize);
+
+      // Search in title, abstract, and other relevant fields
+      const searchQuery = sql`
+        SELECT * FROM studies 
+        WHERE 
+          title ILIKE ${searchTerm} OR 
+          abstract ILIKE ${searchTerm} OR 
+          authors ILIKE ${searchTerm} OR 
+          journal ILIKE ${searchTerm} OR 
+          category ILIKE ${searchTerm} OR
+          methods ILIKE ${searchTerm} OR
+          results ILIKE ${searchTerm} OR
+          conclusion ILIKE ${searchTerm}
+        ORDER BY 
+          CASE 
+            WHEN title ILIKE ${searchTerm} THEN 1
+            WHEN abstract ILIKE ${searchTerm} THEN 2
+            ELSE 3
+          END,
+          created_at DESC
+        LIMIT ${parseInt(pageSize)} 
+        OFFSET ${offset}
+      `;
+
+      const results = await sql(searchQuery);
+
+      // Get total count for pagination
+      const countQuery = sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE 
+          title ILIKE ${searchTerm} OR 
+          abstract ILIKE ${searchTerm} OR 
+          authors ILIKE ${searchTerm} OR 
+          journal ILIKE ${searchTerm} OR 
+          category ILIKE ${searchTerm} OR
+          methods ILIKE ${searchTerm} OR
+          results ILIKE ${searchTerm} OR
+          conclusion ILIKE ${searchTerm}
+      `;
+
+      const countResult = await sql(countQuery);
+      const total = parseInt(countResult[0]?.total || '0');
+
+      console.log(`POST Search results: found ${results.length} of ${total} total matches for "${query}"`);
+
+      res.json({
+        data: results,
+        total: total,
+        page: parseInt(page),
+        pageSize: parseInt(pageSize)
+      });
+    } catch (error) {
+      console.error("POST Search error:", error);
       res.status(500).json({ error: "Search failed" });
     }
   });
