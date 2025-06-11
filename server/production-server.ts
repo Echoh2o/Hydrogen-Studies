@@ -122,20 +122,13 @@ export async function createProductionServer() {
   // Consumer categories API
   app.get('/api/consumer-categories/counts', async (req, res) => {
     try {
-      // Use existing category data from studies table
-      const categoryResults = await sql`
-        SELECT category, COUNT(*) as count
-        FROM studies
-        WHERE category IS NOT NULL
-        GROUP BY category
-        ORDER BY count DESC
-      `;
-
       // Parse consumer categories from JSON field if available
       const consumerCategoriesResults = await sql`
         SELECT consumer_categories, COUNT(*) as count
         FROM studies
         WHERE consumer_categories IS NOT NULL
+        AND consumer_categories != ''
+        AND consumer_categories != 'null'
         GROUP BY consumer_categories
       `;
 
@@ -149,36 +142,35 @@ export async function createProductionServer() {
           const categories = JSON.parse(row.consumer_categories);
           const count = parseInt(row.count);
 
-          if (categories.bodySystem) {
+          if (categories.bodySystem && Array.isArray(categories.bodySystem)) {
             categories.bodySystem.forEach(bs => {
               bodySystemsMap.set(bs, (bodySystemsMap.get(bs) || 0) + count);
             });
           }
 
-          if (categories.condition) {
+          if (categories.condition && Array.isArray(categories.condition)) {
             categories.condition.forEach(cond => {
               conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
             });
           }
 
-          if (categories.lifeStage) {
+          if (categories.lifeStage && Array.isArray(categories.lifeStage)) {
             categories.lifeStage.forEach(ls => {
               lifeStagesMap.set(ls, (lifeStagesMap.get(ls) || 0) + count);
             });
           }
         } catch (e) {
-          // Skip invalid JSON
+          console.log('Skipping invalid JSON:', row.consumer_categories);
         }
       });
 
-      const categorized = {
-        body_systems: Array.from(bodySystemsMap.entries()).map(([name, count]) => ({ name, count })),
-        conditions: Array.from(conditionsMap.entries()).map(([name, count]) => ({ name, count })),
-        life_stages: Array.from(lifeStagesMap.entries()).map(([name, count]) => ({ name, count })),
-        categories: categoryResults // Include traditional categories
+      const data = {
+        condition: Array.from(conditionsMap.entries()).map(([name, count]) => ({ name, count: count.toString() })),
+        bodySystem: Array.from(bodySystemsMap.entries()).map(([name, count]) => ({ name, count: count.toString() })),
+        lifeStage: Array.from(lifeStagesMap.entries()).map(([name, count]) => ({ name, count: count.toString() }))
       };
 
-      res.json(categorized);
+      res.json({ data });
     } catch (error) {
       console.error('Error fetching consumer categories:', error);
       res.status(500).json({ error: 'Failed to fetch consumer categories' });
@@ -222,6 +214,60 @@ export async function createProductionServer() {
     } catch (error) {
       console.error('Error in search:', error);
       res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Consumer categories studies endpoint
+  app.get('/api/consumer-categories/studies', async (req, res) => {
+    try {
+      const { model, category, limit = '20', offset = '0' } = req.query;
+
+      if (!model || !category) {
+        return res.status(400).json({ error: 'Model and category are required' });
+      }
+
+      let studies;
+      const limitNum = parseInt(limit);
+      const offsetNum = parseInt(offset);
+
+      if (model === 'condition') {
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE consumer_categories IS NOT NULL
+          AND consumer_categories != ''
+          AND consumer_categories != 'null'
+          AND consumer_categories LIKE ${'%"condition":[%' + category + '%'}
+          ORDER BY created_at DESC
+          LIMIT ${limitNum} OFFSET ${offsetNum}
+        `;
+      } else if (model === 'bodySystem') {
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE consumer_categories IS NOT NULL
+          AND consumer_categories != ''
+          AND consumer_categories != 'null'
+          AND consumer_categories LIKE ${'%"bodySystem":[%' + category + '%'}
+          ORDER BY created_at DESC
+          LIMIT ${limitNum} OFFSET ${offsetNum}
+        `;
+      } else if (model === 'lifeStage') {
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE consumer_categories IS NOT NULL
+          AND consumer_categories != ''
+          AND consumer_categories != 'null'
+          AND consumer_categories LIKE ${'%"lifeStage":[%' + category + '%'}
+          ORDER BY created_at DESC
+          LIMIT ${limitNum} OFFSET ${offsetNum}
+        `;
+      } else {
+        return res.status(400).json({ error: 'Invalid model type' });
+      }
+
+      res.json(studies);
+    } catch (error) {
+      console.error('Error fetching consumer category studies:', error);
+      res.status(500).json({ error: 'Failed to fetch studies for category' });
     }
   });
 
