@@ -24,6 +24,9 @@ import {
   initializeProductionPerformance,
   performanceTracker
 } from './production-performance-core';
+import studyMetadataRoutes from './routes/study-metadata-routes';
+import performanceRoutes from './routes/performance-routes';
+import comprehensiveImageRoutes from './routes/comprehensive-image-routes';
 async function startServer() {
   const app = express();
 
@@ -69,6 +72,8 @@ async function startServer() {
 
   // Initialize performance system
   await initializeProductionPerformance();
+  app.use('/api/performance', performanceRoutes);
+  app.use('/api/comprehensive-images', comprehensiveImageRoutes);
 
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, '0.0.0.0', () => {
