@@ -69,15 +69,15 @@ export async function createProductionServer() {
 
       let baseQuery = sql`SELECT * FROM studies`;
       let conditions = [];
-      
+
       if (search) {
         conditions.push(sql`(title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})`);
       }
-      
+
       if (category) {
         conditions.push(sql`category = ${category}`);
       }
-      
+
       let studies;
       if (conditions.length > 0) {
         const whereClause = conditions.reduce((acc, condition) => sql`${acc} AND ${condition}`);
@@ -94,7 +94,7 @@ export async function createProductionServer() {
           LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
         `;
       }
-      
+
       res.json(studies);
     } catch (error) {
       console.error('Error fetching studies:', error);
@@ -130,7 +130,7 @@ export async function createProductionServer() {
         GROUP BY category
         ORDER BY count DESC
       `;
-      
+
       // Parse consumer categories from JSON field if available
       const consumerCategoriesResults = await sql`
         SELECT consumer_categories, COUNT(*) as count
@@ -138,29 +138,29 @@ export async function createProductionServer() {
         WHERE consumer_categories IS NOT NULL
         GROUP BY consumer_categories
       `;
-      
+
       // Process the consumer categories JSON
       const bodySystemsMap = new Map();
       const conditionsMap = new Map();
       const lifeStagesMap = new Map();
-      
+
       consumerCategoriesResults.forEach(row => {
         try {
           const categories = JSON.parse(row.consumer_categories);
           const count = parseInt(row.count);
-          
+
           if (categories.bodySystem) {
             categories.bodySystem.forEach(bs => {
               bodySystemsMap.set(bs, (bodySystemsMap.get(bs) || 0) + count);
             });
           }
-          
+
           if (categories.condition) {
             categories.condition.forEach(cond => {
               conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
             });
           }
-          
+
           if (categories.lifeStage) {
             categories.lifeStage.forEach(ls => {
               lifeStagesMap.set(ls, (lifeStagesMap.get(ls) || 0) + count);
@@ -170,14 +170,14 @@ export async function createProductionServer() {
           // Skip invalid JSON
         }
       });
-      
+
       const categorized = {
         body_systems: Array.from(bodySystemsMap.entries()).map(([name, count]) => ({ name, count })),
         conditions: Array.from(conditionsMap.entries()).map(([name, count]) => ({ name, count })),
         life_stages: Array.from(lifeStagesMap.entries()).map(([name, count]) => ({ name, count })),
         categories: categoryResults // Include traditional categories
       };
-      
+
       res.json(categorized);
     } catch (error) {
       console.error('Error fetching consumer categories:', error);
@@ -190,17 +190,17 @@ export async function createProductionServer() {
     try {
       const { q = '', filters = '{}', limit = '20', offset = '0' } = req.query;
       const parsedFilters = JSON.parse(filters as string);
-      
+
       let conditions = [];
-      
+
       if (q) {
         conditions.push(sql`(title ILIKE ${'%' + q + '%'} OR abstract ILIKE ${'%' + q + '%'})`);
       }
-      
+
       if (parsedFilters.category) {
         conditions.push(sql`category = ${parsedFilters.category}`);
       }
-      
+
       let studies;
       if (conditions.length > 0) {
         const whereClause = conditions.reduce((acc, condition) => sql`${acc} AND ${condition}`);
@@ -217,7 +217,7 @@ export async function createProductionServer() {
           LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
         `;
       }
-      
+
       res.json({ studies, total: studies.length });
     } catch (error) {
       console.error('Error in search:', error);
