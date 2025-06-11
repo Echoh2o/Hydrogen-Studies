@@ -44,19 +44,42 @@ async function generateSingleStudyContent(study: any): Promise<void> {
     }
 
     // Create prompt for missing content
-    let prompt = `Generate consumer-friendly explanations for this hydrogen study. Use simple language (6th grade level), 2-3 sentences each.
+    let prompt = `
+    Create a comprehensive consumer-friendly summary for this hydrogen therapy research study.
 
-Study: ${study.title}
-Category: ${study.category || 'General'}
-Abstract: ${study.abstract?.substring(0, 400) || 'No abstract available'}
+    Study Title: ${study.title}
+    Abstract: ${study.abstract}
+    Authors: ${study.authors}
+    Journal: ${study.journal}
+    Category: ${study.category || 'General Health'}
 
-Generate JSON with these fields:`;
+    Please provide a structured response with:
 
-    if (needsMethods) prompt += '\n- "methods": Simple explanation of how the study was conducted';
-    if (needsResults) prompt += '\n- "results": Simple explanation of what the study found';  
-    if (needsConclusion) prompt += '\n- "conclusion": Simple explanation of what this means for people';
+    ## What This Study Found
+    A clear, jargon-free summary in 2-3 sentences explaining the main discovery.
 
-    prompt += '\n\nExample: {"methods": "Researchers gave 30 adults hydrogen water for 8 weeks.", "results": "People had less inflammation.", "conclusion": "Hydrogen water may help reduce inflammation."}';
+    ## Key Results
+    • 3-4 bullet points of the most important findings
+    • Use percentages, numbers, or comparisons when available
+    • Explain complex terms in parentheses
+
+    ## What This Means for You
+    • Practical implications for everyday health
+    • Who might benefit most from these findings
+    • How this relates to current hydrogen therapy practices
+
+    ## Study Context
+    • Type of study (human trial, animal study, lab research)
+    • Number of participants (if applicable)
+    • Study duration and methodology in simple terms
+
+    ## Important Notes
+    • Any limitations or caveats
+    • Whether more research is needed
+    • Safety considerations if relevant
+
+    Keep language at an 8th-grade reading level while maintaining scientific accuracy. Use active voice and avoid medical jargon.
+    `;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -68,7 +91,7 @@ Generate JSON with these fields:`;
 
     const content = response.choices[0].message.content;
     if (!content) return;
-    
+
     const generated = JSON.parse(content);
 
     // Update database with individual queries to avoid parameter issues
@@ -148,9 +171,9 @@ export async function completePhase2Fast(): Promise<SimplifiedStats> {
     for (let i = 0; i < studies.length; i++) {
       const study = studies[i];
       console.log(`📝 Processing study ${i + 1}/${studies.length}: ${study.title?.substring(0, 50)}...`);
-      
+
       await generateSingleStudyContent(study);
-      
+
       // Small delay to avoid rate limits
       if (i < studies.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 1500));

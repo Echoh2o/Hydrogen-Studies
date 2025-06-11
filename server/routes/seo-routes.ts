@@ -64,12 +64,17 @@ router.get('/sitemap.xml', async (req, res) => {
         priority: '0.8'
       })),
 
-      // Study pages
+      // Study pages with enhanced metadata
       ...studiesData.map(study => ({
-        loc: `${baseUrl}/studies/${study.id}`,
+        loc: `${baseUrl}/study/${study.slug || study.id}`,
         lastmod: study.publishDate || study.createdAt?.toISOString().split('T')[0] || currentDate,
         changefreq: 'monthly',
-        priority: '0.6'
+        priority: study.keywords?.length > 5 ? '0.8' : '0.6',
+        image: study.imageUrl ? {
+          loc: study.imageUrl,
+          title: study.title,
+          caption: `Research study: ${study.title.substring(0, 100)}`
+        } : undefined
       }))
     ];
 
