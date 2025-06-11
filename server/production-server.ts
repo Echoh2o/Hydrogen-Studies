@@ -43,7 +43,15 @@ export async function createProductionServer() {
 
   // Static file serving
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  
+  // Serve built assets from dist
+  app.use('/assets', express.static(path.join(process.cwd(), 'dist', 'assets')));
+  
+  // Serve static files from public
   app.use(express.static(path.join(process.cwd(), 'public')));
+  
+  // Serve built files from dist as fallback
+  app.use(express.static(path.join(process.cwd(), 'dist')));
 
   // Essential API endpoints for production
 
@@ -225,7 +233,15 @@ export async function createProductionServer() {
 
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+    const distIndexPath = path.join(process.cwd(), 'dist', 'index.html');
+    const publicIndexPath = path.join(process.cwd(), 'public', 'index.html');
+    
+    // Try dist/index.html first (built version), then fallback to public
+    if (require('fs').existsSync(distIndexPath)) {
+      res.sendFile(distIndexPath);
+    } else {
+      res.sendFile(publicIndexPath);
+    }
   });
 
   // Error handling

@@ -1,8 +1,10 @@
-// Minimal, stable, high-performance server implementation
+
+import { createProductionServer } from './production-server.js';
+
 async function main() {
   try {
-    const { startMinimalServer } = await import("./minimal-stable-server");
-    await startMinimalServer();
+    console.log('Starting Hydrogen Research Platform...');
+    await createProductionServer();
   } catch (error) {
     console.error('Server startup failed:', error);
     process.exit(1);
