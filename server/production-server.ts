@@ -60,14 +60,11 @@ export async function createProductionServer() {
   // Studies API
   app.get('/api/studies', async (req, res) => {
     try {
-      const {
-        search = '',
-        category = '',
-        limit = '50',
-        offset = '0'
-      } = req.query;
+      const search = typeof req.query.search === 'string' ? req.query.search : '';
+      const category = typeof req.query.category === 'string' ? req.query.category : '';
+      const limit = typeof req.query.limit === 'string' ? req.query.limit : '50';
+      const offset = typeof req.query.offset === 'string' ? req.query.offset : '0';
 
-      let baseQuery = sql`SELECT * FROM studies`;
       let conditions = [];
 
       if (search) {
@@ -358,17 +355,29 @@ export async function createProductionServer() {
     });
   });
 
-  const port = parseInt(process.env.PORT || '5000');
+  const port = parseInt(process.env.PORT || '3000');
   const server = createServer(app);
 
   return new Promise((resolve, reject) => {
-    server.listen(port, '0.0.0.0', () => {
-      const duration = Date.now() - startTime;
-      console.log(`✓ Production server running on port ${port} (${duration}ms startup)`);
-      resolve({ app, server });
-    });
+    const tryPort = (portToTry: number) => {
+      server.listen(portToTry, '0.0.0.0', () => {
+        const duration = Date.now() - startTime;
+        console.log(`✓ Production server running on port ${portToTry} (${duration}ms startup)`);
+        resolve({ app, server });
+      });
 
-    server.on('error', reject);
+      server.on('error', (error: any) => {
+        if (error.code === 'EADDRINUSE') {
+          console.log(`Port ${portToTry} in use, trying ${portToTry + 1}...`);
+          server.removeAllListeners('error');
+          tryPort(portToTry + 1);
+        } else {
+          reject(error);
+        }
+      });
+    };
+
+    tryPort(port);
   });
 }
 

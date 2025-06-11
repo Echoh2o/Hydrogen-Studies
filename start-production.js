@@ -23,7 +23,7 @@ if (!existsSync('./server/production-server.js')) {
 
 // Set production environment
 process.env.NODE_ENV = 'production';
-process.env.PORT = process.env.PORT || '5000';
+process.env.PORT = process.env.PORT || '3000';
 
 console.log(`🌐 Server will run on port ${process.env.PORT}`);
 
