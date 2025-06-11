@@ -304,7 +304,7 @@ export async function createProductionServer() {
   app.get('/api/search', async (req, res) => {
     try {
       const { q: query = '', page = 1, pageSize = 20 } = req.query;
-      
+
       console.log(`Search request: query="${query}", page=${page}, pageSize=${pageSize}`);
 
       if (!query || query.trim() === '') {
@@ -379,7 +379,7 @@ export async function createProductionServer() {
   app.get('/api/categories', async (req, res) => {
     try {
       console.log('Fetching all categories...');
-      
+
       const [conditionsResult, bodySystemsResult, lifeStagesResult] = await Promise.all([
         // Health conditions
         sql`
@@ -415,7 +415,7 @@ export async function createProductionServer() {
             title ILIKE '%diabetes%' OR title ILIKE '%metabolic%' OR title ILIKE '%glucose%' OR
             abstract ILIKE '%diabetes%' OR abstract ILIKE '%metabolic%' OR abstract ILIKE '%glucose%'
         `,
-        
+
         // Body systems
         sql`
           SELECT 
@@ -442,7 +442,7 @@ export async function createProductionServer() {
             title ILIKE '%digestive%' OR title ILIKE '%gut%' OR title ILIKE '%liver%' OR title ILIKE '%intestin%' OR
             abstract ILIKE '%digestive%' OR abstract ILIKE '%gut%' OR abstract ILIKE '%liver%' OR abstract ILIKE '%intestin%'
         `,
-        
+
         // Life stages
         sql`
           SELECT 
@@ -517,9 +517,9 @@ export async function createProductionServer() {
         FROM studies 
         WHERE 
           title ILIKE '%diabetes%' OR title ILIKE '%metabolic%' OR title ILIKE '%glucose%' OR
-          abstract ILIKE '%diabetes%' OR abstract ILIKE '%metabolic%' OR abstract ILIK%'
+          abstract ILIKE '%diabetes%' OR abstract ILIKE '%metabolic%' OR abstract ILIKE '%glucose%'
       `;
-      
+
       res.json(result.filter(r => r.count > 0));
     } catch (error) {
       console.error('Error fetching condition categories:', error);
@@ -554,7 +554,7 @@ export async function createProductionServer() {
           title ILIKE '%digestive%' OR title ILIKE '%gut%' OR title ILIKE '%liver%' OR title ILIKE '%intestin%' OR
           abstract ILIKE '%digestive%' OR abstract ILIKE '%gut%' OR abstract ILIKE '%liver%' OR abstract ILIKE '%intestin%'
       `;
-      
+
       res.json(result.filter(r => r.count > 0));
     } catch (error) {
       console.error('Error fetching body system categories:', error);
@@ -588,7 +588,7 @@ export async function createProductionServer() {
           title ILIKE '%elderly%' OR title ILIKE '%aging%' OR title ILIKE '%older%' OR
           abstract ILIKE '%elderly%' OR abstract ILIKE '%aging%' OR abstract ILIKE '%older%'
       `;
-      
+
       res.json(result.filter(r => r.count > 0));
     } catch (error) {
       console.error('Error fetching life stage categories:', error);
@@ -600,7 +600,7 @@ export async function createProductionServer() {
   app.post('/api/search', async (req, res) => {
     try {
       const { query = '', page = 1, pageSize = 20 } = req.body;
-      
+
       console.log(`POST Search request: query="${query}", page=${page}, pageSize=${pageSize}`);
 
       if (!query || query.trim() === '') {
