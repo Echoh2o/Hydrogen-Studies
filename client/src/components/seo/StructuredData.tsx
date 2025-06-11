@@ -28,45 +28,41 @@ interface StructuredDataProps {
 export const StructuredData: React.FC<StructuredDataProps> = ({ study, type, breadcrumbs }) => {
   const generateStudySchema = (study: Study) => ({
     "@context": "https://schema.org",
-    "@type": "ScholarlyArticle",
-    "name": study.title,
+    "@type": ["Article", "ScholarlyArticle"],
     "headline": study.title,
-    "description": study.abstract,
+    "description": study.abstract?.substring(0, 200),
     "author": {
       "@type": "Person",
-      "name": study.authors
+      "name": study.authors?.split(',')[0] || "Research Team"
     },
     "publisher": {
       "@type": "Organization",
-      "name": study.journal || "Hydrogen Research Database",
+      "name": "Hydrogen Research Database",
       "logo": {
         "@type": "ImageObject",
-        "url": `${window.location.origin}/logo.png`
+        "url": `${window.location.origin}/favicon.svg`
       }
     },
     "datePublished": study.publishDate,
     "dateModified": study.publishDate,
-    "url": `${window.location.origin}/studies/${study.id}`,
-    "identifier": {
-      "@type": "PropertyValue",
-      "propertyID": "DOI",
-      "value": study.doi
-    },
-    "keywords": study.keywords?.join(", ") || study.category,
-    "about": {
-      "@type": "MedicalCondition",
-      "name": "Hydrogen Therapy Research"
-    },
-    "image": study.imageUrl ? {
+    "image": {
       "@type": "ImageObject",
       "url": study.imageUrl,
-      "caption": `Research visualization for ${study.title}`
-    } : undefined,
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `${window.location.origin}/studies/${study.id}`
+      "width": 800,
+      "height": 600
     },
-    "citation": study.doi ? `https://doi.org/${study.doi}` : undefined
+    "about": {
+      "@type": "MedicalCondition",
+      "name": study.category
+    },
+    "keywords": study.keywords?.join(', '),
+    "citation": {
+      "@type": "CreativeWork",
+      "name": study.journal,
+      "identifier": study.doi
+    },
+    "inLanguage": "en-US",
+    "isAccessibleForFree": true
   });
 
   const generateOrganizationSchema = () => ({

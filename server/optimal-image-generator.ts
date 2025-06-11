@@ -46,25 +46,25 @@ async function generateSingleImage(study: any, db: any): Promise<boolean> {
 
     const data = await response.json();
     const imageUrl = data.data[0]?.url;
-    
+
     if (!imageUrl) {
       throw new Error('No image URL returned');
     }
 
     const imageResponse = await fetch(imageUrl);
     const buffer = await imageResponse.arrayBuffer();
-    
+
     const uploadsDir = path.join(process.cwd(), 'uploads', 'study-images');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
-    
+
     const filename = `study-${study.id}-${Date.now()}.png`;
     const localPath = path.join(uploadsDir, filename);
     const webPath = `/uploads/study-images/${filename}`;
-    
+
     fs.writeFileSync(localPath, Buffer.from(buffer));
-    
+
     await db.execute(sql`
       UPDATE studies 
       SET image_url = ${webPath},
@@ -112,27 +112,27 @@ export async function startOptimalGeneration(db: any): Promise<{success: boolean
           ORDER BY id
           LIMIT 20
         `);
-        
+
         const studies = (result as any).rows || [];
-        
+
         if (studies.length === 0) {
           console.log('All studies have images - generation complete');
           break;
         }
-        
+
         console.log(`Processing ${studies.length} studies (batch ${Math.floor(stats.processed / 20) + 1})`);
-        
+
         for (const study of studies) {
           if (!isRunning) break;
-          
+
           stats.currentStudy = study.id;
           await generateSingleImage(study, db);
           stats.processed++;
-          
+
           // Conservative rate limiting - 6 seconds between requests
           await new Promise(resolve => setTimeout(resolve, 6000));
         }
-        
+
         // Longer break between batches
         if (studies.length === 20 && isRunning) {
           console.log('Completed batch, waiting 30 seconds before next batch...');

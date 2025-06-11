@@ -354,7 +354,8 @@ router.get('/studies', async (req, res) => {
       
       return res.json({
         success: true,
-        data: studyResults
+        data: studyResults,
+        total: studyResults.length
       });
     } catch (error) {
       console.error('Error fetching studies by category:', error);

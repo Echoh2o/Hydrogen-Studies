@@ -7,6 +7,7 @@ import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import { neon } from '@neondatabase/serverless';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,184 +42,283 @@ export async function createProductionServer() {
     }
   });
 
-  // Static file serving
+  // Static file serving with correct precedence
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-  
-  // Serve built assets from dist
+
+  // Serve built assets from dist (production assets)
   app.use('/assets', express.static(path.join(process.cwd(), 'dist', 'assets')));
-  
-  // Serve static files from public
-  app.use(express.static(path.join(process.cwd(), 'public')));
-  
-  // Serve built files from dist as fallback
+
+  // Serve built files from dist first (production)
   app.use(express.static(path.join(process.cwd(), 'dist')));
 
-  // Essential API endpoints for production
+  // Fallback to public directory (development assets)
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
-  // Health check
-  app.get('/health', async (req, res) => {
-    try {
-      const start = Date.now();
-      await sql('SELECT 1');
-      const dbLatency = Date.now() - start;
-
-      res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        database: { latency: `${dbLatency}ms` },
-        environment: 'production'
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: 'unhealthy',
-        error: 'Database connection failed'
-      });
-    }
-  });
+  // Create essential API routes directly
+  console.log('Setting up essential API routes...');
 
   // Studies API
   app.get('/api/studies', async (req, res) => {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
-      const offset = (page - 1) * limit;
+      const {
+        search = '',
+        category = '',
+        limit = '50',
+        offset = '0'
+      } = req.query;
 
-      const result = await sql`
-        SELECT id, title, abstract, consumer_categories as category, image_url, journal_publish_date as publication_date, 
-               authors, journal, doi, array_to_string(keywords, ', ') as keywords, slug
-        FROM studies 
-        ORDER BY id 
-        LIMIT ${limit} OFFSET ${offset}`;
+      let baseQuery = sql`SELECT * FROM studies`;
+      let conditions = [];
 
-      const countResult = await sql`SELECT COUNT(*) as count FROM studies`;
-
-      res.json({
-        studies: (result as any).rows || [],
-        total: (countResult as any).rows?.[0]?.count || 0,
-        page,
-        limit,
-        totalPages: Math.ceil(((countResult as any).rows?.[0]?.count || 0) / limit)
-      });
-    } catch (error) {
-      console.error('Studies API error:', error);
-      res.status(500).json({ error: 'Failed to fetch studies' });
-    }
-  });
-
-  // Single study API
-  app.get('/api/studies/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-
-      const result = await sql`SELECT * FROM studies WHERE id = ${id}`;
-
-      const study = (result as any).rows?.[0];
-
-      if (!study) {
-        return res.status(404).json({ error: 'Study not found' });
+      if (search) {
+        conditions.push(sql`(title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})`);
       }
 
-      res.json(study);
-    } catch (error) {
-      console.error('Study API error:', error);
-      res.status(500).json({ error: 'Failed to fetch study' });
-    }
-  });
+      if (category) {
+        conditions.push(sql`category = ${category}`);
+      }
 
-  // Search API
-  app.get('/api/search', async (req, res) => {
-    try {
-      const query = req.query.q as string || '';
-      const category = req.query.category as string;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = Math.min(parseInt(req.query.limit as string) || 12, 50);
-      const offset = (page - 1) * limit;
-
-      // Query logic is handled in the next section with proper SQL calls
-
-      let result, countResult;
-
-      if (query && category) {
-        result = await sql(`
-          SELECT id, title, abstract, category, image_url, publication_date,
-                 authors, journal, doi, health_conditions, delivery_method
-          FROM studies 
-          WHERE (title ILIKE $1 OR abstract ILIKE $1) AND category = $2
-          ORDER BY id 
-          LIMIT $3 OFFSET $4
-        `, [`%${query}%`, category, limit, offset]);
-
-        countResult = await sql(`
-          SELECT COUNT(*) as count FROM studies 
-          WHERE (title ILIKE $1 OR abstract ILIKE $1) AND category = $2
-        `, [`%${query}%`, category]);
-      } else if (query) {
-        result = await sql(`
-          SELECT id, title, abstract, category, image_url, publication_date,
-                 authors, journal, doi, health_conditions, delivery_method
-          FROM studies 
-          WHERE title ILIKE $1 OR abstract ILIKE $1
-          ORDER BY id 
-          LIMIT $2 OFFSET $3
-        `, [`%${query}%`, limit, offset]);
-
-        countResult = await sql(`
-          SELECT COUNT(*) as count FROM studies 
-          WHERE title ILIKE $1 OR abstract ILIKE $1
-        `, [`%${query}%`]);
-      } else if (category) {
-        result = await sql(`
-          SELECT id, title, abstract, category, image_url, publication_date,
-                 authors, journal, doi, health_conditions, delivery_method
-          FROM studies 
-          WHERE category = $1
-          ORDER BY id 
-          LIMIT $2 OFFSET $3
-        `, [category, limit, offset]);
-
-        countResult = await sql('SELECT COUNT(*) as count FROM studies WHERE category = $1', [category]);
+      let studies;
+      if (conditions.length > 0) {
+        const whereClause = conditions.reduce((acc, condition) => sql`${acc} AND ${condition}`);
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE ${whereClause}
+          ORDER BY created_at DESC
+          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        `;
       } else {
-        result = await sql(`
-          SELECT id, title, abstract, category, image_url, publication_date,
-                 authors, journal, doi, health_conditions, delivery_method
-          FROM studies 
-          ORDER BY id 
-          LIMIT $1 OFFSET $2
-        `, [limit, offset]);
-
-        countResult = await sql('SELECT COUNT(*) as count FROM studies');
+        studies = await sql`
+          SELECT * FROM studies
+          ORDER BY created_at DESC
+          LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+        `;
       }
 
-      res.json({
-        studies: (result as any).rows || [],
-        total: (countResult as any).rows?.[0]?.count || 0,
-        page,
-        limit,
-        query,
-        category
-      });
+      res.json(studies);
     } catch (error) {
-      console.error('Search API error:', error);
-      res.status(500).json({ error: 'Search failed' });
+      console.error('Error fetching studies:', error);
+      res.status(500).json({ error: 'Failed to fetch studies' });
     }
   });
 
   // Categories API
   app.get('/api/categories', async (req, res) => {
     try {
-      const result = await sql(`
-        SELECT category, COUNT(*) as count 
-        FROM studies 
-        WHERE category IS NOT NULL 
-        GROUP BY category 
+      const categories = await sql`
+        SELECT category, COUNT(*) as count
+        FROM studies
+        WHERE category IS NOT NULL
+        GROUP BY category
         ORDER BY count DESC
-      `);
-
-      res.json((result as any).rows || []);
+      `;
+      res.json(categories);
     } catch (error) {
-      console.error('Categories API error:', error);
+      console.error('Error fetching categories:', error);
       res.status(500).json({ error: 'Failed to fetch categories' });
     }
+  });
+
+  // Consumer categories API
+  app.get('/api/consumer-categories/counts', async (req, res) => {
+    try {
+      // Parse consumer categories from JSON field if available
+      const consumerCategoriesResults = await sql`
+        SELECT consumer_categories, COUNT(*) as count
+        FROM studies
+        WHERE consumer_categories IS NOT NULL
+        AND consumer_categories != ''
+        AND consumer_categories != 'null'
+        GROUP BY consumer_categories
+      `;
+
+      // Process the consumer categories JSON
+      const bodySystemsMap = new Map();
+      const conditionsMap = new Map();
+      const lifeStagesMap = new Map();
+
+      consumerCategoriesResults.forEach(row => {
+        try {
+          const categories = JSON.parse(row.consumer_categories);
+          const count = parseInt(row.count);
+
+          if (categories.bodySystem && Array.isArray(categories.bodySystem)) {
+            categories.bodySystem.forEach(bs => {
+              bodySystemsMap.set(bs, (bodySystemsMap.get(bs) || 0) + count);
+            });
+          }
+
+          if (categories.condition && Array.isArray(categories.condition)) {
+            categories.condition.forEach(cond => {
+              conditionsMap.set(cond, (conditionsMap.get(cond) || 0) + count);
+            });
+          }
+
+          if (categories.lifeStage && Array.isArray(categories.lifeStage)) {
+            categories.lifeStage.forEach(ls => {
+              lifeStagesMap.set(ls, (lifeStagesMap.get(ls) || 0) + count);
+            });
+          }
+        } catch (e) {
+          console.log('Skipping invalid JSON:', row.consumer_categories);
+        }
+      });
+
+      const data = {
+        condition: Array.from(conditionsMap.entries()).map(([name, count]) => ({ name, count: count.toString() })),
+        bodySystem: Array.from(bodySystemsMap.entries()).map(([name, count]) => ({ name, count: count.toString() })),
+        lifeStage: Array.from(lifeStagesMap.entries()).map(([name, count]) => ({ name, count: count.toString() }))
+      };
+
+      res.json({ data });
+    } catch (error) {
+      console.error('Error fetching consumer categories:', error);
+      res.status(500).json({ error: 'Failed to fetch consumer categories' });
+    }
+  });
+
+  // Basic categories endpoint for legacy support
+  app.get('/api/categories', async (req, res) => {
+    try {
+      const { pool } = await import('./db');
+      const result = await pool.query(`
+        SELECT DISTINCT c.id, c.name, c.description, 
+               COUNT(sc.study_id) as study_count
+        FROM categories c
+        LEFT JOIN study_categories sc ON c.id = sc.category_id
+        GROUP BY c.id, c.name, c.description
+        ORDER BY study_count DESC
+        LIMIT 20
+      `);
+
+      const categories = result.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        description: row.description || `${row.study_count} studies available`,
+        icon: 'flask',
+        count: parseInt(row.study_count)
+      }));
+
+      return res.json(categories);
+    } catch (error) {
+      console.error('Categories error:', error);
+      return res.status(500).json({
+        error: 'Failed to fetch categories'
+      });
+    }
+  }
+  );
+
+  // Search API
+  app.get('/api/search', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0 } = req.query;
+
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Search query is required'
+        });
+      }
+
+      const { pool } = await import('./db');
+      const searchQuery = `%${q.toLowerCase()}%`;
+
+      const result = await pool.query(`
+        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+               category, doi, image_url as "imageUrl", slug
+        FROM studies 
+        WHERE LOWER(title) LIKE $1 OR LOWER(abstract) LIKE $2
+        ORDER BY 
+          CASE 
+            WHEN LOWER(title) LIKE $3 THEN 1
+            WHEN LOWER(abstract) LIKE $4 THEN 2
+            ELSE 3
+          END,
+          publish_date DESC
+        LIMIT $5 OFFSET $6
+      `, [searchQuery, searchQuery, searchQuery, searchQuery, limit, offset]);
+
+      const countResult = await pool.query(`
+        SELECT COUNT(*) as total
+        FROM studies 
+        WHERE LOWER(title) LIKE $1 OR LOWER(abstract) LIKE $2
+      `, [searchQuery, searchQuery]);
+
+      return res.json({
+        success: true,
+        studies: result.rows,
+        total: parseInt(countResult.rows[0].total),
+        hasMore: (parseInt(offset) + result.rows.length) < parseInt(countResult.rows[0].total)
+      });
+    } catch (error) {
+      console.error('Search error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Search failed'
+      });
+    }
+  });
+
+  // Consumer categories studies endpoint
+  app.get('/api/consumer-categories/studies', async (req, res) => {
+    try {
+      const { model, category, limit = '20', offset = '0' } = req.query;
+
+      if (!model || !category) {
+        return res.status(400).json({ error: 'Model and category are required' });
+      }
+
+      let studies;
+      const limitNum = parseInt(limit);
+      const offsetNum = parseInt(offset);
+
+      if (model === 'condition') {
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE consumer_categories IS NOT NULL
+          AND consumer_categories != ''
+          AND consumer_categories != 'null'
+          AND consumer_categories LIKE ${'%"condition":[%' + category + '%'}
+          ORDER BY created_at DESC
+          LIMIT ${limitNum} OFFSET ${offsetNum}
+        `;
+      } else if (model === 'bodySystem') {
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE consumer_categories IS NOT NULL
+          AND consumer_categories != ''
+          AND consumer_categories != 'null'
+          AND consumer_categories LIKE ${'%"bodySystem":[%' + category + '%'}
+          ORDER BY created_at DESC
+          LIMIT ${limitNum} OFFSET ${offsetNum}
+        `;
+      } else if (model === 'lifeStage') {
+        studies = await sql`
+          SELECT * FROM studies
+          WHERE consumer_categories IS NOT NULL
+          AND consumer_categories != ''
+          AND consumer_categories != 'null'
+          AND consumer_categories LIKE ${'%"lifeStage":[%' + category + '%'}
+          ORDER BY created_at DESC
+          LIMIT ${limitNum} OFFSET ${offsetNum}
+        `;
+      } else {
+        return res.status(400).json({ error: 'Invalid model type' });
+      }
+
+      res.json(studies);
+    } catch (error) {
+      console.error('Error fetching consumer category studies:', error);
+      res.status(500).json({ error: 'Failed to fetch studies for category' });
+    }
+  });
+
+  console.log('✓ Essential API routes configured');
+
+  // Health check
+  app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
   });
 
   // Root API info
@@ -235,9 +335,9 @@ export async function createProductionServer() {
   app.get('*', (req, res) => {
     const distIndexPath = path.join(process.cwd(), 'dist', 'index.html');
     const publicIndexPath = path.join(process.cwd(), 'public', 'index.html');
-    
+
     // Try dist/index.html first (built version), then fallback to public
-    if (require('fs').existsSync(distIndexPath)) {
+    if (existsSync(distIndexPath)) {
       res.sendFile(distIndexPath);
     } else {
       res.sendFile(publicIndexPath);
