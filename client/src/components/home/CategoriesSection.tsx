@@ -48,8 +48,6 @@ const CategoriesSection = () => {
     count: parseInt(cat.count)
   })) || [];
 
-  console.log('Categories data:', { categoriesResponse, categories });
-
   const getCategoryIcon = (iconName: string) => {
     switch (iconName) {
       case "brain":

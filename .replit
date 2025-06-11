@@ -139,12 +139,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pkill -f \"tsx server/index.ts\" || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🔄 Restarting server with search and categories fixes...\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
 args = "tsx server/index.ts"
