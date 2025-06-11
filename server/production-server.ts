@@ -7,6 +7,7 @@ import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import { neon } from '@neondatabase/serverless';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -237,7 +238,7 @@ export async function createProductionServer() {
     const publicIndexPath = path.join(process.cwd(), 'public', 'index.html');
     
     // Try dist/index.html first (built version), then fallback to public
-    if (require('fs').existsSync(distIndexPath)) {
+    if (existsSync(distIndexPath)) {
       res.sendFile(distIndexPath);
     } else {
       res.sendFile(publicIndexPath);
