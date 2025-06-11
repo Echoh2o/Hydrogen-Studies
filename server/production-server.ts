@@ -375,6 +375,227 @@ export async function createProductionServer() {
     }
   });
 
+  // Categories endpoints
+  app.get('/api/categories', async (req, res) => {
+    try {
+      console.log('Fetching all categories...');
+      
+      const [conditionsResult, bodySystemsResult, lifeStagesResult] = await Promise.all([
+        // Health conditions
+        sql`
+          SELECT 
+            'Arthritis & Inflammation' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%arthritis%' OR title ILIKE '%inflammation%' OR
+            abstract ILIKE '%arthritis%' OR abstract ILIKE '%inflammation%'
+          UNION ALL
+          SELECT 
+            'Heart Disease & Hypertension' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%heart%' OR title ILIKE '%cardiovascular%' OR title ILIKE '%hypertension%' OR
+            abstract ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%hypertension%'
+          UNION ALL
+          SELECT 
+            'Brain & Neurological Disorders' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%brain%' OR title ILIKE '%neuro%' OR title ILIKE '%alzheimer%' OR title ILIKE '%parkinson%' OR
+            abstract ILIKE '%brain%' OR abstract ILIKE '%neuro%' OR abstract ILIKE '%alzheimer%' OR abstract ILIKE '%parkinson%'
+          UNION ALL
+          SELECT 
+            'Diabetes & Metabolic Health' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%diabetes%' OR title ILIKE '%metabolic%' OR title ILIKE '%glucose%' OR
+            abstract ILIKE '%diabetes%' OR abstract ILIKE '%metabolic%' OR abstract ILIKE '%glucose%'
+        `,
+        
+        // Body systems
+        sql`
+          SELECT 
+            'Cardiovascular System' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' OR title ILIKE '%blood%' OR
+            abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%heart%' OR abstract ILIKE '%blood%'
+          UNION ALL
+          SELECT 
+            'Nervous System' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%nervous%' OR title ILIKE '%brain%' OR title ILIKE '%neural%' OR
+            abstract ILIKE '%nervous%' OR abstract ILIKE '%brain%' OR abstract ILIKE '%neural%'
+          UNION ALL
+          SELECT 
+            'Digestive System' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%digestive%' OR title ILIKE '%gut%' OR title ILIKE '%liver%' OR title ILIKE '%intestin%' OR
+            abstract ILIKE '%digestive%' OR abstract ILIKE '%gut%' OR abstract ILIKE '%liver%' OR abstract ILIKE '%intestin%'
+        `,
+        
+        // Life stages
+        sql`
+          SELECT 
+            'Adults' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%adult%' OR abstract ILIKE '%adult%'
+          UNION ALL
+          SELECT 
+            'Athletes' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%athlete%' OR title ILIKE '%sport%' OR title ILIKE '%exercise%' OR
+            abstract ILIKE '%athlete%' OR abstract ILIKE '%sport%' OR abstract ILIKE '%exercise%'
+          UNION ALL
+          SELECT 
+            'Older Adults' as name,
+            COUNT(*) as count
+          FROM studies 
+          WHERE 
+            title ILIKE '%elderly%' OR title ILIKE '%aging%' OR title ILIKE '%older%' OR
+            abstract ILIKE '%elderly%' OR abstract ILIKE '%aging%' OR abstract ILIKE '%older%'
+        `
+      ]);
+
+      console.log('Categories fetched successfully');
+
+      res.json({
+        conditions: conditionsResult.filter(r => r.count > 0),
+        bodySystems: bodySystemsResult.filter(r => r.count > 0),
+        lifeStages: lifeStagesResult.filter(r => r.count > 0)
+      });
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  });
+
+  // Specific category endpoints
+  app.get('/api/categories/condition', async (req, res) => {
+    try {
+      const result = await sql`
+        SELECT 
+          'Arthritis & Inflammation' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%arthritis%' OR title ILIKE '%inflammation%' OR
+          abstract ILIKE '%arthritis%' OR abstract ILIKE '%inflammation%'
+        UNION ALL
+        SELECT 
+          'Heart Disease & Hypertension' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%heart%' OR title ILIKE '%cardiovascular%' OR title ILIKE '%hypertension%' OR
+          abstract ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%hypertension%'
+        UNION ALL
+        SELECT 
+          'Brain & Neurological Disorders' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%brain%' OR title ILIKE '%neuro%' OR title ILIKE '%alzheimer%' OR title ILIKE '%parkinson%' OR
+          abstract ILIKE '%brain%' OR abstract ILIKE '%neuro%' OR abstract ILIKE '%alzheimer%' OR abstract ILIKE '%parkinson%'
+        UNION ALL
+        SELECT 
+          'Diabetes & Metabolic Health' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%diabetes%' OR title ILIKE '%metabolic%' OR title ILIKE '%glucose%' OR
+          abstract ILIKE '%diabetes%' OR abstract ILIKE '%metabolic%' OR abstract ILIK%'
+      `;
+      
+      res.json(result.filter(r => r.count > 0));
+    } catch (error) {
+      console.error('Error fetching condition categories:', error);
+      res.status(500).json({ error: 'Failed to fetch condition categories' });
+    }
+  });
+
+  app.get('/api/categories/body-system', async (req, res) => {
+    try {
+      const result = await sql`
+        SELECT 
+          'Cardiovascular System' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' OR title ILIKE '%blood%' OR
+          abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%heart%' OR abstract ILIKE '%blood%'
+        UNION ALL
+        SELECT 
+          'Nervous System' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%nervous%' OR title ILIKE '%brain%' OR title ILIKE '%neural%' OR
+          abstract ILIKE '%nervous%' OR abstract ILIKE '%brain%' OR abstract ILIKE '%neural%'
+        UNION ALL
+        SELECT 
+          'Digestive System' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%digestive%' OR title ILIKE '%gut%' OR title ILIKE '%liver%' OR title ILIKE '%intestin%' OR
+          abstract ILIKE '%digestive%' OR abstract ILIKE '%gut%' OR abstract ILIKE '%liver%' OR abstract ILIKE '%intestin%'
+      `;
+      
+      res.json(result.filter(r => r.count > 0));
+    } catch (error) {
+      console.error('Error fetching body system categories:', error);
+      res.status(500).json({ error: 'Failed to fetch body system categories' });
+    }
+  });
+
+  app.get('/api/categories/life-stage', async (req, res) => {
+    try {
+      const result = await sql`
+        SELECT 
+          'Adults' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%adult%' OR abstract ILIKE '%adult%'
+        UNION ALL
+        SELECT 
+          'Athletes' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%athlete%' OR title ILIKE '%sport%' OR title ILIKE '%exercise%' OR
+          abstract ILIKE '%athlete%' OR abstract ILIKE '%sport%' OR abstract ILIKE '%exercise%'
+        UNION ALL
+        SELECT 
+          'Older Adults' as name,
+          COUNT(*) as count
+        FROM studies 
+        WHERE 
+          title ILIKE '%elderly%' OR title ILIKE '%aging%' OR title ILIKE '%older%' OR
+          abstract ILIKE '%elderly%' OR abstract ILIKE '%aging%' OR abstract ILIKE '%older%'
+      `;
+      
+      res.json(result.filter(r => r.count > 0));
+    } catch (error) {
+      console.error('Error fetching life stage categories:', error);
+      res.status(500).json({ error: 'Failed to fetch life stage categories' });
+    }
+  });
+
   // Search endpoint (POST version for compatibility)
   app.post('/api/search', async (req, res) => {
     try {
