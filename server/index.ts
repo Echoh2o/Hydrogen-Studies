@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { existsSync } from 'fs';
 import { 
   optimizedSearch, 
   optimizedCategoryCounts, 
@@ -190,6 +191,26 @@ async function startServer() {
   await initializeProductionPerformance();
   app.use('/api/performance', performanceRoutes);
   app.use('/api/comprehensive-images', comprehensiveImageRoutes);
+
+  // Static file serving
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  app.use('/assets', express.static(path.join(process.cwd(), 'dist', 'assets')));
+  app.use(express.static(path.join(process.cwd(), 'dist')));
+  app.use(express.static(path.join(process.cwd(), 'client')));
+
+  // SPA fallback
+  app.get('*', (req, res) => {
+    const distIndexPath = path.join(process.cwd(), 'dist', 'index.html');
+    const clientIndexPath = path.join(process.cwd(), 'client', 'index.html');
+    
+    if (existsSync(distIndexPath)) {
+      res.sendFile(distIndexPath);
+    } else if (existsSync(clientIndexPath)) {
+      res.sendFile(clientIndexPath);
+    } else {
+      res.status(404).json({ error: 'Application not built' });
+    }
+  });
 
   const PORT = parseInt(process.env.PORT || '5000');
   
