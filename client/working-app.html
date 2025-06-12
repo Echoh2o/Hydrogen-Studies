@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydrogen Studies Research Database</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f8fafc; 
+            color: #334155; 
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #1e293b; 
+            font-size: 2.5rem; 
+            margin-bottom: 10px; 
+            font-weight: 700;
+        }
+        .subtitle { color: #64748b; font-size: 1.1rem; }
+        .search-section { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            margin-bottom: 30px;
+        }
+        .search-form { display: flex; gap: 10px; align-items: center; }
+        .search-input { 
+            flex: 1; 
+            padding: 14px 16px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 8px; 
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { 
+            outline: none; 
+            border-color: #3b82f6; 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .search-btn { 
+            padding: 14px 24px; 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .search-btn:hover { background: #2563eb; }
+        .categories-section { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            margin-bottom: 30px;
+        }
+        .categories-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 16px; }
+        .categories-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        .category-btn { 
+            padding: 8px 16px; 
+            border: 2px solid #e2e8f0; 
+            background: white; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .category-btn:hover { border-color: #3b82f6; }
+        .category-btn.active { 
+            background: #3b82f6; 
+            color: white; 
+            border-color: #3b82f6; 
+        }
+        .studies-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); 
+            gap: 24px; 
+        }
+        .study-card { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .study-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+        }
+        .study-title { 
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            margin-bottom: 12px; 
+            color: #1e293b; 
+            line-height: 1.4;
+        }
+        .study-authors { 
+            color: #64748b; 
+            font-size: 0.9rem; 
+            margin-bottom: 12px; 
+            font-weight: 500;
+        }
+        .study-abstract { 
+            color: #475569; 
+            line-height: 1.5; 
+            margin-bottom: 12px;
+        }
+        .study-meta { 
+            font-size: 0.8rem; 
+            color: #94a3b8; 
+            border-top: 1px solid #e2e8f0; 
+            padding-top: 12px;
+        }
+        .loading { 
+            text-align: center; 
+            padding: 60px; 
+            color: #64748b; 
+            font-size: 1.1rem;
+        }
+        .error { 
+            background: #fee2e2; 
+            color: #dc2626; 
+            padding: 16px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin: 20px 0;
+        }
+        .no-results { 
+            text-align: center; 
+            padding: 60px; 
+            color: #64748b; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .stats { 
+            display: flex; 
+            justify-content: center; 
+            gap: 30px; 
+            margin: 20px 0; 
+            flex-wrap: wrap;
+        }
+        .stat { text-align: center; }
+        .stat-number { 
+            font-size: 2rem; 
+            font-weight: 700; 
+            color: #3b82f6; 
+            display: block;
+        }
+        .stat-label { color: #64748b; font-size: 0.9rem; }
+        @media (max-width: 768px) {
+            .studies-grid { grid-template-columns: 1fr; }
+            .search-form { flex-direction: column; }
+            .search-input { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Hydrogen Studies Research Database</h1>
+            <p class="subtitle">Comprehensive collection of peer-reviewed hydrogen research studies</p>
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-number" id="total-studies">1,304</span>
+                    <span class="stat-label">Total Studies</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="showing-studies">0</span>
+                    <span class="stat-label">Showing</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <form class="search-form" id="search-form">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="search-input"
+                    placeholder="Search studies by title, abstract, or keywords..."
+                >
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+        </div>
+
+        <div class="categories-section">
+            <h3 class="categories-title">Filter by Category</h3>
+            <div class="categories-grid" id="categories-grid">
+                <button class="category-btn active" data-category="">All Studies</button>
+            </div>
+        </div>
+
+        <div id="error-container"></div>
+        <div id="loading-container"></div>
+        <div id="studies-container"></div>
+    </div>
+
+    <script>
+        // Global state
+        let studies = [];
+        let categories = [];
+        let currentSearch = '';
+        let currentCategory = '';
+        let isLoading = false;
+
+        // DOM elements
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('search-input');
+        const categoriesGrid = document.getElementById('categories-grid');
+        const studiesContainer = document.getElementById('studies-container');
+        const errorContainer = document.getElementById('error-container');
+        const loadingContainer = document.getElementById('loading-container');
+        const totalStudiesEl = document.getElementById('total-studies');
+        const showingStudiesEl = document.getElementById('showing-studies');
+
+        // Utility functions
+        function showLoading() {
+            isLoading = true;
+            loadingContainer.innerHTML = '<div class="loading">Loading studies...</div>';
+            errorContainer.innerHTML = '';
+        }
+
+        function hideLoading() {
+            isLoading = false;
+            loadingContainer.innerHTML = '';
+        }
+
+        function showError(message) {
+            errorContainer.innerHTML = `<div class="error">Error: ${message}</div>`;
+            hideLoading();
+        }
+
+        function updateStats() {
+            showingStudiesEl.textContent = studies.length;
+        }
+
+        // API functions
+        async function fetchStudies(search = '', category = '') {
+            try {
+                showLoading();
+                const params = new URLSearchParams();
+                if (search.trim()) params.append('search', search);
+                if (category) params.append('category', category);
+                params.append('limit', '50');
+
+                const response = await fetch(`/api/studies?${params}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                
+                const data = await response.json();
+                studies = data;
+                renderStudies();
+                updateStats();
+                hideLoading();
+            } catch (error) {
+                console.error('Fetch studies error:', error);
+                showError(`Failed to load studies: ${error.message}`);
+            }
+        }
+
+        async function fetchCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                categories = data;
+                renderCategories();
+            } catch (error) {
+                console.error('Fetch categories error:', error);
+            }
+        }
+
+        // Render functions
+        function renderStudies() {
+            if (studies.length === 0) {
+                studiesContainer.innerHTML = `
+                    <div class="no-results">
+                        <h3>No studies found</h3>
+                        <p>Try adjusting your search terms or category filter.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const studiesHTML = studies.map(study => `
+                <div class="study-card">
+                    <div class="study-title">${escapeHtml(study.title || 'Untitled Study')}</div>
+                    <div class="study-authors">${escapeHtml(study.authors || 'Unknown Authors')}</div>
+                    <div class="study-abstract">
+                        ${escapeHtml((study.abstract || 'No abstract available').substring(0, 300))}${study.abstract && study.abstract.length > 300 ? '...' : ''}
+                    </div>
+                    <div class="study-meta">
+                        ${study.journal ? `Published in: ${escapeHtml(study.journal)}` : ''}
+                        ${study.publish_date ? ` • ${new Date(study.publish_date).getFullYear()}` : ''}
+                        ${study.category ? ` • Category: ${escapeHtml(study.category)}` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            studiesContainer.innerHTML = `<div class="studies-grid">${studiesHTML}</div>`;
+        }
+
+        function renderCategories() {
+            const categoriesHTML = categories.map(cat => `
+                <button class="category-btn" data-category="${escapeHtml(cat.category)}">
+                    ${escapeHtml(cat.category)} (${cat.count})
+                </button>
+            `).join('');
+
+            categoriesGrid.innerHTML = `
+                <button class="category-btn active" data-category="">All Studies</button>
+                ${categoriesHTML}
+            `;
+
+            // Add click handlers
+            categoriesGrid.addEventListener('click', handleCategoryClick);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Event handlers
+        function handleSearch(event) {
+            event.preventDefault();
+            currentSearch = searchInput.value;
+            fetchStudies(currentSearch, currentCategory);
+        }
+
+        function handleCategoryClick(event) {
+            if (!event.target.classList.contains('category-btn')) return;
+            
+            // Update active state
+            categoriesGrid.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update current category and fetch studies
+            currentCategory = event.target.dataset.category;
+            fetchStudies(currentSearch, currentCategory);
+        }
+
+        // Initialize app
+        function init() {
+            searchForm.addEventListener('submit', handleSearch);
+            fetchStudies();
+            fetchCategories();
+        }
+
+        // Start the application
+        init();
+    </script>
+</body>
+</html>

@@ -8,6 +8,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
+import { readFileSync } from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -162,14 +163,28 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve client files
-app.use('/src', express.static(path.join(__dirname, '..', 'client', 'src')));
+// Serve TypeScript/JSX files with proper MIME types
+app.get('/src/*', (req, res) => {
+  const filePath = path.join(__dirname, '..', 'client', req.path);
+  
+  if (req.path.endsWith('.tsx') || req.path.endsWith('.ts') || req.path.endsWith('.jsx')) {
+    res.setHeader('Content-Type', 'application/javascript');
+  }
+  
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      res.status(404).send('File not found');
+    }
+  });
+});
+
+// Serve other static files
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
-// SPA fallback - serve index.html for all other routes
+// SPA fallback - serve working vanilla JS app
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'client', 'working-app.html'));
 });
 
 // Start server
