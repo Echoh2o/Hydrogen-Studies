@@ -68,27 +68,27 @@ export async function createProductionServer() {
           SELECT * FROM studies 
           WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})
           AND category = ${category}
-          ORDER BY created_at DESC 
+          ORDER BY id DESC 
           LIMIT ${limit} OFFSET ${offset}
         `;
       } else if (search.trim()) {
         studies = await sql`
           SELECT * FROM studies 
           WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}
-          ORDER BY created_at DESC 
+          ORDER BY id DESC 
           LIMIT ${limit} OFFSET ${offset}
         `;
       } else if (category.trim()) {
         studies = await sql`
           SELECT * FROM studies 
           WHERE category = ${category}
-          ORDER BY created_at DESC 
+          ORDER BY id DESC 
           LIMIT ${limit} OFFSET ${offset}
         `;
       } else {
         studies = await sql`
           SELECT * FROM studies 
-          ORDER BY created_at DESC 
+          ORDER BY id DESC 
           LIMIT ${limit} OFFSET ${offset}
         `;
       }
@@ -106,7 +106,7 @@ export async function createProductionServer() {
       const categories = await sql`
         SELECT category, COUNT(*) as count
         FROM studies
-        WHERE category IS NOT NULL
+        WHERE category IS NOT NULL AND category != ''
         GROUP BY category
         ORDER BY count DESC
         LIMIT 20
