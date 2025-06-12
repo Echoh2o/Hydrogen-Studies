@@ -99,17 +99,27 @@ export async function createProductionServer() {
     }
   });
 
-  // Categories API
+  // Categories API - simplified and working
   app.get('/api/categories', async (req, res) => {
     try {
       const categories = await sql`
         SELECT category, COUNT(*) as count
         FROM studies
-        WHERE category IS NOT NULL
+        WHERE category IS NOT NULL AND category != ''
         GROUP BY category
         ORDER BY count DESC
+        LIMIT 20
       `;
-      res.json(categories);
+      
+      const formattedCategories = categories.map(cat => ({
+        id: cat.category,
+        name: cat.category,
+        description: `${cat.count} studies available`,
+        icon: 'flask',
+        count: parseInt(cat.count)
+      }));
+      
+      res.json(formattedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
       res.status(500).json({ error: 'Failed to fetch categories' });
@@ -174,38 +184,6 @@ export async function createProductionServer() {
     }
   });
 
-  // Basic categories endpoint for legacy support
-  app.get('/api/categories', async (req, res) => {
-    try {
-      const { pool } = await import('./db');
-      const result = await pool.query(`
-        SELECT DISTINCT c.id, c.name, c.description, 
-               COUNT(sc.study_id) as study_count
-        FROM categories c
-        LEFT JOIN study_categories sc ON c.id = sc.category_id
-        GROUP BY c.id, c.name, c.description
-        ORDER BY study_count DESC
-        LIMIT 20
-      `);
-
-      const categories = result.rows.map(row => ({
-        id: row.id,
-        name: row.name,
-        description: row.description || `${row.study_count} studies available`,
-        icon: 'flask',
-        count: parseInt(row.study_count)
-      }));
-
-      return res.json(categories);
-    } catch (error) {
-      console.error('Categories error:', error);
-      return res.status(500).json({
-        error: 'Failed to fetch categories'
-      });
-    }
-  }
-  );
-
   // Search API
   app.get('/api/search', async (req, res) => {
     try {
@@ -218,35 +196,36 @@ export async function createProductionServer() {
         });
       }
 
-      const { pool } = await import('./db');
       const searchQuery = `%${q.toLowerCase()}%`;
+      const limitNum = parseInt(limit);
+      const offsetNum = parseInt(offset);
 
-      const result = await pool.query(`
-        SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
-               category, doi, image_url as "imageUrl", slug
+      const studies = await sql`
+        SELECT id, title, abstract, authors, journal, publish_date as publishDate, 
+               category, doi, image_url as imageUrl, slug
         FROM studies 
-        WHERE LOWER(title) LIKE $1 OR LOWER(abstract) LIKE $2
+        WHERE LOWER(title) LIKE ${searchQuery} OR LOWER(abstract) LIKE ${searchQuery}
         ORDER BY 
           CASE 
-            WHEN LOWER(title) LIKE $3 THEN 1
-            WHEN LOWER(abstract) LIKE $4 THEN 2
+            WHEN LOWER(title) LIKE ${searchQuery} THEN 1
+            WHEN LOWER(abstract) LIKE ${searchQuery} THEN 2
             ELSE 3
           END,
           publish_date DESC
-        LIMIT $5 OFFSET $6
-      `, [searchQuery, searchQuery, searchQuery, searchQuery, limit, offset]);
+        LIMIT ${limitNum} OFFSET ${offsetNum}
+      `;
 
-      const countResult = await pool.query(`
+      const countResult = await sql`
         SELECT COUNT(*) as total
         FROM studies 
-        WHERE LOWER(title) LIKE $1 OR LOWER(abstract) LIKE $2
-      `, [searchQuery, searchQuery]);
+        WHERE LOWER(title) LIKE ${searchQuery} OR LOWER(abstract) LIKE ${searchQuery}
+      `;
 
       return res.json({
         success: true,
-        studies: result.rows,
-        total: parseInt(countResult.rows[0].total),
-        hasMore: (parseInt(offset) + result.rows.length) < parseInt(countResult.rows[0].total)
+        studies: studies,
+        total: parseInt(countResult[0].total),
+        hasMore: (offsetNum + studies.length) < parseInt(countResult[0].total)
       });
     } catch (error) {
       console.error('Search error:', error);
