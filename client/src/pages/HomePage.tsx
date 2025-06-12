@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { Search, Droplets, Heart, Brain, Shield, Zap, Users, Award, ChevronRight, Play } from 'lucide-react';
+import { Search, Droplets, Heart, Brain, Shield, Zap, Users, Award, ChevronRight, Play, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const benefits = [
     {
@@ -60,6 +61,8 @@ export default function HomePage() {
               <Droplets className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">HydrogenHealth</span>
             </div>
+            
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <Link href="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Blog
@@ -79,7 +82,76 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t bg-white/95 backdrop-blur-sm">
+              <div className="px-2 pt-2 pb-3 space-y-1">
+                <Link href="/blog">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Blog
+                  </Button>
+                </Link>
+                <Link href="/research">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Research
+                  </Button>
+                </Link>
+                <Link href="/benefits">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Benefits
+                  </Button>
+                </Link>
+                <Link href="/products">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Products
+                  </Button>
+                </Link>
+                <Link href="/advanced-search">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Advanced Search
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
