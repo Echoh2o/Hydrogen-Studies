@@ -73,9 +73,11 @@ export default function HomePage() {
               <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Products
               </Link>
-              <Button variant="outline" size="sm">
-                Advanced Search
-              </Button>
+              <Link href="/advanced-search">
+                <Button variant="outline" size="sm">
+                  Advanced Search
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

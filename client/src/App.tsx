@@ -14,6 +14,8 @@ import { useAnalytics } from "./hooks/use-analytics";
 import Home from "@/pages/home";
 import HomePage from "@/pages/HomePage";
 import SearchPage from "@/pages/SearchPage";
+import BenefitsPage from "@/pages/BenefitsPage";
+import ProductsPage from "@/pages/ProductsPage";
 import NewHomePage from "@/pages/NewHomePage";
 import LearnPage from "@/pages/LearnPage";
 import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
@@ -108,6 +110,8 @@ function Router() {
       <Route path="/search" component={SearchPage} />
       <Route path="/advanced-search" component={EnhancedSearchPage} />
       <Route path="/research" component={EnhancedSearchPage} />
+      <Route path="/benefits" component={BenefitsPage} />
+      <Route path="/products" component={ProductsPage} />
       <Route path="/about" component={AboutUsPage} />
       <Route path="/contact" component={ContactUsPage} />
       <Route path="/learn" component={LearnPage} />
