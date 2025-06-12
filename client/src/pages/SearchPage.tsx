@@ -200,64 +200,66 @@ export default function SearchPage() {
         ) : studies.length > 0 ? (
           <div className="space-y-6">
             {studies.map((study) => (
-              <Card key={study.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">
-                        {study.plain_language_title || study.title}
-                      </h3>
-                      <p className="text-gray-600 mb-3 line-clamp-3">
-                        {study.abstract}
-                      </p>
+              <Link key={study.id} href={`/study/${study.id}`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600">
+                          {study.plain_language_title || study.title}
+                        </h3>
+                        <p className="text-gray-600 mb-3 line-clamp-3">
+                          {study.abstract}
+                        </p>
+                      </div>
+                      {study.image_url && (
+                        <img 
+                          src={study.image_url} 
+                          alt="Study illustration"
+                          className="w-24 h-24 object-cover rounded-lg ml-4 flex-shrink-0"
+                        />
+                      )}
                     </div>
-                    {study.image_url && (
-                      <img 
-                        src={study.image_url} 
-                        alt="Study illustration"
-                        className="w-24 h-24 object-cover rounded-lg ml-4 flex-shrink-0"
-                      />
-                    )}
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {study.publish_year}
-                    </Badge>
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {study.country}
-                    </Badge>
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {study.sample_size} participants
-                    </Badge>
-                    {study.peer_reviewed && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Award className="h-3 w-3" />
-                        Peer Reviewed
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {study.publish_year}
                       </Badge>
-                    )}
-                    {study.has_full_text && (
                       <Badge variant="outline" className="flex items-center gap-1">
-                        <FileText className="h-3 w-3" />
-                        Full Text
+                        <MapPin className="h-3 w-3" />
+                        {study.country}
                       </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-sm text-gray-500">
-                    <div>
-                      <strong>Journal:</strong> {study.journal}
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {study.sample_size} participants
+                      </Badge>
+                      {study.peer_reviewed && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Award className="h-3 w-3" />
+                          Peer Reviewed
+                        </Badge>
+                      )}
+                      {study.has_full_text && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          Full Text
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span><strong>Citations:</strong> {study.citation_count}</span>
-                      <span><strong>Category:</strong> {study.category}</span>
+                    
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <div>
+                        <strong>Journal:</strong> {study.journal}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span><strong>Citations:</strong> {study.citation_count}</span>
+                        <span><strong>Category:</strong> {study.category}</span>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
             
             {/* Load More Button */}

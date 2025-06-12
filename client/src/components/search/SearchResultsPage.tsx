@@ -364,44 +364,42 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           {searchResults?.data && (
             <div className="space-y-4">
               {searchResults.data.map((study: any) => (
-                <Card key={study.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="py-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <Link href={study.slug ? `/study/${study.slug}` : `/study/${study.id}`}>
-                        <h3 className="text-lg font-semibold text-blue-600 hover:text-blue-800 cursor-pointer">
+                <Link key={study.id} href={study.slug ? `/study/${study.slug}` : `/study/${study.id}`}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer hover:border-primary/50">
+                    <CardContent className="py-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-lg font-semibold text-blue-600 hover:text-blue-800">
                           {study.title}
                         </h3>
-                      </Link>
-                      <div className="flex gap-2 ml-4">
-                        <Badge variant="secondary">{study.category}</Badge>
-                        {study.doi && <HiDocument className="h-4 w-4 text-green-600" title="DOI available" />}
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-gray-600 mb-2">
-                      {study.authors} • {study.journal} • {new Date(study.publishDate).getFullYear()}
-                    </p>
-                    
-                    <p className="text-gray-700 mb-3 line-clamp-3">
-                      {study.abstract}
-                    </p>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <HiEye className="h-4 w-4" />
-                          {study.viewCount || 0} views
-                        </span>
+                        <div className="flex gap-2 ml-4">
+                          <Badge variant="secondary">{study.category}</Badge>
+                          {study.doi && <HiDocument className="h-4 w-4 text-green-600" title="DOI available" />}
+                        </div>
                       </div>
                       
-                      <Link href={study.slug ? `/study/${study.slug}` : `/study/${study.id}`}>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {study.authors} • {study.journal} • {new Date(study.publishDate).getFullYear()}
+                      </p>
+                      
+                      <p className="text-gray-700 mb-3 line-clamp-3">
+                        {study.abstract}
+                      </p>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <HiEye className="h-4 w-4" />
+                            {study.viewCount || 0} views
+                          </span>
+                        </div>
+                        
                         <Button variant="outline" size="sm">
                           View Study
                         </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}

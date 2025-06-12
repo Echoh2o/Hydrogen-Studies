@@ -205,7 +205,7 @@ export default function Header() {
                 )}
               </div>
             ))}
-            
+
             {/* Mobile Action Buttons */}
             <div className="pt-4 border-t border-neutral-200 space-y-3">
               <Link href="/search" onClick={handleLinkClick}>
