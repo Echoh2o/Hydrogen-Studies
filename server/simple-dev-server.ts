@@ -1,6 +1,6 @@
 /**
- * Working Development Server
- * Serves API endpoints and static React app
+ * Simple Development Server
+ * Working server without vite middleware dependencies
  */
 
 import express from 'express';
@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Database connection
 const sql = neon(process.env.DATABASE_URL!);
 
-// Working API endpoints
+// API endpoints
 app.get('/api/studies', async (req, res) => {
   try {
     const search = String(req.query.search || '');
@@ -162,14 +162,13 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve client files
-app.use('/src', express.static(path.join(__dirname, '..', 'client', 'src')));
-app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
-app.use(express.static(path.join(__dirname, '..', 'client')));
+// Serve static files from dist directory
+app.use(express.static(path.join(__dirname, '..', 'dist')));
+app.use('/assets', express.static(path.join(__dirname, '..', 'dist', 'assets')));
 
 // SPA fallback - serve index.html for all other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 
 // Start server
