@@ -12,6 +12,8 @@ import { useAnalytics } from "./hooks/use-analytics";
 
 // Core Pages
 import Home from "@/pages/home";
+import HomePage from "@/pages/HomePage";
+import SearchPage from "@/pages/SearchPage";
 import NewHomePage from "@/pages/NewHomePage";
 import LearnPage from "@/pages/LearnPage";
 import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
@@ -98,12 +100,14 @@ function Router() {
   return (
     <Switch>
       {/* Core Public Routes */}
-      <Route path="/" component={NewHomePage} />
+      <Route path="/" component={HomePage} />
       <Route path="/old-home" component={Home} />
+      <Route path="/legacy-home" component={NewHomePage} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:slug" component={SEOStudyPage} />
-      <Route path="/search" component={EnhancedSearchPage} />
+      <Route path="/search" component={SearchPage} />
       <Route path="/advanced-search" component={EnhancedSearchPage} />
+      <Route path="/research" component={EnhancedSearchPage} />
       <Route path="/about" component={AboutUsPage} />
       <Route path="/contact" component={ContactUsPage} />
       <Route path="/learn" component={LearnPage} />
@@ -193,6 +197,7 @@ function Router() {
 function App() {
   const [location] = useLocation();
   const isAdminRoute = location.startsWith('/admin');
+  const isHomePage = location === '/';
   
   // Initialize Google Analytics when app loads
   useEffect(() => {
@@ -209,7 +214,7 @@ function App() {
       <TooltipProvider>
         <ScrollToTop />
         <div className="flex min-h-screen flex-col">
-          {!isAdminRoute && (
+          {!isAdminRoute && !isHomePage && (
             <>
               <CookieConsent />
               <Header />
@@ -218,7 +223,7 @@ function App() {
           <main className={`flex-1 ${isAdminRoute ? 'p-0' : ''}`}>
             <Router />
           </main>
-          {!isAdminRoute && <Footer />}
+          {!isAdminRoute && !isHomePage && <Footer />}
         </div>
         <Toaster />
       </TooltipProvider>
