@@ -110,7 +110,7 @@ export async function createProductionServer() {
         ORDER BY count DESC
         LIMIT 20
       `;
-      
+
       const formattedCategories = categories.map(cat => ({
         id: cat.category,
         name: cat.category,
@@ -118,7 +118,7 @@ export async function createProductionServer() {
         icon: 'flask',
         count: parseInt(cat.count)
       }));
-      
+
       res.json(formattedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -306,6 +306,16 @@ export async function createProductionServer() {
       endpoints: ['/api/studies', '/api/search', '/api/categories', '/health']
     });
   });
+
+  // Import route handlers
+  const studiesRoutes = await import('./routes/studies-routes');
+  const searchRoutes = await import('./routes/simple-search');
+  const studyDetailsRoutes = await import('./routes/study-details-routes');
+
+  // API Routes
+  app.use('/api', studiesRoutes.default);
+  app.use('/api', searchRoutes.default);
+  app.use('/api', studyDetailsRoutes.default);
 
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {

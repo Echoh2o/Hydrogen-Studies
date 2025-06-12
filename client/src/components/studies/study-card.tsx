@@ -62,17 +62,17 @@ export default function StudyCard({ study }: StudyCardProps) {
         </motion.div>
         <span className="text-neutral-500 text-sm">{displayDate}</span>
       </div>
-      
+
       <h3 className="font-heading font-bold text-lg mb-3 text-neutral-800 line-clamp-2">
         <Link href={`/study/${study.id}`} className="hover:text-primary transition-colors duration-200">
           {study.title}
         </Link>
       </h3>
-      
+
       <p className="text-neutral-600 text-sm mb-4 line-clamp-3">
         {study.abstract}
       </p>
-      
+
       <div className="flex items-center text-sm text-neutral-500 mb-4">
         <motion.span 
           className="flex items-center mr-4" 
@@ -91,7 +91,7 @@ export default function StudyCard({ study }: StudyCardProps) {
           {study.journal}
         </motion.span>
       </div>
-      
+
       <motion.div 
         whileHover={{ x: 5 }} 
         transition={{ duration: 0.2 }}
