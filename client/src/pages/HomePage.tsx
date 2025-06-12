@@ -162,24 +162,40 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {benefits.map((benefit, index) => (
-              <Card key={index} className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
-                    {benefit.icon}
-                  </div>
-                  <CardTitle className="text-xl mb-2">{benefit.title}</CardTitle>
-                  <Badge variant="secondary" className="mx-auto">
-                    {benefit.studyCount}
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center text-gray-600 leading-relaxed">
-                    {benefit.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
+            {benefits.map((benefit, index) => {
+              const searchQueries = {
+                "Heart Health": "cardiovascular heart cardiac hypertension blood pressure",
+                "Brain Function": "neurological cognitive brain neuroprotective memory",
+                "Antioxidant Power": "antioxidant oxidative stress free radicals ROS",
+                "Energy & Recovery": "athletic performance exercise recovery fatigue energy"
+              };
+              
+              return (
+                <Link key={index} href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`}>
+                  <Card className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 h-full">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
+                        {benefit.icon}
+                      </div>
+                      <CardTitle className="text-xl mb-2">{benefit.title}</CardTitle>
+                      <Badge variant="secondary" className="mx-auto">
+                        {benefit.studyCount}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
+                        {benefit.description}
+                      </CardDescription>
+                      <div className="text-center">
+                        <span className="text-sm text-blue-600 group-hover:text-blue-700 font-medium">
+                          View Studies →
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
 
           <div className="text-center">
