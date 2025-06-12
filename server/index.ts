@@ -1,6 +1,6 @@
 /**
- * Working Development Server
- * Serves API endpoints and static React app
+ * Development Server with React Integration
+ * Serves API endpoints and React development build
  */
 
 import express from 'express';
@@ -8,7 +8,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
-import { readFileSync } from 'fs';
+import { createServer as createViteServer } from 'vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -333,18 +333,39 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'advanced-research-platform.html'));
 });
 
-// Serve assets
-app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
+async function startServer() {
+  // In development, integrate with Vite
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa'
+      });
+      
+      app.use(vite.ssrFixStacktrace);
+      app.use(vite.middlewares);
+    } catch (error) {
+      console.warn('Vite integration failed, serving static files:', error);
+      app.use(express.static(path.join(__dirname, '..', 'public')));
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+      });
+    }
+  } else {
+    // Production: serve static files
+    app.use(express.static(path.join(__dirname, '..', 'public')));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    });
+  }
 
-// All other routes serve the advanced research platform
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'advanced-research-platform.html'));
-});
+  const PORT = parseInt(process.env.PORT || '5000');
+  
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Mode: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+  });
+}
 
-// Start server
-const PORT = parseInt(process.env.PORT || '5000');
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-});
+startServer().catch(console.error);
