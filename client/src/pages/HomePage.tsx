@@ -169,31 +169,78 @@ export default function HomePage() {
                 "Antioxidant Power": "antioxidant oxidative stress free radicals ROS",
                 "Energy & Recovery": "athletic performance exercise recovery fatigue energy"
               };
+
+              const detailedBenefits = {
+                "Heart Health": [
+                  'May reduce blood pressure in hypertensive individuals',
+                  'Potential improvement in arterial flexibility',
+                  'Reduction in markers of cardiovascular inflammation',
+                  'Support for healthy cholesterol levels'
+                ],
+                "Brain Function": [
+                  'May improve cognitive function in elderly adults',
+                  'Potential neuroprotective effects against oxidative damage',
+                  'Support for mental clarity and focus',
+                  'Possible benefits for neurodegenerative conditions'
+                ],
+                "Antioxidant Power": [
+                  'Selective neutralization of hydroxyl radicals',
+                  'Reduction in oxidative stress markers',
+                  'Support for cellular protection',
+                  'May help reduce inflammation'
+                ],
+                "Energy & Recovery": [
+                  'Reduced exercise-induced fatigue',
+                  'Faster recovery between training sessions',
+                  'Decreased muscle damage markers',
+                  'Improved endurance capacity'
+                ]
+              };
               
               return (
-                <Link key={index} href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`}>
-                  <Card className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 h-full">
-                    <CardHeader className="text-center pb-4">
-                      <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
-                        {benefit.icon}
-                      </div>
-                      <CardTitle className="text-xl mb-2">{benefit.title}</CardTitle>
-                      <Badge variant="secondary" className="mx-auto">
-                        {benefit.studyCount}
-                      </Badge>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
-                        {benefit.description}
-                      </CardDescription>
-                      <div className="text-center">
-                        <span className="text-sm text-blue-600 group-hover:text-blue-700 font-medium">
-                          View Studies →
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full">
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
+                      {benefit.icon}
+                    </div>
+                    <CardTitle className="text-xl mb-2">{benefit.title}</CardTitle>
+                    <Badge variant="secondary" className="mx-auto">
+                      {benefit.studyCount}
+                    </Badge>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
+                      {benefit.description}
+                    </CardDescription>
+                    
+                    {/* Detailed Benefits List */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Potential Benefits</h4>
+                      <ul className="space-y-2">
+                        {detailedBenefits[benefit.title].map((benefitItem, benefitIndex) => (
+                          <li key={benefitIndex} className="flex items-start gap-2 text-sm text-gray-600">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span>{benefitItem}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      <Link href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`} className="block">
+                        <Button className="w-full text-sm" size="sm">
+                          View Studies
+                        </Button>
+                      </Link>
+                      <Link href="/benefits" className="block">
+                        <Button variant="outline" className="w-full text-sm" size="sm">
+                          Learn More
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
