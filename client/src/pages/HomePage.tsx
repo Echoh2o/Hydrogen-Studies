@@ -55,7 +55,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <Droplets className="h-8 w-8 text-blue-600" />
@@ -102,52 +102,47 @@ export default function HomePage() {
 
           {/* Mobile Navigation Menu */}
           {isMobileMenuOpen && (
-            <div className="md:hidden border-t bg-white/95 backdrop-blur-sm">
-              <div className="px-2 pt-2 pb-3 space-y-1">
+            <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+              <div className="px-4 py-3 space-y-2">
                 <Link href="/blog">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Blog
-                  </Button>
+                  </div>
                 </Link>
                 <Link href="/research">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Research
-                  </Button>
+                  </div>
                 </Link>
                 <Link href="/benefits">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Benefits
-                  </Button>
+                  </div>
                 </Link>
                 <Link href="/products">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-gray-700 hover:text-blue-600"
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Products
-                  </Button>
+                  </div>
                 </Link>
                 <Link href="/advanced-search">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
+                  <div 
+                    className="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Advanced Search
-                  </Button>
+                  </div>
                 </Link>
               </div>
             </div>
@@ -270,16 +265,17 @@ export default function HomePage() {
               };
               
               return (
-                <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
-                      {benefit.icon}
-                    </div>
-                    <CardTitle className="text-xl mb-2">{benefit.title}</CardTitle>
-                    <Badge variant="secondary" className="mx-auto">
-                      {benefit.studyCount}
-                    </Badge>
-                  </CardHeader>
+                <Link key={index} href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`} className="block h-full">
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full cursor-pointer hover:scale-105">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
+                        {benefit.icon}
+                      </div>
+                      <CardTitle className="text-xl mb-2 group-hover:text-blue-600 transition-colors">{benefit.title}</CardTitle>
+                      <Badge variant="secondary" className="mx-auto group-hover:bg-blue-100 group-hover:text-blue-700">
+                        {benefit.studyCount}
+                      </Badge>
+                    </CardHeader></Link>
                   <CardContent>
                     <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
                       {benefit.description}
@@ -298,21 +294,15 @@ export default function HomePage() {
                       </ul>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="space-y-2">
-                      <Link href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`} className="block">
-                        <Button className="w-full text-sm" size="sm">
-                          View Studies
-                        </Button>
-                      </Link>
-                      <Link href="/benefits" className="block">
-                        <Button variant="outline" className="w-full text-sm" size="sm">
-                          Learn More
-                        </Button>
-                      </Link>
+                    {/* Click to explore indicator */}
+                    <div className="text-center pt-2">
+                      <Badge variant="outline" className="group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        Click to explore studies
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
+              </Link>
               );
             })}
           </div>
