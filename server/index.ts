@@ -1,16 +1,4 @@
-import { createProductionServer } from './production-server.js';
-
-async function main() {
-  try {
-    console.log('Starting Hydrogen Research Platform...');
-    await createProductionServer();
-  } catch (error) {
-    console.error('Server startup failed:', error);
-    process.exit(1);
-  }
-}
-
-main();
+// Development server entry point
 import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
@@ -75,11 +63,30 @@ async function startServer() {
   app.use('/api/performance', performanceRoutes);
   app.use('/api/comprehensive-images', comprehensiveImageRoutes);
 
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📊 Performance monitoring enabled`);
-    console.log(`🏥 Health check: http://localhost:${PORT}/health`);
-    console.log(`📈 Performance metrics: http://localhost:${PORT}/api/performance`);
+  const PORT = parseInt(process.env.PORT || '5000');
+  
+  return new Promise((resolve, reject) => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Health check: http://localhost:${PORT}/health`);
+      resolve(server);
+    });
+    
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        console.log(`Port ${PORT} in use, trying ${PORT + 1}...`);
+        const nextPort = PORT + 1;
+        const fallbackServer = app.listen(nextPort, '0.0.0.0', () => {
+          console.log(`Server running on port ${nextPort}`);
+          resolve(fallbackServer);
+        });
+        fallbackServer.on('error', reject);
+      } else {
+        reject(error);
+      }
+    });
   });
 }
+
+// Start the server
+startServer().catch(console.error);
