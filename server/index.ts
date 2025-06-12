@@ -216,120 +216,93 @@ app.get('/api/filters/journals', async (req, res) => {
 // Advanced search with multiple filters
 app.get('/api/advanced-search', async (req, res) => {
   try {
-    const {
-      search = '',
-      category = '',
-      year_from = '',
-      year_to = '',
-      country = '',
-      study_type = '',
-      journal = '',
-      peer_reviewed = '',
-      has_full_text = '',
-      min_sample_size = '',
-      sort_by = 'id',
-      sort_order = 'DESC',
-      limit = '20',
-      offset = '0'
-    } = req.query;
+    const search = String(req.query.search || '');
+    const category = String(req.query.category || '');
+    const country = String(req.query.country || '');
+    const sort_by = String(req.query.sort_by || 'id');
+    const limit = Math.min(50, parseInt(String(req.query.limit || '20')));
+    const offset = Math.max(0, parseInt(String(req.query.offset || '0')));
 
-    let conditions = [];
-    let params = [];
+    let studies;
+    let countResult;
     
-    // Text search
-    if (search) {
-      conditions.push(`(title ILIKE $${params.length + 1} OR abstract ILIKE $${params.length + 1})`);
-      params.push(`%${search}%`);
+    // Simple filtering approach that works with Neon
+    if (search && category) {
+      studies = await sql`
+        SELECT id, title, abstract, authors, journal, publish_year, category, 
+               country, study_type, sample_size, citation_count, peer_reviewed,
+               has_full_text, image_url, doi, plain_language_title
+        FROM studies 
+        WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})
+        AND category = ${category}
+        ORDER BY id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      
+      countResult = await sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})
+        AND category = ${category}
+      `;
+    } else if (search) {
+      studies = await sql`
+        SELECT id, title, abstract, authors, journal, publish_year, category, 
+               country, study_type, sample_size, citation_count, peer_reviewed,
+               has_full_text, image_url, doi, plain_language_title
+        FROM studies 
+        WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}
+        ORDER BY id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      
+      countResult = await sql`
+        SELECT COUNT(*) as total FROM studies 
+        WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}
+      `;
+    } else if (category) {
+      studies = await sql`
+        SELECT id, title, abstract, authors, journal, publish_year, category, 
+               country, study_type, sample_size, citation_count, peer_reviewed,
+               has_full_text, image_url, doi, plain_language_title
+        FROM studies 
+        WHERE category = ${category}
+        ORDER BY id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      
+      countResult = await sql`SELECT COUNT(*) as total FROM studies WHERE category = ${category}`;
+    } else if (country) {
+      studies = await sql`
+        SELECT id, title, abstract, authors, journal, publish_year, category, 
+               country, study_type, sample_size, citation_count, peer_reviewed,
+               has_full_text, image_url, doi, plain_language_title
+        FROM studies 
+        WHERE country = ${country}
+        ORDER BY id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      
+      countResult = await sql`SELECT COUNT(*) as total FROM studies WHERE country = ${country}`;
+    } else {
+      studies = await sql`
+        SELECT id, title, abstract, authors, journal, publish_year, category, 
+               country, study_type, sample_size, citation_count, peer_reviewed,
+               has_full_text, image_url, doi, plain_language_title
+        FROM studies 
+        ORDER BY id DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      
+      countResult = await sql`SELECT COUNT(*) as total FROM studies`;
     }
     
-    // Category filter
-    if (category) {
-      conditions.push(`category = $${params.length + 1}`);
-      params.push(category);
-    }
-    
-    // Year range
-    if (year_from) {
-      conditions.push(`publish_year >= $${params.length + 1}`);
-      params.push(parseInt(year_from));
-    }
-    if (year_to) {
-      conditions.push(`publish_year <= $${params.length + 1}`);
-      params.push(parseInt(year_to));
-    }
-    
-    // Country filter
-    if (country) {
-      conditions.push(`country = $${params.length + 1}`);
-      params.push(country);
-    }
-    
-    // Study type filter
-    if (study_type) {
-      conditions.push(`study_type = $${params.length + 1}`);
-      params.push(study_type);
-    }
-    
-    // Journal filter
-    if (journal) {
-      conditions.push(`journal = $${params.length + 1}`);
-      params.push(journal);
-    }
-    
-    // Peer reviewed filter
-    if (peer_reviewed === 'true') {
-      conditions.push(`peer_reviewed = true`);
-    } else if (peer_reviewed === 'false') {
-      conditions.push(`peer_reviewed = false`);
-    }
-    
-    // Has full text filter
-    if (has_full_text === 'true') {
-      conditions.push(`has_full_text = true`);
-    }
-    
-    // Sample size filter
-    if (min_sample_size) {
-      conditions.push(`sample_size >= $${params.length + 1}`);
-      params.push(parseInt(min_sample_size));
-    }
-    
-    // Build WHERE clause
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
-    // Validate sort options
-    const validSortColumns = ['id', 'publish_year', 'citation_count', 'sample_size', 'title'];
-    const sortColumn = validSortColumns.includes(sort_by) ? sort_by : 'id';
-    const sortDirection = sort_order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-    
-    // Build and execute query
-    const queryText = `
-      SELECT id, title, abstract, authors, journal, publish_year, category, 
-             country, study_type, sample_size, citation_count, peer_reviewed,
-             has_full_text, image_url, doi, plain_language_title
-      FROM studies 
-      ${whereClause}
-      ORDER BY ${sortColumn} ${sortDirection}
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-    `;
-    
-    params.push(parseInt(limit), parseInt(offset));
-    
-    const studies = await sql.unsafe(queryText, params);
-    
-    // Get total count for pagination
-    const countQuery = `SELECT COUNT(*) as total FROM studies ${whereClause}`;
-    const countResult = await sql.unsafe(countQuery, params.slice(0, -2));
     const total = parseInt(countResult[0]?.total || '0');
     
     res.json({
       studies,
       total,
-      hasMore: (parseInt(offset) + studies.length) < total,
-      filters: {
-        search, category, year_from, year_to, country, study_type, journal,
-        peer_reviewed, has_full_text, min_sample_size, sort_by, sort_order
-      }
+      hasMore: (offset + studies.length) < total,
+      filters: { search, category, country, sort_by }
     });
     
   } catch (error) {
@@ -355,17 +328,17 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve modern homepage directly for root route
+// Serve advanced research platform directly for root route
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'modern-homepage.html'));
+  res.sendFile(path.join(__dirname, '..', 'client', 'advanced-research-platform.html'));
 });
 
 // Serve assets
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
 
-// All other routes serve the modern homepage
+// All other routes serve the advanced research platform
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'modern-homepage.html'));
+  res.sendFile(path.join(__dirname, '..', 'client', 'advanced-research-platform.html'));
 });
 
 // Start server
