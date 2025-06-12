@@ -1,6 +1,5 @@
 /**
- * Development Server with React Integration
- * Serves API endpoints and React development build
+ * Simple Development Server for React App
  */
 
 import express from 'express';
@@ -8,10 +7,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
-import { createServer as createViteServer } from 'vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const app = express();
 
 // CORS and middleware
@@ -22,7 +19,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Database connection
 const sql = neon(process.env.DATABASE_URL!);
 
-// Working API endpoints
+// API Routes
 app.get('/api/studies', async (req, res) => {
   try {
     const search = String(req.query.search || '');
@@ -68,165 +65,18 @@ app.get('/api/studies', async (req, res) => {
   }
 });
 
-app.get('/api/categories', async (req, res) => {
-  try {
-    const categories = await sql`
-      SELECT category, COUNT(*) as count
-      FROM studies
-      WHERE category IS NOT NULL AND category != ''
-      GROUP BY category
-      ORDER BY count DESC
-      LIMIT 20
-    `;
-    res.json(categories);
-  } catch (error) {
-    console.error('Categories API error:', error);
-    res.status(500).json({ error: 'Failed to fetch categories' });
-  }
-});
-
-app.get('/api/search', async (req, res) => {
-  try {
-    const query = String(req.query.q || '');
-    const limit = Math.min(50, parseInt(String(req.query.limit || '20')));
-    const offset = Math.max(0, parseInt(String(req.query.offset || '0')));
-
-    if (!query.trim()) {
-      return res.status(400).json({ error: 'Search query required' });
-    }
-
-    const studies = await sql`
-      SELECT id, title, abstract, authors, journal, publish_date, category, doi, image_url, slug
-      FROM studies 
-      WHERE LOWER(title) LIKE ${'%' + query.toLowerCase() + '%'} 
-      OR LOWER(abstract) LIKE ${'%' + query.toLowerCase() + '%'}
-      ORDER BY 
-        CASE 
-          WHEN LOWER(title) LIKE ${'%' + query.toLowerCase() + '%'} THEN 1
-          ELSE 2
-        END,
-        id DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
-    const totalResult = await sql`
-      SELECT COUNT(*) as total
-      FROM studies 
-      WHERE LOWER(title) LIKE ${'%' + query.toLowerCase() + '%'} 
-      OR LOWER(abstract) LIKE ${'%' + query.toLowerCase() + '%'}
-    `;
-
-    const total = parseInt(totalResult[0]?.total || '0');
-
-    res.json({
-      success: true,
-      studies,
-      total,
-      hasMore: (offset + studies.length) < total
-    });
-  } catch (error) {
-    console.error('Search API error:', error);
-    res.status(500).json({ error: 'Search failed' });
-  }
-});
-
-app.get('/api/studies/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const study = await sql`SELECT * FROM studies WHERE id = ${id}`;
-    
-    if (study.length === 0) {
-      return res.status(404).json({ error: 'Study not found' });
-    }
-    
-    res.json(study[0]);
-  } catch (error) {
-    console.error('Study by ID error:', error);
-    res.status(500).json({ error: 'Failed to fetch study' });
-  }
-});
-
-// Advanced filtering endpoints
-app.get('/api/filters/years', async (req, res) => {
-  try {
-    const years = await sql`
-      SELECT publish_year, COUNT(*) as count
-      FROM studies
-      WHERE publish_year IS NOT NULL
-      GROUP BY publish_year
-      ORDER BY publish_year DESC
-    `;
-    res.json(years);
-  } catch (error) {
-    console.error('Years filter error:', error);
-    res.status(500).json({ error: 'Failed to fetch years' });
-  }
-});
-
-app.get('/api/filters/countries', async (req, res) => {
-  try {
-    const countries = await sql`
-      SELECT country, COUNT(*) as count
-      FROM studies
-      WHERE country IS NOT NULL AND country != ''
-      GROUP BY country
-      ORDER BY count DESC
-      LIMIT 20
-    `;
-    res.json(countries);
-  } catch (error) {
-    console.error('Countries filter error:', error);
-    res.status(500).json({ error: 'Failed to fetch countries' });
-  }
-});
-
-app.get('/api/filters/study-types', async (req, res) => {
-  try {
-    const studyTypes = await sql`
-      SELECT study_type, COUNT(*) as count
-      FROM studies
-      WHERE study_type IS NOT NULL AND study_type != ''
-      GROUP BY study_type
-      ORDER BY count DESC
-    `;
-    res.json(studyTypes);
-  } catch (error) {
-    console.error('Study types filter error:', error);
-    res.status(500).json({ error: 'Failed to fetch study types' });
-  }
-});
-
-app.get('/api/filters/journals', async (req, res) => {
-  try {
-    const journals = await sql`
-      SELECT journal, COUNT(*) as count
-      FROM studies
-      WHERE journal IS NOT NULL AND journal != ''
-      GROUP BY journal
-      ORDER BY count DESC
-      LIMIT 30
-    `;
-    res.json(journals);
-  } catch (error) {
-    console.error('Journals filter error:', error);
-    res.status(500).json({ error: 'Failed to fetch journals' });
-  }
-});
-
-// Advanced search with multiple filters
+// Advanced search endpoint
 app.get('/api/advanced-search', async (req, res) => {
   try {
     const search = String(req.query.search || '');
     const category = String(req.query.category || '');
     const country = String(req.query.country || '');
-    const sort_by = String(req.query.sort_by || 'id');
     const limit = Math.min(50, parseInt(String(req.query.limit || '20')));
     const offset = Math.max(0, parseInt(String(req.query.offset || '0')));
 
     let studies;
     let countResult;
     
-    // Simple filtering approach that works with Neon
     if (search && category) {
       studies = await sql`
         SELECT id, title, abstract, authors, journal, publish_year, category, 
@@ -302,7 +152,7 @@ app.get('/api/advanced-search', async (req, res) => {
       studies,
       total,
       hasMore: (offset + studies.length) < total,
-      filters: { search, category, country, sort_by }
+      filters: { search, category, country }
     });
     
   } catch (error) {
@@ -314,38 +164,40 @@ app.get('/api/advanced-search', async (req, res) => {
 app.get('/health', async (req, res) => {
   try {
     await sql`SELECT 1`;
-    res.json({ 
-      status: 'healthy', 
-      database: 'connected',
-      timestamp: new Date().toISOString() 
-    });
+    res.json({ status: 'healthy', database: 'connected' });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      error: 'Database connection failed',
-      timestamp: new Date().toISOString() 
-    });
+    console.error('Health check failed:', error);
+    res.status(500).json({ status: 'unhealthy', database: 'disconnected' });
   }
 });
 
-// Serve advanced research platform directly for root route
-// Serve marketing homepage
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'marketing-index.html'));
-});
-
-// Serve static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
-
-// All other routes serve the marketing page (for now)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'marketing-index.html'));
-});
+// Start with Vite dev server in dev mode
+if (process.env.NODE_ENV === 'development') {
+  // Import and start Vite dev server
+  import('vite').then(({ createServer }) => {
+    createServer({
+      server: { 
+        port: 3000,
+        proxy: {
+          '/api': {
+            target: 'http://localhost:5000',
+            changeOrigin: true
+          }
+        }
+      }
+    }).then(viteServer => {
+      viteServer.listen();
+      console.log('Vite dev server running on http://localhost:3000');
+    });
+  });
+}
 
 const PORT = parseInt(process.env.PORT || '5000');
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Marketing homepage: http://localhost:${PORT}/`);
+  console.log(`API server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Visit http://localhost:3000 for the React app');
+  }
 });
