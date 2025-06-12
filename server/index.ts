@@ -163,26 +163,15 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve TypeScript/JSX files with proper MIME types
-app.get('/src/*', (req, res) => {
-  const filePath = path.join(__dirname, '..', 'client', req.path);
-  
-  if (req.path.endsWith('.tsx') || req.path.endsWith('.ts') || req.path.endsWith('.jsx')) {
-    res.setHeader('Content-Type', 'application/javascript');
-  }
-  
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      res.status(404).send('File not found');
-    }
-  });
+// Serve working app directly for root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client', 'working-app.html'));
 });
 
-// Serve other static files
+// Serve assets
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
-app.use(express.static(path.join(__dirname, '..', 'client')));
 
-// SPA fallback - serve working vanilla JS app
+// All other routes serve the working app
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'working-app.html'));
 });
