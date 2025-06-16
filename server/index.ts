@@ -1,6 +1,6 @@
 /**
- * Development Server with React Integration
- * Serves API endpoints and React development build
+ * DEPRECATED - Use server/stable-production.ts instead
+ * This file contains duplicate error handlers and other critical issues
  */
 
 import express from 'express';
