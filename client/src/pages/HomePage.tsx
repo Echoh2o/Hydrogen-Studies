@@ -82,11 +82,7 @@ export default function HomePage() {
               <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Products
               </Link>
-              <Link href="/advanced-search">
-                <Button variant="outline" size="sm">
-                  Advanced Search
-                </Button>
-              </Link>
+
             </div>
 
             {/* Mobile Menu Button */}
@@ -150,14 +146,7 @@ export default function HomePage() {
                     Products
                   </div>
                 </Link>
-                <Link href="/advanced-search">
-                  <div 
-                    className="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Advanced Search
-                  </div>
-                </Link>
+
               </div>
             </div>
           )}
