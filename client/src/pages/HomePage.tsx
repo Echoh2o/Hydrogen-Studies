@@ -55,18 +55,7 @@ export default function HomePage() {
   };
 
   return (
-    <>
-      <Helmet>
-        <title>Hydrogen Studies Database - Comprehensive Research Platform</title>
-        <meta
-          name="description"
-          content="Explore 1,300+ hydrogen health studies with advanced search, visualizations, and evidence-based insights. The most comprehensive hydrogen research platform."
-        />
-      </Helmet>
-
-      <Header />
-
-      <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -456,7 +445,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-      </div>
-    </>
+    </div>
   );
 }
