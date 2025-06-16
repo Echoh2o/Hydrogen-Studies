@@ -1,5 +1,6 @@
 import { Helmet } from "react-helmet";
 import { Separator } from "@/components/ui/separator";
+import { HiMail, HiPhone, HiLocationMarker } from "react-icons/hi";
 
 export default function About() {
   return (
@@ -121,6 +122,75 @@ export default function About() {
                   </ul>
                 </section>
                 
+                <section>
+                  <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
+                  <p className="text-neutral-700 mb-6">
+                    Have questions or suggestions? We'd love to hear from you. Whether you're a researcher, healthcare professional, or just interested in the science, we're here to help.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="text-center">
+                      <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center text-blue-600 mx-auto mb-4">
+                        <HiMail size={24} />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Email</h3>
+                      <p className="text-neutral-600">info@hydrogenstudies.com</p>
+                      <p className="text-neutral-600">research@hydrogenstudies.com</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center text-blue-600 mx-auto mb-4">
+                        <HiPhone size={24} />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Phone</h3>
+                      <p className="text-neutral-600">+1 (888) 123-4567</p>
+                      <p className="text-neutral-600 text-sm">Mon-Fri, 9:00 AM - 5:00 PM PST</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center text-blue-600 mx-auto mb-4">
+                        <HiLocationMarker size={24} />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Address</h3>
+                      <p className="text-neutral-600">
+                        123 Research Avenue<br />
+                        Suite 450<br />
+                        San Francisco, CA 94103<br />
+                        United States
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-neutral-50 p-6 rounded-lg">
+                      <h4 className="font-semibold text-lg mb-3">How can I submit research for inclusion?</h4>
+                      <p className="text-neutral-600">
+                        Researchers can submit published studies for inclusion in our database by emailing the publication details to research@hydrogenstudies.com.
+                      </p>
+                    </div>
+                    <div className="bg-neutral-50 p-6 rounded-lg">
+                      <h4 className="font-semibold text-lg mb-3">Do you provide research consultation?</h4>
+                      <p className="text-neutral-600">
+                        Our team can provide guidance on hydrogen research resources. For specific consultation requests, please contact us directly.
+                      </p>
+                    </div>
+                    <div className="bg-neutral-50 p-6 rounded-lg">
+                      <h4 className="font-semibold text-lg mb-3">How often is the database updated?</h4>
+                      <p className="text-neutral-600">
+                        We update our research database monthly with newly published studies and findings in the field of hydrogen research.
+                      </p>
+                    </div>
+                    <div className="bg-neutral-50 p-6 rounded-lg">
+                      <h4 className="font-semibold text-lg mb-3">Can I request specific research topics?</h4>
+                      <p className="text-neutral-600">
+                        Yes! We welcome suggestions for research topics or specific studies to include. Please use our contact information to send your requests.
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                <Separator className="my-8" />
+
                 <section>
                   <h2 className="text-2xl font-bold mb-4">Disclaimer</h2>
                   <p className="text-neutral-700">
