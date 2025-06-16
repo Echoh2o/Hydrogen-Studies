@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +54,18 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+    <>
+      <Helmet>
+        <title>Hydrogen Studies Database - Comprehensive Research Platform</title>
+        <meta
+          name="description"
+          content="Explore 1,300+ hydrogen health studies with advanced search, visualizations, and evidence-based insights. The most comprehensive hydrogen research platform."
+        />
+      </Helmet>
+
+      <Header />
+
+      <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -61,7 +74,7 @@ export default function HomePage() {
               <Droplets className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">HydrogenHealth</span>
             </div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <Link href="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
@@ -72,6 +85,9 @@ export default function HomePage() {
               </Link>
               <Link href="/benefits" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Benefits
+              </Link>
+              <Link href="/research-analytics" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Analytics  
               </Link>
               <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Products
@@ -128,6 +144,14 @@ export default function HomePage() {
                     Benefits
                   </div>
                 </Link>
+                <Link href="/research-analytics">
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Analytics
+                  </div>
+                </Link>
                 <Link href="/products">
                   <div 
                     className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
@@ -164,7 +188,7 @@ export default function HomePage() {
               Explore 1,304+ peer-reviewed studies from leading universities worldwide. 
               Learn how molecular hydrogen could transform your health and wellness journey.
             </p>
-            
+
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
               <div className="relative">
@@ -263,7 +287,7 @@ export default function HomePage() {
                   'Improved endurance capacity'
                 ]
               };
-              
+
               return (
                 <Link key={index} href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`} className="block h-full">
                   <Card className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full cursor-pointer hover:scale-105">
@@ -280,7 +304,7 @@ export default function HomePage() {
                       <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
                         {benefit.description}
                       </CardDescription>
-                      
+
                       {/* Detailed Benefits List */}
                       <div className="mb-4">
                         <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Potential Benefits</h4>
@@ -328,7 +352,7 @@ export default function HomePage() {
             Our database includes studies from Harvard, Mayo Clinic, Tokyo Medical University, 
             and hundreds of other prestigious institutions worldwide.
           </p>
-          
+
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
               <CardContent className="p-8 text-center">
@@ -431,6 +455,11 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-    </div>
+    
+</div>
+      </div>
+
+      <Footer />
+    </>
   );
 }

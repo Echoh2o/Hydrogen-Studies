@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
 import { createServer as createViteServer } from 'vite';
 import studiesRouter from "./routes/studies-router"; // Import the studies router
+import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
+import { handleError } from './utils/error-handler';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -174,15 +176,15 @@ app.get('/api/filters/journals', async (req, res) => {
 // Advanced search with multiple filters
 app.get('/api/advanced-search', async (req, res) => {
   try {
-    const search = String(req.query.search || '');
-    const category = String(req.query.category || '');
-    const country = String(req.query.country || '');
+    const search = String(req.query.search || '').trim();
+    const category = String(req.query.category || '').trim();
+    const country = String(req.query.country || '').trim();
     const sort_by = String(req.query.sort_by || 'id');
-    const limit = Math.min(50, parseInt(String(req.query.limit || '20')));
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '20'))));
     const offset = Math.max(0, parseInt(String(req.query.offset || '0')));
 
-    let studies;
-    let countResult;
+    let studies = [];
+    let countResult = [{ total: 0 }];
 
     // Simple filtering approach that works with Neon
     if (search && category) {
@@ -269,20 +271,51 @@ app.get('/api/advanced-search', async (req, res) => {
   }
 });
 
+// Initialize health monitoring
+initializeHealthMonitoring();
+
+// Enhanced error handling
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
+  
+  // Don't exit the process in production, just log the error
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  handleError(error, 'uncaughtException');
+  
+  // Graceful shutdown in production
+  if (process.env.NODE_ENV === 'production') {
+    setTimeout(() => process.exit(1), 1000);
+  } else {
+    process.exit(1);
+  }
+});
+
+// Add global error handlers
+process.on('uncaughtException', (error) => {
+  handleError(error, 'uncaughtException');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
+  console.error('Unhandled Rejection at:', promise);
+});
+
+// Health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    await sql`SELECT 1`;
-    res.json({ 
-      status: 'healthy', 
-      database: 'connected',
-      timestamp: new Date().toISOString() 
-    });
+    const healthStatus = await performHealthCheck();
+    res.status(healthStatus.status === 'healthy' ? 200 : 503).json(healthStatus);
   } catch (error) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      error: 'Database connection failed',
-      timestamp: new Date().toISOString() 
-    });
+    handleError(error, 'health check');
+    res.status(503).json({ status: 'unhealthy', error: 'Health check failed' });
   }
 });
 
