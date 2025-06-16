@@ -526,8 +526,10 @@ const StudyPage = () => {
                           <span className="text-purple-600 text-base md:text-sm font-semibold">💧</span>
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-purple-800 text-sm md:text-base">Hydrogen Water</h3>
-                          <p className="text-xs md:text-sm text-purple-700 leading-relaxed">This research suggests drinking hydrogen-rich water may provide health benefits. Look for hydrogen water products or hydrogen tablets.</p>
+                          <Link href="/products" className="group">
+                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">Hydrogen Water</h3>
+                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">This research suggests drinking hydrogen-rich water may provide health benefits. View our Echo Flask and Hydrogen Prebiotic products.</p>
+                          </Link>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
@@ -535,8 +537,10 @@ const StudyPage = () => {
                           <span className="text-purple-600 text-base md:text-sm font-semibold">🫁</span>
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-purple-800 text-sm md:text-base">Hydrogen Inhalation</h3>
-                          <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Some studies show benefits from breathing hydrogen gas. This requires special equipment and should be done safely.</p>
+                          <a href="https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine" target="_blank" rel="noopener noreferrer" className="group">
+                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">Hydrogen Inhalation</h3>
+                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Some studies show benefits from breathing hydrogen gas. View the Echo Refresh hydrogen inhalation machine for safe, professional-grade equipment.</p>
+                          </a>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
@@ -544,8 +548,10 @@ const StudyPage = () => {
                           <span className="text-purple-600 text-base md:text-sm font-semibold">🛁</span>
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-purple-800 text-sm md:text-base">Hydrogen Baths</h3>
-                          <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Bathing in hydrogen-enriched water may provide skin and overall health benefits through absorption.</p>
+                          <a href="https://echowater.com/products/echo-revive" target="_blank" rel="noopener noreferrer" className="group">
+                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">Hydrogen Baths</h3>
+                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Bathing in hydrogen-enriched water may provide skin and overall health benefits through absorption. View the Echo Revive bath water machine.</p>
+                          </a>
                         </div>
                       </div>
                       <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
