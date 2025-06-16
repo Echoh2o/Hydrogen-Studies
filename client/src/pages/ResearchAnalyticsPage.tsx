@@ -1,4 +1,3 @@
-
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,8 @@ import {
   Citation,
   BookOpen,
   Clock,
-  Target
+  Target,
+  Quote
 } from 'lucide-react';
 import PublicationTimelineChart from "@/components/visualizations/PublicationTimelineChart";
 import CitationNetworkMap from "@/components/visualizations/CitationNetworkMap";
@@ -67,7 +67,7 @@ export default function ResearchAnalyticsPage() {
                 Explore the interconnected landscape of hydrogen health research through 
                 advanced visualizations, citation networks, and publication trends
               </p>
-              
+
               {/* Key Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
@@ -98,7 +98,7 @@ export default function ResearchAnalyticsPage() {
         {/* Main Content */}
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-7xl mx-auto">
-            
+
             <Tabs defaultValue="timeline" className="space-y-8">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="timeline" className="flex items-center gap-2">
@@ -318,7 +318,7 @@ export default function ResearchAnalyticsPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Citation className="w-5 h-5" />
+                        <Quote className="w-5 h-5" />
                         Highest Impact Studies
                       </CardTitle>
                     </CardHeader>
