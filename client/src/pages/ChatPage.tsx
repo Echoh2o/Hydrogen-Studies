@@ -1,10 +1,13 @@
 import React from 'react';
 import ChatWidget from '@/components/chat/ChatWidget';
 import { Helmet } from 'react-helmet';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export const ChatPage: React.FC = () => {
   return (
-    <div className="container mx-auto py-8 px-4">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto py-8 px-4">
       <Helmet>
         <title>Hydrogen Health & Wellness Assistant | HydrogenStudies.com</title>
         <meta name="description" content="Ask questions about hydrogen-rich water, hydrogen inhalation therapy, and hydrogen baths for health and wellness. Get evidence-based answers from peer-reviewed studies." />

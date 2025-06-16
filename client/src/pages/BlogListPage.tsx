@@ -277,6 +277,7 @@ export default function BlogListPage() {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
