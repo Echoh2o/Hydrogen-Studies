@@ -286,18 +286,12 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve advanced research platform directly for root route
-// Serve marketing homepage
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'marketing-index.html'));
-});
-
 // Serve static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// All other routes serve the marketing page (for now)
+// Serve the React app for all non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'marketing-index.html'));
+  res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
 });
 
 const PORT = parseInt(process.env.PORT || '5000');
