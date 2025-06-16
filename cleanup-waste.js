@@ -70,13 +70,20 @@ async function cleanupWaste() {
   
   for (const file of wastePatterns) {
     try {
-      await fs.access(file);
+      // Validate file path to prevent directory traversal
+      const safePath = path.resolve(process.cwd(), file);
+      if (!safePath.startsWith(process.cwd())) {
+        console.log(`⚠️ Skipping unsafe path: ${file}`);
+        continue;
+      }
+      
+      await fs.access(safePath);
       
       // Check if file is actually used
-      const isUsed = await checkIfFileIsReferenced(file);
+      const isUsed = await checkIfFileIsReferenced(safePath);
       
       if (!isUsed) {
-        await fs.unlink(file);
+        await fs.unlink(safePath);
         removed.push(file);
         console.log(`✓ Removed: ${file}`);
       } else {

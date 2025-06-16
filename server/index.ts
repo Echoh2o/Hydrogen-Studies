@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
 import { createServer as createViteServer } from 'vite';
 import studiesRouter from "./routes/studies-router"; // Import the studies router
+import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
+import { handleError } from './utils/error-handler';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -269,20 +271,28 @@ app.get('/api/advanced-search', async (req, res) => {
   }
 });
 
+// Initialize health monitoring
+initializeHealthMonitoring();
+
+// Add global error handlers
+process.on('uncaughtException', (error) => {
+  handleError(error, 'uncaughtException');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
+  console.error('Unhandled Rejection at:', promise);
+});
+
+// Health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    await sql`SELECT 1`;
-    res.json({ 
-      status: 'healthy', 
-      database: 'connected',
-      timestamp: new Date().toISOString() 
-    });
+    const healthStatus = await performHealthCheck();
+    res.status(healthStatus.status === 'healthy' ? 200 : 503).json(healthStatus);
   } catch (error) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      error: 'Database connection failed',
-      timestamp: new Date().toISOString() 
-    });
+    handleError(error, 'health check');
+    res.status(503).json({ status: 'unhealthy', error: 'Health check failed' });
   }
 });
 
