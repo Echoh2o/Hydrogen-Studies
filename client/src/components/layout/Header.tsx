@@ -12,8 +12,7 @@ function Header() {
   const navigation = [
     { name: 'Learn', href: '/learn' },
     { name: 'Blog', href: '/blog' },
-    { name: 'About', href: '/about' },
-    { name: 'Contact', href: '/contact' }
+    { name: 'About', href: '/about' }
   ];
 
   const studiesDropdownItems = [
