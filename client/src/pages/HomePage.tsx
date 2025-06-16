@@ -73,6 +73,9 @@ export default function HomePage() {
               <Link href="/benefits" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Benefits
               </Link>
+              <Link href="/research-analytics" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Analytics  
+              </Link>
               <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Products
               </Link>
@@ -126,6 +129,14 @@ export default function HomePage() {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Benefits
+                  </div>
+                </Link>
+                <Link href="/research-analytics">
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Analytics
                   </div>
                 </Link>
                 <Link href="/products">
