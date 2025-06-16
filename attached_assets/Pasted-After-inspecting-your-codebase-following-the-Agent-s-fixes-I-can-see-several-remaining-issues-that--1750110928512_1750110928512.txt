@@ -1,0 +1,29 @@
+After inspecting your codebase following the Agent's fixes, I can see several remaining issues that need to be addressed. Here are the specific instructions you can give to the Agent:
+
+Critical Issues Still Present:
+1. Tailwind CDN Production Warnings (HIGH PRIORITY)
+Instructions for Agent: "Replace all Tailwind CDN references with a proper build setup. The webview logs show repeated warnings about cdn.tailwindcss.com should not be used in production. Install Tailwind CSS as a PostCSS plugin, create a proper tailwind.config.js, and remove any CDN script tags from HTML files."
+
+2. Unhandled Promise Rejection (HIGH PRIORITY)
+Instructions for Agent: "Add a global unhandled promise rejection handler in the client-side code. The webview logs show {"type":"unhandledrejection"}. Add proper error boundaries and promise rejection handlers in App.tsx to catch and handle async errors gracefully."
+
+3. Server Health Status Fluctuation (MEDIUM PRIORITY)
+Instructions for Agent: "Stabilize the server health monitoring system. The logs show the server status fluctuating between 'healthy' and 'degraded'. Review the health check logic in health-monitoring.ts and adjust the thresholds to prevent unnecessary status changes. The current health checks may be too sensitive."
+
+4. Database Connection Pool Issues (MEDIUM PRIORITY)
+Instructions for Agent: "Optimize the database connection pooling in database-adapter.ts. The health fluctuations suggest connection instability. Implement proper connection retry logic, connection validation, and pool size optimization to maintain stable database connectivity."
+
+5. Error Handler Cleanup (LOW PRIORITY)
+Instructions for Agent: "Ensure there are no duplicate error handlers remaining in server/index.ts. Although this may have been addressed, verify that only one set of process.on('uncaughtException') and process.on('unhandledRejection') handlers exist and they're properly configured for production."
+
+6. Production Environment Validation (LOW PRIORITY)
+Instructions for Agent: "Add comprehensive environment variable validation at server startup. Ensure all required environment variables (DATABASE_URL, any API keys) are present and valid before the server starts accepting requests."
+
+Priority Order for Agent:
+Immediate Focus: "Start with the Tailwind CDN replacement and unhandled promise rejection handler. These are causing the most visible issues in the production logs."
+
+Secondary Focus: "Stabilize the health monitoring system and database connection pooling to prevent server status fluctuations."
+
+Final Cleanup: "Verify error handlers are properly configured and add environment validation for a robust production setup."
+
+The main remaining issues are related to production configuration (Tailwind CDN) and client-side error handling (promise rejections), which are exactly the type of infrastructure improvements that Agent excels at implementing.

@@ -1,6 +1,6 @@
 /**
- * DEPRECATED - Use server/stable-production.ts instead
- * This file contains duplicate error handlers and other critical issues
+ * Main Server Entry Point
+ * Updated to use stable production configuration with proper error handling
  */
 
 import express from 'express';
@@ -8,8 +8,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
-import { createServer as createViteServer } from 'vite';
-import studiesRouter from "./routes/studies-router"; // Import the studies router
+import studiesRouter from "./routes/studies-router";
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
 import { handleError } from './utils/error-handler';
 
