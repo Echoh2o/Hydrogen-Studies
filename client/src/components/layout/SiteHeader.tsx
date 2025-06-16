@@ -72,9 +72,6 @@ export default function SiteHeader() {
             <Link href="/chat" className="text-gray-700 hover:text-blue-600 transition-colors">
               AI Assistant
             </Link>
-            <Link href="/about" className="text-gray-700 hover:text-blue-600 transition-colors">
-              About
-            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -207,14 +204,6 @@ export default function SiteHeader() {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   AI Assistant
-                </div>
-              </Link>
-              <Link href="/about">
-                <div 
-                  className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  About
                 </div>
               </Link>
             </div>
