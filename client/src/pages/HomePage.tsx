@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { Helmet } from 'react-helmet';
-import { Search, Droplets, Heart, Brain, Shield, Zap, Users, Award, ChevronRight, Play, Menu, X } from 'lucide-react';
+import { Search, Droplets, Heart, Brain, Shield, Zap, Users, Award, ChevronRight, Play, Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,11 +67,44 @@ export default function HomePage() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
+              {/* Studies Dropdown */}
+              <div className="relative group">
+                <button className="text-gray-700 hover:text-blue-600 transition-colors flex items-center space-x-1">
+                  <span>Studies</span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="p-2 space-y-1">
+                    <Link href="/studies" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      All Studies
+                    </Link>
+                    <Link href="/recent-studies" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      Recent Studies
+                    </Link>
+                    <Link href="/explore-by-condition" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      By Health Condition
+                    </Link>
+                    <Link href="/explore-by-body-system" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      By Body System
+                    </Link>
+                    <Link href="/explore-by-life-stage" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      By Life Stage
+                    </Link>
+                    <Link href="/explore-by-delivery-method" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      By Delivery Method
+                    </Link>
+                    <Link href="/explore-by-benefit" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      By Health Benefit
+                    </Link>
+                    <Link href="/insights" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                      Research Insights
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              
               <Link href="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Blog
-              </Link>
-              <Link href="/research" className="text-gray-700 hover:text-blue-600 transition-colors">
-                Research
               </Link>
               <Link href="/benefits" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Benefits
@@ -82,7 +115,6 @@ export default function HomePage() {
               <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Products
               </Link>
-
             </div>
 
             {/* Mobile Menu Button */}
@@ -106,20 +138,83 @@ export default function HomePage() {
           {isMobileMenuOpen && (
             <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
               <div className="px-4 py-3 space-y-2">
+                {/* Studies Section */}
+                <div className="border-b pb-2 mb-2">
+                  <div className="px-4 py-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                    Studies
+                  </div>
+                  <Link href="/studies">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      All Studies
+                    </div>
+                  </Link>
+                  <Link href="/recent-studies">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Recent Studies
+                    </div>
+                  </Link>
+                  <Link href="/explore-by-condition">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      By Health Condition
+                    </div>
+                  </Link>
+                  <Link href="/explore-by-body-system">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      By Body System
+                    </div>
+                  </Link>
+                  <Link href="/explore-by-life-stage">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      By Life Stage
+                    </div>
+                  </Link>
+                  <Link href="/explore-by-delivery-method">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      By Delivery Method
+                    </div>
+                  </Link>
+                  <Link href="/explore-by-benefit">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      By Health Benefit
+                    </div>
+                  </Link>
+                  <Link href="/insights">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Research Insights
+                    </div>
+                  </Link>
+                </div>
+                
                 <Link href="/blog">
                   <div 
                     className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Blog
-                  </div>
-                </Link>
-                <Link href="/research">
-                  <div 
-                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Research
                   </div>
                 </Link>
                 <Link href="/benefits">
