@@ -81,6 +81,7 @@ import BatchCategorizationPage from "@/pages/admin/BatchCategorizationPage";
 import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
 import EnhancementPage from "@/pages/admin/EnhancementPage";
 import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
+import EnhancedAdminDashboard from "@/pages/admin/EnhancedAdminDashboard";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -133,8 +134,9 @@ function Router() {
       <Route path="/recommendations" component={RecommendationsPage} />
       <Route path="/chat" component={ChatPage} />
 
-      {/* Admin Dashboard - Updated */}
-      <Route path="/admin" component={AdminDashboard} />
+      {/* Enhanced Admin Dashboard with WYSIWYG */}
+      <Route path="/admin" component={EnhancedAdminDashboard} />
+      <Route path="/admin/enhanced" component={EnhancedAdminDashboard} />
       <Route path="/admin/dashboard" component={DashboardPage} />
       <Route path="/admin/legacy" component={AdminPage} />
       <Route path="/admin/import" component={ImportPage} />
