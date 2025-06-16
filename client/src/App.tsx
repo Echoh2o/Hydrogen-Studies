@@ -11,13 +11,11 @@ import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
 
 // Core Pages
-import Home from "@/pages/home";
 import HomePage from "@/pages/HomePage";
 import SearchPage from "@/pages/SearchPage";
 import BenefitsPage from "@/pages/BenefitsPage";
 import ProductsPage from "@/pages/ProductsPage";
-import NewHomePage from "@/pages/NewHomePage";
-import LearnPage from "@/pages/LearnPage";
+
 import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
 import HealthBenefitsPage from "@/pages/HealthBenefitsPage";
 import BlogListPage from "@/pages/BlogListPage";
@@ -30,7 +28,6 @@ import StudyPage from "@/pages/StudyPage";
 import StudyDetailsPage from "@/pages/StudyDetailsPage";
 import SEOStudyPage from "@/pages/SEOStudyPage";
 import About from "@/pages/about";
-import Contact from "@/pages/ContactPage";
 import NotFound from "@/pages/not-found";
 import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
@@ -104,8 +101,6 @@ function Router() {
     <Switch>
       {/* Core Public Routes */}
       <Route path="/" component={HomePage} />
-      <Route path="/old-home" component={Home} />
-      <Route path="/legacy-home" component={NewHomePage} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={StudyPage} />
       <Route path="/study/:slug" component={StudyDetailsPage} />
@@ -116,7 +111,6 @@ function Router() {
       <Route path="/products" component={ProductsPage} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={ContactUsPage} />
-      <Route path="/learn" component={LearnPage} />
       <Route path="/learn/basics" component={HydrogenBasicsPage} />
       <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
       <Route path="/blog" component={BlogListPage} />
