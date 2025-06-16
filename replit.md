@@ -121,6 +121,9 @@ Preferred communication style: Simple, everyday language.
   - All public pages now have consistent header navigation with Studies dropdown, AI Assistant access, and unified branding
   - Cleaned up deprecated header files: removed Header.tsx, header.tsx, footer.tsx duplicates and App-Clean.tsx
   - Single source navigation system now uses only SiteHeader.tsx component
+  - Moved About link from main navigation to footer for cleaner header design
+  - Added SiteHeader to all pages: Studies, Blog, Chat, Research Analytics, Benefits, Products
+  - Navigation now consistently includes: Studies dropdown, Blog, Benefits, Analytics, Products, AI Assistant
 
 ## Changelog
 
