@@ -659,7 +659,7 @@
         }
 
         function showError(message) {
-            errorContainer.innerHTML = `<div class="error">Error: ${message}</div>`;
+            errorContainer.innerHTML = `<div class="error">Error: ${escapeHtml(message)}</div>`;
             hideLoading();
         }
 

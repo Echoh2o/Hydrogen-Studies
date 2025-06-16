@@ -274,6 +274,25 @@ app.get('/api/advanced-search', async (req, res) => {
 // Initialize health monitoring
 initializeHealthMonitoring();
 
+// Enhanced error handling
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process in production, just log the error
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Graceful shutdown in production
+  if (process.env.NODE_ENV === 'production') {
+    setTimeout(() => process.exit(1), 1000);
+  } else {
+    process.exit(1);
+  }
+});
+
 // Add global error handlers
 process.on('uncaughtException', (error) => {
   handleError(error, 'uncaughtException');

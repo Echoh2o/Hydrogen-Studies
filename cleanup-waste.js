@@ -28,12 +28,12 @@ const wastePatterns = [
   'start-production-backup.js',
   'start-production-old.js',
   'ultra-stable-server.js',
-  
+
   // Duplicate build files
   'package-minimal.json',
   'package-production.json',
   'package-stable.json',
-  
+
   // Test/debug files
   'test-api.js',
   'test-homepage.js',
@@ -42,14 +42,14 @@ const wastePatterns = [
   'fast-server.log',
   'optimized-server.log',
   'server.log',
-  
+
   // Temporary scripts
   'batch-categorize.ts',
   'fix-categorization.ts',
   'initialize-tagging.ts',
   'regenerate-all-images.ts',
   'optimized-image-regeneration.ts',
-  
+
   // Documentation files that are outdated
   'cleanup-summary.md',
   'deployment-check.md',
@@ -63,11 +63,11 @@ const wastePatterns = [
 
 async function cleanupWaste() {
   console.log('Analyzing codebase waste...\n');
-  
+
   let removed = [];
   let preserved = [];
   let errors = [];
-  
+
   for (const file of wastePatterns) {
     try {
       // Validate file path to prevent directory traversal
@@ -76,12 +76,12 @@ async function cleanupWaste() {
         console.log(`⚠️ Skipping unsafe path: ${file}`);
         continue;
       }
-      
+
       await fs.access(safePath);
-      
+
       // Check if file is actually used
       const isUsed = await checkIfFileIsReferenced(safePath);
-      
+
       if (!isUsed) {
         await fs.unlink(safePath);
         removed.push(file);
@@ -97,7 +97,7 @@ async function cleanupWaste() {
       }
     }
   }
-  
+
   // Clean up empty directories
   const emptyDirs = await findEmptyDirectories();
   for (const dir of emptyDirs) {
@@ -109,21 +109,21 @@ async function cleanupWaste() {
       // Directory not empty or other error
     }
   }
-  
+
   console.log('\n=== CLEANUP SUMMARY ===');
   console.log(`Files removed: ${removed.length}`);
   console.log(`Files preserved: ${preserved.length}`);
   console.log(`Errors: ${errors.length}`);
-  
+
   if (removed.length > 0) {
     console.log('\nRemoved files:');
     removed.forEach(file => console.log(`  - ${file}`));
   }
-  
+
   // Calculate space saved (estimate)
   const estimatedSavings = removed.length * 50; // Rough estimate in KB
   console.log(`\nEstimated space saved: ~${estimatedSavings}KB`);
-  
+
   return {
     removed: removed.length,
     preserved: preserved.length,
@@ -179,22 +179,34 @@ async function checkIfFileIsReferenced(filename) {
     'STABILITY_IMPROVEMENTS_SUMMARY.md',
     'SYSTEM_OPTIMIZATIONS_SUMMARY.md'
   ];
-  
+
   return !forceRemove.includes(filename);
 }
 
 async function findCodeFiles() {
   const files = [];
-  
+
   async function scan(dir) {
     try {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
-        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-        
+        // Validate entry name to prevent path traversal
+        if (entry.name.includes('..') || entry.name.includes('/') || entry.name.includes('\\')) {
+          console.warn(`Skipping potentially unsafe file: ${entry.name}`);
+          return;
+        }
+
         const fullPath = path.join(dir, entry.name);
-        
+
+        // Additional validation - ensure the resolved path is within the target directory
+        const resolvedPath = path.resolve(fullPath);
+        const resolvedDir = path.resolve(dir);
+        if (!resolvedPath.startsWith(resolvedDir)) {
+          console.warn(`Skipping file outside target directory: ${entry.name}`);
+          return;
+        }
+
         if (entry.isDirectory()) {
           await scan(fullPath);
         } else if (entry.name.match(/\.(js|ts|tsx|json)$/)) {
@@ -205,29 +217,29 @@ async function findCodeFiles() {
       // Directory access error, skip
     }
   }
-  
+
   await scan('.');
   return files;
 }
 
 async function findEmptyDirectories() {
   const emptyDirs = [];
-  
+
   async function scan(dir) {
     try {
       const entries = await fs.readdir(dir);
-      
+
       if (entries.length === 0) {
         emptyDirs.push(dir);
         return;
       }
-      
+
       for (const entry of entries) {
         if (entry.startsWith('.')) continue;
-        
+
         const fullPath = path.join(dir, entry);
         const stat = await fs.stat(fullPath);
-        
+
         if (stat.isDirectory()) {
           await scan(fullPath);
         }
@@ -236,7 +248,7 @@ async function findEmptyDirectories() {
       // Directory access error, skip
     }
   }
-  
+
   await scan('./temp_files');
   return emptyDirs;
 }
