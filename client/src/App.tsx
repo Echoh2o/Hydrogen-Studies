@@ -218,6 +218,58 @@ function App() {
     }
   }, []);
 
+  // Global error handling for unhandled promise rejections
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      
+      // Prevent the default browser handling
+      event.preventDefault();
+      
+      // Log the error details for debugging
+      const errorDetails = {
+        message: event.reason?.message || 'Unknown promise rejection',
+        stack: event.reason?.stack || 'No stack trace available',
+        timestamp: new Date().toISOString(),
+        url: window.location.href
+      };
+      
+      console.error('Promise rejection details:', errorDetails);
+      
+      // Show user-friendly error message if it's a network or API error
+      if (event.reason?.message?.includes('fetch') || 
+          event.reason?.message?.includes('network') ||
+          event.reason?.message?.includes('API')) {
+        console.warn('Network error occurred, but application continues running');
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error caught:', event.error);
+      
+      const errorDetails = {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.error('Error details:', errorDetails);
+    };
+
+    // Add global error listeners
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    // Cleanup listeners on unmount
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

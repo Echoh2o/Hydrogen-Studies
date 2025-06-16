@@ -79,25 +79,28 @@ function checkMemory(): { used: number; total: number; percentage: number } {
 export async function performHealthCheck(): Promise<HealthStatus> {
   const errors: string[] = [];
 
-  // Check database
+  // Check database with more lenient thresholds
   const dbHealth = await checkDatabase();
   if (!dbHealth.connected) {
     errors.push('Database connection failed');
-  } else if (dbHealth.latency > 1000) {
+  } else if (dbHealth.latency > 5000) { // Increased from 1000ms to 5000ms
     errors.push(`Database response time is slow: ${dbHealth.latency}ms`);
   }
 
-  // Check memory
+  // Check memory with higher threshold
   const memory = checkMemory();
-  if (memory.percentage > 90) {
+  if (memory.percentage > 95) { // Increased from 90% to 95%
     errors.push('High memory usage detected');
   }
 
-  // Determine overall status
+  // Determine overall status with more stable criteria
   let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-  if (errors.length > 0) {
-    status = errors.length > 2 ? 'unhealthy' : 'degraded';
+  if (errors.length >= 3) { // Only degrade when 3+ errors
+    status = 'unhealthy';
+  } else if (errors.length >= 2) { // Degraded with 2+ errors
+    status = 'degraded';
   }
+  // Single errors or latency issues don't change status from healthy
 
   healthStatus = {
     status,

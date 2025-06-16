@@ -21,14 +21,55 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Environment validation
-if (!process.env.DATABASE_URL) {
-  console.error('DATABASE_URL environment variable is required');
-  process.exit(1);
+// Comprehensive environment validation
+function validateEnvironment() {
+  const requiredEnvVars = ['DATABASE_URL'];
+  const optionalEnvVars = ['OPENAI_API_KEY', 'SENDGRID_API_KEY', 'VITE_GA_MEASUREMENT_ID'];
+  const missingRequired = [];
+  const missingOptional = [];
+
+  // Check required environment variables
+  for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+      missingRequired.push(envVar);
+    }
+  }
+
+  // Check optional environment variables
+  for (const envVar of optionalEnvVars) {
+    if (!process.env[envVar]) {
+      missingOptional.push(envVar);
+    }
+  }
+
+  // Exit if required variables are missing
+  if (missingRequired.length > 0) {
+    console.error('Missing required environment variables:', missingRequired.join(', '));
+    console.error('Please ensure all required environment variables are set before starting the server.');
+    process.exit(1);
+  }
+
+  // Warn about missing optional variables
+  if (missingOptional.length > 0) {
+    console.warn('Missing optional environment variables:', missingOptional.join(', '));
+    console.warn('Some features may not work properly without these variables.');
+  }
+
+  // Validate DATABASE_URL format
+  try {
+    new URL(process.env.DATABASE_URL!);
+  } catch (error) {
+    console.error('Invalid DATABASE_URL format. Please provide a valid database connection string.');
+    process.exit(1);
+  }
+
+  console.log('Environment validation completed successfully');
 }
 
+validateEnvironment();
+
 // Database connection with retry logic
-const sql = neon(process.env.DATABASE_URL, {
+const sql = neon(process.env.DATABASE_URL!, {
   arrayMode: false,
 });
 
