@@ -19,6 +19,7 @@ import PublicationTimelineChart from "@/components/visualizations/PublicationTim
 import CitationNetworkMap from "@/components/visualizations/CitationNetworkMap";
 import ResearchTrendsChart from "@/components/visualizations/ResearchTrendsChart";
 import HealthOutcomesMap from "@/components/visualizations/HealthOutcomesMap";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function ResearchAnalyticsPage() {
   // Get analytics data
