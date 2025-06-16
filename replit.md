@@ -115,6 +115,7 @@ Preferred communication style: Simple, everyday language.
   - Updated mobile menu to include organized Studies section with all navigation options
   - Studies navigation now includes: All Studies, Recent Studies, By Health Condition, By Body System, By Life Stage, By Delivery Method, By Health Benefit, and Research Insights
   - Enhanced BenefitsPage with learning pathways, quick facts, and comprehensive educational content
+  - Added AI Assistant access to homepage header navigation for both desktop and mobile
 
 ## Changelog
 

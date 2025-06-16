@@ -115,6 +115,9 @@ export default function HomePage() {
               <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Products
               </Link>
+              <Link href="/chat" className="text-gray-700 hover:text-blue-600 transition-colors">
+                AI Assistant
+              </Link>
             </div>
 
             {/* Mobile Menu Button */}
@@ -239,6 +242,14 @@ export default function HomePage() {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Products
+                  </div>
+                </Link>
+                <Link href="/chat">
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    AI Assistant
                   </div>
                 </Link>
 
