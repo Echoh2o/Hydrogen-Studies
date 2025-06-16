@@ -8,39 +8,68 @@ export default function ProductsPage() {
   const products = [
     {
       id: 1,
-      name: "HydroMax Pro Generator",
-      price: "$299",
-      originalPrice: "$399",
-      rating: 4.8,
-      reviews: 324,
-      description: "Professional-grade hydrogen water generator with titanium plates and advanced electrolysis technology.",
-      features: ["1.5 PPM H2 concentration", "Self-cleaning function", "BPA-free materials", "2-year warranty"],
-      image: "/images/hydromax-pro.jpg",
-      badge: "Best Seller"
+      name: "Echo Flask Hydrogen Water Bottle",
+      price: "Visit Store",
+      originalPrice: null,
+      rating: 4.9,
+      reviews: 256,
+      description: "The Echo Flask: Smart hydrogen water bottle with up to 8 ppm hydrogen concentration. Track hydration, customize settings & fuel your cells. Safe & effective.",
+      features: ["Up to 8 PPM H2 concentration", "Smart tracking technology", "Customizable settings", "Safe & effective design"],
+      image: "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
+      badge: "Smart Tech",
+      url: "https://echowater.com/products/echo-flask"
     },
     {
       id: 2,
-      name: "H2 Wellness Bottle",
-      price: "$149",
-      originalPrice: "$199",
-      rating: 4.6,
-      reviews: 186,
-      description: "Portable hydrogen water bottle perfect for daily use and travel.",
-      features: ["0.8-1.2 PPM H2", "USB rechargeable", "Medical-grade materials", "Easy one-touch operation"],
-      image: "/images/h2-wellness.jpg",
-      badge: "Portable"
+      name: "Hydrogen Prebiotic Stick Pack (30-pack)",
+      price: "Visit Store",
+      originalPrice: null,
+      rating: 4.7,
+      reviews: 189,
+      description: "Boost energy, clarity, and gut health with Echo Hydrogen Prebiotic Stick Packs—instant hydration + probiotics in one.",
+      features: ["Instant hydrogen hydration", "Prebiotic formula", "Energy & clarity boost", "Gut health support"],
+      image: "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
+      badge: "Energy",
+      url: "https://echowater.com/products/hydrogen-prebiotic-stick-pack-30-pack"
     },
     {
       id: 3,
-      name: "AquaLife Home System",
-      price: "$599",
-      originalPrice: "$799",
+      name: "Echo Ultimate™ Hydrogen Water Machine",
+      price: "Visit Store",
+      originalPrice: null,
       rating: 4.9,
+      reviews: 143,
+      description: "Echo Ultimate Hydrogen Water Machine offers a versatile solution for your water needs, producing four types of water: hydrogen, alkaline, acidic, and filtered. Ideal for health, cleaning, and skincare.",
+      features: ["4 types of water", "Hydrogen + alkaline production", "Easy installation", "10-year warranty"],
+      image: "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
+      badge: "Premium",
+      url: "https://echowater.com/products/echo-ultimate-hydrogen-water"
+    },
+    {
+      id: 4,
+      name: "Echo Refresh Hydrogen Inhalation Machine",
+      price: "Visit Store",
+      originalPrice: null,
+      rating: 4.8,
       reviews: 97,
-      description: "Complete home hydrogen water system with advanced filtration and mineralization.",
-      features: ["2.0+ PPM H2 concentration", "Multi-stage filtration", "Smart app control", "Professional installation"],
-      image: "/images/aqualife-home.jpg",
-      badge: "Premium"
+      description: "Introducing the Echo Refresh® hydrogen inhalation machine. The Refresh enables you to inhale hydrogen gas. It goes from your lungs into your bloodstream in a matter of seconds.",
+      features: ["Direct hydrogen inhalation", "Rapid bloodstream absorption", "Immediate positive effects", "Professional grade"],
+      image: "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
+      badge: "Inhalation",
+      url: "https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine"
+    },
+    {
+      id: 5,
+      name: "Echo Revive Hydrogen Bath Water Machine",
+      price: "Visit Store",
+      originalPrice: null,
+      rating: 4.6,
+      reviews: 78,
+      description: "Upgrade your bath routine with the Echo Revive. Enjoy the benefits of hydrogen-rich water, including reduced inflammation, improved skin health, and relief from muscle soreness.",
+      features: ["Hydrogen-rich bath water", "Reduced inflammation", "Improved skin health", "Muscle soreness relief"],
+      image: "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
+      badge: "Bath",
+      url: "https://echowater.com/products/echo-revive"
     }
   ];
 
