@@ -94,10 +94,12 @@ export default function ProductsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <>
+      <SiteHeader />
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link href="/" className="flex items-center text-blue-600 hover:text-blue-700 mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
@@ -223,8 +225,11 @@ export default function ProductsPage() {
             These products are not intended to diagnose, treat, cure, or prevent any disease. 
             Individual results may vary. Consult your healthcare provider before use.
           </p>
+          </div>
         </div>
       </div>
-    </div>
+      
+      <Footer />
+    </>
   );
 }

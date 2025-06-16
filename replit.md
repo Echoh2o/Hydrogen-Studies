@@ -117,6 +117,8 @@ Preferred communication style: Simple, everyday language.
   - Enhanced BenefitsPage with learning pathways, quick facts, and comprehensive educational content
   - Added AI Assistant access to homepage header navigation for both desktop and mobile
   - Updated site title from "HydrogenHealth" to "Hydrogen Studies" to better reflect the research focus
+  - Created SiteHeader component and deployed standardized navigation to all non-admin pages
+  - All public pages now have consistent header navigation with Studies dropdown, AI Assistant access, and unified branding
 
 ## Changelog
 
