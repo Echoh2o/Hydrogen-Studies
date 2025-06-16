@@ -7,6 +7,10 @@ import { pool } from "../db";
 
 const router = Router();
 
+// Import analytics routes
+import analyticsRoutes from './analytics-routes';
+router.use('/', analyticsRoutes);
+
 // Get research trends data for visualizations
 router.get("/trends", async (req, res) => {
   try {

@@ -36,7 +36,8 @@ import NotFound from "@/pages/not-found";
 import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
 import RecommendationsPage from "@/pages/RecommendationsPage";
-import ResearchInsightsPage from "@/pages/ResearchInsightsPage";
+import ResearchInsightsPage from "./pages/ResearchInsightsPage";
+import ResearchAnalyticsPage from "./pages/ResearchAnalyticsPage";
 
 // Educational content pages
 import HydrogenTherapyGuide from "@/pages/educational/HydrogenTherapyGuide";
@@ -126,6 +127,7 @@ function Router() {
       <Route path="/categories/health-conditions" component={ExploreByCondition} />
       <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
+      <Route path="/research-analytics" component={ResearchAnalyticsPage} />
 
       {/* Research Exploration */}
       <Route path="/explore-by-condition" component={ExploreByCondition} />
