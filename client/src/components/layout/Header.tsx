@@ -85,6 +85,11 @@ function Header() {
                 Search
               </Button>
             </Link>
+            <Link href="/research-analytics">
+              <Button variant="ghost" size="sm" className="text-gray-700 hover:text-blue-600">
+                Analytics
+              </Button>
+            </Link>
             <Link href="/chat">
               <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
                 <MessageCircle className="h-4 w-4 mr-2" />
@@ -161,6 +166,11 @@ function Header() {
                       <Button variant="outline" className="w-full justify-start">
                         <Search className="h-4 w-4 mr-2" />
                         Search Studies
+                      </Button>
+                    </Link>
+                    <Link href="/research-analytics" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full justify-start">
+                        Analytics
                       </Button>
                     </Link>
                     <Link href="/chat" onClick={() => setIsOpen(false)}>
