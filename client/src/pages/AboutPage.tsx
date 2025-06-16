@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import NewsletterSection from "@/components/home/NewsletterSection";
 import { Helmet } from "react-helmet";
+import { HiMail, HiPhone, HiLocationMarker } from "react-icons/hi";
 
 const AboutPage = () => {
   return (
@@ -71,15 +72,88 @@ const AboutPage = () => {
               </p>
             </div>
             
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/contact">
-                <Button className="bg-primary hover:bg-primary-dark text-white">Contact Us</Button>
-              </Link>
+            <div className="mt-10 flex justify-center">
               <Link href="/categories">
                 <Button variant="outline" className="border-primary text-primary hover:bg-primary/5">
                   Explore Research Categories
                 </Button>
               </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Information Section */}
+      <section className="py-12 bg-neutral-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Contact Us</h2>
+            <p className="text-neutral-600 mb-8 text-center max-w-2xl mx-auto">
+              Have questions or suggestions? We'd love to hear from you. Whether you're a researcher, healthcare professional, or just interested in the science, we're here to help.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center text-primary mx-auto mb-4">
+                  <HiMail size={24} />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Email</h3>
+                <p className="text-neutral-600">info@hydrogenstudies.com</p>
+                <p className="text-neutral-600">research@hydrogenstudies.com</p>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center text-primary mx-auto mb-4">
+                  <HiPhone size={24} />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Phone</h3>
+                <p className="text-neutral-600">+1 (888) 123-4567</p>
+                <p className="text-neutral-600 text-sm">Mon-Fri, 9:00 AM - 5:00 PM PST</p>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center text-primary mx-auto mb-4">
+                  <HiLocationMarker size={24} />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Address</h3>
+                <p className="text-neutral-600">
+                  123 Research Avenue<br />
+                  Suite 450<br />
+                  San Francisco, CA 94103<br />
+                  United States
+                </p>
+              </div>
+            </div>
+
+            {/* FAQ Section */}
+            <div className="mt-12">
+              <h3 className="text-xl font-bold text-center mb-8">Frequently Asked Questions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h4 className="font-semibold text-lg mb-3">How can I submit research for inclusion?</h4>
+                  <p className="text-neutral-600">
+                    Researchers can submit published studies for inclusion in our database by emailing the publication details to research@hydrogenstudies.com.
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h4 className="font-semibold text-lg mb-3">Do you provide research consultation?</h4>
+                  <p className="text-neutral-600">
+                    Our team can provide guidance on hydrogen research resources. For specific consultation requests, please contact us directly.
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h4 className="font-semibold text-lg mb-3">How often is the database updated?</h4>
+                  <p className="text-neutral-600">
+                    We update our research database monthly with newly published studies and findings in the field of hydrogen research.
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm">
+                  <h4 className="font-semibold text-lg mb-3">Can I request specific research topics?</h4>
+                  <p className="text-neutral-600">
+                    Yes! We welcome suggestions for research topics or specific studies to include. Please use our contact information to send your requests.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
