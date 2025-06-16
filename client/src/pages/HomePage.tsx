@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
+import { Helmet } from 'react-helmet';
 import { Search, Droplets, Heart, Brain, Shield, Zap, Users, Award, ChevronRight, Play, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -455,11 +456,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-    
-</div>
       </div>
-
-      <Footer />
     </>
   );
 }
