@@ -319,13 +319,21 @@
             try {
                 document.getElementById('searchInput').disabled = true;
                 const response = await fetch(`/api/advanced-search?search=${encodeURIComponent(query)}&limit=20`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
                 // Create and show search results page
                 showSearchResults(query, data.studies, data.total);
             } catch (error) {
                 console.error('Search error:', error);
-                alert('Search failed. Please try again.');
+                const errorMessage = error.message.includes('HTTP') ? 
+                    'Server temporarily unavailable. Please try again.' : 
+                    'Search failed. Please check your connection.';
+                alert(errorMessage);
             } finally {
                 document.getElementById('searchInput').disabled = false;
             }
