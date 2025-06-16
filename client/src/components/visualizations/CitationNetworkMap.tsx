@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Network, Citation, BookOpen, TrendingUp } from 'lucide-react';
+import { Network, Quote, BookOpen, TrendingUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface NetworkNode {
@@ -300,7 +300,7 @@ export default function CitationNetworkMap({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Citation className="w-5 h-5" />
+              <Quote className="w-5 h-5" />
               Avg Citations
             </CardTitle>
           </CardHeader>
@@ -332,7 +332,7 @@ export default function CitationNetworkMap({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Citation className="w-5 h-5" />
+            <Quote className="w-5 h-5" />
             Most Cited Studies in Network
           </CardTitle>
         </CardHeader>
