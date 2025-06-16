@@ -112,7 +112,6 @@ function Router() {
       <Route path="/studies/:slug" component={SEOStudyPage} />
       <Route path="/search" component={SearchPage} />
       <Route path="/advanced-search" component={EnhancedSearchPage} />
-      <Route path="/research" component={EnhancedSearchPage} />
       <Route path="/benefits" component={BenefitsPage} />
       <Route path="/products" component={ProductsPage} />
       <Route path="/about" component={About} />

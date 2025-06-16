@@ -105,7 +105,16 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- June 16, 2025: Eliminated /research page and integrated Studies navigation into homepage header
+  - Removed /research route from App.tsx
+  - Added Studies dropdown menu to homepage header with comprehensive study browsing options
+  - Updated mobile menu to include organized Studies section with all navigation options
+  - Studies navigation now includes: All Studies, Recent Studies, By Health Condition, By Body System, By Life Stage, By Delivery Method, By Health Benefit, and Research Insights
+
 ## Changelog
 
 Changelog:
 - June 16, 2025. Initial setup
+- June 16, 2025. Navigation restructuring - eliminated /research page, integrated Studies into homepage header
