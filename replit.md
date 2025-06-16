@@ -107,11 +107,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- June 16, 2025: Eliminated /research page and integrated Studies navigation into homepage header
-  - Removed /research route from App.tsx
+- June 16, 2025: Major navigation restructuring and page consolidation
+  - Eliminated /research page and integrated Studies navigation into homepage header
+  - Consolidated /learn page content into /benefits page for unified Benefits & Education experience
+  - Removed duplicate pages: LearnPage.tsx, ContactPage.tsx, home.tsx, NewHomePage.tsx
   - Added Studies dropdown menu to homepage header with comprehensive study browsing options
   - Updated mobile menu to include organized Studies section with all navigation options
   - Studies navigation now includes: All Studies, Recent Studies, By Health Condition, By Body System, By Life Stage, By Delivery Method, By Health Benefit, and Research Insights
+  - Enhanced BenefitsPage with learning pathways, quick facts, and comprehensive educational content
 
 ## Changelog
 
