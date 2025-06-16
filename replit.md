@@ -119,6 +119,8 @@ Preferred communication style: Simple, everyday language.
   - Updated site title from "HydrogenHealth" to "Hydrogen Studies" to better reflect the research focus
   - Created SiteHeader component and deployed standardized navigation to all non-admin pages
   - All public pages now have consistent header navigation with Studies dropdown, AI Assistant access, and unified branding
+  - Cleaned up deprecated header files: removed Header.tsx, header.tsx, footer.tsx duplicates and App-Clean.tsx
+  - Single source navigation system now uses only SiteHeader.tsx component
 
 ## Changelog
 

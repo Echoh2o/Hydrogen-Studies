@@ -4,7 +4,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
-import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
 import { initGA } from "./lib/analytics";
@@ -267,11 +266,8 @@ function App() {
       <TooltipProvider>
         <ScrollToTop />
         <div className="flex min-h-screen flex-col">
-          {!isAdminRoute && !isHomePage && (
-            <>
-              <CookieConsent />
-              <Header />
-            </>
+          {!isAdminRoute && (
+            <CookieConsent />
           )}
           <main className={`flex-1 ${isAdminRoute ? 'p-0' : ''}`}>
             <Router />
