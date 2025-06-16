@@ -1,11 +1,60 @@
 import { Link } from 'wouter';
-import { ArrowLeft, Heart, Brain, Shield, Zap, Users, Microscope, Activity, Sparkles } from 'lucide-react';
+import { ArrowLeft, Heart, Brain, Shield, Zap, Users, Microscope, Activity, Sparkles, BookOpen, FlaskConical, CheckCircle, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Helmet } from 'react-helmet';
 
 export default function BenefitsPage() {
+  const learningTopics = [
+    {
+      id: 'basics',
+      title: 'Hydrogen Therapy Basics',
+      description: 'Understanding the fundamentals of molecular hydrogen and its health applications',
+      icon: <FlaskConical className="h-8 w-8 text-blue-600" />,
+      topics: ['What is molecular hydrogen?', 'How does it work in the body?', 'Safety and dosage'],
+      studyCount: 1326,
+      difficulty: 'Beginner'
+    },
+    {
+      id: 'health-benefits',
+      title: 'Health Benefits & Applications',
+      description: 'Explore the wide range of health conditions hydrogen therapy may support',
+      icon: <Heart className="h-8 w-8 text-red-600" />,
+      topics: ['Cardiovascular health', 'Anti-inflammatory effects', 'Neurological support'],
+      studyCount: 850,
+      difficulty: 'Intermediate'
+    },
+    {
+      id: 'mechanisms',
+      title: 'Scientific Mechanisms',
+      description: 'Deep dive into how hydrogen works at the cellular and molecular level',
+      icon: <Brain className="h-8 w-8 text-purple-600" />,
+      topics: ['Antioxidant properties', 'Cellular signaling', 'Gene expression'],
+      studyCount: 420,
+      difficulty: 'Advanced'
+    },
+    {
+      id: 'delivery-methods',
+      title: 'Delivery Methods',
+      description: 'Learn about different ways to consume hydrogen for health benefits',
+      icon: <Zap className="h-8 w-8 text-green-600" />,
+      topics: ['Hydrogen water', 'Inhalation therapy', 'Hydrogen baths'],
+      studyCount: 380,
+      difficulty: 'Beginner'
+    }
+  ];
+
+  const quickFacts = [
+    'Hydrogen is the smallest and lightest molecule in the universe',
+    'It can easily penetrate cell membranes and reach mitochondria',
+    'Acts as a selective antioxidant targeting harmful free radicals',
+    'Over 1,300 scientific studies have been published on hydrogen therapy',
+    'Safe with no known toxic effects at therapeutic concentrations',
+    'Multiple delivery methods available including water, inhalation, and baths'
+  ];
+
   const benefitCategories = [
     {
       id: 'cardiovascular',
@@ -105,22 +154,28 @@ export default function BenefitsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Link href="/" className="flex items-center text-blue-600 hover:text-blue-700 mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
-          </Link>
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Science-Backed Health Benefits
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Discover what thousands of peer-reviewed studies reveal about hydrogen water's 
-              potential to support your health and wellness goals.
-            </p>
+    <>
+      <Helmet>
+        <title>Hydrogen Benefits & Education - Complete Guide to Hydrogen Therapy</title>
+        <meta name="description" content="Learn about hydrogen therapy benefits backed by 1,300+ studies. Comprehensive guide covering health benefits, mechanisms, delivery methods, and scientific research." />
+      </Helmet>
+      
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Link href="/" className="flex items-center text-blue-600 hover:text-blue-700 mb-6">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Link>
+            <div className="text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Hydrogen Benefits & Education
+              </h1>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                Learn about hydrogen therapy and discover what thousands of peer-reviewed studies reveal about 
+                hydrogen's potential to support your health and wellness goals.
+              </p>
             
             {/* Research Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
@@ -290,6 +345,7 @@ export default function BenefitsPage() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
