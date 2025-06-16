@@ -133,6 +133,9 @@ async function cleanupWaste() {
 }
 
 async function checkIfFileIsReferenced(filename) {
+  // Get just the filename from the full path
+  const basename = path.basename(filename);
+  
   // Force removal of known redundant files
   const forceRemove = [
     'build-production.js',
@@ -180,7 +183,7 @@ async function checkIfFileIsReferenced(filename) {
     'SYSTEM_OPTIMIZATIONS_SUMMARY.md'
   ];
 
-  return !forceRemove.includes(filename);
+  return !forceRemove.includes(basename);
 }
 
 async function findCodeFiles() {

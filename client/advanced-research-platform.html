@@ -700,11 +700,19 @@
                 params.append('offset', (page * pageSize).toString());
 
                 const response = await fetch(`/api/advanced-search?${params}`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
                 
                 const data = await response.json();
-                currentStudies = data.studies;
-                totalResults = data.total;
+                
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response format');
+                }
+                
+                currentStudies = Array.isArray(data.studies) ? data.studies : [];
+                totalResults = parseInt(data.total) || 0;
                 currentPage = page;
                 
                 renderResults();
@@ -713,7 +721,7 @@
                 
             } catch (error) {
                 console.error('Search error:', error);
-                showError(`Search failed: ${error.message}`);
+                showError(`Search failed: ${error.message || 'Unknown error occurred'}`);
             }
         }
 

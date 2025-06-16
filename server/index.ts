@@ -176,15 +176,15 @@ app.get('/api/filters/journals', async (req, res) => {
 // Advanced search with multiple filters
 app.get('/api/advanced-search', async (req, res) => {
   try {
-    const search = String(req.query.search || '');
-    const category = String(req.query.category || '');
-    const country = String(req.query.country || '');
+    const search = String(req.query.search || '').trim();
+    const category = String(req.query.category || '').trim();
+    const country = String(req.query.country || '').trim();
     const sort_by = String(req.query.sort_by || 'id');
-    const limit = Math.min(50, parseInt(String(req.query.limit || '20')));
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '20'))));
     const offset = Math.max(0, parseInt(String(req.query.offset || '0')));
 
-    let studies;
-    let countResult;
+    let studies = [];
+    let countResult = [{ total: 0 }];
 
     // Simple filtering approach that works with Neon
     if (search && category) {
@@ -277,6 +277,8 @@ initializeHealthMonitoring();
 // Enhanced error handling
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
+  
   // Don't exit the process in production, just log the error
   if (process.env.NODE_ENV !== 'production') {
     process.exit(1);
@@ -285,6 +287,8 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
+  handleError(error, 'uncaughtException');
+  
   // Graceful shutdown in production
   if (process.env.NODE_ENV === 'production') {
     setTimeout(() => process.exit(1), 1000);
