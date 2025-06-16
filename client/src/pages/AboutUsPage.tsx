@@ -6,29 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 export default function AboutUsPage() {
-  const teamMembers = [
-    {
-      name: 'Dr. Sarah Chen',
-      role: 'Chief Medical Officer',
-      expertise: 'Gastroenterology & Hydrogen Research',
-      bio: 'Board-certified gastroenterologist with over 15 years of experience in integrative digestive health. Leading researcher in hydrogen therapy applications.',
-      image: 'https://placehold.co/300x300/e2f3ff/003366?text=Dr.+Chen'
-    },
-    {
-      name: 'Dr. James Wilson',
-      role: 'Research Director',
-      expertise: 'Molecular Biology & Oxidative Stress',
-      bio: 'PhD in Molecular Biology with focus on antioxidant mechanisms. Published over 40 peer-reviewed articles on hydrogen therapy.',
-      image: 'https://placehold.co/300x300/e2f3ff/003366?text=Dr.+Wilson'
-    },
-    {
-      name: 'Dr. Maria Rodriguez',
-      role: 'Clinical Research Lead',
-      expertise: 'Cardiology & Sports Medicine',
-      bio: 'Cardiologist specializing in performance medicine. Conducts clinical trials on hydrogen therapy for athletic performance and recovery.',
-      image: 'https://placehold.co/300x300/e2f3ff/003366?text=Dr.+Rodriguez'
-    }
-  ];
 
   const milestones = [
     {
@@ -149,37 +126,7 @@ export default function AboutUsPage() {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Meet Our Expert Team</h2>
-            <p className="text-lg text-gray-600">
-              Leading researchers and medical professionals dedicated to advancing hydrogen science
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {teamMembers.map((member, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="text-center">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-                  />
-                  <CardTitle className="text-xl">{member.name}</CardTitle>
-                  <CardDescription className="text-blue-600 font-medium">{member.role}</CardDescription>
-                  <Badge variant="outline" className="w-fit mx-auto mt-2">{member.expertise}</Badge>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm leading-relaxed">{member.bio}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Our Journey */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
