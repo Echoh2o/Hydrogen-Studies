@@ -21,7 +21,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Database connection
-const sql = neon(process.env.DATABASE_URL!);\
+const sql = neon(process.env.DATABASE_URL!);
 
 // Working API endpoints
 app.use('/api/studies', studiesRouter); // Mount the studies router
@@ -90,8 +90,8 @@ app.get('/api/search', async (req, res) => {
 
 app.get('/api/studies/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);\
-    const study = await sql`SELECT * FROM studies WHERE id = ${id}`;\
+    const id = parseInt(req.params.id);
+    const study = await sql`SELECT * FROM studies WHERE id = ${id}`;
 
     if (study.length === 0) {
       return res.status(404).json({ error: 'Study not found' });
