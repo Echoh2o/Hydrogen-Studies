@@ -13,6 +13,7 @@ import { StudyListSkeleton, ErrorDisplay, EmptyState } from "@/components/ui/loa
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { FileSearch } from "lucide-react";
 import { Study } from "@/types";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function Studies() {
   const [location] = useLocation();
@@ -159,6 +160,8 @@ export default function Studies() {
           content="Browse and search through our comprehensive database of hydrogen gas studies and research papers."
         />
       </Helmet>
+      
+      <SiteHeader />
       
       <div className="bg-neutral-100 py-8">
         <div className="container mx-auto px-4">

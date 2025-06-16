@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export default function BlogListPage() {
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -83,8 +84,10 @@ export default function BlogListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Hero Section */}
+    <>
+      <SiteHeader />
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+        {/* Hero Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <TrendingUp className="h-16 w-16 text-blue-600 mx-auto mb-6" />
