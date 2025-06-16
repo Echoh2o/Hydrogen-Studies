@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import NewsletterSection from "@/components/home/NewsletterSection";
 import { Helmet } from "react-helmet";
 import { HiMail, HiPhone, HiLocationMarker } from "react-icons/hi";
 
@@ -158,8 +157,6 @@ const AboutPage = () => {
           </div>
         </div>
       </section>
-      
-      <NewsletterSection />
     </>
   );
 };
