@@ -1,0 +1,27 @@
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+vite v5.4.19 building for production...
+✓ 4018 modules transformed.
+x Build failed in 18.21s
+error during build:
+client/src/components/visualizations/CitationNetworkMap.tsx (5:18): "Citation" is not exported by "node_modules/lucide-react/dist/esm/lucide-react.js", imported by "client/src/components/visualizations/CitationNetworkMap.tsx".
+file: /home/runner/workspace/client/src/components/visualizations/CitationNetworkMap.tsx:5:18
+
+3: import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+4: import { Badge } from "@/components/ui/badge";
+5: import { Network, Citation, BookOpen, TrendingUp } from 'lucide-react';
+                     ^
+6: import { useEffect, useRef, useState } from 'react';
+
+    at getRollupError (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/parseAst.js:400:41)
+    at error (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/parseAst.js:396:42)
+    at Module.error (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:16788:16)
+    at Module.traceVariable (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:17237:29)
+    at ModuleScope.findVariable (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:14893:39)
+    at FunctionScope.findVariable (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:5617:38)
+    at FunctionBodyScope.findVariable (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:5617:38)
+    at Identifier.bind (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:5391:40)
+    at CallExpression.bind (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:2782:28)
+    at CallExpression.bind (file:///home/runner/workspace/node_modules/rollup/dist/es/shared/node-entry.js:11978:15)
