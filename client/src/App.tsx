@@ -125,9 +125,9 @@ function Router() {
       <Route path="/blog/:id" component={BlogArticlePage} />
       <Route path="/categories/:category" component={ConditionCategoryPage} />
       <Route path="/categories/health-conditions" component={ExploreByCondition} />
+      <Route path="/research-analytics" component={ResearchAnalyticsPage} />
       <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
-      <Route path="/research-analytics" component={ResearchAnalyticsPage} />
 
       {/* Research Exploration */}
       <Route path="/explore-by-condition" component={ExploreByCondition} />
