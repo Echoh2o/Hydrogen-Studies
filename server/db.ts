@@ -11,15 +11,22 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Optimized connection pool configuration for better performance
+// Optimized connection pool configuration for better stability and performance
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20,                    // Maximum number of connections
-  min: 5,                     // Minimum number of connections
-  idleTimeoutMillis: 30000,   // Close idle connections after 30s
-  connectionTimeoutMillis: 5000, // Timeout for new connections
-  maxUses: 7500,              // Close connections after 7500 uses
-  allowExitOnIdle: false      // Keep pool alive
+  max: 15,                    // Reduced max connections for stability
+  min: 3,                     // Reduced min connections
+  idleTimeoutMillis: 60000,   // Increased idle timeout to 60s for stability
+  connectionTimeoutMillis: 8000, // Increased timeout for slower connections
+  maxUses: 10000,             // Increased max uses before recycling
+  allowExitOnIdle: false,     // Keep pool alive
+  
+  // Additional stability configurations
+  statement_timeout: 30000,   // 30 second statement timeout
+  query_timeout: 25000,       // 25 second query timeout
+  
+  // Connection validation
+  application_name: 'hydrogen-studies-app'
 });
 
 export const db = drizzle(pool, { 
