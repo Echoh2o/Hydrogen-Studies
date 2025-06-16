@@ -271,6 +271,77 @@ export default function BenefitsPage() {
           ))}
         </Tabs>
 
+        {/* Quick Facts Section */}
+        <Card className="mb-16">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl mb-4">Quick Facts About Hydrogen</CardTitle>
+            <CardDescription className="text-lg max-w-3xl mx-auto">
+              Essential facts about molecular hydrogen therapy based on scientific research.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {quickFacts.map((fact, index) => (
+                <div key={index} className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
+                  <p className="text-gray-700">{fact}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Learning Pathways Section */}
+        <Card className="mb-16">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl mb-4">Learning Pathways</CardTitle>
+            <CardDescription className="text-lg max-w-3xl mx-auto">
+              Choose your learning journey based on your background and interests
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {learningTopics.map((topic) => (
+                <Card key={topic.id} className="hover:shadow-lg transition-shadow border-2 hover:border-blue-200 h-full">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        {topic.icon}
+                        <div>
+                          <Badge variant="outline" className="mb-2">{topic.difficulty}</Badge>
+                          <CardTitle className="text-xl">{topic.title}</CardTitle>
+                        </div>
+                      </div>
+                    </div>
+                    <CardDescription className="text-base">{topic.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="font-medium text-gray-700 mb-2">What you'll learn:</p>
+                        <ul className="space-y-1">
+                          {topic.topics.map((subtopic, index) => (
+                            <li key={index} className="text-sm text-gray-600 flex items-center">
+                              <CheckCircle className="h-3 w-3 text-green-600 mr-2" />
+                              {subtopic}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <span className="text-sm text-gray-500">{topic.studyCount} supporting studies</span>
+                        <div className="flex items-center text-blue-600 font-medium">
+                          Learn more <ChevronRight className="h-4 w-4 ml-1" />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* How It Works Section */}
         <Card className="mb-16">
           <CardHeader className="text-center">
