@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Helmet } from 'react-helmet';
+import SiteHeader from '@/components/layout/SiteHeader';
+import Footer from '@/components/layout/Footer';
 
 export default function BenefitsPage() {
   const learningTopics = [
@@ -159,6 +161,8 @@ export default function BenefitsPage() {
         <title>Hydrogen Benefits & Education - Complete Guide to Hydrogen Therapy</title>
         <meta name="description" content="Learn about hydrogen therapy benefits backed by 1,300+ studies. Comprehensive guide covering health benefits, mechanisms, delivery methods, and scientific research." />
       </Helmet>
+      
+      <SiteHeader />
       
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
@@ -417,6 +421,8 @@ export default function BenefitsPage() {
         </div>
       </div>
       </div>
+      
+      <Footer />
     </>
   );
 }
