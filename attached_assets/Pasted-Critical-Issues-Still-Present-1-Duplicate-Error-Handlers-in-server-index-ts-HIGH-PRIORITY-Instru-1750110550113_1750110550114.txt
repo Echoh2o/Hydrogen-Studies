@@ -1,0 +1,28 @@
+Critical Issues Still Present:
+1. Duplicate Error Handlers in server/index.ts (HIGH PRIORITY)
+Instructions for Agent: "Remove the duplicate error handlers in server/index.ts. There are two sets of identical process.on('uncaughtException') and process.on('unhandledRejection') handlers around lines 140-155. Keep only one set and ensure they don't conflict."
+
+2. Missing Tailwind CSS Build Setup (HIGH PRIORITY)
+Instructions for Agent: "Replace the Tailwind CDN with a proper build setup. The webview logs show repeated production warnings. Create a proper Tailwind configuration, update the build process, and remove any CDN references from HTML files."
+
+3. Unhandled Promise Rejection (MEDIUM PRIORITY)
+Instructions for Agent: "Add proper error handling for the unhandled promise rejection shown in webview logs. Add a global promise rejection handler in the client-side App.tsx and ensure all async operations have proper catch blocks."
+
+4. Server Health Fluctuation (MEDIUM PRIORITY)
+Instructions for Agent: "The server status is fluctuating between 'healthy' and 'degraded'. Investigate the health monitoring system in server/health-monitoring.ts and database connection pooling to stabilize the server status."
+
+5. Path Validation Issue in cleanup-waste.js (LOW PRIORITY)
+Instructions for Agent: "Fix the path validation logic in cleanup-waste.js around line 145. The current validation is too restrictive and may cause the script to skip legitimate files. Update the validation to only block '..' path traversal attempts."
+
+6. Database Connection Error Handling (MEDIUM PRIORITY)
+Instructions for Agent: "Add proper error handling to the database connection in server/index.ts. The Neon database connection needs retry logic and connection pool management to prevent connection issues."
+
+7. Missing Production Environment Variables (LOW PRIORITY)
+Instructions for Agent: "Ensure all required environment variables are properly validated at startup. Add checks for DATABASE_URL, and any API keys that are required for production operation."
+
+Summary Instructions for Agent:
+Primary Focus: "Fix the duplicate error handlers and implement proper Tailwind CSS build setup to resolve the production warnings. These are causing the most immediate stability issues."
+
+Secondary Focus: "Add comprehensive error handling for promise rejections and stabilize the database connection pooling to prevent server health fluctuations."
+
+Testing: "After making these changes, run the application and monitor the webview logs to ensure the Tailwind warnings are gone and no unhandled promise rejections occur."
