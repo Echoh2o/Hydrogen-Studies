@@ -79,12 +79,7 @@ function Header() {
 
           {/* Action Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/search">
-              <Button variant="ghost" size="sm" className="text-gray-700 hover:text-blue-600">
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </Button>
-            </Link>
+
             <Link href="/research-analytics">
               <Button variant="ghost" size="sm" className="text-gray-700 hover:text-blue-600">
                 Analytics
@@ -162,12 +157,7 @@ function Header() {
                   ))}
                   
                   <div className="border-t pt-4 space-y-2">
-                    <Link href="/search" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full justify-start">
-                        <Search className="h-4 w-4 mr-2" />
-                        Search Studies
-                      </Button>
-                    </Link>
+
                     <Link href="/research-analytics" onClick={() => setIsOpen(false)}>
                       <Button variant="outline" className="w-full justify-start">
                         Analytics
