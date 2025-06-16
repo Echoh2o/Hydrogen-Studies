@@ -339,14 +339,16 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             {benefits.map((benefit, index) => {
-              const searchQueries = {
+              type BenefitTitle = "Heart Health" | "Brain Function" | "Antioxidant Power" | "Energy & Recovery";
+              
+              const searchQueries: Record<BenefitTitle, string> = {
                 "Heart Health": "cardiovascular heart cardiac hypertension blood pressure",
                 "Brain Function": "neurological cognitive brain neuroprotective memory",
                 "Antioxidant Power": "antioxidant oxidative stress free radicals ROS",
                 "Energy & Recovery": "athletic performance exercise recovery fatigue energy"
               };
 
-              const detailedBenefits = {
+              const detailedBenefits: Record<BenefitTitle, string[]> = {
                 "Heart Health": [
                   'May reduce blood pressure in hypertensive individuals',
                   'Potential improvement in arterial flexibility',
@@ -373,8 +375,9 @@ export default function HomePage() {
                 ]
               };
 
+              const benefitTitle = benefit.title as BenefitTitle;
               return (
-                <Link key={index} href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`} className="block h-full">
+                <Link key={index} href={`/search?q=${encodeURIComponent(searchQueries[benefitTitle] || '')}`} className="block h-full">
                   <Card className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full cursor-pointer hover:scale-105">
                     <CardHeader className="text-center pb-4">
                       <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
@@ -394,7 +397,7 @@ export default function HomePage() {
                       <div className="mb-4">
                         <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Potential Benefits</h4>
                         <ul className="space-y-2">
-                          {detailedBenefits[benefit.title].map((benefitItem, benefitIndex) => (
+                          {(detailedBenefits[benefitTitle] || []).map((benefitItem: string, benefitIndex: number) => (
                             <li key={benefitIndex} className="flex items-start gap-2 text-sm text-gray-600">
                               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                               <span>{benefitItem}</span>
