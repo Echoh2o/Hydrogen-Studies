@@ -419,7 +419,7 @@ export default function HomePage() {
               <h3 className="font-semibold mb-4">Research</h3>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><Link href="/research" className="hover:text-white transition-colors">Browse Studies</Link></li>
-                <li><Link href="/advanced-search" className="hover:text-white transition-colors">Advanced Search</Link></li>
+
                 <li><Link href="/categories" className="hover:text-white transition-colors">By Category</Link></li>
               </ul>
             </div>

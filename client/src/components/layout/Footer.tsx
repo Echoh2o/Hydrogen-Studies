@@ -52,11 +52,7 @@ export default function Footer() {
                   Browse Studies
                 </Link>
               </li>
-              <li>
-                <Link href="/search" className="text-gray-300 hover:text-white transition-colors">
-                  Advanced Search
-                </Link>
-              </li>
+
               <li>
                 <Link href="/insights" className="text-gray-300 hover:text-white transition-colors">
                   Research Insights
