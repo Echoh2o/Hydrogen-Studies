@@ -64,11 +64,7 @@ const AboutPage = () => {
                 As a selective antioxidant that targets the most cytotoxic free radicals, hydrogen offers potential benefits without disrupting the normal cellular functions of beneficial reactive oxygen species. This selective action, combined with hydrogen's ability to easily penetrate cell membranes and cross the blood-brain barrier, has drawn significant scientific interest.
               </p>
               
-              <h3 className="text-xl font-bold mt-8 mb-4">Our Team</h3>
-              
-              <p>
-                HydrogenStudies.com is maintained by a dedicated team of researchers, medical professionals, and web specialists committed to providing accurate, up-to-date information on hydrogen research. Our advisory board includes experts in molecular biology, medicine, and research methodology who ensure the quality and reliability of our database.
-              </p>
+
             </div>
             
             <div className="mt-10 flex justify-center">
