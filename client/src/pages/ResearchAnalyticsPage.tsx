@@ -10,7 +10,6 @@ import {
   Calendar, 
   Users, 
   Network,
-  Citation,
   BookOpen,
   Clock,
   Target,
@@ -76,7 +75,7 @@ export default function ResearchAnalyticsPage() {
                   <div className="text-sm text-blue-100">Total Studies</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                  <Citation className="w-6 h-6 mx-auto mb-2" />
+                  <Quote className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">{analyticsData?.totalCitations || '15K+'}</div>
                   <div className="text-sm text-blue-100">Citations</div>
                 </div>
