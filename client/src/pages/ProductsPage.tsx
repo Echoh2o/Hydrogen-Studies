@@ -3,6 +3,8 @@ import { ArrowLeft, Star, ShoppingCart, Award, Droplets, Heart, Zap } from 'luci
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import SiteHeader from '@/components/layout/SiteHeader';
+import Footer from '@/components/layout/Footer';
 
 export default function ProductsPage() {
   const products = [
