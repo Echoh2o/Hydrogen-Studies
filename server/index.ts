@@ -286,8 +286,12 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Serve static files from client dist directory
+app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
+
+// Serve public assets
+app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
 
 // Serve the React app for all non-API routes
 app.get('*', (req, res) => {
