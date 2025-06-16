@@ -27,10 +27,7 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const neonClient = neon(connectionString, {
-  connectionTimeoutMillis: 5000,
-  arrayMode: false,
-});
+const neonClient = neon(connectionString);
 
 const db = drizzle(neonClient);
 
@@ -169,10 +166,10 @@ app.get('/api/advanced-search', asyncHandler(async (req: any, res: any) => {
       const searchCondition = or(
         ilike(studies.title, `%${search}%`),
         ilike(studies.abstract, `%${search}%`),
-        ilike(studies.plain_language_title, `%${search}%`),
-        ilike(studies.consumer_methods, `%${search}%`),
-        ilike(studies.consumer_results, `%${search}%`),
-        ilike(studies.consumer_conclusions, `%${search}%`)
+        ilike(studies.plainLanguageTitle, `%${search}%`),
+        ilike(studies.methods, `%${search}%`),
+        ilike(studies.results, `%${search}%`),
+        ilike(studies.conclusion, `%${search}%`)
       );
       conditions.push(searchCondition);
     }
@@ -186,35 +183,35 @@ app.get('/api/advanced-search', asyncHandler(async (req: any, res: any) => {
     }
 
     if (minYear) {
-      conditions.push(sql`${studies.publish_year} >= ${parseInt(minYear as string)}`);
+      conditions.push(sql`${studies.publishYear} >= ${parseInt(minYear as string)}`);
     }
 
     if (maxYear) {
-      conditions.push(sql`${studies.publish_year} <= ${parseInt(maxYear as string)}`);
+      conditions.push(sql`${studies.publishYear} <= ${parseInt(maxYear as string)}`);
     }
 
     if (minCitations) {
-      conditions.push(sql`${studies.citation_count} >= ${parseInt(minCitations as string)}`);
+      conditions.push(sql`${studies.citationCount} >= ${parseInt(minCitations as string)}`);
     }
 
     if (maxCitations) {
-      conditions.push(sql`${studies.citation_count} <= ${parseInt(maxCitations as string)}`);
+      conditions.push(sql`${studies.citationCount} <= ${parseInt(maxCitations as string)}`);
     }
 
     if (minSampleSize) {
-      conditions.push(sql`${studies.sample_size} >= ${parseInt(minSampleSize as string)}`);
+      conditions.push(sql`${studies.sampleSize} >= ${parseInt(minSampleSize as string)}`);
     }
 
     if (maxSampleSize) {
-      conditions.push(sql`${studies.sample_size} <= ${parseInt(maxSampleSize as string)}`);
+      conditions.push(sql`${studies.sampleSize} <= ${parseInt(maxSampleSize as string)}`);
     }
 
     if (peerReviewed === 'true') {
-      conditions.push(eq(studies.peer_reviewed, true));
+      conditions.push(eq(studies.peerReviewed, true));
     }
 
     if (hasFullText === 'true') {
-      conditions.push(sql`${studies.full_text} IS NOT NULL AND ${studies.full_text} != ''`);
+      conditions.push(sql`${studies.fullText} IS NOT NULL AND ${studies.fullText} != ''`);
     }
 
     if (conditions.length > 0) {
