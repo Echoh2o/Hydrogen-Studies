@@ -49,6 +49,8 @@ export default function ResearchAnalyticsPage() {
         />
       </Helmet>
 
+      <SiteHeader />
+      
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-slate-900 to-blue-900 text-white py-16">
