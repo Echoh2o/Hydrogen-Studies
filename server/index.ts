@@ -22,8 +22,16 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Database connection
-const sql = neon(process.env.DATABASE_URL!);
+// Environment validation
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL environment variable is required');
+  process.exit(1);
+}
+
+// Database connection with retry logic
+const sql = neon(process.env.DATABASE_URL, {
+  arrayMode: false,
+});
 
 // Working API endpoints
 app.use('/api/studies', studiesRouter); // Mount the studies router
@@ -225,7 +233,7 @@ app.get('/api/advanced-search', async (req, res) => {
     const offset = Math.max(0, parseInt(String(req.query.offset || '0')));
 
     let studies = [];
-    let countResult = [{ total: 0 }];
+    let countResult: any[] = [];
 
     // Simple filtering approach that works with Neon
     if (search && category) {
@@ -315,7 +323,7 @@ app.get('/api/advanced-search', async (req, res) => {
 // Initialize health monitoring
 initializeHealthMonitoring();
 
-// Enhanced error handling
+// Global error handling - single set only
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
@@ -336,17 +344,6 @@ process.on('uncaughtException', (error) => {
   } else {
     process.exit(1);
   }
-});
-
-// Add global error handlers
-process.on('uncaughtException', (error) => {
-  handleError(error, 'uncaughtException');
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
-  console.error('Unhandled Rejection at:', promise);
 });
 
 // Health check endpoint
