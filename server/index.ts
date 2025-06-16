@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
 import { createServer as createViteServer } from 'vite';
+import studiesRouter from "./routes/studies-router"; // Import the studies router
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,50 +24,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const sql = neon(process.env.DATABASE_URL!);
 
 // Working API endpoints
-app.get('/api/studies', async (req, res) => {
-  try {
-    const search = String(req.query.search || '');
-    const category = String(req.query.category || '');
-    const limit = Math.min(100, parseInt(String(req.query.limit || '50')));
-    const offset = Math.max(0, parseInt(String(req.query.offset || '0')));
-
-    let studies;
-    if (search && category) {
-      studies = await sql`
-        SELECT * FROM studies 
-        WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})
-        AND category = ${category}
-        ORDER BY id DESC 
-        LIMIT ${limit} OFFSET ${offset}
-      `;
-    } else if (search) {
-      studies = await sql`
-        SELECT * FROM studies 
-        WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}
-        ORDER BY id DESC 
-        LIMIT ${limit} OFFSET ${offset}
-      `;
-    } else if (category) {
-      studies = await sql`
-        SELECT * FROM studies 
-        WHERE category = ${category}
-        ORDER BY id DESC 
-        LIMIT ${limit} OFFSET ${offset}
-      `;
-    } else {
-      studies = await sql`
-        SELECT * FROM studies 
-        ORDER BY id DESC 
-        LIMIT ${limit} OFFSET ${offset}
-      `;
-    }
-
-    res.json(studies);
-  } catch (error) {
-    console.error('Studies API error:', error);
-    res.status(500).json({ error: 'Failed to fetch studies' });
-  }
-});
+app.use('/api/studies', studiesRouter); // Mount the studies router
 
 app.get('/api/categories', async (req, res) => {
   try {
@@ -99,7 +57,7 @@ app.get('/api/search', async (req, res) => {
       SELECT id, title, abstract, authors, journal, publish_date, category, doi, image_url, slug
       FROM studies 
       WHERE LOWER(title) LIKE ${'%' + query.toLowerCase() + '%'} 
-      OR LOWER(abstract) LIKE ${'%' + query.toLowerCase() + '%'}
+      OR LOWER(abstract) LIKE ${'%' + query.toLowerCase() + '%'} 
       ORDER BY 
         CASE 
           WHEN LOWER(title) LIKE ${'%' + query.toLowerCase() + '%'} THEN 1
@@ -113,7 +71,7 @@ app.get('/api/search', async (req, res) => {
       SELECT COUNT(*) as total
       FROM studies 
       WHERE LOWER(title) LIKE ${'%' + query.toLowerCase() + '%'} 
-      OR LOWER(abstract) LIKE ${'%' + query.toLowerCase() + '%'}
+      OR LOWER(abstract) LIKE ${'%' + query.toLowerCase() + '%'} 
     `;
 
     const total = parseInt(totalResult[0]?.total || '0');
@@ -134,11 +92,11 @@ app.get('/api/studies/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const study = await sql`SELECT * FROM studies WHERE id = ${id}`;
-    
+
     if (study.length === 0) {
       return res.status(404).json({ error: 'Study not found' });
     }
-    
+
     res.json(study[0]);
   } catch (error) {
     console.error('Study by ID error:', error);
@@ -225,7 +183,7 @@ app.get('/api/advanced-search', async (req, res) => {
 
     let studies;
     let countResult;
-    
+
     // Simple filtering approach that works with Neon
     if (search && category) {
       studies = await sql`
@@ -233,15 +191,15 @@ app.get('/api/advanced-search', async (req, res) => {
                country, study_type, sample_size, citation_count, peer_reviewed,
                has_full_text, image_url, doi, plain_language_title
         FROM studies 
-        WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})
+        WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}) 
         AND category = ${category}
         ORDER BY id DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
-      
+
       countResult = await sql`
         SELECT COUNT(*) as total FROM studies 
-        WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'})
+        WHERE (title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}) 
         AND category = ${category}
       `;
     } else if (search) {
@@ -250,14 +208,14 @@ app.get('/api/advanced-search', async (req, res) => {
                country, study_type, sample_size, citation_count, peer_reviewed,
                has_full_text, image_url, doi, plain_language_title
         FROM studies 
-        WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}
+        WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'} 
         ORDER BY id DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
-      
+
       countResult = await sql`
         SELECT COUNT(*) as total FROM studies 
-        WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'}
+        WHERE title ILIKE ${'%' + search + '%'} OR abstract ILIKE ${'%' + search + '%'} 
       `;
     } else if (category) {
       studies = await sql`
@@ -269,7 +227,7 @@ app.get('/api/advanced-search', async (req, res) => {
         ORDER BY id DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
-      
+
       countResult = await sql`SELECT COUNT(*) as total FROM studies WHERE category = ${category}`;
     } else if (country) {
       studies = await sql`
@@ -281,7 +239,7 @@ app.get('/api/advanced-search', async (req, res) => {
         ORDER BY id DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
-      
+
       countResult = await sql`SELECT COUNT(*) as total FROM studies WHERE country = ${country}`;
     } else {
       studies = await sql`
@@ -292,19 +250,19 @@ app.get('/api/advanced-search', async (req, res) => {
         ORDER BY id DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
-      
+
       countResult = await sql`SELECT COUNT(*) as total FROM studies`;
     }
-    
+
     const total = parseInt(countResult[0]?.total || '0');
-    
+
     res.json({
       studies,
       total,
       hasMore: (offset + studies.length) < total,
-      filters: { search, category, country, sort_by }
+      filters: { search, category, country, sort_by } 
     });
-    
+
   } catch (error) {
     console.error('Advanced search error:', error);
     res.status(500).json({ error: 'Advanced search failed' });
@@ -328,18 +286,16 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve advanced research platform directly for root route
-// Serve marketing homepage
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'marketing-index.html'));
-});
+// Serve static files from client dist directory
+app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Serve public assets
+app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
 
-// All other routes serve the marketing page (for now)
+// Serve the React app for all non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'marketing-index.html'));
+  res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
 });
 
 const PORT = parseInt(process.env.PORT || '5000');

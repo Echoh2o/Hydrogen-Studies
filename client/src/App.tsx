@@ -27,7 +27,8 @@ import ContactUsPage from "@/pages/ContactUsPage";
 import Studies from "@/pages/studies";
 import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
 import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
-
+import StudyPage from "@/pages/StudyPage";
+import StudyDetailsPage from "@/pages/StudyDetailsPage";
 import SEOStudyPage from "@/pages/SEOStudyPage";
 import About from "@/pages/about";
 import Contact from "@/pages/ContactPage";
@@ -35,7 +36,8 @@ import NotFound from "@/pages/not-found";
 import BlogPage from "@/pages/BlogPage";
 import ChatPage from "@/pages/ChatPage";
 import RecommendationsPage from "@/pages/RecommendationsPage";
-import ResearchInsightsPage from "@/pages/ResearchInsightsPage";
+import ResearchInsightsPage from "./pages/ResearchInsightsPage";
+import ResearchAnalyticsPage from "./pages/ResearchAnalyticsPage";
 
 // Educational content pages
 import HydrogenTherapyGuide from "@/pages/educational/HydrogenTherapyGuide";
@@ -87,18 +89,18 @@ import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
-  
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location]);
-  
+
   return null;
 }
 
 function Router() {
   // Track page views when routes change
   useAnalytics();
-  
+
   return (
     <Switch>
       {/* Core Public Routes */}
@@ -106,7 +108,9 @@ function Router() {
       <Route path="/old-home" component={Home} />
       <Route path="/legacy-home" component={NewHomePage} />
       <Route path="/studies" component={Studies} />
-      <Route path="/study/:slug" component={SEOStudyPage} />
+      <Route path="/study/:id" component={StudyPage} />
+      <Route path="/study/:slug" component={StudyDetailsPage} />
+      <Route path="/studies/:slug" component={SEOStudyPage} />
       <Route path="/search" component={SearchPage} />
       <Route path="/advanced-search" component={EnhancedSearchPage} />
       <Route path="/research" component={EnhancedSearchPage} />
@@ -123,7 +127,8 @@ function Router() {
       <Route path="/categories/health-conditions" component={ExploreByCondition} />
       <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
-      
+      <Route path="/research-analytics" component={ResearchAnalyticsPage} />
+
       {/* Research Exploration */}
       <Route path="/explore-by-condition" component={ExploreByCondition} />
       <Route path="/condition/:name" component={ConditionCategoryPage} />
@@ -131,18 +136,18 @@ function Router() {
       <Route path="/body-system/:name" component={BodySystemCategoryPage} />
       <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />
       <Route path="/life-stage/:name" component={LifeStageCategoryPage} />
-      
+
       {/* Content & Resources */}
       <Route path="/blog/:id/:slug?" component={BlogPage} />
       <Route path="/recommendations" component={RecommendationsPage} />
       <Route path="/chat" component={ChatPage} />
-      
+
       {/* Admin Dashboard - Updated */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/dashboard" component={DashboardPage} />
       <Route path="/admin/legacy" component={AdminPage} />
       <Route path="/admin/import" component={ImportPage} />
-      
+
       {/* Admin Management Pages */}
       <Route path="/admin/studies" component={StudiesManagementPage} />
       <Route path="/admin/studies/add" component={AddStudyPage} />
@@ -151,13 +156,13 @@ function Router() {
       <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
       <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
-      
+
       {/* Admin Import & Data Pages */}
       <Route path="/admin/research-import" component={ResearchImportPage} />
       <Route path="/admin/data-import" component={DataImportPage} />
       <Route path="/admin/research-database" component={ResearchDatabasePage} />
       <Route path="/admin/journal-date-updater" component={JournalDateUpdater} />
-      
+
       {/* Admin Enhancement Pages */}
       <Route path="/admin/content-enrichment" component={ContentEnrichmentPage} />
       <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
@@ -165,33 +170,33 @@ function Router() {
       <Route path="/admin/image-generation" component={ImageGenerationPage} />
       <Route path="/admin/enhancement" component={EnhancementPage} />
       <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
-      
+
       {/* Admin Monitoring Pages */}
       <Route path="/admin/monitoring" component={AdminMonitoringPage} />
       <Route path="/admin/article-search" component={ArticleSearchPage} />
       <Route path="/admin/europe-pmc" component={EuropePmcPage} />
       <Route path="/admin/semantic-scholar" component={SemanticScholarPage} />
       <Route path="/admin/crossref" component={CrossRefPage} />
-      
+
       {/* Tag-based Navigation */}
       <Route path="/studies/tags" component={TaggedStudiesPage} />
       <Route path="/studies/tags/:category" component={TaggedStudiesPage} />
       <Route path="/browse-by-tags" component={TaggedStudiesPage} />
-      
+
       {/* Legacy route redirects */}
       <Route path="/categories" component={() => { window.location.replace('/explore-by-condition'); return null; }} />
       <Route path="/category/:id" component={() => { window.location.replace('/explore-by-condition'); return null; }} />
       <Route path="/resources" component={() => { window.location.replace('/recommendations'); return null; }} />
       <Route path="/learn" component={() => { window.location.replace('/about'); return null; }} />
       <Route path="/improved-search" component={() => { window.location.replace('/search'); return null; }} />
-      
+
       {/* SEO-optimized study routes */}
       <Route path="/study/:slug" component={SEOStudyPage} />
       <Route path="/study/id/:id" component={SEOStudyPage} />
-      
+
       {/* Legacy studies route - redirect to study */}
       <Route path="/studies/:id/:slug?" component={EnhancedStudyPage} />
-      
+
       {/* 404 - Must be last */}
       <Route component={NotFound} />
     </Switch>
@@ -202,7 +207,7 @@ function App() {
   const [location] = useLocation();
   const isAdminRoute = location.startsWith('/admin');
   const isHomePage = location === '/';
-  
+
   // Initialize Google Analytics when app loads
   useEffect(() => {
     // Verify required environment variable is present
@@ -212,7 +217,7 @@ function App() {
       initGA();
     }
   }, []);
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { Search, Droplets, Heart, Brain, Shield, Zap, Users, Award, ChevronRight, Play } from 'lucide-react';
+import { Search, Droplets, Heart, Brain, Shield, Zap, Users, Award, ChevronRight, Play, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const benefits = [
     {
@@ -54,12 +55,14 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <Droplets className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">HydrogenHealth</span>
             </div>
+            
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <Link href="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
                 Blog
@@ -79,7 +82,71 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+              <div className="px-4 py-3 space-y-2">
+                <Link href="/blog">
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Blog
+                  </div>
+                </Link>
+                <Link href="/research">
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Research
+                  </div>
+                </Link>
+                <Link href="/benefits">
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Benefits
+                  </div>
+                </Link>
+                <Link href="/products">
+                  <div 
+                    className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Products
+                  </div>
+                </Link>
+                <Link href="/advanced-search">
+                  <div 
+                    className="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Advanced Search
+                  </div>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -162,24 +229,82 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {benefits.map((benefit, index) => (
-              <Card key={index} className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
-                    {benefit.icon}
-                  </div>
-                  <CardTitle className="text-xl mb-2">{benefit.title}</CardTitle>
-                  <Badge variant="secondary" className="mx-auto">
-                    {benefit.studyCount}
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center text-gray-600 leading-relaxed">
-                    {benefit.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
+            {benefits.map((benefit, index) => {
+              const searchQueries = {
+                "Heart Health": "cardiovascular heart cardiac hypertension blood pressure",
+                "Brain Function": "neurological cognitive brain neuroprotective memory",
+                "Antioxidant Power": "antioxidant oxidative stress free radicals ROS",
+                "Energy & Recovery": "athletic performance exercise recovery fatigue energy"
+              };
+
+              const detailedBenefits = {
+                "Heart Health": [
+                  'May reduce blood pressure in hypertensive individuals',
+                  'Potential improvement in arterial flexibility',
+                  'Reduction in markers of cardiovascular inflammation',
+                  'Support for healthy cholesterol levels'
+                ],
+                "Brain Function": [
+                  'May improve cognitive function in elderly adults',
+                  'Potential neuroprotective effects against oxidative damage',
+                  'Support for mental clarity and focus',
+                  'Possible benefits for neurodegenerative conditions'
+                ],
+                "Antioxidant Power": [
+                  'Selective neutralization of hydroxyl radicals',
+                  'Reduction in oxidative stress markers',
+                  'Support for cellular protection',
+                  'May help reduce inflammation'
+                ],
+                "Energy & Recovery": [
+                  'Reduced exercise-induced fatigue',
+                  'Faster recovery between training sessions',
+                  'Decreased muscle damage markers',
+                  'Improved endurance capacity'
+                ]
+              };
+              
+              return (
+                <Link key={index} href={`/search?q=${encodeURIComponent(searchQueries[benefit.title])}`} className="block h-full">
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full cursor-pointer hover:scale-105">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
+                        {benefit.icon}
+                      </div>
+                      <CardTitle className="text-xl mb-2 group-hover:text-blue-600 transition-colors">{benefit.title}</CardTitle>
+                      <Badge variant="secondary" className="mx-auto group-hover:bg-blue-100 group-hover:text-blue-700">
+                        {benefit.studyCount}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
+                        {benefit.description}
+                      </CardDescription>
+                      
+                      {/* Detailed Benefits List */}
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Potential Benefits</h4>
+                        <ul className="space-y-2">
+                          {detailedBenefits[benefit.title].map((benefitItem, benefitIndex) => (
+                            <li key={benefitIndex} className="flex items-start gap-2 text-sm text-gray-600">
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                              <span>{benefitItem}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Click to explore indicator */}
+                      <div className="text-center pt-2">
+                        <Badge variant="outline" className="group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          Click to explore studies
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
 
           <div className="text-center">

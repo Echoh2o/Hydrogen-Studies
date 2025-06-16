@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Search, MessageCircle } from "lucide-react";
 
 const navigationLinks = [
   { href: "/", label: "Home" },
-  { href: "/search", label: "Studies" },
+  { href: "/studies", label: "Studies" },
   {
     href: "/explore-by-condition",
     label: "Explore",
@@ -52,6 +52,12 @@ export default function Header() {
     };
   }, [openDropdown]);
 
+  // Close mobile menu when clicking on a link
+  const handleLinkClick = () => {
+    setMobileMenuOpen(false);
+    setOpenDropdown(null);
+  };
+
   return (
     <header className="bg-white shadow-md sticky top-0 z-40">
       <div className="container mx-auto px-4">
@@ -81,7 +87,7 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex items-center space-x-8">
             {navigationLinks.map((link) => (
               <div 
                 key={link.id || link.href} 
@@ -126,6 +132,22 @@ export default function Header() {
             ))}
           </nav>
 
+          {/* Desktop Action Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link href="/search">
+              <Button variant="ghost" size="sm" className="text-neutral-700 hover:text-primary">
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
+            </Link>
+            <Link href="/chat">
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Ask AI
+              </Button>
+            </Link>
+          </div>
+
           {/* Mobile Navigation Button */}
           <Button
             variant="ghost"
@@ -144,30 +166,27 @@ export default function Header() {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white px-4 py-2 pb-4 border-t border-neutral-200">
-          <nav className="flex flex-col space-y-3">
+        <div className="md:hidden bg-white shadow-lg border-t border-neutral-200 absolute top-full left-0 right-0 z-50">
+          <nav className="flex flex-col px-4 py-4 space-y-4">
             {navigationLinks.map((link) => (
               <div key={link.id || link.href}>
                 {link.dropdown ? (
-                  <div className="py-2">
+                  <div className="py-1">
                     <button
                       onClick={() => toggleDropdown(link.label)}
-                      className="flex items-center justify-between w-full text-neutral-700 hover:text-primary font-medium"
+                      className="flex items-center justify-between w-full text-neutral-700 hover:text-primary font-medium py-2 text-left"
                     >
                       {link.label}
                       <ChevronDown className={`h-4 w-4 transition-transform ${openDropdown === link.label ? 'rotate-180' : ''}`} />
                     </button>
                     {openDropdown === link.label && (
-                      <div className="pl-4 mt-2 space-y-2.5 border-l-2 border-blue-100">
+                      <div className="pl-4 mt-2 space-y-2 border-l-2 border-blue-100">
                         {link.dropdown.map((item) => (
                           <Link
                             key={item.href}
                             href={item.href}
-                            className="block py-1.5 text-neutral-600 hover:text-primary transition-colors duration-150"
-                            onClick={() => {
-                              setOpenDropdown(null);
-                              setMobileMenuOpen(false);
-                            }}
+                            className="block py-2 text-neutral-600 hover:text-primary transition-colors duration-150"
+                            onClick={handleLinkClick}
                           >
                             {item.label}
                           </Link>
@@ -178,14 +197,30 @@ export default function Header() {
                 ) : (
                   <Link
                     href={link.href}
-                    className="text-neutral-700 hover:text-primary py-2 px-1 font-medium block"
-                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-neutral-700 hover:text-primary py-2 font-medium block"
+                    onClick={handleLinkClick}
                   >
                     {link.label}
                   </Link>
                 )}
               </div>
             ))}
+
+            {/* Mobile Action Buttons */}
+            <div className="pt-4 border-t border-neutral-200 space-y-3">
+              <Link href="/search" onClick={handleLinkClick}>
+                <Button variant="outline" className="w-full justify-start">
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Studies
+                </Button>
+              </Link>
+              <Link href="/chat" onClick={handleLinkClick}>
+                <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  AI Assistant
+                </Button>
+              </Link>
+            </div>
           </nav>
         </div>
       )}
