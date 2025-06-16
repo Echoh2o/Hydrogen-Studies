@@ -173,6 +173,47 @@ app.get('/api/filters/journals', async (req, res) => {
   }
 });
 
+// Database overview endpoint
+app.get('/api/overview', async (req, res) => {
+  try {
+    const [totalStudies, categoryCounts, countryCounts, yearRange] = await Promise.all([
+      sql`SELECT COUNT(*) as count FROM studies`,
+      sql`
+        SELECT category, COUNT(*) as count
+        FROM studies
+        WHERE category IS NOT NULL AND category != ''
+        GROUP BY category
+        ORDER BY count DESC
+        LIMIT 10
+      `,
+      sql`
+        SELECT country, COUNT(*) as count
+        FROM studies
+        WHERE country IS NOT NULL AND country != ''
+        GROUP BY country
+        ORDER BY count DESC
+        LIMIT 10
+      `,
+      sql`
+        SELECT MIN(publish_year) as min_year, MAX(publish_year) as max_year
+        FROM studies
+        WHERE publish_year IS NOT NULL
+      `
+    ]);
+
+    res.json({
+      totalStudies: totalStudies[0]?.count || 0,
+      categoryCounts,
+      countryCounts,
+      yearRange: yearRange[0],
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Overview API error:', error);
+    res.status(500).json({ error: 'Failed to load overview' });
+  }
+});
+
 // Advanced search with multiple filters
 app.get('/api/advanced-search', async (req, res) => {
   try {
