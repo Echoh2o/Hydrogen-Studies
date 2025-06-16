@@ -275,34 +275,34 @@ export default function HomePage() {
                       <Badge variant="secondary" className="mx-auto group-hover:bg-blue-100 group-hover:text-blue-700">
                         {benefit.studyCount}
                       </Badge>
-                    </CardHeader></Link>
-                  <CardContent>
-                    <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
-                      {benefit.description}
-                    </CardDescription>
-                    
-                    {/* Detailed Benefits List */}
-                    <div className="mb-4">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Potential Benefits</h4>
-                      <ul className="space-y-2">
-                        {detailedBenefits[benefit.title].map((benefitItem, benefitIndex) => (
-                          <li key={benefitIndex} className="flex items-start gap-2 text-sm text-gray-600">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <span>{benefitItem}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
+                        {benefit.description}
+                      </CardDescription>
+                      
+                      {/* Detailed Benefits List */}
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">Potential Benefits</h4>
+                        <ul className="space-y-2">
+                          {detailedBenefits[benefit.title].map((benefitItem, benefitIndex) => (
+                            <li key={benefitIndex} className="flex items-start gap-2 text-sm text-gray-600">
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                              <span>{benefitItem}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
 
-                    {/* Click to explore indicator */}
-                    <div className="text-center pt-2">
-                      <Badge variant="outline" className="group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        Click to explore studies
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                      {/* Click to explore indicator */}
+                      <div className="text-center pt-2">
+                        <Badge variant="outline" className="group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          Click to explore studies
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               );
             })}
           </div>
