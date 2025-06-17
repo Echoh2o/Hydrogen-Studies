@@ -77,10 +77,10 @@ const sql = neon(process.env.DATABASE_URL!, {
 });
 
 // Working API endpoints
+app.use('/api/keywords/monitor', keywordMonitorScheduleRoutes); // Keyword monitor schedule routes (more specific first)
+app.use('/api/keywords', keywordMonitorRoutes); // Keyword monitor routes
 app.use('/api/studies', studiesRouter); // Mount the studies router
 app.use(researchUnifiedRoutes); // Research unified routes
-app.use('/api/keywords', keywordMonitorRoutes); // Keyword monitor routes
-app.use('/api/keywords/monitor', keywordMonitorScheduleRoutes); // Keyword monitor schedule routes
 
 app.get('/api/categories', async (req, res) => {
   try {
