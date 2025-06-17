@@ -65,10 +65,10 @@ export default function BlogsPage() {
     );
   }
   
-  const blogs = blogsQuery.data?.data || [];
+  const blogs = (blogsQuery.data as any)?.data || [];
   
   // Filter and sort blogs
-  const filteredBlogs = blogs.filter((blog) => {
+  const filteredBlogs = blogs.filter((blog: any) => {
     // Apply status filter (using isPublished instead of status)
     if (selectedStatus !== "all") {
       const isPublished = selectedStatus === "published";
