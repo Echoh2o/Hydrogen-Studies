@@ -16,13 +16,10 @@ import AdminLayout from "@/components/admin/AdminLayout";
 interface BatchProcessingStats {
   totalToProcess: number;
   processed: number;
-  success: number;
   failed: number;
-  skipped: number;
-  errors: Array<{studyId: number; error: string}>;
   inProgress: boolean;
-  startedAt?: string;
-  completedAt?: string;
+  startTime?: string;
+  estimatedCompletion?: string | null;
 }
 
 interface EnhancementResult {
@@ -360,7 +357,7 @@ export default function BatchEnrichmentPage() {
                       </div>
                       <div className="bg-green-50 p-4 rounded-lg">
                         <div className="text-sm text-green-600">Successful</div>
-                        <div className="text-2xl font-bold text-green-700">{batchStatus.status.success}</div>
+                        <div className="text-2xl font-bold text-green-700">{batchStatus.status.processed - batchStatus.status.failed}</div>
                       </div>
                       <div className="bg-red-50 p-4 rounded-lg">
                         <div className="text-sm text-red-600">Failed</div>
@@ -371,12 +368,12 @@ export default function BatchEnrichmentPage() {
                     <div className="space-y-2">
                       <div className="flex gap-x-4">
                         <div className="text-sm font-medium">Started:</div>
-                        <div className="text-sm">{formatDate(batchStatus.status.startedAt)}</div>
+                        <div className="text-sm">{formatDate(batchStatus.status.startTime)}</div>
                       </div>
-                      {batchStatus.status.completedAt && (
+                      {batchStatus.status.estimatedCompletion && (
                         <div className="flex gap-x-4">
-                          <div className="text-sm font-medium">Completed:</div>
-                          <div className="text-sm">{formatDate(batchStatus.status.completedAt)}</div>
+                          <div className="text-sm font-medium">Estimated Completion:</div>
+                          <div className="text-sm">{formatDate(batchStatus.status.estimatedCompletion)}</div>
                         </div>
                       )}
                       <div className="flex gap-x-4">
@@ -397,26 +394,13 @@ export default function BatchEnrichmentPage() {
                       </div>
                     </div>
                     
-                    {batchStatus.status.errors.length > 0 && (
+                    {batchStatus.status.failed > 0 && (
                       <div className="space-y-2">
-                        <h3 className="text-md font-medium">Errors ({batchStatus.status.errors.length})</h3>
+                        <h3 className="text-md font-medium">Processing Issues ({batchStatus.status.failed})</h3>
                         <div className="max-h-60 overflow-y-auto border rounded-md p-2">
-                          {batchStatus.status.errors.map((error, index) => (
-                            <div key={index} className="py-2 border-b last:border-0">
-                              <div className="flex justify-between">
-                                <span className="font-medium">Study #{error.studyId}</span>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => enrichSingleStudy(error.studyId)}
-                                  disabled={isEnrichingSingle}
-                                >
-                                  Retry
-                                </Button>
-                              </div>
-                              <div className="text-sm text-red-600">{error.error}</div>
-                            </div>
-                          ))}
+                          <div className="py-2 text-sm text-muted-foreground">
+                            {batchStatus.status.failed} studies failed to process. Check server logs for detailed error information.
+                          </div>
                         </div>
                       </div>
                     )}
