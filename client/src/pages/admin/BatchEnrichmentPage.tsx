@@ -55,10 +55,7 @@ export default function BatchEnrichmentPage() {
     refetch: refetchStatus 
   } = useQuery<{ success: boolean; status: BatchProcessingStats | null }>({
     queryKey: ['/api/enrichment/batch/status'],
-    refetchInterval: (data) => {
-      // Only poll if a batch process is in progress
-      return data?.status?.inProgress ? 5000 : false;
-    },
+    refetchInterval: 5000, // Poll every 5 seconds
   });
   
   // Mutation to start a batch process
