@@ -83,6 +83,9 @@ import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
 import EnhancementPage from "@/pages/admin/EnhancementPage";
 import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
 import EnhancedAdminDashboard from "@/pages/admin/EnhancedAdminDashboard";
+import AnalyticsPage from "@/pages/admin/AnalyticsPage";
+import SettingsPage from "@/pages/admin/SettingsPage";
+import UsersPage from "@/pages/admin/UsersPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -166,6 +169,11 @@ function Router() {
       <Route path="/admin/image-generation" component={ImageGenerationPage} />
       <Route path="/admin/enhancement" component={EnhancementPage} />
       <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
+      
+      {/* Additional Admin Pages */}
+      <Route path="/admin/analytics" component={AnalyticsPage} />
+      <Route path="/admin/settings" component={SettingsPage} />
+      <Route path="/admin/users" component={UsersPage} />
 
       {/* Admin Monitoring Pages */}
       <Route path="/admin/monitoring" component={AdminMonitoringPage} />
