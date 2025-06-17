@@ -12,14 +12,18 @@ export default function AnalyticsPage() {
     queryKey: ["/api/stats/dashboard"],
   });
 
-  const stats = analyticsQuery.data || {
+  const stats = analyticsQuery.data as {
+    totalBlogs: number;
+    publishedBlogs: number;
+    draftBlogs: number;
+  } || {
     totalBlogs: 0,
     publishedBlogs: 0,
     draftBlogs: 0
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Analytics Dashboard" description="Monitor your platform's performance and user engagement">
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
