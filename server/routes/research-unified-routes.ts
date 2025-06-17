@@ -8,10 +8,7 @@ import { enrichStudyFromPubMed as extractStudyFromPubMed } from '../pubmed-enric
 
 const router = Router();
 
-// Test endpoint to verify route registration
-router.get('/api/research/test', (req: Request, res: Response) => {
-  res.json({ success: true, message: 'Research unified routes working' });
-});
+
 
 /**
  * Unified search across multiple research databases
