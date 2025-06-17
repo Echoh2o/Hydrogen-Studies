@@ -158,15 +158,15 @@ export default function BatchEnrichmentPage() {
       
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Content Enrichment Dashboard</h1>
-          <Button 
-            variant="outline"
-            onClick={() => refetchStatus()}
-            disabled={isLoadingStatus}
-          >
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh Status
-          </Button>
-        </div>
+        <Button 
+          variant="outline"
+          onClick={() => refetchStatus()}
+          disabled={isLoadingStatus}
+        >
+          <RefreshCcw className="mr-2 h-4 w-4" />
+          Refresh Status
+        </Button>
+      </div>
         
         <p className="text-muted-foreground max-w-3xl">
           This dashboard allows you to enrich study content with external data from research databases, 
