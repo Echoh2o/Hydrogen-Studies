@@ -107,6 +107,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- June 17, 2025: Fixed research import API endpoints
+  - Resolved "Not Valid JSON" error in /admin/research-import page
+  - Properly registered research unified routes in main server
+  - PubMed, Europe PMC, and CrossRef searches now returning valid JSON responses
+  - Improved Europe PMC query logic for broader search results
+  - Research database searches functional across multiple external APIs
+
 - June 16, 2025: Major navigation restructuring and page consolidation
   - Eliminated /research page and integrated Studies navigation into homepage header
   - Consolidated /learn page content into /benefits page for unified Benefits & Education experience
