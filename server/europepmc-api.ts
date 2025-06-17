@@ -16,9 +16,8 @@ export async function searchEuropePMC(
   try {
     console.log(`Searching EuropePMC for: "${query}", page ${page}, size ${pageSize}`);
     
-    // For consistent results, we'll use a simple hydrogen-specific terms approach
-    // but make it much less restrictive than before
-    const enhancedQuery = `${query} AND hydrogen`;
+    // Use the query directly without modification to get broader results
+    const enhancedQuery = query;
     
     console.log(`Sending request to EuropePMC with query: ${enhancedQuery}`);
     
