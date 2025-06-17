@@ -8,6 +8,9 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { eq, count } from 'drizzle-orm';
+import { blogArticles } from '../shared/schema';
 import studiesRouter from "./routes/studies-router";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
@@ -78,6 +81,7 @@ validateEnvironment();
 const sql = neon(process.env.DATABASE_URL!, {
   arrayMode: false,
 });
+const db = drizzle(sql);
 
 // Working API endpoints
 app.use('/api/keywords/monitor', keywordMonitorScheduleRoutes); // Keyword monitor schedule routes (more specific first)
@@ -93,18 +97,18 @@ app.get('/api/stats/dashboard', async (req, res) => {
   try {
     // Get total blog count
     const [totalResult] = await db
-      .select({ count: sql`count(*)` })
+      .select({ count: count() })
       .from(blogArticles);
     
     // Get published blog count
     const [publishedResult] = await db
-      .select({ count: sql`count(*)` })
+      .select({ count: count() })
       .from(blogArticles)
       .where(eq(blogArticles.isPublished, true));
     
     // Get draft blog count
     const [draftResult] = await db
-      .select({ count: sql`count(*)` })
+      .select({ count: count() })
       .from(blogArticles)
       .where(eq(blogArticles.isPublished, false));
 
