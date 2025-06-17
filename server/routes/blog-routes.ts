@@ -56,27 +56,11 @@ router.get('/', async (req, res) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const offset = (page - 1) * limit;
-    const published = req.query.published as string;
-    const search = req.query.search as string;
 
-    let query = db.select().from(blogArticles);
-    
-    // Add published filter if provided
-    if (published === 'true') {
-      query = query.where(eq(blogArticles.isPublished, true));
-    } else if (published === 'false') {
-      query = query.where(eq(blogArticles.isPublished, false));
-    }
-    
-    // Add search filter if provided
-    if (search) {
-      query = query.where(
-        sql`${blogArticles.title} ILIKE ${`%${search}%`} OR ${blogArticles.summary} ILIKE ${`%${search}%`}`
-      );
-    }
-
-    // Add pagination and ordering
-    const blogs = await query
+    // Simple query to get all blogs
+    const blogs = await db
+      .select()
+      .from(blogArticles)
       .orderBy(desc(blogArticles.createdAt))
       .limit(limit)
       .offset(offset);
@@ -136,7 +120,7 @@ router.get('/categories', async (req, res) => {
 /**
  * Get a single blog article by ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id(\\d+)', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     
