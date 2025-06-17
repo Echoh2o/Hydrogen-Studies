@@ -147,6 +147,7 @@ function Router() {
       <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
       <Route path="/admin/blogs" component={BlogsManagementPage} />
       <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
+      <Route path="/admin/blog-generator" component={BlogGeneratePage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
       <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
 
