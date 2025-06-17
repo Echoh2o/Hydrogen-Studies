@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { searchPubMedWithPagination } from '../routes/research-routes';
+import { searchPubMedWithPagination } from './research-routes';
 import { searchEuropePMC, extractStudyFromEuropePMC } from '../europepmc-api';
 import { searchSemanticScholar, extractStudyFromSemanticScholar } from '../semantic-scholar-api';
 import { searchCrossRef, extractStudyFromCrossRef } from '../crossref-api';
