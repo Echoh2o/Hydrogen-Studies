@@ -8,6 +8,11 @@ import { enrichStudyFromPubMed as extractStudyFromPubMed } from '../pubmed-enric
 
 const router = Router();
 
+// Test endpoint to verify route registration
+router.get('/api/research/test', (req: Request, res: Response) => {
+  res.json({ success: true, message: 'Research unified routes working' });
+});
+
 /**
  * Unified search across multiple research databases
  * 
@@ -39,7 +44,12 @@ router.get('/api/research/search', async (req: Request, res: Response) => {
     let existingStudies: any[] = [];
     try {
       console.log('Getting matching studies from database...');
-      existingStudies = await storage.getStudiesByTitlePartial(query, 50);
+      try {
+        existingStudies = await storage.getStudiesByTitlePartial(query, 50);
+      } catch (storageError) {
+        console.warn('Storage method not available, skipping database check:', storageError);
+        existingStudies = [];
+      }
       console.log(`Found ${existingStudies.length} potentially matching studies in our database`);
       
       // Create lookup maps for faster matching
