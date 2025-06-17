@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
 import studiesRouter from "./routes/studies-router";
+import researchUnifiedRoutes from "./routes/research-unified-routes";
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
 import { handleError } from './utils/error-handler';
 
@@ -75,6 +76,7 @@ const sql = neon(process.env.DATABASE_URL!, {
 
 // Working API endpoints
 app.use('/api/studies', studiesRouter); // Mount the studies router
+app.use(researchUnifiedRoutes); // Research unified routes
 
 app.get('/api/categories', async (req, res) => {
   try {
