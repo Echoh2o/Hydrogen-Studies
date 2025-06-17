@@ -65,13 +65,16 @@ export default function BlogsPage() {
     );
   }
   
-  const blogs = blogsQuery.data || [];
+  const blogs = blogsQuery.data?.data || [];
   
   // Filter and sort blogs
   const filteredBlogs = blogs.filter((blog) => {
-    // Apply status filter
-    if (selectedStatus !== "all" && blog.status !== selectedStatus) {
-      return false;
+    // Apply status filter (using isPublished instead of status)
+    if (selectedStatus !== "all") {
+      const isPublished = selectedStatus === "published";
+      if (blog.isPublished !== isPublished) {
+        return false;
+      }
     }
     
     // Apply search filter (case-insensitive)
