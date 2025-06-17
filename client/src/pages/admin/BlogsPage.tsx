@@ -109,7 +109,7 @@ export default function BlogsPage() {
   });
   
   // Toggle sort
-  const toggleSort = (field) => {
+  const toggleSort = (field: string) => {
     if (sortBy === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
