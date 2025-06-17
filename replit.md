@@ -107,6 +107,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- June 17, 2025: Fixed admin pages API endpoints and TypeScript errors
+  - Resolved keyword monitor schedule API by adding `/schedule` route alias
+  - Fixed batch enrichment API endpoints by registering enrichment routes
+  - Created batch-specific endpoints (/api/enrichment/batch/status, /api/enrichment/batch/start, /api/enrichment/batch/stop)
+  - Corrected BatchEnrichmentPage TypeScript interface to match actual API response structure
+  - Fixed JSX syntax errors and data access patterns in admin components
+  - All admin pages now return proper JSON responses instead of HTML
+
 - June 17, 2025: Fixed research import API endpoints
   - Resolved "Not Valid JSON" error in /admin/research-import page
   - Properly registered research unified routes in main server
