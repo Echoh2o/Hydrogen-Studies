@@ -85,9 +85,47 @@ app.use('/api/keywords', keywordMonitorRoutes); // Keyword monitor routes
 app.use('/api/content-enrichment', contentEnrichmentRoutes); // Content enrichment routes
 app.use('/api/enrichment', enrichmentRoutes); // Enrichment routes
 app.use('/api/blogs', blogRoutes); // Blog routes
-app.use('/api/stats', blogRoutes); // Stats routes (included in blog routes)
 app.use('/api/studies', studiesRouter); // Mount the studies router
 app.use(researchUnifiedRoutes); // Research unified routes
+
+// Dashboard stats endpoint
+app.get('/api/stats/dashboard', async (req, res) => {
+  try {
+    // Get total blog count
+    const [totalResult] = await db
+      .select({ count: sql`count(*)` })
+      .from(blogArticles);
+    
+    // Get published blog count
+    const [publishedResult] = await db
+      .select({ count: sql`count(*)` })
+      .from(blogArticles)
+      .where(eq(blogArticles.isPublished, true));
+    
+    // Get draft blog count
+    const [draftResult] = await db
+      .select({ count: sql`count(*)` })
+      .from(blogArticles)
+      .where(eq(blogArticles.isPublished, false));
+
+    const stats = {
+      totalBlogs: Number(totalResult.count),
+      publishedBlogs: Number(publishedResult.count),
+      draftBlogs: Number(draftResult.count)
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching blog stats:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch blog statistics',
+      totalBlogs: 0,
+      publishedBlogs: 0,
+      draftBlogs: 0
+    });
+  }
+});
 
 app.get('/api/categories', async (req, res) => {
   try {
