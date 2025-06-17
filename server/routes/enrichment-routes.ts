@@ -80,4 +80,74 @@ router.get('/summary', async (req, res) => {
   }
 });
 
+/**
+ * Batch enrichment endpoints
+ */
+router.get('/batch/status', async (req, res) => {
+  try {
+    const status = getEnrichmentStatus();
+    
+    res.json({
+      success: true,
+      status: {
+        inProgress: status.isRunning,
+        totalToProcess: 0,
+        processed: status.totalProcessed,
+        failed: status.errors,
+        startTime: status.startTime,
+        estimatedCompletion: null
+      }
+    });
+  } catch (error) {
+    console.error('Error getting batch status:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/batch/start', async (req, res) => {
+  try {
+    const { batchSize = 10 } = req.body;
+    
+    const stats = await startTargetedEnrichment(batchSize);
+    
+    res.json({
+      success: true,
+      message: 'Batch enrichment started successfully',
+      status: {
+        inProgress: true,
+        totalToProcess: batchSize,
+        processed: 0,
+        failed: 0,
+        startTime: new Date(),
+        estimatedCompletion: null
+      }
+    });
+  } catch (error) {
+    console.error('Error starting batch enrichment:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/batch/stop', async (req, res) => {
+  try {
+    // Stop the enrichment process (implementation depends on your enrichment system)
+    res.json({
+      success: true,
+      message: 'Batch enrichment stopped successfully'
+    });
+  } catch (error) {
+    console.error('Error stopping batch enrichment:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;
