@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import { AlertCircle, CheckCircle, RefreshCcw, Database } from "lucide-react";
+import AdminLayout from "@/components/admin/AdminLayout";
 
 interface BatchProcessingStats {
   totalToProcess: number;
@@ -147,14 +148,16 @@ export default function BatchEnrichmentPage() {
   };
   
   return (
-    <div className="container mx-auto py-10">
+    <AdminLayout 
+      title="Batch Content Enrichment" 
+      description="Enrich study content with external data from research databases"
+    >
       <Helmet>
         <title>Batch Content Enrichment | Admin Dashboard</title>
       </Helmet>
       
-      <div className="flex flex-col gap-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">Content Enrichment Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Content Enrichment Dashboard</h1>
           <Button 
             variant="outline"
             onClick={() => refetchStatus()}
@@ -438,7 +441,6 @@ export default function BatchEnrichmentPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+    </AdminLayout>
   );
 }
