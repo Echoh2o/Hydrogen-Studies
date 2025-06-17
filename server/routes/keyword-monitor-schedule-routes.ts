@@ -79,6 +79,35 @@ router.get("/", async (req, res) => {
 });
 
 /**
+ * Get current schedule (alias route for /schedule)
+ */
+router.get("/schedule", async (req, res) => {
+  try {
+    const [schedule] = await db.select().from(monitorSchedule);
+    
+    if (!schedule) {
+      // Create default schedule if none exists
+      const [newSchedule] = await db.insert(monitorSchedule).values({
+        enabled: false,
+        frequency: "daily",
+        time: "00:00",
+        days: ["monday", "wednesday", "friday"],
+        sources: ["pubmed", "crossref", "europepmc"],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      return res.json(newSchedule);
+    }
+    
+    return res.json(schedule);
+  } catch (error) {
+    console.error("Error fetching schedule:", error);
+    return res.status(500).json({ message: "Failed to fetch schedule" });
+  }
+});
+
+/**
  * Update schedule
  */
 router.post("/", async (req, res) => {
