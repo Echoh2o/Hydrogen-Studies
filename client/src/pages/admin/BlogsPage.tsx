@@ -65,7 +65,7 @@ export default function BlogsPage() {
     );
   }
   
-  const blogs = (blogsQuery.data as any)?.data || [];
+  const blogs = Array.isArray((blogsQuery.data as any)?.data) ? (blogsQuery.data as any).data : [];
   
   // Filter and sort blogs
   const filteredBlogs = blogs.filter((blog: any) => {
@@ -255,7 +255,7 @@ export default function BlogsPage() {
                       <Badge variant="secondary">{blog.articleType}</Badge>
                     </TableCell>
                     <TableCell>
-                      {blog.status === "published" ? (
+                      {blog.isPublished ? (
                         <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
                           Published
                         </Badge>
