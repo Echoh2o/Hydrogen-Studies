@@ -68,7 +68,6 @@ import StudiesManagementPage from "@/pages/admin/StudiesManagementPage";
 import AddStudyPage from "@/pages/admin/AddStudyPage";
 import StudyEditPage from "@/pages/admin/StudyEditPage";
 import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
-import BlogManagementPage from "@/pages/admin/BlogManagementPage";
 import BlogGeneratePage from "@/pages/admin/BlogGeneratePage";
 import BlogAddPage from "@/pages/admin/BlogAddPage";
 import BlogEditPage from "@/pages/admin/BlogEditPage";
@@ -152,7 +151,7 @@ function Router() {
       <Route path="/admin/blogs" component={BlogsManagementPage} />
       <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
       <Route path="/admin/blog-generator" component={BlogGeneratePage} />
-      <Route path="/admin/blog-categories" component={BlogManagementPage} />
+      <Route path="/admin/blog-categories" component={BlogsManagementPage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
       <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
 
@@ -169,7 +168,7 @@ function Router() {
       <Route path="/admin/image-generation" component={ImageGenerationPage} />
       <Route path="/admin/enhancement" component={EnhancementPage} />
       <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
-      
+
       {/* Additional Admin Pages */}
       <Route path="/admin/analytics" component={AnalyticsPage} />
       <Route path="/admin/settings" component={SettingsPage} />
@@ -226,10 +225,10 @@ function App() {
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('Unhandled promise rejection:', event.reason);
-      
+
       // Prevent the default browser handling
       event.preventDefault();
-      
+
       // Log the error details for debugging
       const errorDetails = {
         message: event.reason?.message || 'Unknown promise rejection',
@@ -237,9 +236,9 @@ function App() {
         timestamp: new Date().toISOString(),
         url: window.location.href
       };
-      
+
       console.error('Promise rejection details:', errorDetails);
-      
+
       // Show user-friendly error message if it's a network or API error
       if (event.reason?.message?.includes('fetch') || 
           event.reason?.message?.includes('network') ||
@@ -250,7 +249,7 @@ function App() {
 
     const handleError = (event: ErrorEvent) => {
       console.error('Global error caught:', event.error);
-      
+
       const errorDetails = {
         message: event.message,
         filename: event.filename,
@@ -259,7 +258,7 @@ function App() {
         error: event.error,
         timestamp: new Date().toISOString()
       };
-      
+
       console.error('Error details:', errorDetails);
     };
 
