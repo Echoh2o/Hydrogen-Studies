@@ -100,13 +100,13 @@ app.get('/api/stats/dashboard', async (req, res) => {
     const [totalResult] = await db
       .select({ count: count() })
       .from(blogArticles);
-    
+
     // Get published blog count
     const [publishedResult] = await db
       .select({ count: count() })
       .from(blogArticles)
       .where(eq(blogArticles.isPublished, true));
-    
+
     // Get draft blog count
     const [draftResult] = await db
       .select({ count: count() })
@@ -423,7 +423,7 @@ initializeHealthMonitoring();
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
-  
+
   // Don't exit the process in production, just log the error
   if (process.env.NODE_ENV !== 'production') {
     process.exit(1);
@@ -433,7 +433,7 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   handleError(error, 'uncaughtException');
-  
+
   // Graceful shutdown in production
   if (process.env.NODE_ENV === 'production') {
     setTimeout(() => process.exit(1), 1000);
@@ -445,32 +445,70 @@ process.on('uncaughtException', (error) => {
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    const healthStatus = await performHealthCheck();
-    res.status(healthStatus.status === 'healthy' ? 200 : 503).json(healthStatus);
+    // Test database connection
+    await sql`SELECT 1`;
+
+    const health = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      database: 'connected'
+    };
+
+    res.json(health);
   } catch (error) {
-    handleError(error, 'health check');
-    res.status(503).json({ status: 'unhealthy', error: 'Health check failed' });
+    console.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Database connection failed'
+    });
   }
 });
 
-// Quality audit endpoint
-app.get('/api/admin/quality/audit', async (req, res) => {
+// Quality monitoring endpoints
+app.get('/api/admin/quality/monitor', async (req, res) => {
   try {
-    console.log('🔍 Running comprehensive quality audit...');
-    const auditResults = await qualityAudit.runFullAudit();
-    res.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      ...auditResults
-    });
+    const { qualityMonitor } = await import('./quality-assurance-monitor.js');
+    const report = qualityMonitor.getQualityReport();
+    res.json(report);
   } catch (error) {
-    console.error('Quality audit error:', error);
-    handleError(error, 'quality audit');
-    res.status(500).json({ 
-      success: false, 
-      error: 'Quality audit failed',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('Quality monitoring failed:', error);
+    res.status(500).json({ error: 'Quality monitoring unavailable' });
+  }
+});
+
+app.get('/api/admin/quality/integrity', async (req, res) => {
+  try {
+    const { dataIntegrityValidator } = await import('./data-integrity-validator.js');
+    const validation = await dataIntegrityValidator.validateDataIntegrity();
+    res.json(validation);
+  } catch (error) {
+    console.error('Data integrity validation failed:', error);
+    res.status(500).json({ error: 'Data integrity validation failed' });
+  }
+});
+
+app.post('/api/admin/quality/fix-issues', async (req, res) => {
+  try {
+    const { dataIntegrityValidator } = await import('./data-integrity-validator.js');
+    const result = await dataIntegrityValidator.fixCommonIssues();
+    res.json(result);
+  } catch (error) {
+    console.error('Issue fixing failed:', error);
+    res.status(500).json({ error: 'Failed to fix issues' });
+  }
+});
+
+app.get('/api/admin/quality/tests', async (req, res) => {
+  try {
+    const { qualityTests } = await import('./automated-quality-tests.js');
+    const results = await qualityTests.runAllTests();
+    res.json(results);
+  } catch (error) {
+    console.error('Quality tests failed:', error);
+    res.status(500).json({ error: 'Quality tests failed' });
   }
 });
 
@@ -481,18 +519,30 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads
 // Setup server and Vite
 async function setupServer() {
   const PORT = parseInt(process.env.PORT || '5000');
-  
+
   if (process.env.NODE_ENV === 'development') {
     // Development mode - use Vite dev server
     const { setupVite } = await import('./vite.js');
     const { createServer } = await import('http');
     const server = createServer(app);
     await setupVite(app, server);
-    
+
     server.listen(PORT, '0.0.0.0', () => {
+      console.log('Health monitoring initialized');
+
+      // Initialize quality monitoring
+      try {
+        const { qualityMonitor } = await import('./quality-assurance-monitor.js');
+        qualityMonitor.runContinuousMonitoring();
+        console.log('Quality monitoring initialized');
+      } catch (error) {
+        console.warn('Quality monitoring failed to initialize:', error);
+      }
+
       console.log(`Server running on port ${PORT}`);
       console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
+      console.log(`Quality dashboard: http://localhost:${PORT}/api/admin/quality/monitor`);
     });
   } else {
     // Production mode - serve static files
@@ -500,11 +550,23 @@ async function setupServer() {
     app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
     });
-    
+
     app.listen(PORT, '0.0.0.0', () => {
+      console.log('Health monitoring initialized');
+
+      // Initialize quality monitoring
+      try {
+        const { qualityMonitor } = await import('./quality-assurance-monitor.js');
+        qualityMonitor.runContinuousMonitoring();
+        console.log('Quality monitoring initialized');
+      } catch (error) {
+        console.warn('Quality monitoring failed to initialize:', error);
+      }
+
       console.log(`Server running on port ${PORT}`);
       console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
+      console.log(`Quality dashboard: http://localhost:${PORT}/api/admin/quality/monitor`);
     });
   }
 }
