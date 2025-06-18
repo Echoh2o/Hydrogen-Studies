@@ -248,3 +248,94 @@ export default function SettingsPage() {
     </AdminLayout>
   );
 }
+import React from "react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+
+export default function SettingsPage() {
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Manage application settings and preferences</p>
+        </div>
+        
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>General Settings</CardTitle>
+              <CardDescription>Configure general application settings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="site-title">Site Title</Label>
+                <Input type="text" id="site-title" placeholder="HydrogenHealth" />
+              </div>
+              
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="site-description">Site Description</Label>
+                <Input type="text" id="site-description" placeholder="Research database for hydrogen therapy" />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch id="maintenance-mode" />
+                <Label htmlFor="maintenance-mode">Maintenance Mode</Label>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>API Settings</CardTitle>
+              <CardDescription>Configure external API integrations</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="openai-key">OpenAI API Key</Label>
+                <Input type="password" id="openai-key" placeholder="sk-..." />
+              </div>
+              
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="sendgrid-key">SendGrid API Key</Label>
+                <Input type="password" id="sendgrid-key" placeholder="SG..." />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Content Settings</CardTitle>
+              <CardDescription>Manage content generation and display settings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Switch id="auto-generation" />
+                <Label htmlFor="auto-generation">Auto-generate blog content</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch id="image-generation" />
+                <Label htmlFor="image-generation">Auto-generate study images</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch id="seo-optimization" />
+                <Label htmlFor="seo-optimization">SEO optimization</Label>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="flex justify-end">
+            <Button>Save Settings</Button>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
