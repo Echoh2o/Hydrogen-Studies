@@ -39,12 +39,12 @@ export default function BlogsPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [sortDirection, setSortDirection] = useState("desc");
-  
+
   // Fetch blogs
   const blogsQuery = useQuery({
     queryKey: ["/api/blogs"],
   });
-  
+
   // Loading state
   if (blogsQuery.isLoading) {
     return (
@@ -53,7 +53,7 @@ export default function BlogsPage() {
       </div>
     );
   }
-  
+
   // Error state
   if (blogsQuery.isError) {
     return (
@@ -64,11 +64,11 @@ export default function BlogsPage() {
       </Alert>
     );
   }
-  
+
   // Safely extract blogs data
   const blogsData = blogsQuery.data as any;
   const blogs = Array.isArray(blogsData?.data) ? blogsData.data : Array.isArray(blogsData) ? blogsData : [];
-  
+
   // Filter and sort blogs
   const filteredBlogs = blogs.filter((blog: any) => {
     // Apply status filter (using isPublished instead of status)
@@ -78,7 +78,7 @@ export default function BlogsPage() {
         return false;
       }
     }
-    
+
     // Apply search filter (case-insensitive)
     if (searchQuery && searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
@@ -88,14 +88,14 @@ export default function BlogsPage() {
         blog.articleType?.toLowerCase().includes(query)
       );
     }
-    
+
     return true;
   });
-  
+
   // Sort filtered blogs
   const sortedBlogs = [...filteredBlogs].sort((a, b) => {
     let comparison = 0;
-    
+
     if (sortBy === "date") {
       const dateA = new Date(a.publishDate || a.createdAt).getTime();
       const dateB = new Date(b.publishDate || b.createdAt).getTime();
@@ -105,11 +105,11 @@ export default function BlogsPage() {
     } else if (sortBy === "type") {
       comparison = a.articleType.localeCompare(b.articleType);
     }
-    
+
     // Apply sort direction
     return sortDirection === "desc" ? -comparison : comparison;
   });
-  
+
   // Toggle sort
   const toggleSort = (field: string) => {
     if (sortBy === field) {
@@ -119,7 +119,7 @@ export default function BlogsPage() {
       setSortDirection("desc");
     }
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -149,7 +149,7 @@ export default function BlogsPage() {
               className="pl-9"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -189,7 +189,7 @@ export default function BlogsPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -211,7 +211,7 @@ export default function BlogsPage() {
             </DropdownMenu>
           </div>
         </div>
-        
+
         {/* Blogs table */}
         {sortedBlogs.length === 0 ? (
           <div className="text-center py-8">

@@ -67,7 +67,11 @@ import DashboardPage from "@/pages/admin/DashboardPage";
 import StudiesManagementPage from "@/pages/admin/StudiesManagementPage";
 import AddStudyPage from "@/pages/admin/AddStudyPage";
 import StudyEditPage from "@/pages/admin/StudyEditPage";
-import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
+import BlogsPage from "@/pages/admin/BlogsPage";
+import BlogManagementPage from "@/pages/admin/BlogManagementPage";
+import AnalyticsPage from "@/pages/admin/AnalyticsPage";
+import SettingsPage from "@/pages/admin/SettingsPage";
+import UsersPage from "@/pages/admin/UsersPage";
 import BlogGeneratePage from "@/pages/admin/BlogGeneratePage";
 import BlogAddPage from "@/pages/admin/BlogAddPage";
 import BlogEditPage from "@/pages/admin/BlogEditPage";
@@ -82,9 +86,6 @@ import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
 import EnhancementPage from "@/pages/admin/EnhancementPage";
 import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
 import EnhancedAdminDashboard from "@/pages/admin/EnhancedAdminDashboard";
-import AnalyticsPage from "@/pages/admin/AnalyticsPage";
-import SettingsPage from "@/pages/admin/SettingsPage";
-import UsersPage from "@/pages/admin/UsersPage";
 
 function ScrollToTop() {
   const [location] = useLocation();
