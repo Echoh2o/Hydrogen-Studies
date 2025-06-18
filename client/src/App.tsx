@@ -155,119 +155,35 @@ function Router() {
       <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
 
       {/* Admin Import & Data Pages */}
-      <Route path="/admin/research-import" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <ResearchImportPage />
-        </Suspense>
-      } />
-      <Route path="/admin/data-import" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <DataImportPage />
-        </Suspense>
-      } />
-      <Route path="/admin/research-database" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <ResearchDatabasePage />
-        </Suspense>
-      } />
-      <Route path="/admin/journal-date-updater" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <JournalDateUpdater />
-        </Suspense>
-      } />
+      <Route path="/admin/research-import" component={ResearchImportPage} />
+      <Route path="/admin/data-import" component={DataImportPage} />
+      <Route path="/admin/research-database" component={ResearchDatabasePage} />
+      <Route path="/admin/journal-date-updater" component={JournalDateUpdater} />
 
       {/* Admin Enhancement Pages */}
-      <Route path="/admin/content-enrichment" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <ContentEnrichmentPage />
-        </Suspense>
-      } />
-      <Route path="/admin/batch-enrichment" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <BatchEnrichmentPage />
-        </Suspense>
-      } />
-      <Route path="/admin/batch-categorization" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <BatchCategorizationPage />
-        </Suspense>
-      } />
-      <Route path="/admin/image-generation" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <ImageGenerationPage />
-        </Suspense>
-      } />
-      <Route path="/admin/enhancement" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <EnhancementPage />
-        </Suspense>
-      } />
-      <Route path="/admin/keyword-monitor" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <KeywordMonitorPage />
-        </Suspense>
-      } />
+      <Route path="/admin/content-enrichment" component={ContentEnrichmentPage} />
+      <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
+      <Route path="/admin/batch-categorization" component={BatchCategorizationPage} />
+      <Route path="/admin/image-generation" component={ImageGenerationPage} />
+      <Route path="/admin/enhancement" component={EnhancementPage} />
+      <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
 
       {/* Additional Admin Pages */}
-      <Route path="/admin/analytics" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <AnalyticsPage />
-        </Suspense>
-      } />
-      <Route path="/admin/settings" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <SettingsPage />
-        </Suspense>
-      } />
-      <Route path="/admin/users" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <UsersPage />
-        </Suspense>
-      } />
+      <Route path="/admin/analytics" component={AnalyticsPage} />
+      <Route path="/admin/settings" component={SettingsPage} />
+      <Route path="/admin/users" component={UsersPage} />
 
       {/* Admin Monitoring Pages */}
-      <Route path="/admin/monitoring" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <AdminMonitoringPage />
-        </Suspense>
-      } />
-      <Route path="/admin/article-search" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <ArticleSearchPage />
-        </Suspense>
-      } />
-      <Route path="/admin/europe-pmc" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <EuropePmcPage />
-        </Suspense>
-      } />
-      <Route path="/admin/semantic-scholar" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <SemanticScholarPage />
-        </Suspense>
-      } />
-      <Route path="/admin/crossref" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <CrossRefPage />
-        </Suspense>
-      } />
+      <Route path="/admin/monitoring" component={AdminMonitoringPage} />
+      <Route path="/admin/article-search" component={ArticleSearchPage} />
+      <Route path="/admin/europe-pmc" component={EuropePmcPage} />
+      <Route path="/admin/semantic-scholar" component={SemanticScholarPage} />
+      <Route path="/admin/crossref" component={CrossRefPage} />
 
       {/* Tag-based Navigation */}
-      <Route path="/studies/tags" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <TaggedStudiesPage />
-        </Suspense>
-      } />
-      <Route path="/studies/tags/:category" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <TaggedStudiesPage />
-        </Suspense>
-      } />
-      <Route path="/browse-by-tags" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <TaggedStudiesPage />
-        </Suspense>
-      } />
+      <Route path="/studies/tags" component={TaggedStudiesPage} />
+      <Route path="/studies/tags/:category" component={TaggedStudiesPage} />
+      <Route path="/browse-by-tags" component={TaggedStudiesPage} />
 
       {/* Legacy route redirects */}
       <Route path="/categories" component={() => { window.location.replace('/explore-by-condition'); return null; }} />
