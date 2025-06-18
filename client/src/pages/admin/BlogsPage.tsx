@@ -67,7 +67,9 @@ export default function BlogsPage() {
 
   // Safely extract blogs data
   const blogsData = blogsQuery.data as any;
-  const blogs = Array.isArray(blogsData?.data) ? blogsData.data : Array.isArray(blogsData) ? blogsData : [];
+  const blogs = Array.isArray(blogsData?.data) ? blogsData.data : 
+                Array.isArray(blogsData) ? blogsData : 
+                Array.isArray(blogsData?.blogs) ? blogsData.blogs : [];
 
   // Filter and sort blogs
   const filteredBlogs = blogs.filter((blog: any) => {
