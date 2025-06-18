@@ -65,14 +65,34 @@ export default function BlogsPage() {
     );
   }
 
-  // Safely extract blogs data
+  // Safely extract blogs data with comprehensive error handling
   const blogsData = blogsQuery.data as any;
-  const blogs = Array.isArray(blogsData?.data) ? blogsData.data : 
-                Array.isArray(blogsData) ? blogsData : 
-                Array.isArray(blogsData?.blogs) ? blogsData.blogs : [];
+  let blogs: any[] = [];
+  
+  try {
+    if (Array.isArray(blogsData?.data)) {
+      blogs = blogsData.data;
+    } else if (Array.isArray(blogsData)) {
+      blogs = blogsData;
+    } else if (Array.isArray(blogsData?.blogs)) {
+      blogs = blogsData.blogs;
+    } else if (blogsData && typeof blogsData === 'object') {
+      // Try to find any array property in the response
+      const arrayProp = Object.values(blogsData).find(Array.isArray);
+      if (arrayProp) {
+        blogs = arrayProp as any[];
+      }
+    }
+  } catch (error) {
+    console.error('Error processing blogs data:', error);
+    blogs = [];
+  }
+  
+  // Ensure blogs is always an array before filtering
+  const safeBlogs = Array.isArray(blogs) ? blogs : [];
 
   // Filter and sort blogs
-  const filteredBlogs = blogs.filter((blog: any) => {
+  const filteredBlogs = safeBlogs.filter((blog: any) => {
     // Apply status filter (using isPublished instead of status)
     if (selectedStatus !== "all") {
       const isPublished = selectedStatus === "published";
