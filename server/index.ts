@@ -20,6 +20,7 @@ import enrichmentRoutes from "./routes/enrichment-routes";
 import blogRoutes from "./routes/blog-routes";
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
 import { handleError } from './utils/error-handler';
+import { qualityAudit } from './comprehensive-quality-audit';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -449,6 +450,27 @@ app.get('/health', async (req, res) => {
   } catch (error) {
     handleError(error, 'health check');
     res.status(503).json({ status: 'unhealthy', error: 'Health check failed' });
+  }
+});
+
+// Quality audit endpoint
+app.get('/api/admin/quality/audit', async (req, res) => {
+  try {
+    console.log('🔍 Running comprehensive quality audit...');
+    const auditResults = await qualityAudit.runFullAudit();
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      ...auditResults
+    });
+  } catch (error) {
+    console.error('Quality audit error:', error);
+    handleError(error, 'quality audit');
+    res.status(500).json({ 
+      success: false, 
+      error: 'Quality audit failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
