@@ -39,12 +39,12 @@ export default function BlogsPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [sortDirection, setSortDirection] = useState("desc");
-  
+
   // Fetch blogs
   const blogsQuery = useQuery({
     queryKey: ["/api/blogs"],
   });
-  
+
   // Loading state
   if (blogsQuery.isLoading) {
     return (
@@ -53,7 +53,7 @@ export default function BlogsPage() {
       </div>
     );
   }
-  
+
   // Error state
   if (blogsQuery.isError) {
     return (
@@ -64,9 +64,34 @@ export default function BlogsPage() {
       </Alert>
     );
   }
-  
-  const blogs = (blogsQuery.data as any)?.data || [];
-  
+
+  // Safely extract blogs data with comprehensive fallbacks
+  const blogsData = blogsQuery.data as any;
+  let blogs: any[] = [];
+
+  try {
+    if (Array.isArray(blogsData?.data)) {
+      blogs = blogsData.data;
+    } else if (Array.isArray(blogsData)) {
+      blogs = blogsData;
+    } else if (Array.isArray(blogsData?.blogs)) {
+      blogs = blogsData.blogs;
+    } else if (blogsData && typeof blogsData === 'object') {
+      // If it's an object, try to extract any array property
+      const possibleArrays = Object.values(blogsData).filter(Array.isArray);
+      blogs = possibleArrays.length > 0 ? possibleArrays[0] as any[] : [];
+    }
+    
+    // Ensure blogs is always an array
+    if (!Array.isArray(blogs)) {
+      console.warn('Blogs data is not an array:', blogsData);
+      blogs = [];
+    }
+  } catch (error) {
+    console.error('Error processing blogs data:', error);
+    blogs = [];
+  }
+
   // Filter and sort blogs
   const filteredBlogs = blogs.filter((blog: any) => {
     // Apply status filter (using isPublished instead of status)
@@ -76,7 +101,7 @@ export default function BlogsPage() {
         return false;
       }
     }
-    
+
     // Apply search filter (case-insensitive)
     if (searchQuery && searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
@@ -86,14 +111,14 @@ export default function BlogsPage() {
         blog.articleType?.toLowerCase().includes(query)
       );
     }
-    
+
     return true;
   });
-  
+
   // Sort filtered blogs
   const sortedBlogs = [...filteredBlogs].sort((a, b) => {
     let comparison = 0;
-    
+
     if (sortBy === "date") {
       const dateA = new Date(a.publishDate || a.createdAt).getTime();
       const dateB = new Date(b.publishDate || b.createdAt).getTime();
@@ -103,11 +128,11 @@ export default function BlogsPage() {
     } else if (sortBy === "type") {
       comparison = a.articleType.localeCompare(b.articleType);
     }
-    
+
     // Apply sort direction
     return sortDirection === "desc" ? -comparison : comparison;
   });
-  
+
   // Toggle sort
   const toggleSort = (field: string) => {
     if (sortBy === field) {
@@ -117,7 +142,7 @@ export default function BlogsPage() {
       setSortDirection("desc");
     }
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -147,7 +172,7 @@ export default function BlogsPage() {
               className="pl-9"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -187,7 +212,7 @@ export default function BlogsPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -209,7 +234,7 @@ export default function BlogsPage() {
             </DropdownMenu>
           </div>
         </div>
-        
+
         {/* Blogs table */}
         {sortedBlogs.length === 0 ? (
           <div className="text-center py-8">
@@ -255,7 +280,7 @@ export default function BlogsPage() {
                       <Badge variant="secondary">{blog.articleType}</Badge>
                     </TableCell>
                     <TableCell>
-                      {blog.status === "published" ? (
+                      {blog.isPublished ? (
                         <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
                           Published
                         </Badge>

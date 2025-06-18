@@ -37,17 +37,17 @@ export default function StudiesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [sortDirection, setSortDirection] = useState("desc");
-  
+
   // Fetch studies
   const studiesQuery = useQuery({
     queryKey: ["/api/studies"],
   });
-  
+
   // Fetch categories for filtering
   const categoriesQuery = useQuery({
     queryKey: ["/api/categories"],
   });
-  
+
   // Loading state
   if (studiesQuery.isLoading) {
     return (
@@ -56,7 +56,7 @@ export default function StudiesPage() {
       </div>
     );
   }
-  
+
   // Error state
   if (studiesQuery.isError) {
     return (
@@ -67,18 +67,18 @@ export default function StudiesPage() {
       </Alert>
     );
   }
-  
+
   // Make sure studies data is properly handled as an array
   const studies = Array.isArray(studiesQuery.data) ? studiesQuery.data : [];
   const categories = Array.isArray(categoriesQuery.data) ? categoriesQuery.data : [];
-  
+
   // Filter and sort studies
   const filteredStudies = studies.filter((study) => {
     // Apply category filter
     if (selectedCategory !== "all" && study.category !== selectedCategory) {
       return false;
     }
-    
+
     // Apply search filter (case-insensitive)
     if (searchQuery && searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
@@ -89,14 +89,14 @@ export default function StudiesPage() {
         study.journal?.toLowerCase().includes(query)
       );
     }
-    
+
     return true;
   });
-  
+
   // Sort filtered studies
   const sortedStudies = [...filteredStudies].sort((a, b) => {
     let comparison = 0;
-    
+
     if (sortBy === "date") {
       const dateA = new Date(a.publishDate || a.createdAt).getTime();
       const dateB = new Date(b.publishDate || b.createdAt).getTime();
@@ -106,11 +106,11 @@ export default function StudiesPage() {
     } else if (sortBy === "category") {
       comparison = a.category.localeCompare(b.category);
     }
-    
+
     // Apply sort direction
     return sortDirection === "desc" ? -comparison : comparison;
   });
-  
+
   // Toggle sort
   const toggleSort = (field) => {
     if (sortBy === field) {
@@ -120,7 +120,7 @@ export default function StudiesPage() {
       setSortDirection("desc");
     }
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -150,7 +150,7 @@ export default function StudiesPage() {
               className="pl-9"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -163,6 +163,7 @@ export default function StudiesPage() {
                 <DropdownMenuItem 
                   onClick={() => setSelectedCategory("all")}
                   className="flex items-center justify-between"
+                  key="all"
                 >
                   All Categories
                   {selectedCategory === "all" && (
@@ -184,7 +185,7 @@ export default function StudiesPage() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -206,7 +207,7 @@ export default function StudiesPage() {
             </DropdownMenu>
           </div>
         </div>
-        
+
         {/* Studies table */}
         {sortedStudies.length === 0 ? (
           <div className="text-center py-8">

@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
 import { initGA } from "./lib/analytics";
@@ -49,43 +49,42 @@ import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/Explore
 import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
 import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
 
-// Admin pages - updated
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminPage from "@/pages/admin/AdminPage";
-import ImportPage from "@/pages/admin/ImportPage";
+// Lazy load admin components for better performance
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
+const ImportPage = lazy(() => import('./pages/admin/ImportPage'));
 
 // Tag-based navigation
-import TaggedStudiesPage from "@/pages/TaggedStudiesPage";
-import AdminMonitoringPage from "@/pages/admin/AdminMonitoringPage";
-import ArticleSearchPage from "@/pages/admin/ArticleSearchPage";
-import EuropePmcPage from "@/pages/admin/EuropePmcPage";
-import SemanticScholarPage from "@/pages/admin/SemanticScholarPage";
-import CrossRefPage from "@/pages/admin/CrossRefPage";
+const TaggedStudiesPage = lazy(() => import('./pages/TaggedStudiesPage'));
+const AdminMonitoringPage = lazy(() => import('./pages/admin/AdminMonitoringPage'));
+const ArticleSearchPage = lazy(() => import('./pages/admin/ArticleSearchPage'));
+const EuropePmcPage = lazy(() => import('./pages/admin/EuropePmcPage'));
+const SemanticScholarPage = lazy(() => import('./pages/admin/SemanticScholarPage'));
+const CrossRefPage = lazy(() => import('./pages/admin/CrossRefPage'));
 
 // Admin pages - new layout
-import DashboardPage from "@/pages/admin/DashboardPage";
-import StudiesManagementPage from "@/pages/admin/StudiesManagementPage";
-import AddStudyPage from "@/pages/admin/AddStudyPage";
-import StudyEditPage from "@/pages/admin/StudyEditPage";
-import BlogsManagementPage from "@/pages/admin/BlogsManagementPage";
-import BlogManagementPage from "@/pages/admin/BlogManagementPage";
-import BlogGeneratePage from "@/pages/admin/BlogGeneratePage";
-import BlogAddPage from "@/pages/admin/BlogAddPage";
-import BlogEditPage from "@/pages/admin/BlogEditPage";
-import ResearchImportPage from "@/pages/admin/ResearchImportPage";
-import DataImportPage from "@/pages/admin/DataImportPage";
-import ResearchDatabasePage from "@/pages/admin/ResearchDatabasePage";
-import JournalDateUpdater from "@/pages/admin/JournalDateUpdater";
-import ContentEnrichmentPage from "@/pages/admin/ContentEnrichmentPage";
-import BatchEnrichmentPage from "@/pages/admin/BatchEnrichmentPage";
-import BatchCategorizationPage from "@/pages/admin/BatchCategorizationPage";
-import ImageGenerationPage from "@/pages/admin/ImageGenerationPage";
-import EnhancementPage from "@/pages/admin/EnhancementPage";
-import KeywordMonitorPage from "@/pages/admin/KeywordMonitorPage";
-import EnhancedAdminDashboard from "@/pages/admin/EnhancedAdminDashboard";
-import AnalyticsPage from "@/pages/admin/AnalyticsPage";
-import SettingsPage from "@/pages/admin/SettingsPage";
-import UsersPage from "@/pages/admin/UsersPage";
+const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
+const StudiesManagementPage = lazy(() => import('./pages/admin/StudiesManagementPage'));
+const AddStudyPage = lazy(() => import('./pages/admin/AddStudyPage'));
+const StudyEditPage = lazy(() => import('./pages/admin/StudyEditPage'));
+const BlogsPage = lazy(() => import('./pages/admin/BlogsPage'));
+const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const BlogGeneratePage = lazy(() => import('./pages/admin/BlogGeneratePage'));
+const BlogAddPage = lazy(() => import('./pages/admin/BlogAddPage'));
+const BlogEditPage = lazy(() => import('./pages/admin/BlogEditPage'));
+const ResearchImportPage = lazy(() => import('./pages/admin/ResearchImportPage'));
+const DataImportPage = lazy(() => import('./pages/admin/DataImportPage'));
+const ResearchDatabasePage = lazy(() => import('./pages/admin/ResearchDatabasePage'));
+const JournalDateUpdater = lazy(() => import('./pages/admin/JournalDateUpdater'));
+const ContentEnrichmentPage = lazy(() => import('./pages/admin/ContentEnrichmentPage'));
+const BatchEnrichmentPage = lazy(() => import('./pages/admin/BatchEnrichmentPage'));
+const BatchCategorizationPage = lazy(() => import('./pages/admin/BatchCategorizationPage'));
+const ImageGenerationPage = lazy(() => import('./pages/admin/ImageGenerationPage'));
+const EnhancementPage = lazy(() => import('./pages/admin/EnhancementPage'));
+const KeywordMonitorPage = lazy(() => import('./pages/admin/KeywordMonitorPage'));
+const EnhancedAdminDashboard = lazy(() => import('./pages/admin/EnhancedAdminDashboard'));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -139,53 +138,188 @@ function Router() {
       <Route path="/chat" component={ChatPage} />
 
       {/* Enhanced Admin Dashboard with WYSIWYG */}
-      <Route path="/admin" component={EnhancedAdminDashboard} />
-      <Route path="/admin/enhanced" component={EnhancedAdminDashboard} />
-      <Route path="/admin/dashboard" component={DashboardPage} />
-      <Route path="/admin/legacy" component={AdminPage} />
-      <Route path="/admin/import" component={ImportPage} />
+      <Route path="/admin" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <EnhancedAdminDashboard />
+        </Suspense>
+      } />
+      <Route path="/admin/enhanced" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <EnhancedAdminDashboard />
+        </Suspense>
+      } />
+      <Route path="/admin/dashboard" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <DashboardPage />
+        </Suspense>
+      } />
+      <Route path="/admin/legacy" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <AdminPage />
+        </Suspense>
+      } />
+      <Route path="/admin/import" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <ImportPage />
+        </Suspense>
+      } />
 
       {/* Admin Management Pages */}
-      <Route path="/admin/studies" component={StudiesManagementPage} />
-      <Route path="/admin/studies/add" component={AddStudyPage} />
-      <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
-      <Route path="/admin/blogs" component={BlogsManagementPage} />
-      <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
-      <Route path="/admin/blog-generator" component={BlogGeneratePage} />
-      <Route path="/admin/blog-categories" component={BlogManagementPage} />
-      <Route path="/admin/blogs/add" component={BlogAddPage} />
-      <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
+      <Route path="/admin/studies" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <StudiesManagementPage />
+        </Suspense>
+      } />
+      <Route path="/admin/studies/add" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <AddStudyPage />
+        </Suspense>
+      } />
+      <Route path="/admin/studies/edit/:id" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <StudyEditPage />
+        </Suspense>
+      } />
+      <Route path="/admin/blogs" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <BlogsPage />
+        </Suspense>
+      } />
+      <Route path="/admin/blogs/generate" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <BlogGeneratePage />
+        </Suspense>
+      } />
+      <Route path="/admin/blog-generator" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <BlogGeneratePage />
+        </Suspense>
+      } />
+      <Route path="/admin/blogs/add" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <BlogAddPage />
+        </Suspense>
+      } />
+      <Route path="/admin/blogs/edit/:id" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <BlogEditPage />
+        </Suspense>
+      } />
 
       {/* Admin Import & Data Pages */}
-      <Route path="/admin/research-import" component={ResearchImportPage} />
-      <Route path="/admin/data-import" component={DataImportPage} />
-      <Route path="/admin/research-database" component={ResearchDatabasePage} />
-      <Route path="/admin/journal-date-updater" component={JournalDateUpdater} />
+      <Route path="/admin/research-import" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <ResearchImportPage />
+        </Suspense>
+      } />
+      <Route path="/admin/data-import" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <DataImportPage />
+        </Suspense>
+      } />
+      <Route path="/admin/research-database" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <ResearchDatabasePage />
+        </Suspense>
+      } />
+      <Route path="/admin/journal-date-updater" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <JournalDateUpdater />
+        </Suspense>
+      } />
 
       {/* Admin Enhancement Pages */}
-      <Route path="/admin/content-enrichment" component={ContentEnrichmentPage} />
-      <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
-      <Route path="/admin/batch-categorization" component={BatchCategorizationPage} />
-      <Route path="/admin/image-generation" component={ImageGenerationPage} />
-      <Route path="/admin/enhancement" component={EnhancementPage} />
-      <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
-      
+      <Route path="/admin/content-enrichment" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <ContentEnrichmentPage />
+        </Suspense>
+      } />
+      <Route path="/admin/batch-enrichment" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <BatchEnrichmentPage />
+        </Suspense>
+      } />
+      <Route path="/admin/batch-categorization" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <BatchCategorizationPage />
+        </Suspense>
+      } />
+      <Route path="/admin/image-generation" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <ImageGenerationPage />
+        </Suspense>
+      } />
+      <Route path="/admin/enhancement" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <EnhancementPage />
+        </Suspense>
+      } />
+      <Route path="/admin/keyword-monitor" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <KeywordMonitorPage />
+        </Suspense>
+      } />
+
       {/* Additional Admin Pages */}
-      <Route path="/admin/analytics" component={AnalyticsPage} />
-      <Route path="/admin/settings" component={SettingsPage} />
-      <Route path="/admin/users" component={UsersPage} />
+      <Route path="/admin/analytics" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <AnalyticsPage />
+        </Suspense>
+      } />
+      <Route path="/admin/settings" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <SettingsPage />
+        </Suspense>
+      } />
+      <Route path="/admin/users" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <UsersPage />
+        </Suspense>
+      } />
 
       {/* Admin Monitoring Pages */}
-      <Route path="/admin/monitoring" component={AdminMonitoringPage} />
-      <Route path="/admin/article-search" component={ArticleSearchPage} />
-      <Route path="/admin/europe-pmc" component={EuropePmcPage} />
-      <Route path="/admin/semantic-scholar" component={SemanticScholarPage} />
-      <Route path="/admin/crossref" component={CrossRefPage} />
+      <Route path="/admin/monitoring" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <AdminMonitoringPage />
+        </Suspense>
+      } />
+      <Route path="/admin/article-search" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <ArticleSearchPage />
+        </Suspense>
+      } />
+      <Route path="/admin/europe-pmc" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <EuropePmcPage />
+        </Suspense>
+      } />
+      <Route path="/admin/semantic-scholar" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <SemanticScholarPage />
+        </Suspense>
+      } />
+      <Route path="/admin/crossref" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <CrossRefPage />
+        </Suspense>
+      } />
 
       {/* Tag-based Navigation */}
-      <Route path="/studies/tags" component={TaggedStudiesPage} />
-      <Route path="/studies/tags/:category" component={TaggedStudiesPage} />
-      <Route path="/browse-by-tags" component={TaggedStudiesPage} />
+      <Route path="/studies/tags" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <TaggedStudiesPage />
+        </Suspense>
+      } />
+      <Route path="/studies/tags/:category" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <TaggedStudiesPage />
+        </Suspense>
+      } />
+      <Route path="/browse-by-tags" component={
+        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
+          <TaggedStudiesPage />
+        </Suspense>
+      } />
 
       {/* Legacy route redirects */}
       <Route path="/categories" component={() => { window.location.replace('/explore-by-condition'); return null; }} />
@@ -226,10 +360,10 @@ function App() {
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('Unhandled promise rejection:', event.reason);
-      
+
       // Prevent the default browser handling
       event.preventDefault();
-      
+
       // Log the error details for debugging
       const errorDetails = {
         message: event.reason?.message || 'Unknown promise rejection',
@@ -237,9 +371,9 @@ function App() {
         timestamp: new Date().toISOString(),
         url: window.location.href
       };
-      
+
       console.error('Promise rejection details:', errorDetails);
-      
+
       // Show user-friendly error message if it's a network or API error
       if (event.reason?.message?.includes('fetch') || 
           event.reason?.message?.includes('network') ||
@@ -250,7 +384,7 @@ function App() {
 
     const handleError = (event: ErrorEvent) => {
       console.error('Global error caught:', event.error);
-      
+
       const errorDetails = {
         message: event.message,
         filename: event.filename,
@@ -259,7 +393,7 @@ function App() {
         error: event.error,
         timestamp: new Date().toISOString()
       };
-      
+
       console.error('Error details:', errorDetails);
     };
 
