@@ -530,19 +530,9 @@ async function setupServer() {
     server.listen(PORT, '0.0.0.0', () => {
       console.log('Health monitoring initialized');
 
-      // Initialize quality monitoring
-      try {
-        const { qualityMonitor } = await import('./quality-assurance-monitor.js');
-        qualityMonitor.runContinuousMonitoring();
-        console.log('Quality monitoring initialized');
-      } catch (error) {
-        console.warn('Quality monitoring failed to initialize:', error);
-      }
-
       console.log(`Server running on port ${PORT}`);
       console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
-      console.log(`Quality dashboard: http://localhost:${PORT}/api/admin/quality/monitor`);
     });
   } else {
     // Production mode - serve static files
@@ -554,19 +544,9 @@ async function setupServer() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log('Health monitoring initialized');
 
-      // Initialize quality monitoring
-      try {
-        const { qualityMonitor } = await import('./quality-assurance-monitor.js');
-        qualityMonitor.runContinuousMonitoring();
-        console.log('Quality monitoring initialized');
-      } catch (error) {
-        console.warn('Quality monitoring failed to initialize:', error);
-      }
-
       console.log(`Server running on port ${PORT}`);
       console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
-      console.log(`Quality dashboard: http://localhost:${PORT}/api/admin/quality/monitor`);
     });
   }
 }
