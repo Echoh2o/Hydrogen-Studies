@@ -65,7 +65,9 @@ export default function BlogsPage() {
     );
   }
   
-  const blogs = Array.isArray((blogsQuery.data as any)?.data) ? (blogsQuery.data as any).data : [];
+  // Safely extract blogs data
+  const blogsData = blogsQuery.data as any;
+  const blogs = Array.isArray(blogsData?.data) ? blogsData.data : Array.isArray(blogsData) ? blogsData : [];
   
   // Filter and sort blogs
   const filteredBlogs = blogs.filter((blog: any) => {
