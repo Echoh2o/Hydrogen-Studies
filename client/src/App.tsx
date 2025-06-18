@@ -138,73 +138,21 @@ function Router() {
       <Route path="/chat" component={ChatPage} />
 
       {/* Enhanced Admin Dashboard with WYSIWYG */}
-      <Route path="/admin" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <EnhancedAdminDashboard />
-        </Suspense>
-      } />
-      <Route path="/admin/enhanced" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <EnhancedAdminDashboard />
-        </Suspense>
-      } />
-      <Route path="/admin/dashboard" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <DashboardPage />
-        </Suspense>
-      } />
-      <Route path="/admin/legacy" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <AdminPage />
-        </Suspense>
-      } />
-      <Route path="/admin/import" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <ImportPage />
-        </Suspense>
-      } />
+      <Route path="/admin" component={EnhancedAdminDashboard} />
+      <Route path="/admin/enhanced" component={EnhancedAdminDashboard} />
+      <Route path="/admin/dashboard" component={DashboardPage} />
+      <Route path="/admin/legacy" component={AdminPage} />
+      <Route path="/admin/import" component={ImportPage} />
 
       {/* Admin Management Pages */}
-      <Route path="/admin/studies" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <StudiesManagementPage />
-        </Suspense>
-      } />
-      <Route path="/admin/studies/add" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <AddStudyPage />
-        </Suspense>
-      } />
-      <Route path="/admin/studies/edit/:id" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <StudyEditPage />
-        </Suspense>
-      } />
-      <Route path="/admin/blogs" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <BlogsPage />
-        </Suspense>
-      } />
-      <Route path="/admin/blogs/generate" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <BlogGeneratePage />
-        </Suspense>
-      } />
-      <Route path="/admin/blog-generator" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <BlogGeneratePage />
-        </Suspense>
-      } />
-      <Route path="/admin/blogs/add" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <BlogAddPage />
-        </Suspense>
-      } />
-      <Route path="/admin/blogs/edit/:id" component={
-        <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading Admin...</div>}>
-          <BlogEditPage />
-        </Suspense>
-      } />
+      <Route path="/admin/studies" component={StudiesManagementPage} />
+      <Route path="/admin/studies/add" component={AddStudyPage} />
+      <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
+      <Route path="/admin/blogs" component={BlogsPage} />
+      <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
+      <Route path="/admin/blog-generator" component={BlogGeneratePage} />
+      <Route path="/admin/blogs/add" component={BlogAddPage} />
+      <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
 
       {/* Admin Import & Data Pages */}
       <Route path="/admin/research-import" component={
