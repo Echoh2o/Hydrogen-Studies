@@ -69,16 +69,27 @@ export default function BlogsPage() {
   const blogsData = blogsQuery.data as any;
   let blogs: any[] = [];
 
-  if (Array.isArray(blogsData?.data)) {
-    blogs = blogsData.data;
-  } else if (Array.isArray(blogsData)) {
-    blogs = blogsData;
-  } else if (Array.isArray(blogsData?.blogs)) {
-    blogs = blogsData.blogs;
-  } else if (blogsData && typeof blogsData === 'object') {
-    // If it's an object, try to extract any array property
-    const possibleArrays = Object.values(blogsData).filter(Array.isArray);
-    blogs = possibleArrays.length > 0 ? possibleArrays[0] as any[] : [];
+  try {
+    if (Array.isArray(blogsData?.data)) {
+      blogs = blogsData.data;
+    } else if (Array.isArray(blogsData)) {
+      blogs = blogsData;
+    } else if (Array.isArray(blogsData?.blogs)) {
+      blogs = blogsData.blogs;
+    } else if (blogsData && typeof blogsData === 'object') {
+      // If it's an object, try to extract any array property
+      const possibleArrays = Object.values(blogsData).filter(Array.isArray);
+      blogs = possibleArrays.length > 0 ? possibleArrays[0] as any[] : [];
+    }
+    
+    // Ensure blogs is always an array
+    if (!Array.isArray(blogs)) {
+      console.warn('Blogs data is not an array:', blogsData);
+      blogs = [];
+    }
+  } catch (error) {
+    console.error('Error processing blogs data:', error);
+    blogs = [];
   }
 
   // Filter and sort blogs

@@ -194,13 +194,13 @@ export default function StudiesPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => toggleSort("date")} key="date">
+                <DropdownMenuItem onClick={() => toggleSort("date")}>
                   Date {sortBy === "date" && (sortDirection === "asc" ? "(Oldest)" : "(Newest)")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toggleSort("title")} key="title">
+                <DropdownMenuItem onClick={() => toggleSort("title")}>
                   Title {sortBy === "title" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toggleSort("category")} key="category">
+                <DropdownMenuItem onClick={() => toggleSort("category")}>
                   Category {sortBy === "category" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
