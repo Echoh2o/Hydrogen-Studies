@@ -68,6 +68,8 @@ export interface BulkGenerationResult {
  */
 export async function getBlogRecommendations(limit: number = 20): Promise<BlogRecommendation[]> {
   try {
+    console.log('Fetching blog recommendations...');
+    
     // Get studies with their blog counts
     const studiesWithBlogCounts = await db
       .select({
@@ -79,7 +81,6 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
         category: studies.category,
         publishDate: studies.publishDate,
         journalPublishDate: studies.journalPublishDate,
-
         blogCount: sql<number>`COALESCE(COUNT(${blogArticles.id}), 0)`
       })
       .from(studies)
@@ -89,54 +90,78 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
       .orderBy(desc(studies.id))
       .limit(limit * 2); // Get more to filter through
 
+    console.log(`Found ${studiesWithBlogCounts.length} studies with < 3 blogs`);
+
     if (!studiesWithBlogCounts.length) {
       return [];
     }
 
-    // Use AI to analyze and prioritize studies
+    // Check if OpenAI API key is available
+    const hasOpenAI = !!process.env.OPENAI_API_KEY;
+    console.log(`OpenAI available: ${hasOpenAI}`);
+
     const recommendations: BlogRecommendation[] = [];
     
     for (const study of studiesWithBlogCounts.slice(0, limit)) {
       try {
-        const aiAnalysis = await analyzeStudyForBlogPotential(study);
+        let aiAnalysis;
         
-        recommendations.push({
-          studyId: study.id,
-          studyTitle: study.title,
-          studyAbstract: study.abstract,
-          studyAuthors: study.authors,
-          studyJournal: study.journal,
-          studyCategory: study.category,
-          studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown',
-          priority: aiAnalysis.priority,
-          reasonForRecommendation: aiAnalysis.reason,
-          suggestedBlogTypes: aiAnalysis.suggestedTypes,
-          estimatedReadership: aiAnalysis.estimatedReadership,
-          seoKeywords: aiAnalysis.seoKeywords,
-          potentialTitle: aiAnalysis.potentialTitle,
-          hasExistingBlogs: study.blogCount > 0,
-          existingBlogCount: study.blogCount
-        });
+        if (hasOpenAI) {
+          // Try AI analysis with timeout
+          try {
+            aiAnalysis = await Promise.race([
+              analyzeStudyForBlogPotential(study),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('AI analysis timeout')), 10000)
+              )
+            ]);
+          } catch (aiError) {
+            console.log(`AI analysis failed for study ${study.id}, using fallback`);
+            aiAnalysis = null;
+          }
+        }
+        
+        if (aiAnalysis) {
+          recommendations.push({
+            studyId: study.id,
+            studyTitle: study.title,
+            studyAbstract: study.abstract,
+            studyAuthors: study.authors,
+            studyJournal: study.journal,
+            studyCategory: study.category,
+            studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown',
+            priority: aiAnalysis.priority,
+            reasonForRecommendation: aiAnalysis.reason,
+            suggestedBlogTypes: aiAnalysis.suggestedTypes,
+            estimatedReadership: aiAnalysis.estimatedReadership,
+            seoKeywords: aiAnalysis.seoKeywords,
+            potentialTitle: aiAnalysis.potentialTitle,
+            hasExistingBlogs: study.blogCount > 0,
+            existingBlogCount: study.blogCount
+          });
+        } else {
+          // Use rule-based analysis for fallback
+          const ruleBasedAnalysis = createRuleBasedRecommendation(study);
+          recommendations.push({
+            studyId: study.id,
+            studyTitle: study.title,
+            studyAbstract: study.abstract,
+            studyAuthors: study.authors,
+            studyJournal: study.journal,
+            studyCategory: study.category,
+            studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown',
+            priority: ruleBasedAnalysis.priority,
+            reasonForRecommendation: ruleBasedAnalysis.reason,
+            suggestedBlogTypes: ruleBasedAnalysis.suggestedTypes,
+            estimatedReadership: ruleBasedAnalysis.estimatedReadership,
+            seoKeywords: ruleBasedAnalysis.seoKeywords,
+            potentialTitle: ruleBasedAnalysis.potentialTitle,
+            hasExistingBlogs: study.blogCount > 0,
+            existingBlogCount: study.blogCount
+          });
+        }
       } catch (error) {
-        console.error(`Error analyzing study ${study.id}:`, error);
-        // Fallback recommendation without AI analysis
-        recommendations.push({
-          studyId: study.id,
-          studyTitle: study.title,
-          studyAbstract: study.abstract,
-          studyAuthors: study.authors,
-          studyJournal: study.journal,
-          studyCategory: study.category,
-          studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown',
-          priority: 'medium',
-          reasonForRecommendation: 'Study has limited blog coverage and could benefit from consumer-friendly articles',
-          suggestedBlogTypes: ['explainer', 'summary'],
-          estimatedReadership: 'Medium',
-          seoKeywords: ['hydrogen therapy', 'research', study.category.toLowerCase()],
-          potentialTitle: `Understanding ${study.title.split(' ').slice(0, 6).join(' ')}...`,
-          hasExistingBlogs: study.blogCount > 0,
-          existingBlogCount: study.blogCount
-        });
+        console.error(`Error processing study ${study.id}:`, error);
       }
     }
 
@@ -150,6 +175,71 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
     console.error('Error getting blog recommendations:', error);
     return [];
   }
+}
+
+/**
+ * Create rule-based recommendation without AI
+ */
+function createRuleBasedRecommendation(study: any): {
+  priority: 'high' | 'medium' | 'low';
+  reason: string;
+  suggestedTypes: string[];
+  estimatedReadership: string;
+  seoKeywords: string[];
+  potentialTitle: string;
+} {
+  const title = study.title.toLowerCase();
+  const abstract = (study.abstract || '').toLowerCase();
+  const category = (study.category || '').toLowerCase();
+  
+  // Determine priority based on keywords and category
+  let priority: 'high' | 'medium' | 'low' = 'medium';
+  let reason = 'Study has limited blog coverage and could benefit from consumer-friendly articles';
+  
+  const highPriorityKeywords = ['clinical trial', 'human study', 'therapeutic', 'treatment', 'therapy', 'health benefits'];
+  const mediumPriorityKeywords = ['research', 'study', 'analysis', 'investigation'];
+  
+  if (highPriorityKeywords.some(keyword => title.includes(keyword) || abstract.includes(keyword))) {
+    priority = 'high';
+    reason = 'High-impact clinical research with direct therapeutic applications - excellent for consumer education';
+  } else if (study.blogCount === 0) {
+    priority = 'high';
+    reason = 'No existing blog coverage - high opportunity for new content creation';
+  }
+  
+  // Suggest article types based on content
+  const suggestedTypes = ['explainer', 'summary'];
+  if (title.includes('clinical') || abstract.includes('patients')) {
+    suggestedTypes.push('clinical-insights');
+  }
+  if (title.includes('mechanism') || abstract.includes('molecular')) {
+    suggestedTypes.push('science-breakdown');
+  }
+  
+  // Generate SEO keywords
+  const seoKeywords = ['hydrogen therapy', 'research'];
+  if (category) seoKeywords.push(category);
+  
+  // Extract key terms for additional keywords
+  const keyTerms = title.split(' ').filter(word => 
+    word.length > 4 && !['study', 'research', 'analysis', 'investigation'].includes(word.toLowerCase())
+  ).slice(0, 2);
+  seoKeywords.push(...keyTerms);
+  
+  // Generate potential title
+  const titleWords = study.title.split(' ').slice(0, 8).join(' ');
+  const potentialTitle = titleWords.length > 50 
+    ? `${titleWords.substring(0, 47)}...` 
+    : `Understanding ${titleWords}`;
+  
+  return {
+    priority,
+    reason,
+    suggestedTypes,
+    estimatedReadership: priority === 'high' ? 'High' : 'Medium',
+    seoKeywords,
+    potentialTitle
+  };
 }
 
 /**
