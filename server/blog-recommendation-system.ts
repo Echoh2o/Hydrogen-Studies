@@ -3,14 +3,13 @@
  * Automatically recommends studies for blog creation and handles bulk generation
  */
 
-import OpenAI from "openai";
-import { db } from "./db";
-import { studies, blogArticles } from "@shared/schema";
-import { sql, eq, notInArray, desc, and, isNull, ne } from "drizzle-orm";
-import slugify from 'slugify';
+import { eq, desc, sql } from 'drizzle-orm';
+import { db } from './db';
+import { studies, blogArticles } from '@shared/schema';
+import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY 
 });
 
 export interface BlogRecommendation {
@@ -84,12 +83,11 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
       })
       .from(studies)
       .orderBy(desc(studies.id))
-      .limit(50); // Get more studies to filter
+      .limit(50);
 
     console.log(`Found ${allStudies.length} total studies`);
 
     // For now, assume all studies have 0 blogs to get the system working quickly
-    // This will be enhanced later with proper blog counting
     const studiesWithBlogCounts = allStudies
       .map(study => ({
         ...study,
@@ -107,55 +105,30 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
     const hasOpenAI = !!process.env.OPENAI_API_KEY;
     console.log(`OpenAI available: ${hasOpenAI}`);
 
-    const recommendations: BlogRecommendation[] = [];
-    
-    for (const study of studiesWithBlogCounts.slice(0, limit)) {
-      try {
-        let aiAnalysis;
-        
-        if (hasOpenAI) {
-          // Try AI analysis with timeout
-          try {
-            aiAnalysis = await Promise.race([
-              analyzeStudyForBlogPotential(study),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('AI analysis timeout')), 10000)
-              )
-            ]);
-          } catch (aiError) {
-            console.log(`AI analysis failed for study ${study.id}, using fallback`);
-            aiAnalysis = null;
-          }
-        }
-        
-        // Use rule-based analysis (faster and more reliable for initial implementation)
-        const ruleBasedAnalysis = createRuleBasedRecommendation(study);
-        
-        const recommendation: BlogRecommendation = {
-          studyId: study.id,
-          studyTitle: study.title || 'Untitled Study',
-          studyAbstract: study.abstract || 'No abstract available',
-          studyAuthors: study.authors || 'Unknown authors',
-          studyJournal: study.journal || 'Unknown journal',
-          studyCategory: study.category || 'General',
-          studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown',
-          priority: ruleBasedAnalysis.priority,
-          reasonForRecommendation: ruleBasedAnalysis.reason,
-          suggestedBlogTypes: ruleBasedAnalysis.suggestedTypes,
-          estimatedReadership: ruleBasedAnalysis.estimatedReadership,
-          seoKeywords: ruleBasedAnalysis.seoKeywords,
-          potentialTitle: ruleBasedAnalysis.potentialTitle,
-          hasExistingBlogs: study.blogCount > 0,
-          existingBlogCount: study.blogCount
-        };
-        
-        recommendations.push(recommendation);
-      } catch (error) {
-        console.error(`Error processing study ${study.id}:`, error);
-      }
-    }
+    // Fast processing: create recommendations without AI for speed
+    const recommendations: BlogRecommendation[] = studiesWithBlogCounts.map(study => {
+      const ruleBasedRec = createRuleBasedRecommendation(study);
+      
+      return {
+        studyId: study.id,
+        studyTitle: study.title || 'Untitled Study',
+        studyAbstract: study.abstract || 'No abstract available',
+        studyAuthors: study.authors || 'Unknown authors',
+        studyJournal: study.journal || 'Unknown journal',
+        studyCategory: study.category || 'General',
+        studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown date',
+        priority: ruleBasedRec.priority,
+        reasonForRecommendation: ruleBasedRec.reason,
+        suggestedBlogTypes: ruleBasedRec.suggestedTypes,
+        estimatedReadership: ruleBasedRec.estimatedReadership,
+        seoKeywords: ruleBasedRec.seoKeywords,
+        potentialTitle: ruleBasedRec.potentialTitle,
+        hasExistingBlogs: study.blogCount > 0,
+        existingBlogCount: study.blogCount
+      };
+    });
 
-    // Sort by priority (high, medium, low) and return
+    console.log(`Generated ${recommendations.length} recommendations`);
     return recommendations.sort((a, b) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
       return priorityOrder[b.priority] - priorityOrder[a.priority];
@@ -164,142 +137,6 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
   } catch (error) {
     console.error('Error getting blog recommendations:', error);
     return [];
-  }
-}
-
-/**
- * Create rule-based recommendation without AI
- */
-function createRuleBasedRecommendation(study: any): {
-  priority: 'high' | 'medium' | 'low';
-  reason: string;
-  suggestedTypes: string[];
-  estimatedReadership: string;
-  seoKeywords: string[];
-  potentialTitle: string;
-} {
-  const title = study.title.toLowerCase();
-  const abstract = (study.abstract || '').toLowerCase();
-  const category = (study.category || '').toLowerCase();
-  
-  // Determine priority based on keywords and category
-  let priority: 'high' | 'medium' | 'low' = 'medium';
-  let reason = 'Study has limited blog coverage and could benefit from consumer-friendly articles';
-  
-  const highPriorityKeywords = ['clinical trial', 'human study', 'therapeutic', 'treatment', 'therapy', 'health benefits'];
-  const mediumPriorityKeywords = ['research', 'study', 'analysis', 'investigation'];
-  
-  if (highPriorityKeywords.some(keyword => title.includes(keyword) || abstract.includes(keyword))) {
-    priority = 'high';
-    reason = 'High-impact clinical research with direct therapeutic applications - excellent for consumer education';
-  } else if (study.blogCount === 0) {
-    priority = 'high';
-    reason = 'No existing blog coverage - high opportunity for new content creation';
-  }
-  
-  // Suggest article types based on content
-  const suggestedTypes = ['explainer', 'summary'];
-  if (title.includes('clinical') || abstract.includes('patients')) {
-    suggestedTypes.push('clinical-insights');
-  }
-  if (title.includes('mechanism') || abstract.includes('molecular')) {
-    suggestedTypes.push('science-breakdown');
-  }
-  
-  // Generate SEO keywords
-  const seoKeywords = ['hydrogen therapy', 'research'];
-  if (category) seoKeywords.push(category);
-  
-  // Extract key terms for additional keywords
-  const keyTerms = title.split(' ').filter((word: string) => 
-    word.length > 4 && !['study', 'research', 'analysis', 'investigation'].includes(word.toLowerCase())
-  ).slice(0, 2);
-  seoKeywords.push(...keyTerms);
-  
-  // Generate potential title
-  const titleWords = study.title.split(' ').slice(0, 8).join(' ');
-  const potentialTitle = titleWords.length > 50 
-    ? `${titleWords.substring(0, 47)}...` 
-    : `Understanding ${titleWords}`;
-  
-  return {
-    priority,
-    reason,
-    suggestedTypes,
-    estimatedReadership: priority === 'high' ? 'High' : 'Medium',
-    seoKeywords,
-    potentialTitle
-  };
-}
-
-/**
- * Analyze study using AI to determine blog potential
- */
-async function analyzeStudyForBlogPotential(study: any): Promise<{
-  priority: 'high' | 'medium' | 'low';
-  reason: string;
-  suggestedTypes: string[];
-  estimatedReadership: string;
-  seoKeywords: string[];
-  potentialTitle: string;
-}> {
-  const prompt = `Analyze this hydrogen therapy research study for blog article potential:
-
-Title: ${study.title}
-Abstract: ${study.abstract}
-Journal: ${study.journal}
-Category: ${study.category}
-Authors: ${study.authors}
-Existing blog count: ${study.blogCount}
-
-Please analyze and provide:
-1. Priority level (high/medium/low) based on public interest, SEO potential, and educational value
-2. Reason for this priority level (2-3 sentences)
-3. Suggested article types (choose 2-3 from: explainer, summary, implications, timeline, benefits, how-to)
-4. Estimated readership appeal (High/Medium/Low)
-5. 5-8 SEO keywords that would rank well
-6. A potential blog title that would be compelling and SEO-friendly
-
-Respond in JSON format:
-{
-  "priority": "high|medium|low",
-  "reason": "explanation",
-  "suggestedTypes": ["type1", "type2"],
-  "estimatedReadership": "High|Medium|Low",
-  "seoKeywords": ["keyword1", "keyword2"],
-  "potentialTitle": "compelling title"
-}`;
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    messages: [
-      {
-        role: "system",
-        content: "You are an expert content strategist specializing in health and medical research content. Analyze research studies for their blog potential, considering SEO, public interest, and educational value."
-      },
-      {
-        role: "user",
-        content: prompt
-      }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.7,
-    max_tokens: 500
-  });
-
-  try {
-    const analysis = JSON.parse(response.choices[0].message.content || '{}');
-    return {
-      priority: analysis.priority || 'medium',
-      reason: analysis.reason || 'Study has potential for blog coverage',
-      suggestedTypes: analysis.suggestedTypes || ['explainer', 'summary'],
-      estimatedReadership: analysis.estimatedReadership || 'Medium',
-      seoKeywords: analysis.seoKeywords || ['hydrogen therapy', 'research'],
-      potentialTitle: analysis.potentialTitle || study.title
-    };
-  } catch (error) {
-    console.error('Error parsing AI analysis:', error);
-    throw error;
   }
 }
 
@@ -343,18 +180,15 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
       // Generate blogs for each requested article type
       for (const articleType of request.articleTypes) {
         try {
-          const blogContent = await Promise.race([
-            generateSingleBlogContent(
-              study,
-              articleType,
-              request.readingLevel,
-              request.includeImages,
-              request.includeSEO
-            ),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Blog generation timeout')), 25000))
-          ]);
+          const blogContent = await generateSingleBlogContent(
+            study,
+            articleType,
+            request.readingLevel,
+            request.includeImages,
+            request.includeSEO
+          );
           
-          generatedBlogs.push(blogContent as GeneratedBlogContent);
+          generatedBlogs.push(blogContent);
         } catch (error) {
           console.error(`Error generating ${articleType} blog for study ${studyId}:`, error);
         }
@@ -440,31 +274,6 @@ async function generateSingleBlogContent(
       readingLevel: readingLevel
     };
 
-    // Generate image if requested
-    if (includeImages) {
-      try {
-        const imageData = await generateBlogImage(study, result.title);
-        result.imagePrompt = imageData.prompt;
-        result.imageUrl = imageData.url;
-        result.imageAlt = imageData.alt;
-      } catch (error) {
-        console.error('Error generating image:', error);
-      }
-    }
-
-    // Generate SEO data if requested
-    if (includeSEO) {
-      try {
-        const seoData = await generateSEOData(study, result);
-        result.seoTitle = seoData.title;
-        result.seoDescription = seoData.description;
-        result.tags = seoData.tags;
-        result.keywords = seoData.keywords;
-      } catch (error) {
-        console.error('Error generating SEO data:', error);
-      }
-    }
-
     return result;
     
   } catch (error) {
@@ -480,6 +289,70 @@ async function generateSingleBlogContent(
       readingLevel: readingLevel
     };
   }
+}
+
+/**
+ * Create rule-based recommendation without AI
+ */
+function createRuleBasedRecommendation(study: any): {
+  priority: 'high' | 'medium' | 'low';
+  reason: string;
+  suggestedTypes: string[];
+  estimatedReadership: string;
+  seoKeywords: string[];
+  potentialTitle: string;
+} {
+  const title = study.title.toLowerCase();
+  const abstract = (study.abstract || '').toLowerCase();
+  const category = (study.category || '').toLowerCase();
+  
+  // Determine priority based on keywords and category
+  let priority: 'high' | 'medium' | 'low' = 'medium';
+  let reason = 'Study has limited blog coverage and could benefit from consumer-friendly articles';
+  
+  const highPriorityKeywords = ['clinical trial', 'human study', 'therapeutic', 'treatment', 'therapy', 'health benefits'];
+  const mediumPriorityKeywords = ['research', 'study', 'analysis', 'investigation'];
+  
+  if (highPriorityKeywords.some(keyword => title.includes(keyword) || abstract.includes(keyword))) {
+    priority = 'high';
+    reason = 'High-impact clinical research with direct therapeutic applications - excellent for consumer education';
+  } else if (study.blogCount === 0) {
+    priority = 'high';
+    reason = 'No existing blog coverage - high opportunity for new content creation';
+  }
+  
+  // Suggest article types based on content
+  const suggestedTypes = ['explainer'];
+  if (title.includes('clinical') || abstract.includes('patient')) {
+    suggestedTypes.push('implications');
+  }
+  if (title.includes('benefit') || abstract.includes('therapeutic')) {
+    suggestedTypes.push('benefits');
+  }
+  
+  // Estimate readership
+  const estimatedReadership = priority === 'high' ? 'High' : 'Medium';
+  
+  // Generate SEO keywords
+  const seoKeywords = [
+    'hydrogen therapy',
+    category,
+    'research study',
+    'health benefits',
+    'therapeutic applications'
+  ].filter(Boolean);
+  
+  // Create potential title
+  const potentialTitle = `Understanding ${study.title.split(' ').slice(0, 6).join(' ')}: New Research Insights`;
+  
+  return {
+    priority,
+    reason,
+    suggestedTypes,
+    estimatedReadership,
+    seoKeywords,
+    potentialTitle
+  };
 }
 
 /**
@@ -514,206 +387,37 @@ Structure:
 5. What comes next in research
 6. Conclusion with key takeaways
 
-Make it engaging, accurate, and easy to understand. Use headings and bullet points where helpful.`;
-
-    case 'summary':
-      return `${baseInfo}
-
-Write a concise research summary article (400-600 words) about this hydrogen therapy study. ${readingLevelInstruction}
-
-Structure:
-1. Brief introduction to the research question
-2. Key methodology points
-3. Main findings and results
-4. Clinical implications
-5. Bottom line for readers
-
-Focus on the most important takeaways that readers need to know.`;
+Focus on making complex science accessible while maintaining accuracy.`;
 
     case 'implications':
       return `${baseInfo}
 
-Write an article (600-800 words) focusing on the health implications and real-world applications of this hydrogen therapy research. ${readingLevelInstruction}
+Write an implications article (600-800 words) exploring what this research means for the future. ${readingLevelInstruction}
 
-Structure:
-1. Introduction to the potential health benefits
-2. What this research tells us about hydrogen therapy
-3. Practical applications for healthcare
-4. Who might benefit from these findings
-5. Future directions and next steps
-6. Conclusion with actionable insights
-
-Emphasize practical relevance and potential impact on health and wellness.`;
+Focus on:
+- Real-world applications
+- Impact on current treatments
+- Future research directions
+- Potential benefits for patients
+- Timeline for practical applications`;
 
     case 'benefits':
       return `${baseInfo}
 
-Write a benefits-focused article (600-800 words) about the potential health advantages revealed by this hydrogen therapy research. ${readingLevelInstruction}
+Write a benefits-focused article (500-700 words) highlighting the potential health advantages discovered in this study. ${readingLevelInstruction}
 
-Structure:
-1. Overview of hydrogen therapy benefits
-2. Specific benefits found in this study
-3. How these benefits might work (mechanisms)
-4. Who could potentially benefit
-5. How to interpret these research findings
-6. What to expect from future research
-
-Focus on evidence-based benefits while being clear about research limitations.`;
-
-    case 'how-to':
-      return `${baseInfo}
-
-Write a practical how-to article (700-900 words) that helps readers understand and potentially apply insights from this hydrogen therapy research. ${readingLevelInstruction}
-
-Structure:
-1. Introduction to hydrogen therapy basics
-2. What this research teaches us
-3. Practical considerations for implementation
-4. Safety considerations and precautions
-5. How to stay updated on research developments
-6. Resources for further learning
-
-Be practical and actionable while emphasizing the importance of medical consultation.`;
+Emphasize:
+- Specific health benefits identified
+- How these benefits could help people
+- Safety considerations
+- Comparison to existing treatments
+- Who might benefit most`;
 
     default:
       return `${baseInfo}
 
-Write an informative article (600-800 words) about this hydrogen therapy research study. ${readingLevelInstruction}
+Write an informative article about this hydrogen therapy research. ${readingLevelInstruction}
 
-Make it engaging, accurate, and accessible to your target audience. Include key findings, significance, and implications for health and wellness.`;
+Make it engaging and accessible while maintaining scientific accuracy.`;
   }
-}
-
-/**
- * Generate image for blog article using DALL-E
- */
-async function generateBlogImage(study: any, title: string): Promise<{
-  prompt: string;
-  url: string;
-  alt: string;
-}> {
-  const imagePrompt = `Create a professional, scientific illustration representing hydrogen therapy research. The image should be modern, clean, and educational, showing molecular hydrogen (H2) in a medical/health context. Include visual elements that suggest cellular health, medical research, or therapeutic benefits. Style: Clean, modern, professional medical illustration with soft blue and white colors. No text or people in the image.`;
-
-  const imageResponse = await openai.images.generate({
-    model: "dall-e-3",
-    prompt: imagePrompt,
-    n: 1,
-    size: "1024x1024",
-    quality: "standard",
-  });
-
-  const imageUrl = imageResponse.data?.[0]?.url;
-  
-  if (!imageUrl) {
-    throw new Error('Failed to generate image');
-  }
-
-  return {
-    prompt: imagePrompt,
-    url: imageUrl,
-    alt: `Scientific illustration representing hydrogen therapy research: ${title}`
-  };
-}
-
-/**
- * Generate SEO optimization data
- */
-async function generateSEOData(study: any, blogContent: GeneratedBlogContent): Promise<{
-  title: string;
-  description: string;
-  tags: string[];
-  keywords: string[];
-}> {
-  const seoPrompt = `Generate SEO optimization data for this hydrogen therapy blog article:
-
-Title: ${blogContent.title}
-Summary: ${blogContent.summary}
-Study Category: ${study.category}
-Content Preview: ${blogContent.content.substring(0, 300)}...
-
-Provide:
-1. SEO-optimized title (55-60 characters, includes primary keyword)
-2. Meta description (150-160 characters, compelling and keyword-rich)
-3. 5-8 relevant tags for categorization
-4. 8-12 SEO keywords (mix of long-tail and short-tail)
-
-Focus on keywords people would search for when looking for hydrogen therapy information.
-
-Respond in JSON format:
-{
-  "title": "SEO title",
-  "description": "meta description",
-  "tags": ["tag1", "tag2"],
-  "keywords": ["keyword1", "keyword2"]
-}`;
-
-  const seoResponse = await openai.chat.completions.create({
-    model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    messages: [
-      {
-        role: "system",
-        content: "You are an SEO expert specializing in health and medical content optimization."
-      },
-      {
-        role: "user",
-        content: seoPrompt
-      }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.7,
-    max_tokens: 400
-  });
-
-  const seoData = JSON.parse(seoResponse.choices[0].message.content || '{}');
-  
-  return {
-    title: seoData.title || blogContent.title,
-    description: seoData.description || blogContent.summary,
-    tags: seoData.tags || ['hydrogen therapy', 'research', 'health'],
-    keywords: seoData.keywords || ['hydrogen therapy', 'molecular hydrogen', 'health benefits', 'medical research']
-  };
-}
-
-/**
- * Save generated blogs to database
- */
-export async function saveBulkGeneratedBlogs(results: BulkGenerationResult[]): Promise<{
-  saved: number;
-  failed: number;
-  errors: string[];
-}> {
-  let saved = 0;
-  let failed = 0;
-  const errors: string[] = [];
-
-  for (const result of results) {
-    if (!result.success) {
-      failed++;
-      errors.push(`Study ${result.studyId}: ${result.error}`);
-      continue;
-    }
-
-    for (const blog of result.generatedBlogs) {
-      try {
-        await db.insert(blogArticles).values({
-          studyId: result.studyId,
-          title: blog.title,
-          slug: blog.slug,
-          summary: blog.summary,
-          content: blog.content,
-          articleType: blog.articleType,
-          readingLevel: blog.readingLevel,
-          imageUrl: blog.imageUrl || null,
-          imageAlt: blog.imageAlt || null,
-          isPublished: false, // Start as draft
-        });
-        saved++;
-      } catch (error) {
-        failed++;
-        errors.push(`Failed to save blog for study ${result.studyId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-  }
-
-  return { saved, failed, errors };
 }
