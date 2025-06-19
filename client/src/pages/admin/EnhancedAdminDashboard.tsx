@@ -72,7 +72,7 @@ const EnhancedAdminDashboard: React.FC = () => {
 
   // Fetch dashboard data
   const { data: dashboardStats } = useQuery({
-    queryKey: ['/api/admin/dashboard-stats'],
+    queryKey: ['/api/stats/dashboard'],
     staleTime: 30000
   });
 
@@ -134,11 +134,11 @@ const EnhancedAdminDashboard: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const stats = dashboardStats || {
-    totalStudies: studies.length,
+  const stats = {
+    totalStudies: (dashboardStats as any)?.totalStudies || studies.length,
     publishedStudies: studies.filter(s => s.isPublished).length,
-    totalBlogs: blogArticles.length,
-    publishedBlogs: blogArticles.filter(b => b.isPublished).length,
+    totalBlogs: (dashboardStats as any)?.totalBlogs || blogArticles.length,
+    publishedBlogs: (dashboardStats as any)?.publishedBlogs || blogArticles.filter(b => b.isPublished).length,
     totalViews: studies.reduce((sum, s) => sum + (s.viewCount || 0), 0) + 
                 blogArticles.reduce((sum, b) => sum + (b.viewCount || 0), 0),
     recentActivity: []
