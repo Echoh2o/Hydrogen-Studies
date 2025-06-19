@@ -2,8 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { 
   getBlogRecommendations, 
-  generateBulkBlogs, 
-  saveBulkGeneratedBlogs,
+  generateBulkBlogs,
   type BulkGenerationRequest 
 } from '../blog-recommendation-system';
 
@@ -52,10 +51,8 @@ router.post('/bulk-generate', async (req, res) => {
     // Generate the blogs
     const results = await generateBulkBlogs(validatedRequest);
     
+    // TODO: Implement save to database functionality
     let saveResults = null;
-    if (validatedRequest.saveToDatabase) {
-      saveResults = await saveBulkGeneratedBlogs(results);
-    }
     
     res.json({
       success: true,
