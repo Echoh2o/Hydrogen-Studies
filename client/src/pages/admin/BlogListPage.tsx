@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AdminLayout } from '@/components/admin/AdminLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,9 +70,9 @@ export default function BlogListPage() {
   // Delete blog mutation
   const deleteBlogMutation = useMutation({
     mutationFn: (blogId: number) => 
-      apiRequest(`/api/blogs/${blogId}`, {
+      fetch(`/api/blogs/${blogId}`, {
         method: 'DELETE'
-      }),
+      }).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
       toast({
@@ -92,10 +92,11 @@ export default function BlogListPage() {
   // Toggle publish status mutation
   const togglePublishMutation = useMutation({
     mutationFn: ({ blogId, isPublished }: { blogId: number; isPublished: boolean }) =>
-      apiRequest(`/api/blogs/${blogId}`, {
+      fetch(`/api/blogs/${blogId}`, {
         method: 'PUT',
-        body: { isPublished }
-      }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublished })
+      }).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
       toast({
@@ -136,7 +137,7 @@ export default function BlogListPage() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
+      <AdminLayout title="Blog Management">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -149,7 +150,7 @@ export default function BlogListPage() {
 
   if (error) {
     return (
-      <AdminLayout>
+      <AdminLayout title="Blog Management">
         <div className="text-center py-8">
           <p className="text-red-500">Error loading blogs: {error.message}</p>
         </div>
@@ -158,7 +159,7 @@ export default function BlogListPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Blog Management">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
