@@ -17,7 +17,7 @@ import ProductsPage from "@/pages/ProductsPage";
 
 import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
 import HealthBenefitsPage from "@/pages/HealthBenefitsPage";
-import BlogListPage from "@/pages/BlogListPage";
+import PublicBlogListPage from "@/pages/BlogListPage";
 import BlogArticlePage from "@/pages/BlogArticlePage";
 import ContactUsPage from "@/pages/ContactUsPage";
 import Studies from "@/pages/studies";
@@ -74,6 +74,7 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const BlogGeneratePage = lazy(() => import('./pages/admin/BlogGeneratePage'));
 const BlogAddPage = lazy(() => import('./pages/admin/BlogAddPage'));
 const BlogEditPage = lazy(() => import('./pages/admin/BlogEditPage'));
+const BlogListPage = lazy(() => import('./pages/admin/BlogListPage'));
 const ResearchImportPage = lazy(() => import('./pages/admin/ResearchImportPage'));
 const DataImportPage = lazy(() => import('./pages/admin/DataImportPage'));
 const ResearchDatabasePage = lazy(() => import('./pages/admin/ResearchDatabasePage'));
@@ -116,7 +117,7 @@ function Router() {
       <Route path="/contact" component={ContactUsPage} />
       <Route path="/learn/basics" component={HydrogenBasicsPage} />
       <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
-      <Route path="/blog" component={BlogListPage} />
+      <Route path="/blog" component={PublicBlogListPage} />
       <Route path="/blog/:id" component={BlogArticlePage} />
       <Route path="/categories/:category" component={ConditionCategoryPage} />
       <Route path="/categories/health-conditions" component={ExploreByCondition} />
@@ -148,7 +149,7 @@ function Router() {
       <Route path="/admin/studies" component={StudiesManagementPage} />
       <Route path="/admin/studies/add" component={AddStudyPage} />
       <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
-      <Route path="/admin/blogs" component={BlogsPage} />
+      <Route path="/admin/blogs" component={BlogListPage} />
       <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
       <Route path="/admin/blog-generator" component={BlogGeneratePage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
