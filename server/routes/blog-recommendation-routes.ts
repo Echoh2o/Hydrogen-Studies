@@ -14,9 +14,11 @@ const router = Router();
  */
 router.get('/recommendations', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 20;
+    console.log('Blog recommendations endpoint called');
+    const limit = parseInt(req.query.limit as string) || 10; // Reduced default limit
     const recommendations = await getBlogRecommendations(limit);
     
+    console.log(`Returning ${recommendations.length} recommendations`);
     res.json({
       success: true,
       data: recommendations,
