@@ -28,9 +28,16 @@ router.get('/stats/dashboard', async (req, res) => {
       .where(eq(blogArticles.isPublished, false));
 
     // Get total studies count
-    const [studiesResult] = await db
-      .select({ count: count() })
-      .from(studies);
+    let studiesCount = 0;
+    try {
+      const [studiesResult] = await db
+        .select({ count: count() })
+        .from(studies);
+      studiesCount = studiesResult?.count || 0;
+    } catch (error) {
+      console.log('Studies table not accessible, using default count');
+      studiesCount = 0;
+    }
     
     // Get categories count (approximate)
     const categoriesCount = 8; // Known categories from the system
@@ -41,7 +48,7 @@ router.get('/stats/dashboard', async (req, res) => {
       publishedBlogs: publishedResult.count,
       draftBlogs: draftResult.count,
       // Study stats  
-      totalStudies: studiesResult?.count || 0,
+      totalStudies: studiesCount,
       categoriesCount,
       recentImports: 0 // Will be enhanced when import tracking is added
     };
