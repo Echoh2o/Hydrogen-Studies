@@ -51,6 +51,18 @@ export default function DashboardPage() {
     categoriesCount: (stats as any)?.categoriesCount || 8,
     recentImports: (stats as any)?.recentImports || 0,
   };
+
+  // Show loading state while fetching data
+  if (isLoadingStats) {
+    return (
+      <AdminLayout title="Dashboard" description="Admin dashboard overview">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading dashboard statistics...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
   
   return (
     <AdminLayout title="Dashboard" description="Admin dashboard overview">
@@ -64,6 +76,11 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">
             Welcome to the HydrogenStudies admin dashboard
           </p>
+          {stats && (
+            <div className="text-xs text-muted-foreground mt-1">
+              Last updated: {new Date().toLocaleTimeString()}
+            </div>
+          )}
         </div>
         
         {/* Quick Action Cards */}
