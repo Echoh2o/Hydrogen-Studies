@@ -47,13 +47,17 @@ export default function BlogAddPage() {
   
   // Function to generate slug from title
   const generateSlug = (title: string): string => {
+    if (!title) return '';
+    
     return title
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '')  // Remove special characters except hyphens
+      .trim()
+      .replace(/[^\w\s-]/g, '')  // Remove special characters except word chars, spaces, hyphens
       .replace(/\s+/g, '-')      // Replace spaces with hyphens
       .replace(/-+/g, '-')       // Replace multiple hyphens with single hyphen
       .replace(/^-+|-+$/g, '')   // Remove leading/trailing hyphens
-      .trim();
+      .replace(/[^a-z0-9-]/g, '') // Ensure only lowercase letters, numbers, and hyphens
+      || 'untitled-blog';        // Fallback if empty
   };
   
   // Handle input changes
@@ -94,6 +98,26 @@ export default function BlogAddPage() {
   // Create blog mutation
   const createBlogMutation = useMutation({
     mutationFn: async () => {
+      // Validate blog data before sending
+      if (!blogData.title || blogData.title.length < 3) {
+        throw new Error('Title must be at least 3 characters');
+      }
+      if (!blogData.slug || blogData.slug.length < 3) {
+        throw new Error('Slug must be at least 3 characters');
+      }
+      if (!blogData.summary || blogData.summary.length < 10) {
+        throw new Error('Summary must be at least 10 characters');
+      }
+      if (!blogData.content || blogData.content.length < 50) {
+        throw new Error('Content must be at least 50 characters');
+      }
+      
+      // Test slug pattern
+      const slugPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+      if (!slugPattern.test(blogData.slug)) {
+        throw new Error('Slug must contain only lowercase letters, numbers, and hyphens (no leading/trailing hyphens)');
+      }
+      
       const response = await apiRequest('POST', '/api/blogs', blogData);
       return response.json();
     },
