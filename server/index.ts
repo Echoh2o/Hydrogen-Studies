@@ -18,6 +18,7 @@ import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-rout
 import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
 import enrichmentRoutes from "./routes/enrichment-routes";
 import blogRoutes from "./routes/blog-routes";
+import blogRecommendationRoutes from "./routes/blog-recommendation-routes";
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
 import { handleError } from './utils/error-handler';
 import { qualityAudit } from './comprehensive-quality-audit';
@@ -90,6 +91,7 @@ app.use('/api/keywords', keywordMonitorRoutes); // Keyword monitor routes
 app.use('/api/content-enrichment', contentEnrichmentRoutes); // Content enrichment routes
 app.use('/api/enrichment', enrichmentRoutes); // Enrichment routes
 app.use('/api/blogs', blogRoutes); // Blog routes
+app.use('/api/blog-recommendations', blogRecommendationRoutes); // Blog recommendation routes
 app.use('/api/studies', studiesRouter); // Mount the studies router
 app.use(researchUnifiedRoutes); // Research unified routes
 
