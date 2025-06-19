@@ -113,22 +113,20 @@ app.get('/api/stats/dashboard', async (req, res) => {
       .from(blogArticles)
       .where(eq(blogArticles.isPublished, false));
 
-    // Get total studies count
+    // Get total studies count using SQL query
     let studiesCount = 0;
     try {
-      const [studiesResult] = await db
-        .select({ count: count() })
-        .from(studies);
-      studiesCount = studiesResult?.count || 0;
+      const result = await sql`SELECT COUNT(*) as count FROM studies`;
+      studiesCount = Number(result[0]?.count) || 0;
     } catch (error) {
-      console.log('Studies table query failed, using API fallback');
-      // Fallback to studies API count
+      console.log('Direct SQL query failed, trying table query');
       try {
-        const response = await fetch('http://localhost:5000/api/studies?limit=1');
-        const data = await response.json();
-        studiesCount = data?.pagination?.total || 0;
-      } catch (fetchError) {
-        console.log('Studies API also failed, using 0');
+        const [studiesResult] = await db
+          .select({ count: count() })
+          .from(studies);
+        studiesCount = studiesResult?.count || 0;
+      } catch (tableError) {
+        console.log('Table query also failed, using 0');
         studiesCount = 0;
       }
     }
