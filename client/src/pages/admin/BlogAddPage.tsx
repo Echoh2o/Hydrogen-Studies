@@ -37,13 +37,19 @@ export default function BlogAddPage() {
     content: '',
     readingLevel: '6th',
     articleType: 'manual', 
-    studyId: 0,
+    studyId: 1, // Default to first study
     editorNotes: '',
     isPublished: false,
   });
   
   const [activeTab, setActiveTab] = useState('content');
   const [createdBlogId, setCreatedBlogId] = useState<number | null>(null);
+  
+  // Fetch studies for dropdown
+  const { data: studies = [] } = useQuery({
+    queryKey: ['/api/studies'],
+    staleTime: 300000, // 5 minutes
+  });
   
   // Function to generate slug from title
   const generateSlug = (title: string): string => {
@@ -80,7 +86,7 @@ export default function BlogAddPage() {
   };
   
   // Handle select changes
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: string | number) => {
     setBlogData(prev => ({
       ...prev,
       [name]: value,
@@ -110,6 +116,9 @@ export default function BlogAddPage() {
       }
       if (!blogData.content || blogData.content.length < 50) {
         throw new Error('Content must be at least 50 characters');
+      }
+      if (!blogData.studyId || blogData.studyId < 1) {
+        throw new Error('Please select a study');
       }
       
       // Test slug pattern
@@ -309,6 +318,28 @@ export default function BlogAddPage() {
                   description="A short summary that will appear in blog lists and search results"
                 />
                 
+                <div className="space-y-2">
+                  <Label htmlFor="studyId">Related Study <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={blogData.studyId.toString()} 
+                    onValueChange={(value) => handleSelectChange('studyId', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a study" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {studies?.slice(0, 50)?.map((study: any) => (
+                        <SelectItem key={study.id} value={study.id.toString()}>
+                          {study.title?.length > 60 ? `${study.title.substring(0, 60)}...` : study.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Choose the study this blog article will be about
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="articleType">Article Type</Label>
