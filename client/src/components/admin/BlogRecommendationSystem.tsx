@@ -100,10 +100,12 @@ export function BlogRecommendationSystem() {
   });
 
   // Fetch blog recommendations
-  const { data: recommendations = [], isLoading: isLoadingRecommendations, refetch } = useQuery({
+  const { data: recommendationsResponse, isLoading: isLoadingRecommendations, refetch } = useQuery({
     queryKey: ['/api/blog-recommendations/recommendations'],
     staleTime: 300000, // 5 minutes
   });
+  
+  const recommendations: BlogRecommendation[] = recommendationsResponse?.data || [];
 
   // Preview generation mutation
   const previewMutation = useMutation({
@@ -114,8 +116,7 @@ export function BlogRecommendationSystem() {
         articleTypes: generationOptions.articleTypes
       });
     },
-    onSuccess: (response) => {
-      const data = response.data;
+    onSuccess: (data) => {
       toast({
         title: 'Generation Preview',
         description: `Will generate ${data.totalBlogsToGenerate} blogs for ${data.selectedStudiesCount} studies. Estimated time: ${data.estimatedTimeDisplay}`,
@@ -198,7 +199,7 @@ export function BlogRecommendationSystem() {
   };
 
   const selectAllStudies = () => {
-    setSelectedStudies(new Set(recommendations.map((r: BlogRecommendation) => r.studyId)));
+    setSelectedStudies(new Set(recommendations.map((r) => r.studyId)));
   };
 
   const clearAllSelections = () => {
@@ -207,8 +208,8 @@ export function BlogRecommendationSystem() {
 
   const selectByPriority = (priority: 'high' | 'medium' | 'low') => {
     const studyIds = recommendations
-      .filter((r: BlogRecommendation) => r.priority === priority)
-      .map((r: BlogRecommendation) => r.studyId);
+      .filter((r) => r.priority === priority)
+      .map((r) => r.studyId);
     setSelectedStudies(new Set(studyIds));
   };
 
@@ -279,13 +280,13 @@ export function BlogRecommendationSystem() {
                   Clear All
                 </Button>
                 <Button onClick={() => selectByPriority('high')} variant="outline" size="sm">
-                  High Priority ({recommendations.filter((r: BlogRecommendation) => r.priority === 'high').length})
+                  High Priority ({recommendations.filter((r) => r.priority === 'high').length})
                 </Button>
                 <Button onClick={() => selectByPriority('medium')} variant="outline" size="sm">
-                  Medium Priority ({recommendations.filter((r: BlogRecommendation) => r.priority === 'medium').length})
+                  Medium Priority ({recommendations.filter((r) => r.priority === 'medium').length})
                 </Button>
                 <Button onClick={() => selectByPriority('low')} variant="outline" size="sm">
-                  Low Priority ({recommendations.filter((r: BlogRecommendation) => r.priority === 'low').length})
+                  Low Priority ({recommendations.filter((r) => r.priority === 'low').length})
                 </Button>
               </div>
               {selectedStudies.size > 0 && (
@@ -301,7 +302,7 @@ export function BlogRecommendationSystem() {
           {/* Recommendations List */}
           <ScrollArea className="h-[600px]">
             <div className="space-y-4">
-              {recommendations.map((recommendation: BlogRecommendation) => (
+              {recommendations.map((recommendation) => (
                 <Card key={recommendation.studyId} className={`transition-all ${
                   selectedStudies.has(recommendation.studyId) 
                     ? 'ring-2 ring-primary shadow-md' 
