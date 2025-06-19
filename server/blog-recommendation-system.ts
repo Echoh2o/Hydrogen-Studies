@@ -343,13 +343,16 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
       // Generate blogs for each requested article type
       for (const articleType of request.articleTypes) {
         try {
-          const blogContent = await generateSingleBlogContent(
-            study,
-            articleType,
-            request.readingLevel,
-            request.includeImages,
-            request.includeSEO
-          );
+          const blogContent = await Promise.race([
+            generateSingleBlogContent(
+              study,
+              articleType,
+              request.readingLevel,
+              request.includeImages,
+              request.includeSEO
+            ),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Blog generation timeout')), 25000))
+          ]);
           
           generatedBlogs.push(blogContent);
         } catch (error) {
@@ -391,60 +394,42 @@ async function generateSingleBlogContent(
   includeSEO: boolean
 ): Promise<GeneratedBlogContent> {
   
-  // Generate main content
-  const contentPrompt = createContentPrompt(study, articleType, readingLevel);
-  
-  const contentResponse = await openai.chat.completions.create({
-    model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert medical content writer specializing in making complex research accessible. Write engaging, accurate blog content about hydrogen therapy research.`
-      },
-      {
-        role: "user",
-        content: contentPrompt
-      }
-    ],
-    temperature: 0.7,
-    max_tokens: 2000
-  });
+  try {
+    // Generate main content with timeout
+    const contentPrompt = createContentPrompt(study, articleType, readingLevel);
+    
+    const contentResponse = await Promise.race([
+      openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert medical content writer. Write concise, engaging content about hydrogen therapy research.`
+          },
+          {
+            role: "user",
+            content: contentPrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1200
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('OpenAI timeout')), 10000))
+    ]);
 
-  const content = contentResponse.choices[0].message.content || '';
+    const content = (contentResponse as any).choices[0]?.message?.content || 
+      generateFallbackContent(study, articleType, readingLevel);
 
-  // Generate title and summary
-  const metaPrompt = `Based on this blog content about hydrogen therapy research, provide:
-1. An engaging, SEO-optimized title (60 characters or less)
-2. A compelling 2-3 sentence summary for previews and social sharing
-3. A URL-friendly slug
+    // Generate optimized metadata quickly
+    const baseTitle = `${study.title.split(' ').slice(0, 8).join(' ')}`;
+    const slug = baseTitle.toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .substring(0, 60);
 
-Content preview: ${content.substring(0, 500)}...
-
-Respond in JSON format:
-{
-  "title": "engaging title",
-  "summary": "compelling summary",
-  "slug": "url-friendly-slug"
-}`;
-
-  const metaResponse = await openai.chat.completions.create({
-    model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    messages: [
-      {
-        role: "system", 
-        content: "You are an SEO and content marketing expert. Create optimized titles, summaries, and slugs for blog articles."
-      },
-      {
-        role: "user",
-        content: metaPrompt
-      }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.7,
-    max_tokens: 300
-  });
-
-  const meta = JSON.parse(metaResponse.choices[0].message.content || '{}');
+    const summary = study.abstract 
+      ? `${study.abstract.substring(0, 150)}...`
+      : `New research explores hydrogen therapy applications in ${study.category.toLowerCase()}.`;
 
   const result: GeneratedBlogContent = {
     title: meta.title || `Understanding ${study.title.split(' ').slice(0, 6).join(' ')}`,
