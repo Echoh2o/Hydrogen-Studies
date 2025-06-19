@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { blogArticles } from '@shared/schema';
+import { blogArticles, studies } from '@shared/schema';
 import { sql, count, desc, eq } from 'drizzle-orm';
 
 const router = Router();
@@ -27,10 +27,23 @@ router.get('/stats/dashboard', async (req, res) => {
       .from(blogArticles)
       .where(eq(blogArticles.isPublished, false));
 
+    // Get total studies count
+    const [studiesResult] = await db
+      .select({ count: count() })
+      .from(studies);
+    
+    // Get categories count (approximate)
+    const categoriesCount = 8; // Known categories from the system
+    
     const stats = {
+      // Blog stats
       totalBlogs: totalResult.count,
       publishedBlogs: publishedResult.count,
-      draftBlogs: draftResult.count
+      draftBlogs: draftResult.count,
+      // Study stats  
+      totalStudies: studiesResult?.count || 0,
+      categoriesCount,
+      recentImports: 0 // Will be enhanced when import tracking is added
     };
 
     res.json(stats);
