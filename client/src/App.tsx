@@ -270,7 +270,9 @@ function App() {
             <CookieConsent />
           )}
           <main className={`flex-1 ${isAdminRoute ? 'p-0' : ''}`}>
-            <Router />
+            <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
+              <Router />
+            </Suspense>
           </main>
           {!isAdminRoute && !isHomePage && <Footer />}
         </div>
