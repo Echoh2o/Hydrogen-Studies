@@ -43,16 +43,20 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
   const [createdBlogId, setCreatedBlogId] = useState<number | undefined>(blogId);
   
   // Fetch studies for dropdown
-  const { data: studies = [] } = useQuery({
-    queryKey: ['/api/studies'],
+  const { data: studiesResponse } = useQuery({
+    queryKey: ['/api/studies/first/50'],
     staleTime: 300000, // 5 minutes
   });
   
+  const studies: Array<{id: number, title: string}> = studiesResponse?.data || [];
+  
   // If editing, fetch blog data
-  const { data: blogData } = useQuery({
+  const { data: blogResponse } = useQuery({
     queryKey: [`/api/blogs/${blogId}`],
     enabled: !!blogId,
   });
+  
+  const blogData = blogResponse?.data;
   
   // Initialize form with default values or existing blog data
   const form = useForm<BlogFormValues>({
