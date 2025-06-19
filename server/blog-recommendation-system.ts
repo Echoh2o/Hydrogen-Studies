@@ -354,7 +354,7 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
             new Promise((_, reject) => setTimeout(() => reject(new Error('Blog generation timeout')), 25000))
           ]);
           
-          generatedBlogs.push(blogContent);
+          generatedBlogs.push(blogContent as GeneratedBlogContent);
         } catch (error) {
           console.error(`Error generating ${articleType} blog for study ${studyId}:`, error);
         }
@@ -418,7 +418,7 @@ async function generateSingleBlogContent(
     ]);
 
     const content = (contentResponse as any).choices[0]?.message?.content || 
-      generateFallbackContent(study, articleType, readingLevel);
+      `This is a ${articleType} article about ${study.title}. ${study.abstract || 'Research findings on hydrogen therapy applications.'}`;
 
     // Generate optimized metadata quickly
     const baseTitle = `${study.title.split(' ').slice(0, 8).join(' ')}`;
@@ -431,41 +431,55 @@ async function generateSingleBlogContent(
       ? `${study.abstract.substring(0, 150)}...`
       : `New research explores hydrogen therapy applications in ${study.category.toLowerCase()}.`;
 
-  const result: GeneratedBlogContent = {
-    title: meta.title || `Understanding ${study.title.split(' ').slice(0, 6).join(' ')}`,
-    slug: meta.slug || slugify(meta.title || study.title, { lower: true, strict: true }),
-    summary: meta.summary || 'Exploring the latest research in hydrogen therapy and its potential health benefits.',
-    content: content,
-    articleType: articleType,
-    readingLevel: readingLevel
-  };
+    const result: GeneratedBlogContent = {
+      title: baseTitle.length > 60 ? baseTitle.substring(0, 60) + '...' : baseTitle,
+      slug: slug,
+      summary: summary,
+      content: content,
+      articleType: articleType,
+      readingLevel: readingLevel
+    };
 
-  // Generate image if requested
-  if (includeImages) {
-    try {
-      const imageData = await generateBlogImage(study, result.title);
-      result.imagePrompt = imageData.prompt;
-      result.imageUrl = imageData.url;
-      result.imageAlt = imageData.alt;
-    } catch (error) {
-      console.error('Error generating image:', error);
+    // Generate image if requested
+    if (includeImages) {
+      try {
+        const imageData = await generateBlogImage(study, result.title);
+        result.imagePrompt = imageData.prompt;
+        result.imageUrl = imageData.url;
+        result.imageAlt = imageData.alt;
+      } catch (error) {
+        console.error('Error generating image:', error);
+      }
     }
-  }
 
-  // Generate SEO data if requested
-  if (includeSEO) {
-    try {
-      const seoData = await generateSEOData(study, result);
-      result.seoTitle = seoData.title;
-      result.seoDescription = seoData.description;
-      result.tags = seoData.tags;
-      result.keywords = seoData.keywords;
-    } catch (error) {
-      console.error('Error generating SEO data:', error);
+    // Generate SEO data if requested
+    if (includeSEO) {
+      try {
+        const seoData = await generateSEOData(study, result);
+        result.seoTitle = seoData.title;
+        result.seoDescription = seoData.description;
+        result.tags = seoData.tags;
+        result.keywords = seoData.keywords;
+      } catch (error) {
+        console.error('Error generating SEO data:', error);
+      }
     }
-  }
 
-  return result;
+    return result;
+    
+  } catch (error) {
+    console.error('Error generating blog content:', error);
+    // Return simple fallback content
+    const baseTitle = study.title.split(' ').slice(0, 8).join(' ');
+    return {
+      title: baseTitle.length > 60 ? baseTitle.substring(0, 60) + '...' : baseTitle,
+      slug: baseTitle.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 60),
+      summary: `Research findings on ${study.title.toLowerCase().substring(0, 100)}...`,
+      content: `This study titled "${study.title}" presents important findings in ${study.category}. ${study.abstract || 'The research contributes to our understanding of hydrogen therapy applications.'}`,
+      articleType: articleType,
+      readingLevel: readingLevel
+    };
+  }
 }
 
 /**
