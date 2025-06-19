@@ -375,7 +375,7 @@ export default function BlogEditPage() {
                       <SelectValue placeholder="Select related study" />
                     </SelectTrigger>
                     <SelectContent>
-                      {studies.map((study: any) => (
+                      {Array.isArray(studies) && studies.map((study: any) => (
                         <SelectItem key={study.id} value={study.id.toString()}>
                           {study.title}
                         </SelectItem>
