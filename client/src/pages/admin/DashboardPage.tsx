@@ -53,6 +53,15 @@ export default function DashboardPage() {
     recentImports: 0,
   };
   
+  // For dashboard display, use more descriptive names
+  const dashboardStats = {
+    totalStudies: displayStats.totalStudies,
+    totalBlogs: displayStats.totalBlogs,
+    pendingBlogs: displayStats.draftBlogs, // Draft blogs are pending
+    categoriesCount: displayStats.categoriesCount,
+    recentImports: displayStats.recentImports,
+  };
+  
   return (
     <AdminLayout title="Dashboard" description="Admin dashboard overview">
       <Helmet>
@@ -173,7 +182,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{displayStats.totalStudies}</div>
+              <div className="text-2xl font-bold">{dashboardStats.totalStudies}</div>
               <p className="text-xs text-muted-foreground">Hydrogen research studies in database</p>
             </CardContent>
           </Card>
@@ -186,7 +195,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{displayStats.totalBlogs}</div>
+              <div className="text-2xl font-bold">{dashboardStats.totalBlogs}</div>
               <p className="text-xs text-muted-foreground">Published blog articles</p>
             </CardContent>
           </Card>
@@ -199,7 +208,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{displayStats.pendingBlogs}</div>
+              <div className="text-2xl font-bold">{dashboardStats.pendingBlogs}</div>
               <p className="text-xs text-muted-foreground">Blogs awaiting review/publishing</p>
             </CardContent>
           </Card>
@@ -212,7 +221,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{displayStats.recentImports}</div>
+              <div className="text-2xl font-bold">{dashboardStats.recentImports}</div>
               <p className="text-xs text-muted-foreground">Studies imported in last 30 days</p>
             </CardContent>
           </Card>
