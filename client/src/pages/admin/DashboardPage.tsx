@@ -43,16 +43,15 @@ export default function DashboardPage() {
     });
   };
   
-  // Placeholder data for stats when API isn't implemented yet
-  const placeholderStats = {
-    totalStudies: '1,523',
-    totalBlogs: '47',
-    pendingBlogs: '12',
-    categoriesCount: '8',
-    recentImports: '23',
+  // Use real stats from API, with sensible defaults if loading
+  const displayStats = stats || {
+    totalStudies: 0,
+    totalBlogs: 0,
+    publishedBlogs: 0,
+    draftBlogs: 0,
+    categoriesCount: 0,
+    recentImports: 0,
   };
-  
-  const displayStats = stats || placeholderStats;
   
   return (
     <AdminLayout title="Dashboard" description="Admin dashboard overview">
