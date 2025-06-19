@@ -215,7 +215,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {studies.map((study) => (
+                    {studies.map((study: {id: number, title: string}) => (
                       <SelectItem key={study.id} value={study.id.toString()}>
                         {study.title}
                       </SelectItem>
