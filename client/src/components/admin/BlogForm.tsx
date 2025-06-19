@@ -23,7 +23,7 @@ const blogSchema = z.object({
   studyId: z.number().min(1, "Please select a study"),
   readingLevel: z.string().default("general"),
   slug: z.string().min(3, "Slug must be at least 3 characters")
-    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
+    .regex(/^[a-z0-9]+([a-z0-9-]*[a-z0-9]+)*$/, "Slug must start and end with letters/numbers, and only contain lowercase letters, numbers, and hyphens"),
   isPublished: z.boolean().default(false),
   editorNotes: z.string().optional(),
   articleType: z.string().optional()
