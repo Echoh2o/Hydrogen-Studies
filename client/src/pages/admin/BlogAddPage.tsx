@@ -24,6 +24,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { MediaUpload } from '@/components/common/MediaUpload';
 import { BlogImageGenerator } from '@/components/admin/BlogImageGenerator';
 import { BlogContentSuggestions } from '@/components/admin/BlogContentSuggestions';
+import { BlogRecommendationSystem } from '@/components/admin/BlogRecommendationSystem';
 
 export default function BlogAddPage() {
   const { toast } = useToast();
@@ -208,99 +209,19 @@ export default function BlogAddPage() {
                   </p>
                 </div>
 
-                {/* AI Content Suggestions for Unsaved Blog */}
+                {/* AI Blog Recommendation System */}
                 <Card className="border-dashed border-2 border-primary/50 bg-primary/5">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      AI Content Suggestions
+                      AI Blog Recommendations
                     </CardTitle>
                     <CardDescription>
-                      Get AI-powered content suggestions for your blog
+                      Get AI-powered recommendations for high-impact blog articles
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                      {/* Title Suggestions */}
-                      <Button 
-                        variant="outline" 
-                        className="flex justify-start items-center gap-2"
-                        onClick={() => {
-                          if (blogData.title || blogData.content || blogData.summary) {
-                            toast({
-                              title: "Generating title suggestions...",
-                              description: "AI is creating title suggestions based on your content."
-                            });
-                            
-                            // Mock implementation - would normally call the API
-                            setTimeout(() => {
-                              const mockTitles = [
-                                "Hydrogen Therapy: The Future of Inflammation Treatment",
-                                "How Molecular Hydrogen Is Revolutionizing Medical Research",
-                                "Understanding the Impact of H2 on Cellular Health"
-                              ];
-                              
-                              const randomTitle = mockTitles[Math.floor(Math.random() * mockTitles.length)];
-                              
-                              setBlogData({
-                                ...blogData,
-                                title: randomTitle
-                              });
-                              
-                              toast({
-                                title: "Title Updated",
-                                description: "An AI-suggested title has been applied to your blog."
-                              });
-                            }, 1500);
-                          } else {
-                            toast({
-                              title: "Content Required",
-                              description: "Please add some content to your blog first.",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                      >
-                        Suggest Title
-                      </Button>
-                      
-                      {/* Summary Suggestions */}
-                      <Button 
-                        variant="outline"
-                        className="flex justify-start items-center gap-2"
-                        onClick={() => {
-                          if (blogData.title || blogData.content) {
-                            toast({
-                              title: "Generating summary...",
-                              description: "AI is creating a summary based on your content."
-                            });
-                            
-                            // In a real implementation, this would call the API
-                            setTimeout(() => {
-                              const mockSummary = "<p>This article explores the latest research on molecular hydrogen and its therapeutic potential. It discusses mechanisms of action, clinical applications, and future directions for hydrogen therapy research.</p>";
-                              
-                              setBlogData({
-                                ...blogData,
-                                summary: mockSummary
-                              });
-                              
-                              toast({
-                                title: "Summary Updated",
-                                description: "An AI-generated summary has been applied to your blog."
-                              });
-                            }, 1500);
-                          } else {
-                            toast({
-                              title: "Content Required",
-                              description: "Please add a title or main content first.",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                      >
-                        Generate Summary
-                      </Button>
-                    </div>
+                  <CardContent>
+                    <BlogRecommendationSystem />
                   </CardContent>
                 </Card>
                 
@@ -328,7 +249,7 @@ export default function BlogAddPage() {
                       <SelectValue placeholder="Select a study" />
                     </SelectTrigger>
                     <SelectContent>
-                      {studies?.slice(0, 50)?.map((study: any) => (
+                      {Array.isArray(studies) && studies?.slice(0, 50)?.map((study: any) => (
                         <SelectItem key={study.id} value={study.id.toString()}>
                           {study.title?.length > 60 ? `${study.title.substring(0, 60)}...` : study.title}
                         </SelectItem>
