@@ -56,7 +56,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
     enabled: !!blogId,
   });
   
-  const blogData = blogResponse?.data as any;
+  const blogData = (blogResponse as any)?.data;
   
   // Initialize form with default values or existing blog data
   const form = useForm<BlogFormValues>({
