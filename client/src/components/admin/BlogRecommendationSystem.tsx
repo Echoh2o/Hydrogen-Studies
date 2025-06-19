@@ -158,18 +158,22 @@ export function BlogRecommendationSystem() {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
+      const summary = data?.summary || data?.data?.summary || {};
+      const successfulStudies = summary.successfulStudies || data?.results?.filter((r: any) => r.success)?.length || 0;
+      const totalBlogs = summary.totalBlogs || data?.results?.reduce((acc: number, r: any) => acc + (r.generatedBlogs?.length || 0), 0) || 0;
+      
       setGenerationProgress(prev => ({
         ...prev,
         isGenerating: false,
         progress: 100,
-        completedStudies: data.summary.successfulStudies,
-        generatedBlogs: data.summary.totalBlogs
+        completedStudies: successfulStudies,
+        generatedBlogs: totalBlogs
       }));
 
       toast({
         title: 'Generation Complete',
-        description: `Generated ${data.summary.totalBlogs} blog articles for ${data.summary.successfulStudies} studies.`,
+        description: `Generated ${totalBlogs} blog articles for ${successfulStudies} studies.`,
       });
 
       // Clear selections and refresh data
