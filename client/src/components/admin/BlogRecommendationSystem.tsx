@@ -105,7 +105,11 @@ export function BlogRecommendationSystem() {
     staleTime: 300000, // 5 minutes
   });
   
-  const recommendations: BlogRecommendation[] = recommendationsResponse?.data || [];
+  const recommendations: BlogRecommendation[] = Array.isArray((recommendationsResponse as any)?.data) 
+    ? (recommendationsResponse as any).data 
+    : Array.isArray(recommendationsResponse) 
+    ? (recommendationsResponse as BlogRecommendation[])
+    : [];
 
   // Preview generation mutation
   const previewMutation = useMutation({
