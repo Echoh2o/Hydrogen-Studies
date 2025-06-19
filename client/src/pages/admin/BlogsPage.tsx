@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { 
   PlusCircle, 
   Loader2, 
@@ -48,20 +49,24 @@ export default function BlogsPage() {
   // Loading state
   if (blogsQuery.isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout title="Blog Management" description="Manage all blog articles and content">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
     );
   }
 
   // Error state
   if (blogsQuery.isError) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertDescription>
-          Failed to load blog articles. Please try again later.
-        </AlertDescription>
-      </Alert>
+      <AdminLayout title="Blog Management" description="Manage all blog articles and content">
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>
+            Failed to load blog articles. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </AdminLayout>
     );
   }
 
@@ -144,7 +149,8 @@ export default function BlogsPage() {
   };
 
   return (
-    <Card>
+    <AdminLayout title="Blog Management" description="Manage all blog articles and content">
+      <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
           <div>
@@ -318,6 +324,7 @@ export default function BlogsPage() {
           Showing {sortedBlogs.length} of {blogs.length} blog articles
         </p>
       </CardFooter>
-    </Card>
+      </Card>
+    </AdminLayout>
   );
 }
