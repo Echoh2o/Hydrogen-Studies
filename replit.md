@@ -107,18 +107,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- June 19, 2025: Fixed admin dashboard statistics display and mobile navigation
-  - Resolved dashboard endpoint mismatch - EnhancedAdminDashboard now queries correct /api/stats/dashboard
-  - Dashboard stats API returns comprehensive authentic data (1,304 studies, 12 blogs, 0 published, 12 drafts)
-  - Added mobile navigation to /admin/blogs page using AdminLayout wrapper
-  - Fixed React routing errors by converting JSX elements to proper component functions across all admin routes
-  - Resolved React Suspense synchronous input errors by implementing proper Suspense wrapper and startTransition
-  - Added missing admin routes for /admin/analytics, /admin/settings, /admin/users with full page implementations
-  - Resolved all TypeScript interface errors in admin components to match database schema
-  - Blog management displays real articles with proper pagination and filtering
-  - All API endpoints operational: dashboard stats, blog management, batch enrichment, keyword monitoring
-  - Complete admin navigation system now functional with authentic database integration
-  - Application loads successfully without React component suspension or routing errors
+- June 19, 2025: Fixed blog creation functionality and admin dashboard statistics
+  - Added missing POST/PUT endpoints to server/routes/blog-routes.ts with proper Zod validation
+  - Fixed slug validation pattern to match client-side requirements (lowercase letters, numbers, hyphens only)
+  - Added study selection dropdown to blog creation form with first 50 studies available
+  - Resolved "Study ID is required" error by implementing proper study connection interface
+  - Dashboard endpoint fixed - EnhancedAdminDashboard now queries correct /api/stats/dashboard
+  - Dashboard shows authentic data: 1,304 studies, 13 blogs (after test creation), proper statistics
+  - Added mobile navigation to admin pages using AdminLayout wrapper
+  - Blog creation form now validates properly and connects to actual studies
+  - All validation errors resolved - both client-side and server-side validation working
+  - Complete blog management workflow now functional from creation to publication
 
 - June 17, 2025: Fixed admin pages API endpoints and TypeScript errors
   - Resolved keyword monitor schedule API by adding `/schedule` route alias
