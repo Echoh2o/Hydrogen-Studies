@@ -128,19 +128,20 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
           }
         }
         
-        // Use rule-based analysis for now (more reliable than AI for initial implementation)
+        // Use rule-based analysis (faster and more reliable for initial implementation)
         const ruleBasedAnalysis = createRuleBasedRecommendation(study);
-        recommendations.push({
+        
+        const recommendation: BlogRecommendation = {
           studyId: study.id,
-          studyTitle: study.title,
-          studyAbstract: study.abstract,
-          studyAuthors: study.authors,
-          studyJournal: study.journal,
-          studyCategory: study.category,
+          studyTitle: study.title || 'Untitled Study',
+          studyAbstract: study.abstract || 'No abstract available',
+          studyAuthors: study.authors || 'Unknown authors',
+          studyJournal: study.journal || 'Unknown journal',
+          studyCategory: study.category || 'General',
           studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown',
           priority: ruleBasedAnalysis.priority,
-          reasonForRecommendation: ruleBasedAnalysis.reason,
-          suggestedBlogTypes: ruleBasedAnalysis.suggestedTypes,
+          reasonForRecommendation: ruleBasedAnalysis.reasonForRecommendation,
+          suggestedBlogTypes: ruleBasedAnalysis.suggestedBlogTypes,
           estimatedReadership: ruleBasedAnalysis.estimatedReadership,
           seoKeywords: ruleBasedAnalysis.seoKeywords,
           potentialTitle: ruleBasedAnalysis.potentialTitle,
