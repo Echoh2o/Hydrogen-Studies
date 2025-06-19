@@ -48,7 +48,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
     staleTime: 300000, // 5 minutes
   });
   
-  const studies: Array<{id: number, title: string}> = studiesResponse?.data || [];
+  const studies: Array<{id: number, title: string}> = (studiesResponse as any)?.data || [];
   
   // If editing, fetch blog data
   const { data: blogResponse } = useQuery({
@@ -56,7 +56,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
     enabled: !!blogId,
   });
   
-  const blogData = blogResponse?.data;
+  const blogData = blogResponse?.data as any;
   
   // Initialize form with default values or existing blog data
   const form = useForm<BlogFormValues>({
