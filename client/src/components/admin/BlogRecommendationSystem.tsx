@@ -105,18 +105,21 @@ export function BlogRecommendationSystem() {
     staleTime: 300000, // 5 minutes
   });
   
-  const recommendations: BlogRecommendation[] = recommendationsResponse?.data || [];
+  const recommendations: BlogRecommendation[] = Array.isArray(recommendationsResponse?.data) 
+    ? recommendationsResponse.data 
+    : recommendationsResponse || [];
 
   // Preview generation mutation
   const previewMutation = useMutation({
     mutationFn: async () => {
       const selectedStudyIds = Array.from(selectedStudies);
-      return apiRequest('POST', '/api/blog-recommendations/preview', {
+      const response = await apiRequest('POST', '/api/blog-recommendations/preview', {
         selectedStudyIds,
         articleTypes: generationOptions.articleTypes
       });
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: 'Generation Preview',
         description: `Will generate ${data.totalBlogsToGenerate} blogs for ${data.selectedStudiesCount} studies. Estimated time: ${data.estimatedTimeDisplay}`,
