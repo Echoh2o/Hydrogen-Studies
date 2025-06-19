@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { eq, count } from 'drizzle-orm';
-import { blogArticles } from '../shared/schema';
+import { blogArticles, studies } from '../shared/schema';
 import studiesRouter from "./routes/studies-router";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
