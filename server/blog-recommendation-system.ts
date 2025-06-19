@@ -140,14 +140,16 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
           studyCategory: study.category || 'General',
           studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown',
           priority: ruleBasedAnalysis.priority,
-          reasonForRecommendation: ruleBasedAnalysis.reasonForRecommendation,
-          suggestedBlogTypes: ruleBasedAnalysis.suggestedBlogTypes,
+          reasonForRecommendation: ruleBasedAnalysis.reason,
+          suggestedBlogTypes: ruleBasedAnalysis.suggestedTypes,
           estimatedReadership: ruleBasedAnalysis.estimatedReadership,
           seoKeywords: ruleBasedAnalysis.seoKeywords,
           potentialTitle: ruleBasedAnalysis.potentialTitle,
           hasExistingBlogs: study.blogCount > 0,
           existingBlogCount: study.blogCount
-        });
+        };
+        
+        recommendations.push(recommendation);
       } catch (error) {
         console.error(`Error processing study ${study.id}:`, error);
       }
