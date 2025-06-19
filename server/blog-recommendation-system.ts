@@ -311,9 +311,18 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
 
   for (const studyId of request.selectedStudyIds) {
     try {
-      // Get study details
+      // Get study details - select only existing columns to avoid video_url error
       const [study] = await db
-        .select()
+        .select({
+          id: studies.id,
+          title: studies.title,
+          abstract: studies.abstract,
+          authors: studies.authors,
+          journal: studies.journal,
+          category: studies.category,
+          publishDate: studies.publishDate,
+          journalPublishDate: studies.journalPublishDate
+        })
         .from(studies)
         .where(eq(studies.id, studyId))
         .limit(1);
