@@ -107,18 +107,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- June 18, 2025: Successfully resolved all admin page functionality and API endpoints
+- June 19, 2025: Fixed admin dashboard statistics display and mobile navigation
+  - Resolved dashboard endpoint mismatch - EnhancedAdminDashboard now queries correct /api/stats/dashboard
+  - Dashboard stats API returns comprehensive authentic data (1,304 studies, 12 blogs, 0 published, 12 drafts)
+  - Added mobile navigation to /admin/blogs page using AdminLayout wrapper
   - Fixed React routing errors by converting JSX elements to proper component functions across all admin routes
   - Resolved React Suspense synchronous input errors by implementing proper Suspense wrapper and startTransition
-  - Resolved blogs.filter error by correcting data access pattern in BlogsPage component
   - Added missing admin routes for /admin/analytics, /admin/settings, /admin/users with full page implementations
   - Resolved all TypeScript interface errors in admin components to match database schema
-  - Dashboard stats API now returns comprehensive authentic data (12 total blogs, 0 published, 12 drafts, 1,326 studies)
   - Blog management displays real articles with proper pagination and filtering
   - All API endpoints operational: dashboard stats, blog management, batch enrichment, keyword monitoring
-  - Fixed server startup errors by resolving async/await syntax issues
   - Complete admin navigation system now functional with authentic database integration
-  - Application now loads successfully without React component suspension or routing errors
+  - Application loads successfully without React component suspension or routing errors
 
 - June 17, 2025: Fixed admin pages API endpoints and TypeScript errors
   - Resolved keyword monitor schedule API by adding `/schedule` route alias

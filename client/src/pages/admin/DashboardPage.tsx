@@ -21,9 +21,11 @@ import {
 
 export default function DashboardPage() {
   // Fetch dashboard stats
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
+  const { data: stats, isLoading: isLoadingStats, error: statsError } = useQuery({
     queryKey: ['/api/stats/dashboard'],
     retry: false,
+    refetchOnMount: true,
+    staleTime: 0,
   });
   
   // Fetch recent studies
@@ -51,6 +53,10 @@ export default function DashboardPage() {
     categoriesCount: (stats as any)?.categoriesCount || 8,
     recentImports: (stats as any)?.recentImports || 0,
   };
+
+  // Debug: Log the stats data to see what's being received
+  console.log('Dashboard stats received:', stats);
+  console.log('Processed dashboard stats:', dashboardStats);
 
   // Show loading state while fetching data
   if (isLoadingStats) {
@@ -189,8 +195,11 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardStats.totalStudies}</div>
+              <div className="text-2xl font-bold">{dashboardStats.totalStudies || 'Loading...'}</div>
               <p className="text-xs text-muted-foreground">Hydrogen research studies in database</p>
+              {process.env.NODE_ENV === 'development' && (
+                <p className="text-xs text-red-500">Debug: {JSON.stringify(stats)}</p>
+              )}
             </CardContent>
           </Card>
           
