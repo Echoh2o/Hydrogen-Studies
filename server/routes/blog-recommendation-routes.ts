@@ -64,8 +64,8 @@ router.post('/bulk-generate', async (req, res) => {
           successfulStudies: results.filter(r => r.success).length,
           failedStudies: results.filter(r => !r.success).length,
           totalBlogs: results.reduce((sum, r) => sum + r.generatedBlogs.length, 0),
-          savedBlogs: saveResults?.saved || 0,
-          failedSaves: saveResults?.failed || 0
+          savedBlogs: 0,
+          failedSaves: 0
         }
       }
     });
