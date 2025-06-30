@@ -733,6 +733,134 @@ router.post('/api/research/import', async (req: Request, res: Response) => {
 });
 
 /**
+ * PubMed specific search endpoint
+ */
+router.get('/api/research/pubmed/search', async (req: Request, res: Response) => {
+  try {
+    const { query, page = '1', pageSize = '10' } = req.query;
+    
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
+    
+    const pageNum = parseInt(page as string);
+    const pageSizeNum = parseInt(pageSize as string);
+    
+    console.log(`PubMed search: "${query}", page ${pageNum}, size ${pageSizeNum}`);
+    
+    const results = await searchPubMedWithPagination(query, (pageNum - 1) * pageSizeNum, pageSizeNum);
+    
+    res.json({
+      success: true,
+      source: 'pubmed',
+      data: results,
+      total: results.length,
+      page: pageNum,
+      pageSize: pageSizeNum
+    });
+  } catch (error: any) {
+    console.error('Error in PubMed search:', error);
+    res.status(500).json({ error: error.message || 'Failed to search PubMed' });
+  }
+});
+
+/**
+ * Europe PMC specific search endpoint
+ */
+router.get('/api/research/europe-pmc/search', async (req: Request, res: Response) => {
+  try {
+    const { query, page = '1', pageSize = '10' } = req.query;
+    
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
+    
+    const pageNum = parseInt(page as string);
+    const pageSizeNum = parseInt(pageSize as string);
+    
+    console.log(`Europe PMC search: "${query}", page ${pageNum}, size ${pageSizeNum}`);
+    
+    const results = await searchEuropePMC(query, pageNum, pageSizeNum);
+    
+    res.json({
+      success: true,
+      source: 'europe-pmc',
+      data: results.results,
+      total: results.total,
+      page: pageNum,
+      pageSize: pageSizeNum
+    });
+  } catch (error: any) {
+    console.error('Error in Europe PMC search:', error);
+    res.status(500).json({ error: error.message || 'Failed to search Europe PMC' });
+  }
+});
+
+/**
+ * CrossRef specific search endpoint
+ */
+router.get('/api/research/crossref/search', async (req: Request, res: Response) => {
+  try {
+    const { query, page = '1', pageSize = '10' } = req.query;
+    
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
+    
+    const pageNum = parseInt(page as string);
+    const pageSizeNum = parseInt(pageSize as string);
+    
+    console.log(`CrossRef search: "${query}", page ${pageNum}, size ${pageSizeNum}`);
+    
+    const results = await searchCrossRef(query, pageNum, pageSizeNum);
+    
+    res.json({
+      success: true,
+      source: 'crossref',
+      data: results.items || [],
+      total: results.total_results || 0,
+      page: pageNum,
+      pageSize: pageSizeNum
+    });
+  } catch (error: any) {
+    console.error('Error in CrossRef search:', error);
+    res.status(500).json({ error: error.message || 'Failed to search CrossRef' });
+  }
+});
+
+/**
+ * Semantic Scholar specific search endpoint
+ */
+router.get('/api/research/semantic-scholar/search', async (req: Request, res: Response) => {
+  try {
+    const { query, page = '1', pageSize = '10' } = req.query;
+    
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
+    
+    const pageNum = parseInt(page as string);
+    const pageSizeNum = parseInt(pageSize as string);
+    
+    console.log(`Semantic Scholar search: "${query}", page ${pageNum}, size ${pageSizeNum}`);
+    
+    const results = await searchSemanticScholar(query, pageNum - 1, pageSizeNum);
+    
+    res.json({
+      success: true,
+      source: 'semantic-scholar',
+      data: results.data || [],
+      total: results.total || 0,
+      page: pageNum,
+      pageSize: pageSizeNum
+    });
+  } catch (error: any) {
+    console.error('Error in Semantic Scholar search:', error);
+    res.status(500).json({ error: error.message || 'Failed to search Semantic Scholar' });
+  }
+});
+
+/**
  * Schedule a recurring search
  */
 router.post('/api/research/schedule', async (req: Request, res: Response) => {
