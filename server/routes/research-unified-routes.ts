@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { searchPubMedWithPagination } from './research-routes';
-import { searchEuropePMC, extractStudyFromEuropePMC } from '../europepmc-api';
+import { searchEuropePMC } from '../europepmc-api-fixed';
+import { extractStudyFromEuropePMC } from '../europepmc-api';
 import { searchSemanticScholar, extractStudyFromSemanticScholar } from '../semantic-scholar-api';
 import { searchCrossRef, extractStudyFromCrossRef } from '../crossref-api';
 import { storage } from '../storage';
