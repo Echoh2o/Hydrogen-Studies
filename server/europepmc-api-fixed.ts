@@ -30,6 +30,7 @@ export async function searchEuropePMC(
       timeout: 10000
     });
     
+    console.log(`EuropePMC API response:`, JSON.stringify(response.data, null, 2).substring(0, 500));
     console.log(`EuropePMC returned ${response.data.resultList?.result?.length || 0} results of ${response.data.hitCount || 0} total hits`);
     
     const results = (response.data.resultList?.result || []).map((article: any) => ({
@@ -51,7 +52,11 @@ export async function searchEuropePMC(
       total: response.data.hitCount || 0
     };
   } catch (error) {
-    console.error('Europe PMC search error:', error);
-    throw new Error('Failed to search Europe PMC');
+    console.error('Europe PMC search error:', error.message);
+    console.error('Europe PMC error details:', error.response?.data || error.response?.status);
+    return {
+      results: [],
+      total: 0
+    };
   }
 }
