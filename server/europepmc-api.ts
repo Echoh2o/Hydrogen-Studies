@@ -16,8 +16,8 @@ export async function searchEuropePMC(
   try {
     console.log(`Searching EuropePMC for: "${query}", page ${page}, size ${pageSize}`);
     
-    // Use the query directly without modification to get broader results
-    const enhancedQuery = query;
+    // Use the query directly and ensure it searches in relevant fields
+    const enhancedQuery = `(TITLE:"${query}" OR ABSTRACT:"${query}" OR KEYWORD:"${query}")`;
     
     console.log(`Sending request to EuropePMC with query: ${enhancedQuery}`);
     
