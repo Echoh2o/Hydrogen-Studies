@@ -31,10 +31,11 @@ export default function ResearchImportPage() {
         
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Importing research</AlertTitle>
+          <AlertTitle>Research Platform Status</AlertTitle>
           <AlertDescription>
-            Use any of these methods to search and import hydrogen studies from external databases.
-            All imported studies will be automatically categorized and tagged based on their content.
+            ✅ **PubMed** - Fully operational with authentic research data<br/>
+            ⚠️ **Europe PMC, CrossRef, Semantic Scholar** - Connected but may need API authentication<br/>
+            Start with PubMed to search and import hydrogen studies with complete metadata.
           </AlertDescription>
         </Alert>
         
