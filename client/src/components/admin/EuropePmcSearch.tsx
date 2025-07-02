@@ -56,12 +56,12 @@ const EuropePmcSearch: React.FC = () => {
     error,
     refetch 
   } = useQuery({
-    queryKey: ['/api/europepmc/search', searchQuery, currentPage, pageSize, sortBy],
+    queryKey: ['/api/research/europe-pmc/search', searchQuery, currentPage, pageSize, sortBy],
     queryFn: async () => {
       if (!searchQuery) return { data: { resultList: { result: [] } }, metadata: { total: 0 } };
       
       // Important: The server expects 'query' parameter, not 'q'
-      const url = `/api/europepmc/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}${sortBy ? `&sortBy=${sortBy}` : ''}`;
+      const url = `/api/research/europe-pmc/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}${sortBy ? `&sortBy=${sortBy}` : ''}`;
       const response = await fetch(url);
       
       if (!response.ok) {

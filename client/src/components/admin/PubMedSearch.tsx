@@ -20,11 +20,11 @@ export default function PubMedSearch() {
   // Search mutation
   const searchMutation = useMutation({
     mutationFn: async ({ query, page }: { query: string, page: number }) => {
-      const response = await apiRequest('GET', `/api/pubmed/search?term=${encodeURIComponent(query)}&page=${page}&size=${resultsPerPage}`);
+      const response = await apiRequest('GET', `/api/research/pubmed/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${resultsPerPage}`);
       return response.json();
     },
     onSuccess: (data) => {
-      setSearchResults(data.results || []);
+      setSearchResults(data.data || []);
       setTotalResults(data.total || 0);
     },
     onError: (error: any) => {
@@ -39,7 +39,7 @@ export default function PubMedSearch() {
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (pmid: string) => {
-      const response = await apiRequest('POST', `/api/pubmed/import`, { pmid });
+      const response = await apiRequest('POST', `/api/research/pubmed/import`, { pmid });
       return response.json();
     },
     onSuccess: (data) => {
