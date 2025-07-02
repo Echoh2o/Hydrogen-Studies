@@ -20,7 +20,7 @@ export default function SemanticScholarSearch() {
   // Search mutation
   const searchMutation = useMutation({
     mutationFn: async ({ query, offset }: { query: string, offset: number }) => {
-      const response = await apiRequest('GET', `/api/semantic-scholar/search?query=${encodeURIComponent(query)}&offset=${offset}&limit=${limit}`);
+      const response = await apiRequest('GET', `/api/research/semantic-scholar/search?query=${encodeURIComponent(query)}&offset=${offset}&limit=${limit}`);
       return response.json();
     },
     onSuccess: (data) => {

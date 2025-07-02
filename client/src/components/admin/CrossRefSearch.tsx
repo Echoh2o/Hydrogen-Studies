@@ -18,7 +18,7 @@ export default function CrossRefSearch() {
   // Search mutation
   const searchMutation = useMutation({
     mutationFn: async ({ query, page }: { query: string, page: number }) => {
-      const response = await apiRequest('GET', `/api/crossref/search?q=${encodeURIComponent(query)}&page=${page}`);
+      const response = await apiRequest('GET', `/api/research/crossref/search?query=${encodeURIComponent(query)}&page=${page}`);
       return response.json();
     },
     onSuccess: (data) => {
