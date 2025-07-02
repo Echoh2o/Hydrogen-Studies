@@ -9,7 +9,7 @@
 import axios from 'axios';
 import type { InsertStudy } from '@shared/schema';
 
-const API_KEY = process.env.CORE_API_KEY || ''; // Can use CORE API key for enhanced limits
+// Using public Semantic Scholar API without authentication
 
 /**
  * Get article details by DOI for content enrichment
@@ -40,7 +40,7 @@ export async function getSemanticScholarPaper(doi: string): Promise<any> {
       params: {
         fields: 'title,abstract,url,journal,year,authors,venue,publicationDate,referenceCount,citationCount,influentialCitationCount,tldr,publicationTypes,publicationVenue,fieldsOfStudy,s2FieldsOfStudy,paperId,externalIds,isOpenAccess,openAccessPdf,citationStyles,embedding,sections,figures,equations',
       },
-      headers: API_KEY ? { 'x-api-key': API_KEY } : {},
+      headers: {},
       timeout: 10000
     });
     
@@ -67,7 +67,7 @@ export async function searchSemanticScholar(query: string, limit: number = 10, o
         offset,
         fields: 'title,abstract,url,journal,year,authors,venue,publicationDate,externalIds,isOpenAccess'
       },
-      headers: API_KEY ? { 'x-api-key': API_KEY } : {},
+      headers: {},
       timeout: 10000
     });
     

@@ -30,7 +30,12 @@ export async function searchEuropePMC(
       timeout: 10000
     });
     
-    console.log(`EuropePMC API response:`, JSON.stringify(response.data, null, 2).substring(0, 500));
+    // Debug: Check if we got actual results
+    if (response.data.resultList && response.data.resultList.result) {
+      console.log(`EuropePMC API found ${response.data.resultList.result.length} results`);
+    } else {
+      console.log(`EuropePMC API response structure:`, Object.keys(response.data));
+    }
     console.log(`EuropePMC returned ${response.data.resultList?.result?.length || 0} results of ${response.data.hitCount || 0} total hits`);
     
     const results = (response.data.resultList?.result || []).map((article: any) => ({
