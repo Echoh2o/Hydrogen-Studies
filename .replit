@@ -173,3 +173,6 @@ args = "sleep 2"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "tsx server/index.ts"
+
+[agent]
+integrations = ["javascript_openai==1.0.0"]
