@@ -75,6 +75,7 @@ const BlogGeneratePage = lazy(() => import('./pages/admin/BlogGeneratePage'));
 const BlogAddPage = lazy(() => import('./pages/admin/BlogAddPage'));
 const BlogEditPage = lazy(() => import('./pages/admin/BlogEditPage'));
 const BlogListPage = lazy(() => import('./pages/admin/BlogListPage'));
+const BlogCategoriesPage = lazy(() => import('./pages/admin/BlogCategoriesPage'));
 const BlogRecommendationPage = lazy(() => import('./pages/admin/BlogRecommendationPage'));
 const ResearchImportPage = lazy(() => import('./pages/admin/ResearchImportPage'));
 const DataImportPage = lazy(() => import('./pages/admin/DataImportPage'));
@@ -155,6 +156,7 @@ function Router() {
       <Route path="/admin/blog-generator" component={BlogGeneratePage} />
       <Route path="/admin/blogs/add" component={BlogAddPage} />
       <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
+      <Route path="/admin/blog-categories" component={BlogCategoriesPage} />
       <Route path="/admin/blog-recommendations" component={BlogRecommendationPage} />
 
       {/* Admin Import & Data Pages */}

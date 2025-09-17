@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import session from 'express-session';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -32,12 +33,29 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Session middleware for authentication
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'hydrogen-research-secret-key-development',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  },
+}));
+
 // Comprehensive environment validation
 function validateEnvironment() {
   const requiredEnvVars = ['DATABASE_URL'];
   const optionalEnvVars = ['OPENAI_API_KEY', 'SENDGRID_API_KEY', 'VITE_GA_MEASUREMENT_ID'];
   const missingRequired = [];
   const missingOptional = [];
+
+  // SECURITY: ADMIN_USER_IDS is required in production for admin access control
+  if (process.env.NODE_ENV === 'production') {
+    requiredEnvVars.push('ADMIN_USER_IDS');
+  }
 
   // Check required environment variables
   for (const envVar of requiredEnvVars) {
@@ -53,10 +71,34 @@ function validateEnvironment() {
     }
   }
 
+  // Additional validation for ADMIN_USER_IDS
+  if (process.env.ADMIN_USER_IDS) {
+    const adminIds = process.env.ADMIN_USER_IDS.split(',')
+      .map(id => id.trim())
+      .filter(id => id.length > 0);
+    
+    if (adminIds.length === 0) {
+      console.error('ADMIN_USER_IDS cannot be empty - provide at least one valid admin user ID');
+      process.exit(1);
+    }
+    
+    // Security check: warn about potentially insecure admin IDs
+    const insecureIds = ['admin', '1', 'root', 'administrator'];
+    const foundInsecure = adminIds.filter(id => insecureIds.includes(id.toLowerCase()));
+    if (foundInsecure.length > 0) {
+      console.warn(`WARNING: Found potentially insecure admin IDs: ${foundInsecure.join(', ')}`);
+      console.warn('Consider using more secure, unique identifiers for admin users.');
+    }
+  }
+
   // Exit if required variables are missing
   if (missingRequired.length > 0) {
     console.error('Missing required environment variables:', missingRequired.join(', '));
     console.error('Please ensure all required environment variables are set before starting the server.');
+    if (missingRequired.includes('ADMIN_USER_IDS')) {
+      console.error('ADMIN_USER_IDS is required in production for secure admin access control.');
+      console.error('Set ADMIN_USER_IDS to a comma-separated list of secure user identifiers.');
+    }
     process.exit(1);
   }
 

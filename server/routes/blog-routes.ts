@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { blogArticles, studies, insertBlogArticleSchema } from '@shared/schema';
-import { sql, count, desc, eq } from 'drizzle-orm';
+import { sql, count, desc, eq, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
+import { isAuthenticated, requireAdmin } from '../auth';
 
 const router = Router();
 
@@ -110,33 +111,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * Get blog categories (article types)
- */
-router.get('/categories', async (req, res) => {
-  try {
-    // Get unique article types from blog articles
-    const categoriesResult = await db
-      .select({ articleType: blogArticles.articleType })
-      .from(blogArticles)
-      .where(sql`${blogArticles.articleType} IS NOT NULL AND ${blogArticles.articleType} != ''`)
-      .groupBy(blogArticles.articleType);
-
-    const categories = categoriesResult.map(item => item.articleType).filter(Boolean);
-
-    res.json({
-      success: true,
-      categories
-    });
-  } catch (error) {
-    console.error('Error fetching blog categories:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to fetch blog categories',
-      categories: []
-    });
-  }
-});
 
 /**
  * Get a single blog article by ID
@@ -338,6 +312,200 @@ router.put('/:id(\\d+)', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update blog article'
+    });
+  }
+});
+
+/**
+ * Get all blog categories with article counts
+ */
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await db
+      .select({
+        name: blogArticles.articleType,
+        count: count()
+      })
+      .from(blogArticles)
+      .where(isNotNull(blogArticles.articleType))
+      .groupBy(blogArticles.articleType)
+      .orderBy(desc(count()));
+
+    const filteredCategories = categories.filter(cat => cat.name && cat.name.trim() !== '');
+
+    res.json({
+      success: true,
+      categories: filteredCategories
+    });
+  } catch (error) {
+    console.error('Error fetching blog categories:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch blog categories'
+    });
+  }
+});
+
+/**
+ * Add a new blog category
+ * SECURITY: Requires admin access - only admin users can create categories
+ */
+router.post('/categories', requireAdmin, async (req, res) => {
+  try {
+    const { name } = z.object({
+      name: z.string().min(1, "Category name is required").max(50, "Category name too long")
+    }).parse(req.body);
+
+    const trimmedName = name.trim();
+
+    // Check if category already exists
+    const existingCategory = await db
+      .select({ count: count() })
+      .from(blogArticles)
+      .where(eq(blogArticles.articleType, trimmedName))
+      .limit(1);
+
+    if (existingCategory.length > 0 && existingCategory[0].count > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category already exists'
+      });
+    }
+
+    // Since categories are stored as article types in blog_articles,
+    // we don't need to create a separate record - just return success
+    // Categories are created when blog articles use them
+    res.json({
+      success: true,
+      message: `Category "${trimmedName}" is ready to be used`
+    });
+  } catch (error) {
+    console.error('Error adding blog category:', error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: error.errors[0].message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add blog category'
+    });
+  }
+});
+
+/**
+ * Update a blog category name
+ * SECURITY: Requires admin access - only admin users can modify categories
+ */
+router.put('/categories/:name', requireAdmin, async (req, res) => {
+  try {
+    const oldName = decodeURIComponent(req.params.name);
+    const { name: newName } = z.object({
+      name: z.string().min(1, "Category name is required").max(50, "Category name too long")
+    }).parse(req.body);
+
+    const trimmedNewName = newName.trim();
+
+    // Check if old category exists
+    const existingArticles = await db
+      .select({ count: count() })
+      .from(blogArticles)
+      .where(eq(blogArticles.articleType, oldName));
+
+    if (existingArticles.length === 0 || existingArticles[0].count === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
+
+    // Check if new category name already exists
+    const conflictingCategory = await db
+      .select({ count: count() })
+      .from(blogArticles)
+      .where(eq(blogArticles.articleType, trimmedNewName));
+
+    if (conflictingCategory.length > 0 && conflictingCategory[0].count > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'A category with this name already exists'
+      });
+    }
+
+    // Update all blog articles with the old category name
+    const result = await db
+      .update(blogArticles)
+      .set({ 
+        articleType: trimmedNewName,
+        updatedAt: new Date()
+      })
+      .where(eq(blogArticles.articleType, oldName))
+      .returning({ id: blogArticles.id });
+
+    res.json({
+      success: true,
+      message: `Updated ${result.length} articles from "${oldName}" to "${trimmedNewName}"`
+    });
+  } catch (error) {
+    console.error('Error updating blog category:', error);
+    
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: error.errors[0].message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update blog category'
+    });
+  }
+});
+
+/**
+ * Delete a blog category
+ * SECURITY: Requires admin access - only admin users can delete categories
+ */
+router.delete('/categories/:name', requireAdmin, async (req, res) => {
+  try {
+    const categoryName = decodeURIComponent(req.params.name);
+
+    // Check if category exists
+    const existingArticles = await db
+      .select({ count: count() })
+      .from(blogArticles)
+      .where(eq(blogArticles.articleType, categoryName));
+
+    if (existingArticles.length === 0 || existingArticles[0].count === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
+
+    // Set article_type to null for all articles with this category
+    const result = await db
+      .update(blogArticles)
+      .set({ 
+        articleType: null,
+        updatedAt: new Date()
+      })
+      .where(eq(blogArticles.articleType, categoryName))
+      .returning({ id: blogArticles.id });
+
+    res.json({
+      success: true,
+      message: `Removed category "${categoryName}" from ${result.length} articles`
+    });
+  } catch (error) {
+    console.error('Error deleting blog category:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete blog category'
     });
   }
 });
