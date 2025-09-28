@@ -224,25 +224,25 @@ class MemoryFallback {
     }
   }
   
-  async getSavedBlogs(userId: number): Promise<BlogArticle[]> {
+  async getSavedBlogs(userId: string): Promise<BlogArticle[]> {
     const saved: BlogArticle[] = [];
     // This would need to join with blogs table in a real implementation
     return saved;
   }
   
-  async getRecentlyViewedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
+  async getRecentlyViewedBlogs(userId: string, limit?: number): Promise<BlogArticle[]> {
     const viewed: BlogArticle[] = [];
     // This would need to join with blogs table in a real implementation
     return viewed;
   }
   
   // Recommendation system
-  async getRecommendedStudies(userId: number, limit?: number): Promise<Study[]> {
+  async getRecommendedStudies(userId: string, limit?: number): Promise<Study[]> {
     // This would implement recommendation logic in a real implementation
     return [];
   }
   
-  async getRecommendedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
+  async getRecommendedBlogs(userId: string, limit?: number): Promise<BlogArticle[]> {
     // This would implement recommendation logic in a real implementation
     return [];
   }
@@ -261,7 +261,7 @@ class MemoryFallback {
     return newNotification;
   }
   
-  async getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]> {
+  async getUserNotifications(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
     const notifications: Notification[] = [];
     
     for (const notification of this.notificationsData.values()) {
@@ -283,7 +283,7 @@ class MemoryFallback {
     }
   }
   
-  async markAllNotificationsAsRead(userId: number): Promise<void> {
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
     for (const [id, notification] of this.notificationsData.entries()) {
       if (notification.userId === userId) {
         notification.read = true;
@@ -573,20 +573,20 @@ export class DatabaseStorage implements IStorage {
     return this.fallback.recordBlogView(userId, blogId);
   }
   
-  async getSavedBlogs(userId: number): Promise<BlogArticle[]> {
+  async getSavedBlogs(userId: string): Promise<BlogArticle[]> {
     return this.fallback.getSavedBlogs(userId);
   }
   
-  async getRecentlyViewedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
+  async getRecentlyViewedBlogs(userId: string, limit?: number): Promise<BlogArticle[]> {
     return this.fallback.getRecentlyViewedBlogs(userId, limit);
   }
   
   // Recommendation system - fall back to memory implementation
-  async getRecommendedStudies(userId: number, limit?: number): Promise<Study[]> {
+  async getRecommendedStudies(userId: string, limit?: number): Promise<Study[]> {
     return this.fallback.getRecommendedStudies(userId, limit);
   }
   
-  async getRecommendedBlogs(userId: number, limit?: number): Promise<BlogArticle[]> {
+  async getRecommendedBlogs(userId: string, limit?: number): Promise<BlogArticle[]> {
     return this.fallback.getRecommendedBlogs(userId, limit);
   }
   
@@ -595,7 +595,7 @@ export class DatabaseStorage implements IStorage {
     return this.fallback.createNotification(notification);
   }
   
-  async getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]> {
+  async getUserNotifications(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
     return this.fallback.getUserNotifications(userId, unreadOnly);
   }
   
@@ -603,7 +603,7 @@ export class DatabaseStorage implements IStorage {
     return this.fallback.markNotificationAsRead(id);
   }
   
-  async markAllNotificationsAsRead(userId: number): Promise<void> {
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
     return this.fallback.markAllNotificationsAsRead(userId);
   }
   

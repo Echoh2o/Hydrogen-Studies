@@ -4,6 +4,7 @@ import { studies } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { pool } from "../db";
+import { searchRateLimiter, generalApiRateLimiter } from "../rate-limiting";
 
 const router = Router();
 
@@ -296,8 +297,9 @@ router.get("/by-consumer-category/:model/:category", async (req, res) => {
   }
 });
 
-// Get all studies with filtering and search
-router.get("/", async (req, res) => {
+// Get all studies with filtering and search + pagination
+// Rate limited to prevent abuse
+router.get("/", searchRateLimiter, async (req, res) => {
   try {
     const { 
       query, 
@@ -312,10 +314,11 @@ router.get("/", async (req, res) => {
       dateFrom,
       dateTo,
       page = "1",
-      pageSize = "10",
+      limit = "50",  // Default 50 items per page for admin interface
       sortField,
       sortOrder,
-      sortBy
+      sortBy,
+      search  // Add simple search param for admin UI
     } = req.query;
     
     console.log("Search query parameters:", { 
@@ -343,10 +346,12 @@ router.get("/", async (req, res) => {
       let paramCount = 0;
       
       // Add search filters for your authentic research data
-      if (query) {
+      // Support both 'query' and 'search' parameters for compatibility
+      const searchTerm = query || search;
+      if (searchTerm) {
         paramCount++;
         searchQuery += ` AND (title ILIKE $${paramCount} OR abstract ILIKE $${paramCount} OR authors ILIKE $${paramCount})`;
-        queryParams.push(`%${query}%`);
+        queryParams.push(`%${searchTerm}%`);
       }
       
       if (keyword) {
@@ -390,14 +395,14 @@ router.get("/", async (req, res) => {
         searchQuery += ` ORDER BY id DESC`;
       }
       
-      // Add pagination
+      // Add pagination - use 'limit' parameter for consistency
       const pageNum = Math.max(1, Number(page) || 1);
-      const pageSizeNum = Math.min(50, Math.max(1, Number(pageSize) || 20));
-      const offset = (pageNum - 1) * pageSizeNum;
+      const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
+      const offset = (pageNum - 1) * limitNum;
       
       paramCount++;
       searchQuery += ` LIMIT $${paramCount}`;
-      queryParams.push(pageSizeNum);
+      queryParams.push(limitNum);
       
       paramCount++;
       searchQuery += ` OFFSET $${paramCount}`;
@@ -412,10 +417,11 @@ router.get("/", async (req, res) => {
       const countParams = [];
       let countParamCount = 0;
       
-      if (query) {
+      const countSearchTerm = query || search;
+      if (countSearchTerm) {
         countParamCount++;
         countQuery += ` AND (title ILIKE $${countParamCount} OR abstract ILIKE $${countParamCount} OR authors ILIKE $${countParamCount})`;
-        countParams.push(`%${query}%`);
+        countParams.push(`%${countSearchTerm}%`);
       }
       
       if (keyword) {
@@ -455,8 +461,8 @@ router.get("/", async (req, res) => {
         data: searchResult.rows,
         total,
         page: pageNum,
-        pageSize: pageSizeNum,
-        totalPages: Math.ceil(total / pageSizeNum)
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
       };
       
     } catch (dbError) {
@@ -490,17 +496,17 @@ router.get("/", async (req, res) => {
       // So we need to paginate manually
       const studies = result as any[];
       const pageNum = Number(page);
-      const pageSizeNum = Number(pageSize);
-      const startIndex = (pageNum - 1) * pageSizeNum;
-      const endIndex = startIndex + pageSizeNum;
+      const limitNum = Number(limit || 50);
+      const startIndex = (pageNum - 1) * limitNum;
+      const endIndex = startIndex + limitNum;
       const paginatedData = studies.slice(startIndex, endIndex);
       
       res.json({
         data: paginatedData,
         total: studies.length,
         page: pageNum,
-        pageSize: pageSizeNum,
-        pageCount: Math.ceil(studies.length / pageSizeNum)
+        limit: limitNum,
+        totalPages: Math.ceil(studies.length / limitNum)
       });
     }
   } catch (error) {
@@ -607,6 +613,38 @@ router.get("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error fetching study:", error);
     res.status(500).json({ message: "Failed to fetch study" });
+  }
+});
+
+// Get study by slug
+router.get("/slug/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    
+    if (!slug) {
+      return res.status(400).json({ error: 'Slug is required' });
+    }
+
+    const { pool } = await import('../db');
+    const studies = await pool.query(`
+      SELECT 
+        id, title, abstract, authors, journal, 
+        publish_date as "publishDate", category, doi, 
+        image_url as "imageUrl", slug
+      FROM studies 
+      WHERE slug = $1
+      LIMIT 1
+    `, [slug]);
+
+    if (studies.rows.length === 0) {
+      return res.status(404).json({ error: 'Study not found' });
+    }
+
+    const study = studies.rows[0];
+    res.json(study);
+  } catch (error) {
+    console.error('Error fetching study by slug:', error);
+    res.status(500).json({ error: 'Failed to fetch study' });
   }
 });
 

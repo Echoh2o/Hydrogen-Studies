@@ -438,7 +438,7 @@ export async function getSavedBlogs(userId: number): Promise<BlogArticle[]> {
 /**
  * Get recently viewed blogs for a user
  */
-export async function getRecentlyViewedBlogs(userId: number, limit: number = 10): Promise<BlogArticle[]> {
+export async function getRecentlyViewedBlogs(userId: string, limit: number = 10): Promise<BlogArticle[]> {
   const result = await db
     .select({ blog: blogArticles })
     .from(userBlogInteractions)
@@ -465,7 +465,7 @@ export async function createNotification(notificationData: InsertNotification): 
 /**
  * Get user notifications
  */
-export async function getUserNotifications(userId: number, unreadOnly: boolean = false): Promise<Notification[]> {
+export async function getUserNotifications(userId: string, unreadOnly: boolean = false): Promise<Notification[]> {
   let query = db
     .select()
     .from(notifications)
@@ -491,7 +491,7 @@ export async function markNotificationAsRead(id: number): Promise<void> {
 /**
  * Mark all notifications as read for a user
  */
-export async function markAllNotificationsAsRead(userId: number): Promise<void> {
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
   await db
     .update(notifications)
     .set({ isRead: true })

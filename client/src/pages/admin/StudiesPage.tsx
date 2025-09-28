@@ -8,7 +8,14 @@ import {
   ArrowUpDown,
   Filter,
   Check,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Edit,
+  Eye,
+  MoreHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,17 +37,49 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function StudiesPage() {
   // Filter and search state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sortBy, setSortBy] = useState("date");
-  const [sortDirection, setSortDirection] = useState("desc");
+  const [sortBy, setSortBy] = useState("id");
+  const [sortOrder, setSortOrder] = useState("desc");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
-  // Fetch studies
+  // Build query parameters
+  const queryParams = new URLSearchParams();
+  queryParams.set("page", currentPage.toString());
+  queryParams.set("limit", pageSize.toString());
+  queryParams.set("sortBy", sortBy);
+  queryParams.set("sortOrder", sortOrder);
+  
+  if (searchQuery) {
+    queryParams.set("search", searchQuery);
+  }
+  
+  if (selectedCategory && selectedCategory !== "all") {
+    queryParams.set("category", selectedCategory);
+  }
+
+  // Fetch studies with pagination
   const studiesQuery = useQuery({
-    queryKey: ["/api/studies"],
+    queryKey: ["/api/studies", currentPage, pageSize, searchQuery, selectedCategory, sortBy, sortOrder],
+    queryFn: async () => {
+      const response = await fetch(`/api/studies?${queryParams.toString()}`);
+      if (!response.ok) throw new Error("Failed to fetch studies");
+      return response.json();
+    },
+    keepPreviousData: true,
   });
 
   // Fetch categories for filtering
@@ -49,7 +88,7 @@ export default function StudiesPage() {
   });
 
   // Loading state
-  if (studiesQuery.isLoading) {
+  if (studiesQuery.isLoading && !studiesQuery.data) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -68,57 +107,84 @@ export default function StudiesPage() {
     );
   }
 
-  // Make sure studies data is properly handled as an array
-  const studies = Array.isArray(studiesQuery.data) ? studiesQuery.data : [];
+  // Extract data from paginated response
+  const studies = studiesQuery.data?.data || [];
+  const totalStudies = studiesQuery.data?.total || 0;
+  const totalPages = studiesQuery.data?.totalPages || 1;
   const categories = Array.isArray(categoriesQuery.data) ? categoriesQuery.data : [];
 
-  // Filter and sort studies
-  const filteredStudies = studies.filter((study) => {
-    // Apply category filter
-    if (selectedCategory !== "all" && study.category !== selectedCategory) {
-      return false;
-    }
+  // Handle search input change with debounce effect
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1); // Reset to first page on new search
+  };
 
-    // Apply search filter (case-insensitive)
-    if (searchQuery && searchQuery.trim() !== "") {
-      const query = searchQuery.toLowerCase();
-      return (
-        study.title?.toLowerCase().includes(query) ||
-        study.authors?.toLowerCase().includes(query) ||
-        study.abstract?.toLowerCase().includes(query) ||
-        study.journal?.toLowerCase().includes(query)
-      );
-    }
-
-    return true;
-  });
-
-  // Sort filtered studies
-  const sortedStudies = [...filteredStudies].sort((a, b) => {
-    let comparison = 0;
-
-    if (sortBy === "date") {
-      const dateA = new Date(a.publishDate || a.createdAt).getTime();
-      const dateB = new Date(b.publishDate || b.createdAt).getTime();
-      comparison = dateA - dateB;
-    } else if (sortBy === "title") {
-      comparison = a.title.localeCompare(b.title);
-    } else if (sortBy === "category") {
-      comparison = a.category.localeCompare(b.category);
-    }
-
-    // Apply sort direction
-    return sortDirection === "desc" ? -comparison : comparison;
-  });
+  // Handle category change
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1); // Reset to first page on filter change
+  };
 
   // Toggle sort
-  const toggleSort = (field) => {
+  const toggleSort = (field: string) => {
     if (sortBy === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortDirection("desc");
+      setSortOrder("desc");
     }
+    setCurrentPage(1); // Reset to first page on sort change
+  };
+
+  // Pagination handlers
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = () => setCurrentPage(totalPages);
+  const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
+  const goToNextPage = () => setCurrentPage(Math.min(totalPages, currentPage + 1));
+  
+  const handlePageSizeChange = (newSize: string) => {
+    setPageSize(parseInt(newSize));
+    setCurrentPage(1); // Reset to first page on page size change
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push(-1); // Ellipsis
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push(-1); // Ellipsis
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
@@ -146,7 +212,7 @@ export default function StudiesPage() {
             <Input
               placeholder="Search studies..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9"
             />
           </div>
@@ -161,7 +227,7 @@ export default function StudiesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem 
-                  onClick={() => setSelectedCategory("all")}
+                  onClick={() => handleCategoryChange("all")}
                   className="flex items-center justify-between"
                   key="all"
                 >
@@ -174,7 +240,7 @@ export default function StudiesPage() {
                 {categories.map((category) => (
                   <DropdownMenuItem 
                     key={category.name}
-                    onClick={() => setSelectedCategory(category.name)}
+                    onClick={() => handleCategoryChange(category.name)}
                     className="flex items-center justify-between"
                   >
                     {category.name}
@@ -194,22 +260,42 @@ export default function StudiesPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => toggleSort("date")}>
-                  Date {sortBy === "date" && (sortDirection === "asc" ? "(Oldest)" : "(Newest)")}
+                <DropdownMenuItem onClick={() => toggleSort("publish_date")}>
+                  Date {sortBy === "publish_date" && (sortOrder === "asc" ? "(Oldest)" : "(Newest)")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => toggleSort("title")}>
-                  Title {sortBy === "title" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
+                  Title {sortBy === "title" && (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => toggleSort("category")}>
-                  Category {sortBy === "category" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
+                  Category {sortBy === "category" && (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
+        {/* Results info */}
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalStudies)} of {totalStudies} studies
+          </p>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">Items per page:</label>
+            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Studies table */}
-        {sortedStudies.length === 0 ? (
+        {studies.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">
               No studies found matching your criteria.
@@ -239,45 +325,53 @@ export default function StudiesPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Authors</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Enrichment</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedStudies.map((study) => (
+                {studies.map((study) => (
                   <TableRow key={study.id}>
-                    <TableCell className="font-medium">
-                      <div className="max-w-xs truncate">{study.title}</div>
+                    <TableCell>
+                      <div className="max-w-[350px]">
+                        <p className="font-medium truncate">{study.title}</p>
+                        {study.journal && (
+                          <p className="text-sm text-muted-foreground truncate">{study.journal}</p>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{study.category}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[150px] truncate">{study.authors}</div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(study.publishDate || study.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {study.hasFullText ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                          <Check className="h-3 w-3 mr-1" /> Enriched
-                        </Badge>
+                      {study.category ? (
+                        <Badge variant="outline">{study.category}</Badge>
                       ) : (
-                        <Badge variant="outline">Needs Enrichment</Badge>
+                        <span className="text-muted-foreground">Uncategorized</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <p className="text-sm truncate max-w-[200px]">{study.authors || "N/A"}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm">{formatDate(study.publishDate)}</p>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" asChild className="mr-1">
-                        <Link href={`/admin/studies/edit/${study.id}`}>
-                          Edit
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/study/${study.id}`}>
-                          View
-                        </Link>
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/study/${study.id}`}>
+                              <Eye className="h-4 w-4 mr-2" /> View
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/studies/edit/${study.id}`}>
+                              <Edit className="h-4 w-4 mr-2" /> Edit
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -286,11 +380,69 @@ export default function StudiesPage() {
           </div>
         )}
       </CardContent>
-      <CardFooter>
-        <p className="text-sm text-muted-foreground">
-          Showing {sortedStudies.length} of {studies.length} studies
-        </p>
-      </CardFooter>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <CardFooter className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToFirstPage}
+              disabled={currentPage === 1}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((page, index) => (
+                page === -1 ? (
+                  <span key={`ellipsis-${index}`} className="px-2">...</span>
+                ) : (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="min-w-[40px]"
+                  >
+                    {page}
+                  </Button>
+                )
+              ))}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToLastPage}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <p className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </p>
+        </CardFooter>
+      )}
     </Card>
   );
 }
