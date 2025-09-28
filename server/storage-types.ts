@@ -94,45 +94,45 @@ export interface IStorage {
   submitContactMessage(message: InsertContact): Promise<any>;
   
   // User account operations
-  getUserById(id: number): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
-  deleteUser(id: number): Promise<void>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   authenticateUser(email: string, password: string): Promise<User | null>;
   
   // User preferences operations
-  getUserPreferences(userId: number): Promise<UserPreferences | undefined>;
+  getUserPreferences(userId: string): Promise<UserPreferences | undefined>;
   createUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences>;
   updateUserPreferences(id: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences>;
   
   // Search history operations
   addSearchHistory(searchHistory: InsertSearchHistory): Promise<SearchHistory>;
-  getUserSearchHistory(userId: number, limit?: number): Promise<SearchHistory[]>;
+  getUserSearchHistory(userId: string, limit?: number): Promise<SearchHistory[]>;
   
   // User study interactions
-  saveStudy(userId: number, studyId: number): Promise<UserStudyInteraction>;
-  unsaveStudy(userId: number, studyId: number): Promise<void>;
-  recordStudyView(userId: number, studyId: number): Promise<void>;
-  getSavedStudies(userId: number): Promise<Study[]>;
-  getRecentlyViewedStudies(userId: number, limit?: number): Promise<Study[]>;
+  saveStudy(userId: string, studyId: number): Promise<UserStudyInteraction>;
+  unsaveStudy(userId: string, studyId: number): Promise<void>;
+  recordStudyView(userId: string, studyId: number): Promise<void>;
+  getSavedStudies(userId: string): Promise<Study[]>;
+  getRecentlyViewedStudies(userId: string, limit?: number): Promise<Study[]>;
   
   // User blog interactions
-  saveBlog(userId: number, blogId: number): Promise<UserBlogInteraction>;
-  unsaveBlog(userId: number, blogId: number): Promise<void>;
-  recordBlogView(userId: number, blogId: number): Promise<void>;
-  getSavedBlogs(userId: number): Promise<BlogArticle[]>;
-  getRecentlyViewedBlogs(userId: number, limit?: number): Promise<BlogArticle[]>;
+  saveBlog(userId: string, blogId: number): Promise<UserBlogInteraction>;
+  unsaveBlog(userId: string, blogId: number): Promise<void>;
+  recordBlogView(userId: string, blogId: number): Promise<void>;
+  getSavedBlogs(userId: string): Promise<BlogArticle[]>;
+  getRecentlyViewedBlogs(userId: string, limit?: number): Promise<BlogArticle[]>;
   
   // Recommendation system
-  getRecommendedStudies(userId: number, limit?: number): Promise<Study[]>;
-  getRecommendedBlogs(userId: number, limit?: number): Promise<BlogArticle[]>;
+  getRecommendedStudies(userId: string, limit?: number): Promise<Study[]>;
+  getRecommendedBlogs(userId: string, limit?: number): Promise<BlogArticle[]>;
   
   // Notification system
   createNotification(notification: InsertNotification): Promise<Notification>;
-  getUserNotifications(userId: number, unreadOnly?: boolean): Promise<Notification[]>;
+  getUserNotifications(userId: string, unreadOnly?: boolean): Promise<Notification[]>;
   markNotificationAsRead(id: number): Promise<void>;
-  markAllNotificationsAsRead(userId: number): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
   
   // Study review queue
   saveStudyForReview(reviewItem: InsertStudyReviewQueue): Promise<StudyReviewQueue>;

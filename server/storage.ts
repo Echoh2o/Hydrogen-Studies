@@ -87,45 +87,45 @@ export interface IStorage {
   submitContactMessage(message: InsertContact): Promise<any>;
   
   // User account operations
-  getUserById(id: number): Promise<any | undefined>;
+  getUserById(id: string): Promise<any | undefined>;
   getUserByEmail(email: string): Promise<any | undefined>;
   createUser(user: any): Promise<any>;
-  updateUser(id: number, user: any): Promise<any>;
-  deleteUser(id: number): Promise<void>;
+  updateUser(id: string, user: any): Promise<any>;
+  deleteUser(id: string): Promise<void>;
   authenticateUser(email: string, password: string): Promise<any | null>;
   
   // User preferences operations
-  getUserPreferences(userId: number): Promise<any | undefined>;
+  getUserPreferences(userId: string): Promise<any | undefined>;
   createUserPreferences(preferences: any): Promise<any>;
   updateUserPreferences(id: number, preferences: any): Promise<any>;
   
   // Search history operations
   addSearchHistory(searchHistory: any): Promise<any>;
-  getUserSearchHistory(userId: number, limit?: number): Promise<any[]>;
+  getUserSearchHistory(userId: string, limit?: number): Promise<any[]>;
   
   // User study interactions
-  saveStudy(userId: number, studyId: number): Promise<any>;
-  unsaveStudy(userId: number, studyId: number): Promise<void>;
-  recordStudyView(userId: number, studyId: number): Promise<void>;
-  getSavedStudies(userId: number): Promise<Study[]>;
-  getRecentlyViewedStudies(userId: number, limit?: number): Promise<Study[]>;
+  saveStudy(userId: string, studyId: number): Promise<any>;
+  unsaveStudy(userId: string, studyId: number): Promise<void>;
+  recordStudyView(userId: string, studyId: number): Promise<void>;
+  getSavedStudies(userId: string): Promise<Study[]>;
+  getRecentlyViewedStudies(userId: string, limit?: number): Promise<Study[]>;
   
   // User blog interactions
-  saveBlog(userId: number, blogId: number): Promise<any>;
-  unsaveBlog(userId: number, blogId: number): Promise<void>;
-  recordBlogView(userId: number, blogId: number): Promise<void>;
-  getSavedBlogs(userId: number): Promise<any[]>;
-  getRecentlyViewedBlogs(userId: number, limit?: number): Promise<any[]>;
+  saveBlog(userId: string, blogId: number): Promise<any>;
+  unsaveBlog(userId: string, blogId: number): Promise<void>;
+  recordBlogView(userId: string, blogId: number): Promise<void>;
+  getSavedBlogs(userId: string): Promise<any[]>;
+  getRecentlyViewedBlogs(userId: string, limit?: number): Promise<any[]>;
   
   // Recommendation system
-  getRecommendedStudies(userId: number, limit?: number): Promise<Study[]>;
-  getRecommendedBlogs(userId: number, limit?: number): Promise<any[]>;
+  getRecommendedStudies(userId: string, limit?: number): Promise<Study[]>;
+  getRecommendedBlogs(userId: string, limit?: number): Promise<any[]>;
   
   // Notification system
   createNotification(notification: any): Promise<any>;
-  getUserNotifications(userId: number, unreadOnly?: boolean): Promise<any[]>;
+  getUserNotifications(userId: string, unreadOnly?: boolean): Promise<any[]>;
   markNotificationAsRead(id: number): Promise<void>;
-  markAllNotificationsAsRead(userId: number): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
   
   // Study review queue
   saveStudyForReview(reviewItem: InsertStudyReviewQueue): Promise<StudyReviewQueue>;
@@ -703,7 +703,7 @@ export class MemStorage implements IStorage {
   }
   
   // User account operations - minimal implementation
-  async getUserById(id: number): Promise<any | undefined> {
+  async getUserById(id: string): Promise<any | undefined> {
     return undefined;
   }
   
@@ -715,11 +715,11 @@ export class MemStorage implements IStorage {
     return user;
   }
   
-  async updateUser(id: number, user: any): Promise<any> {
+  async updateUser(id: string, user: any): Promise<any> {
     return user;
   }
   
-  async deleteUser(id: number): Promise<void> {
+  async deleteUser(id: string): Promise<void> {
     // Nothing to do
   }
   
@@ -728,7 +728,7 @@ export class MemStorage implements IStorage {
   }
   
   // User preferences operations - minimal implementation
-  async getUserPreferences(userId: number): Promise<any | undefined> {
+  async getUserPreferences(userId: string): Promise<any | undefined> {
     return undefined;
   }
   
@@ -745,58 +745,58 @@ export class MemStorage implements IStorage {
     return searchHistory;
   }
   
-  async getUserSearchHistory(userId: number, limit?: number): Promise<any[]> {
+  async getUserSearchHistory(userId: string, limit?: number): Promise<any[]> {
     return [];
   }
   
   // User study interactions - minimal implementation
-  async saveStudy(userId: number, studyId: number): Promise<any> {
+  async saveStudy(userId: string, studyId: number): Promise<any> {
     return { userId, studyId };
   }
   
-  async unsaveStudy(userId: number, studyId: number): Promise<void> {
+  async unsaveStudy(userId: string, studyId: number): Promise<void> {
     // Nothing to do
   }
   
-  async recordStudyView(userId: number, studyId: number): Promise<void> {
+  async recordStudyView(userId: string, studyId: number): Promise<void> {
     // Nothing to do
   }
   
-  async getSavedStudies(userId: number): Promise<Study[]> {
+  async getSavedStudies(userId: string): Promise<Study[]> {
     return [];
   }
   
-  async getRecentlyViewedStudies(userId: number, limit?: number): Promise<Study[]> {
+  async getRecentlyViewedStudies(userId: string, limit?: number): Promise<Study[]> {
     return [];
   }
   
   // User blog interactions - minimal implementation
-  async saveBlog(userId: number, blogId: number): Promise<any> {
+  async saveBlog(userId: string, blogId: number): Promise<any> {
     return { userId, blogId };
   }
   
-  async unsaveBlog(userId: number, blogId: number): Promise<void> {
+  async unsaveBlog(userId: string, blogId: number): Promise<void> {
     // Nothing to do
   }
   
-  async recordBlogView(userId: number, blogId: number): Promise<void> {
+  async recordBlogView(userId: string, blogId: number): Promise<void> {
     // Nothing to do
   }
   
-  async getSavedBlogs(userId: number): Promise<any[]> {
+  async getSavedBlogs(userId: string): Promise<any[]> {
     return [];
   }
   
-  async getRecentlyViewedBlogs(userId: number, limit?: number): Promise<any[]> {
+  async getRecentlyViewedBlogs(userId: string, limit?: number): Promise<any[]> {
     return [];
   }
   
   // Recommendation system - minimal implementation
-  async getRecommendedStudies(userId: number, limit?: number): Promise<Study[]> {
+  async getRecommendedStudies(userId: string, limit?: number): Promise<Study[]> {
     return [];
   }
   
-  async getRecommendedBlogs(userId: number, limit?: number): Promise<any[]> {
+  async getRecommendedBlogs(userId: string, limit?: number): Promise<any[]> {
     return [];
   }
   
@@ -805,7 +805,7 @@ export class MemStorage implements IStorage {
     return notification;
   }
   
-  async getUserNotifications(userId: number, unreadOnly?: boolean): Promise<any[]> {
+  async getUserNotifications(userId: string, unreadOnly?: boolean): Promise<any[]> {
     return [];
   }
   
@@ -813,7 +813,7 @@ export class MemStorage implements IStorage {
     // Nothing to do
   }
   
-  async markAllNotificationsAsRead(userId: number): Promise<void> {
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
     // Nothing to do
   }
 }

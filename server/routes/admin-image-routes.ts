@@ -7,6 +7,7 @@ import { db } from '../db';
 import { studies } from '../../shared/schema';
 import { isNull, sql } from 'drizzle-orm';
 import { generateStudyImage } from '../enhanced-image-generator';
+import { imageGenerationRateLimiter, generalApiRateLimiter } from '../rate-limiting';
 
 const router = Router();
 
@@ -80,8 +81,9 @@ router.get('/studies-needing-images', async (req, res) => {
 
 /**
  * Generate image for a specific study (admin action)
+ * Strictly rate limited due to high cost of image generation
  */
-router.post('/generate-single/:studyId', async (req, res) => {
+router.post('/generate-single/:studyId', imageGenerationRateLimiter, async (req, res) => {
   try {
     const studyId = parseInt(req.params.studyId);
     if (isNaN(studyId)) {
@@ -134,8 +136,9 @@ router.post('/generate-single/:studyId', async (req, res) => {
 
 /**
  * Generate images for multiple studies (batch admin action)
+ * Very strict rate limit due to batch nature and high cost
  */
-router.post('/generate-batch', async (req, res) => {
+router.post('/generate-batch', imageGenerationRateLimiter, async (req, res) => {
   try {
     const { studyIds, maxCount = 10 } = req.body;
     
@@ -200,8 +203,9 @@ router.post('/generate-batch', async (req, res) => {
 
 /**
  * Auto-generate images for all studies missing them (admin action)
+ * Extremely strict rate limit - this is a very expensive operation
  */
-router.post('/generate-all-missing', async (req, res) => {
+router.post('/generate-all-missing', imageGenerationRateLimiter, async (req, res) => {
   try {
     const { maxStudies = 50 } = req.body;
     

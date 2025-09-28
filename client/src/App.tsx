@@ -8,46 +8,52 @@ import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
 import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
+import PageLoader from "@/components/ui/page-loader";
+import { EnhancedErrorBoundary, PageErrorBoundary, AsyncErrorBoundary } from "@/components/ui/enhanced-error-boundary";
 
-// Core Pages
+// Critical page - keep as direct import for fastest initial load
 import HomePage from "@/pages/HomePage";
-import SearchPage from "@/pages/SearchPage";
-import BenefitsPage from "@/pages/BenefitsPage";
-import ProductsPage from "@/pages/ProductsPage";
 
-import HydrogenBasicsPage from "@/pages/HydrogenBasicsPage";
-import HealthBenefitsPage from "@/pages/HealthBenefitsPage";
-import PublicBlogListPage from "@/pages/BlogListPage";
-import BlogArticlePage from "@/pages/BlogArticlePage";
-import ContactUsPage from "@/pages/ContactUsPage";
-import Studies from "@/pages/studies";
-import EnhancedStudyPage from "@/pages/EnhancedStudyPage";
-import EnhancedSearchPage from "@/pages/EnhancedSearchPage";
-import StudyPage from "@/pages/StudyPage";
-import StudyDetailsPage from "@/pages/StudyDetailsPage";
-import SEOStudyPage from "@/pages/SEOStudyPage";
-import About from "@/pages/about";
-import NotFound from "@/pages/not-found";
-import BlogPage from "@/pages/BlogPage";
-import ChatPage from "@/pages/ChatPage";
-import RecommendationsPage from "@/pages/RecommendationsPage";
-import ResearchInsightsPage from "./pages/ResearchInsightsPage";
-import ResearchAnalyticsPage from "./pages/ResearchAnalyticsPage";
+// Lazy load all non-critical pages for better performance
+const SearchPage = lazy(() => import("@/pages/SearchPage"));
+const BenefitsPage = lazy(() => import("@/pages/BenefitsPage"));
+const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
+const HydrogenBasicsPage = lazy(() => import("@/pages/HydrogenBasicsPage"));
+const HealthBenefitsPage = lazy(() => import("@/pages/HealthBenefitsPage"));
+const PublicBlogListPage = lazy(() => import("@/pages/BlogListPage"));
+const BlogArticlePage = lazy(() => import("@/pages/BlogArticlePage"));
+const ContactUsPage = lazy(() => import("@/pages/ContactUsPage"));
+const Studies = lazy(() => import("@/pages/studies"));
+const EnhancedStudyPage = lazy(() => import("@/pages/EnhancedStudyPage"));
+const EnhancedSearchPage = lazy(() => import("@/pages/EnhancedSearchPage"));
+const StudyPage = lazy(() => import("@/pages/StudyPage"));
+const StudyDetailsPage = lazy(() => import("@/pages/StudyDetailsPage"));
+const SEOStudyPage = lazy(() => import("@/pages/SEOStudyPage"));
+const About = lazy(() => import("@/pages/about"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const ChatPage = lazy(() => import("@/pages/ChatPage"));
+const RecommendationsPage = lazy(() => import("@/pages/RecommendationsPage"));
+const ResearchInsightsPage = lazy(() => import("./pages/ResearchInsightsPage"));
+const ResearchAnalyticsPage = lazy(() => import("./pages/ResearchAnalyticsPage"));
 
 // Educational content pages
-import HydrogenTherapyGuide from "@/pages/educational/HydrogenTherapyGuide";
+const HydrogenTherapyGuide = lazy(() => import("@/pages/educational/HydrogenTherapyGuide"));
 
 // New organization structure pages
-import ExploreByBenefit from "@/pages/ExploreByBenefit";
-import ExploreByCondition from "@/pages/ExploreByCondition";
-import ConditionCategoryPage from "@/pages/ConditionCategoryPage";
-import ExploreByBodySystem from "@/pages/ExploreByBodySystem";
-import BodySystemCategoryPage from "@/pages/BodySystemCategoryPage";
-import ExploreByLifeStage from "@/pages/ExploreByLifeStage";
-import LifeStageCategoryPage from "@/pages/LifeStageCategoryPage";
-import ExploreByDemographicPage, { DemographicDetailPage } from "@/pages/ExploreByDemographic";
-import ExploreByMechanismPage, { MechanismDetailPage } from "@/pages/ExploreByMechanism";
-import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "@/pages/ExploreByDeliveryMethod";
+const ExploreByBenefit = lazy(() => import("@/pages/ExploreByBenefit"));
+const ExploreByCondition = lazy(() => import("@/pages/ExploreByCondition"));
+const ConditionCategoryPage = lazy(() => import("@/pages/ConditionCategoryPage"));
+const ExploreByBodySystem = lazy(() => import("@/pages/ExploreByBodySystem"));
+const BodySystemCategoryPage = lazy(() => import("@/pages/BodySystemCategoryPage"));
+const ExploreByLifeStage = lazy(() => import("@/pages/ExploreByLifeStage"));
+const LifeStageCategoryPage = lazy(() => import("@/pages/LifeStageCategoryPage"));
+const ExploreByDemographicPage = lazy(() => import("@/pages/ExploreByDemographic").then(module => ({ default: module.default })));
+const DemographicDetailPage = lazy(() => import("@/pages/ExploreByDemographic").then(module => ({ default: module.DemographicDetailPage })));
+const ExploreByMechanismPage = lazy(() => import("@/pages/ExploreByMechanism").then(module => ({ default: module.default })));
+const MechanismDetailPage = lazy(() => import("@/pages/ExploreByMechanism").then(module => ({ default: module.MechanismDetailPage })));
+const ExploreByDeliveryMethodPage = lazy(() => import("@/pages/ExploreByDeliveryMethod").then(module => ({ default: module.default })));
+const DeliveryMethodDetailPage = lazy(() => import("@/pages/ExploreByDeliveryMethod").then(module => ({ default: module.DeliveryMethodDetailPage })));
 
 // Lazy load admin components for better performance
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -104,8 +110,9 @@ function Router() {
   useAnalytics();
 
   return (
-    <Switch>
-      {/* Core Public Routes */}
+    <PageErrorBoundary>
+      <Switch>
+        {/* Core Public Routes */}
       <Route path="/" component={HomePage} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={StudyPage} />
@@ -206,7 +213,8 @@ function Router() {
 
       {/* 404 - Must be last */}
       <Route component={NotFound} />
-    </Switch>
+      </Switch>
+    </PageErrorBoundary>
   );
 }
 
@@ -267,23 +275,32 @@ function App() {
 
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ScrollToTop />
-        <div className="flex min-h-screen flex-col">
-          {!isAdminRoute && (
-            <CookieConsent />
-          )}
-          <main className={`flex-1 ${isAdminRoute ? 'p-0' : ''}`}>
-            <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
-              <Router />
-            </Suspense>
-          </main>
-          {!isAdminRoute && !isHomePage && <Footer />}
-        </div>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <EnhancedErrorBoundary
+      onError={(error, errorInfo) => {
+        console.error('App-level error:', error);
+        // Could send to error tracking service here
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ScrollToTop />
+          <div className="flex min-h-screen flex-col">
+            {!isAdminRoute && (
+              <CookieConsent />
+            )}
+            <main className={`flex-1 ${isAdminRoute ? 'p-0' : ''}`}>
+              <AsyncErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <Router />
+                </Suspense>
+              </AsyncErrorBoundary>
+            </main>
+            {!isAdminRoute && !isHomePage && <Footer />}
+          </div>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </EnhancedErrorBoundary>
   );
 }
 

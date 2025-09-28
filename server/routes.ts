@@ -28,15 +28,16 @@ import {
 
 // Import only the working routes
 import educationalRoutes from "./routes/educational";
-import scraperRoutes from "./routes/scraper-routes";
-import importRoutes from "./routes/import-routes";
-import hydrogenImportRoutes from "./routes/hydrogen-import";
-import excelAnalysisRoutes from "./routes/excel-analysis";
-import minimalImportRoutes from "./routes/minimal-import";
+// Removed: These route files no longer exist after consolidation
+// import scraperRoutes from "./routes/scraper-routes";
+// import importRoutes from "./routes/import-routes";
+// import hydrogenImportRoutes from "./routes/hydrogen-import";
+// import excelAnalysisRoutes from "./routes/excel-analysis";
+// import minimalImportRoutes from "./routes/minimal-import";
 import researchRoutes from "./routes/research-routes";
-import excelImportRoutes from "./routes/excel-import";
+// import excelImportRoutes from "./routes/excel-import";
 import unifiedResearchRoutes from "./routes/research-unified-routes";
-import studyDetailsRoutes from "./routes/study-details";
+// import studyDetailsRoutes from "./routes/study-details"; // Consolidated into studies-router
 import europePmcRoutes from "./routes/europepmc-routes";
 import imageFixRoutes from "./routes/image-fix-routes";
 import semanticScholarRoutes from "./routes/semantic-scholar-routes";
@@ -58,7 +59,7 @@ import { enrichStudyDirect } from "./direct-pubmed-enrichment";
 import { enrichStudySimple } from "./simple-pubmed-enrichment";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
-import exportRoutes from "./routes/export-routes";
+// import exportRoutes from "./routes/export-routes"; // File doesn't exist
 import recommendationRoutes from "./routes/recommendation-routes";
 import chatRoutes from "./routes/chat-routes";
 import adminImageRoutes from "./routes/admin-image-routes";
@@ -376,12 +377,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register working route modules
   app.use('/api', educationalRoutes);
-  app.use('/api', scraperRoutes);
-  app.use('/api', importRoutes);
-  app.use('/api/import', excelImportRoutes);
-  app.use('/api', hydrogenImportRoutes);
-  app.use('/api', excelAnalysisRoutes);
-  app.use('/api', minimalImportRoutes);
+  // Commented out - routes consolidated or removed
+  // app.use('/api', scraperRoutes);
+  // app.use('/api', importRoutes);
+  // app.use('/api/import', excelImportRoutes);
+  // app.use('/api', hydrogenImportRoutes);
+  // app.use('/api', excelAnalysisRoutes);
+  // app.use('/api', minimalImportRoutes);
   app.use('/api/images/fix', imageFixRoutes);
   app.use('/api', researchRoutes);
   app.use('/api/consumer-categories', consumerCategoriesRoutes);
@@ -398,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', insightCardRoutes);
   app.use('/api/keywords', keywordMonitorRoutes);
   app.use('/api/keywords/monitor/schedule', keywordMonitorScheduleRoutes);
-  app.use('/api/export', exportRoutes);
+  // app.use('/api/export', exportRoutes); // Route file doesn't exist
 
   // Performance monitoring endpoints
   app.get('/api/admin/performance-stats', async (req, res) => {
@@ -417,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api', chatRoutes);
-  app.use('/api', studyDetailsRoutes);
+  // app.use('/api', studyDetailsRoutes); // Consolidated into studies-router
 
   // Admin status routes
   app.get('/api/admin/status', async (req, res) => {

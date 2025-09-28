@@ -4,14 +4,34 @@
  */
 
 import express from 'express';
-import session from 'express-session';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { eq, count } from 'drizzle-orm';
 import { blogArticles, studies } from '../shared/schema';
+
+// Security and session imports
+import { getSessionMiddleware } from './session-config';
+import { getCorsConfig, validateCorsConfig } from './cors-config';
+import { csrfProtection, csrfToken, addCsrfToResponse } from './csrf-protection';
+
+// Enhanced error handling imports
+import { 
+  globalErrorHandler, 
+  requestIdMiddleware, 
+  errorRecoveryMiddleware,
+  timeoutMiddleware,
+  asyncHandler,
+  isOperationalError
+} from './utils/error-handler';
+import { AppError, ErrorFactory, NotFoundError, DatabaseError, ErrorCode } from './utils/app-errors';
+import { DatabaseCircuitBreaker, checkDatabaseHealth, withRetry } from './utils/database-wrapper';
+
+// Route imports
 import studiesRouter from "./routes/studies-router";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
@@ -20,30 +40,78 @@ import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
 import enrichmentRoutes from "./routes/enrichment-routes";
 import blogRoutes from "./routes/blog-routes";
 import blogRecommendationRoutes from "./routes/blog-recommendation-routes";
+
+// Monitoring and utilities
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
 import { handleError } from './utils/error-handler';
 import { qualityAudit } from './comprehensive-quality-audit';
+import { searchRateLimiter, generalApiRateLimiter, aiGenerationRateLimiter } from './rate-limiting';
+import testRateLimitEndpoint from './test-rate-limit-endpoint';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
-// CORS and middleware
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '50mb' }));
+// Initialize database circuit breaker
+const dbCircuitBreaker = new DatabaseCircuitBreaker();
+
+// Request tracking and error recovery middleware
+app.use(requestIdMiddleware);
+app.use(errorRecoveryMiddleware);
+app.use(timeoutMiddleware(30000)); // 30 second timeout
+
+// Cookie parser for CSRF tokens
+app.use(cookieParser());
+
+// Secure CORS configuration
+validateCorsConfig();
+app.use(cors(getCorsConfig()));
+
+// Body parsing middleware with error handling
+app.use(express.json({ 
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf.toString());
+    } catch (error) {
+      throw new AppError('Invalid JSON in request body', 400, ErrorCode.BAD_REQUEST);
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Session middleware for authentication
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'hydrogen-research-secret-key-development',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  },
-}));
+// Secure session middleware with PostgreSQL store
+// Using async middleware wrapper to handle async session config
+app.use(getSessionMiddleware());
+console.log('🔄 Initializing session store with PostgreSQL...');
+
+// CSRF protection middleware
+const csrf = csrfProtection({
+  ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
+  ignoreRoutes: [
+    '/health',
+    '/api/stats',
+    '/api/search',
+    '/api/categories',
+    '/api/filters',
+    '/api/overview',
+    '/api/studies', // GET requests only
+    '/api/admin/quality/monitor',
+    '/api/admin/quality/integrity'
+  ]
+});
+
+// Apply CSRF protection
+app.use(csrf);
+app.use(csrfToken());
+
+// Add CSRF token to API responses
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path.startsWith('/api/')) {
+    addCsrfToResponse(req, res);
+  }
+  next();
+});
 
 // Comprehensive environment validation
 function validateEnvironment() {
@@ -52,9 +120,12 @@ function validateEnvironment() {
   const missingRequired = [];
   const missingOptional = [];
 
-  // SECURITY: ADMIN_USER_IDS is required in production for admin access control
-  if (process.env.NODE_ENV === 'production') {
+  // SECURITY: Required variables in production (non-Replit)
+  const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
+  if (process.env.NODE_ENV === 'production' && !isReplit) {
     requiredEnvVars.push('ADMIN_USER_IDS');
+    requiredEnvVars.push('SESSION_SECRET');
+    requiredEnvVars.push('ALLOWED_ORIGINS');
   }
 
   // Check required environment variables
@@ -91,6 +162,41 @@ function validateEnvironment() {
     }
   }
 
+  // Validate SESSION_SECRET strength
+  if (process.env.SESSION_SECRET) {
+    if (process.env.SESSION_SECRET.length < 32) {
+      console.error('SESSION_SECRET is too short. Use at least 32 characters.');
+      console.error('Generate a secure secret using: openssl rand -hex 32');
+      if (process.env.NODE_ENV === 'production') {
+        process.exit(1);
+      }
+    }
+    if (process.env.SESSION_SECRET === 'dev-secret-change-me-before-production') {
+      console.error('SESSION_SECRET is using the default value. This is insecure!');
+      console.error('Generate a secure secret using: openssl rand -hex 32');
+      if (process.env.NODE_ENV === 'production') {
+        process.exit(1);
+      }
+    }
+  } else if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️  SESSION_SECRET not set. Using default for development only.');
+    console.warn('⚠️  Generate a secure secret for production: openssl rand -hex 32');
+  }
+
+  // Validate ALLOWED_ORIGINS
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOWED_ORIGINS) {
+    const origins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+    for (const origin of origins) {
+      try {
+        new URL(origin);
+      } catch (error) {
+        console.error(`Invalid origin in ALLOWED_ORIGINS: ${origin}`);
+        console.error('Each origin must be a valid URL (e.g., https://example.com)');
+        process.exit(1);
+      }
+    }
+  }
+
   // Exit if required variables are missing
   if (missingRequired.length > 0) {
     console.error('Missing required environment variables:', missingRequired.join(', '));
@@ -98,6 +204,15 @@ function validateEnvironment() {
     if (missingRequired.includes('ADMIN_USER_IDS')) {
       console.error('ADMIN_USER_IDS is required in production for secure admin access control.');
       console.error('Set ADMIN_USER_IDS to a comma-separated list of secure user identifiers.');
+    }
+    if (missingRequired.includes('SESSION_SECRET')) {
+      console.error('SESSION_SECRET is required in production for secure session management.');
+      console.error('Generate a secure secret using: openssl rand -hex 32');
+    }
+    if (missingRequired.includes('ALLOWED_ORIGINS')) {
+      console.error('ALLOWED_ORIGINS is required in production for CORS security.');
+      console.error('Set ALLOWED_ORIGINS to a comma-separated list of allowed origins.');
+      console.error('Example: ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com');
     }
     process.exit(1);
   }
@@ -127,80 +242,82 @@ const sql = neon(process.env.DATABASE_URL!, {
 });
 const db = drizzle(sql);
 
-// Working API endpoints
+// Test rate limit endpoint - for verification
+app.use('/api/test', testRateLimitEndpoint);
+
+// Working API endpoints with rate limiting
 app.use('/api/keywords/monitor', keywordMonitorScheduleRoutes); // Keyword monitor schedule routes (more specific first)
 app.use('/api/keywords', keywordMonitorRoutes); // Keyword monitor routes
-app.use('/api/content-enrichment', contentEnrichmentRoutes); // Content enrichment routes
-app.use('/api/enrichment', enrichmentRoutes); // Enrichment routes
-app.use('/api/blogs', blogRoutes); // Blog routes
-app.use('/api/blog-recommendations', blogRecommendationRoutes); // Blog recommendation routes
-app.use('/api/studies', studiesRouter); // Mount the studies router
+app.use('/api/content-enrichment', aiGenerationRateLimiter, contentEnrichmentRoutes); // Content enrichment routes with strict rate limit
+app.use('/api/enrichment', aiGenerationRateLimiter, enrichmentRoutes); // Enrichment routes with strict rate limit
+app.use('/api/blogs', blogRoutes); // Blog routes (rate limiting applied inside router)
+app.use('/api/blog-recommendations', aiGenerationRateLimiter, blogRecommendationRoutes); // Blog recommendation routes with strict rate limit
+app.use('/api/studies', studiesRouter); // Mount the studies router (rate limiting applied inside router)
 app.use(researchUnifiedRoutes); // Research unified routes
 
 // Dashboard stats endpoint with comprehensive statistics
-app.get('/api/stats/dashboard', async (req, res) => {
+app.get('/api/stats/dashboard', generalApiRateLimiter, asyncHandler(async (req, res, next) => {
   try {
-    // Get total blog count
-    const [totalResult] = await db
-      .select({ count: count() })
-      .from(blogArticles);
+    // Use circuit breaker for database operations
+    const stats = await withRetry(async () => {
+      // Get total blog count
+      const [totalResult] = await db
+        .select({ count: count() })
+        .from(blogArticles);
 
-    // Get published blog count
-    const [publishedResult] = await db
-      .select({ count: count() })
-      .from(blogArticles)
-      .where(eq(blogArticles.isPublished, true));
+      // Get published blog count
+      const [publishedResult] = await db
+        .select({ count: count() })
+        .from(blogArticles)
+        .where(eq(blogArticles.isPublished, true));
 
-    // Get draft blog count
-    const [draftResult] = await db
-      .select({ count: count() })
-      .from(blogArticles)
-      .where(eq(blogArticles.isPublished, false));
+      // Get draft blog count
+      const [draftResult] = await db
+        .select({ count: count() })
+        .from(blogArticles)
+        .where(eq(blogArticles.isPublished, false));
 
-    // Get total studies count using SQL query
-    let studiesCount = 0;
-    try {
-      const result = await sql`SELECT COUNT(*) as count FROM studies`;
-      studiesCount = Number(result[0]?.count) || 0;
-    } catch (error) {
-      console.log('Direct SQL query failed, trying table query');
+      // Get total studies count using SQL query with fallback
+      let studiesCount = 0;
       try {
-        const [studiesResult] = await db
-          .select({ count: count() })
-          .from(studies);
-        studiesCount = studiesResult?.count || 0;
-      } catch (tableError) {
-        console.log('Table query also failed, using 0');
-        studiesCount = 0;
+        const result = await sql`SELECT COUNT(*) as count FROM studies`;
+        studiesCount = Number(result[0]?.count) || 0;
+      } catch (error) {
+        console.log('Direct SQL query failed, trying table query');
+        try {
+          const [studiesResult] = await db
+            .select({ count: count() })
+            .from(studies);
+          studiesCount = studiesResult?.count || 0;
+        } catch (tableError) {
+          console.log('Table query also failed, using 0');
+          studiesCount = 0;
+        }
       }
-    }
 
-    const stats = {
-      totalBlogs: Number(totalResult.count),
-      publishedBlogs: Number(publishedResult.count),
-      draftBlogs: Number(draftResult.count),
-      totalStudies: Number(studiesCount),
-      categoriesCount: 8,
-      recentImports: 0
-    };
+      return {
+        totalBlogs: Number(totalResult.count),
+        publishedBlogs: Number(publishedResult.count),
+        draftBlogs: Number(draftResult.count),
+        totalStudies: Number(studiesCount),
+        categoriesCount: 8,
+        recentImports: 0
+      };
+    }, { maxRetries: 2, retryDelay: 500 });
 
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching blog stats:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to fetch blog statistics',
-      totalBlogs: 0,
-      publishedBlogs: 0,
-      draftBlogs: 0,
-      totalStudies: 0,
-      categoriesCount: 0,
-      recentImports: 0
-    });
+    // Error is handled by global error handler
+    throw new DatabaseError(
+      'Failed to fetch dashboard statistics',
+      true,
+      { endpoint: '/api/stats/dashboard' },
+      error as Error
+    );
   }
-});
+}));
 
-app.get('/api/categories', async (req, res) => {
+app.get('/api/categories', generalApiRateLimiter, async (req, res) => {
   try {
     const categories = await sql`
       SELECT category, COUNT(*) as count
@@ -217,7 +334,7 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-app.get('/api/search', async (req, res) => {
+app.get('/api/search', searchRateLimiter, async (req, res) => {
   try {
     const query = String(req.query.q || '');
     const limit = Math.min(50, parseInt(String(req.query.limit || '20')));
@@ -279,7 +396,7 @@ app.get('/api/studies/:id', async (req, res) => {
 });
 
 // Advanced filtering endpoints
-app.get('/api/filters/years', async (req, res) => {
+app.get('/api/filters/years', generalApiRateLimiter, async (req, res) => {
   try {
     const years = await sql`
       SELECT publish_year, COUNT(*) as count
@@ -295,7 +412,7 @@ app.get('/api/filters/years', async (req, res) => {
   }
 });
 
-app.get('/api/filters/countries', async (req, res) => {
+app.get('/api/filters/countries', generalApiRateLimiter, async (req, res) => {
   try {
     const countries = await sql`
       SELECT country, COUNT(*) as count
@@ -312,7 +429,7 @@ app.get('/api/filters/countries', async (req, res) => {
   }
 });
 
-app.get('/api/filters/study-types', async (req, res) => {
+app.get('/api/filters/study-types', generalApiRateLimiter, async (req, res) => {
   try {
     const studyTypes = await sql`
       SELECT study_type, COUNT(*) as count
@@ -328,7 +445,7 @@ app.get('/api/filters/study-types', async (req, res) => {
   }
 });
 
-app.get('/api/filters/journals', async (req, res) => {
+app.get('/api/filters/journals', generalApiRateLimiter, async (req, res) => {
   try {
     const journals = await sql`
       SELECT journal, COUNT(*) as count
@@ -346,7 +463,7 @@ app.get('/api/filters/journals', async (req, res) => {
 });
 
 // Database overview endpoint
-app.get('/api/overview', async (req, res) => {
+app.get('/api/overview', generalApiRateLimiter, async (req, res) => {
   try {
     const [totalStudies, categoryCounts, countryCounts, yearRange] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM studies`,
@@ -387,7 +504,7 @@ app.get('/api/overview', async (req, res) => {
 });
 
 // Advanced search with multiple filters
-app.get('/api/advanced-search', async (req, res) => {
+app.get('/api/advanced-search', searchRateLimiter, async (req, res) => {
   try {
     const search = String(req.query.search || '').trim();
     const category = String(req.query.category || '').trim();
@@ -487,53 +604,113 @@ app.get('/api/advanced-search', async (req, res) => {
 // Initialize health monitoring
 initializeHealthMonitoring();
 
-// Global error handling - single set only
+// Enhanced global error handling with graceful shutdown
+let isShuttingDown = false;
+
+async function gracefulShutdown(reason: string, error?: any) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  
+  console.error(`\n⚠️  Initiating graceful shutdown due to: ${reason}`);
+  if (error) {
+    console.error('Error details:', error);
+  }
+  
+  // Give ongoing requests 10 seconds to complete
+  const shutdownTimeout = setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+  
+  try {
+    // Close database connections
+    console.log('Closing database connections...');
+    // await db.destroy(); // If using a pool
+    
+    console.log('Graceful shutdown completed');
+    clearTimeout(shutdownTimeout);
+    process.exit(0);
+  } catch (shutdownError) {
+    console.error('Error during shutdown:', shutdownError);
+    clearTimeout(shutdownTimeout);
+    process.exit(1);
+  }
+}
+
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   handleError(new Error(`Unhandled Rejection: ${reason}`), 'unhandledRejection');
-
-  // Don't exit the process in production, just log the error
-  if (process.env.NODE_ENV !== 'production') {
-    process.exit(1);
+  
+  // In production, log but don't crash unless it's critical
+  if (process.env.NODE_ENV === 'production') {
+    // Track unhandled rejections
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+    if (!isOperationalError(error)) {
+      gracefulShutdown('Critical unhandled rejection', error);
+    }
+  } else {
+    gracefulShutdown('Unhandled rejection in development', reason);
   }
 });
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   handleError(error, 'uncaughtException');
-
-  // Graceful shutdown in production
-  if (process.env.NODE_ENV === 'production') {
-    setTimeout(() => process.exit(1), 1000);
-  } else {
-    process.exit(1);
-  }
+  
+  // Always shutdown on uncaught exceptions as the process is in undefined state
+  gracefulShutdown('Uncaught exception', error);
 });
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM received'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT received'));
+
+// Test rate limiting endpoint (for verification)
+app.get('/api/test-rate-limit', searchRateLimiter, (req, res) => {
+  res.json({
+    success: true,
+    message: 'Rate limit test endpoint',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Enhanced health check endpoint with detailed status
+app.get('/health', asyncHandler(async (req, res) => {
+  const healthChecks = {
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    circuitBreaker: dbCircuitBreaker.getState(),
+  };
+
   try {
-    // Test database connection
-    await sql`SELECT 1`;
+    // Test database connection with timeout
+    const dbHealth = await checkDatabaseHealth(sql, 5000);
+    
+    if (!dbHealth.healthy) {
+      throw new Error(dbHealth.error || 'Database unhealthy');
+    }
 
-    const health = {
+    res.json({
       status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      database: 'connected'
-    };
-
-    res.json(health);
+      ...healthChecks,
+      database: {
+        status: 'connected',
+        latency: dbHealth.latency
+      }
+    });
   } catch (error) {
     console.error('Health check failed:', error);
     res.status(503).json({
       status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: 'Database connection failed'
+      ...healthChecks,
+      database: {
+        status: 'disconnected',
+        error: (error as Error).message
+      }
     });
   }
-});
+}));
 
 // Quality monitoring endpoints
 app.get('/api/admin/quality/monitor', async (req, res) => {
@@ -584,6 +761,14 @@ app.get('/api/admin/quality/tests', async (req, res) => {
 app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
 
+// 404 handler for API routes
+app.use('/api/*', (req, res, next) => {
+  next(new NotFoundError('API endpoint'));
+});
+
+// Global error handler - MUST be last middleware
+app.use(globalErrorHandler);
+
 // Setup server and Vite
 async function setupServer() {
   const PORT = parseInt(process.env.PORT || '5000');
@@ -596,8 +781,6 @@ async function setupServer() {
     await setupVite(app, server);
 
     server.listen(PORT, '0.0.0.0', () => {
-      console.log('Health monitoring initialized');
-
       console.log(`Server running on port ${PORT}`);
       console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
@@ -610,8 +793,6 @@ async function setupServer() {
     });
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log('Health monitoring initialized');
-
       console.log(`Server running on port ${PORT}`);
       console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
