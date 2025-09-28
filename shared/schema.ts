@@ -23,7 +23,7 @@ export const users = pgTable("users", {
 // User preferences table schema
 export const userPreferences = pgTable("user_preferences", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   categories: text("categories").array(),
   keywords: text("keywords").array(),
   authors: text("authors").array(),
@@ -36,7 +36,7 @@ export const userPreferences = pgTable("user_preferences", {
 // Search history table schema
 export const searchHistory = pgTable("search_history", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   searchQuery: text("search_query").notNull(),
   searchDate: timestamp("search_date").notNull().defaultNow(),
 });
@@ -58,7 +58,7 @@ export const userStudyInteractions = pgTable("user_study_interactions", {
 // Notifications table schema
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   message: text("message").notNull(),
   type: text("type").notNull(), // "study", "blog", "system"
@@ -69,7 +69,7 @@ export const notifications = pgTable("notifications", {
 
 // User blog interactions (saved/viewed blogs)
 export const userBlogInteractions = pgTable("user_blog_interactions", {
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   blogId: integer("blog_id").notNull().references(() => blogArticles.id),
   isSaved: boolean("is_saved").default(false),
   viewCount: integer("view_count").default(0),
@@ -426,7 +426,7 @@ export type StudyReviewQueue = typeof studyReviewQueue.$inferSelect;
 // Chat conversations table schema
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id),
   title: text("title").default("New Conversation"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -445,7 +445,7 @@ export const chatMessages = pgTable("chat_messages", {
 export const chatFeedback = pgTable("chat_feedback", {
   id: serial("id").primaryKey(),
   messageId: integer("message_id").notNull().references(() => chatMessages.id),
-  userId: integer("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id),
   rating: integer("rating").notNull(), // 1 (thumbs down) or 5 (thumbs up)
   comment: text("comment"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

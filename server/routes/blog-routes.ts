@@ -4,6 +4,7 @@ import { blogArticles, studies, insertBlogArticleSchema } from '@shared/schema';
 import { sql, count, desc, eq, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { isAuthenticated, requireAdmin } from '../auth';
+import { aiGenerationRateLimiter, generalApiRateLimiter } from '../rate-limiting';
 
 const router = Router();
 
@@ -76,31 +77,54 @@ router.get('/stats/dashboard', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit as string) || 50; // Default 50 for admin pages
     const offset = (page - 1) * limit;
+    const search = req.query.search as string;
+    const filterType = req.query.filterType as string;
+    const filterStatus = req.query.filterStatus as string;
 
-    // Simple query to get all blogs
-    const blogs = await db
-      .select()
-      .from(blogArticles)
+    // Build query with filters
+    let baseQuery = db.select().from(blogArticles);
+    let countQuery = db.select({ count: count() }).from(blogArticles);
+    
+    // Apply search filter
+    if (search) {
+      const searchCondition = sql`${blogArticles.title} ILIKE ${'%' + search + '%'} OR ${blogArticles.summary} ILIKE ${'%' + search + '%'}`;
+      baseQuery = baseQuery.where(searchCondition);
+      countQuery = countQuery.where(searchCondition);
+    }
+    
+    // Apply type filter
+    if (filterType && filterType !== 'all') {
+      baseQuery = baseQuery.where(eq(blogArticles.articleType, filterType));
+      countQuery = countQuery.where(eq(blogArticles.articleType, filterType));
+    }
+    
+    // Apply status filter
+    if (filterStatus === 'published') {
+      baseQuery = baseQuery.where(eq(blogArticles.isPublished, true));
+      countQuery = countQuery.where(eq(blogArticles.isPublished, true));
+    } else if (filterStatus === 'draft') {
+      baseQuery = baseQuery.where(eq(blogArticles.isPublished, false));
+      countQuery = countQuery.where(eq(blogArticles.isPublished, false));
+    }
+    
+    // Apply ordering and pagination
+    const blogs = await baseQuery
       .orderBy(desc(blogArticles.createdAt))
       .limit(limit)
       .offset(offset);
 
     // Get total count for pagination
-    const [totalResult] = await db
-      .select({ count: count() })
-      .from(blogArticles);
+    const [totalResult] = await countQuery;
 
+    // Consistent response format with studies endpoint
     res.json({
-      success: true,
       data: blogs,
-      pagination: {
-        page,
-        limit,
-        total: totalResult.count,
-        totalPages: Math.ceil(totalResult.count / limit)
-      }
+      total: totalResult.count,
+      page,
+      limit,
+      totalPages: Math.ceil(totalResult.count / limit)
     });
   } catch (error) {
     console.error('Error fetching blogs:', error);
@@ -153,8 +177,9 @@ router.get('/:id(\\d+)', async (req, res) => {
 
 /**
  * Create a new blog article
+ * Rate limited to prevent abuse of blog generation
  */
-router.post('/', async (req, res) => {
+router.post('/', aiGenerationRateLimiter, async (req, res) => {
   try {
     // Validate request body with Zod schema
     const blogValidationSchema = z.object({
