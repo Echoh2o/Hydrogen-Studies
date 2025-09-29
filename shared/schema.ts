@@ -144,7 +144,53 @@ export const studies = pgTable("studies", {
   ethicalApproval: text("ethical_approval"), // Ethics committee information
   fullText: text("full_text"), // Full research paper content when available
   
+  // SEO Enhancement Fields
+  canonicalUrl: text("canonical_url"), // Prevent duplicate content issues
+  metaTitle: text("meta_title"), // SEO-optimized title (60 chars)
+  metaDescription: text("meta_description"), // SEO description (160 chars)
+  schemaOrg: text("schema_org"), // JSON-LD structured data for search engines
+  ogTitle: text("og_title"), // Open Graph title for social sharing
+  ogDescription: text("og_description"), // Open Graph description
+  ogImage: text("og_image"), // Open Graph image URL
+  twitterCard: text("twitter_card"), // Twitter card type
+  twitterTitle: text("twitter_title"), // Twitter card title
+  twitterDescription: text("twitter_description"), // Twitter card description
+  twitterImage: text("twitter_image"), // Twitter card image
+  lastModified: timestamp("last_modified"), // For sitemap generation
+  priority: text("priority"), // Sitemap priority (0.0-1.0)
+  changeFrequency: text("change_frequency"), // Sitemap update frequency
+  structuredData: text("structured_data"), // JSONB field for AI-readable structured data
+  
+  // Academic Enhancement Fields
+  academicSchema: text("academic_schema"), // Scholar.org structured data
+  citationFormats: text("citation_formats"), // JSON with multiple citation formats (APA, MLA, etc.)
+  impactMetrics: text("impact_metrics"), // Academic ranking and impact scores
+  peerReviewStatus: text("peer_review_status"), // Peer review credibility status
+  conflictOfInterest: text("conflict_of_interest"), // Trust signal declarations
+  
+  // AI Comprehension Fields
+  hierarchicalStructure: text("hierarchical_structure"), // H1, H2, H3 tag structure
+  semanticHtml: text("semantic_html"), // Semantic HTML equivalents
+  entityRecognition: text("entity_recognition"), // JSON of recognized entities (people, places, medical terms)
+  conceptRelationships: text("concept_relationships"), // Linked data relationships
+  questionAnswerPairs: text("question_answer_pairs"), // Q&A pairs for AI training
+  summary50Words: text("summary_50_words"), // 50-word summary
+  summary100Words: text("summary_100_words"), // 100-word summary
+  summary200Words: text("summary_200_words"), // 200-word summary
+  semanticKeywords: text("semantic_keywords").array(), // LSI keywords for SEO
+  topicalRelevance: integer("topical_relevance"), // Score for topical authority (0-100)
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Performance indexes for SEO and search
+    slugIdx: index("studies_slug_idx").on(table.slug),
+    canonicalUrlIdx: index("studies_canonical_url_idx").on(table.canonicalUrl),
+    publishYearIdx: index("studies_publish_year_idx").on(table.publishYear),
+    categoryIdx: index("studies_category_idx").on(table.category),
+    viewCountIdx: index("studies_view_count_idx").on(table.viewCount),
+    lastModifiedIdx: index("studies_last_modified_idx").on(table.lastModified),
+  }
 });
 
 // Categories table schema
@@ -292,6 +338,72 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// SEO Metadata table for centralized SEO management
+export const seoMetadata = pgTable("seo_metadata", {
+  id: serial("id").primaryKey(),
+  entityType: text("entity_type").notNull(), // 'study', 'blog', 'article', 'page'
+  entityId: integer("entity_id").notNull(), // Foreign key to respective table
+  
+  // SEO Directives
+  robots: text("robots").default("index, follow"), // Index/follow directives
+  robotsNoIndex: boolean("robots_no_index").default(false),
+  robotsNoFollow: boolean("robots_no_follow").default(false),
+  
+  // International SEO
+  alternateLanguages: text("alternate_languages"), // JSON array of hreflang tags
+  
+  // Link Management
+  internalLinks: text("internal_links").array(), // Array of related content URLs
+  externalLinks: text("external_links").array(), // Authoritative source URLs
+  
+  // Keyword and Relevance
+  semanticKeywords: text("semantic_keywords").array(), // LSI keywords for SEO
+  topicalRelevance: integer("topical_relevance").default(50), // Score 0-100 for topical authority
+  keywordDensity: text("keyword_density"), // JSON object with keyword frequency data
+  
+  // Search Engine Performance
+  clickThroughRate: text("click_through_rate"), // CTR data from search console
+  averagePosition: text("average_position"), // Average SERP position
+  impressions: integer("impressions").default(0), // Search impressions count
+  clicks: integer("clicks").default(0), // Search clicks count
+  
+  // AI and ML Optimization
+  aiOptimizationScore: integer("ai_optimization_score").default(0), // 0-100 score
+  contentQualityScore: integer("content_quality_score").default(0), // 0-100 score
+  readabilityScore: integer("readability_score").default(0), // 0-100 score
+  sentimentAnalysis: text("sentiment_analysis"), // JSON with sentiment data
+  
+  // Schema Markup
+  richSnippetType: text("rich_snippet_type"), // Type of rich snippet (FAQ, HowTo, etc.)
+  schemaMarkup: text("schema_markup"), // Full schema.org JSON-LD
+  
+  // Social Media Metrics
+  socialMediaEngagement: text("social_media_engagement"), // JSON with platform-specific metrics
+  viralityScore: integer("virality_score").default(0), // 0-100 viral potential
+  
+  // Content Freshness
+  lastContentUpdate: timestamp("last_content_update"),
+  contentUpdateFrequency: text("content_update_frequency"), // daily, weekly, monthly, yearly
+  nextScheduledUpdate: timestamp("next_scheduled_update"),
+  
+  // Performance Metrics
+  pageSpeed: integer("page_speed"), // Lighthouse score
+  mobileFriendly: boolean("mobile_friendly").default(true),
+  coreWebVitals: text("core_web_vitals"), // JSON with LCP, FID, CLS scores
+  
+  // Tracking
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Composite index for entity lookups
+    entityIdx: index("seo_metadata_entity_idx").on(table.entityType, table.entityId),
+    // Performance indexes
+    relevanceIdx: index("seo_metadata_relevance_idx").on(table.topicalRelevance),
+    qualityIdx: index("seo_metadata_quality_idx").on(table.contentQualityScore),
+  }
+});
+
 // Table for tracking scraped sources to avoid duplicates
 export const scrapedSources = pgTable("scraped_sources", {
   id: serial("id").primaryKey(),
@@ -358,12 +470,46 @@ export const blogArticles = pgTable("blog_articles", {
   isPublished: boolean("is_published").default(false),
   editorNotes: text("editor_notes"),
   viewCount: integer("view_count").default(0),
+  
+  // SEO Enhancement Fields for Blogs
+  canonicalUrl: text("canonical_url"),
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  schemaOrg: text("schema_org"), // Article schema JSON-LD
+  breadcrumbs: text("breadcrumbs"), // Navigation structure JSON
+  authorBio: text("author_bio"), // For E-A-T (Expertise, Authority, Trust)
+  lastReviewed: timestamp("last_reviewed"), // Content freshness indicator
+  faqSchema: text("faq_schema"), // FAQ structured data if applicable
+  socialShares: integer("social_shares").default(0), // Track social engagement
+  ogTitle: text("og_title"),
+  ogDescription: text("og_description"),
+  ogImage: text("og_image"),
+  twitterCard: text("twitter_card"),
+  twitterTitle: text("twitter_title"),
+  twitterDescription: text("twitter_description"),
+  
+  // AI Comprehension Fields for Blogs
+  hierarchicalStructure: text("hierarchical_structure"),
+  entityRecognition: text("entity_recognition"),
+  semanticKeywords: text("semantic_keywords").array(),
+  questionAnswerPairs: text("question_answer_pairs"),
+  summary50Words: text("summary_50_words"),
+  summary100Words: text("summary_100_words"),
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Performance indexes for blog SEO
+    slugIdx: index("blog_articles_slug_idx").on(table.slug),
+    canonicalUrlIdx: index("blog_articles_canonical_url_idx").on(table.canonicalUrl),
+    publishedIdx: index("blog_articles_published_idx").on(table.isPublished),
+    viewCountIdx: index("blog_articles_view_count_idx").on(table.viewCount),
+  }
 });
 
 // Create insertion schemas and types
-export const insertStudySchema = createInsertSchema(studies).omit({ id: true, createdAt: true });
+export const insertStudySchema = createInsertSchema(studies).omit({ id: true, createdAt: true, lastModified: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertNewsletterSchema = createInsertSchema(newsletters).omit({ id: true, createdAt: true });
 export const insertContactSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
@@ -385,6 +531,11 @@ export const insertStudyReviewQueueSchema = createInsertSchema(studyReviewQueue)
   reviewedAt: true, 
   createdAt: true 
 });
+export const insertSeoMetadataSchema = createInsertSchema(seoMetadata).omit({ 
+  id: true, 
+  createdAt: true,
+  updatedAt: true
+});
 
 // Types for insertion
 export type InsertStudy = z.infer<typeof insertStudySchema>;
@@ -404,6 +555,7 @@ export type InsertFaqItem = z.infer<typeof insertFaqItemSchema>;
 export type InsertStudyCollection = z.infer<typeof insertStudyCollectionSchema>;
 export type InsertCollectionStudy = z.infer<typeof insertCollectionStudySchema>;
 export type InsertStudyReviewQueue = z.infer<typeof insertStudyReviewQueueSchema>;
+export type InsertSeoMetadata = z.infer<typeof insertSeoMetadataSchema>;
 
 // Types for selection
 export type Study = typeof studies.$inferSelect;
@@ -422,6 +574,7 @@ export type FaqItem = typeof faqItems.$inferSelect;
 export type StudyCollection = typeof studyCollections.$inferSelect;
 export type CollectionStudy = typeof collectionStudies.$inferSelect;
 export type StudyReviewQueue = typeof studyReviewQueue.$inferSelect;
+export type SeoMetadata = typeof seoMetadata.$inferSelect;
 
 // Chat conversations table schema
 export const conversations = pgTable("conversations", {
@@ -664,6 +817,69 @@ export type InsertTag = z.infer<typeof insertTagSchema>;
 export type InsertStudyTag = z.infer<typeof insertStudyTagSchema>;
 export type InsertTagCategory = z.infer<typeof insertTagCategorySchema>;
 export type InsertTagSynonym = z.infer<typeof insertTagSynonymSchema>;
+
+// ===== SCIENTIFIC ARTICLES TABLE =====
+// For longer, more detailed scientific content
+
+export const scientificArticles = pgTable("scientific_articles", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull().references(() => studies.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  articleType: text("article_type").notNull(), // 'comprehensive_review', 'clinical_applications'
+  content: text("content").notNull(), // 2000-3000 words of detailed content
+  summary: text("summary").notNull(), // Executive summary
+  abstract: text("abstract"), // Formal scientific abstract
+  introduction: text("introduction"), // Detailed introduction section
+  methodology: text("methodology"), // Methodology analysis
+  results: text("results"), // Results discussion
+  discussion: text("discussion"), // In-depth discussion
+  conclusion: text("conclusion"), // Scientific conclusion
+  references: text("references").array(), // List of references/citations
+  keywords: text("keywords").array(), // Scientific keywords for indexing
+  authors: text("authors"), // Article authors (can differ from study authors)
+  readingLevel: text("reading_level").default("8th-10th grade"), // Target reading level
+  wordCount: integer("word_count").notNull(),
+  readingTime: integer("reading_time").notNull(), // Estimated reading time in minutes
+  
+  // SEO fields
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  canonicalUrl: text("canonical_url"),
+  
+  // Media fields
+  imageUrl: text("image_url"),
+  imageAlt: text("image_alt"),
+  figures: text("figures").array(), // Scientific figures/charts
+  figuresCaptions: text("figures_captions").array(),
+  
+  // Publishing fields
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
+  viewCount: integer("view_count").default(0),
+  
+  // Quality and review
+  peerReviewed: boolean("peer_reviewed").default(false),
+  reviewedBy: text("reviewed_by"),
+  reviewNotes: text("review_notes"),
+  qualityScore: integer("quality_score"), // 0-100 quality score
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Create insertion schema for scientific articles
+export const insertScientificArticleSchema = createInsertSchema(scientificArticles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  viewCount: true,
+  publishedAt: true
+});
+
+// Types for scientific articles
+export type ScientificArticle = typeof scientificArticles.$inferSelect;
+export type InsertScientificArticle = z.infer<typeof insertScientificArticleSchema>;
 
 // Study category types
 export type StudyCategory = typeof studyCategories.$inferSelect;

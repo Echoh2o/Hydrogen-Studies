@@ -45,7 +45,7 @@ const initializeOpenAI = (): OpenAI | null => {
 
 const openai = initializeOpenAI();
 
-// Blog article types
+// Blog article types - expanded set for comprehensive coverage
 const BLOG_TYPES = [
   "overview", 
   "practical_application", 
@@ -54,7 +54,12 @@ const BLOG_TYPES = [
   "benefits_focused",
   "future_implications",
   "faq_style",
-  "how_to_guide"
+  "how_to_guide",
+  "tips",              // New: Practical tips for patients
+  "patient_story",     // New: Relatable patient perspective
+  "myth_busting",      // New: Common misconceptions
+  "daily_routine",     // New: Daily implementation guide
+  "side_effects"       // New: What to expect, safety considerations
 ];
 
 /**
@@ -84,7 +89,7 @@ export async function generateBlogArticlesForStudy(
       throw new AppError('Invalid study data provided', 400, ErrorCode.VALIDATION_ERROR);
     }
     
-    const count = Math.min(options.count || 3, BLOG_TYPES.length);
+    const count = Math.min(options.count || 7, BLOG_TYPES.length);
     const fallbackToBasic = options.fallbackToBasic ?? true;
     
     // Check OpenAI availability
@@ -252,7 +257,7 @@ async function generateArticleContent(
     messages: [
       { 
         role: "system", 
-        content: "You are a scientific writer specializing in hydrogen therapy research. Write engaging, accurate content at a 6th grade reading level." 
+        content: "You are a scientific writer specializing in hydrogen therapy research. Write engaging, accurate content at a 6th grade reading level (Flesch-Kincaid score 60-70). Use simple words, short sentences, and clear explanations. Avoid medical jargon unless necessary, and always explain complex terms in simple language." 
       },
       { role: "user", content: prompt }
     ],
@@ -428,7 +433,12 @@ function generateFallbackTitle(study: Study, articleType: string): string {
     benefits_focused: 'Health Benefits',
     future_implications: 'Future Impact',
     faq_style: 'Common Questions',
-    how_to_guide: 'How-To Guide'
+    how_to_guide: 'How-To Guide',
+    tips: 'Practical Tips',
+    patient_story: 'Patient Perspective',
+    myth_busting: 'Myths vs Facts',
+    daily_routine: 'Daily Guide',
+    side_effects: 'What to Expect'
   };
   
   const typeLabel = typeLabels[articleType] || 'Analysis';
@@ -509,14 +519,19 @@ function extractKeywords(study: Study, summary: string): string[] {
 
 function createContentPrompt(study: Study, articleType: string): string {
   const prompts: Record<string, string> = {
-    overview: `Write a comprehensive overview article about this hydrogen therapy study. Include background, key findings, and implications.`,
-    practical_application: `Write a practical guide on how the findings from this study could be applied in real-world health scenarios.`,
-    comparison: `Compare this hydrogen therapy study with other treatments or approaches for similar conditions.`,
-    simplified: `Explain this hydrogen therapy study in very simple terms that anyone can understand.`,
-    benefits_focused: `Focus on the specific health benefits discovered in this hydrogen therapy study.`,
-    future_implications: `Discuss the future implications and potential developments based on this hydrogen therapy research.`,
-    faq_style: `Create an FAQ-style article answering common questions about this hydrogen therapy study.`,
-    how_to_guide: `Create a how-to guide based on the practical applications of this hydrogen therapy research.`,
+    overview: `Write a comprehensive overview article about this hydrogen therapy study. Include background, key findings, and implications. Use 6th grade reading level.`,
+    practical_application: `Write a practical guide on how the findings from this study could be applied in real-world health scenarios. Use 6th grade reading level.`,
+    comparison: `Compare this hydrogen therapy study with other treatments or approaches for similar conditions. Use 6th grade reading level.`,
+    simplified: `Explain this hydrogen therapy study in very simple terms that anyone can understand. Target 6th grade reading level.`,
+    benefits_focused: `Focus on the specific health benefits discovered in this hydrogen therapy study. Use 6th grade reading level.`,
+    future_implications: `Discuss the future implications and potential developments based on this hydrogen therapy research. Use 6th grade reading level.`,
+    faq_style: `Create an FAQ-style article answering common questions about this hydrogen therapy study. Use 6th grade reading level.`,
+    how_to_guide: `Create a how-to guide based on the practical applications of this hydrogen therapy research. Use 6th grade reading level.`,
+    tips: `Write an article with 7-10 practical tips for patients who want to benefit from the hydrogen therapy findings in this study. Make it actionable and easy to follow. Use 6th grade reading level.`,
+    patient_story: `Write an article from a patient's perspective about how hydrogen therapy could impact their daily life based on this study. Make it relatable and hopeful. Use 6th grade reading level.`,
+    myth_busting: `Write a myth-busting article addressing common misconceptions about hydrogen therapy based on what this study reveals. Format as 'Myth vs Fact'. Use 6th grade reading level.`,
+    daily_routine: `Create a daily routine guide showing how someone could incorporate hydrogen therapy into their life based on this study's findings. Include morning, afternoon, and evening suggestions. Use 6th grade reading level.`,
+    side_effects: `Write an informative article about what to expect from hydrogen therapy based on this study, including any side effects, safety considerations, and when to consult a healthcare provider. Be reassuring but honest. Use 6th grade reading level.`
   };
   
   const basePrompt = prompts[articleType] || prompts.overview;
