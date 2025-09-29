@@ -378,6 +378,28 @@ const EnhancedAdminDashboard: React.FC = () => {
                       <span className="text-sm">Enrich Content</span>
                     </Link>
                   </Button>
+                  
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="flex items-center justify-center h-20 flex-col space-y-2"
+                  >
+                    <Link href="/admin/trends">
+                      <TrendingUp className="h-6 w-6" />
+                      <span className="text-sm">Trends Analysis</span>
+                    </Link>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="flex items-center justify-center h-20 flex-col space-y-2"
+                  >
+                    <Link href="/admin/multi-format">
+                      <FileText className="h-6 w-6" />
+                      <span className="text-sm">Multi-Format Generator</span>
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -9,7 +9,7 @@ import { searchRateLimiter, generalApiRateLimiter } from "../rate-limiting";
 const router = Router();
 
 // Import analytics routes
-import analyticsRoutes from './analytics-routes';
+import analyticsRoutes from './content-analytics-routes';
 router.use('/', analyticsRoutes);
 
 // Get research trends data for visualizations
