@@ -59,10 +59,6 @@ externalPort = 8000
 localPort = 38869
 externalPort = 8080
 
-[[ports]]
-localPort = 39421
-externalPort = 8008
-
 [workflows]
 runButton = "Start application"
 
