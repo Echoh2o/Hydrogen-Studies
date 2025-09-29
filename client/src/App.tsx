@@ -36,6 +36,7 @@ const ChatPage = lazy(() => import("@/pages/ChatPage"));
 const RecommendationsPage = lazy(() => import("@/pages/RecommendationsPage"));
 const ResearchInsightsPage = lazy(() => import("./pages/ResearchInsightsPage"));
 const ResearchAnalyticsPage = lazy(() => import("./pages/ResearchAnalyticsPage"));
+const StudyExplorerPage = lazy(() => import("./pages/StudyExplorerPage"));
 
 // Educational content pages
 const HydrogenTherapyGuide = lazy(() => import("@/pages/educational/HydrogenTherapyGuide"));
@@ -94,6 +95,11 @@ const ImageGenerationPage = lazy(() => import('./pages/admin/ImageGenerationPage
 const EnhancementPage = lazy(() => import('./pages/admin/EnhancementPage'));
 const KeywordMonitorPage = lazy(() => import('./pages/admin/KeywordMonitorPage'));
 const EnhancedAdminDashboard = lazy(() => import('./pages/admin/EnhancedAdminDashboard'));
+const TrendsAnalysisPage = lazy(() => import('./pages/admin/TrendsAnalysisPage'));
+const ReviewAssistantPage = lazy(() => import('./pages/admin/ReviewAssistantPage'));
+const ContentOptimizationPage = lazy(() => import('./pages/admin/ContentOptimizationPage'));
+const MultiFormatGeneratorPage = lazy(() => import('./pages/admin/MultiFormatGeneratorPage'));
+const NaturalLanguageSearchPage = lazy(() => import('./pages/NaturalLanguageSearchPage'));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -119,6 +125,7 @@ function Router() {
       <Route path="/study/:slug" component={StudyDetailsPage} />
       <Route path="/studies/:slug" component={SEOStudyPage} />
       <Route path="/search" component={SearchPage} />
+      <Route path="/search/natural-language" component={NaturalLanguageSearchPage} />
       <Route path="/advanced-search" component={EnhancedSearchPage} />
       <Route path="/benefits" component={BenefitsPage} />
       <Route path="/products" component={ProductsPage} />
@@ -133,6 +140,7 @@ function Router() {
       <Route path="/research-analytics" component={ResearchAnalyticsPage} />
       <Route path="/insights" component={ResearchInsightsPage} />
       <Route path="/research-insights" component={ResearchInsightsPage} />
+      <Route path="/study-explorer" component={StudyExplorerPage} />
 
       {/* Research Exploration */}
       <Route path="/explore-by-condition" component={ExploreByCondition} />
@@ -179,6 +187,10 @@ function Router() {
       <Route path="/admin/image-generation" component={ImageGenerationPage} />
       <Route path="/admin/enhancement" component={EnhancementPage} />
       <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
+      <Route path="/admin/trends" component={TrendsAnalysisPage} />
+      <Route path="/admin/review-assistant" component={ReviewAssistantPage} />
+      <Route path="/admin/content-optimization" component={ContentOptimizationPage} />
+      <Route path="/admin/multi-format" component={MultiFormatGeneratorPage} />
 
       {/* Additional Admin Pages */}
       <Route path="/admin/analytics" component={AnalyticsPage} />

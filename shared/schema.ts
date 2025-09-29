@@ -454,6 +454,85 @@ export const studyReviewQueue = pgTable("study_review_queue", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Multi-format content table for generated content in various formats
+export const multiFormatContent = pgTable("multi_format_content", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull().references(() => studies.id),
+  formatType: text("format_type").notNull(), // podcast, infographic, social_twitter, social_linkedin, video, newsletter
+  title: text("title").notNull(),
+  
+  // Podcast fields
+  podcastScript: text("podcast_script"),
+  podcastIntro: text("podcast_intro"),
+  podcastOutro: text("podcast_outro"),
+  podcastQA: text("podcast_qa"), // JSON array of Q&A pairs
+  podcastShowNotes: text("podcast_show_notes"),
+  podcastDuration: integer("podcast_duration"), // in seconds
+  
+  // Infographic fields
+  keyStatistics: text("key_statistics"), // JSON array of stats
+  dataPoints: text("data_points"), // JSON for charts and graphs
+  visualSuggestions: text("visual_suggestions"), // JSON for design guidance
+  infographicTitle: text("infographic_title"),
+  infographicSubheadings: text("infographic_subheadings"), // JSON array
+  
+  // Social media fields
+  socialPlatform: text("social_platform"), // twitter, linkedin, instagram, facebook, tiktok
+  socialContent: text("social_content"),
+  hashtags: text("hashtags").array(),
+  threadContent: text("thread_content"), // JSON array for Twitter threads
+  characterCount: integer("character_count"),
+  
+  // Video script fields
+  videoScript: text("video_script"),
+  videoType: text("video_type"), // youtube_explainer, short_form, animation
+  videoStoryboard: text("video_storyboard"), // JSON with scenes and timing
+  videoDuration: integer("video_duration"), // in seconds
+  visualCues: text("visual_cues"), // JSON array of visual directions
+  
+  // Newsletter fields
+  newsletterHtml: text("newsletter_html"),
+  newsletterPlainText: text("newsletter_plain_text"),
+  newsletterSubjectLine: text("newsletter_subject_line"),
+  newsletterPreheader: text("newsletter_preheader"),
+  
+  // Common fields
+  readingLevel: text("reading_level").default("6th_grade"),
+  wordCount: integer("word_count"),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
+  scheduledFor: timestamp("scheduled_for"),
+  
+  // Performance metrics
+  viewCount: integer("view_count").default(0),
+  engagementScore: integer("engagement_score").default(0),
+  shareCount: integer("share_count").default(0),
+  clickThroughRate: text("click_through_rate"),
+  conversionMetrics: text("conversion_metrics"), // JSON with platform-specific metrics
+  
+  // SEO and meta fields
+  metaDescription: text("meta_description"),
+  keywords: text("keywords").array(),
+  ogImage: text("og_image"),
+  
+  // Generation metadata
+  generatedBy: text("generated_by").default("ai"), // ai, manual, hybrid
+  generationModel: text("generation_model"),
+  generationPrompt: text("generation_prompt"),
+  editorNotes: text("editor_notes"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Indexes for performance
+    studyIdIdx: index("multi_format_content_study_id_idx").on(table.studyId),
+    formatTypeIdx: index("multi_format_content_format_type_idx").on(table.formatType),
+    publishedIdx: index("multi_format_content_published_idx").on(table.isPublished),
+    scheduledIdx: index("multi_format_content_scheduled_idx").on(table.scheduledFor),
+  }
+});
+
 // Blog articles table schema
 export const blogArticles = pgTable("blog_articles", {
   id: serial("id").primaryKey(),
@@ -514,6 +593,7 @@ export const insertCategorySchema = createInsertSchema(categories).omit({ id: tr
 export const insertNewsletterSchema = createInsertSchema(newsletters).omit({ id: true, createdAt: true });
 export const insertContactSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
 export const insertBlogArticleSchema = createInsertSchema(blogArticles).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export const insertMultiFormatContentSchema = createInsertSchema(multiFormatContent).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true, engagementScore: true, shareCount: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSearchHistorySchema = createInsertSchema(searchHistory).omit({ id: true, searchDate: true });
@@ -543,6 +623,7 @@ export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
 export type InsertContact = z.infer<typeof insertContactSchema>;
 export type InsertBlogArticle = z.infer<typeof insertBlogArticleSchema>;
+export type InsertMultiFormatContent = z.infer<typeof insertMultiFormatContentSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
@@ -562,6 +643,7 @@ export type Study = typeof studies.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Newsletter = typeof newsletters.$inferSelect;
 export type BlogArticle = typeof blogArticles.$inferSelect;
+export type MultiFormatContent = typeof multiFormatContent.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type SearchHistory = typeof searchHistory.$inferSelect;
@@ -880,6 +962,580 @@ export const insertScientificArticleSchema = createInsertSchema(scientificArticl
 // Types for scientific articles
 export type ScientificArticle = typeof scientificArticles.$inferSelect;
 export type InsertScientificArticle = z.infer<typeof insertScientificArticleSchema>;
+
+// ===== TREND ANALYSIS TABLES =====
+
+// Search queries table to track what users are searching for
+export const searchQueries = pgTable("search_queries", {
+  id: serial("id").primaryKey(),
+  query: text("query").notNull(),
+  userId: text("user_id").references(() => users.id),
+  resultsCount: integer("results_count").default(0),
+  clickedResults: text("clicked_results").array(), // Study IDs that were clicked
+  sessionId: text("session_id"),
+  searchType: text("search_type"), // 'basic', 'advanced', 'filter'
+  filters: text("filters"), // JSON string of applied filters
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    queryIdx: index("search_queries_query_idx").on(table.query),
+    createdAtIdx: index("search_queries_created_at_idx").on(table.createdAt),
+  }
+});
+
+// Study metrics table for tracking engagement
+export const studyMetrics = pgTable("study_metrics", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull().references(() => studies.id, { onDelete: "cascade" }),
+  date: timestamp("date").notNull(),
+  viewCount: integer("view_count").default(0),
+  uniqueViewers: integer("unique_viewers").default(0),
+  downloadCount: integer("download_count").default(0),
+  shareCount: integer("share_count").default(0),
+  citationClicks: integer("citation_clicks").default(0),
+  avgTimeOnPage: integer("avg_time_on_page"), // in seconds
+  bounceRate: integer("bounce_rate"), // percentage
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    studyDateIdx: index("study_metrics_study_date_idx").on(table.studyId, table.date),
+    dateIdx: index("study_metrics_date_idx").on(table.date),
+  }
+});
+
+// Trend analysis table to store analysis results
+export const trendAnalysis = pgTable("trend_analysis", {
+  id: serial("id").primaryKey(),
+  analysisType: text("analysis_type").notNull(), // 'emerging_topics', 'breakthrough', 'momentum', 'comprehensive'
+  periodType: text("period_type").notNull(), // 'weekly', 'monthly', 'quarterly', 'yearly'
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  
+  // Analysis results (stored as JSON)
+  emergingTopics: text("emerging_topics"), // JSON array of {topic, count, growth_rate, studies}
+  breakthroughStudies: text("breakthrough_studies"), // JSON array of study IDs with impact scores
+  momentumData: text("momentum_data"), // JSON object with accelerating/declining areas
+  keywordTrends: text("keyword_trends"), // JSON object with keyword frequency changes
+  citationPatterns: text("citation_patterns"), // JSON object with citation network data
+  
+  // Summary and insights
+  summary: text("summary"), // AI-generated summary of the analysis
+  insights: text("insights").array(), // Key insights from the analysis
+  recommendations: text("recommendations").array(), // Actionable recommendations
+  
+  // Metrics
+  totalStudiesAnalyzed: integer("total_studies_analyzed").default(0),
+  newStudiesCount: integer("new_studies_count").default(0),
+  avgCitationCount: integer("avg_citation_count").default(0),
+  topResearchAreas: text("top_research_areas").array(),
+  
+  // Status and metadata
+  status: text("status").default("pending"), // 'pending', 'processing', 'completed', 'failed'
+  processingTime: integer("processing_time"), // in milliseconds
+  errorMessage: text("error_message"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => {
+  return {
+    typeIdx: index("trend_analysis_type_idx").on(table.analysisType),
+    periodIdx: index("trend_analysis_period_idx").on(table.periodStart, table.periodEnd),
+    statusIdx: index("trend_analysis_status_idx").on(table.status),
+  }
+});
+
+// Trend alerts table for notifications
+export const trendAlerts = pgTable("trend_alerts", {
+  id: serial("id").primaryKey(),
+  trendAnalysisId: integer("trend_analysis_id").references(() => trendAnalysis.id),
+  alertType: text("alert_type").notNull(), // 'breakthrough', 'emerging_topic', 'momentum_shift'
+  alertLevel: text("alert_level").notNull(), // 'info', 'warning', 'critical'
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  relatedStudies: text("related_studies").array(), // Study IDs
+  actionRequired: boolean("action_required").default(false),
+  notificationSent: boolean("notification_sent").default(false),
+  acknowledgedBy: text("acknowledged_by").references(() => users.id),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    alertTypeIdx: index("trend_alerts_type_idx").on(table.alertType),
+    levelIdx: index("trend_alerts_level_idx").on(table.alertLevel),
+    notificationIdx: index("trend_alerts_notification_idx").on(table.notificationSent),
+  }
+});
+
+// Create insertion schemas for trend analysis
+export const insertSearchQuerySchema = createInsertSchema(searchQueries).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertStudyMetricsSchema = createInsertSchema(studyMetrics).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertTrendAnalysisSchema = createInsertSchema(trendAnalysis).omit({ 
+  id: true, 
+  createdAt: true,
+  completedAt: true,
+  processingTime: true
+});
+export const insertTrendAlertSchema = createInsertSchema(trendAlerts).omit({ 
+  id: true, 
+  createdAt: true,
+  acknowledgedAt: true 
+});
+
+// Types for trend analysis
+export type SearchQuery = typeof searchQueries.$inferSelect;
+export type StudyMetric = typeof studyMetrics.$inferSelect;
+export type TrendAnalysis = typeof trendAnalysis.$inferSelect;
+export type TrendAlert = typeof trendAlerts.$inferSelect;
+export type InsertSearchQuery = z.infer<typeof insertSearchQuerySchema>;
+export type InsertStudyMetrics = z.infer<typeof insertStudyMetricsSchema>;
+export type InsertTrendAnalysis = z.infer<typeof insertTrendAnalysisSchema>;
+export type InsertTrendAlert = z.infer<typeof insertTrendAlertSchema>;
+
+// ===== CONTENT ANALYTICS TABLES =====
+
+// Content analytics table for tracking performance
+export const contentAnalytics = pgTable("content_analytics", {
+  id: serial("id").primaryKey(),
+  contentType: text("content_type").notNull(), // 'study', 'blog', 'article'
+  contentId: integer("content_id").notNull(),
+  
+  // View metrics
+  viewCount: integer("view_count").default(0),
+  uniqueViewers: integer("unique_viewers").default(0),
+  
+  // Engagement metrics
+  avgTimeSpent: integer("avg_time_spent").default(0), // in seconds
+  totalTimeSpent: integer("total_time_spent").default(0), // total across all views
+  bounceRate: integer("bounce_rate").default(0), // percentage (0-100)
+  scrollDepth: integer("scroll_depth").default(0), // average percentage scrolled
+  
+  // Interaction metrics
+  shareCount: integer("share_count").default(0),
+  likeCount: integer("like_count").default(0),
+  commentCount: integer("comment_count").default(0),
+  downloadCount: integer("download_count").default(0),
+  
+  // Conversion metrics
+  conversionRate: integer("conversion_rate").default(0), // percentage reading related content
+  relatedContentClicks: integer("related_content_clicks").default(0),
+  ctaClickRate: integer("cta_click_rate").default(0), // call-to-action click rate
+  
+  // A/B testing
+  abTestVersion: text("ab_test_version"), // version identifier for A/B tests
+  abTestMetrics: text("ab_test_metrics"), // JSON with test-specific metrics
+  
+  // Time-based metrics
+  periodType: text("period_type").default("daily"), // 'hourly', 'daily', 'weekly', 'monthly'
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    contentIdx: index("content_analytics_content_idx").on(table.contentType, table.contentId),
+    periodIdx: index("content_analytics_period_idx").on(table.periodStart, table.periodEnd),
+    viewCountIdx: index("content_analytics_view_count_idx").on(table.viewCount),
+  }
+});
+
+// User engagement table for individual interaction tracking
+export const userEngagement = pgTable("user_engagement", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id),
+  sessionId: text("session_id").notNull(), // for anonymous users
+  contentType: text("content_type").notNull(), // 'study', 'blog', 'article'
+  contentId: integer("content_id").notNull(),
+  
+  // Interaction details
+  action: text("action").notNull(), // 'view', 'like', 'share', 'download', 'comment', 'click'
+  actionValue: text("action_value"), // additional context (e.g., share platform, click target)
+  
+  // Time metrics
+  timeSpent: integer("time_spent").default(0), // seconds spent on content
+  scrollDepth: integer("scroll_depth").default(0), // percentage scrolled
+  engagementScore: integer("engagement_score").default(0), // calculated engagement score
+  
+  // Context
+  referrerType: text("referrer_type"), // 'search', 'social', 'direct', 'internal'
+  referrerValue: text("referrer_value"), // specific referrer details
+  deviceType: text("device_type"), // 'desktop', 'mobile', 'tablet'
+  browserType: text("browser_type"),
+  
+  // Content context
+  contentVersion: text("content_version"), // for A/B testing
+  contentPosition: integer("content_position"), // position in list/search results
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    userIdx: index("user_engagement_user_idx").on(table.userId),
+    sessionIdx: index("user_engagement_session_idx").on(table.sessionId),
+    contentIdx: index("user_engagement_content_idx").on(table.contentType, table.contentId),
+    actionIdx: index("user_engagement_action_idx").on(table.action),
+    createdAtIdx: index("user_engagement_created_at_idx").on(table.createdAt),
+  }
+});
+
+// Content performance insights table for AI-generated recommendations
+export const contentInsights = pgTable("content_insights", {
+  id: serial("id").primaryKey(),
+  contentType: text("content_type").notNull(),
+  contentId: integer("content_id").notNull(),
+  
+  // Performance patterns
+  headlinePattern: text("headline_pattern"), // successful headline pattern identified
+  optimalLength: integer("optimal_length"), // optimal content length in words
+  bestKeywords: text("best_keywords").array(), // high-performing keywords
+  bestTags: text("best_tags").array(), // high-performing tags
+  
+  // Recommendations
+  improvementSuggestions: text("improvement_suggestions").array(),
+  similarHighPerformers: text("similar_high_performers").array(), // IDs of similar successful content
+  optimalPublishTime: text("optimal_publish_time"), // best time to publish
+  
+  // Audience insights
+  primaryAudience: text("primary_audience"), // main audience segment
+  audiencePreferences: text("audience_preferences"), // JSON with preference data
+  readingLevel: integer("reading_level"), // optimal reading level
+  
+  // Content gaps
+  missingTopics: text("missing_topics").array(),
+  suggestedFollowUps: text("suggested_follow_ups").array(),
+  
+  // Performance prediction
+  predictedEngagement: integer("predicted_engagement"), // predicted engagement score
+  confidenceScore: integer("confidence_score"), // confidence in predictions (0-100)
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    contentIdx: unique("content_insights_content_unique").on(table.contentType, table.contentId),
+  }
+});
+
+// Create insertion schemas for analytics
+export const insertContentAnalyticsSchema = createInsertSchema(contentAnalytics).omit({ 
+  id: true, 
+  createdAt: true,
+  updatedAt: true 
+});
+export const insertUserEngagementSchema = createInsertSchema(userEngagement).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertContentInsightsSchema = createInsertSchema(contentInsights).omit({ 
+  id: true, 
+  createdAt: true,
+  updatedAt: true 
+});
+
+// Types for content analytics
+export type ContentAnalytics = typeof contentAnalytics.$inferSelect;
+export type UserEngagement = typeof userEngagement.$inferSelect;
+export type ContentInsights = typeof contentInsights.$inferSelect;
+export type InsertContentAnalytics = z.infer<typeof insertContentAnalyticsSchema>;
+export type InsertUserEngagement = z.infer<typeof insertUserEngagementSchema>;
+export type InsertContentInsights = z.infer<typeof insertContentInsightsSchema>;
+
+// ===== REVIEW ASSISTANT TABLES =====
+
+// Study quality scores table for automated quality assessment
+export const studyQualityScores = pgTable("study_quality_scores", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull().references(() => studies.id, { onDelete: "cascade" }),
+  
+  // Individual scores (0-100)
+  methodologyScore: integer("methodology_score").notNull().default(0),
+  impactScore: integer("impact_score").notNull().default(0),
+  relevanceScore: integer("relevance_score").notNull().default(0),
+  overallScore: integer("overall_score").notNull().default(0),
+  
+  // Detailed breakdown
+  scoreBreakdown: text("score_breakdown"), // JSON with detailed scoring criteria
+  
+  // Red flags
+  redFlags: text("red_flags").array(), // Array of identified red flags
+  redFlagCount: integer("red_flag_count").notNull().default(0),
+  
+  // Methodology details
+  sampleSizeScore: integer("sample_size_score").default(0),
+  studyDesignScore: integer("study_design_score").default(0),
+  blindingScore: integer("blinding_score").default(0),
+  controlGroupScore: integer("control_group_score").default(0),
+  statisticalRigorScore: integer("statistical_rigor_score").default(0),
+  
+  // Impact details
+  journalImpactScore: integer("journal_impact_score").default(0),
+  citationScore: integer("citation_score").default(0),
+  authorReputationScore: integer("author_reputation_score").default(0),
+  institutionScore: integer("institution_score").default(0),
+  fundingQualityScore: integer("funding_quality_score").default(0),
+  
+  // Relevance details
+  hydrogenFocusScore: integer("hydrogen_focus_score").default(0),
+  humanStudyScore: integer("human_study_score").default(0),
+  clinicalApplicabilityScore: integer("clinical_applicability_score").default(0),
+  recencyScore: integer("recency_score").default(0),
+  practicalImplicationsScore: integer("practical_implications_score").default(0),
+  
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    studyIdIdx: unique("study_quality_scores_study_unique").on(table.studyId),
+    overallScoreIdx: index("study_quality_scores_overall_idx").on(table.overallScore),
+    redFlagCountIdx: index("study_quality_scores_red_flags_idx").on(table.redFlagCount),
+  }
+});
+
+// Review recommendations table for intelligent review assistance
+export const reviewRecommendations = pgTable("review_recommendations", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull().references(() => studies.id, { onDelete: "cascade" }),
+  
+  // Priority and actions
+  priority: text("priority").notNull().default("medium"), // 'high', 'medium', 'low'
+  suggestedActions: text("suggested_actions").array(), // Array of recommended actions
+  
+  // Analysis results
+  keyFindings: text("key_findings").array(), // Main findings from the study
+  potentialIssues: text("potential_issues").array(), // Identified concerns
+  strengthsIdentified: text("strengths_identified").array(), // Study strengths
+  
+  // Related content
+  relatedStudyIds: integer("related_study_ids").array(), // IDs of similar studies
+  suggestedCategories: text("suggested_categories").array(), // Auto-suggested categories
+  suggestedTags: text("suggested_tags").array(), // Auto-suggested tags
+  suggestedBlogTopics: text("suggested_blog_topics").array(), // Blog topic ideas
+  
+  // Auto-categorization results
+  healthConditions: text("health_conditions").array(), // Detected health conditions
+  bodySystems: text("body_systems").array(), // Affected body systems
+  deliveryMethods: text("delivery_methods").array(), // H2 delivery methods used
+  studyTypeClassification: text("study_type_classification"), // RCT, observational, etc.
+  ageGroups: text("age_groups").array(), // Age demographics
+  geographicRelevance: text("geographic_relevance").array(), // Geographic scope
+  mechanismsOfAction: text("mechanisms_of_action").array(), // MOA identified
+  
+  // Grouping information
+  researchTeamId: text("research_team_id"), // Identifier for research team
+  studyGroupId: text("study_group_id"), // Group ID for batch review
+  isFollowUp: boolean("is_follow_up").default(false),
+  isReplication: boolean("is_replication").default(false),
+  contradictsStudyIds: integer("contradicts_study_ids").array(), // IDs of contradicting studies
+  
+  // AI analysis metadata
+  confidenceScore: integer("confidence_score").default(0), // AI confidence (0-100)
+  analysisVersion: text("analysis_version"), // Version of analysis algorithm
+  
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    studyIdIdx: unique("review_recommendations_study_unique").on(table.studyId),
+    priorityIdx: index("review_recommendations_priority_idx").on(table.priority),
+    studyGroupIdx: index("review_recommendations_group_idx").on(table.studyGroupId),
+  }
+});
+
+// Create insertion schemas for review assistant
+export const insertStudyQualityScoresSchema = createInsertSchema(studyQualityScores).omit({ 
+  id: true, 
+  createdAt: true,
+  lastUpdated: true 
+});
+export const insertReviewRecommendationsSchema = createInsertSchema(reviewRecommendations).omit({ 
+  id: true, 
+  createdAt: true,
+  lastUpdated: true 
+});
+
+// Types for review assistant
+export type StudyQualityScores = typeof studyQualityScores.$inferSelect;
+export type ReviewRecommendations = typeof reviewRecommendations.$inferSelect;
+export type InsertStudyQualityScores = z.infer<typeof insertStudyQualityScoresSchema>;
+export type InsertReviewRecommendations = z.infer<typeof insertReviewRecommendationsSchema>;
+
+// Content Relationships table - tracks relationships between content pieces
+export const contentRelationships = pgTable("content_relationships", {
+  id: serial("id").primaryKey(),
+  sourceType: text("source_type").notNull(), // 'blog', 'study', 'scientific_article'
+  sourceId: integer("source_id").notNull(),
+  targetType: text("target_type").notNull(), // 'blog', 'study', 'scientific_article'
+  targetId: integer("target_id").notNull(),
+  relationshipType: text("relationship_type").notNull(), // 'supports', 'contradicts', 'references', 'extends', 'updates'
+  confidence: integer("confidence").default(100), // Confidence score 0-100
+  autoDetected: boolean("auto_detected").default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    sourceIdx: index("content_relationships_source_idx").on(table.sourceType, table.sourceId),
+    targetIdx: index("content_relationships_target_idx").on(table.targetType, table.targetId),
+    relationshipTypeIdx: index("content_relationships_type_idx").on(table.relationshipType),
+  }
+});
+
+// Content Versions table - tracks version history of content
+export const contentVersions = pgTable("content_versions", {
+  id: serial("id").primaryKey(),
+  contentType: text("content_type").notNull(), // 'blog', 'study', 'scientific_article'
+  contentId: integer("content_id").notNull(),
+  versionNumber: integer("version_number").notNull().default(1),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  summary: text("summary"),
+  changeNotes: text("change_notes"),
+  changedBy: text("changed_by"), // User ID who made the change
+  changeReason: text("change_reason"), // 'new_evidence', 'correction', 'update', 'enhancement'
+  previousVersionId: integer("previous_version_id"),
+  isLatest: boolean("is_latest").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    contentIdx: index("content_versions_content_idx").on(table.contentType, table.contentId),
+    versionNumberIdx: index("content_versions_version_idx").on(table.versionNumber),
+    isLatestIdx: index("content_versions_latest_idx").on(table.isLatest),
+  }
+});
+
+// Update Notifications table - tracks content update notifications
+export const updateNotifications = pgTable("update_notifications", {
+  id: serial("id").primaryKey(),
+  contentType: text("content_type").notNull(), // 'blog', 'study', 'scientific_article'
+  contentId: integer("content_id").notNull(),
+  triggerType: text("trigger_type").notNull(), // 'new_study', 'contradicting_evidence', 'supporting_evidence', 'outdated_data'
+  triggerContentId: integer("trigger_content_id"), // The new study/content that triggered the update
+  priority: text("priority").notNull().default("medium"), // 'critical', 'high', 'medium', 'low'
+  priorityScore: integer("priority_score").default(50), // 0-100
+  status: text("status").notNull().default("pending"), // 'pending', 'in_review', 'approved', 'applied', 'rejected'
+  updateSummary: text("update_summary"),
+  suggestedChanges: text("suggested_changes"),
+  impactedSections: text("impacted_sections").array(),
+  reviewedBy: text("reviewed_by"), // User ID who reviewed
+  reviewedAt: timestamp("reviewed_at"),
+  appliedAt: timestamp("applied_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    contentIdx: index("update_notifications_content_idx").on(table.contentType, table.contentId),
+    statusIdx: index("update_notifications_status_idx").on(table.status),
+    priorityIdx: index("update_notifications_priority_idx").on(table.priority, table.priorityScore),
+    createdAtIdx: index("update_notifications_created_idx").on(table.createdAt),
+  }
+});
+
+// Content Dependencies table - tracks which content depends on which studies/data
+export const contentDependencies = pgTable("content_dependencies", {
+  id: serial("id").primaryKey(),
+  contentType: text("content_type").notNull(), // 'blog', 'scientific_article'
+  contentId: integer("content_id").notNull(),
+  dependencyType: text("dependency_type").notNull(), // 'study', 'statistic', 'citation', 'claim'
+  dependencyId: integer("dependency_id"),
+  dependencyDetails: text("dependency_details"), // JSON with specific details
+  importance: text("importance").default("normal"), // 'critical', 'high', 'normal', 'low'
+  lastVerified: timestamp("last_verified"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    contentIdx: index("content_dependencies_content_idx").on(table.contentType, table.contentId),
+    dependencyIdx: index("content_dependencies_dependency_idx").on(table.dependencyType, table.dependencyId),
+  }
+});
+
+// Update History table - tracks all updates made to content
+export const updateHistory = pgTable("update_history", {
+  id: serial("id").primaryKey(),
+  contentType: text("content_type").notNull(),
+  contentId: integer("content_id").notNull(),
+  updateType: text("update_type").notNull(), // 'auto_update', 'manual_update', 'correction', 'enhancement'
+  previousVersion: text("previous_version"),
+  newVersion: text("new_version"),
+  changedFields: text("changed_fields").array(),
+  changeDescription: text("change_description"),
+  performedBy: text("performed_by"), // User ID or 'system'
+  notificationId: integer("notification_id").references(() => updateNotifications.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    contentIdx: index("update_history_content_idx").on(table.contentType, table.contentId),
+    updateTypeIdx: index("update_history_type_idx").on(table.updateType),
+    createdAtIdx: index("update_history_created_idx").on(table.createdAt),
+  }
+});
+
+// Smart Links table - tracks intelligent internal links for SEO
+export const smartLinks = pgTable("smart_links", {
+  id: serial("id").primaryKey(),
+  fromType: text("from_type").notNull(), // Source content type
+  fromId: integer("from_id").notNull(),
+  toType: text("to_type").notNull(), // Target content type
+  toId: integer("to_id").notNull(),
+  anchorText: text("anchor_text").notNull(),
+  context: text("context"), // Surrounding text context
+  relevanceScore: integer("relevance_score").default(100), // 0-100
+  linkType: text("link_type").default("contextual"), // 'contextual', 'related', 'citation', 'update'
+  autoGenerated: boolean("auto_generated").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    fromIdx: index("smart_links_from_idx").on(table.fromType, table.fromId),
+    toIdx: index("smart_links_to_idx").on(table.toType, table.toId),
+    activeIdx: index("smart_links_active_idx").on(table.isActive),
+  }
+});
+
+// Create insertion schemas for Dynamic Content Optimization
+export const insertContentRelationshipSchema = createInsertSchema(contentRelationships).omit({ 
+  id: true, 
+  createdAt: true,
+  updatedAt: true 
+});
+export const insertContentVersionSchema = createInsertSchema(contentVersions).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertUpdateNotificationSchema = createInsertSchema(updateNotifications).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertContentDependencySchema = createInsertSchema(contentDependencies).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertUpdateHistorySchema = createInsertSchema(updateHistory).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export const insertSmartLinkSchema = createInsertSchema(smartLinks).omit({ 
+  id: true, 
+  createdAt: true 
+});
+
+// Types for Dynamic Content Optimization
+export type ContentRelationship = typeof contentRelationships.$inferSelect;
+export type ContentVersion = typeof contentVersions.$inferSelect;
+export type UpdateNotification = typeof updateNotifications.$inferSelect;
+export type ContentDependency = typeof contentDependencies.$inferSelect;
+export type UpdateHistory = typeof updateHistory.$inferSelect;
+export type SmartLink = typeof smartLinks.$inferSelect;
+export type InsertContentRelationship = z.infer<typeof insertContentRelationshipSchema>;
+export type InsertContentVersion = z.infer<typeof insertContentVersionSchema>;
+export type InsertUpdateNotification = z.infer<typeof insertUpdateNotificationSchema>;
+export type InsertContentDependency = z.infer<typeof insertContentDependencySchema>;
+export type InsertUpdateHistory = z.infer<typeof insertUpdateHistorySchema>;
+export type InsertSmartLink = z.infer<typeof insertSmartLinkSchema>;
 
 // Study category types
 export type StudyCategory = typeof studyCategories.$inferSelect;

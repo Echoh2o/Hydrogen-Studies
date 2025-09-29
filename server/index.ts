@@ -41,6 +41,12 @@ import enrichmentRoutes from "./routes/enrichment-routes";
 import blogRoutes from "./routes/blog-routes";
 import blogRecommendationRoutes from "./routes/blog-recommendation-routes";
 import chatRoutes from "./routes/chat-routes";
+import trendsRoutes from "./routes/trends-routes";
+import contentAnalyticsRoutes from "./routes/content-analytics-routes";
+import explorerRoutes from "./routes/explorer-routes";
+import reviewAssistantRoutes from "./routes/review-assistant-routes";
+import contentOptimizationRoutes from "./routes/content-optimization-routes";
+import multiFormatRoutes from "./routes/multi-format-routes";
 
 // Monitoring and utilities
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
@@ -48,6 +54,7 @@ import { handleError } from './utils/error-handler';
 import { qualityAudit } from './comprehensive-quality-audit';
 import { searchRateLimiter, generalApiRateLimiter, aiGenerationRateLimiter } from './rate-limiting';
 import testRateLimitEndpoint from './test-rate-limit-endpoint';
+import naturalLanguageSearchRoutes from './routes/natural-language-search-routes';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -258,9 +265,32 @@ app.use('/api/content-enrichment', aiGenerationRateLimiter, contentEnrichmentRou
 app.use('/api/enrichment', aiGenerationRateLimiter, enrichmentRoutes); // Enrichment routes with strict rate limit
 app.use('/api/blogs', blogRoutes); // Blog routes (rate limiting applied inside router)
 app.use('/api/blog-recommendations', aiGenerationRateLimiter, blogRecommendationRoutes); // Blog recommendation routes with strict rate limit
+app.use('/api/trends', generalApiRateLimiter, trendsRoutes); // Trend detection and analysis routes
+app.use('/api/analytics', generalApiRateLimiter, contentAnalyticsRoutes); // Content analytics routes
+app.use('/api/review-assistant', aiGenerationRateLimiter, reviewAssistantRoutes); // Review assistant routes with AI rate limiting
+app.use('/api/content-optimization', aiGenerationRateLimiter, contentOptimizationRoutes); // Content optimization routes with AI rate limiting
 app.use('/api', chatRoutes); // Chat routes - mounted at /api for /api/chat endpoint
 app.use('/api/studies', studiesRouter); // Mount the studies router (rate limiting applied inside router)
+app.use(explorerRoutes); // Study explorer routes for visualizations
 app.use(researchUnifiedRoutes); // Research unified routes
+
+// API Routes Registration
+app.use("/api/studies", studiesRouter);
+app.use("/api/research", researchUnifiedRoutes);
+app.use("/api/keyword-monitor", keywordMonitorRoutes);
+app.use("/api/keyword-monitor/schedule", keywordMonitorScheduleRoutes);
+app.use("/api/content-enrichment", contentEnrichmentRoutes);
+app.use("/api/enrichment", enrichmentRoutes);
+app.use("/api/blogs", blogRoutes);
+app.use("/api/blog-recommendations", blogRecommendationRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/trends", trendsRoutes);
+app.use("/api/analytics", contentAnalyticsRoutes);
+app.use("/api/explorer", explorerRoutes);
+app.use("/api/review", reviewAssistantRoutes);
+app.use("/api/content-optimization", contentOptimizationRoutes);
+app.use("/api/natural-language-search", naturalLanguageSearchRoutes);
+app.use("/api/multi-format", multiFormatRoutes);
 
 // Dashboard stats endpoint with comprehensive statistics
 app.get('/api/stats/dashboard', generalApiRateLimiter, asyncHandler(async (req, res, next) => {

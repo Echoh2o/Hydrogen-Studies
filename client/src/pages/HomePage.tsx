@@ -78,6 +78,9 @@ export default function HomePage() {
                     <Link href="/studies" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
                       All Studies
                     </Link>
+                    <Link href="/study-explorer" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors font-semibold bg-blue-50">
+                      🔬 Interactive Explorer
+                    </Link>
                     <Link href="/recent-studies" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
                       Recent Studies
                     </Link>
@@ -152,6 +155,14 @@ export default function HomePage() {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       All Studies
+                    </div>
+                  </Link>
+                  <Link href="/study-explorer">
+                    <div 
+                      className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm font-semibold bg-blue-50"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      🔬 Interactive Explorer
                     </div>
                   </Link>
                   <Link href="/recent-studies">
