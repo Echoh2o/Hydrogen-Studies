@@ -874,4 +874,186 @@ router.post('/api/research/schedule', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Approve or reject a study from the review queue
+ * When approved, automatically generates comprehensive content
+ */
+router.put('/api/research/review-queue/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, userId, notes } = req.body;
+    
+    if (!id || !status || !userId) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: id, status, and userId are required' 
+      });
+    }
+    
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ 
+        error: 'Invalid status. Must be either "approved" or "rejected"' 
+      });
+    }
+    
+    // Get the review queue item
+    const reviewItem = await storage.getStudyReviewQueueById(parseInt(id));
+    
+    if (!reviewItem) {
+      return res.status(404).json({ error: 'Review queue item not found' });
+    }
+    
+    // Update the review status
+    const updatedItem = await storage.updateStudyReviewStatus(
+      parseInt(id),
+      status,
+      userId,
+      notes
+    );
+    
+    // If approved, create the study and generate all content
+    if (status === 'approved') {
+      try {
+        console.log(`Processing approved study: ${reviewItem.title}`);
+        
+        // 1. Create the study in the main database
+        const study = {
+          title: reviewItem.title,
+          abstract: reviewItem.abstract,
+          authors: reviewItem.authors,
+          journal: reviewItem.journal,
+          publishDate: reviewItem.publishDate || new Date().toISOString(),
+          journalPublishDate: reviewItem.journalPublishDate,
+          category: reviewItem.category,
+          doi: reviewItem.doi,
+          url: reviewItem.sourceUrl,
+          sourcePlatform: reviewItem.sourcePlatform,
+          peerReviewed: true,
+        };
+        
+        const createdStudy = await storage.createStudy(study);
+        console.log(`Study created with ID: ${createdStudy.id}`);
+        
+        // Import enrichment modules dynamically to avoid circular dependencies
+        const [
+          { enrichStudyContent },
+          { generateBlogArticlesForStudy },
+          { generateScientificArticlesForStudy },
+          { generateStudyImage },
+          { autoTagStudy }
+        ] = await Promise.all([
+          import('../content-enrichment'),
+          import('../blog-generator-enhanced'),
+          import('../scientific-article-generator'),
+          import('../image-generator'),
+          import('../automated-tagging-system')
+        ]);
+        
+        // 2. Enrich the study content (6th grade reading level)
+        console.log('Starting content enrichment...');
+        const enrichmentResult = await enrichStudyContent(createdStudy, {
+          targetReadingLevel: '6th grade',
+          generatePlainSummary: true,
+          generateKeywords: true
+        });
+        
+        if (enrichmentResult.success) {
+          console.log('Content enrichment completed successfully');
+        } else {
+          console.warn('Content enrichment had issues:', enrichmentResult.error);
+        }
+        
+        // 3. Generate 7-10 blog posts (parallel generation for efficiency)
+        console.log('Generating blog articles...');
+        const blogGenerationPromise = generateBlogArticlesForStudy(createdStudy, {
+          count: 10, // Generate up to 10 blog posts
+          fallbackToBasic: true
+        });
+        
+        // 4. Generate 2 scientific articles
+        console.log('Generating scientific articles...');
+        const scientificGenerationPromise = generateScientificArticlesForStudy.generateScientificArticlesForStudy(createdStudy, {
+          fallbackToBasic: true
+        });
+        
+        // 5. Generate study image using DALL-E
+        console.log('Generating study image...');
+        const imageGenerationPromise = generateStudyImage(createdStudy.id);
+        
+        // 6. Auto-tag and categorize for SEO
+        console.log('Auto-tagging study...');
+        const taggingPromise = autoTagStudy(createdStudy);
+        
+        // Execute all content generation in parallel
+        const [blogResult, scientificResult, imageResult, tagResult] = await Promise.all([
+          blogGenerationPromise.catch(error => {
+            console.error('Blog generation failed:', error);
+            return { articles: [], errors: [{ type: 'blog', error: error.message }] };
+          }),
+          scientificGenerationPromise.catch(error => {
+            console.error('Scientific article generation failed:', error);
+            return { articles: [], errors: [{ type: 'scientific', error: error.message }] };
+          }),
+          imageGenerationPromise.catch(error => {
+            console.error('Image generation failed:', error);
+            return { success: false, error: error.message };
+          }),
+          taggingPromise.catch(error => {
+            console.error('Auto-tagging failed:', error);
+            return { success: false, error: error.message };
+          })
+        ]);
+        
+        // Compile generation results
+        const generationSummary = {
+          studyId: createdStudy.id,
+          blogPosts: {
+            generated: blogResult.articles?.length || 0,
+            errors: blogResult.errors?.length || 0
+          },
+          scientificArticles: {
+            generated: scientificResult.articles?.length || 0,
+            errors: scientificResult.errors?.length || 0
+          },
+          image: imageResult.success ? 'Generated' : 'Failed',
+          tags: tagResult.success ? 'Applied' : 'Failed'
+        };
+        
+        console.log('Content generation summary:', generationSummary);
+        
+        res.json({
+          success: true,
+          message: `Study approved and published with comprehensive content`,
+          reviewItem: updatedItem,
+          study: createdStudy,
+          contentGeneration: generationSummary
+        });
+        
+      } catch (error: any) {
+        console.error('Error processing approved study:', error);
+        
+        // Still mark as approved but note the error
+        res.json({
+          success: true,
+          message: 'Study approved but content generation had issues',
+          reviewItem: updatedItem,
+          error: error.message || 'Content generation partially failed'
+        });
+      }
+    } else {
+      // Study was rejected
+      res.json({
+        success: true,
+        message: 'Study rejected successfully',
+        reviewItem: updatedItem
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('Error updating review status:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to update review status' 
+    });
+  }
+});
+
 export default router;

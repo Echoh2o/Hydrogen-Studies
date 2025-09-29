@@ -37,30 +37,33 @@ async function generateEnhancedContent(study: StudyToEnhance): Promise<{
   summaryMarkdown?: string;
 }> {
   try {
-    // Generate plain language summary
-    const summaryPrompt = `Create a plain language summary for this hydrogen research study. Write it in simple terms that non-scientists can understand. Focus on what the study found and what it means for people's health. Keep it under 200 words.
+    // Generate plain language summary at 6th grade reading level
+    const summaryPrompt = `Create a plain language summary for this hydrogen research study. Write it at a 6th grade reading level (Flesch-Kincaid score 60-70). Use simple words, short sentences (10-15 words), and clear explanations. Avoid medical jargon. Focus on what the study found and what it means for people's health. Keep it under 200 words.
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 
-Write a consumer-friendly summary:`;
+Write a consumer-friendly summary at 6th grade reading level:`;
 
     const summaryResponse = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: summaryPrompt }],
+      messages: [
+        { role: "system", content: "You are a medical writer who specializes in explaining complex research to the general public. Always write at a 6th grade reading level. Use simple words, short sentences, and clear explanations. Avoid medical jargon unless absolutely necessary, and always explain technical terms in simple language." },
+        { role: "user", content: summaryPrompt }
+      ],
       max_tokens: 300,
       temperature: 0.3,
     });
 
     const summaryMarkdown = summaryResponse.choices[0]?.message?.content || null;
 
-    // Generate objective
-    const objectivePrompt = `Extract or write a clear, simple objective for this study in 1-2 sentences:
+    // Generate objective at 6th grade reading level
+    const objectivePrompt = `Extract or write a clear, simple objective for this study in 1-2 sentences. Use 6th grade reading level - simple words and short sentences:
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 
-Objective:`;
+Objective (6th grade reading level):`;
 
     const objectiveResponse = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -71,13 +74,13 @@ Objective:`;
 
     const objective = objectiveResponse.choices[0]?.message?.content || null;
 
-    // Generate methods summary
-    const methodsPrompt = `Write a brief, clear summary of the methods used in this study. Focus on what was done and how. Keep it under 150 words and use simple language:
+    // Generate methods summary at 6th grade reading level
+    const methodsPrompt = `Write a brief, clear summary of the methods used in this study. Use 6th grade reading level (simple words, short sentences). Focus on what was done and how. Keep it under 150 words. Explain any technical terms in simple language:
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 
-Methods:`;
+Methods (6th grade reading level):`;
 
     const methodsResponse = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -88,13 +91,13 @@ Methods:`;
 
     const methods = methodsResponse.choices[0]?.message?.content || null;
 
-    // Generate results summary
-    const resultsPrompt = `Write a brief, clear summary of the key results from this study. Focus on what was found. Keep it under 150 words and use simple language:
+    // Generate results summary at 6th grade reading level
+    const resultsPrompt = `Write a brief, clear summary of the key results from this study. Use 6th grade reading level (simple words, short sentences). Focus on what was found. Keep it under 150 words. Avoid complex numbers - use simple comparisons like "twice as much" or "30% better":
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 
-Results:`;
+Results (6th grade reading level):`;
 
     const resultsResponse = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -105,13 +108,13 @@ Results:`;
 
     const results = resultsResponse.choices[0]?.message?.content || null;
 
-    // Generate conclusion
-    const conclusionPrompt = `Write a brief, clear conclusion for this study. Focus on what it means and its implications. Keep it under 100 words and use simple language:
+    // Generate conclusion at 6th grade reading level
+    const conclusionPrompt = `Write a brief, clear conclusion for this study. Use 6th grade reading level (simple words, short sentences). Focus on what it means for people's health. Keep it under 100 words. Make it easy for anyone to understand:
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 
-Conclusion:`;
+Conclusion (6th grade reading level):`;
 
     const conclusionResponse = await openai.chat.completions.create({
       model: "gpt-4o",
