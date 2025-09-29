@@ -13,13 +13,18 @@ const router = express.Router();
 let openai: OpenAI | null = null;
 
 try {
-  if (process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (apiKey && apiKey.trim() !== '') {
     openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: apiKey.trim(),
     });
+    console.log('✅ OpenAI client initialized successfully');
+  } else {
+    console.warn('⚠️ OpenAI API key not configured - chat will use fallback responses');
   }
 } catch (error) {
-  console.error('Failed to initialize OpenAI client:', error);
+  console.error('❌ Failed to initialize OpenAI client:', error);
+  console.warn('⚠️ Chat will use fallback responses');
 }
 
 interface ChatMessage {
@@ -49,23 +54,26 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    // Check if OpenAI is available
-    if (!openai) {
-      return res.status(503).json({
-        success: false,
-        error: 'AI service is currently unavailable. Please check API configuration.',
-        fallback: true
-      });
-    }
+    // Log query processing
+    console.log('📝 Processing chat query:', query);
 
-    console.log('Processing chat query:', query);
 
     // Search for relevant studies
     const relevantStudies = await searchRelevantStudies(query);
     console.log(`Found ${relevantStudies.length} relevant studies`);
 
-    // Generate AI response using OpenAI
-    const aiResponse = await generateAIResponse(query, relevantStudies);
+    // Generate AI response using OpenAI or fallback
+    let aiResponse: string;
+    if (openai) {
+      try {
+        aiResponse = await generateAIResponse(query, relevantStudies);
+      } catch (error) {
+        console.error('Error generating AI response, using fallback:', error);
+        aiResponse = generateFallbackResponse(query, relevantStudies);
+      }
+    } else {
+      aiResponse = generateFallbackResponse(query, relevantStudies);
+    }
 
     // Format sources from studies
     const sources = relevantStudies.slice(0, 5).map(study => ({
@@ -142,6 +150,32 @@ async function searchRelevantStudies(query: string): Promise<any[]> {
   }
 }
 
+// Generate fallback response when OpenAI is not available
+function generateFallbackResponse(query: string, studies: any[]): string {
+  if (studies.length === 0) {
+    return `I found no specific studies matching your query about "${query}". \n\nHydrogen therapy is an emerging field with growing research. Please try searching with different keywords or browse our study database for more information.\n\nYou might also find our educational resources helpful for learning about hydrogen therapy basics.`;
+  }
+
+  const topStudies = studies.slice(0, 3);
+  let response = `Based on our database of hydrogen research studies, here's what I found relevant to your query about "${query}":\n\n`;
+  
+  response += `📚 **Relevant Research Studies:**\n\n`;
+  topStudies.forEach((study, index) => {
+    response += `${index + 1}. **${study.title || 'Untitled Study'}**\n`;
+    if (study.authors) response += `   Authors: ${study.authors}\n`;
+    if (study.abstract) {
+      const shortAbstract = study.abstract.substring(0, 200);
+      response += `   Summary: ${shortAbstract}...\n`;
+    }
+    response += '\n';
+  });
+  
+  response += `\n💡 **Note:** This is a summary based on our research database. For detailed AI-powered analysis, please ensure the AI service is configured.\n\n`;
+  response += `📖 We found ${studies.length} relevant studies in our database. You can explore these studies in detail through our search interface.`;
+  
+  return response;
+}
+
 // Generate AI response using OpenAI
 async function generateAIResponse(query: string, studies: any[]): Promise<string> {
   if (!openai) {
@@ -156,7 +190,9 @@ async function generateAIResponse(query: string, studies: any[]): Promise<string
     const systemPrompt = `You are a specialized AI assistant for hydrogen health research. 
     Provide accurate, evidence-based answers about hydrogen therapy, hydrogen water, and molecular hydrogen health benefits.
     Always base your responses on the provided scientific studies.
-    Be helpful, informative, and cite the relevant studies in your response.`;
+    Write at a 6th grade reading level to ensure accessibility.
+    Be helpful, informative, and cite the relevant studies in your response.
+    Format your response with clear sections and bullet points when appropriate.`;
 
     const userPrompt = `Question: ${query}
 
@@ -183,17 +219,45 @@ async function generateAIResponse(query: string, studies: any[]): Promise<string
   }
 }
 
-// Generate related questions
+// Generate related questions based on the query
 function generateRelatedQuestions(query: string): string[] {
-  const questions = [
+  const queryLower = query.toLowerCase();
+  const allQuestions = [
     "What are the benefits of hydrogen water for health?",
     "How does molecular hydrogen work as an antioxidant?",
     "What conditions can hydrogen therapy help with?",
     "How should hydrogen therapy be administered?",
-    "Are there any side effects of hydrogen treatment?"
+    "Are there any side effects of hydrogen treatment?",
+    "What is the recommended dosage for hydrogen water?",
+    "How does hydrogen therapy compare to traditional treatments?",
+    "What does the latest research say about hydrogen therapy?",
+    "Can hydrogen therapy help with inflammation?",
+    "Is hydrogen water safe for daily consumption?"
   ];
 
-  return questions.slice(0, 3);
+  // Try to provide contextually relevant questions
+  const relevantQuestions: string[] = [];
+  
+  if (queryLower.includes('benefit') || queryLower.includes('help')) {
+    relevantQuestions.push("What conditions can hydrogen therapy help with?");
+  }
+  if (queryLower.includes('safe') || queryLower.includes('side')) {
+    relevantQuestions.push("Are there any side effects of hydrogen treatment?");
+  }
+  if (queryLower.includes('dose') || queryLower.includes('how much')) {
+    relevantQuestions.push("What is the recommended dosage for hydrogen water?");
+  }
+  if (queryLower.includes('inflamm')) {
+    relevantQuestions.push("Can hydrogen therapy help with inflammation?");
+  }
+  
+  // Fill remaining slots with general questions
+  const remainingQuestions = allQuestions.filter(q => !relevantQuestions.includes(q));
+  while (relevantQuestions.length < 3 && remainingQuestions.length > 0) {
+    relevantQuestions.push(remainingQuestions.shift()!);
+  }
+
+  return relevantQuestions.slice(0, 3);
 }
 
 // Generate product recommendations
@@ -253,6 +317,109 @@ router.get('/chat/conversations', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch conversations'
+    });
+  }
+});
+
+// Advanced chat endpoint with additional features
+router.post('/advanced-chat', async (req, res) => {
+  try {
+    const { query, conversationId, context } = req.body;
+
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Query is required and must be a string'
+      });
+    }
+
+    // Log query processing
+    console.log('📝 Processing advanced chat query:', query);
+
+    // Search for relevant studies with enhanced scoring
+    const relevantStudies = await searchRelevantStudies(query);
+    console.log(`Found ${relevantStudies.length} relevant studies`);
+
+    // Generate AI response using OpenAI or fallback
+    let aiResponse: string;
+    if (openai) {
+      try {
+        // Enhanced AI response with context
+        const studyContext = relevantStudies.slice(0, 7).map(study => 
+          `Study: ${study.title}\nAuthors: ${study.authors}\nAbstract: ${study.abstract?.substring(0, 400)}...\n`
+        ).join('\n');
+
+        const systemPrompt = `You are an advanced AI assistant specializing in hydrogen health research. 
+        Provide comprehensive, evidence-based answers about hydrogen therapy, hydrogen water, and molecular hydrogen health benefits.
+        Always base your responses on the provided scientific studies.
+        Write at a 6th grade reading level to ensure accessibility.
+        Be thorough and include specific findings, dosages, and recommendations when available.
+        Format your response with clear sections, bullet points, and emphasize key takeaways.`;
+
+        const userPrompt = `Question: ${query}
+        ${context ? `Additional Context: ${context}` : ''}
+        
+        Relevant Studies:
+        ${studyContext}
+        
+        Please provide a detailed, comprehensive answer based on the scientific evidence from these studies.
+        Include specific findings, recommended dosages, and practical applications where relevant.`;
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          max_tokens: 1500,
+          temperature: 0.7
+        });
+
+        aiResponse = completion.choices[0]?.message?.content || generateFallbackResponse(query, relevantStudies);
+      } catch (error) {
+        console.error('Error generating advanced AI response, using fallback:', error);
+        aiResponse = generateFallbackResponse(query, relevantStudies);
+      }
+    } else {
+      aiResponse = generateFallbackResponse(query, relevantStudies);
+    }
+
+    // Format sources from studies with more detail
+    const sources = relevantStudies.slice(0, 7).map(study => ({
+      title: study.title || 'Untitled Study',
+      doi: study.doi || '',
+      authors: study.authors || 'Unknown',
+      publishDate: study.publish_date || study.publication_date || '',
+      journal: study.journal || '',
+      abstract: study.abstract?.substring(0, 200) + '...' || '',
+      id: study.id
+    }));
+
+    // Generate contextually relevant questions
+    const relatedQuestions = generateRelatedQuestions(query);
+
+    // Enhanced product recommendations
+    const productRecommendations = generateProductRecommendations(query);
+
+    const response: ChatResponse = {
+      answer: aiResponse,
+      sources,
+      relatedQuestions,
+      conversationId: conversationId || Math.floor(Math.random() * 1000000),
+      productRecommendations
+    };
+
+    res.json({
+      success: true,
+      data: response
+    });
+
+  } catch (error) {
+    console.error('Advanced chat API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process advanced chat request',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

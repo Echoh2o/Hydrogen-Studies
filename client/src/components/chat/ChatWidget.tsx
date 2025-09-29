@@ -91,7 +91,9 @@ export const ChatWidget: React.FC = () => {
       try {
         // Load conversations (if authenticated)
         try {
-          const conversationsResponse = await fetch('/api/chat/conversations');
+          const conversationsResponse = await fetch('/api/chat/conversations', {
+            credentials: 'include'
+          });
           if (conversationsResponse.ok) {
             const data = await conversationsResponse.json();
             if (data.data && Array.isArray(data.data)) {
@@ -106,7 +108,9 @@ export const ChatWidget: React.FC = () => {
         
         // Load popular questions for all users (regardless of authentication)
         try {
-          const questionsResponse = await fetch('/api/chat/popular-questions?limit=5');
+          const questionsResponse = await fetch('/api/chat/popular-questions?limit=5', {
+            credentials: 'include'
+          });
           if (questionsResponse.ok) {
             const data = await questionsResponse.json();
             if (data.data && Array.isArray(data.data)) {
@@ -224,6 +228,7 @@ export const ChatWidget: React.FC = () => {
             query: userMessage,
             conversationId: conversationId
           }),
+          credentials: 'include', // Include cookies for CSRF token
           signal: controller.signal
         });
         

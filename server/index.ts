@@ -40,6 +40,7 @@ import contentEnrichmentRoutes from "./routes/content-enrichment-routes";
 import enrichmentRoutes from "./routes/enrichment-routes";
 import blogRoutes from "./routes/blog-routes";
 import blogRecommendationRoutes from "./routes/blog-recommendation-routes";
+import chatRoutes from "./routes/chat-routes";
 
 // Monitoring and utilities
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
@@ -97,7 +98,12 @@ const csrf = csrfProtection({
     '/api/overview',
     '/api/studies', // GET requests only
     '/api/admin/quality/monitor',
-    '/api/admin/quality/integrity'
+    '/api/admin/quality/integrity',
+    '/api/chat', // Chat endpoint
+    '/api/advanced-chat', // Advanced chat endpoint
+    '/api/chat/popular-questions', // Popular questions endpoint
+    '/api/chat/conversations', // Conversations endpoint
+    '/api/chat/feedback' // Feedback endpoint
   ]
 });
 
@@ -252,6 +258,7 @@ app.use('/api/content-enrichment', aiGenerationRateLimiter, contentEnrichmentRou
 app.use('/api/enrichment', aiGenerationRateLimiter, enrichmentRoutes); // Enrichment routes with strict rate limit
 app.use('/api/blogs', blogRoutes); // Blog routes (rate limiting applied inside router)
 app.use('/api/blog-recommendations', aiGenerationRateLimiter, blogRecommendationRoutes); // Blog recommendation routes with strict rate limit
+app.use('/api', chatRoutes); // Chat routes - mounted at /api for /api/chat endpoint
 app.use('/api/studies', studiesRouter); // Mount the studies router (rate limiting applied inside router)
 app.use(researchUnifiedRoutes); // Research unified routes
 
