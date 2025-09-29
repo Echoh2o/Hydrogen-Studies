@@ -64,6 +64,7 @@ import recommendationRoutes from "./routes/recommendation-routes";
 import chatRoutes from "./routes/chat-routes";
 import adminImageRoutes from "./routes/admin-image-routes";
 import adminEnrichmentRoutes from "./routes/admin-enrichment-routes";
+import naturalLanguageSearchRoutes from "./routes/natural-language-search-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const router = express.Router();
@@ -419,6 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api', chatRoutes);
+  app.use('', naturalLanguageSearchRoutes); // Natural language search routes
   // app.use('/api', studyDetailsRoutes); // Consolidated into studies-router
 
   // Admin status routes

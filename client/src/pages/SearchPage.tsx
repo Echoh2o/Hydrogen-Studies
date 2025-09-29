@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Search, Filter, Calendar, MapPin, FileText, Users, Award, ChevronDown, ArrowLeft } from 'lucide-react';
+import { Search, Filter, Calendar, MapPin, FileText, Users, Award, ChevronDown, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,6 +92,22 @@ export default function SearchPage() {
               {total.toLocaleString()} studies found
             </Badge>
           </div>
+          
+          {/* AI Search Banner */}
+          <Link href="/search/natural-language">
+            <Card className="mb-4 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-primary/20">
+              <CardContent className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                  <div>
+                    <p className="font-semibold text-sm">Try Natural Language Search</p>
+                    <p className="text-xs text-muted-foreground">Ask questions in plain English with AI-powered understanding</p>
+                  </div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-primary rotate-[-90deg]" />
+              </CardContent>
+            </Card>
+          </Link>
           
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex gap-4 items-center">
