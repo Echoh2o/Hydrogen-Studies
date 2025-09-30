@@ -9,15 +9,71 @@ export enum CategorizationModel {
   LIFE_STAGE = 'life_stage'
 }
 
-// Users table schema
+// User role enum
+export enum UserRole {
+  ADMIN = 'admin',
+  EDITOR = 'editor',
+  CUSTOMER = 'customer',
+  VISITOR = 'visitor'
+}
+
+// Users table schema - Enhanced for authentication
 export const users = pgTable("users", {
-  id: text("id").primaryKey().notNull(), // Store Replit user ID
-  email: text("email"),
+  id: text("id").primaryKey().notNull(),
+  username: varchar("username", { length: 255 }).unique(),
+  email: text("email").unique(),
+  passwordHash: text("password_hash"),
   firstName: text("first_name"),
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
+  role: text("role").default(UserRole.CUSTOMER),
+  permissions: text("permissions").array().default([]),
+  isActive: boolean("is_active").default(true),
+  lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    usernameIdx: index("username_idx").on(table.username),
+    emailIdx: index("email_idx").on(table.email),
+  }
+});
+
+// User sessions table for managing active sessions
+export const userSessions = pgTable("user_sessions", {
+  id: text("id").primaryKey(), // Session ID
+  userId: text("user_id").notNull().references(() => users.id),
+  data: text("data"), // Session data (JSON)
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  lastActivity: timestamp("last_activity").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    userIdIdx: index("user_sessions_user_id_idx").on(table.userId),
+    expiresIdx: index("user_sessions_expires_idx").on(table.expiresAt),
+  }
+});
+
+// Audit logs table for tracking user actions
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id),
+  action: text("action").notNull(), // login, logout, update_profile, etc.
+  entityType: text("entity_type"), // user, study, blog, etc.
+  entityId: text("entity_id"), // ID of the affected entity
+  changes: text("changes"), // JSON with before/after values
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  sessionId: text("session_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => {
+  return {
+    userIdIdx: index("audit_logs_user_id_idx").on(table.userId),
+    actionIdx: index("audit_logs_action_idx").on(table.action),
+    createdAtIdx: index("audit_logs_created_at_idx").on(table.createdAt),
+  }
 });
 
 // User preferences table schema
@@ -1540,3 +1596,20 @@ export type InsertSmartLink = z.infer<typeof insertSmartLinkSchema>;
 // Study category types
 export type StudyCategory = typeof studyCategories.$inferSelect;
 export type InsertStudyCategory = typeof studyCategories.$inferInsert;
+
+// Authentication schemas and types
+export const insertUserSessionSchema = createInsertSchema(userSessions).omit({
+  createdAt: true,
+  lastActivity: true
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true
+});
+
+// Authentication types
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
