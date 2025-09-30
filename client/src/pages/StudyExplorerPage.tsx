@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import {
   Search, Filter, Share2, Download, Eye, GitBranch,
@@ -13,14 +13,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
-import { HeadMetaTags } from '@/components/seo/HeadMetaTags';
+import HeadMetaTags from '@/components/seo/HeadMetaTags';
 import InteractiveBodyMap from '@/components/explorer/InteractiveBodyMap';
 import ResearchTimeline from '@/components/explorer/ResearchTimeline';
 import StudyComparison from '@/components/explorer/StudyComparison';
 import ResearchEvolution from '@/components/explorer/ResearchEvolution';
 
 export default function StudyExplorerPage() {
-  const [navigate] = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('timeline');
   const [globalFilter, setGlobalFilter] = useState({
