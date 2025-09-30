@@ -136,7 +136,8 @@ function validateEnvironment() {
   // SECURITY: Required variables in production (non-Replit)
   const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
   if (process.env.NODE_ENV === 'production' && !isReplit) {
-    requiredEnvVars.push('ADMIN_USER_IDS');
+    // ADMIN_USER_IDS is now optional - admin features will be disabled if not set
+    // requiredEnvVars.push('ADMIN_USER_IDS');  // Made optional to prevent crash
     requiredEnvVars.push('SESSION_SECRET');
     requiredEnvVars.push('ALLOWED_ORIGINS');
   }
@@ -162,17 +163,21 @@ function validateEnvironment() {
       .filter(id => id.length > 0);
     
     if (adminIds.length === 0) {
-      console.error('ADMIN_USER_IDS cannot be empty - provide at least one valid admin user ID');
-      process.exit(1);
+      console.warn('ADMIN_USER_IDS is empty - admin functionality will be disabled');
+      // Don't exit, just disable admin features
+    } else {
+      // Security check: warn about potentially insecure admin IDs
+      const insecureIds = ['admin', '1', 'root', 'administrator'];
+      const foundInsecure = adminIds.filter(id => insecureIds.includes(id.toLowerCase()));
+      if (foundInsecure.length > 0) {
+        console.warn(`WARNING: Found potentially insecure admin IDs: ${foundInsecure.join(', ')}`);
+        console.warn('Consider using more secure, unique identifiers for admin users.');
+      }
     }
-    
-    // Security check: warn about potentially insecure admin IDs
-    const insecureIds = ['admin', '1', 'root', 'administrator'];
-    const foundInsecure = adminIds.filter(id => insecureIds.includes(id.toLowerCase()));
-    if (foundInsecure.length > 0) {
-      console.warn(`WARNING: Found potentially insecure admin IDs: ${foundInsecure.join(', ')}`);
-      console.warn('Consider using more secure, unique identifiers for admin users.');
-    }
+  } else if (process.env.NODE_ENV === 'production') {
+    // Don't crash in production, just warn
+    console.warn('⚠️ ADMIN_USER_IDS not configured in production - admin features disabled');
+    console.warn('⚠️ To enable admin features: Deployments → Configuration → Add ADMIN_USER_IDS secret');
   }
 
   // Validate SESSION_SECRET strength
@@ -214,10 +219,7 @@ function validateEnvironment() {
   if (missingRequired.length > 0) {
     console.error('Missing required environment variables:', missingRequired.join(', '));
     console.error('Please ensure all required environment variables are set before starting the server.');
-    if (missingRequired.includes('ADMIN_USER_IDS')) {
-      console.error('ADMIN_USER_IDS is required in production for secure admin access control.');
-      console.error('Set ADMIN_USER_IDS to a comma-separated list of secure user identifiers.');
-    }
+    // ADMIN_USER_IDS is now optional - handled with warnings above
     if (missingRequired.includes('SESSION_SECRET')) {
       console.error('SESSION_SECRET is required in production for secure session management.');
       console.error('Generate a secure secret using: openssl rand -hex 32');
