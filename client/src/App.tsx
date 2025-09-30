@@ -56,6 +56,11 @@ const MechanismDetailPage = lazy(() => import("@/pages/ExploreByMechanism").then
 const ExploreByDeliveryMethodPage = lazy(() => import("@/pages/ExploreByDeliveryMethod").then(module => ({ default: module.default })));
 const DeliveryMethodDetailPage = lazy(() => import("@/pages/ExploreByDeliveryMethod").then(module => ({ default: module.DeliveryMethodDetailPage })));
 
+// Authentication pages
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
+
 // Lazy load admin components for better performance
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
@@ -118,7 +123,11 @@ function Router() {
   return (
     <PageErrorBoundary>
       <Switch>
-        {/* Core Public Routes */}
+        {/* Authentication Routes */}
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+      
+      {/* Core Public Routes */}
       <Route path="/" component={HomePage} />
       <Route path="/studies" component={Studies} />
       <Route path="/study/:id" component={StudyPage} />
@@ -163,6 +172,7 @@ function Router() {
       <Route path="/admin/import" component={ImportPage} />
 
       {/* Admin Management Pages */}
+      <Route path="/admin/users" component={UserManagementPage} />
       <Route path="/admin/studies" component={StudiesManagementPage} />
       <Route path="/admin/studies/add" component={AddStudyPage} />
       <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
