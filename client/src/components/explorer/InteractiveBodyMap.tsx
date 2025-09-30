@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Loader2, Info, Activity, Brain, Heart, Lungs, Shield } from 'lucide-react';
+import { Loader2, Info, Activity, Brain, Heart, Wind, Shield } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -182,7 +182,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                 <Heart className="w-4 h-4" x="177" y="132" stroke="#fff" />
               </motion.g>
 
-              {/* Lungs/Respiratory System */}
+              {/* Respiratory System */}
               <motion.g
                 id="respiratory"
                 className="cursor-pointer"
@@ -201,7 +201,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   stroke="#fff"
                   strokeWidth="2"
                 />
-                <Lungs className="w-4 h-4" x="207" y="132" stroke="#fff" />
+                <Wind className="w-4 h-4" x="207" y="132" stroke="#fff" />
               </motion.g>
 
               {/* Digestive System */}
