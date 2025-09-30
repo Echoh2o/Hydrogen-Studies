@@ -54,10 +54,14 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
  */
 function getAdminUserIds(): string[] {
   if (!process.env.ADMIN_USER_IDS) {
+    // In production, just disable admin functionality instead of crashing
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('ADMIN_USER_IDS environment variable is required in production');
+      console.warn('⚠️ ADMIN_USER_IDS environment variable not set in production.');
+      console.warn('⚠️ Admin functionality is disabled for security. Add ADMIN_USER_IDS to enable admin features.');
+      console.warn('⚠️ To add: Go to Deployments → Configuration → Add published app secret');
+      return [];
     }
-    // Only allow a safe default in development mode
+    // Allow a safe default in development mode
     console.warn('Warning: ADMIN_USER_IDS not set, using empty array. Admin functionality will be disabled.');
     return [];
   }
@@ -67,7 +71,8 @@ function getAdminUserIds(): string[] {
     .filter(id => id.length > 0);
     
   if (adminIds.length === 0) {
-    throw new Error('ADMIN_USER_IDS cannot be empty - provide at least one valid admin user ID');
+    console.warn('ADMIN_USER_IDS is empty - admin functionality will be disabled');
+    return [];
   }
   
   return adminIds;
