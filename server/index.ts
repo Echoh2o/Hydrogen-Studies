@@ -32,6 +32,7 @@ import { AppError, ErrorFactory, NotFoundError, DatabaseError, ErrorCode } from 
 import { DatabaseCircuitBreaker, checkDatabaseHealth, withRetry } from './utils/database-wrapper';
 
 // Route imports
+import authRoutes from "./routes/auth-routes";
 import studiesRouter from "./routes/studies-router";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
@@ -277,6 +278,7 @@ app.use(explorerRoutes); // Study explorer routes for visualizations
 app.use(researchUnifiedRoutes); // Research unified routes
 
 // API Routes Registration
+app.use("/api/auth", authRoutes);  // Authentication routes (before other protected routes)
 app.use("/api/studies", studiesRouter);
 app.use("/api/research", researchUnifiedRoutes);
 app.use("/api/keyword-monitor", keywordMonitorRoutes);

@@ -1,25 +1,21 @@
 /**
- * Authentication and authorization utilities
+ * Authentication and authorization middleware utilities
+ * Supports role-based access control and permissions
  */
 import { compare, hash } from 'bcrypt';
 import { Request, Response, NextFunction } from 'express';
-import { storage } from './storage';
-import { z } from 'zod';
-import { insertUserSchema } from '@shared/schema';
+import { db } from './db';
+import { users, UserRole } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
-// Registration schema with password confirmation
-export const registerSchema = insertUserSchema.extend({
-  passwordConfirm: z.string().min(6),
-}).refine(data => data.password === data.passwordConfirm, {
-  message: "Passwords do not match",
-  path: ["passwordConfirm"]
-});
-
-// Login schema
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string()
-});
+// Extend Express Request type to include session properties
+declare module 'express-session' {
+  interface SessionData {
+    userId: string;
+    username: string | null;
+    userRole: string;
+  }
+}
 
 // Number of salt rounds for password hashing
 const SALT_ROUNDS = 10;
@@ -45,131 +41,189 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
   if (req.session && req.session.userId) {
     return next();
   }
-  res.status(401).json({ message: 'Unauthorized' });
+  res.status(401).json({ error: 'Unauthorized - Please login' });
 }
 
 /**
- * List of admin user IDs - must be provided via ADMIN_USER_IDS environment variable
- * No default admin IDs for security reasons
+ * Middleware to require specific roles
+ * @param roles Array of allowed roles
  */
-function getAdminUserIds(): string[] {
-  if (!process.env.ADMIN_USER_IDS) {
-    // In production, just disable admin functionality instead of crashing
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('⚠️ ADMIN_USER_IDS environment variable not set in production.');
-      console.warn('⚠️ Admin functionality is disabled for security. Add ADMIN_USER_IDS to enable admin features.');
-      console.warn('⚠️ To add: Go to Deployments → Configuration → Add published app secret');
-      return [];
+export function requireRole(roles: string[]) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // Check authentication first
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Unauthorized - Please login' });
     }
-    // Allow a safe default in development mode
-    console.warn('Warning: ADMIN_USER_IDS not set, using empty array. Admin functionality will be disabled.');
-    return [];
-  }
-  
-  const adminIds = process.env.ADMIN_USER_IDS.split(',')
-    .map(id => id.trim())
-    .filter(id => id.length > 0);
-    
-  if (adminIds.length === 0) {
-    console.warn('ADMIN_USER_IDS is empty - admin functionality will be disabled');
-    return [];
-  }
-  
-  return adminIds;
+
+    // Get user from database to check role
+    try {
+      const [user] = await db.select()
+        .from(users)
+        .where(eq(users.id, req.session.userId))
+        .limit(1);
+
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ error: 'Account is deactivated' });
+      }
+
+      // Check if user has one of the required roles
+      if (roles.includes(user.role || '')) {
+        return next();
+      }
+
+      return res.status(403).json({ 
+        error: 'Forbidden - Insufficient permissions',
+        requiredRoles: roles,
+        userRole: user.role
+      });
+    } catch (error) {
+      console.error('Role check error:', error);
+      return res.status(500).json({ error: 'Failed to verify permissions' });
+    }
+  };
 }
 
-const ADMIN_USER_IDS = getAdminUserIds();
+/**
+ * Middleware to check specific permission
+ * @param permission The required permission
+ */
+export function hasPermission(permission: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // Check authentication first
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Unauthorized - Please login' });
+    }
+
+    // Get user from database to check permissions
+    try {
+      const [user] = await db.select()
+        .from(users)
+        .where(eq(users.id, req.session.userId))
+        .limit(1);
+
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ error: 'Account is deactivated' });
+      }
+
+      // Admins have all permissions
+      if (user.role === UserRole.ADMIN) {
+        return next();
+      }
+
+      // Check if user has the specific permission
+      if (user.permissions && user.permissions.includes(permission)) {
+        return next();
+      }
+
+      return res.status(403).json({ 
+        error: 'Forbidden - Missing required permission',
+        requiredPermission: permission
+      });
+    } catch (error) {
+      console.error('Permission check error:', error);
+      return res.status(500).json({ error: 'Failed to verify permissions' });
+    }
+  };
+}
 
 /**
  * Middleware to check if user is an admin
- * Requires authentication first - use with isAuthenticated
+ * Updated to use role-based system instead of environment variable
  */
 export function isAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.session || !req.session.userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
-  const userId = req.session.userId;
-  
-  // Check if user ID is in the admin list
-  if (ADMIN_USER_IDS.includes(userId)) {
-    return next();
-  }
-
-  // Return 403 Forbidden for non-admin users
-  res.status(403).json({ 
-    message: 'Forbidden: Admin access required',
-    error: 'You do not have permission to perform this action'
-  });
+  return requireRole([UserRole.ADMIN])(req, res, next);
 }
 
 /**
  * Combined middleware: requires both authentication and admin privileges
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  // First check authentication
+  return requireRole([UserRole.ADMIN])(req, res, next);
+}
+
+/**
+ * Middleware to check if user is an admin or editor
+ */
+export function isAdminOrEditor(req: Request, res: Response, next: NextFunction) {
+  return requireRole([UserRole.ADMIN, UserRole.EDITOR])(req, res, next);
+}
+
+/**
+ * Get current user from request
+ */
+export async function getCurrentUser(req: Request) {
   if (!req.session || !req.session.userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return null;
   }
 
-  // Then check admin status
-  const userId = req.session.userId;
-  if (ADMIN_USER_IDS.includes(userId)) {
-    return next();
-  }
+  try {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.id, req.session.userId))
+      .limit(1);
 
-  // Return 403 Forbidden for non-admin users
-  res.status(403).json({ 
-    message: 'Forbidden: Admin access required',
-    error: 'You do not have permission to perform this action'
-  });
+    return user || null;
+  } catch (error) {
+    console.error('Get current user error:', error);
+    return null;
+  }
 }
 
 /**
- * Register a new user
+ * Check if a user has a specific role
  */
-export async function registerUser(userData: z.infer<typeof registerSchema>) {
-  // Check if user already exists
-  const existingUser = await storage.getUserByEmail(userData.email);
-  if (existingUser) {
-    throw new Error('Email is already registered');
+export async function userHasRole(userId: string, role: string): Promise<boolean> {
+  try {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    return user ? user.role === role : false;
+  } catch (error) {
+    console.error('User role check error:', error);
+    return false;
   }
-
-  // Hash the password
-  const hashedPassword = await hashPassword(userData.password);
-
-  // Create the user
-  const user = await storage.createUser({
-    ...userData,
-    password: hashedPassword
-  });
-
-  // Create default user preferences
-  await storage.createUserPreferences({
-    userId: user.id,
-    categories: [],
-    keywords: [],
-    authors: [],
-    emailNotifications: true,
-    notificationFrequency: 'weekly'
-  });
-
-  return user;
 }
 
 /**
- * Authenticate a user
+ * Check if a user has a specific permission
  */
+export async function userHasPermission(userId: string, permission: string): Promise<boolean> {
+  try {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) return false;
+    
+    // Admins have all permissions
+    if (user.role === UserRole.ADMIN) return true;
+    
+    // Check specific permissions
+    return user.permissions ? user.permissions.includes(permission) : false;
+  } catch (error) {
+    console.error('User permission check error:', error);
+    return false;
+  }
+}
+
+// Export legacy functions for compatibility (these will be deprecated)
+export async function registerUser(userData: any) {
+  console.warn('registerUser is deprecated. Use /api/auth/register endpoint instead.');
+  throw new Error('Method deprecated');
+}
+
 export async function authenticateUser(email: string, password: string) {
-  const user = await storage.getUserByEmail(email);
-  if (!user) {
-    return null;
-  }
-
-  const isPasswordValid = await comparePasswords(password, user.password);
-  if (!isPasswordValid) {
-    return null;
-  }
-
-  return user;
+  console.warn('authenticateUser is deprecated. Use /api/auth/login endpoint instead.');
+  throw new Error('Method deprecated');
 }
