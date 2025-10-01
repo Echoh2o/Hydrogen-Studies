@@ -542,9 +542,9 @@ const HydrogenTherapyGuide = () => {
                   </li>
                 </ul>
                 <div className="mt-6">
-                  <Link href="/condition/metabolic syndrome">
+                  <Link href="/search?q=metabolic syndrome">
                     <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-800 p-0">
-                      View metabolic studies →
+                      Search metabolic studies →
                     </Button>
                   </Link>
                 </div>
