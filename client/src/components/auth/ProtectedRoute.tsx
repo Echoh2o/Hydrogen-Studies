@@ -3,7 +3,7 @@
  * Wraps routes that require authentication and optionally specific roles
  */
 import { useEffect, ReactNode } from 'react';
-import { useLocation, useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,7 @@ export default function ProtectedRoute({
   fallback,
   redirectTo = '/login'
 }: ProtectedRouteProps) {
-  const [location] = useLocation();
-  const [, navigate] = useNavigate();
+  const [location, navigate] = useLocation();
 
   // Check session status
   const { data: session, isLoading, error } = useQuery({

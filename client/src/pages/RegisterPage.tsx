@@ -3,7 +3,7 @@
  * Handles new user registration with validation
  */
 import { useState } from 'react';
-import { Link, useNavigate } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -70,7 +70,7 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const [, navigate] = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [registerError, setRegisterError] = useState<string>('');
   const [passwordStrength, setPasswordStrength] = useState(0);

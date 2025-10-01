@@ -14,6 +14,11 @@ import { EnhancedErrorBoundary, PageErrorBoundary, AsyncErrorBoundary } from "@/
 // Critical page - keep as direct import for fastest initial load
 import HomePage from "@/pages/HomePage";
 
+// Authentication components - critical for security
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
+
 // Lazy load all non-critical pages for better performance
 const SearchPage = lazy(() => import("@/pages/SearchPage"));
 const BenefitsPage = lazy(() => import("@/pages/BenefitsPage"));
@@ -57,8 +62,6 @@ const ExploreByDeliveryMethodPage = lazy(() => import("@/pages/ExploreByDelivery
 const DeliveryMethodDetailPage = lazy(() => import("@/pages/ExploreByDeliveryMethod").then(module => ({ default: module.DeliveryMethodDetailPage })));
 
 // Authentication pages
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 
 // Lazy load admin components for better performance
@@ -164,55 +167,276 @@ function Router() {
       <Route path="/recommendations" component={RecommendationsPage} />
       <Route path="/chat" component={ChatPage} />
 
-      {/* Enhanced Admin Dashboard with WYSIWYG */}
-      <Route path="/admin" component={EnhancedAdminDashboard} />
-      <Route path="/admin/enhanced" component={EnhancedAdminDashboard} />
-      <Route path="/admin/dashboard" component={DashboardPage} />
-      <Route path="/admin/legacy" component={AdminPage} />
-      <Route path="/admin/import" component={ImportPage} />
+      {/* Enhanced Admin Dashboard with WYSIWYG - Protected */}
+      <Route path="/admin">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <EnhancedAdminDashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/enhanced">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <EnhancedAdminDashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/dashboard">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <DashboardPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/legacy">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <AdminPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/import">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ImportPage />
+          </ProtectedRoute>
+        )}
+      </Route>
 
-      {/* Admin Management Pages */}
-      <Route path="/admin/users" component={UserManagementPage} />
-      <Route path="/admin/studies" component={StudiesManagementPage} />
-      <Route path="/admin/studies/add" component={AddStudyPage} />
-      <Route path="/admin/studies/edit/:id" component={StudyEditPage} />
-      <Route path="/admin/blogs" component={BlogListPage} />
-      <Route path="/admin/blogs/generate" component={BlogGeneratePage} />
-      <Route path="/admin/blog-generator" component={BlogGeneratePage} />
-      <Route path="/admin/blogs/add" component={BlogAddPage} />
-      <Route path="/admin/blogs/edit/:id" component={BlogEditPage} />
-      <Route path="/admin/blog-categories" component={BlogCategoriesPage} />
-      <Route path="/admin/blog-recommendations" component={BlogRecommendationPage} />
+      {/* Admin Management Pages - Protected */}
+      <Route path="/admin/users">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin']}>
+            <UserManagementPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/studies">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <StudiesManagementPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/studies/add">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <AddStudyPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/studies/edit/:id">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <StudyEditPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/blogs">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BlogListPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/blogs/generate">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BlogGeneratePage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/blog-generator">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BlogGeneratePage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/blogs/add">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BlogAddPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/blogs/edit/:id">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BlogEditPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/blog-categories">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BlogCategoriesPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/blog-recommendations">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BlogRecommendationPage />
+          </ProtectedRoute>
+        )}
+      </Route>
 
-      {/* Admin Import & Data Pages */}
-      <Route path="/admin/research-import" component={ResearchImportPage} />
-      <Route path="/admin/data-import" component={DataImportPage} />
-      <Route path="/admin/research-database" component={ResearchDatabasePage} />
-      <Route path="/admin/journal-date-updater" component={JournalDateUpdater} />
+      {/* Admin Import & Data Pages - Protected */}
+      <Route path="/admin/research-import">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ResearchImportPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/data-import">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <DataImportPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/research-database">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ResearchDatabasePage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/journal-date-updater">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <JournalDateUpdater />
+          </ProtectedRoute>
+        )}
+      </Route>
 
-      {/* Admin Enhancement Pages */}
-      <Route path="/admin/content-enrichment" component={ContentEnrichmentPage} />
-      <Route path="/admin/batch-enrichment" component={BatchEnrichmentPage} />
-      <Route path="/admin/batch-categorization" component={BatchCategorizationPage} />
-      <Route path="/admin/image-generation" component={ImageGenerationPage} />
-      <Route path="/admin/enhancement" component={EnhancementPage} />
-      <Route path="/admin/keyword-monitor" component={KeywordMonitorPage} />
-      <Route path="/admin/trends" component={TrendsAnalysisPage} />
-      <Route path="/admin/review-assistant" component={ReviewAssistantPage} />
-      <Route path="/admin/content-optimization" component={ContentOptimizationPage} />
-      <Route path="/admin/multi-format" component={MultiFormatGeneratorPage} />
+      {/* Admin Enhancement Pages - Protected */}
+      <Route path="/admin/content-enrichment">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ContentEnrichmentPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/batch-enrichment">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BatchEnrichmentPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/batch-categorization">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <BatchCategorizationPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/image-generation">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ImageGenerationPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/enhancement">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <EnhancementPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/keyword-monitor">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <KeywordMonitorPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/trends">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <TrendsAnalysisPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/review-assistant">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ReviewAssistantPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/content-optimization">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ContentOptimizationPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/multi-format">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <MultiFormatGeneratorPage />
+          </ProtectedRoute>
+        )}
+      </Route>
 
-      {/* Additional Admin Pages */}
-      <Route path="/admin/analytics" component={AnalyticsPage} />
-      <Route path="/admin/settings" component={SettingsPage} />
-      <Route path="/admin/users" component={UsersPage} />
+      {/* Additional Admin Pages - Protected */}
+      <Route path="/admin/analytics">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <AnalyticsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/settings">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin']}>
+            <SettingsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
 
-      {/* Admin Monitoring Pages */}
-      <Route path="/admin/monitoring" component={AdminMonitoringPage} />
-      <Route path="/admin/article-search" component={ArticleSearchPage} />
-      <Route path="/admin/europe-pmc" component={EuropePmcPage} />
-      <Route path="/admin/semantic-scholar" component={SemanticScholarPage} />
-      <Route path="/admin/crossref" component={CrossRefPage} />
+      {/* Admin Monitoring Pages - Protected */}
+      <Route path="/admin/monitoring">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <AdminMonitoringPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/article-search">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <ArticleSearchPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/europe-pmc">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <EuropePmcPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/semantic-scholar">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <SemanticScholarPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/admin/crossref">
+        {() => (
+          <ProtectedRoute requiredRoles={['admin', 'editor']}>
+            <CrossRefPage />
+          </ProtectedRoute>
+        )}
+      </Route>
 
       {/* Tag-based Navigation */}
       <Route path="/studies/tags" component={TaggedStudiesPage} />
