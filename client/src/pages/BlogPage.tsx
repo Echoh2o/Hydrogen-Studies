@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { ArrowLeft, Calendar, Eye, Share } from "lucide-react";
 import { Helmet } from "react-helmet";
 import ReactMarkdown from 'react-markdown';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export default function BlogPage() {
   const { id } = useParams();
@@ -71,6 +72,7 @@ export default function BlogPage() {
   
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>{blog.title} | Hydrogen Studies Blog</title>
         <meta name="description" content={blog.summary} />

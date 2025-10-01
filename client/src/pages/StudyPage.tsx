@@ -12,6 +12,7 @@ import JsonLd, { generateMedicalArticleSchema, generateBreadcrumbSchema } from "
 import SEOHead from "@/components/seo/SEOHead";
 import StructuredData from "@/components/seo/StructuredData";
 import { useEffect, useRef } from "react";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 // Simple pure component for rendering a study image or fallback
 interface StudyImageProps {
@@ -287,6 +288,7 @@ const StudyPage = () => {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>{(study.plainLanguageTitle || study.plain_language_title || study.title)} | Hydrogen Studies Research</title>
         <meta name="description" content={study.abstract?.substring(0, 160) + "..."} />

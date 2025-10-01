@@ -18,6 +18,7 @@ import InteractiveBodyMap from '@/components/explorer/InteractiveBodyMap';
 import ResearchTimeline from '@/components/explorer/ResearchTimeline';
 import StudyComparison from '@/components/explorer/StudyComparison';
 import ResearchEvolution from '@/components/explorer/ResearchEvolution';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export default function StudyExplorerPage() {
   const [, navigate] = useLocation();
@@ -94,6 +95,7 @@ export default function StudyExplorerPage() {
 
   return (
     <>
+      <SiteHeader />
       <HeadMetaTags
         title="Interactive Study Explorer - Hydrogen Therapy Research"
         description="Explore hydrogen therapy research with interactive visualizations including timeline, body map, and evolution diagrams. Discover research trends and compare studies."

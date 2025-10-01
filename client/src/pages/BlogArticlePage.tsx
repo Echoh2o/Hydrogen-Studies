@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export default function BlogArticlePage() {
   const { id } = useParams();
@@ -167,16 +168,18 @@ For those interested in diving deeper into the research, here are key studies re
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/blog" className="flex items-center text-blue-600 hover:text-blue-700">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Blog
-          </Link>
+    <>
+      <SiteHeader />
+      <div className="min-h-screen bg-white">
+        {/* Back Navigation - removed sticky nav since we have SiteHeader */}
+        <div className="bg-white border-b">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <Link href="/blog" className="flex items-center text-blue-600 hover:text-blue-700">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Blog
+            </Link>
+          </div>
         </div>
-      </div>
 
       {/* Article Header */}
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -327,5 +330,6 @@ For those interested in diving deeper into the research, here are key studies re
         </div>
       </section>
     </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export default function HydrogenBasicsPage() {
   const deliveryMethods = [
@@ -53,7 +54,9 @@ export default function HydrogenBasicsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <>
+      <SiteHeader />
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Navigation */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -277,5 +280,6 @@ export default function HydrogenBasicsPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }
