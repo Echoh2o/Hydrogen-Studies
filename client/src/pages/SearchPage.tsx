@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Link } from 'wouter';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface Study {
   id: number;
@@ -88,7 +89,9 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <SiteHeader />
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -321,5 +324,6 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

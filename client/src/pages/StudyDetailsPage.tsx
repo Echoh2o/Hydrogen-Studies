@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface Study {
   id: number;
@@ -64,19 +65,24 @@ export default function StudyDetailsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <>
+        <SiteHeader />
+        <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-3/4"></div>
           <div className="h-4 bg-gray-200 rounded w-1/2"></div>
           <div className="h-32 bg-gray-200 rounded"></div>
         </div>
       </div>
+      </>
     );
   }
 
   if (error || !study) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <>
+        <SiteHeader />
+        <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="p-8 text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Study Not Found</h1>
@@ -90,6 +96,7 @@ export default function StudyDetailsPage() {
           </CardContent>
         </Card>
       </div>
+      </>
     );
   }
 
@@ -110,7 +117,9 @@ export default function StudyDetailsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Back Button */}
       <div className="mb-6">
         <Link href="/search">
@@ -289,5 +298,6 @@ export default function StudyDetailsPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

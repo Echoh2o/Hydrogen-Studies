@@ -4,6 +4,7 @@ import { Heart, ArrowRight, Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface Condition {
   name: string;
@@ -71,8 +72,10 @@ const ExploreByCondition = () => {
   const otherConditions = conditions.slice(6);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Helmet>
+    <>
+      <SiteHeader />
+      <div className="container mx-auto px-4 py-8">
+        <Helmet>
         <title>Explore by Health Condition | HydrogenStudies.com</title>
         <meta 
           name="description" 
@@ -175,6 +178,7 @@ const ExploreByCondition = () => {
         </>
       )}
     </div>
+    </>
   );
 };
 

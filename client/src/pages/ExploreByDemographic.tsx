@@ -16,6 +16,7 @@ import { Helmet } from 'react-helmet';
 
 // Icons for demographics
 import { Users, Baby, Heart, MoveRight, Award, BookOpen, Hourglass } from 'lucide-react';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 const getDemographicIcon = (slug: string, className: string = '') => {
   switch (slug) {
@@ -45,7 +46,9 @@ const ExploreByDemographicPage: React.FC = () => {
   });
 
   return (
-    <div className="container mx-auto py-10">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto py-10">
       <Helmet>
         <title>Explore Hydrogen Studies by Demographic | HydrogenStudies.com</title>
         <meta name="description" content="Discover hydrogen research organized by demographics including athletes, elderly, children, healthy adults, and those with specific health conditions." />
@@ -100,6 +103,7 @@ const ExploreByDemographicPage: React.FC = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

@@ -4,6 +4,7 @@ import { Heart, Calendar, Book, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface Study {
   id: number;
@@ -111,8 +112,10 @@ const ConditionCategoryPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Helmet>
+    <>
+      <SiteHeader />
+      <div className="container mx-auto px-4 py-8">
+        <Helmet>
         <title>{`Hydrogen Therapy for ${displayName} | Research on Health Benefits & Treatment`}</title>
         <meta 
           name="description" 
@@ -246,6 +249,7 @@ const ConditionCategoryPage = () => {
         </>
       )}
     </div>
+    </>
   );
 };
 

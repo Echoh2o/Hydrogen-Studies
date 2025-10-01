@@ -11,6 +11,7 @@ import {
 } from "react-icons/hi";
 import { Brain } from "lucide-react";
 import { Helmet } from "react-helmet";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 const CategoriesPage = () => {
   const { data: categoriesResponse, isLoading, error } = useQuery<Array<{
@@ -63,6 +64,7 @@ const CategoriesPage = () => {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>Research Categories - Hydrogen Studies Database</title>
         <meta name="description" content="Browse hydrogen research by category. Explore studies on neurology, cardiology, immunology, metabolism, longevity and more." />

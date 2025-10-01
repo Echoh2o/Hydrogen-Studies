@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { Loader2 } from 'lucide-react';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 // Condition-focused categories
 const conditionCategories = [
@@ -187,7 +188,9 @@ const ExploreByBenefit: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6 text-center">
         Explore Hydrogen Research by Health Benefits
       </h1>
@@ -390,6 +393,7 @@ const ExploreByBenefit: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

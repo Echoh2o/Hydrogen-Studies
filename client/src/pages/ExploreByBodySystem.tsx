@@ -16,6 +16,7 @@ import { ConsumerCategoriesResponse } from "@/types/consumer-categories";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface BodySystemCategory {
   name: string;
@@ -106,8 +107,10 @@ const ExploreByBodySystem = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <Helmet>
+    <>
+      <SiteHeader />
+      <div className="container mx-auto px-4 py-12">
+        <Helmet>
         <title>Explore Hydrogen Studies by Body System | HydrogenStudies.com</title>
         <meta 
           name="description" 
@@ -173,6 +176,7 @@ const ExploreByBodySystem = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 

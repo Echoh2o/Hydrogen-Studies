@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, BookOpen, Users, FlaskConical, Heart } from "lucide-react";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface Tag {
   id: number;
@@ -137,7 +138,9 @@ export default function TaggedStudiesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">
           Browse Studies by Tags
@@ -435,5 +438,6 @@ export default function TaggedStudiesPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }

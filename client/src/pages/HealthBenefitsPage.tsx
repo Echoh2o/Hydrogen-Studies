@@ -4,6 +4,7 @@ import { ArrowLeft, Heart, Brain, Zap, Shield, Droplet, Users, TrendingUp } from
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export default function HealthBenefitsPage() {
   const healthCategories = [
@@ -112,7 +113,9 @@ export default function HealthBenefitsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <>
+      <SiteHeader />
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Navigation */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -282,5 +285,6 @@ export default function HealthBenefitsPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }
