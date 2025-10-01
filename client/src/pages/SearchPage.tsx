@@ -41,13 +41,13 @@ export default function SearchPage() {
 
   // Parse URL parameters
   useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
+    const params = new URLSearchParams(window.location.search);
     const initialQuery = params.get('search') || params.get('q') || '';
     setSearchQuery(initialQuery);
     if (initialQuery) {
       performSearch(initialQuery);
     }
-  }, [location]);
+  }, [location]); // Still depend on location for route changes
 
   const performSearch = async (query: string, filters: any = {}) => {
     setLoading(true);
