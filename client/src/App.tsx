@@ -161,6 +161,17 @@ function Router() {
       <Route path="/body-system/:name" component={BodySystemCategoryPage} />
       <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />
       <Route path="/life-stage/:name" component={LifeStageCategoryPage} />
+      <Route path="/explore-by-benefit" component={ExploreByBenefit} />
+      <Route path="/explore-by-delivery-method" component={ExploreByDeliveryMethodPage} />
+      <Route path="/delivery-methods/:slug" component={DeliveryMethodDetailPage} />
+
+      {/* Recent Studies Redirect */}
+      <Route path="/recent-studies">
+        {() => {
+          window.location.href = '/studies';
+          return null;
+        }}
+      </Route>
 
       {/* Content & Resources */}
       <Route path="/blog/:id/:slug?" component={BlogPage} />
