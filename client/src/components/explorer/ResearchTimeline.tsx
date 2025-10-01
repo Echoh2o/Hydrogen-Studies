@@ -245,12 +245,12 @@ export default function ResearchTimeline({
             </Select>
 
             {/* Category Filter */}
-            <Select value={selectedCategory || ""} onValueChange={(v) => setSelectedCategory(v || null)}>
+            <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)}>
               <SelectTrigger className="w-48" data-testid="timeline-category-filter">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}

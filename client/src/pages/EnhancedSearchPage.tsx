@@ -63,7 +63,7 @@ export default function EnhancedSearchPage() {
   const [filters, setFilters] = useState<SearchFilters>({
     query: urlParams.get('q') || '',
     tags: [],
-    category: '',
+    category: 'all',
     dateRange: 'all',
     studyType: 'all',
     minViewCount: 0,
@@ -96,7 +96,7 @@ export default function EnhancedSearchPage() {
     // Update URL with search parameters
     const params = new URLSearchParams();
     if (updatedFilters.query) params.set('q', updatedFilters.query);
-    if (updatedFilters.category) params.set('category', updatedFilters.category);
+    if (updatedFilters.category && updatedFilters.category !== 'all') params.set('category', updatedFilters.category);
     if (updatedFilters.sortBy !== 'relevance') params.set('sort', updatedFilters.sortBy);
     
     setLocation(`/search?${params.toString()}`);
@@ -193,7 +193,7 @@ export default function EnhancedSearchPage() {
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All categories</SelectItem>
+                    <SelectItem value="all">All categories</SelectItem>
                     <SelectItem value="health_condition">Health Conditions</SelectItem>
                     <SelectItem value="study_type">Study Types</SelectItem>
                     <SelectItem value="mechanism">Mechanisms</SelectItem>
