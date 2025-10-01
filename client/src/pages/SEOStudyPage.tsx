@@ -7,6 +7,7 @@ import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar
 import { Helmet } from "react-helmet";
 import { useEffect } from "react";
 import { StudyInfoPanel } from "@/components/StudyInfoPanel";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface Study {
   id: number;
@@ -79,7 +80,9 @@ export default function SEOStudyPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white py-12">
+      <>
+        <SiteHeader />
+        <div className="min-h-screen bg-white py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="h-6 bg-neutral-200 rounded w-48 mb-6 animate-pulse"></div>
@@ -97,12 +100,15 @@ export default function SEOStudyPage() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   if (error || !study) {
     return (
-      <div className="min-h-screen bg-white py-12">
+      <>
+        <SiteHeader />
+        <div className="min-h-screen bg-white py-12">
         <div className="container mx-auto px-4 text-center">
           <Card className="max-w-md mx-auto">
             <CardContent className="pt-6 pb-6">
@@ -122,6 +128,7 @@ export default function SEOStudyPage() {
           </Card>
         </div>
       </div>
+      </>
     );
   }
 
@@ -137,6 +144,7 @@ export default function SEOStudyPage() {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={study.abstract?.substring(0, 160) + "..."} />

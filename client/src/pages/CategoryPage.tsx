@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Helmet } from "react-helmet";
 import { HiUser, HiBookOpen, HiDocument, HiFilter, HiChevronRight, HiChevronLeft } from "react-icons/hi";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 // Study type definition 
 interface Study {
@@ -69,6 +70,7 @@ const CategoryPage = () => {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>{category?.name || name} Research - Hydrogen Studies Database</title>
         <meta name="description" content={`Browse hydrogen research studies in ${category?.name || name}. Explore the latest findings and applications in this field.`} />

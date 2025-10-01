@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Helmet } from 'react-helmet';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 // Icons for mechanisms
 import { Zap, Dna, HeartPulse, Shield, Droplets, RefreshCw, BarChart, Brain } from 'lucide-react';
@@ -47,7 +48,9 @@ const ExploreByMechanismPage: React.FC = () => {
   });
 
   return (
-    <div className="container mx-auto py-10">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto py-10">
       <Helmet>
         <title>Explore Hydrogen Studies by Mechanism | HydrogenStudies.com</title>
         <meta name="description" content="Discover hydrogen research organized by biological mechanisms including antioxidant effects, gene expression, mitochondrial function, and more." />
@@ -102,6 +105,7 @@ const ExploreByMechanismPage: React.FC = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

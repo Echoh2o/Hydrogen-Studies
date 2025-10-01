@@ -16,6 +16,7 @@ import { Helmet } from 'react-helmet';
 
 // Icons for delivery methods
 import { Droplet, Wind, Bath, Beaker, Pill, Stethoscope, Soup } from 'lucide-react';
+import SiteHeader from '@/components/layout/SiteHeader';
 
 const getDeliveryMethodIcon = (slug: string, className: string = '') => {
   switch (slug) {
@@ -45,7 +46,9 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
   });
 
   return (
-    <div className="container mx-auto py-10">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto py-10">
       <Helmet>
         <title>Explore Hydrogen Studies by Delivery Method | HydrogenStudies.com</title>
         <meta name="description" content="Discover hydrogen research organized by delivery methods including drinking water, inhalation, bathing, tablets, and injections." />
@@ -122,6 +125,7 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

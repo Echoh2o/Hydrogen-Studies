@@ -12,6 +12,7 @@ import {
   Heart, Bookmark, Download, ChevronRight, Sparkles,
   TrendingUp, Clock, Star
 } from "lucide-react";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 interface StudyDetails {
   id: number;
@@ -163,7 +164,9 @@ export default function EnhancedStudyPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <SiteHeader />
+      <div className="container mx-auto px-4 py-8">
       {/* Study Header */}
       <div className="mb-8">
         <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
@@ -487,5 +490,6 @@ export default function EnhancedStudyPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

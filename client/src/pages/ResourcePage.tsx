@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { HiArrowLeft, HiArrowRight, HiDownload, HiShare } from "react-icons/hi";
 import NewsletterSection from "@/components/home/NewsletterSection";
 import { Helmet } from "react-helmet";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 const ResourcePage = () => {
   const { slug } = useParams();
@@ -73,6 +74,7 @@ const ResourcePage = () => {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>{resource.title} | Hydrogen Studies Educational Resources</title>
         <meta name="description" content={resource.description} />

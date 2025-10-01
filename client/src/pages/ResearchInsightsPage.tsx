@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp, Activity, Database, Calendar, Users, Heart, Brain } from 'lucide-react';
 import { useQuery } from "@tanstack/react-query";
+import SiteHeader from '@/components/layout/SiteHeader';
 
 export default function ResearchInsightsPage() {
   // Get database statistics
@@ -15,6 +16,7 @@ export default function ResearchInsightsPage() {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>Research Insights & Analytics - Hydrogen Studies Database</title>
         <meta
