@@ -49,12 +49,14 @@ const HeadMetaTags: React.FC<HeadMetaTagsProps> = ({
   // Default domain for absolute URLs
   const domain = 'https://hydrogenstudies.com';
   
-  // Format absolute URL for canonical and og:url
-  const absoluteUrl = canonicalUrl.startsWith('http') ? canonicalUrl : `${domain}${canonicalUrl}`;
+  // Format absolute URL for canonical and og:url - with safety check for undefined
+  const absoluteUrl = canonicalUrl 
+    ? (canonicalUrl.startsWith('http') ? canonicalUrl : `${domain}${canonicalUrl}`)
+    : `${domain}/`;
   
   // Format image URLs to be absolute
-  const formattedOgImage = ogImage?.startsWith('http') ? ogImage : `${domain}${ogImage}`;
-  const formattedTwitterImage = twitterImage?.startsWith('http') ? twitterImage : `${domain}${twitterImage}`;
+  const formattedOgImage = ogImage?.startsWith('http') ? ogImage : ogImage ? `${domain}${ogImage}` : undefined;
+  const formattedTwitterImage = twitterImage?.startsWith('http') ? twitterImage : twitterImage ? `${domain}${twitterImage}` : undefined;
   
   return (
     <Helmet>
