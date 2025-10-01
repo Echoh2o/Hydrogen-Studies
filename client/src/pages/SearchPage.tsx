@@ -38,16 +38,16 @@ export default function SearchPage() {
   const [category, setCategory] = useState('all');
   const [country, setCountry] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Parse URL parameters
   useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
-    const q = params.get('q') || '';
-    setSearchQuery(q);
-    if (q) {
-      performSearch(q);
+    const params = new URLSearchParams(window.location.search);
+    const initialQuery = params.get('search') || params.get('q') || '';
+    setSearchQuery(initialQuery);
+    if (initialQuery) {
+      performSearch(initialQuery);
     }
-  }, [location]);
+  }, [location]); // Still depend on location for route changes
 
   const performSearch = async (query: string, filters: any = {}) => {
     setLoading(true);
@@ -56,21 +56,21 @@ export default function SearchPage() {
         search: query,
         limit: '20'
       });
-      
+
       const categoryValue = filters.category || category;
       const countryValue = filters.country || country;
-      
+
       if (categoryValue !== 'all') {
         params.set('category', categoryValue);
       }
-      
+
       if (countryValue !== 'all') {
         params.set('country', countryValue);
       }
-      
+
       const response = await fetch(`/api/advanced-search?${params}`);
       const data = await response.json();
-      
+
       setStudies(data.studies || []);
       setTotal(data.total || 0);
     } catch (error) {
@@ -104,7 +104,7 @@ export default function SearchPage() {
               {total.toLocaleString()} studies found
             </Badge>
           </div>
-          
+
           {/* AI Search Banner */}
           <Link href="/search/natural-language">
             <Card className="mb-4 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-primary/20">
@@ -120,7 +120,7 @@ export default function SearchPage() {
               </CardContent>
             </Card>
           </Link>
-          
+
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex gap-4 items-center">
             <div className="flex-1 relative">
@@ -180,7 +180,7 @@ export default function SearchPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium mb-2">Country</label>
                     <Select value={country} onValueChange={(value) => {
@@ -199,10 +199,10 @@ export default function SearchPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="flex items-end">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => {
                         setCategory('all');
                         setCountry('all');
@@ -241,14 +241,14 @@ export default function SearchPage() {
                         </p>
                       </div>
                       {study.image_url && (
-                        <img 
-                          src={study.image_url} 
+                        <img
+                          src={study.image_url}
                           alt="Study illustration"
                           className="w-24 h-24 object-cover rounded-lg ml-4 flex-shrink-0"
                         />
                       )}
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-2 mb-4">
                       <Badge variant="secondary" className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -275,7 +275,7 @@ export default function SearchPage() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div className="flex justify-between items-center text-sm text-gray-500">
                       <div>
                         <strong>Journal:</strong> {study.journal}
@@ -289,7 +289,7 @@ export default function SearchPage() {
                 </Card>
               </Link>
             ))}
-            
+
             {/* Load More Button */}
             <div className="text-center py-8">
               <Button variant="outline" size="lg">

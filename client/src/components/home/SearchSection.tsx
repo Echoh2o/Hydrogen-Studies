@@ -41,8 +41,23 @@ const SearchSection = () => {
       if (fullTextOnly) params.append("fullTextOnly", "true");
     }
     
+    // Build query string with 'search' as the main parameter
+    const queryParams = new URLSearchParams();
+    if (searchQuery) queryParams.append("search", searchQuery);
+    if (category) queryParams.append("category", category);
+    if (year) queryParams.append("year", year);
+    if (sort) queryParams.append("sort", sort);
+    
+    // Add advanced search params
+    if (isAdvancedOpen) {
+      if (author) queryParams.append("author", author);
+      if (journal) queryParams.append("journal", journal);
+      if (studyType) queryParams.append("studyType", studyType);
+      if (fullTextOnly) queryParams.append("fullTextOnly", "true");
+    }
+    
     // Navigate to search results page with query parameters
-    navigate(`/search?${params.toString()}`);
+    navigate(`/search?${queryParams.toString()}`);
   };
 
   return (
