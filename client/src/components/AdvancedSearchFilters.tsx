@@ -40,9 +40,9 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
     mechanisms: [],
     yearFrom: "",
     yearTo: "",
-    category: "",
+    category: "all",
     aiEnhanced: null,
-    readingLevel: "",
+    readingLevel: "all",
     sortBy: "relevance"
   });
 
@@ -136,9 +136,9 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
       mechanisms: [],
       yearFrom: "",
       yearTo: "",
-      category: "",
+      category: "all",
       aiEnhanced: null,
-      readingLevel: "",
+      readingLevel: "all",
       sortBy: "relevance"
     });
   };
@@ -153,9 +153,9 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
     count += filters.studyTypes.length;
     count += filters.mechanisms.length;
     if (filters.yearFrom || filters.yearTo) count++;
-    if (filters.category) count++;
+    if (filters.category && filters.category !== "all") count++;
     if (filters.aiEnhanced !== null) count++;
-    if (filters.readingLevel) count++;
+    if (filters.readingLevel && filters.readingLevel !== "all") count++;
     return count;
   };
 
@@ -362,7 +362,7 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
                       <SelectValue placeholder="Select reading level" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Levels</SelectItem>
+                      <SelectItem value="all">All Levels</SelectItem>
                       {readingLevels.map(level => (
                         <SelectItem key={level.value} value={level.value}>
                           {level.label}
@@ -376,14 +376,14 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-gray-700">Content Type</label>
                   <Select 
-                    value={filters.aiEnhanced === null ? "" : filters.aiEnhanced.toString()} 
-                    onValueChange={(value) => updateFilter("aiEnhanced", value === "" ? null : value === "true")}
+                    value={filters.aiEnhanced === null ? "all" : filters.aiEnhanced.toString()} 
+                    onValueChange={(value) => updateFilter("aiEnhanced", value === "all" ? null : value === "true")}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="All content" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Content</SelectItem>
+                      <SelectItem value="all">All Content</SelectItem>
                       <SelectItem value="true">AI Enhanced</SelectItem>
                       <SelectItem value="false">Original Only</SelectItem>
                     </SelectContent>

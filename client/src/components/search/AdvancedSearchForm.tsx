@@ -106,12 +106,12 @@ export function AdvancedSearchForm({ onSearch }) {
       deliveryMethod: [],
       healthCondition: [],
       bodySystem: [],
-      yearFrom: "",
-      yearTo: "",
+      yearFrom: "none",
+      yearTo: "none",
       peerReviewed: false,
       hasFullText: false,
-      outcome: "",
-      studyType: "",
+      outcome: "all",
+      studyType: "all",
       advancedOptions: {
         searchInMethods: true,
         searchInResults: true,
@@ -151,12 +151,12 @@ export function AdvancedSearchForm({ onSearch }) {
       queryParams.append("bodySystem", values.bodySystem.join(","));
     
     // Add scalar fields
-    if (values.yearFrom) queryParams.append("yearFrom", values.yearFrom);
-    if (values.yearTo) queryParams.append("yearTo", values.yearTo);
+    if (values.yearFrom && values.yearFrom !== "none") queryParams.append("yearFrom", values.yearFrom);
+    if (values.yearTo && values.yearTo !== "none") queryParams.append("yearTo", values.yearTo);
     if (values.peerReviewed) queryParams.append("peerReviewed", "true");
     if (values.hasFullText) queryParams.append("hasFullText", "true");
-    if (values.outcome) queryParams.append("outcome", values.outcome);
-    if (values.studyType) queryParams.append("studyType", values.studyType);
+    if (values.outcome && values.outcome !== "all") queryParams.append("outcome", values.outcome);
+    if (values.studyType && values.studyType !== "all") queryParams.append("studyType", values.studyType);
     
     // Add advanced options
     if (values.advancedOptions) {
@@ -209,7 +209,18 @@ export function AdvancedSearchForm({ onSearch }) {
           excludeTerms: "",
         });
       } else {
-        form.setValue(field as any, field.includes('year') ? "" : (Array.isArray(form.getValues(field as any)) ? [] : ""));
+        // Set appropriate default values for different field types
+        let defaultValue: any;
+        if (field === 'yearFrom' || field === 'yearTo') {
+          defaultValue = "none";
+        } else if (field === 'studyType' || field === 'outcome') {
+          defaultValue = "all";
+        } else if (Array.isArray(form.getValues(field as any))) {
+          defaultValue = [];
+        } else {
+          defaultValue = "";
+        }
+        form.setValue(field as any, defaultValue);
       }
     }
     
@@ -227,12 +238,12 @@ export function AdvancedSearchForm({ onSearch }) {
       deliveryMethod: [],
       healthCondition: [],
       bodySystem: [],
-      yearFrom: "",
-      yearTo: "",
+      yearFrom: "none",
+      yearTo: "none",
       peerReviewed: false,
       hasFullText: false,
-      outcome: "",
-      studyType: "",
+      outcome: "all",
+      studyType: "all",
       advancedOptions: {
         searchInMethods: true,
         searchInResults: true,
@@ -402,7 +413,7 @@ export function AdvancedSearchForm({ onSearch }) {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="">Any Year</SelectItem>
+                                  <SelectItem value="none">Any Year</SelectItem>
                                   {yearOptions.map(year => (
                                     <SelectItem key={year} value={year}>{year}</SelectItem>
                                   ))}
@@ -428,7 +439,7 @@ export function AdvancedSearchForm({ onSearch }) {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="">Current Year</SelectItem>
+                                  <SelectItem value="none">Current Year</SelectItem>
                                   {yearOptions.map(year => (
                                     <SelectItem key={year} value={year}>{year}</SelectItem>
                                   ))}
@@ -456,7 +467,7 @@ export function AdvancedSearchForm({ onSearch }) {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">All Study Types</SelectItem>
+                                <SelectItem value="all">All Study Types</SelectItem>
                                 <SelectItem value="human">Human Studies</SelectItem>
                                 <SelectItem value="animal">Animal Studies</SelectItem>
                                 <SelectItem value="in_vitro">In Vitro Studies</SelectItem>
@@ -486,7 +497,7 @@ export function AdvancedSearchForm({ onSearch }) {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">All Outcomes</SelectItem>
+                                <SelectItem value="all">All Outcomes</SelectItem>
                                 <SelectItem value="positive">Positive Results</SelectItem>
                                 <SelectItem value="neutral">Neutral Results</SelectItem>
                                 <SelectItem value="negative">Negative Results</SelectItem>

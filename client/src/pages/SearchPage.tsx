@@ -34,8 +34,8 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('');
-  const [country, setCountry] = useState('');
+  const [category, setCategory] = useState('all');
+  const [country, setCountry] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   
   // Parse URL parameters
@@ -53,10 +53,19 @@ export default function SearchPage() {
     try {
       const params = new URLSearchParams({
         search: query,
-        category: filters.category || category,
-        country: filters.country || country,
         limit: '20'
       });
+      
+      const categoryValue = filters.category || category;
+      const countryValue = filters.country || country;
+      
+      if (categoryValue !== 'all') {
+        params.set('category', categoryValue);
+      }
+      
+      if (countryValue !== 'all') {
+        params.set('country', countryValue);
+      }
       
       const response = await fetch(`/api/advanced-search?${params}`);
       const data = await response.json();
@@ -158,7 +167,7 @@ export default function SearchPage() {
                         <SelectValue placeholder="All categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All categories</SelectItem>
+                        <SelectItem value="all">All categories</SelectItem>
                         <SelectItem value="cardiovascular">Cardiovascular</SelectItem>
                         <SelectItem value="diabetes">Diabetes</SelectItem>
                         <SelectItem value="neurological">Neurological</SelectItem>
@@ -179,7 +188,7 @@ export default function SearchPage() {
                         <SelectValue placeholder="All countries" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All countries</SelectItem>
+                        <SelectItem value="all">All countries</SelectItem>
                         <SelectItem value="Japan">Japan</SelectItem>
                         <SelectItem value="China">China</SelectItem>
                         <SelectItem value="United States">United States</SelectItem>
@@ -192,8 +201,8 @@ export default function SearchPage() {
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        setCategory('');
-                        setCountry('');
+                        setCategory('all');
+                        setCountry('all');
                         setTimeout(() => performSearch(searchQuery), 100);
                       }}
                       className="w-full"
@@ -294,8 +303,8 @@ export default function SearchPage() {
             </p>
             <Button onClick={() => {
               setSearchQuery('');
-              setCategory('');
-              setCountry('');
+              setCategory('all');
+              setCountry('all');
               performSearch('');
             }}>
               Browse All Studies
