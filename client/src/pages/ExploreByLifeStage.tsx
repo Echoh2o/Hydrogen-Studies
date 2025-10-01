@@ -114,14 +114,14 @@ const ExploreByLifeStage = () => {
   return (
     <>
       <SiteHeader />
-      <div className="container mx-auto px-4 py-12">
-        <Helmet>
+      <Helmet>
         <title>Explore Hydrogen Studies by Life Stage | HydrogenStudies.com</title>
         <meta 
           name="description" 
           content="Browse hydrogen research organized by different life stages and demographics. Find studies about how hydrogen therapy affects infants, children, adults, seniors, pregnant women, and athletes."
         />
       </Helmet>
+      <div className="container mx-auto px-4 py-12">
 
       <div className="max-w-4xl mx-auto mb-12 text-center">
         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-primary">
