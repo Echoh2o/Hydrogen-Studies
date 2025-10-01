@@ -22,12 +22,23 @@ interface LifeStageCategory {
   icon?: React.ReactNode;
 }
 
+interface ApiResponse {
+  success: boolean;
+  data?: {
+    life_stage: Array<{
+      name: string;
+      count: number;
+    }>;
+  };
+  error?: string;
+}
+
 const ExploreByLifeStage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<LifeStageCategory[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: categoriesData } = useQuery({
+  const { data: categoriesData } = useQuery<ApiResponse>({
     queryKey: ["/api/consumer-categories/counts"],
   });
 
