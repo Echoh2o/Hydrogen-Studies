@@ -49,6 +49,7 @@ import reviewAssistantRoutes from "./routes/review-assistant-routes";
 import contentOptimizationRoutes from "./routes/content-optimization-routes";
 import multiFormatRoutes from "./routes/multi-format-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
+import consumerCategoriesRoutes from "./routes/consumer-categories-routes";
 
 // Monitoring and utilities
 import { initializeHealthMonitoring, performHealthCheck } from './health-monitoring';
@@ -297,6 +298,7 @@ app.use("/api/content-optimization", contentOptimizationRoutes);
 app.use("/api/natural-language-search", naturalLanguageSearchRoutes);
 app.use("/api/multi-format", multiFormatRoutes);
 app.use(hydrogenRoutes); // Hydrogen routes (delivery methods, benefits, etc.)
+app.use("/api/consumer-categories", consumerCategoriesRoutes); // Consumer categories routes for exploration pages
 
 // Dashboard stats endpoint with comprehensive statistics
 app.get('/api/stats/dashboard', generalApiRateLimiter, asyncHandler(async (req, res, next) => {
