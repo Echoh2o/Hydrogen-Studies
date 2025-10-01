@@ -107,6 +107,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- October 1, 2025: Critical Security Fix - Protected All Admin Routes
+  - Fixed navigation issue by replacing non-existent useNavigate with useLocation from wouter library
+  - Wrapped ALL admin routes with ProtectedRoute component to prevent unauthorized access
+  - Implemented role-based access control (admin-only for sensitive routes, admin/editor for content management)
+  - Added proper authentication flow with redirect to login page when accessing protected routes
+  - Fixed apiRequest calls to use correct signature (method, url, data, throwOnError)
+  - Removed invalid 'size' prop from Badge components throughout the application
+  - Authentication routes (/login, /register) now properly integrated into main routing
+
 - June 19, 2025: Implemented AI-powered blog recommendation and auto-generation system
   - Built working blog recommendation API that analyzes studies and suggests blog topics
   - Added priority-based recommendations with SEO keywords and article type suggestions

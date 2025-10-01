@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/components/auth/ProtectedRoute';
@@ -33,16 +33,14 @@ import {
 
 export default function SiteHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [, navigate] = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, user, userRole, isLoading } = useAuth();
 
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: () => 
-      apiRequest('/api/auth/logout', {
-        method: 'POST',
-      }),
+      apiRequest('POST', '/api/auth/logout'),
     onSuccess: () => {
       // Clear cached auth data
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
@@ -284,7 +282,7 @@ export default function SiteHeader() {
                           </p>
                           <p className="text-xs text-gray-500">{user.email}</p>
                           {userRole && (
-                            <Badge className="mt-1" variant="secondary" size="sm">
+                            <Badge className="mt-1 text-xs" variant="secondary">
                               {userRole}
                             </Badge>
                           )}
