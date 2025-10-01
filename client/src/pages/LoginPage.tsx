@@ -3,7 +3,7 @@
  * Handles user authentication with email/username and password
  */
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,8 +29,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [, navigate] = useNavigate();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
   const [loginError, setLoginError] = useState<string>('');
 

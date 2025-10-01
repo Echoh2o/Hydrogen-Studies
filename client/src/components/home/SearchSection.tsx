@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { HiSearch, HiChevronDown, HiChevronUp, HiAdjustments } from "react-icons/hi";
 
 const SearchSection = () => {
@@ -17,7 +17,7 @@ const SearchSection = () => {
   const [studyType, setStudyType] = useState("");
   const [fullTextOnly, setFullTextOnly] = useState(false);
   
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const toggleAdvanced = () => {
     setIsAdvancedOpen(!isAdvancedOpen);
