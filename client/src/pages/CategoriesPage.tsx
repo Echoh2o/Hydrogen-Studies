@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { type Category } from "@/types";
 import { 
-  HiBrain, 
   HiHeart, 
   HiShieldExclamation, 
   HiDatabase, 
@@ -10,17 +9,43 @@ import {
   HiBeaker,
   HiArrowRight
 } from "react-icons/hi";
+import { Brain } from "lucide-react";
 import { Helmet } from "react-helmet";
 
 const CategoriesPage = () => {
-  const { data: categories, isLoading, error } = useQuery({
+  const { data: categoriesResponse, isLoading, error } = useQuery<Array<{
+    category: string;
+    count: string;
+  }>>({
     queryKey: ["/api/categories"],
   });
 
-  const getCategoryIcon = (iconName: string) => {
+  // Helper function to map category names to icon types
+  const getCategoryIconType = (categoryName: string): string => {
+    const lowerName = categoryName.toLowerCase();
+    if (lowerName.includes("neuro") || lowerName.includes("brain")) return "brain";
+    if (lowerName.includes("heart") || lowerName.includes("cardio")) return "heartbeat";
+    if (lowerName.includes("inflam") || lowerName.includes("immune")) return "shield-virus";
+    if (lowerName.includes("metabol") || lowerName.includes("diabetes")) return "dna";
+    if (lowerName.includes("respiratory") || lowerName.includes("lung")) return "hourglass-half";
+    return "flask";
+  };
+
+  // Transform the API response into Category objects
+  const categories: Category[] = Array.isArray(categoriesResponse)
+    ? categoriesResponse.map((item, index) => ({
+        id: `category-${index}`,
+        name: item.category,
+        description: `Research related to ${item.category.toLowerCase()}`,
+        studyCount: parseInt(item.count || "0"),
+        icon: getCategoryIconType(item.category)
+      }))
+    : [];
+
+  const getCategoryIcon = (iconName: string | undefined) => {
     switch (iconName) {
       case "brain":
-        return <HiBrain className="text-xl" />;
+        return <Brain className="text-xl" />;
       case "heartbeat":
         return <HiHeart className="text-xl" />;
       case "shield-virus":
@@ -73,8 +98,8 @@ const CategoriesPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {categories?.map((category: Category) => (
-                <Link key={category.id} href={`/category/${category.name.toLowerCase()}`}>
+              {categories.map((category) => (
+                <Link key={category.id} href={`/search?q=${encodeURIComponent(category.name)}`}>
                   <a className="bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition p-6 group">
                     <div className="bg-primary/10 rounded-full w-14 h-14 flex items-center justify-center mb-4 text-primary group-hover:bg-primary group-hover:text-white transition">
                       {getCategoryIcon(category.icon)}
@@ -82,7 +107,7 @@ const CategoriesPage = () => {
                     <h2 className="text-xl font-semibold mb-3">{category.name}</h2>
                     <p className="text-neutral-600 mb-4">{category.description}</p>
                     <div className="text-primary font-medium flex items-center group-hover:translate-x-1 transition-transform">
-                      View Studies <HiArrowRight className="ml-2" />
+                      Search Studies <HiArrowRight className="ml-2" />
                     </div>
                   </a>
                 </Link>

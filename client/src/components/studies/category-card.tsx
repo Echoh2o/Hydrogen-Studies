@@ -23,8 +23,8 @@ export default function CategoryCard({ category }: CategoryCardProps) {
         <p className="text-neutral-600 mb-4">{category.description}</p>
         <div className="flex justify-between items-center">
           <span className="text-sm text-neutral-500">{category.studyCount} studies</span>
-          <Link href={`/category/${category.id}`} className="text-primary font-medium text-sm hover:underline">
-            View studies →
+          <Link href={`/search?q=${encodeURIComponent(category.name)}`} className="text-primary font-medium text-sm hover:underline">
+            Search studies →
           </Link>
         </div>
       </div>

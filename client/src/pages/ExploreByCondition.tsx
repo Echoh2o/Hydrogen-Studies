@@ -125,9 +125,9 @@ const ExploreByCondition = () => {
                   </p>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/condition/${encodeURIComponent(condition.name)}`}>
+                  <Link href={`/search?q=${encodeURIComponent(condition.name)}`}>
                     <Button className="w-full">
-                      View Studies
+                      Search Studies
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
@@ -144,7 +144,7 @@ const ExploreByCondition = () => {
             {conditions.map((condition) => (
               <Link 
                 key={condition.name} 
-                href={`/condition/${encodeURIComponent(condition.name)}`}
+                href={`/search?q=${encodeURIComponent(condition.name)}`}
                 className="block"
               >
                 <div className="bg-white p-4 rounded-lg border border-neutral-200 hover:border-primary hover:bg-primary/5 transition-colors duration-200">

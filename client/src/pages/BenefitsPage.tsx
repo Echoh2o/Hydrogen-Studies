@@ -258,9 +258,9 @@ export default function BenefitsPage() {
                     </div>
                   </div>
                   <div className="mt-8 pt-6 border-t">
-                    <Link href={`/search?category=${category.id}`}>
+                    <Link href={`/search?q=${category.title}`}>
                       <Button className="mr-4">
-                        View All {category.title} Studies
+                        Search {category.title} Studies
                       </Button>
                     </Link>
                     <Link href="/research">
