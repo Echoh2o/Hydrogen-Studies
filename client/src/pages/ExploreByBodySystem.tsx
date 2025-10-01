@@ -109,16 +109,15 @@ const ExploreByBodySystem = () => {
   return (
     <>
       <SiteHeader />
-      <div className="container mx-auto px-4 py-12">
-        <Helmet>
+      <Helmet>
         <title>Explore Hydrogen Studies by Body System | HydrogenStudies.com</title>
         <meta 
           name="description" 
           content="Browse hydrogen research organized by body systems. Find studies about how hydrogen therapy affects different systems in the body including cardiovascular, nervous, immune, and more."
         />
       </Helmet>
-
-      <div className="max-w-4xl mx-auto mb-12 text-center">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto mb-12 text-center">
         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-primary">
           Explore by Body System
         </h1>
