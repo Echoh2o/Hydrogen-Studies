@@ -18,12 +18,12 @@ router.get("/trends", async (req, res) => {
     // Get yearly publication trends
     const yearlyTrendsQuery = `
       SELECT 
-        EXTRACT(YEAR FROM publish_date) as year,
+        EXTRACT(YEAR FROM publish_date::date) as year,
         COUNT(*) as count
       FROM studies 
       WHERE publish_date IS NOT NULL 
-        AND EXTRACT(YEAR FROM publish_date) >= 2000
-      GROUP BY EXTRACT(YEAR FROM publish_date)
+        AND EXTRACT(YEAR FROM publish_date::date) >= 2000
+      GROUP BY EXTRACT(YEAR FROM publish_date::date)
       ORDER BY year
     `;
 
@@ -37,8 +37,8 @@ router.get("/trends", async (req, res) => {
     const categoryTrendsQuery = `
       SELECT 
         CASE 
-          WHEN body_systems IS NOT NULL AND array_length(body_systems, 1) > 0 THEN body_systems[1]
-          WHEN categories IS NOT NULL AND array_length(categories, 1) > 0 THEN categories[1]
+          WHEN body_systems IS NOT NULL AND body_systems != '' THEN body_systems
+          WHEN category IS NOT NULL AND category != '' THEN category
           WHEN title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' THEN 'Cardiovascular'
           WHEN title ILIKE '%brain%' OR title ILIKE '%neuro%' THEN 'Neurological'
           WHEN title ILIKE '%diabetes%' OR title ILIKE '%metabolic%' THEN 'Metabolic'
@@ -46,17 +46,17 @@ router.get("/trends", async (req, res) => {
           WHEN title ILIKE '%cancer%' OR title ILIKE '%tumor%' THEN 'Cancer'
           WHEN title ILIKE '%exercise%' OR title ILIKE '%athletic%' THEN 'Exercise'
           ELSE 'General Health'
-        END as category,
+        END as category_name,
         COUNT(*) as count
       FROM studies
-      GROUP BY category
+      GROUP BY category_name
       ORDER BY count DESC
       LIMIT 10
     `;
 
     const categoryResult = await pool.query(categoryTrendsQuery);
     const categoryTrends = categoryResult.rows.map(row => ({
-      category: row.category || 'General Health',
+      category: row.category_name || 'General Health',
       count: parseInt(row.count)
     }));
 
@@ -76,11 +76,12 @@ router.get("/health-outcomes", async (req, res) => {
   try {
     // Get cardiovascular outcomes from real studies
     const cardiovascularQuery = `
-      SELECT COUNT(*) as studies,
-             array_agg(DISTINCT SUBSTRING(title, 1, 50)) as sample_titles
+      SELECT COUNT(*) as studies
       FROM studies 
-      WHERE body_systems @> ARRAY['Cardiovascular']::text[]
-         OR keywords @> ARRAY['cardiovascular', 'heart', 'blood pressure']::text[]
+      WHERE body_systems ILIKE '%Cardiovascular%'
+         OR 'cardiovascular' = ANY(keywords) 
+         OR 'heart' = ANY(keywords) 
+         OR 'blood pressure' = ANY(keywords)
          OR title ILIKE '%cardiovascular%' 
          OR title ILIKE '%heart%'
          OR abstract ILIKE '%cardiovascular%'
@@ -89,11 +90,12 @@ router.get("/health-outcomes", async (req, res) => {
 
     // Get nervous system outcomes from real studies
     const nervousQuery = `
-      SELECT COUNT(*) as studies,
-             array_agg(DISTINCT SUBSTRING(title, 1, 50)) as sample_titles
+      SELECT COUNT(*) as studies
       FROM studies 
-      WHERE body_systems @> ARRAY['Nervous']::text[]
-         OR keywords @> ARRAY['brain', 'neurological', 'cognitive']::text[]
+      WHERE body_systems ILIKE '%Nervous%'
+         OR 'brain' = ANY(keywords) 
+         OR 'neurological' = ANY(keywords) 
+         OR 'cognitive' = ANY(keywords)
          OR title ILIKE '%brain%' 
          OR title ILIKE '%neuro%'
          OR abstract ILIKE '%neurological%'
@@ -102,11 +104,12 @@ router.get("/health-outcomes", async (req, res) => {
 
     // Get metabolic outcomes from real studies
     const metabolicQuery = `
-      SELECT COUNT(*) as studies,
-             array_agg(DISTINCT SUBSTRING(title, 1, 50)) as sample_titles
+      SELECT COUNT(*) as studies
       FROM studies 
-      WHERE body_systems @> ARRAY['Metabolic']::text[]
-         OR keywords @> ARRAY['diabetes', 'metabolism', 'glucose']::text[]
+      WHERE body_systems ILIKE '%Metabolic%'
+         OR 'diabetes' = ANY(keywords) 
+         OR 'metabolism' = ANY(keywords) 
+         OR 'glucose' = ANY(keywords)
          OR title ILIKE '%metabolic%' 
          OR title ILIKE '%diabetes%'
          OR abstract ILIKE '%metabolism%'
@@ -115,11 +118,12 @@ router.get("/health-outcomes", async (req, res) => {
 
     // Get immune system outcomes from real studies
     const immuneQuery = `
-      SELECT COUNT(*) as studies,
-             array_agg(DISTINCT SUBSTRING(title, 1, 50)) as sample_titles
+      SELECT COUNT(*) as studies
       FROM studies 
-      WHERE body_systems @> ARRAY['Immune']::text[]
-         OR keywords @> ARRAY['immune', 'inflammation', 'oxidative']::text[]
+      WHERE body_systems ILIKE '%Immune%'
+         OR 'immune' = ANY(keywords) 
+         OR 'inflammation' = ANY(keywords) 
+         OR 'oxidative' = ANY(keywords)
          OR title ILIKE '%immune%' 
          OR title ILIKE '%inflammation%'
          OR abstract ILIKE '%antioxidant%'
@@ -444,13 +448,13 @@ router.get("/", searchRateLimiter, async (req, res) => {
       
       if (yearFrom) {
         countParamCount++;
-        countQuery += ` AND EXTRACT(YEAR FROM publish_date::timestamp) >= $${countParamCount}`;
+        countQuery += ` AND EXTRACT(YEAR FROM publish_date::date) >= $${countParamCount}`;
         countParams.push(parseInt(yearFrom));
       }
       
       if (yearTo) {
         countParamCount++;
-        countQuery += ` AND EXTRACT(YEAR FROM publish_date::timestamp) <= $${countParamCount}`;
+        countQuery += ` AND EXTRACT(YEAR FROM publish_date::date) <= $${countParamCount}`;
         countParams.push(parseInt(yearTo));
       }
       
