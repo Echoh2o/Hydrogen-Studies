@@ -49,14 +49,10 @@ export default function LoginPage() {
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: (data: LoginFormData) => 
-      apiRequest('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      }),
+    mutationFn: async (data: LoginFormData) => {
+      const response = await apiRequest('POST', '/api/auth/login', data);
+      return await response.json();
+    },
     onSuccess: (response) => {
       // Clear any cached auth data
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });

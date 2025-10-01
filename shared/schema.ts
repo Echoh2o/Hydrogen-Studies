@@ -22,14 +22,16 @@ export const users = pgTable("users", {
   id: text("id").primaryKey().notNull(),
   username: varchar("username", { length: 255 }).unique(),
   email: text("email").unique(),
-  passwordHash: text("password_hash"),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  profileImageUrl: text("profile_image_url"),
+  password: text("password"), // Added password column to match database
+  passwordHash: text("passwordHash"),
+  // firstName and lastName columns don't exist in the database
+  // firstName: text("first_name"),
+  // lastName: text("last_name"),
+  profileImageUrl: text("profile_image"), // Changed from profile_image_url to match database
   role: text("role").default(UserRole.CUSTOMER),
   permissions: text("permissions").array().default([]),
-  isActive: boolean("is_active").default(true),
-  lastLogin: timestamp("last_login"),
+  isActive: boolean("isActive").default(true), // Changed from is_active to match database
+  lastLogin: timestamp("lastLogin"), // Changed from last_login to match database
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => {

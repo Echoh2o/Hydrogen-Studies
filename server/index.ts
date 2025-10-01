@@ -113,7 +113,9 @@ const csrf = csrfProtection({
     '/api/advanced-chat', // Advanced chat endpoint
     '/api/chat/popular-questions', // Popular questions endpoint
     '/api/chat/conversations', // Conversations endpoint
-    '/api/chat/feedback' // Feedback endpoint
+    '/api/chat/feedback', // Feedback endpoint
+    '/api/auth/register', // Registration doesn't require CSRF (no session yet)
+    '/api/auth/login' // Login doesn't require CSRF (no session yet)
   ]
 });
 
