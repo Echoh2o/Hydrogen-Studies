@@ -114,7 +114,7 @@ const CategoriesSection = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories?.map((category: Category) => (
-            <Link key={category.id} href={`/condition/${getCategorySlug(category.name)}`}>
+            <Link key={category.id} href={`/search?q=${category.name}`}>
               <a className="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden group">
                 <div className="p-5">
                   <div className="bg-primary/10 rounded-full w-12 h-12 flex items-center justify-center mb-4 text-primary group-hover:bg-primary group-hover:text-white transition">
@@ -123,7 +123,7 @@ const CategoriesSection = () => {
                   <h3 className="text-xl font-semibold mb-2">{category.name}</h3>
                   <p className="text-neutral-600 mb-3">{category.description}</p>
                   <div className="text-primary font-medium flex items-center group-hover:translate-x-1 transition-transform">
-                    View Studies <HiArrowRight className="ml-2" />
+                    Search Studies <HiArrowRight className="ml-2" />
                   </div>
                 </div>
               </a>
