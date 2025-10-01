@@ -65,13 +65,13 @@ export default function TaggedStudiesPage() {
   const [match, params] = useRoute("/studies/tags/:category?");
   
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>(params?.category || "");
+  const [selectedCategory, setSelectedCategory] = useState<string>(params?.category || "all");
   const [searchQuery, setSearchQuery] = useState("");
   const [matchType, setMatchType] = useState<"any" | "all">("any");
 
   // Fetch available tags
   const { data: tags, isLoading: tagsLoading } = useQuery<{ tags: Tag[] }>({
-    queryKey: ["/api/tags", { category: selectedCategory, limit: 100 }],
+    queryKey: ["/api/tags", { category: selectedCategory === 'all' ? undefined : selectedCategory, limit: 100 }],
     enabled: true,
   });
 
@@ -89,11 +89,11 @@ export default function TaggedStudiesPage() {
   const { data: searchResults, isLoading: searchLoading } = useQuery<SearchResults>({
     queryKey: ["/api/search/by-tags", { 
       tagIds: selectedTags.length > 0 ? selectedTags : undefined,
-      category: selectedCategory || undefined,
+      category: selectedCategory === 'all' ? undefined : selectedCategory,
       matchType,
       limit: 20 
     }],
-    enabled: selectedTags.length > 0 || selectedCategory !== "",
+    enabled: selectedTags.length > 0 || selectedCategory !== "all",
   });
 
   // Filter tags based on search query
@@ -211,7 +211,7 @@ export default function TaggedStudiesPage() {
                         <SelectValue placeholder="All categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All categories</SelectItem>
+                        <SelectItem value="all">All categories</SelectItem>
                         {categories?.categories.map((cat) => (
                           <SelectItem key={cat.slug} value={cat.slug}>
                             {cat.name}
