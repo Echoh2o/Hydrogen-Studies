@@ -3,13 +3,25 @@
  * Provides comprehensive search and filtering capabilities
  */
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,16 +47,16 @@ interface SearchFilters {
   hasFullText: boolean | null;
   hasDOI: boolean | null;
   sortBy: string;
-  sortOrder: 'asc' | 'desc';
+  sortOrder: "asc" | "desc";
 }
 
 export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
   onSearch,
   isOpen,
-  setIsOpen
+  setIsOpen,
 }) => {
   const [filters, setFilters] = useState<SearchFilters>({
-    query: '',
+    query: "",
     categories: [],
     authors: [],
     journals: [],
@@ -52,26 +64,26 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
     studyTypes: [],
     hasFullText: null,
     hasDOI: null,
-    sortBy: 'relevance',
-    sortOrder: 'desc'
+    sortBy: "relevance",
+    sortOrder: "desc",
   });
 
   // Fetch available filter options
   const { data: filterOptions } = useQuery({
-    queryKey: ['/api/search/filter-options'],
-    enabled: isOpen
+    queryKey: ["/api/search/filter-options"],
+    enabled: isOpen,
   });
 
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleArrayFilterToggle = (key: keyof SearchFilters, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [key]: prev[key].includes(value)
-        ? prev[key].filter(item => item !== value)
-        : [...prev[key], value]
+        ? prev[key].filter((item) => item !== value)
+        : [...prev[key], value],
     }));
   };
 
@@ -82,7 +94,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
 
   const clearFilters = () => {
     setFilters({
-      query: '',
+      query: "",
       categories: [],
       authors: [],
       journals: [],
@@ -90,18 +102,21 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
       studyTypes: [],
       hasFullText: null,
       hasDOI: null,
-      sortBy: 'relevance',
-      sortOrder: 'desc'
+      sortBy: "relevance",
+      sortOrder: "desc",
     });
   };
 
-  const activeFiltersCount = Object.entries(filters).reduce((count, [key, value]) => {
-    if (key === 'query' && value) return count + 1;
-    if (Array.isArray(value) && value.length > 0) return count + value.length;
-    if (key === 'yearRange' && (value.start || value.end)) return count + 1;
-    if (typeof value === 'boolean' && value !== null) return count + 1;
-    return count;
-  }, 0);
+  const activeFiltersCount = Object.entries(filters).reduce(
+    (count, [key, value]) => {
+      if (key === "query" && value) return count + 1;
+      if (Array.isArray(value) && value.length > 0) return count + value.length;
+      if (key === "yearRange" && (value.start || value.end)) return count + 1;
+      if (typeof value === "boolean" && value !== null) return count + 1;
+      return count;
+    },
+    0,
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -116,7 +131,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
           )}
         </Button>
       </DialogTrigger>
-      
+
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -138,7 +153,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
                   id="search-query"
                   placeholder="Enter search terms..."
                   value={filters.query}
-                  onChange={(e) => handleFilterChange('query', e.target.value)}
+                  onChange={(e) => handleFilterChange("query", e.target.value)}
                 />
               </div>
             </CardContent>
@@ -152,13 +167,21 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
             <CardContent>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {filterOptions?.categories?.map((category: any) => (
-                  <div key={category.id} className="flex items-center space-x-2">
+                  <div
+                    key={category.id}
+                    className="flex items-center space-x-2"
+                  >
                     <Checkbox
                       id={`category-${category.id}`}
                       checked={filters.categories.includes(category.name)}
-                      onCheckedChange={() => handleArrayFilterToggle('categories', category.name)}
+                      onCheckedChange={() =>
+                        handleArrayFilterToggle("categories", category.name)
+                      }
                     />
-                    <Label htmlFor={`category-${category.id}`} className="text-sm">
+                    <Label
+                      htmlFor={`category-${category.id}`}
+                      className="text-sm"
+                    >
                       {category.name} ({category.studyCount})
                     </Label>
                   </div>
@@ -182,11 +205,13 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
                     placeholder="2000"
                     min="1990"
                     max={new Date().getFullYear()}
-                    value={filters.yearRange.start || ''}
-                    onChange={(e) => handleFilterChange('yearRange', {
-                      ...filters.yearRange,
-                      start: e.target.value ? parseInt(e.target.value) : null
-                    })}
+                    value={filters.yearRange.start || ""}
+                    onChange={(e) =>
+                      handleFilterChange("yearRange", {
+                        ...filters.yearRange,
+                        start: e.target.value ? parseInt(e.target.value) : null,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -197,11 +222,13 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
                     placeholder="2024"
                     min="1990"
                     max={new Date().getFullYear()}
-                    value={filters.yearRange.end || ''}
-                    onChange={(e) => handleFilterChange('yearRange', {
-                      ...filters.yearRange,
-                      end: e.target.value ? parseInt(e.target.value) : null
-                    })}
+                    value={filters.yearRange.end || ""}
+                    onChange={(e) =>
+                      handleFilterChange("yearRange", {
+                        ...filters.yearRange,
+                        end: e.target.value ? parseInt(e.target.value) : null,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -215,12 +242,21 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {['Clinical Trial', 'Meta-Analysis', 'Systematic Review', 'Animal Study', 'In Vitro Study', 'Observational Study'].map((type) => (
+                {[
+                  "Clinical Trial",
+                  "Meta-Analysis",
+                  "Systematic Review",
+                  "Animal Study",
+                  "In Vitro Study",
+                  "Observational Study",
+                ].map((type) => (
                   <div key={type} className="flex items-center space-x-2">
                     <Checkbox
                       id={`type-${type}`}
                       checked={filters.studyTypes.includes(type)}
-                      onCheckedChange={() => handleArrayFilterToggle('studyTypes', type)}
+                      onCheckedChange={() =>
+                        handleArrayFilterToggle("studyTypes", type)
+                      }
                     />
                     <Label htmlFor={`type-${type}`} className="text-sm">
                       {type}
@@ -241,21 +277,21 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
                 <Checkbox
                   id="has-fulltext"
                   checked={filters.hasFullText === true}
-                  onCheckedChange={(checked) => 
-                    handleFilterChange('hasFullText', checked ? true : null)
+                  onCheckedChange={(checked) =>
+                    handleFilterChange("hasFullText", checked ? true : null)
                   }
                 />
                 <Label htmlFor="has-fulltext" className="text-sm">
                   Full text available
                 </Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="has-doi"
                   checked={filters.hasDOI === true}
-                  onCheckedChange={(checked) => 
-                    handleFilterChange('hasDOI', checked ? true : null)
+                  onCheckedChange={(checked) =>
+                    handleFilterChange("hasDOI", checked ? true : null)
                   }
                 />
                 <Label htmlFor="has-doi" className="text-sm">
@@ -275,7 +311,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
                 <Label htmlFor="sort-by">Sort by</Label>
                 <Select
                   value={filters.sortBy}
-                  onValueChange={(value) => handleFilterChange('sortBy', value)}
+                  onValueChange={(value) => handleFilterChange("sortBy", value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -289,12 +325,14 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="sort-order">Order</Label>
                 <Select
                   value={filters.sortOrder}
-                  onValueChange={(value: 'asc' | 'desc') => handleFilterChange('sortOrder', value)}
+                  onValueChange={(value: "asc" | "desc") =>
+                    handleFilterChange("sortOrder", value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -320,31 +358,39 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
                 <Badge variant="secondary">
                   Query: "{filters.query}"
                   <button
-                    onClick={() => handleFilterChange('query', '')}
+                    onClick={() => handleFilterChange("query", "")}
                     className="ml-1 hover:bg-gray-200 rounded-full p-1"
                   >
                     <HiX className="h-3 w-3" />
                   </button>
                 </Badge>
               )}
-              
+
               {filters.categories.map((category) => (
                 <Badge key={category} variant="secondary">
                   {category}
                   <button
-                    onClick={() => handleArrayFilterToggle('categories', category)}
+                    onClick={() =>
+                      handleArrayFilterToggle("categories", category)
+                    }
                     className="ml-1 hover:bg-gray-200 rounded-full p-1"
                   >
                     <HiX className="h-3 w-3" />
                   </button>
                 </Badge>
               ))}
-              
+
               {(filters.yearRange.start || filters.yearRange.end) && (
                 <Badge variant="secondary">
-                  Year: {filters.yearRange.start || '?'} - {filters.yearRange.end || '?'}
+                  Year: {filters.yearRange.start || "?"} -{" "}
+                  {filters.yearRange.end || "?"}
                   <button
-                    onClick={() => handleFilterChange('yearRange', { start: null, end: null })}
+                    onClick={() =>
+                      handleFilterChange("yearRange", {
+                        start: null,
+                        end: null,
+                      })
+                    }
                     className="ml-1 hover:bg-gray-200 rounded-full p-1"
                   >
                     <HiX className="h-3 w-3" />
@@ -360,14 +406,12 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
           <Button variant="outline" onClick={clearFilters}>
             Clear All Filters
           </Button>
-          
+
           <div className="space-x-2">
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSearch}>
-              Apply Filters & Search
-            </Button>
+            <Button onClick={handleSearch}>Apply Filters & Search</Button>
           </div>
         </div>
       </DialogContent>

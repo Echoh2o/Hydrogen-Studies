@@ -3,9 +3,9 @@
  * Handles AI-powered chat interactions for hydrogen health research
  */
 
-import express from 'express';
-import OpenAI from 'openai';
-import { storage } from '../storage';
+import express from "express";
+import OpenAI from "openai";
+import { storage } from "../storage";
 
 const router = express.Router();
 
@@ -14,21 +14,23 @@ let openai: OpenAI | null = null;
 
 try {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (apiKey && apiKey.trim() !== '') {
+  if (apiKey && apiKey.trim() !== "") {
     openai = new OpenAI({
       apiKey: apiKey.trim(),
     });
-    console.log('✅ OpenAI client initialized successfully');
+    console.log("✅ OpenAI client initialized successfully");
   } else {
-    console.warn('⚠️ OpenAI API key not configured - chat will use fallback responses');
+    console.warn(
+      "⚠️ OpenAI API key not configured - chat will use fallback responses",
+    );
   }
 } catch (error) {
-  console.error('❌ Failed to initialize OpenAI client:', error);
-  console.warn('⚠️ Chat will use fallback responses');
+  console.error("❌ Failed to initialize OpenAI client:", error);
+  console.warn("⚠️ Chat will use fallback responses");
 }
 
 interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   id?: number;
   timestamp?: Date;
@@ -43,20 +45,19 @@ interface ChatResponse {
 }
 
 // Main chat endpoint
-router.post('/chat', async (req, res) => {
+router.post("/chat", async (req, res) => {
   try {
     const { query, conversationId } = req.body;
 
-    if (!query || typeof query !== 'string') {
+    if (!query || typeof query !== "string") {
       return res.status(400).json({
         success: false,
-        error: 'Query is required and must be a string'
+        error: "Query is required and must be a string",
       });
     }
 
     // Log query processing
-    console.log('📝 Processing chat query:', query);
-
+    console.log("📝 Processing chat query:", query);
 
     // Search for relevant studies
     const relevantStudies = await searchRelevantStudies(query);
@@ -68,7 +69,7 @@ router.post('/chat', async (req, res) => {
       try {
         aiResponse = await generateAIResponse(query, relevantStudies);
       } catch (error) {
-        console.error('Error generating AI response, using fallback:', error);
+        console.error("Error generating AI response, using fallback:", error);
         aiResponse = generateFallbackResponse(query, relevantStudies);
       }
     } else {
@@ -76,13 +77,13 @@ router.post('/chat', async (req, res) => {
     }
 
     // Format sources from studies
-    const sources = relevantStudies.slice(0, 5).map(study => ({
-      title: study.title || 'Untitled Study',
-      doi: study.doi || '',
-      authors: study.authors || 'Unknown',
-      publishDate: study.publish_date || study.publication_date || '',
-      journal: study.journal || '',
-      id: study.id
+    const sources = relevantStudies.slice(0, 5).map((study) => ({
+      title: study.title || "Untitled Study",
+      doi: study.doi || "",
+      authors: study.authors || "Unknown",
+      publishDate: study.publish_date || study.publication_date || "",
+      journal: study.journal || "",
+      id: study.id,
     }));
 
     // Generate related questions
@@ -93,20 +94,19 @@ router.post('/chat', async (req, res) => {
       sources,
       relatedQuestions,
       conversationId: conversationId || Math.floor(Math.random() * 1000000),
-      productRecommendations: generateProductRecommendations(query)
+      productRecommendations: generateProductRecommendations(query),
     };
 
     res.json({
       success: true,
-      data: response
+      data: response,
     });
-
   } catch (error) {
-    console.error('Chat API error:', error);
+    console.error("Chat API error:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to process chat request',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: "Failed to process chat request",
+      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -117,7 +117,7 @@ async function searchRelevantStudies(query: string): Promise<any[]> {
     const studiesResult = await storage.getStudies();
     const studies = studiesResult.data || [];
     const searchTerms = query.toLowerCase().split(/\s+/);
-    
+
     const scoredStudies = studies.map((study: any) => {
       let score = 0;
       const searchableText = [
@@ -126,12 +126,15 @@ async function searchRelevantStudies(query: string): Promise<any[]> {
         study.keywords,
         study.methods,
         study.results,
-        study.conclusions
-      ].join(' ').toLowerCase();
+        study.conclusions,
+      ]
+        .join(" ")
+        .toLowerCase();
 
       // Score based on term matches
-      searchTerms.forEach(term => {
-        const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
+      searchTerms.forEach((term) => {
+        const matches = (searchableText.match(new RegExp(term, "g")) || [])
+          .length;
         score += matches;
       });
 
@@ -143,9 +146,8 @@ async function searchRelevantStudies(query: string): Promise<any[]> {
       .filter((study: any) => study.relevanceScore > 0)
       .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
       .slice(0, 10);
-      
   } catch (error) {
-    console.error('Error searching studies:', error);
+    console.error("Error searching studies:", error);
     return [];
   }
 }
@@ -158,34 +160,41 @@ function generateFallbackResponse(query: string, studies: any[]): string {
 
   const topStudies = studies.slice(0, 3);
   let response = `Based on our database of hydrogen research studies, here's what I found relevant to your query about "${query}":\n\n`;
-  
+
   response += `📚 **Relevant Research Studies:**\n\n`;
   topStudies.forEach((study, index) => {
-    response += `${index + 1}. **${study.title || 'Untitled Study'}**\n`;
+    response += `${index + 1}. **${study.title || "Untitled Study"}**\n`;
     if (study.authors) response += `   Authors: ${study.authors}\n`;
     if (study.abstract) {
       const shortAbstract = study.abstract.substring(0, 200);
       response += `   Summary: ${shortAbstract}...\n`;
     }
-    response += '\n';
+    response += "\n";
   });
-  
+
   response += `\n💡 **Note:** This is a summary based on our research database. For detailed AI-powered analysis, please ensure the AI service is configured.\n\n`;
   response += `📖 We found ${studies.length} relevant studies in our database. You can explore these studies in detail through our search interface.`;
-  
+
   return response;
 }
 
 // Generate AI response using OpenAI
-async function generateAIResponse(query: string, studies: any[]): Promise<string> {
+async function generateAIResponse(
+  query: string,
+  studies: any[],
+): Promise<string> {
   if (!openai) {
-    throw new Error('OpenAI client not available');
+    throw new Error("OpenAI client not available");
   }
 
   try {
-    const studyContext = studies.slice(0, 5).map(study => 
-      `Study: ${study.title}\nAuthors: ${study.authors}\nAbstract: ${study.abstract?.substring(0, 300)}...\n`
-    ).join('\n');
+    const studyContext = studies
+      .slice(0, 5)
+      .map(
+        (study) =>
+          `Study: ${study.title}\nAuthors: ${study.authors}\nAbstract: ${study.abstract?.substring(0, 300)}...\n`,
+      )
+      .join("\n");
 
     const systemPrompt = `You are a specialized AI assistant for hydrogen health research. 
     Provide accurate, evidence-based answers about hydrogen therapy, hydrogen water, and molecular hydrogen health benefits.
@@ -205,17 +214,19 @@ async function generateAIResponse(query: string, studies: any[]): Promise<string
       model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
+        { role: "user", content: userPrompt },
       ],
       max_tokens: 1000,
-      temperature: 0.7
+      temperature: 0.7,
     });
 
-    return completion.choices[0]?.message?.content || 'I apologize, but I could not generate a response at this time.';
-    
+    return (
+      completion.choices[0]?.message?.content ||
+      "I apologize, but I could not generate a response at this time."
+    );
   } catch (error) {
-    console.error('OpenAI API error:', error);
-    throw new Error('Failed to generate AI response');
+    console.error("OpenAI API error:", error);
+    throw new Error("Failed to generate AI response");
   }
 }
 
@@ -232,27 +243,31 @@ function generateRelatedQuestions(query: string): string[] {
     "How does hydrogen therapy compare to traditional treatments?",
     "What does the latest research say about hydrogen therapy?",
     "Can hydrogen therapy help with inflammation?",
-    "Is hydrogen water safe for daily consumption?"
+    "Is hydrogen water safe for daily consumption?",
   ];
 
   // Try to provide contextually relevant questions
   const relevantQuestions: string[] = [];
-  
-  if (queryLower.includes('benefit') || queryLower.includes('help')) {
+
+  if (queryLower.includes("benefit") || queryLower.includes("help")) {
     relevantQuestions.push("What conditions can hydrogen therapy help with?");
   }
-  if (queryLower.includes('safe') || queryLower.includes('side')) {
+  if (queryLower.includes("safe") || queryLower.includes("side")) {
     relevantQuestions.push("Are there any side effects of hydrogen treatment?");
   }
-  if (queryLower.includes('dose') || queryLower.includes('how much')) {
-    relevantQuestions.push("What is the recommended dosage for hydrogen water?");
+  if (queryLower.includes("dose") || queryLower.includes("how much")) {
+    relevantQuestions.push(
+      "What is the recommended dosage for hydrogen water?",
+    );
   }
-  if (queryLower.includes('inflamm')) {
+  if (queryLower.includes("inflamm")) {
     relevantQuestions.push("Can hydrogen therapy help with inflammation?");
   }
-  
+
   // Fill remaining slots with general questions
-  const remainingQuestions = allQuestions.filter(q => !relevantQuestions.includes(q));
+  const remainingQuestions = allQuestions.filter(
+    (q) => !relevantQuestions.includes(q),
+  );
   while (relevantQuestions.length < 3 && remainingQuestions.length > 0) {
     relevantQuestions.push(remainingQuestions.shift()!);
   }
@@ -265,76 +280,77 @@ function generateProductRecommendations(query: string): any[] {
   return [
     {
       name: "Echo H2 Flask",
-      description: "Portable hydrogen-infusing water bottle for on-the-go hydrogen therapy",
+      description:
+        "Portable hydrogen-infusing water bottle for on-the-go hydrogen therapy",
       url: "https://echowater.com/products/echo-h2-flask",
       imageUrl: "/images/echo-flask.jpg",
-      relevanceScore: 95
+      relevanceScore: 95,
     },
     {
       name: "Echo H2 Machine",
       description: "Premium hydrogen water generator for home use",
       url: "https://echowater.com/products/echo-h2-machine",
       imageUrl: "/images/echo-machine.jpg",
-      relevanceScore: 90
-    }
+      relevanceScore: 90,
+    },
   ];
 }
 
 // Get popular questions
-router.get('/chat/popular-questions', async (req, res) => {
+router.get("/chat/popular-questions", async (req, res) => {
   try {
     const questions = [
       "What are the benefits of hydrogen water?",
       "How does molecular hydrogen help with inflammation?",
       "Can hydrogen therapy help with diabetes?",
       "What does research say about hydrogen for athletes?",
-      "Is hydrogen water safe for daily consumption?"
+      "Is hydrogen water safe for daily consumption?",
     ];
 
     res.json({
       success: true,
-      data: questions
+      data: questions,
     });
   } catch (error) {
-    console.error('Error fetching popular questions:', error);
+    console.error("Error fetching popular questions:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch popular questions'
+      error: "Failed to fetch popular questions",
     });
   }
 });
 
 // Get conversations (placeholder for now)
-router.get('/chat/conversations', async (req, res) => {
+router.get("/chat/conversations", async (req, res) => {
   try {
     // Return empty array for now - can be implemented with database storage
     res.json({
       success: true,
-      data: []
+      data: [],
     });
   } catch (error) {
-    console.error('Error fetching conversations:', error);
+    console.error("Error fetching conversations:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch conversations'
+      error: "Failed to fetch conversations",
     });
   }
 });
 
 // Advanced chat endpoint with additional features
-router.post('/advanced-chat', async (req, res) => {
+router.post("/advanced-chat", async (req, res) => {
   try {
     const { query, conversationId, context } = req.body;
 
-    if (!query || typeof query !== 'string') {
+    if (!query || typeof query !== "string") {
       return res.status(400).json({
         success: false,
-        error: 'Query is required and must be a string'
+        error: "Query is required and must be a string",
       });
     }
 
     // Log query processing
-    console.log('📝 Processing advanced chat query:', query);
+    console.log("📝 Processing advanced chat query:", query);
 
     // Search for relevant studies with enhanced scoring
     const relevantStudies = await searchRelevantStudies(query);
@@ -345,9 +361,13 @@ router.post('/advanced-chat', async (req, res) => {
     if (openai) {
       try {
         // Enhanced AI response with context
-        const studyContext = relevantStudies.slice(0, 7).map(study => 
-          `Study: ${study.title}\nAuthors: ${study.authors}\nAbstract: ${study.abstract?.substring(0, 400)}...\n`
-        ).join('\n');
+        const studyContext = relevantStudies
+          .slice(0, 7)
+          .map(
+            (study) =>
+              `Study: ${study.title}\nAuthors: ${study.authors}\nAbstract: ${study.abstract?.substring(0, 400)}...\n`,
+          )
+          .join("\n");
 
         const systemPrompt = `You are an advanced AI assistant specializing in hydrogen health research. 
         Provide comprehensive, evidence-based answers about hydrogen therapy, hydrogen water, and molecular hydrogen health benefits.
@@ -357,7 +377,7 @@ router.post('/advanced-chat', async (req, res) => {
         Format your response with clear sections, bullet points, and emphasize key takeaways.`;
 
         const userPrompt = `Question: ${query}
-        ${context ? `Additional Context: ${context}` : ''}
+        ${context ? `Additional Context: ${context}` : ""}
         
         Relevant Studies:
         ${studyContext}
@@ -369,15 +389,20 @@ router.post('/advanced-chat', async (req, res) => {
           model: "gpt-4o",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "user", content: userPrompt },
           ],
           max_tokens: 1500,
-          temperature: 0.7
+          temperature: 0.7,
         });
 
-        aiResponse = completion.choices[0]?.message?.content || generateFallbackResponse(query, relevantStudies);
+        aiResponse =
+          completion.choices[0]?.message?.content ||
+          generateFallbackResponse(query, relevantStudies);
       } catch (error) {
-        console.error('Error generating advanced AI response, using fallback:', error);
+        console.error(
+          "Error generating advanced AI response, using fallback:",
+          error,
+        );
         aiResponse = generateFallbackResponse(query, relevantStudies);
       }
     } else {
@@ -385,14 +410,14 @@ router.post('/advanced-chat', async (req, res) => {
     }
 
     // Format sources from studies with more detail
-    const sources = relevantStudies.slice(0, 7).map(study => ({
-      title: study.title || 'Untitled Study',
-      doi: study.doi || '',
-      authors: study.authors || 'Unknown',
-      publishDate: study.publish_date || study.publication_date || '',
-      journal: study.journal || '',
-      abstract: study.abstract?.substring(0, 200) + '...' || '',
-      id: study.id
+    const sources = relevantStudies.slice(0, 7).map((study) => ({
+      title: study.title || "Untitled Study",
+      doi: study.doi || "",
+      authors: study.authors || "Unknown",
+      publishDate: study.publish_date || study.publication_date || "",
+      journal: study.journal || "",
+      abstract: study.abstract?.substring(0, 200) + "..." || "",
+      id: study.id,
     }));
 
     // Generate contextually relevant questions
@@ -406,41 +431,40 @@ router.post('/advanced-chat', async (req, res) => {
       sources,
       relatedQuestions,
       conversationId: conversationId || Math.floor(Math.random() * 1000000),
-      productRecommendations
+      productRecommendations,
     };
 
     res.json({
       success: true,
-      data: response
+      data: response,
     });
-
   } catch (error) {
-    console.error('Advanced chat API error:', error);
+    console.error("Advanced chat API error:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to process advanced chat request',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: "Failed to process advanced chat request",
+      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Submit feedback
-router.post('/chat/feedback', async (req, res) => {
+router.post("/chat/feedback", async (req, res) => {
   try {
     const { messageId, rating, comment } = req.body;
-    
+
     // Log feedback for now - can be stored in database later
-    console.log('Chat feedback received:', { messageId, rating, comment });
-    
+    console.log("Chat feedback received:", { messageId, rating, comment });
+
     res.json({
       success: true,
-      message: 'Feedback submitted successfully'
+      message: "Feedback submitted successfully",
     });
   } catch (error) {
-    console.error('Error submitting feedback:', error);
+    console.error("Error submitting feedback:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to submit feedback'
+      error: "Failed to submit feedback",
     });
   }
 });

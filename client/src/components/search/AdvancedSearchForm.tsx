@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
 } from "@/components/ui/form";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,20 +50,24 @@ const searchFormSchema = z.object({
   hasFullText: z.boolean().optional(),
   outcome: z.string().optional(),
   studyType: z.string().optional(),
-  advancedOptions: z.object({
-    searchInMethods: z.boolean().default(true),
-    searchInResults: z.boolean().default(true),
-    searchInConclusion: z.boolean().default(true),
-    searchInSimplified: z.boolean().default(true),
-    useFuzzyMatch: z.boolean().default(false),
-    excludeTerms: z.string().optional(),
-  }).optional(),
+  advancedOptions: z
+    .object({
+      searchInMethods: z.boolean().default(true),
+      searchInResults: z.boolean().default(true),
+      searchInConclusion: z.boolean().default(true),
+      searchInSimplified: z.boolean().default(true),
+      useFuzzyMatch: z.boolean().default(false),
+      excludeTerms: z.string().optional(),
+    })
+    .optional(),
 });
 
 type SearchFormValues = z.infer<typeof searchFormSchema>;
 
 const currentYear = new Date().getFullYear();
-const yearOptions = Array.from({ length: 30 }, (_, i) => (currentYear - i).toString());
+const yearOptions = Array.from({ length: 30 }, (_, i) =>
+  (currentYear - i).toString(),
+);
 
 export function AdvancedSearchForm({ onSearch }) {
   const [activeTab, setActiveTab] = useState<string>("basic");
@@ -72,27 +76,29 @@ export function AdvancedSearchForm({ onSearch }) {
 
   // Fetch filter options from API
   const { data: benefits, isLoading: isLoadingBenefits } = useQuery({
-    queryKey: ['/api/benefits'],
+    queryKey: ["/api/benefits"],
   });
 
   const { data: demographics, isLoading: isLoadingDemographics } = useQuery({
-    queryKey: ['/api/demographics'],
+    queryKey: ["/api/demographics"],
   });
 
   const { data: mechanisms, isLoading: isLoadingMechanisms } = useQuery({
-    queryKey: ['/api/mechanisms'],
+    queryKey: ["/api/mechanisms"],
   });
 
-  const { data: deliveryMethods, isLoading: isLoadingDeliveryMethods } = useQuery({
-    queryKey: ['/api/delivery-methods'],
-  });
+  const { data: deliveryMethods, isLoading: isLoadingDeliveryMethods } =
+    useQuery({
+      queryKey: ["/api/delivery-methods"],
+    });
 
-  const { data: healthConditions, isLoading: isLoadingHealthConditions } = useQuery({
-    queryKey: ['/api/health-conditions'],
-  });
+  const { data: healthConditions, isLoading: isLoadingHealthConditions } =
+    useQuery({
+      queryKey: ["/api/health-conditions"],
+    });
 
   const { data: bodySystems, isLoading: isLoadingBodySystems } = useQuery({
-    queryKey: ['/api/body-systems'],
+    queryKey: ["/api/body-systems"],
   });
 
   // Set up the form
@@ -127,65 +133,71 @@ export function AdvancedSearchForm({ onSearch }) {
   const onSubmit = (values: SearchFormValues) => {
     // Build query string
     const queryParams = new URLSearchParams();
-    
+
     // Add main query if present
     if (values.query) queryParams.append("query", values.query);
-    
+
     // Add array fields
-    if (values.benefit && values.benefit.length > 0) 
+    if (values.benefit && values.benefit.length > 0)
       queryParams.append("benefit", values.benefit.join(","));
-    
-    if (values.demographic && values.demographic.length > 0) 
+
+    if (values.demographic && values.demographic.length > 0)
       queryParams.append("demographic", values.demographic.join(","));
-    
-    if (values.mechanism && values.mechanism.length > 0) 
+
+    if (values.mechanism && values.mechanism.length > 0)
       queryParams.append("mechanism", values.mechanism.join(","));
-    
-    if (values.deliveryMethod && values.deliveryMethod.length > 0) 
+
+    if (values.deliveryMethod && values.deliveryMethod.length > 0)
       queryParams.append("deliveryMethod", values.deliveryMethod.join(","));
-    
-    if (values.healthCondition && values.healthCondition.length > 0) 
+
+    if (values.healthCondition && values.healthCondition.length > 0)
       queryParams.append("healthCondition", values.healthCondition.join(","));
-    
-    if (values.bodySystem && values.bodySystem.length > 0) 
+
+    if (values.bodySystem && values.bodySystem.length > 0)
       queryParams.append("bodySystem", values.bodySystem.join(","));
-    
+
     // Add scalar fields
-    if (values.yearFrom && values.yearFrom !== "none") queryParams.append("yearFrom", values.yearFrom);
-    if (values.yearTo && values.yearTo !== "none") queryParams.append("yearTo", values.yearTo);
+    if (values.yearFrom && values.yearFrom !== "none")
+      queryParams.append("yearFrom", values.yearFrom);
+    if (values.yearTo && values.yearTo !== "none")
+      queryParams.append("yearTo", values.yearTo);
     if (values.peerReviewed) queryParams.append("peerReviewed", "true");
     if (values.hasFullText) queryParams.append("hasFullText", "true");
-    if (values.outcome && values.outcome !== "all") queryParams.append("outcome", values.outcome);
-    if (values.studyType && values.studyType !== "all") queryParams.append("studyType", values.studyType);
-    
+    if (values.outcome && values.outcome !== "all")
+      queryParams.append("outcome", values.outcome);
+    if (values.studyType && values.studyType !== "all")
+      queryParams.append("studyType", values.studyType);
+
     // Add advanced options
     if (values.advancedOptions) {
-      if (values.advancedOptions.searchInMethods) 
+      if (values.advancedOptions.searchInMethods)
         queryParams.append("searchInMethods", "true");
-      
-      if (values.advancedOptions.searchInResults) 
+
+      if (values.advancedOptions.searchInResults)
         queryParams.append("searchInResults", "true");
-      
-      if (values.advancedOptions.searchInConclusion) 
+
+      if (values.advancedOptions.searchInConclusion)
         queryParams.append("searchInConclusion", "true");
-      
-      if (values.advancedOptions.searchInSimplified) 
+
+      if (values.advancedOptions.searchInSimplified)
         queryParams.append("searchInSimplified", "true");
-      
-      if (values.advancedOptions.useFuzzyMatch) 
+
+      if (values.advancedOptions.useFuzzyMatch)
         queryParams.append("useFuzzyMatch", "true");
-      
-      if (values.advancedOptions.excludeTerms) 
+
+      if (values.advancedOptions.excludeTerms)
         queryParams.append("excludeTerms", values.advancedOptions.excludeTerms);
     }
-    
+
     // Update URL without navigating
     window.history.pushState(
-      null, 
-      '', 
-      queryParams.toString() ? `?${queryParams.toString()}` : window.location.pathname
+      null,
+      "",
+      queryParams.toString()
+        ? `?${queryParams.toString()}`
+        : window.location.pathname,
     );
-    
+
     // Call parent search function
     onSearch(values);
   };
@@ -195,12 +207,12 @@ export function AdvancedSearchForm({ onSearch }) {
     if (value) {
       // Clear specific value from array field
       const currentValues = form.getValues(field as any) as string[];
-      const newValues = currentValues.filter(v => v !== value);
+      const newValues = currentValues.filter((v) => v !== value);
       form.setValue(field as any, newValues);
     } else {
       // Clear entire field
-      if (field === 'advancedOptions') {
-        form.setValue('advancedOptions', {
+      if (field === "advancedOptions") {
+        form.setValue("advancedOptions", {
           searchInMethods: true,
           searchInResults: true,
           searchInConclusion: true,
@@ -211,9 +223,9 @@ export function AdvancedSearchForm({ onSearch }) {
       } else {
         // Set appropriate default values for different field types
         let defaultValue: any;
-        if (field === 'yearFrom' || field === 'yearTo') {
+        if (field === "yearFrom" || field === "yearTo") {
           defaultValue = "none";
-        } else if (field === 'studyType' || field === 'outcome') {
+        } else if (field === "studyType" || field === "outcome") {
           defaultValue = "all";
         } else if (Array.isArray(form.getValues(field as any))) {
           defaultValue = [];
@@ -223,7 +235,7 @@ export function AdvancedSearchForm({ onSearch }) {
         form.setValue(field as any, defaultValue);
       }
     }
-    
+
     // Submit form to apply changes
     form.handleSubmit(onSubmit)();
   };
@@ -253,7 +265,7 @@ export function AdvancedSearchForm({ onSearch }) {
         excludeTerms: "",
       },
     });
-    
+
     // Submit form to apply changes
     form.handleSubmit(onSubmit)();
   };
@@ -261,7 +273,7 @@ export function AdvancedSearchForm({ onSearch }) {
   // Active filter count
   const getActiveFilterCount = () => {
     let count = 0;
-    
+
     const values = form.getValues();
     if (values.query) count++;
     if (values.benefit && values.benefit.length > 0) count++;
@@ -276,7 +288,7 @@ export function AdvancedSearchForm({ onSearch }) {
     if (values.hasFullText) count++;
     if (values.outcome) count++;
     if (values.studyType) count++;
-    
+
     // Count advanced options
     if (values.advancedOptions) {
       if (!values.advancedOptions.searchInMethods) count++;
@@ -286,7 +298,7 @@ export function AdvancedSearchForm({ onSearch }) {
       if (values.advancedOptions.useFuzzyMatch) count++;
       if (values.advancedOptions.excludeTerms) count++;
     }
-    
+
     return count;
   };
 
@@ -311,8 +323,8 @@ export function AdvancedSearchForm({ onSearch }) {
                         />
                       </FormControl>
                       <Search className="absolute left-3 top-3 h-5 w-5 text-neutral-400" />
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="absolute right-1 top-1 rounded-lg"
                       >
                         Search
@@ -350,7 +362,10 @@ export function AdvancedSearchForm({ onSearch }) {
               {getActiveFilterCount() > 0 && (
                 <div className="flex flex-wrap gap-2 mt-4">
                   {form.getValues().query && (
-                    <Badge variant="outline" className="flex items-center gap-1">
+                    <Badge
+                      variant="outline"
+                      className="flex items-center gap-1"
+                    >
                       <span>Query: {form.getValues().query}</span>
                       <X
                         className="h-3 w-3 cursor-pointer"
@@ -358,9 +373,13 @@ export function AdvancedSearchForm({ onSearch }) {
                       />
                     </Badge>
                   )}
-                  
-                  {form.getValues().benefit?.map(benefit => (
-                    <Badge key={benefit} variant="outline" className="flex items-center gap-1">
+
+                  {form.getValues().benefit?.map((benefit) => (
+                    <Badge
+                      key={benefit}
+                      variant="outline"
+                      className="flex items-center gap-1"
+                    >
                       <span>Benefit: {benefit}</span>
                       <X
                         className="h-3 w-3 cursor-pointer"
@@ -368,10 +387,10 @@ export function AdvancedSearchForm({ onSearch }) {
                       />
                     </Badge>
                   ))}
-                  
+
                   {/* Add more active filters for other fields */}
                   {/* Similar badges for demographic, mechanism, etc. */}
-                  
+
                   <Button
                     type="button"
                     variant="ghost"
@@ -383,17 +402,27 @@ export function AdvancedSearchForm({ onSearch }) {
                   </Button>
                 </div>
               )}
-              
+
               {/* Expanded filters */}
               {isExpanded && (
                 <div className="mt-4 space-y-6">
-                  <Tabs defaultValue="basic" onValueChange={setActiveTab} value={activeTab}>
+                  <Tabs
+                    defaultValue="basic"
+                    onValueChange={setActiveTab}
+                    value={activeTab}
+                  >
                     <TabsList className="w-full">
-                      <TabsTrigger value="basic" className="flex-1">Basic Filters</TabsTrigger>
-                      <TabsTrigger value="hierarchical" className="flex-1">By Research Category</TabsTrigger>
-                      <TabsTrigger value="advanced" className="flex-1">Advanced Options</TabsTrigger>
+                      <TabsTrigger value="basic" className="flex-1">
+                        Basic Filters
+                      </TabsTrigger>
+                      <TabsTrigger value="hierarchical" className="flex-1">
+                        By Research Category
+                      </TabsTrigger>
+                      <TabsTrigger value="advanced" className="flex-1">
+                        Advanced Options
+                      </TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="basic" className="space-y-4 mt-4">
                       {/* Year range */}
                       <div className="grid grid-cols-2 gap-4">
@@ -414,15 +443,17 @@ export function AdvancedSearchForm({ onSearch }) {
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem value="none">Any Year</SelectItem>
-                                  {yearOptions.map(year => (
-                                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                                  {yearOptions.map((year) => (
+                                    <SelectItem key={year} value={year}>
+                                      {year}
+                                    </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="yearTo"
@@ -439,9 +470,13 @@ export function AdvancedSearchForm({ onSearch }) {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="none">Current Year</SelectItem>
-                                  {yearOptions.map(year => (
-                                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                                  <SelectItem value="none">
+                                    Current Year
+                                  </SelectItem>
+                                  {yearOptions.map((year) => (
+                                    <SelectItem key={year} value={year}>
+                                      {year}
+                                    </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
@@ -449,7 +484,7 @@ export function AdvancedSearchForm({ onSearch }) {
                           )}
                         />
                       </div>
-                      
+
                       {/* Study type */}
                       <FormField
                         control={form.control}
@@ -467,19 +502,33 @@ export function AdvancedSearchForm({ onSearch }) {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="all">All Study Types</SelectItem>
-                                <SelectItem value="human">Human Studies</SelectItem>
-                                <SelectItem value="animal">Animal Studies</SelectItem>
-                                <SelectItem value="in_vitro">In Vitro Studies</SelectItem>
-                                <SelectItem value="clinical_trial">Clinical Trials</SelectItem>
-                                <SelectItem value="meta_analysis">Meta-Analysis</SelectItem>
-                                <SelectItem value="review">Review Articles</SelectItem>
+                                <SelectItem value="all">
+                                  All Study Types
+                                </SelectItem>
+                                <SelectItem value="human">
+                                  Human Studies
+                                </SelectItem>
+                                <SelectItem value="animal">
+                                  Animal Studies
+                                </SelectItem>
+                                <SelectItem value="in_vitro">
+                                  In Vitro Studies
+                                </SelectItem>
+                                <SelectItem value="clinical_trial">
+                                  Clinical Trials
+                                </SelectItem>
+                                <SelectItem value="meta_analysis">
+                                  Meta-Analysis
+                                </SelectItem>
+                                <SelectItem value="review">
+                                  Review Articles
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Outcome */}
                       <FormField
                         control={form.control}
@@ -497,17 +546,27 @@ export function AdvancedSearchForm({ onSearch }) {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="all">All Outcomes</SelectItem>
-                                <SelectItem value="positive">Positive Results</SelectItem>
-                                <SelectItem value="neutral">Neutral Results</SelectItem>
-                                <SelectItem value="negative">Negative Results</SelectItem>
-                                <SelectItem value="mixed">Mixed Results</SelectItem>
+                                <SelectItem value="all">
+                                  All Outcomes
+                                </SelectItem>
+                                <SelectItem value="positive">
+                                  Positive Results
+                                </SelectItem>
+                                <SelectItem value="neutral">
+                                  Neutral Results
+                                </SelectItem>
+                                <SelectItem value="negative">
+                                  Negative Results
+                                </SelectItem>
+                                <SelectItem value="mixed">
+                                  Mixed Results
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Checkboxes */}
                       <div className="space-y-4">
                         <FormField
@@ -527,7 +586,7 @@ export function AdvancedSearchForm({ onSearch }) {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="hasFullText"
@@ -547,8 +606,11 @@ export function AdvancedSearchForm({ onSearch }) {
                         />
                       </div>
                     </TabsContent>
-                    
-                    <TabsContent value="hierarchical" className="space-y-6 mt-4">
+
+                    <TabsContent
+                      value="hierarchical"
+                      className="space-y-6 mt-4"
+                    >
                       {/* Benefits */}
                       <FormField
                         control={form.control}
@@ -572,34 +634,50 @@ export function AdvancedSearchForm({ onSearch }) {
                                     </Button>
                                   </FormControl>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full p-0" align="start">
+                                <PopoverContent
+                                  className="w-full p-0"
+                                  align="start"
+                                >
                                   <div className="max-h-72 overflow-auto p-2 space-y-2">
                                     {isLoadingBenefits ? (
                                       <div className="flex items-center justify-center p-4">
                                         <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
                                       </div>
-                                    ) : benefits?.map(benefit => (
-                                      <div key={benefit.id} className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`benefit-${benefit.id}`}
-                                          checked={field.value?.includes(benefit.id.toString())}
-                                          onCheckedChange={checked => {
-                                            const newValue = checked
-                                              ? [...(field.value || []), benefit.id.toString()]
-                                              : (field.value || []).filter(
-                                                  value => value !== benefit.id.toString()
-                                                );
-                                            field.onChange(newValue);
-                                          }}
-                                        />
-                                        <label
-                                          htmlFor={`benefit-${benefit.id}`}
-                                          className="text-sm font-medium cursor-pointer"
+                                    ) : (
+                                      benefits?.map((benefit) => (
+                                        <div
+                                          key={benefit.id}
+                                          className="flex items-center space-x-2"
                                         >
-                                          {benefit.name} ({benefit.studyCount})
-                                        </label>
-                                      </div>
-                                    ))}
+                                          <Checkbox
+                                            id={`benefit-${benefit.id}`}
+                                            checked={field.value?.includes(
+                                              benefit.id.toString(),
+                                            )}
+                                            onCheckedChange={(checked) => {
+                                              const newValue = checked
+                                                ? [
+                                                    ...(field.value || []),
+                                                    benefit.id.toString(),
+                                                  ]
+                                                : (field.value || []).filter(
+                                                    (value) =>
+                                                      value !==
+                                                      benefit.id.toString(),
+                                                  );
+                                              field.onChange(newValue);
+                                            }}
+                                          />
+                                          <label
+                                            htmlFor={`benefit-${benefit.id}`}
+                                            className="text-sm font-medium cursor-pointer"
+                                          >
+                                            {benefit.name} ({benefit.studyCount}
+                                            )
+                                          </label>
+                                        </div>
+                                      ))
+                                    )}
                                   </div>
                                 </PopoverContent>
                               </Popover>
@@ -608,7 +686,7 @@ export function AdvancedSearchForm({ onSearch }) {
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Demographics */}
                       <FormField
                         control={form.control}
@@ -632,34 +710,50 @@ export function AdvancedSearchForm({ onSearch }) {
                                     </Button>
                                   </FormControl>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full p-0" align="start">
+                                <PopoverContent
+                                  className="w-full p-0"
+                                  align="start"
+                                >
                                   <div className="max-h-72 overflow-auto p-2 space-y-2">
                                     {isLoadingDemographics ? (
                                       <div className="flex items-center justify-center p-4">
                                         <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
                                       </div>
-                                    ) : demographics?.map(demographic => (
-                                      <div key={demographic.id} className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`demographic-${demographic.id}`}
-                                          checked={field.value?.includes(demographic.id.toString())}
-                                          onCheckedChange={checked => {
-                                            const newValue = checked
-                                              ? [...(field.value || []), demographic.id.toString()]
-                                              : (field.value || []).filter(
-                                                  value => value !== demographic.id.toString()
-                                                );
-                                            field.onChange(newValue);
-                                          }}
-                                        />
-                                        <label
-                                          htmlFor={`demographic-${demographic.id}`}
-                                          className="text-sm font-medium cursor-pointer"
+                                    ) : (
+                                      demographics?.map((demographic) => (
+                                        <div
+                                          key={demographic.id}
+                                          className="flex items-center space-x-2"
                                         >
-                                          {demographic.name} ({demographic.studyCount})
-                                        </label>
-                                      </div>
-                                    ))}
+                                          <Checkbox
+                                            id={`demographic-${demographic.id}`}
+                                            checked={field.value?.includes(
+                                              demographic.id.toString(),
+                                            )}
+                                            onCheckedChange={(checked) => {
+                                              const newValue = checked
+                                                ? [
+                                                    ...(field.value || []),
+                                                    demographic.id.toString(),
+                                                  ]
+                                                : (field.value || []).filter(
+                                                    (value) =>
+                                                      value !==
+                                                      demographic.id.toString(),
+                                                  );
+                                              field.onChange(newValue);
+                                            }}
+                                          />
+                                          <label
+                                            htmlFor={`demographic-${demographic.id}`}
+                                            className="text-sm font-medium cursor-pointer"
+                                          >
+                                            {demographic.name} (
+                                            {demographic.studyCount})
+                                          </label>
+                                        </div>
+                                      ))
+                                    )}
                                   </div>
                                 </PopoverContent>
                               </Popover>
@@ -668,7 +762,7 @@ export function AdvancedSearchForm({ onSearch }) {
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Mechanisms */}
                       <FormField
                         control={form.control}
@@ -692,34 +786,50 @@ export function AdvancedSearchForm({ onSearch }) {
                                     </Button>
                                   </FormControl>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full p-0" align="start">
+                                <PopoverContent
+                                  className="w-full p-0"
+                                  align="start"
+                                >
                                   <div className="max-h-72 overflow-auto p-2 space-y-2">
                                     {isLoadingMechanisms ? (
                                       <div className="flex items-center justify-center p-4">
                                         <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
                                       </div>
-                                    ) : mechanisms?.map(mechanism => (
-                                      <div key={mechanism.id} className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`mechanism-${mechanism.id}`}
-                                          checked={field.value?.includes(mechanism.id.toString())}
-                                          onCheckedChange={checked => {
-                                            const newValue = checked
-                                              ? [...(field.value || []), mechanism.id.toString()]
-                                              : (field.value || []).filter(
-                                                  value => value !== mechanism.id.toString()
-                                                );
-                                            field.onChange(newValue);
-                                          }}
-                                        />
-                                        <label
-                                          htmlFor={`mechanism-${mechanism.id}`}
-                                          className="text-sm font-medium cursor-pointer"
+                                    ) : (
+                                      mechanisms?.map((mechanism) => (
+                                        <div
+                                          key={mechanism.id}
+                                          className="flex items-center space-x-2"
                                         >
-                                          {mechanism.name} ({mechanism.studyCount})
-                                        </label>
-                                      </div>
-                                    ))}
+                                          <Checkbox
+                                            id={`mechanism-${mechanism.id}`}
+                                            checked={field.value?.includes(
+                                              mechanism.id.toString(),
+                                            )}
+                                            onCheckedChange={(checked) => {
+                                              const newValue = checked
+                                                ? [
+                                                    ...(field.value || []),
+                                                    mechanism.id.toString(),
+                                                  ]
+                                                : (field.value || []).filter(
+                                                    (value) =>
+                                                      value !==
+                                                      mechanism.id.toString(),
+                                                  );
+                                              field.onChange(newValue);
+                                            }}
+                                          />
+                                          <label
+                                            htmlFor={`mechanism-${mechanism.id}`}
+                                            className="text-sm font-medium cursor-pointer"
+                                          >
+                                            {mechanism.name} (
+                                            {mechanism.studyCount})
+                                          </label>
+                                        </div>
+                                      ))
+                                    )}
                                   </div>
                                 </PopoverContent>
                               </Popover>
@@ -728,7 +838,7 @@ export function AdvancedSearchForm({ onSearch }) {
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Delivery Methods */}
                       <FormField
                         control={form.control}
@@ -752,34 +862,49 @@ export function AdvancedSearchForm({ onSearch }) {
                                     </Button>
                                   </FormControl>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full p-0" align="start">
+                                <PopoverContent
+                                  className="w-full p-0"
+                                  align="start"
+                                >
                                   <div className="max-h-72 overflow-auto p-2 space-y-2">
                                     {isLoadingDeliveryMethods ? (
                                       <div className="flex items-center justify-center p-4">
                                         <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
                                       </div>
-                                    ) : deliveryMethods?.map(method => (
-                                      <div key={method.id} className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`method-${method.id}`}
-                                          checked={field.value?.includes(method.id.toString())}
-                                          onCheckedChange={checked => {
-                                            const newValue = checked
-                                              ? [...(field.value || []), method.id.toString()]
-                                              : (field.value || []).filter(
-                                                  value => value !== method.id.toString()
-                                                );
-                                            field.onChange(newValue);
-                                          }}
-                                        />
-                                        <label
-                                          htmlFor={`method-${method.id}`}
-                                          className="text-sm font-medium cursor-pointer"
+                                    ) : (
+                                      deliveryMethods?.map((method) => (
+                                        <div
+                                          key={method.id}
+                                          className="flex items-center space-x-2"
                                         >
-                                          {method.name} ({method.studyCount})
-                                        </label>
-                                      </div>
-                                    ))}
+                                          <Checkbox
+                                            id={`method-${method.id}`}
+                                            checked={field.value?.includes(
+                                              method.id.toString(),
+                                            )}
+                                            onCheckedChange={(checked) => {
+                                              const newValue = checked
+                                                ? [
+                                                    ...(field.value || []),
+                                                    method.id.toString(),
+                                                  ]
+                                                : (field.value || []).filter(
+                                                    (value) =>
+                                                      value !==
+                                                      method.id.toString(),
+                                                  );
+                                              field.onChange(newValue);
+                                            }}
+                                          />
+                                          <label
+                                            htmlFor={`method-${method.id}`}
+                                            className="text-sm font-medium cursor-pointer"
+                                          >
+                                            {method.name} ({method.studyCount})
+                                          </label>
+                                        </div>
+                                      ))
+                                    )}
                                   </div>
                                 </PopoverContent>
                               </Popover>
@@ -789,7 +914,7 @@ export function AdvancedSearchForm({ onSearch }) {
                         )}
                       />
                     </TabsContent>
-                    
+
                     <TabsContent value="advanced" className="space-y-6 mt-4">
                       {/* Search locations */}
                       <div className="space-y-4">
@@ -807,14 +932,12 @@ export function AdvancedSearchForm({ onSearch }) {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>
-                                    Methods Section
-                                  </FormLabel>
+                                  <FormLabel>Methods Section</FormLabel>
                                 </div>
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="advancedOptions.searchInResults"
@@ -827,14 +950,12 @@ export function AdvancedSearchForm({ onSearch }) {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>
-                                    Results Section
-                                  </FormLabel>
+                                  <FormLabel>Results Section</FormLabel>
                                 </div>
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="advancedOptions.searchInConclusion"
@@ -847,14 +968,12 @@ export function AdvancedSearchForm({ onSearch }) {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>
-                                    Conclusion Section
-                                  </FormLabel>
+                                  <FormLabel>Conclusion Section</FormLabel>
                                 </div>
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="advancedOptions.searchInSimplified"
@@ -867,16 +986,14 @@ export function AdvancedSearchForm({ onSearch }) {
                                   />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                  <FormLabel>
-                                    Simplified Explanations
-                                  </FormLabel>
+                                  <FormLabel>Simplified Explanations</FormLabel>
                                 </div>
                               </FormItem>
                             )}
                           />
                         </div>
                       </div>
-                      
+
                       {/* Fuzzy matching */}
                       <FormField
                         control={form.control}
@@ -890,9 +1007,7 @@ export function AdvancedSearchForm({ onSearch }) {
                               />
                             </FormControl>
                             <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Use Fuzzy Matching
-                              </FormLabel>
+                              <FormLabel>Use Fuzzy Matching</FormLabel>
                               <p className="text-sm text-neutral-500">
                                 Finds closely related terms and handles typos
                               </p>
@@ -900,7 +1015,7 @@ export function AdvancedSearchForm({ onSearch }) {
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Exclude terms */}
                       <FormField
                         control={form.control}

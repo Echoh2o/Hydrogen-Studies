@@ -1,6 +1,6 @@
 /**
  * Consumer-Friendly Content Generator
- * 
+ *
  * Creates plain language explanations of study methods, results, and conclusions
  * that are accessible to general consumers at a 6th grade reading level
  */
@@ -41,7 +41,7 @@ let currentStats: ConsumerContentStats = {
   methodsGenerated: 0,
   resultsGenerated: 0,
   conclusionsGenerated: 0,
-  results: []
+  results: [],
 };
 
 /**
@@ -121,7 +121,7 @@ Guidelines:
 
 Study Title: ${study.title}
 Study Category: ${study.category}
-Health Conditions: ${study.health_conditions || 'General health'}
+Health Conditions: ${study.health_conditions || "General health"}
 Abstract: ${study.abstract?.substring(0, 400)}
 
 Example output: "This study suggests hydrogen water may help reduce inflammation, but more research is needed to confirm these benefits for long-term health."
@@ -141,33 +141,38 @@ Write a clear conclusion:`;
 /**
  * Process a single study to generate consumer-friendly content
  */
-async function processStudyConsumerContent(study: any): Promise<ConsumerContentResult> {
+async function processStudyConsumerContent(
+  study: any,
+): Promise<ConsumerContentResult> {
   const fieldsGenerated: string[] = [];
-  
+
   try {
     // Check which fields need generation
-    const needsMethods = !study.methods_short || study.methods_short.trim() === '';
-    const needsResults = !study.results_short || study.results_short.trim() === '';
-    const needsConclusion = !study.conclusion_short || study.conclusion_short.trim() === '';
+    const needsMethods =
+      !study.methods_short || study.methods_short.trim() === "";
+    const needsResults =
+      !study.results_short || study.results_short.trim() === "";
+    const needsConclusion =
+      !study.conclusion_short || study.conclusion_short.trim() === "";
 
     const updates: any = {};
 
     // Generate missing content
     if (needsMethods) {
       updates.methods_short = await generateConsumerMethods(study);
-      fieldsGenerated.push('methods');
+      fieldsGenerated.push("methods");
       currentStats.methodsGenerated++;
     }
 
     if (needsResults) {
       updates.results_short = await generateConsumerResults(study);
-      fieldsGenerated.push('results');
+      fieldsGenerated.push("results");
       currentStats.resultsGenerated++;
     }
 
     if (needsConclusion) {
       updates.conclusion_short = await generateConsumerConclusion(study);
-      fieldsGenerated.push('conclusion');
+      fieldsGenerated.push("conclusion");
       currentStats.conclusionsGenerated++;
     }
 
@@ -183,19 +188,18 @@ async function processStudyConsumerContent(study: any): Promise<ConsumerContentR
         paramIndex++;
       }
 
-      const query = `UPDATE studies SET ${updateParts.join(', ')} WHERE id = $1`;
+      const query = `UPDATE studies SET ${updateParts.join(", ")} WHERE id = $1`;
       await db.execute(sql.raw(query, values));
     }
 
-    console.log(`✓ Study ${study.id}: Generated ${fieldsGenerated.join(', ')}`);
+    console.log(`✓ Study ${study.id}: Generated ${fieldsGenerated.join(", ")}`);
 
     return {
       studyId: study.id,
       title: study.title,
       success: true,
-      fieldsGenerated
+      fieldsGenerated,
     };
-
   } catch (error) {
     console.error(`✗ Study ${study.id}: ${error}`);
     return {
@@ -203,7 +207,7 @@ async function processStudyConsumerContent(study: any): Promise<ConsumerContentR
       title: study.title,
       success: false,
       fieldsGenerated: [],
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -223,7 +227,7 @@ export async function generateAllConsumerContent(): Promise<ConsumerContentStats
     methodsGenerated: 0,
     resultsGenerated: 0,
     conclusionsGenerated: 0,
-    results: []
+    results: [],
   };
 
   try {
@@ -240,7 +244,9 @@ export async function generateAllConsumerContent(): Promise<ConsumerContentStats
     `);
 
     const studies = studiesResult.rows;
-    console.log(`📚 Found ${studies.length} studies needing consumer-friendly content`);
+    console.log(
+      `📚 Found ${studies.length} studies needing consumer-friendly content`,
+    );
 
     if (studies.length === 0) {
       console.log("✅ All studies already have consumer-friendly content!");
@@ -254,13 +260,15 @@ export async function generateAllConsumerContent(): Promise<ConsumerContentStats
     for (let i = 0; i < studies.length; i += batchSize) {
       const batchNumber = Math.floor(i / batchSize) + 1;
       const batch = studies.slice(i, i + batchSize);
-      
-      console.log(`📦 Processing batch ${batchNumber}/${totalBatches}: ${batch.length} studies`);
+
+      console.log(
+        `📦 Processing batch ${batchNumber}/${totalBatches}: ${batch.length} studies`,
+      );
 
       // Process batch sequentially to avoid overwhelming the API
       for (const study of batch) {
         const result = await processStudyConsumerContent(study);
-        
+
         currentStats.results.push(result);
         currentStats.totalProcessed++;
         if (result.success) {
@@ -270,7 +278,7 @@ export async function generateAllConsumerContent(): Promise<ConsumerContentStats
         }
 
         // Small delay between studies
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       console.log(`✓ Batch ${batchNumber} completed`);
@@ -278,12 +286,15 @@ export async function generateAllConsumerContent(): Promise<ConsumerContentStats
       // Longer delay between batches
       if (i + batchSize < studies.length) {
         console.log("⏳ Waiting 3 seconds before next batch...");
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
     }
 
     currentStats.endTime = new Date();
-    const duration = Math.round((currentStats.endTime.getTime() - currentStats.startTime.getTime()) / 1000);
+    const duration = Math.round(
+      (currentStats.endTime.getTime() - currentStats.startTime.getTime()) /
+        1000,
+    );
 
     console.log("\n🎉 Consumer content generation completed!");
     console.log(`📊 Results:`);
@@ -292,11 +303,12 @@ export async function generateAllConsumerContent(): Promise<ConsumerContentStats
     console.log(`   - Failed: ${currentStats.failed}`);
     console.log(`   - Methods generated: ${currentStats.methodsGenerated}`);
     console.log(`   - Results generated: ${currentStats.resultsGenerated}`);
-    console.log(`   - Conclusions generated: ${currentStats.conclusionsGenerated}`);
+    console.log(
+      `   - Conclusions generated: ${currentStats.conclusionsGenerated}`,
+    );
     console.log(`   - Duration: ${duration} seconds`);
 
     return currentStats;
-
   } catch (error) {
     console.error("❌ Error in consumer content generation:", error);
     currentStats.endTime = new Date();
@@ -325,14 +337,20 @@ export async function getConsumerContentCoverage() {
   `);
 
   const stats = result.rows[0];
-  
+
   return {
     totalStudies: Number(stats.total_studies),
     withMethods: Number(stats.with_methods),
     withResults: Number(stats.with_results),
     withConclusions: Number(stats.with_conclusions),
-    methodsPercentage: Math.round((Number(stats.with_methods) / Number(stats.total_studies)) * 100),
-    resultsPercentage: Math.round((Number(stats.with_results) / Number(stats.total_studies)) * 100),
-    conclusionsPercentage: Math.round((Number(stats.with_conclusions) / Number(stats.total_studies)) * 100)
+    methodsPercentage: Math.round(
+      (Number(stats.with_methods) / Number(stats.total_studies)) * 100,
+    ),
+    resultsPercentage: Math.round(
+      (Number(stats.with_results) / Number(stats.total_studies)) * 100,
+    ),
+    conclusionsPercentage: Math.round(
+      (Number(stats.with_conclusions) / Number(stats.total_studies)) * 100,
+    ),
   };
 }

@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useInView,
+} from "framer-motion";
 
 interface ParallaxScrollProps {
   children: React.ReactNode;
@@ -26,14 +32,18 @@ export const ParallaxScroll = ({
   });
 
   // Calculate parallax effects for different directions
-  const yRange = direction === "up" || direction === "down" ? 
-    [-100 * speed, 100 * speed] : [0, 0];
-  const xRange = direction === "left" || direction === "right" ? 
-    [-100 * speed, 100 * speed] : [0, 0];
-  
+  const yRange =
+    direction === "up" || direction === "down"
+      ? [-100 * speed, 100 * speed]
+      : [0, 0];
+  const xRange =
+    direction === "left" || direction === "right"
+      ? [-100 * speed, 100 * speed]
+      : [0, 0];
+
   // Invert direction if needed
-  const finalYRange = direction === "down" ? yRange.map(v => -v) : yRange;
-  const finalXRange = direction === "right" ? xRange.map(v => -v) : xRange;
+  const finalYRange = direction === "down" ? yRange.map((v) => -v) : yRange;
+  const finalXRange = direction === "right" ? xRange.map((v) => -v) : xRange;
 
   const y = useTransform(scrollYProgress, [0, 1], finalYRange);
   const x = useTransform(scrollYProgress, [0, 1], finalXRange);
@@ -44,9 +54,9 @@ export const ParallaxScroll = ({
 
   // We'll use a simple div with motion
   return (
-    <motion.div 
-      ref={ref} 
-      className={className} 
+    <motion.div
+      ref={ref}
+      className={className}
       style={{ x: springX, y: springY }}
     >
       {children}
@@ -81,11 +91,16 @@ export const FadeInOnScroll = ({
 
   const getInitialPosition = () => {
     switch (direction) {
-      case "up": return { opacity: 0, y: distance };
-      case "down": return { opacity: 0, y: -distance };
-      case "left": return { opacity: 0, x: distance };
-      case "right": return { opacity: 0, x: -distance };
-      default: return { opacity: 0, y: distance };
+      case "up":
+        return { opacity: 0, y: distance };
+      case "down":
+        return { opacity: 0, y: -distance };
+      case "left":
+        return { opacity: 0, x: distance };
+      case "right":
+        return { opacity: 0, x: -distance };
+      default:
+        return { opacity: 0, y: distance };
     }
   };
 
@@ -135,22 +150,22 @@ export const SequentialFadeIn = ({
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
-      transition: { 
+      transition: {
         staggerChildren: staggerDelay,
         delayChildren: initialDelay,
-      } 
-    }
+      },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: "easeOut" }
-    }
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
   };
 
   return (

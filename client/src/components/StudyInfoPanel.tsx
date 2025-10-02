@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  HiTag, 
-  HiHeart, 
-  HiUser, 
-  HiAcademicCap, 
-  HiCurrencyDollar, 
-  HiGlobe, 
+import {
+  HiTag,
+  HiHeart,
+  HiUser,
+  HiAcademicCap,
+  HiCurrencyDollar,
+  HiGlobe,
   HiDocumentText,
   HiTrendingUp,
   HiExternalLink,
   HiClock,
   HiBeaker,
-  HiCheck
+  HiCheck,
 } from "react-icons/hi";
 import { type studies } from "@shared/schema";
 
@@ -27,76 +27,102 @@ interface StudyInfoPanelProps {
   relatedStudies?: Study[];
 }
 
-export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelProps) {
+export function StudyInfoPanel({
+  study,
+  relatedStudies = [],
+}: StudyInfoPanelProps) {
   // Parse JSON fields safely
   const parseJsonField = (field: string | null | undefined): string[] => {
     if (!field) return [];
     try {
-      if (typeof field === 'string' && field.startsWith('{') && field.endsWith('}')) {
+      if (
+        typeof field === "string" &&
+        field.startsWith("{") &&
+        field.endsWith("}")
+      ) {
         // Handle PostgreSQL array format: {"item1","item2"}
-        return field.slice(1, -1).split(',').map(item => 
-          item.replace(/"/g, '').trim()
-        ).filter(Boolean);
+        return field
+          .slice(1, -1)
+          .split(",")
+          .map((item) => item.replace(/"/g, "").trim())
+          .filter(Boolean);
       }
       return Array.isArray(field) ? field : JSON.parse(field);
     } catch {
-      return typeof field === 'string' ? [field] : [];
+      return typeof field === "string" ? [field] : [];
     }
   };
 
-  const keywords = Array.isArray(study.keywords) ? study.keywords : parseJsonField(study.keywords || '');
-  
+  const keywords = Array.isArray(study.keywords)
+    ? study.keywords
+    : parseJsonField(study.keywords || "");
+
   // Use health conditions and body systems instead of outdated consumer categories
   const healthCategories = [];
-  if ((study as any).health_conditions && (study as any).health_conditions !== 'General Wellness') {
+  if (
+    (study as any).health_conditions &&
+    (study as any).health_conditions !== "General Wellness"
+  ) {
     healthCategories.push((study as any).health_conditions);
   }
-  if ((study as any).body_systems && (study as any).body_systems !== 'General Wellness') {
+  if (
+    (study as any).body_systems &&
+    (study as any).body_systems !== "General Wellness"
+  ) {
     healthCategories.push((study as any).body_systems);
   }
-  if (study.category && study.category !== 'General Wellness') {
+  if (study.category && study.category !== "General Wellness") {
     healthCategories.push(study.category);
   }
-  
-  const consumerCategories = healthCategories.length > 0 ? healthCategories : [];
-  
+
+  const consumerCategories =
+    healthCategories.length > 0 ? healthCategories : [];
+
   // Parse funding sources
-  const fundingSources = study.fundingSources ? 
-    study.fundingSources.split(';').map(source => source.trim()).filter(Boolean) : [];
-    
+  const fundingSources = study.fundingSources
+    ? study.fundingSources
+        .split(";")
+        .map((source) => source.trim())
+        .filter(Boolean)
+    : [];
+
   // Parse author affiliations
-  const authorAffiliations = study.authorAffiliations ? 
-    study.authorAffiliations.split(';').map(affil => affil.trim()).filter(Boolean) : [];
+  const authorAffiliations = study.authorAffiliations
+    ? study.authorAffiliations
+        .split(";")
+        .map((affil) => affil.trim())
+        .filter(Boolean)
+    : [];
 
   // Fetch real data counts
   const { data: keywordCounts } = useQuery({
-    queryKey: ['/api/metadata/keywords/counts'],
-    enabled: keywords.length > 0
+    queryKey: ["/api/metadata/keywords/counts"],
+    enabled: keywords.length > 0,
   });
 
   const { data: categoryCounts } = useQuery({
-    queryKey: ['/api/metadata/consumer-categories/counts'],
-    enabled: consumerCategories.length > 0
+    queryKey: ["/api/metadata/consumer-categories/counts"],
+    enabled: consumerCategories.length > 0,
   });
 
   const { data: relatedStudiesData } = useQuery({
-    queryKey: ['/api/metadata/related', study.id],
+    queryKey: ["/api/metadata/related", study.id],
     queryFn: async () => {
       const response = await fetch(`/api/metadata/related/${study.id}`);
-      if (!response.ok) throw new Error('Failed to fetch related studies');
+      if (!response.ok) throw new Error("Failed to fetch related studies");
       return response.json();
     },
-    enabled: !!study.id
+    enabled: !!study.id,
   });
 
   // Create clickable info items with authentic counts
-  const InfoSection = ({ 
-    title, 
-    icon: Icon, 
-    items, 
+  const InfoSection = ({
+    title,
+    icon: Icon,
+    items,
     linkPrefix,
     countsData,
-    emptyMessage = "Not specified"
+    emptyMessage = "Not specified",
   }: {
     title: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -119,9 +145,10 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
 
     const getCount = (item: string) => {
       if (!countsData) return 1;
-      const match = countsData.find(c => 
-        (c.keyword && c.keyword.toLowerCase() === item.toLowerCase()) ||
-        (c.category && c.category.toLowerCase() === item.toLowerCase())
+      const match = countsData.find(
+        (c) =>
+          (c.keyword && c.keyword.toLowerCase() === item.toLowerCase()) ||
+          (c.category && c.category.toLowerCase() === item.toLowerCase()),
       );
       return match?.count || 1;
     };
@@ -134,12 +161,12 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
         </div>
         <div className="flex flex-wrap gap-1">
           {items.map((item, index) => (
-            <Link 
-              key={index} 
+            <Link
+              key={index}
               href={`${linkPrefix}${encodeURIComponent(item.toLowerCase())}`}
             >
-              <Badge 
-                variant="secondary" 
+              <Badge
+                variant="secondary"
                 className="text-xs hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors"
               >
                 {item}
@@ -170,9 +197,9 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
             countsData={keywordCounts}
             emptyMessage="Keywords being processed from research paper"
           />
-          
+
           <Separator />
-          
+
           <InfoSection
             title="Health Categories"
             icon={HiHeart}
@@ -181,9 +208,9 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
             countsData={categoryCounts}
             emptyMessage="No specific health categories"
           />
-          
+
           <Separator />
-          
+
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
               <HiBeaker className="w-4 h-4" />
@@ -193,7 +220,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
               <div className="space-y-1">
                 <span className="text-neutral-500">Type:</span>
                 <Badge variant="outline" className="text-xs">
-                  {study.studyType || 'Research Study'}
+                  {study.studyType || "Research Study"}
                 </Badge>
               </div>
               <div className="space-y-1">
@@ -219,7 +246,7 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
               <HiDocumentText className="w-4 h-4" />
               Study Information
             </div>
-            
+
             <div className="space-y-2">
               <div>
                 <span className="text-xs text-neutral-500">Title:</span>
@@ -227,34 +254,32 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
                   {study.title}
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <span className="text-xs text-neutral-500">Author(s):</span>
-                  <p className="text-xs text-neutral-700">
-                    {study.authors}
-                  </p>
+                  <p className="text-xs text-neutral-700">{study.authors}</p>
                 </div>
                 <div>
                   <span className="text-xs text-neutral-500">Date:</span>
                   <p className="text-xs text-neutral-700">
-                    {study.publishDate || study.journalPublishDate || 'Not specified'}
+                    {study.publishDate ||
+                      study.journalPublishDate ||
+                      "Not specified"}
                   </p>
                 </div>
               </div>
-              
+
               {study.doi && (
                 <div>
                   <span className="text-xs text-neutral-500">DOI:</span>
-                  <p className="text-xs text-blue-600 font-mono">
-                    {study.doi}
-                  </p>
+                  <p className="text-xs text-blue-600 font-mono">{study.doi}</p>
                 </div>
               )}
-              
+
               {(study.url || study.doi) && (
                 <div>
-                  <a 
+                  <a
                     href={study.url || `https://doi.org/${study.doi}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -280,7 +305,10 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
                 </div>
                 <div className="space-y-1">
                   {authorAffiliations.slice(0, 3).map((affiliation, index) => (
-                    <p key={index} className="text-xs text-neutral-600 leading-relaxed">
+                    <p
+                      key={index}
+                      className="text-xs text-neutral-600 leading-relaxed"
+                    >
                       {affiliation}
                     </p>
                   ))}
@@ -305,7 +333,10 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
                 </div>
                 <div className="space-y-1">
                   {fundingSources.slice(0, 3).map((source, index) => (
-                    <p key={index} className="text-xs text-neutral-600 leading-relaxed">
+                    <p
+                      key={index}
+                      className="text-xs text-neutral-600 leading-relaxed"
+                    >
                       {source}
                     </p>
                   ))}
@@ -334,8 +365,17 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
                 </p>
               )}
               {study.doi && (
-                <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
-                  <a href={`https://doi.org/${study.doi}`} target="_blank" rel="noopener noreferrer">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  asChild
+                >
+                  <a
+                    href={`https://doi.org/${study.doi}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     View Original Paper
                   </a>
                 </Button>
@@ -354,7 +394,14 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
           <CardContent>
             <div className="space-y-3">
               {relatedStudies.slice(0, 3).map((relatedStudy) => (
-                <Link key={relatedStudy.id} href={relatedStudy.slug ? `/study/${relatedStudy.slug}` : `/study/${relatedStudy.id}`}>
+                <Link
+                  key={relatedStudy.id}
+                  href={
+                    relatedStudy.slug
+                      ? `/study/${relatedStudy.slug}`
+                      : `/study/${relatedStudy.id}`
+                  }
+                >
                   <div className="p-3 border border-neutral-200 rounded-lg hover:border-primary hover:bg-neutral-50 transition-colors cursor-pointer">
                     <h4 className="text-sm font-medium line-clamp-2 mb-1">
                       {relatedStudy.plainLanguageTitle || relatedStudy.title}
@@ -386,13 +433,19 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
           <CardContent>
             <div className="space-y-3">
               {relatedStudiesData.slice(0, 4).map((relatedStudy: any) => (
-                <Link key={relatedStudy.id} href={`/study/${relatedStudy.slug || relatedStudy.id}`}>
+                <Link
+                  key={relatedStudy.id}
+                  href={`/study/${relatedStudy.slug || relatedStudy.id}`}
+                >
                   <div className="p-3 border border-neutral-200 rounded-lg hover:border-primary hover:bg-neutral-50 transition-colors cursor-pointer">
                     <h4 className="text-sm font-medium line-clamp-2 mb-1">
                       {relatedStudy.plainLanguageTitle || relatedStudy.title}
                     </h4>
                     <p className="text-xs text-neutral-500">
-                      {relatedStudy.journal} • {relatedStudy.publishDate?.slice(0, 4) || relatedStudy.journalPublishDate?.slice(0, 4) || 'Year not specified'}
+                      {relatedStudy.journal} •{" "}
+                      {relatedStudy.publishDate?.slice(0, 4) ||
+                        relatedStudy.journalPublishDate?.slice(0, 4) ||
+                        "Year not specified"}
                     </p>
                   </div>
                 </Link>
@@ -410,7 +463,10 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
       )}
 
       {/* Study Methodology */}
-      {((study as any).sample_size || (study as any).duration || (study as any).vehicle || (study as any).ph) && (
+      {((study as any).sample_size ||
+        (study as any).duration ||
+        (study as any).vehicle ||
+        (study as any).ph) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Study Methodology</CardTitle>
@@ -435,7 +491,9 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
               )}
               {(study as any).vehicle && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-neutral-600">Delivery Method:</span>
+                  <span className="text-sm text-neutral-600">
+                    Delivery Method:
+                  </span>
                   <Badge variant="outline" className="text-xs">
                     {(study as any).vehicle}
                   </Badge>
@@ -455,7 +513,9 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
       )}
 
       {/* Study Quality Indicators */}
-      {((study as any).citation_count > 0 || (study as any).peer_reviewed || (study as any).has_full_text) && (
+      {((study as any).citation_count > 0 ||
+        (study as any).peer_reviewed ||
+        (study as any).has_full_text) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Quality Indicators</CardTitle>
@@ -465,7 +525,9 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
               {(study as any).peer_reviewed && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-neutral-700">Peer Reviewed</span>
+                  <span className="text-sm text-neutral-700">
+                    Peer Reviewed
+                  </span>
                 </div>
               )}
               {(study as any).citation_count > 0 && (
@@ -479,7 +541,9 @@ export function StudyInfoPanel({ study, relatedStudies = [] }: StudyInfoPanelPro
               {(study as any).has_full_text && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm text-neutral-700">Full Text Available</span>
+                  <span className="text-sm text-neutral-700">
+                    Full Text Available
+                  </span>
                 </div>
               )}
             </div>

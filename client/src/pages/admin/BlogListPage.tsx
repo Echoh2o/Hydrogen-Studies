@@ -1,17 +1,30 @@
-import { useState } from 'react';
-import { Link } from 'wouter';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Eye, 
-  Edit, 
-  Trash2, 
-  Plus, 
+import { useState } from "react";
+import { Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import AdminLayout from "@/components/admin/AdminLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Eye,
+  Edit,
+  Trash2,
+  Plus,
   Search,
   Calendar,
   User,
@@ -21,15 +34,15 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
-} from 'lucide-react';
-import { 
+  ChevronsRight,
+} from "lucide-react";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
+} from "@/components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -39,9 +52,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface BlogArticle {
   id: number;
@@ -59,40 +72,47 @@ interface BlogArticle {
 }
 
 export default function BlogListPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Build query parameters for pagination and filtering
   const queryParams = new URLSearchParams();
-  queryParams.set('page', currentPage.toString());
-  queryParams.set('limit', pageSize.toString());
-  
+  queryParams.set("page", currentPage.toString());
+  queryParams.set("limit", pageSize.toString());
+
   if (searchTerm) {
-    queryParams.set('search', searchTerm);
+    queryParams.set("search", searchTerm);
   }
-  
-  if (filterType !== 'all') {
-    queryParams.set('filterType', filterType);
+
+  if (filterType !== "all") {
+    queryParams.set("filterType", filterType);
   }
-  
-  if (filterStatus !== 'all') {
-    queryParams.set('filterStatus', filterStatus);
+
+  if (filterStatus !== "all") {
+    queryParams.set("filterStatus", filterStatus);
   }
 
   // Fetch blogs with pagination
   const { data, isLoading, error } = useQuery({
-    queryKey: ['/api/blogs', currentPage, pageSize, searchTerm, filterType, filterStatus],
+    queryKey: [
+      "/api/blogs",
+      currentPage,
+      pageSize,
+      searchTerm,
+      filterType,
+      filterStatus,
+    ],
     queryFn: async () => {
       const response = await fetch(`/api/blogs?${queryParams.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch blogs');
+      if (!response.ok) throw new Error("Failed to fetch blogs");
       return response.json();
     },
     keepPreviousData: true,
@@ -105,12 +125,12 @@ export default function BlogListPage() {
 
   // Delete blog mutation
   const deleteBlogMutation = useMutation({
-    mutationFn: (blogId: number) => 
+    mutationFn: (blogId: number) =>
       fetch(`/api/blogs/${blogId}`, {
-        method: 'DELETE'
-      }).then(res => res.json()),
+        method: "DELETE",
+      }).then((res) => res.json()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
       toast({
         title: "Success",
         description: "Blog article deleted successfully",
@@ -122,19 +142,25 @@ export default function BlogListPage() {
         description: error.message || "Failed to delete blog article",
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Toggle publish status mutation
   const togglePublishMutation = useMutation({
-    mutationFn: ({ blogId, isPublished }: { blogId: number; isPublished: boolean }) =>
+    mutationFn: ({
+      blogId,
+      isPublished,
+    }: {
+      blogId: number;
+      isPublished: boolean;
+    }) =>
       fetch(`/api/blogs/${blogId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isPublished })
-      }).then(res => res.json()),
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublished }),
+      }).then((res) => res.json()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
       toast({
         title: "Success",
         description: "Blog status updated successfully",
@@ -146,7 +172,7 @@ export default function BlogListPage() {
         description: error.message || "Failed to update blog status",
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Handle search input change
@@ -170,8 +196,9 @@ export default function BlogListPage() {
   const goToFirstPage = () => setCurrentPage(1);
   const goToLastPage = () => setCurrentPage(totalPages);
   const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
-  const goToNextPage = () => setCurrentPage(Math.min(totalPages, currentPage + 1));
-  
+  const goToNextPage = () =>
+    setCurrentPage(Math.min(totalPages, currentPage + 1));
+
   const handlePageSizeChange = (newSize: string) => {
     setPageSize(parseInt(newSize));
     setCurrentPage(1); // Reset to first page on page size change
@@ -181,7 +208,7 @@ export default function BlogListPage() {
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -203,7 +230,7 @@ export default function BlogListPage() {
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   };
 
@@ -216,10 +243,10 @@ export default function BlogListPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -252,7 +279,9 @@ export default function BlogListPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Blog Management</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Blog Management
+            </h1>
             <p className="text-muted-foreground">
               Manage your blog articles and generated content
             </p>
@@ -305,7 +334,10 @@ export default function BlogListPage() {
               </Select>
 
               {/* Status Filter */}
-              <Select value={filterStatus} onValueChange={handleFilterStatusChange}>
+              <Select
+                value={filterStatus}
+                onValueChange={handleFilterStatusChange}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
@@ -317,7 +349,10 @@ export default function BlogListPage() {
               </Select>
 
               {/* Page Size */}
-              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={handlePageSizeChange}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -334,7 +369,8 @@ export default function BlogListPage() {
         {/* Results info */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalBlogs)} of {totalBlogs} blogs
+            Showing {(currentPage - 1) * pageSize + 1} to{" "}
+            {Math.min(currentPage * pageSize, totalBlogs)} of {totalBlogs} blogs
           </p>
         </div>
 
@@ -346,18 +382,20 @@ export default function BlogListPage() {
                 <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-2 text-lg font-semibold">No blogs found</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || filterType !== 'all' || filterStatus !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Get started by creating your first blog article'}
+                  {searchTerm || filterType !== "all" || filterStatus !== "all"
+                    ? "Try adjusting your filters"
+                    : "Get started by creating your first blog article"}
                 </p>
                 <div className="flex gap-2 justify-center">
-                  {(searchTerm || filterType !== 'all' || filterStatus !== 'all') && (
+                  {(searchTerm ||
+                    filterType !== "all" ||
+                    filterStatus !== "all") && (
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setSearchTerm('');
-                        setFilterType('all');
-                        setFilterStatus('all');
+                        setSearchTerm("");
+                        setFilterType("all");
+                        setFilterStatus("all");
                       }}
                     >
                       Clear Filters
@@ -382,18 +420,20 @@ export default function BlogListPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-xl font-semibold">{blog.title}</h3>
-                        <Badge variant={blog.isPublished ? "success" : "secondary"}>
-                          {blog.isPublished ? 'Published' : 'Draft'}
+                        <Badge
+                          variant={blog.isPublished ? "success" : "secondary"}
+                        >
+                          {blog.isPublished ? "Published" : "Draft"}
                         </Badge>
                         {blog.articleType && (
                           <Badge variant="outline">{blog.articleType}</Badge>
                         )}
                       </div>
-                      
+
                       <p className="text-muted-foreground mb-4 line-clamp-2">
                         {blog.summary}
                       </p>
-                      
+
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -407,7 +447,7 @@ export default function BlogListPage() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 ml-4">
                       <Link href={`/blog/${blog.slug}`}>
                         <Button size="sm" variant="outline">
@@ -415,14 +455,14 @@ export default function BlogListPage() {
                           View
                         </Button>
                       </Link>
-                      
+
                       <Link href={`/admin/blog/edit/${blog.id}`}>
                         <Button size="sm" variant="outline">
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
                       </Link>
-                      
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button size="sm" variant="ghost">
@@ -431,9 +471,11 @@ export default function BlogListPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => handleTogglePublish(blog.id, blog.isPublished)}
+                            onClick={() =>
+                              handleTogglePublish(blog.id, blog.isPublished)
+                            }
                           >
-                            {blog.isPublished ? 'Unpublish' : 'Publish'}
+                            {blog.isPublished ? "Unpublish" : "Publish"}
                           </DropdownMenuItem>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -447,9 +489,12 @@ export default function BlogListPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Blog Article</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Delete Blog Article
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete "{blog.title}"? This action cannot be undone.
+                                  Are you sure you want to delete "{blog.title}
+                                  "? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -494,12 +539,14 @@ export default function BlogListPage() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                
+
                 {/* Page numbers */}
                 <div className="flex items-center gap-1">
-                  {getPageNumbers().map((page, index) => (
+                  {getPageNumbers().map((page, index) =>
                     page === -1 ? (
-                      <span key={`ellipsis-${index}`} className="px-2">...</span>
+                      <span key={`ellipsis-${index}`} className="px-2">
+                        ...
+                      </span>
                     ) : (
                       <Button
                         key={page}
@@ -510,10 +557,10 @@ export default function BlogListPage() {
                       >
                         {page}
                       </Button>
-                    )
-                  ))}
+                    ),
+                  )}
                 </div>
-                
+
                 <Button
                   variant="outline"
                   size="icon"
@@ -531,7 +578,7 @@ export default function BlogListPage() {
                   <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <p className="text-sm text-muted-foreground">
                 Page {currentPage} of {totalPages}
               </p>

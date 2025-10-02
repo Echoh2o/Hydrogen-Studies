@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'wouter';
-import { useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useAuth } from '@/components/auth/ProtectedRoute';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/components/auth/ProtectedRoute";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,20 +15,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Droplets, 
-  Menu, 
-  X, 
-  ChevronDown, 
-  User, 
-  LogOut, 
-  Settings, 
+import {
+  Droplets,
+  Menu,
+  X,
+  ChevronDown,
+  User,
+  LogOut,
+  Settings,
   Shield,
   UserCircle,
   LogIn,
   UserPlus,
   Users,
-  LayoutDashboard
+  LayoutDashboard,
 } from "lucide-react";
 
 export default function SiteHeader() {
@@ -39,25 +39,24 @@ export default function SiteHeader() {
 
   // Logout mutation
   const logoutMutation = useMutation({
-    mutationFn: () => 
-      apiRequest('POST', '/api/auth/logout'),
+    mutationFn: () => apiRequest("POST", "/api/auth/logout"),
     onSuccess: () => {
       // Clear cached auth data
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/check-session'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/check-session"] });
+
       toast({
-        title: 'Logged out',
-        description: 'You have been successfully logged out.',
+        title: "Logged out",
+        description: "You have been successfully logged out.",
       });
-      
-      navigate('/');
+
+      navigate("/");
     },
     onError: () => {
       toast({
-        title: 'Logout failed',
-        description: 'There was a problem logging out. Please try again.',
-        variant: 'destructive',
+        title: "Logout failed",
+        description: "There was a problem logging out. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -68,7 +67,7 @@ export default function SiteHeader() {
 
   // Get user initials for avatar
   const getUserInitials = () => {
-    if (!user) return 'U';
+    if (!user) return "U";
     if (user.firstName && user.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
     }
@@ -78,11 +77,11 @@ export default function SiteHeader() {
     if (user.email) {
       return user.email.substring(0, 2).toUpperCase();
     }
-    return 'U';
+    return "U";
   };
 
   // Check if user is admin or editor
-  const isAdminOrEditor = userRole === 'admin' || userRole === 'editor';
+  const isAdminOrEditor = userRole === "admin" || userRole === "editor";
 
   return (
     <nav className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
@@ -92,7 +91,9 @@ export default function SiteHeader() {
             <Link href="/">
               <div className="flex items-center space-x-2 cursor-pointer">
                 <Droplets className="h-8 w-8 text-blue-600" />
-                <span className="text-xl font-bold text-gray-900">Hydrogen Studies</span>
+                <span className="text-xl font-bold text-gray-900">
+                  Hydrogen Studies
+                </span>
               </div>
             </Link>
           </div>
@@ -107,47 +108,86 @@ export default function SiteHeader() {
               </button>
               <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="p-2 space-y-1">
-                  <Link href="/studies" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/studies"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     All Studies
                   </Link>
-                  <Link href="/recent-studies" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/recent-studies"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     Recent Studies
                   </Link>
-                  <Link href="/explore-by-condition" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/explore-by-condition"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     By Health Condition
                   </Link>
-                  <Link href="/explore-by-body-system" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/explore-by-body-system"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     By Body System
                   </Link>
-                  <Link href="/explore-by-life-stage" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/explore-by-life-stage"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     By Life Stage
                   </Link>
-                  <Link href="/explore-by-delivery-method" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/explore-by-delivery-method"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     By Delivery Method
                   </Link>
-                  <Link href="/explore-by-benefit" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/explore-by-benefit"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     By Health Benefit
                   </Link>
-                  <Link href="/insights" className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors">
+                  <Link
+                    href="/insights"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  >
                     Research Insights
                   </Link>
                 </div>
               </div>
             </div>
-            
-            <Link href="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
+
+            <Link
+              href="/blog"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
+            >
               Blog
             </Link>
-            <Link href="/benefits" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link
+              href="/benefits"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
+            >
               Benefits
             </Link>
-            <Link href="/research-analytics" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Analytics  
+            <Link
+              href="/research-analytics"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
+            >
+              Analytics
             </Link>
-            <Link href="/products" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link
+              href="/products"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
+            >
               Products
             </Link>
-            <Link href="/chat" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link
+              href="/chat"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
+            >
               AI Assistant
             </Link>
 
@@ -157,9 +197,15 @@ export default function SiteHeader() {
             ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full"
+                  >
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.profileImageUrl} alt={user.username || user.email} />
+                      <AvatarImage
+                        src={user.profileImageUrl}
+                        alt={user.username || user.email}
+                      />
                       <AvatarFallback>{getUserInitials()}</AvatarFallback>
                     </Avatar>
                   </Button>
@@ -168,9 +214,9 @@ export default function SiteHeader() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {user.firstName && user.lastName 
+                        {user.firstName && user.lastName
                           ? `${user.firstName} ${user.lastName}`
-                          : user.username || 'User'}
+                          : user.username || "User"}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
@@ -183,57 +229,61 @@ export default function SiteHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+
+                  <DropdownMenuItem onClick={() => navigate("/settings")}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
-                  
+
                   {isAdminOrEditor && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <DropdownMenuItem onClick={() => navigate("/admin")}>
                         <Shield className="mr-2 h-4 w-4" />
                         <span>Admin Dashboard</span>
                       </DropdownMenuItem>
-                      {userRole === 'admin' && (
-                        <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                      {userRole === "admin" && (
+                        <DropdownMenuItem
+                          onClick={() => navigate("/admin/users")}
+                        >
                           <Users className="mr-2 h-4 w-4" />
                           <span>Manage Users</span>
                         </DropdownMenuItem>
                       )}
                     </>
                   )}
-                  
+
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={handleLogout}
                     disabled={logoutMutation.isPending}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>{logoutMutation.isPending ? 'Logging out...' : 'Log out'}</span>
+                    <span>
+                      {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                    </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate('/login')}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/login")}
                   data-testid="button-login"
                 >
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
                 </Button>
-                <Button 
-                  size="sm" 
-                  onClick={() => navigate('/register')}
+                <Button
+                  size="sm"
+                  onClick={() => navigate("/register")}
                   data-testid="button-register"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
@@ -271,14 +321,17 @@ export default function SiteHeader() {
                     <div className="space-y-2">
                       <div className="flex items-center space-x-3 px-4 py-2">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.profileImageUrl} alt={user.username || user.email} />
+                          <AvatarImage
+                            src={user.profileImageUrl}
+                            alt={user.username || user.email}
+                          />
                           <AvatarFallback>{getUserInitials()}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <p className="text-sm font-medium">
-                            {user.firstName && user.lastName 
+                            {user.firstName && user.lastName
                               ? `${user.firstName} ${user.lastName}`
-                              : user.username || 'User'}
+                              : user.username || "User"}
                           </p>
                           <p className="text-xs text-gray-500">{user.email}</p>
                           {userRole && (
@@ -288,9 +341,9 @@ export default function SiteHeader() {
                           )}
                         </div>
                       </div>
-                      
+
                       <Link href="/profile">
-                        <div 
+                        <div
                           className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
@@ -298,9 +351,9 @@ export default function SiteHeader() {
                           Profile
                         </div>
                       </Link>
-                      
+
                       <Link href="/settings">
-                        <div 
+                        <div
                           className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
@@ -308,11 +361,11 @@ export default function SiteHeader() {
                           Settings
                         </div>
                       </Link>
-                      
+
                       {isAdminOrEditor && (
                         <>
                           <Link href="/admin">
-                            <div 
+                            <div
                               className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
@@ -320,9 +373,9 @@ export default function SiteHeader() {
                               Admin Dashboard
                             </div>
                           </Link>
-                          {userRole === 'admin' && (
+                          {userRole === "admin" && (
                             <Link href="/admin/users">
-                              <div 
+                              <div
                                 className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                                 onClick={() => setIsMobileMenuOpen(false)}
                               >
@@ -333,7 +386,7 @@ export default function SiteHeader() {
                           )}
                         </>
                       )}
-                      
+
                       <button
                         onClick={() => {
                           handleLogout();
@@ -343,13 +396,15 @@ export default function SiteHeader() {
                         className="w-full text-left block px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
                       >
                         <LogOut className="inline mr-2 h-4 w-4" />
-                        {logoutMutation.isPending ? 'Logging out...' : 'Log out'}
+                        {logoutMutation.isPending
+                          ? "Logging out..."
+                          : "Log out"}
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Link href="/login">
-                        <div 
+                        <div
                           className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm font-medium"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
@@ -358,7 +413,7 @@ export default function SiteHeader() {
                         </div>
                       </Link>
                       <Link href="/register">
-                        <div 
+                        <div
                           className="block px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors text-sm font-medium text-center"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
@@ -377,7 +432,7 @@ export default function SiteHeader() {
                   Studies
                 </div>
                 <Link href="/studies">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -385,7 +440,7 @@ export default function SiteHeader() {
                   </div>
                 </Link>
                 <Link href="/recent-studies">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -393,7 +448,7 @@ export default function SiteHeader() {
                   </div>
                 </Link>
                 <Link href="/explore-by-condition">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -401,7 +456,7 @@ export default function SiteHeader() {
                   </div>
                 </Link>
                 <Link href="/explore-by-body-system">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -409,7 +464,7 @@ export default function SiteHeader() {
                   </div>
                 </Link>
                 <Link href="/explore-by-life-stage">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -417,7 +472,7 @@ export default function SiteHeader() {
                   </div>
                 </Link>
                 <Link href="/explore-by-delivery-method">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -425,7 +480,7 @@ export default function SiteHeader() {
                   </div>
                 </Link>
                 <Link href="/explore-by-benefit">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -433,7 +488,7 @@ export default function SiteHeader() {
                   </div>
                 </Link>
                 <Link href="/insights">
-                  <div 
+                  <div
                     className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -441,9 +496,9 @@ export default function SiteHeader() {
                   </div>
                 </Link>
               </div>
-              
+
               <Link href="/blog">
-                <div 
+                <div
                   className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -451,7 +506,7 @@ export default function SiteHeader() {
                 </div>
               </Link>
               <Link href="/benefits">
-                <div 
+                <div
                   className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -459,7 +514,7 @@ export default function SiteHeader() {
                 </div>
               </Link>
               <Link href="/research-analytics">
-                <div 
+                <div
                   className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -467,7 +522,7 @@ export default function SiteHeader() {
                 </div>
               </Link>
               <Link href="/products">
-                <div 
+                <div
                   className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -475,7 +530,7 @@ export default function SiteHeader() {
                 </div>
               </Link>
               <Link href="/chat">
-                <div 
+                <div
                   className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

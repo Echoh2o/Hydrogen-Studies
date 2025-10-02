@@ -1,8 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users, FileText, TrendingUp, Eye, Search } from "lucide-react";
+import {
+  BarChart3,
+  Users,
+  FileText,
+  TrendingUp,
+  Eye,
+  Search,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function AnalyticsPage() {
@@ -11,21 +24,26 @@ export default function AnalyticsPage() {
     queryKey: ["/api/stats/dashboard"],
   });
 
-  const stats = analyticsQuery.data as {
+  const stats = (analyticsQuery.data as {
     totalBlogs: number;
     publishedBlogs: number;
     draftBlogs: number;
-  } || {
+  }) || {
     totalBlogs: 0,
     publishedBlogs: 0,
-    draftBlogs: 0
+    draftBlogs: 0,
   };
 
   return (
-    <AdminLayout title="Analytics Dashboard" description="Monitor your platform's performance and user engagement">
+    <AdminLayout
+      title="Analytics Dashboard"
+      description="Monitor your platform's performance and user engagement"
+    >
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Analytics Dashboard
+          </h1>
           <p className="text-muted-foreground">
             Monitor your platform's performance and user engagement
           </p>
@@ -35,7 +53,9 @@ export default function AnalyticsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Articles
+              </CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -48,7 +68,9 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Published Content</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Published Content
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -61,7 +83,9 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Draft Articles</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Draft Articles
+              </CardTitle>
               <Eye className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -74,12 +98,17 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Publication Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Publication Rate
+              </CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats.totalBlogs > 0 ? Math.round((stats.publishedBlogs / stats.totalBlogs) * 100) : 0}%
+                {stats.totalBlogs > 0
+                  ? Math.round((stats.publishedBlogs / stats.totalBlogs) * 100)
+                  : 0}
+                %
               </div>
               <p className="text-xs text-muted-foreground">
                 Articles published
@@ -108,15 +137,19 @@ export default function AnalyticsPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <h4 className="font-medium">Article Types Distribution</h4>
+                      <h4 className="font-medium">
+                        Article Types Distribution
+                      </h4>
                       <p className="text-sm text-muted-foreground">
-                        Most content is practical application focused, with manual and comparison articles also available.
+                        Most content is practical application focused, with
+                        manual and comparison articles also available.
                       </p>
                     </div>
                     <div className="space-y-2">
                       <h4 className="font-medium">Publication Status</h4>
                       <p className="text-sm text-muted-foreground">
-                        Currently all {stats.totalBlogs} articles are in draft status, ready for review and publication.
+                        Currently all {stats.totalBlogs} articles are in draft
+                        status, ready for review and publication.
                       </p>
                     </div>
                   </div>
@@ -137,7 +170,8 @@ export default function AnalyticsPage() {
                 <Alert>
                   <Search className="h-4 w-4" />
                   <AlertDescription>
-                    User engagement tracking will be available once articles are published and users begin interacting with the content.
+                    User engagement tracking will be available once articles are
+                    published and users begin interacting with the content.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -156,15 +190,21 @@ export default function AnalyticsPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <h4 className="font-medium text-green-600">Database Status</h4>
+                      <h4 className="font-medium text-green-600">
+                        Database Status
+                      </h4>
                       <p className="text-sm text-muted-foreground">
-                        Connected and operational with {stats.totalBlogs} articles loaded successfully.
+                        Connected and operational with {stats.totalBlogs}{" "}
+                        articles loaded successfully.
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <h4 className="font-medium text-green-600">API Performance</h4>
+                      <h4 className="font-medium text-green-600">
+                        API Performance
+                      </h4>
                       <p className="text-sm text-muted-foreground">
-                        All admin API endpoints are responding correctly with authentic data.
+                        All admin API endpoints are responding correctly with
+                        authentic data.
                       </p>
                     </div>
                   </div>

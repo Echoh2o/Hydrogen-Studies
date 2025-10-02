@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Check, AlertCircle } from "lucide-react";
 
-interface AnimatedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface AnimatedInputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   success?: boolean;
@@ -20,22 +21,28 @@ interface AnimatedInputProps extends React.InputHTMLAttributes<HTMLInputElement>
 /**
  * An enhanced input component with animations for focus, error and success states
  */
-export const AnimatedInput = React.forwardRef<HTMLInputElement, AnimatedInputProps>(
-  ({ 
-    label, 
-    error, 
-    success = false, 
-    animateLabel = true, 
-    containerClassName,
-    labelClassName,
-    errorClassName,
-    successClassName,
-    className,
-    value,
-    onFocus,
-    onBlur,
-    ...props 
-  }, ref) => {
+export const AnimatedInput = React.forwardRef<
+  HTMLInputElement,
+  AnimatedInputProps
+>(
+  (
+    {
+      label,
+      error,
+      success = false,
+      animateLabel = true,
+      containerClassName,
+      labelClassName,
+      errorClassName,
+      successClassName,
+      className,
+      value,
+      onFocus,
+      onBlur,
+      ...props
+    },
+    ref,
+  ) => {
     const [focused, setFocused] = useState(false);
     const hasContent = React.useMemo(() => {
       return !!value && String(value).length > 0;
@@ -44,19 +51,19 @@ export const AnimatedInput = React.forwardRef<HTMLInputElement, AnimatedInputPro
     return (
       <div className={cn("relative mb-4 w-full", containerClassName)}>
         {label && (
-          <Label 
+          <Label
             className={cn(
               "absolute left-3 transition-all duration-200 pointer-events-none",
-              animateLabel && (focused || hasContent) 
-                ? "transform -translate-y-7 scale-90 text-primary" 
+              animateLabel && (focused || hasContent)
+                ? "transform -translate-y-7 scale-90 text-primary"
                 : "transform translate-y-2 text-muted-foreground",
-              labelClassName
+              labelClassName,
             )}
           >
             {label}
           </Label>
         )}
-        
+
         <Input
           ref={ref}
           className={cn(
@@ -65,7 +72,7 @@ export const AnimatedInput = React.forwardRef<HTMLInputElement, AnimatedInputPro
             success ? "border-green-500 focus:border-green-500" : "",
             focused ? "border-primary shadow-sm" : "",
             label && animateLabel ? "pt-3" : "",
-            className
+            className,
           )}
           onFocus={(e) => {
             setFocused(true);
@@ -77,7 +84,7 @@ export const AnimatedInput = React.forwardRef<HTMLInputElement, AnimatedInputPro
           }}
           {...props}
         />
-        
+
         <AnimatePresence>
           {error && (
             <motion.div
@@ -85,20 +92,26 @@ export const AnimatedInput = React.forwardRef<HTMLInputElement, AnimatedInputPro
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={cn("flex items-center mt-1 text-destructive text-sm", errorClassName)}
+              className={cn(
+                "flex items-center mt-1 text-destructive text-sm",
+                errorClassName,
+              )}
             >
               <AlertCircle className="w-4 h-4 mr-1" />
               {error}
             </motion.div>
           )}
-          
+
           {success && !error && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className={cn("absolute right-3 top-1/2 -translate-y-1/2 text-green-500", successClassName)}
+              className={cn(
+                "absolute right-3 top-1/2 -translate-y-1/2 text-green-500",
+                successClassName,
+              )}
             >
               <Check className="w-5 h-5" />
             </motion.div>
@@ -106,7 +119,7 @@ export const AnimatedInput = React.forwardRef<HTMLInputElement, AnimatedInputPro
         </AnimatePresence>
       </div>
     );
-  }
+  },
 );
 
 AnimatedInput.displayName = "AnimatedInput";
@@ -126,18 +139,24 @@ interface AnimatedTextareaProps {
 /**
  * An enhanced textarea component with animations for focus, error and success states
  */
-export const AnimatedTextarea = React.forwardRef<HTMLTextAreaElement, AnimatedTextareaProps>(
-  ({
-    label,
-    error,
-    success = false,
-    animateLabel = true,
-    containerClassName,
-    textareaClassName,
-    labelClassName,
-    errorClassName,
-    ...props
-  }, ref) => {
+export const AnimatedTextarea = React.forwardRef<
+  HTMLTextAreaElement,
+  AnimatedTextareaProps
+>(
+  (
+    {
+      label,
+      error,
+      success = false,
+      animateLabel = true,
+      containerClassName,
+      textareaClassName,
+      labelClassName,
+      errorClassName,
+      ...props
+    },
+    ref,
+  ) => {
     const [focused, setFocused] = useState(false);
     const hasContent = React.useMemo(() => {
       return !!props.value && String(props.value).length > 0;
@@ -152,7 +171,7 @@ export const AnimatedTextarea = React.forwardRef<HTMLTextAreaElement, AnimatedTe
               animateLabel && (focused || hasContent)
                 ? "transform -translate-y-7 scale-90 text-primary"
                 : "transform translate-y-2 text-muted-foreground",
-              labelClassName
+              labelClassName,
             )}
           >
             {label}
@@ -167,7 +186,7 @@ export const AnimatedTextarea = React.forwardRef<HTMLTextAreaElement, AnimatedTe
             success ? "border-green-500 focus:border-green-500" : "",
             focused ? "border-primary shadow-sm" : "",
             label && animateLabel ? "pt-6" : "",
-            textareaClassName
+            textareaClassName,
           )}
           onFocus={(e) => {
             setFocused(true);
@@ -187,7 +206,10 @@ export const AnimatedTextarea = React.forwardRef<HTMLTextAreaElement, AnimatedTe
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={cn("flex items-center mt-1 text-destructive text-sm", errorClassName)}
+              className={cn(
+                "flex items-center mt-1 text-destructive text-sm",
+                errorClassName,
+              )}
             >
               <AlertCircle className="w-4 h-4 mr-1" />
               {error}
@@ -208,7 +230,7 @@ export const AnimatedTextarea = React.forwardRef<HTMLTextAreaElement, AnimatedTe
         </AnimatePresence>
       </div>
     );
-  }
+  },
 );
 
 AnimatedTextarea.displayName = "AnimatedTextarea";

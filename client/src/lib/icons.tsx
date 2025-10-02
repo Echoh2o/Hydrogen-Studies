@@ -1,23 +1,23 @@
-import { 
-  HiBrain, 
-  HiHeart, 
-  HiShieldExclamation, 
-  HiDatabase, 
-  HiClock, 
+import {
+  HiBrain,
+  HiHeart,
+  HiShieldExclamation,
+  HiDatabase,
+  HiClock,
   HiBeaker,
-  HiChevronDown, 
-  HiSearch, 
-  HiArrowRight, 
-  HiUser, 
-  HiBookOpen, 
-  HiQuote, 
+  HiChevronDown,
+  HiSearch,
+  HiArrowRight,
+  HiUser,
+  HiBookOpen,
+  HiQuote,
   HiDocument,
   HiViewGrid,
   HiMenu,
   HiX,
   HiDownload,
   HiExternalLink,
-  HiFilter
+  HiFilter,
 } from "react-icons/hi";
 
 // Mapping for category icons
@@ -58,11 +58,11 @@ export const UIIcons = {
   ArrowRight: HiArrowRight,
   ChevronDown: HiChevronDown,
   ViewGrid: HiViewGrid,
-  Filter: HiFilter
+  Filter: HiFilter,
 };
 
 export default {
   getCategoryIcon,
   StudyIcons,
-  UIIcons
+  UIIcons,
 };

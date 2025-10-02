@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,33 +12,35 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { WysiwygEditor } from '@/components/ui/wysiwyg-editor';
-import { Separator } from '@/components/ui/separator';
-import { CalendarIcon, Loader2 } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { WysiwygEditor } from "@/components/ui/wysiwyg-editor";
+import { Separator } from "@/components/ui/separator";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { useMutation } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Form schema
 const studyFormSchema = z.object({
-  title: z.string().min(3, { message: 'Title must be at least 3 characters' }),
-  authors: z.string().min(3, { message: 'Authors are required' }),
-  abstract: z.string().min(10, { message: 'Abstract must be at least 10 characters' }),
-  journal: z.string().min(2, { message: 'Journal is required' }),
-  publishDate: z.date({ required_error: 'Publication date is required' }),
-  category: z.string().min(1, { message: 'Category is required' }),
+  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
+  authors: z.string().min(3, { message: "Authors are required" }),
+  abstract: z
+    .string()
+    .min(10, { message: "Abstract must be at least 10 characters" }),
+  journal: z.string().min(2, { message: "Journal is required" }),
+  publishDate: z.date({ required_error: "Publication date is required" }),
+  category: z.string().min(1, { message: "Category is required" }),
   peerReviewed: z.boolean().default(false),
   methods: z.string().optional(),
   results: z.string().optional(),
@@ -56,46 +58,50 @@ interface StudyFormProps {
   onSuccess?: () => void;
 }
 
-export default function StudyForm({ initialData, studyId, onSuccess }: StudyFormProps) {
+export default function StudyForm({
+  initialData,
+  studyId,
+  onSuccess,
+}: StudyFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Default values for the form
   const defaultValues: Partial<StudyFormValues> = {
-    title: initialData?.title || '',
-    abstract: initialData?.abstract || '',
-    authors: initialData?.authors || '',
-    journal: initialData?.journal || '',
-    publishDate: initialData?.publishDate ? new Date(initialData.publishDate) : new Date(),
+    title: initialData?.title || "",
+    abstract: initialData?.abstract || "",
+    authors: initialData?.authors || "",
+    journal: initialData?.journal || "",
+    publishDate: initialData?.publishDate
+      ? new Date(initialData.publishDate)
+      : new Date(),
     peerReviewed: initialData?.peerReviewed || false,
-    category: initialData?.category || '',
-    methods: initialData?.methods || '',
-    results: initialData?.results || '',
-    conclusion: initialData?.conclusion || '',
-    doi: initialData?.doi || '',
-    pdfUrl: initialData?.pdfUrl || '',
-    citationUrl: initialData?.citationUrl || '',
+    category: initialData?.category || "",
+    methods: initialData?.methods || "",
+    results: initialData?.results || "",
+    conclusion: initialData?.conclusion || "",
+    doi: initialData?.doi || "",
+    pdfUrl: initialData?.pdfUrl || "",
+    citationUrl: initialData?.citationUrl || "",
   };
-  
+
   // Initialize form
   const form = useForm<StudyFormValues>({
     resolver: zodResolver(studyFormSchema),
     defaultValues,
   });
-  
+
   // Create or update study mutation
   const studyMutation = useMutation({
     mutationFn: async (data: StudyFormValues) => {
-      const endpoint = studyId 
-        ? `/api/studies/${studyId}` 
-        : '/api/studies';
-      
-      const method = studyId ? 'PUT' : 'POST';
+      const endpoint = studyId ? `/api/studies/${studyId}` : "/api/studies";
+
+      const method = studyId ? "PUT" : "POST";
       const formattedData = {
         ...data,
-        publishDate: format(data.publishDate, 'yyyy-MM-dd'),
+        publishDate: format(data.publishDate, "yyyy-MM-dd"),
       };
-      
+
       const response = await apiRequest(method, endpoint, formattedData);
       return response.json();
     },
@@ -106,7 +112,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
           ? "The study has been updated successfully."
           : "The study has been created successfully.",
       });
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -121,15 +127,15 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
     },
     onSettled: () => {
       setIsSubmitting(false);
-    }
+    },
   });
-  
+
   // Form submission handler
   const onSubmit = (values: StudyFormValues) => {
     setIsSubmitting(true);
     studyMutation.mutate(values);
   };
-  
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -139,7 +145,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
           <p className="text-sm text-gray-500 mb-4">
             Enter the core details about the study.
           </p>
-          
+
           <div className="space-y-4">
             <FormField
               control={form.control}
@@ -154,7 +160,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="authors"
@@ -162,7 +168,10 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 <FormItem>
                   <FormLabel>Authors*</FormLabel>
                   <FormControl>
-                    <Input placeholder="Smith J, Johnson A, et al." {...field} />
+                    <Input
+                      placeholder="Smith J, Johnson A, et al."
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>
                     Author names separated by commas
@@ -171,7 +180,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="abstract"
@@ -193,7 +202,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 </FormItem>
               )}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -208,7 +217,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="publishDate"
@@ -222,7 +231,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                             variant={"outline"}
                             className={cn(
                               "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
+                              !field.value && "text-muted-foreground",
                             )}
                           >
                             {field.value ? (
@@ -251,7 +260,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 )}
               />
             </div>
-            
+
             <FormField
               control={form.control}
               name="category"
@@ -268,7 +277,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="peerReviewed"
@@ -291,16 +300,17 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
             />
           </div>
         </div>
-        
+
         <Separator />
-        
+
         {/* Study Details Section */}
         <div>
           <h3 className="text-lg font-medium">Study Details</h3>
           <p className="text-sm text-gray-500 mb-4">
-            Add more detailed information about the study's methodology and findings.
+            Add more detailed information about the study's methodology and
+            findings.
           </p>
-          
+
           <div className="space-y-4">
             <FormField
               control={form.control}
@@ -312,7 +322,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                     <WysiwygEditor
                       id="methods"
                       name="methods"
-                      value={field.value || ''}
+                      value={field.value || ""}
                       onChange={field.onChange}
                       placeholder="Study methods"
                       height="180px"
@@ -322,7 +332,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="results"
@@ -333,7 +343,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                     <WysiwygEditor
                       id="results"
                       name="results"
-                      value={field.value || ''}
+                      value={field.value || ""}
                       onChange={field.onChange}
                       placeholder="Study results"
                       height="180px"
@@ -343,7 +353,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="conclusion"
@@ -354,7 +364,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                     <WysiwygEditor
                       id="conclusion"
                       name="conclusion"
-                      value={field.value || ''}
+                      value={field.value || ""}
                       onChange={field.onChange}
                       placeholder="Study conclusion"
                       height="180px"
@@ -366,16 +376,16 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
             />
           </div>
         </div>
-        
+
         <Separator />
-        
+
         {/* Links and References Section */}
         <div>
           <h3 className="text-lg font-medium">Links and References</h3>
           <p className="text-sm text-gray-500 mb-4">
             Add links to the original study and related resources.
           </p>
-          
+
           <div className="space-y-4">
             <FormField
               control={form.control}
@@ -393,7 +403,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="pdfUrl"
@@ -401,13 +411,16 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 <FormItem>
                   <FormLabel>PDF URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com/study.pdf" {...field} />
+                    <Input
+                      placeholder="https://example.com/study.pdf"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="citationUrl"
@@ -415,7 +428,10 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
                 <FormItem>
                   <FormLabel>Citation URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://pubmed.ncbi.nlm.nih.gov/12345678/" {...field} />
+                    <Input
+                      placeholder="https://pubmed.ncbi.nlm.nih.gov/12345678/"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -423,7 +439,7 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
             />
           </div>
         </div>
-        
+
         <div className="flex justify-end gap-4">
           <Button
             type="button"
@@ -437,10 +453,12 @@ export default function StudyForm({ initialData, studyId, onSuccess }: StudyForm
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {studyId ? 'Updating...' : 'Creating...'}
+                {studyId ? "Updating..." : "Creating..."}
               </>
+            ) : studyId ? (
+              "Update Study"
             ) : (
-              studyId ? 'Update Study' : 'Create Study'
+              "Create Study"
             )}
           </Button>
         </div>

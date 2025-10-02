@@ -3,8 +3,8 @@
  * Implements connection pooling, query optimization, and error recovery
  */
 
-import { db } from './db.js';
-import { sql } from 'drizzle-orm';
+import { db } from "./db.js";
+import { sql } from "drizzle-orm";
 
 // Query cache for frequently accessed data
 const queryCache = new Map();
@@ -18,13 +18,17 @@ interface CachedQuery {
 /**
  * Cached database query execution
  */
-export async function cachedQuery(key: string, queryFn: () => Promise<any>, ttl = CACHE_TTL): Promise<any> {
+export async function cachedQuery(
+  key: string,
+  queryFn: () => Promise<any>,
+  ttl = CACHE_TTL,
+): Promise<any> {
   const cached = queryCache.get(key) as CachedQuery;
-  
-  if (cached && (Date.now() - cached.timestamp) < ttl) {
+
+  if (cached && Date.now() - cached.timestamp < ttl) {
     return cached.data;
   }
-  
+
   try {
     const data = await queryFn();
     queryCache.set(key, { data, timestamp: Date.now() });
@@ -51,18 +55,20 @@ export async function getStudiesOptimized(options: {
 }): Promise<any[]> {
   const { limit = 20, offset = 0, fields, categoryId } = options;
   const cacheKey = `studies_${JSON.stringify(options)}`;
-  
+
   return cachedQuery(cacheKey, async () => {
-    const { studies } = await import('../shared/schema.js');
-    const { eq } = await import('drizzle-orm');
-    
+    const { studies } = await import("../shared/schema.js");
+    const { eq } = await import("drizzle-orm");
+
     let query = db.select().from(studies);
-    
+
     if (categoryId) {
       // Add category filtering when needed
-      query = query.where(sql`consumer_categories LIKE ${'%"' + categoryId + '"%'}`);
+      query = query.where(
+        sql`consumer_categories LIKE ${'%"' + categoryId + '"%'}`,
+      );
     }
-    
+
     return query.limit(Math.min(limit, 100)).offset(offset);
   });
 }
@@ -71,29 +77,37 @@ export async function getStudiesOptimized(options: {
  * Get category statistics with caching
  */
 export async function getCategoryStats(): Promise<any[]> {
-  return cachedQuery('category_stats', async () => {
-    const { categories } = await import('../shared/schema.js');
-    return db.select().from(categories);
-  }, 10 * 60 * 1000); // Cache for 10 minutes
+  return cachedQuery(
+    "category_stats",
+    async () => {
+      const { categories } = await import("../shared/schema.js");
+      return db.select().from(categories);
+    },
+    10 * 60 * 1000,
+  ); // Cache for 10 minutes
 }
 
 /**
  * Database health check and recovery
  */
-export async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency: number; error?: string }> {
+export async function checkDatabaseHealth(): Promise<{
+  healthy: boolean;
+  latency: number;
+  error?: string;
+}> {
   const start = Date.now();
-  
+
   try {
     await db.execute(sql`SELECT 1`);
     return {
       healthy: true,
-      latency: Date.now() - start
+      latency: Date.now() - start,
     };
   } catch (error) {
     return {
       healthy: false,
       latency: Date.now() - start,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -116,11 +130,14 @@ export function cleanupCache(): void {
 export function initializeDatabaseOptimizations(): void {
   // Cleanup cache every 10 minutes
   setInterval(cleanupCache, 10 * 60 * 1000);
-  
+
   // Log cache statistics every hour
-  setInterval(() => {
-    console.log(`Database cache: ${queryCache.size} entries`);
-  }, 60 * 60 * 1000);
-  
-  console.log('Database optimizations initialized');
+  setInterval(
+    () => {
+      console.log(`Database cache: ${queryCache.size} entries`);
+    },
+    60 * 60 * 1000,
+  );
+
+  console.log("Database optimizations initialized");
 }

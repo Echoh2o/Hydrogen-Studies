@@ -1,7 +1,7 @@
-import { db } from './db';
-import { sql } from 'drizzle-orm';
-import { addJournalPublishDateField } from './migrations/add-journal-publish-date';
-import { runMigration as addMultipleImagesSupport } from './migrations/add-multiple-images-support';
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+import { addJournalPublishDateField } from "./migrations/add-journal-publish-date";
+import { runMigration as addMultipleImagesSupport } from "./migrations/add-multiple-images-support";
 
 /**
  * Run database schema migrations to ensure the database structure
@@ -9,18 +9,18 @@ import { runMigration as addMultipleImagesSupport } from './migrations/add-multi
  */
 export async function runMigrations() {
   try {
-    console.log('Starting database migrations...');
-    
+    console.log("Starting database migrations...");
+
     // Run specific migrations in order
     await addJournalPublishDateField();
-    
+
     // Add multiple images support
     await addMultipleImagesSupport();
-    
-    console.log('Database migrations completed successfully');
+
+    console.log("Database migrations completed successfully");
     return true;
   } catch (error) {
-    console.error('Error running database migrations:', error);
+    console.error("Error running database migrations:", error);
     return false;
   }
 }

@@ -3,15 +3,15 @@
  * Generates optimized meta tags, Open Graph, and Twitter Card data
  */
 
-import React from 'react';
-import { Helmet } from 'react-helmet';
+import React from "react";
+import { Helmet } from "react-helmet";
 
 interface SEOHeadProps {
   title: string;
   description: string;
   canonicalUrl?: string;
   ogImage?: string;
-  ogType?: 'website' | 'article';
+  ogType?: "website" | "article";
   publishDate?: string;
   modifiedDate?: string;
   authors?: string;
@@ -25,13 +25,13 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   description,
   canonicalUrl,
   ogImage,
-  ogType = 'website',
+  ogType = "website",
   publishDate,
   modifiedDate,
   authors,
   keywords = [],
   category,
-  doi
+  doi,
 }) => {
   const baseUrl = window.location.origin;
   const currentUrl = canonicalUrl || window.location.href;
@@ -39,24 +39,29 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   const imageUrl = ogImage || defaultImage;
 
   // Clean and optimize title
-  const cleanTitle = title.length > 60 ? title.substring(0, 57) + '...' : title;
+  const cleanTitle = title.length > 60 ? title.substring(0, 57) + "..." : title;
   const siteTitle = "Hydrogen Research Database";
-  const fullTitle = title.includes(siteTitle) ? title : `${cleanTitle} | ${siteTitle}`;
+  const fullTitle = title.includes(siteTitle)
+    ? title
+    : `${cleanTitle} | ${siteTitle}`;
 
   // Clean and optimize description
-  const cleanDescription = description.length > 160 
-    ? description.substring(0, 157) + '...' 
-    : description;
+  const cleanDescription =
+    description.length > 160
+      ? description.substring(0, 157) + "..."
+      : description;
 
   // Generate keywords string
   const keywordsString = [
     ...keywords,
-    'hydrogen therapy',
-    'molecular hydrogen',
-    'hydrogen research',
-    'health studies',
-    category
-  ].filter(Boolean).join(', ');
+    "hydrogen therapy",
+    "molecular hydrogen",
+    "hydrogen research",
+    "health studies",
+    category,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Helmet>
@@ -85,10 +90,14 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="twitter:site" content="@hydrogenstudies" />
 
       {/* Article-specific Meta Tags */}
-      {ogType === 'article' && (
+      {ogType === "article" && (
         <>
-          {publishDate && <meta property="article:published_time" content={publishDate} />}
-          {modifiedDate && <meta property="article:modified_time" content={modifiedDate} />}
+          {publishDate && (
+            <meta property="article:published_time" content={publishDate} />
+          )}
+          {modifiedDate && (
+            <meta property="article:modified_time" content={modifiedDate} />
+          )}
           {authors && <meta property="article:author" content={authors} />}
           {category && <meta property="article:section" content={category} />}
           {keywords.map((keyword, index) => (
@@ -100,17 +109,25 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       {/* Research-specific Meta Tags */}
       {doi && <meta name="citation_doi" content={doi} />}
       {authors && <meta name="citation_author" content={authors} />}
-      {publishDate && <meta name="citation_publication_date" content={publishDate} />}
+      {publishDate && (
+        <meta name="citation_publication_date" content={publishDate} />
+      )}
       <meta name="citation_title" content={title} />
 
       {/* Additional SEO Meta Tags */}
-      <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+      <meta
+        name="robots"
+        content="index, follow, max-snippet:-1, max-image-preview:large"
+      />
       <meta name="googlebot" content="index, follow" />
       <meta name="theme-color" content="#0066cc" />
       <meta name="msapplication-TileColor" content="#0066cc" />
 
       {/* Mobile Optimization */}
-      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, shrink-to-fit=no"
+      />
       <meta name="format-detection" content="telephone=no" />
 
       {/* Performance Hints */}

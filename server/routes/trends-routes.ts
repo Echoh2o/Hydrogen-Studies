@@ -2,17 +2,17 @@
  * API Routes for Trend Detection and Analysis
  */
 
-import express from 'express';
-import { trendDetectionService } from '../services/trend-detection-service';
-import { db } from '../db';
-import { 
-  trendAnalysis, 
-  trendAlerts, 
+import express from "express";
+import { trendDetectionService } from "../services/trend-detection-service";
+import { db } from "../db";
+import {
+  trendAnalysis,
+  trendAlerts,
   searchQueries,
-  studyMetrics 
-} from '@shared/schema';
-import { desc, eq, and, gte, lte, sql, count } from 'drizzle-orm';
-import { subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
+  studyMetrics,
+} from "@shared/schema";
+import { desc, eq, and, gte, lte, sql, count } from "drizzle-orm";
+import { subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 
 const router = express.Router();
 
@@ -20,39 +20,39 @@ const router = express.Router();
  * GET /api/trends/emerging-topics
  * Returns top emerging research topics
  */
-router.get('/emerging-topics', async (req, res) => {
+router.get("/emerging-topics", async (req, res) => {
   try {
-    const { period = 'monthly' } = req.query;
-    
-    if (!['weekly', 'monthly', 'quarterly'].includes(period as string)) {
-      return res.status(400).json({ 
-        error: 'Invalid period. Use weekly, monthly, or quarterly.' 
+    const { period = "monthly" } = req.query;
+
+    if (!["weekly", "monthly", "quarterly"].includes(period as string)) {
+      return res.status(400).json({
+        error: "Invalid period. Use weekly, monthly, or quarterly.",
       });
     }
 
     const topics = await trendDetectionService.identifyEmergingTopics(
-      period as 'weekly' | 'monthly' | 'quarterly'
+      period as "weekly" | "monthly" | "quarterly",
     );
 
     res.json({
       success: true,
       period,
       count: topics.length,
-      topics: topics.map(topic => ({
+      topics: topics.map((topic) => ({
         name: topic.topic,
         growth: `${topic.growthRate.toFixed(1)}%`,
         studyCount: topic.count,
         previousCount: topic.previousCount,
         significance: topic.significance,
         relatedKeywords: topic.keywords,
-        studyIds: topic.studyIds
-      }))
+        studyIds: topic.studyIds,
+      })),
     });
   } catch (error) {
-    console.error('Error fetching emerging topics:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch emerging topics',
-      message: error.message 
+    console.error("Error fetching emerging topics:", error);
+    res.status(500).json({
+      error: "Failed to fetch emerging topics",
+      message: error.message,
     });
   }
 });
@@ -61,39 +61,39 @@ router.get('/emerging-topics', async (req, res) => {
  * GET /api/trends/breakthrough-studies
  * Identifies high-impact recent studies
  */
-router.get('/breakthrough-studies', async (req, res) => {
+router.get("/breakthrough-studies", async (req, res) => {
   try {
-    const { period = 'monthly' } = req.query;
-    
-    if (!['weekly', 'monthly', 'quarterly'].includes(period as string)) {
-      return res.status(400).json({ 
-        error: 'Invalid period. Use weekly, monthly, or quarterly.' 
+    const { period = "monthly" } = req.query;
+
+    if (!["weekly", "monthly", "quarterly"].includes(period as string)) {
+      return res.status(400).json({
+        error: "Invalid period. Use weekly, monthly, or quarterly.",
       });
     }
 
     const studies = await trendDetectionService.detectBreakthroughStudies(
-      period as 'weekly' | 'monthly' | 'quarterly'
+      period as "weekly" | "monthly" | "quarterly",
     );
 
     res.json({
       success: true,
       period,
       count: studies.length,
-      studies: studies.map(study => ({
+      studies: studies.map((study) => ({
         id: study.studyId,
         title: study.title,
         impactScore: study.impactScore,
         citations: study.citationCount,
         views: study.viewCount,
         reason: study.reasonForBreakthrough,
-        publishedDate: study.publicationDate
-      }))
+        publishedDate: study.publicationDate,
+      })),
     });
   } catch (error) {
-    console.error('Error fetching breakthrough studies:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch breakthrough studies',
-      message: error.message 
+    console.error("Error fetching breakthrough studies:", error);
+    res.status(500).json({
+      error: "Failed to fetch breakthrough studies",
+      message: error.message,
     });
   }
 });
@@ -102,48 +102,48 @@ router.get('/breakthrough-studies', async (req, res) => {
  * GET /api/trends/momentum
  * Shows research areas gaining or losing momentum
  */
-router.get('/momentum', async (req, res) => {
+router.get("/momentum", async (req, res) => {
   try {
-    const { period = 'monthly' } = req.query;
-    
-    if (!['weekly', 'monthly', 'quarterly'].includes(period as string)) {
-      return res.status(400).json({ 
-        error: 'Invalid period. Use weekly, monthly, or quarterly.' 
+    const { period = "monthly" } = req.query;
+
+    if (!["weekly", "monthly", "quarterly"].includes(period as string)) {
+      return res.status(400).json({
+        error: "Invalid period. Use weekly, monthly, or quarterly.",
       });
     }
 
     const momentum = await trendDetectionService.trackResearchMomentum(
-      period as 'weekly' | 'monthly' | 'quarterly'
+      period as "weekly" | "monthly" | "quarterly",
     );
 
     res.json({
       success: true,
       period,
-      accelerating: momentum.accelerating.map(area => ({
+      accelerating: momentum.accelerating.map((area) => ({
         name: area.area,
         change: `+${area.percentageChange.toFixed(1)}%`,
         currentActivity: area.currentActivity,
         previousActivity: area.previousActivity,
-        studyIds: area.studyIds
+        studyIds: area.studyIds,
       })),
-      declining: momentum.declining.map(area => ({
+      declining: momentum.declining.map((area) => ({
         name: area.area,
         change: `${area.percentageChange.toFixed(1)}%`,
         currentActivity: area.currentActivity,
         previousActivity: area.previousActivity,
-        studyIds: area.studyIds
+        studyIds: area.studyIds,
       })),
-      stable: momentum.stable.map(area => ({
+      stable: momentum.stable.map((area) => ({
         name: area.area,
         activity: area.activity,
-        studyIds: area.studyIds
-      }))
+        studyIds: area.studyIds,
+      })),
     });
   } catch (error) {
-    console.error('Error fetching research momentum:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch research momentum',
-      message: error.message 
+    console.error("Error fetching research momentum:", error);
+    res.status(500).json({
+      error: "Failed to fetch research momentum",
+      message: error.message,
     });
   }
 });
@@ -152,18 +152,18 @@ router.get('/momentum', async (req, res) => {
  * GET /api/trends/keyword-trends
  * Returns keyword trend analysis
  */
-router.get('/keyword-trends', async (req, res) => {
+router.get("/keyword-trends", async (req, res) => {
   try {
-    const { period = 'monthly', limit = 20 } = req.query;
-    
-    if (!['weekly', 'monthly', 'quarterly'].includes(period as string)) {
-      return res.status(400).json({ 
-        error: 'Invalid period. Use weekly, monthly, or quarterly.' 
+    const { period = "monthly", limit = 20 } = req.query;
+
+    if (!["weekly", "monthly", "quarterly"].includes(period as string)) {
+      return res.status(400).json({
+        error: "Invalid period. Use weekly, monthly, or quarterly.",
       });
     }
 
     const trends = await trendDetectionService.analyzeKeywordTrends(
-      period as 'weekly' | 'monthly' | 'quarterly'
+      period as "weekly" | "monthly" | "quarterly",
     );
 
     const limitNum = Math.min(parseInt(limit as string) || 20, 100);
@@ -172,20 +172,20 @@ router.get('/keyword-trends', async (req, res) => {
       success: true,
       period,
       count: trends.length,
-      trends: trends.slice(0, limitNum).map(trend => ({
+      trends: trends.slice(0, limitNum).map((trend) => ({
         keyword: trend.keyword,
         trend: trend.trend,
-        change: `${trend.percentageChange > 0 ? '+' : ''}${trend.percentageChange.toFixed(1)}%`,
+        change: `${trend.percentageChange > 0 ? "+" : ""}${trend.percentageChange.toFixed(1)}%`,
         currentFrequency: trend.currentFrequency,
         previousFrequency: trend.previousFrequency,
-        relatedStudies: trend.relatedStudies
-      }))
+        relatedStudies: trend.relatedStudies,
+      })),
     });
   } catch (error) {
-    console.error('Error fetching keyword trends:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch keyword trends',
-      message: error.message 
+    console.error("Error fetching keyword trends:", error);
+    res.status(500).json({
+      error: "Failed to fetch keyword trends",
+      message: error.message,
     });
   }
 });
@@ -194,13 +194,15 @@ router.get('/keyword-trends', async (req, res) => {
  * GET /api/trends/report
  * Generates comprehensive trend report
  */
-router.get('/report', async (req, res) => {
+router.get("/report", async (req, res) => {
   try {
-    const { period = 'monthly' } = req.query;
-    
-    if (!['weekly', 'monthly', 'quarterly', 'yearly'].includes(period as string)) {
-      return res.status(400).json({ 
-        error: 'Invalid period. Use weekly, monthly, quarterly, or yearly.' 
+    const { period = "monthly" } = req.query;
+
+    if (
+      !["weekly", "monthly", "quarterly", "yearly"].includes(period as string)
+    ) {
+      return res.status(400).json({
+        error: "Invalid period. Use weekly, monthly, quarterly, or yearly.",
       });
     }
 
@@ -210,11 +212,11 @@ router.get('/report', async (req, res) => {
       .from(trendAnalysis)
       .where(
         and(
-          eq(trendAnalysis.analysisType, 'comprehensive'),
+          eq(trendAnalysis.analysisType, "comprehensive"),
           eq(trendAnalysis.periodType, period as string),
-          eq(trendAnalysis.status, 'completed'),
-          gte(trendAnalysis.createdAt, subDays(new Date(), 1))
-        )
+          eq(trendAnalysis.status, "completed"),
+          gte(trendAnalysis.createdAt, subDays(new Date(), 1)),
+        ),
       )
       .orderBy(desc(trendAnalysis.createdAt))
       .limit(1);
@@ -230,10 +232,10 @@ router.get('/report', async (req, res) => {
           period: report.periodType,
           periodStart: report.periodStart,
           periodEnd: report.periodEnd,
-          emergingTopics: JSON.parse(report.emergingTopics || '[]'),
-          breakthroughStudies: JSON.parse(report.breakthroughStudies || '[]'),
-          momentum: JSON.parse(report.momentumData || '{}'),
-          keywordTrends: JSON.parse(report.keywordTrends || '[]'),
+          emergingTopics: JSON.parse(report.emergingTopics || "[]"),
+          breakthroughStudies: JSON.parse(report.breakthroughStudies || "[]"),
+          momentum: JSON.parse(report.momentumData || "{}"),
+          keywordTrends: JSON.parse(report.keywordTrends || "[]"),
           summary: report.summary,
           insights: report.insights,
           recommendations: report.recommendations,
@@ -241,15 +243,15 @@ router.get('/report', async (req, res) => {
             totalStudiesAnalyzed: report.totalStudiesAnalyzed,
             newStudiesCount: report.newStudiesCount,
             avgCitationCount: report.avgCitationCount,
-            topResearchAreas: report.topResearchAreas
+            topResearchAreas: report.topResearchAreas,
           },
-          generatedAt: report.createdAt
-        }
+          generatedAt: report.createdAt,
+        },
       });
     } else {
       // Generate new report
       const report = await trendDetectionService.generateTrendReport(
-        period as 'weekly' | 'monthly' | 'quarterly'
+        period as "weekly" | "monthly" | "quarterly",
       );
 
       // Save to database
@@ -259,7 +261,10 @@ router.get('/report', async (req, res) => {
         .returning();
 
       // Create alerts
-      const alerts = await trendDetectionService.createTrendAlerts(savedReport.id, savedReport);
+      const alerts = await trendDetectionService.createTrendAlerts(
+        savedReport.id,
+        savedReport,
+      );
       if (alerts.length > 0) {
         await db.insert(trendAlerts).values(alerts);
       }
@@ -272,10 +277,12 @@ router.get('/report', async (req, res) => {
           period: savedReport.periodType,
           periodStart: savedReport.periodStart,
           periodEnd: savedReport.periodEnd,
-          emergingTopics: JSON.parse(savedReport.emergingTopics || '[]'),
-          breakthroughStudies: JSON.parse(savedReport.breakthroughStudies || '[]'),
-          momentum: JSON.parse(savedReport.momentumData || '{}'),
-          keywordTrends: JSON.parse(savedReport.keywordTrends || '[]'),
+          emergingTopics: JSON.parse(savedReport.emergingTopics || "[]"),
+          breakthroughStudies: JSON.parse(
+            savedReport.breakthroughStudies || "[]",
+          ),
+          momentum: JSON.parse(savedReport.momentumData || "{}"),
+          keywordTrends: JSON.parse(savedReport.keywordTrends || "[]"),
           summary: savedReport.summary,
           insights: savedReport.insights,
           recommendations: savedReport.recommendations,
@@ -283,18 +290,18 @@ router.get('/report', async (req, res) => {
             totalStudiesAnalyzed: savedReport.totalStudiesAnalyzed,
             newStudiesCount: savedReport.newStudiesCount,
             avgCitationCount: savedReport.avgCitationCount,
-            topResearchAreas: savedReport.topResearchAreas
+            topResearchAreas: savedReport.topResearchAreas,
           },
           generatedAt: savedReport.createdAt,
-          alertsCreated: alerts.length
-        }
+          alertsCreated: alerts.length,
+        },
       });
     }
   } catch (error) {
-    console.error('Error generating trend report:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate trend report',
-      message: error.message 
+    console.error("Error generating trend report:", error);
+    res.status(500).json({
+      error: "Failed to generate trend report",
+      message: error.message,
     });
   }
 });
@@ -303,49 +310,55 @@ router.get('/report', async (req, res) => {
  * POST /api/trends/analyze
  * Triggers trend analysis
  */
-router.post('/analyze', async (req, res) => {
+router.post("/analyze", async (req, res) => {
   try {
-    const { 
-      period = 'weekly',
-      type = 'comprehensive' 
-    } = req.body;
+    const { period = "weekly", type = "comprehensive" } = req.body;
 
-    if (!['weekly', 'monthly', 'quarterly', 'yearly'].includes(period)) {
-      return res.status(400).json({ 
-        error: 'Invalid period. Use weekly, monthly, quarterly, or yearly.' 
+    if (!["weekly", "monthly", "quarterly", "yearly"].includes(period)) {
+      return res.status(400).json({
+        error: "Invalid period. Use weekly, monthly, quarterly, or yearly.",
       });
     }
 
-    if (!['emerging_topics', 'breakthrough', 'momentum', 'comprehensive'].includes(type)) {
-      return res.status(400).json({ 
-        error: 'Invalid analysis type.' 
+    if (
+      ![
+        "emerging_topics",
+        "breakthrough",
+        "momentum",
+        "comprehensive",
+      ].includes(type)
+    ) {
+      return res.status(400).json({
+        error: "Invalid analysis type.",
       });
     }
 
     // Run analysis asynchronously
     const analysisPromise = trendDetectionService.runScheduledAnalysis(
-      period as 'weekly' | 'monthly' | 'quarterly'
+      period as "weekly" | "monthly" | "quarterly",
     );
 
     // Return immediately with analysis ID
     res.json({
       success: true,
       message: `${type} analysis started for ${period} period`,
-      status: 'processing',
-      checkStatusUrl: `/api/trends/status`
+      status: "processing",
+      checkStatusUrl: `/api/trends/status`,
     });
 
     // Continue processing in background
-    analysisPromise.then(result => {
-      console.log(`Analysis completed: ${result.id}`);
-    }).catch(error => {
-      console.error('Background analysis failed:', error);
-    });
+    analysisPromise
+      .then((result) => {
+        console.log(`Analysis completed: ${result.id}`);
+      })
+      .catch((error) => {
+        console.error("Background analysis failed:", error);
+      });
   } catch (error) {
-    console.error('Error triggering analysis:', error);
-    res.status(500).json({ 
-      error: 'Failed to trigger analysis',
-      message: error.message 
+    console.error("Error triggering analysis:", error);
+    res.status(500).json({
+      error: "Failed to trigger analysis",
+      message: error.message,
     });
   }
 });
@@ -354,7 +367,7 @@ router.post('/analyze', async (req, res) => {
  * GET /api/trends/status
  * Check analysis status
  */
-router.get('/status', async (req, res) => {
+router.get("/status", async (req, res) => {
   try {
     const latestAnalyses = await db
       .select({
@@ -364,7 +377,7 @@ router.get('/status', async (req, res) => {
         status: trendAnalysis.status,
         createdAt: trendAnalysis.createdAt,
         completedAt: trendAnalysis.completedAt,
-        errorMessage: trendAnalysis.errorMessage
+        errorMessage: trendAnalysis.errorMessage,
       })
       .from(trendAnalysis)
       .orderBy(desc(trendAnalysis.createdAt))
@@ -372,13 +385,13 @@ router.get('/status', async (req, res) => {
 
     res.json({
       success: true,
-      analyses: latestAnalyses
+      analyses: latestAnalyses,
     });
   } catch (error) {
-    console.error('Error fetching analysis status:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch analysis status',
-      message: error.message 
+    console.error("Error fetching analysis status:", error);
+    res.status(500).json({
+      error: "Failed to fetch analysis status",
+      message: error.message,
     });
   }
 });
@@ -387,12 +400,9 @@ router.get('/status', async (req, res) => {
  * GET /api/trends/alerts
  * Get trend alerts
  */
-router.get('/alerts', async (req, res) => {
+router.get("/alerts", async (req, res) => {
   try {
-    const { 
-      unacknowledged = 'false',
-      limit = '20' 
-    } = req.query;
+    const { unacknowledged = "false", limit = "20" } = req.query;
 
     let query = db
       .select()
@@ -400,7 +410,7 @@ router.get('/alerts', async (req, res) => {
       .orderBy(desc(trendAlerts.createdAt))
       .limit(parseInt(limit as string));
 
-    if (unacknowledged === 'true') {
+    if (unacknowledged === "true") {
       query = query.where(eq(trendAlerts.acknowledgedAt, null));
     }
 
@@ -409,7 +419,7 @@ router.get('/alerts', async (req, res) => {
     res.json({
       success: true,
       count: alerts.length,
-      alerts: alerts.map(alert => ({
+      alerts: alerts.map((alert) => ({
         id: alert.id,
         type: alert.alertType,
         level: alert.alertLevel,
@@ -418,14 +428,14 @@ router.get('/alerts', async (req, res) => {
         relatedStudies: alert.relatedStudies,
         actionRequired: alert.actionRequired,
         acknowledged: !!alert.acknowledgedAt,
-        createdAt: alert.createdAt
-      }))
+        createdAt: alert.createdAt,
+      })),
     });
   } catch (error) {
-    console.error('Error fetching alerts:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch alerts',
-      message: error.message 
+    console.error("Error fetching alerts:", error);
+    res.status(500).json({
+      error: "Failed to fetch alerts",
+      message: error.message,
     });
   }
 });
@@ -434,7 +444,7 @@ router.get('/alerts', async (req, res) => {
  * PUT /api/trends/alerts/:id/acknowledge
  * Acknowledge an alert
  */
-router.put('/alerts/:id/acknowledge', async (req, res) => {
+router.put("/alerts/:id/acknowledge", async (req, res) => {
   try {
     const alertId = parseInt(req.params.id);
     const { userId } = req.body;
@@ -443,26 +453,26 @@ router.put('/alerts/:id/acknowledge', async (req, res) => {
       .update(trendAlerts)
       .set({
         acknowledgedBy: userId,
-        acknowledgedAt: new Date()
+        acknowledgedAt: new Date(),
       })
       .where(eq(trendAlerts.id, alertId))
       .returning();
 
     if (!updated) {
-      return res.status(404).json({ 
-        error: 'Alert not found' 
+      return res.status(404).json({
+        error: "Alert not found",
       });
     }
 
     res.json({
       success: true,
-      alert: updated
+      alert: updated,
     });
   } catch (error) {
-    console.error('Error acknowledging alert:', error);
-    res.status(500).json({ 
-      error: 'Failed to acknowledge alert',
-      message: error.message 
+    console.error("Error acknowledging alert:", error);
+    res.status(500).json({
+      error: "Failed to acknowledge alert",
+      message: error.message,
     });
   }
 });
@@ -471,24 +481,24 @@ router.put('/alerts/:id/acknowledge', async (req, res) => {
  * GET /api/trends/search-queries
  * Get popular search queries
  */
-router.get('/search-queries', async (req, res) => {
+router.get("/search-queries", async (req, res) => {
   try {
-    const { limit = '10' } = req.query;
-    
+    const { limit = "10" } = req.query;
+
     const queries = await trendDetectionService.getPopularSearchQueries(
-      parseInt(limit as string)
+      parseInt(limit as string),
     );
 
     res.json({
       success: true,
       count: queries.length,
-      queries
+      queries,
     });
   } catch (error) {
-    console.error('Error fetching search queries:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch search queries',
-      message: error.message 
+    console.error("Error fetching search queries:", error);
+    res.status(500).json({
+      error: "Failed to fetch search queries",
+      message: error.message,
     });
   }
 });
@@ -497,13 +507,13 @@ router.get('/search-queries', async (req, res) => {
  * POST /api/trends/track-search
  * Track a search query
  */
-router.post('/track-search', async (req, res) => {
+router.post("/track-search", async (req, res) => {
   try {
     const { query, userId, results, clickedIds } = req.body;
 
     if (!query) {
-      return res.status(400).json({ 
-        error: 'Query is required' 
+      return res.status(400).json({
+        error: "Query is required",
       });
     }
 
@@ -511,18 +521,18 @@ router.post('/track-search', async (req, res) => {
       query,
       userId,
       results,
-      clickedIds
+      clickedIds,
     );
 
     res.json({
       success: true,
-      message: 'Search query tracked'
+      message: "Search query tracked",
     });
   } catch (error) {
-    console.error('Error tracking search query:', error);
-    res.status(500).json({ 
-      error: 'Failed to track search query',
-      message: error.message 
+    console.error("Error tracking search query:", error);
+    res.status(500).json({
+      error: "Failed to track search query",
+      message: error.message,
     });
   }
 });
@@ -531,13 +541,13 @@ router.post('/track-search', async (req, res) => {
  * POST /api/trends/track-metrics
  * Track study engagement metrics
  */
-router.post('/track-metrics', async (req, res) => {
+router.post("/track-metrics", async (req, res) => {
   try {
     const { studyId, metrics } = req.body;
 
     if (!studyId) {
-      return res.status(400).json({ 
-        error: 'Study ID is required' 
+      return res.status(400).json({
+        error: "Study ID is required",
       });
     }
 
@@ -545,13 +555,13 @@ router.post('/track-metrics', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Metrics tracked'
+      message: "Metrics tracked",
     });
   } catch (error) {
-    console.error('Error tracking metrics:', error);
-    res.status(500).json({ 
-      error: 'Failed to track metrics',
-      message: error.message 
+    console.error("Error tracking metrics:", error);
+    res.status(500).json({
+      error: "Failed to track metrics",
+      message: error.message,
     });
   }
 });
@@ -560,10 +570,10 @@ router.post('/track-metrics', async (req, res) => {
  * GET /api/trends/study-metrics/:id
  * Get metrics for a specific study
  */
-router.get('/study-metrics/:id', async (req, res) => {
+router.get("/study-metrics/:id", async (req, res) => {
   try {
     const studyId = parseInt(req.params.id);
-    const { days = '30' } = req.query;
+    const { days = "30" } = req.query;
 
     const startDate = subDays(new Date(), parseInt(days as string));
 
@@ -573,16 +583,20 @@ router.get('/study-metrics/:id', async (req, res) => {
       .where(
         and(
           eq(studyMetrics.studyId, studyId),
-          gte(studyMetrics.date, startDate)
-        )
+          gte(studyMetrics.date, startDate),
+        ),
       )
       .orderBy(desc(studyMetrics.date));
 
     // Aggregate metrics
     const totalViews = metrics.reduce((sum, m) => sum + (m.viewCount || 0), 0);
-    const totalDownloads = metrics.reduce((sum, m) => sum + (m.downloadCount || 0), 0);
-    const avgTimeOnPage = metrics.reduce((sum, m, i, arr) => 
-      sum + (m.avgTimeOnPage || 0) / arr.length, 0
+    const totalDownloads = metrics.reduce(
+      (sum, m) => sum + (m.downloadCount || 0),
+      0,
+    );
+    const avgTimeOnPage = metrics.reduce(
+      (sum, m, i, arr) => sum + (m.avgTimeOnPage || 0) / arr.length,
+      0,
     );
 
     res.json({
@@ -593,14 +607,14 @@ router.get('/study-metrics/:id', async (req, res) => {
         totalViews,
         totalDownloads,
         avgTimeOnPage: Math.round(avgTimeOnPage),
-        dailyMetrics: metrics
-      }
+        dailyMetrics: metrics,
+      },
     });
   } catch (error) {
-    console.error('Error fetching study metrics:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch study metrics',
-      message: error.message 
+    console.error("Error fetching study metrics:", error);
+    res.status(500).json({
+      error: "Failed to fetch study metrics",
+      message: error.message,
     });
   }
 });
@@ -609,13 +623,13 @@ router.get('/study-metrics/:id', async (req, res) => {
  * GET /api/trends/dashboard
  * Get dashboard summary data
  */
-router.get('/dashboard', async (req, res) => {
+router.get("/dashboard", async (req, res) => {
   try {
     // Get latest analysis
     const [latestAnalysis] = await db
       .select()
       .from(trendAnalysis)
-      .where(eq(trendAnalysis.status, 'completed'))
+      .where(eq(trendAnalysis.status, "completed"))
       .orderBy(desc(trendAnalysis.createdAt))
       .limit(1);
 
@@ -626,7 +640,8 @@ router.get('/dashboard', async (req, res) => {
       .where(eq(trendAlerts.acknowledgedAt, null));
 
     // Get popular searches
-    const popularSearches = await trendDetectionService.getPopularSearchQueries(5);
+    const popularSearches =
+      await trendDetectionService.getPopularSearchQueries(5);
 
     // Parse latest analysis data
     let dashboardData = {
@@ -638,13 +653,15 @@ router.get('/dashboard', async (req, res) => {
       insights: [],
       recommendations: [],
       unacknowledgedAlerts: alertCount?.count || 0,
-      popularSearches
+      popularSearches,
     };
 
     if (latestAnalysis) {
-      const emergingTopics = JSON.parse(latestAnalysis.emergingTopics || '[]');
-      const breakthroughStudies = JSON.parse(latestAnalysis.breakthroughStudies || '[]');
-      const momentum = JSON.parse(latestAnalysis.momentumData || '{}');
+      const emergingTopics = JSON.parse(latestAnalysis.emergingTopics || "[]");
+      const breakthroughStudies = JSON.parse(
+        latestAnalysis.breakthroughStudies || "[]",
+      );
+      const momentum = JSON.parse(latestAnalysis.momentumData || "{}");
 
       dashboardData = {
         hasAnalysis: true,
@@ -655,19 +672,19 @@ router.get('/dashboard', async (req, res) => {
         insights: latestAnalysis.insights || [],
         recommendations: latestAnalysis.recommendations || [],
         unacknowledgedAlerts: alertCount?.count || 0,
-        popularSearches
+        popularSearches,
       };
     }
 
     res.json({
       success: true,
-      dashboard: dashboardData
+      dashboard: dashboardData,
     });
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch dashboard data',
-      message: error.message 
+    console.error("Error fetching dashboard data:", error);
+    res.status(500).json({
+      error: "Failed to fetch dashboard data",
+      message: error.message,
     });
   }
 });

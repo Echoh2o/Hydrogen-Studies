@@ -3,31 +3,32 @@
  * Provides comprehensive search functionality with multiple filters
  */
 
-import { Router } from 'express';
-import { db } from '../db';
-import { studies, categories } from '@shared/schema';
-import { sql, eq, and, or, ilike, gte, lte, desc, asc } from 'drizzle-orm';
+import { Router } from "express";
+import { db } from "../db";
+import { studies, categories } from "@shared/schema";
+import { sql, eq, and, or, ilike, gte, lte, desc, asc } from "drizzle-orm";
 
 const router = Router();
 
 // Advanced search with multiple filters
-router.get('/api/search/advanced', async (req, res) => {
+router.get("/api/search/advanced", async (req, res) => {
   try {
     const {
-      query = '',
-      categories: categoryFilter = '',
+      query = "",
+      categories: categoryFilter = "",
       yearStart,
       yearEnd,
-      studyTypes = '',
+      studyTypes = "",
       hasFullText,
       hasDOI,
-      sortBy = 'relevance',
-      sortOrder = 'desc',
+      sortBy = "relevance",
+      sortOrder = "desc",
       page = 1,
-      pageSize = 20
+      pageSize = 20,
     } = req.query;
 
-    const offset = (parseInt(page as string) - 1) * parseInt(pageSize as string);
+    const offset =
+      (parseInt(page as string) - 1) * parseInt(pageSize as string);
     const limit = parseInt(pageSize as string);
 
     // Build dynamic WHERE conditions
@@ -41,102 +42,118 @@ router.get('/api/search/advanced', async (req, res) => {
           ilike(studies.abstract, `%${query}%`),
           ilike(studies.authors, `%${query}%`),
           ilike(studies.journal, `%${query}%`),
-          ilike(studies.category, `%${query}%`)
-        )
+          ilike(studies.category, `%${query}%`),
+        ),
       );
     }
 
     // Category filter
     if (categoryFilter) {
-      const categoryList = (categoryFilter as string).split(',').map(c => c.trim());
+      const categoryList = (categoryFilter as string)
+        .split(",")
+        .map((c) => c.trim());
       conditions.push(
-        or(...categoryList.map(cat => ilike(studies.category, `%${cat}%`)))
+        or(...categoryList.map((cat) => ilike(studies.category, `%${cat}%`))),
       );
     }
 
     // Year range filter
     if (yearStart) {
-      conditions.push(gte(sql`EXTRACT(YEAR FROM ${studies.publishDate})`, parseInt(yearStart as string)));
+      conditions.push(
+        gte(
+          sql`EXTRACT(YEAR FROM ${studies.publishDate})`,
+          parseInt(yearStart as string),
+        ),
+      );
     }
     if (yearEnd) {
-      conditions.push(lte(sql`EXTRACT(YEAR FROM ${studies.publishDate})`, parseInt(yearEnd as string)));
+      conditions.push(
+        lte(
+          sql`EXTRACT(YEAR FROM ${studies.publishDate})`,
+          parseInt(yearEnd as string),
+        ),
+      );
     }
 
     // Study type filter
     if (studyTypes) {
-      const typeList = (studyTypes as string).split(',').map(t => t.trim());
+      const typeList = (studyTypes as string).split(",").map((t) => t.trim());
       conditions.push(
-        or(...typeList.map(type => ilike(studies.category, `%${type}%`)))
+        or(...typeList.map((type) => ilike(studies.category, `%${type}%`))),
       );
     }
 
     // Full text availability
-    if (hasFullText === 'true') {
+    if (hasFullText === "true") {
       conditions.push(sql`${studies.fullTextAvailable} = true`);
     }
 
     // DOI availability
-    if (hasDOI === 'true') {
+    if (hasDOI === "true") {
       conditions.push(sql`${studies.doi} IS NOT NULL AND ${studies.doi} != ''`);
     }
 
     // Build ORDER BY clause
     let orderBy;
-    const direction = sortOrder === 'asc' ? asc : desc;
+    const direction = sortOrder === "asc" ? asc : desc;
 
     switch (sortBy) {
-      case 'date':
+      case "date":
         orderBy = direction(studies.publishDate);
         break;
-      case 'title':
+      case "title":
         orderBy = direction(studies.title);
         break;
-      case 'citations':
+      case "citations":
         orderBy = direction(sql`COALESCE(${studies.citations}, 0)`);
         break;
-      case 'views':
+      case "views":
         orderBy = direction(sql`COALESCE(${studies.viewCount}, 0)`);
         break;
-      case 'relevance':
+      case "relevance":
       default:
         // Calculate relevance score based on multiple factors
         if (query) {
           orderBy = desc(sql`
             (CASE 
-              WHEN LOWER(${studies.title}) LIKE LOWER(${'%' + query + '%'}) THEN 10
+              WHEN LOWER(${studies.title}) LIKE LOWER(${"%" + query + "%"}) THEN 10
               ELSE 0
             END) +
             (CASE 
-              WHEN LOWER(${studies.abstract}) LIKE LOWER(${'%' + query + '%'}) THEN 5
+              WHEN LOWER(${studies.abstract}) LIKE LOWER(${"%" + query + "%"}) THEN 5
               ELSE 0
             END) +
             (CASE 
-              WHEN LOWER(${studies.authors}) LIKE LOWER(${'%' + query + '%'}) THEN 3
+              WHEN LOWER(${studies.authors}) LIKE LOWER(${"%" + query + "%"}) THEN 3
               ELSE 0
             END) +
             COALESCE(${studies.viewCount}, 0) * 0.01 +
             COALESCE(${studies.citations}, 0) * 0.1
           `);
         } else {
-          orderBy = desc(sql`COALESCE(${studies.viewCount}, 0) + COALESCE(${studies.citations}, 0) * 10`);
+          orderBy = desc(
+            sql`COALESCE(${studies.viewCount}, 0) + COALESCE(${studies.citations}, 0) * 10`,
+          );
         }
         break;
     }
 
     // Execute search query
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     const [searchResults, countResult] = await Promise.all([
-      db.select()
+      db
+        .select()
         .from(studies)
         .where(whereClause)
         .orderBy(orderBy)
         .limit(limit)
         .offset(offset),
-      
-      db.select({ count: sql<number>`count(*)` })
+
+      db
+        .select({ count: sql<number>`count(*)` })
         .from(studies)
-        .where(whereClause)
+        .where(whereClause),
     ]);
 
     const total = countResult[0]?.count || 0;
@@ -159,18 +176,17 @@ router.get('/api/search/advanced', async (req, res) => {
         hasFullText,
         hasDOI,
         sortBy,
-        sortOrder
-      }
+        sortOrder,
+      },
     });
-
   } catch (error) {
-    console.error('Error performing advanced search:', error);
-    res.status(500).json({ error: 'Advanced search failed' });
+    console.error("Error performing advanced search:", error);
+    res.status(500).json({ error: "Advanced search failed" });
   }
 });
 
 // Search suggestions endpoint
-router.get('/api/search/suggestions', async (req, res) => {
+router.get("/api/search/suggestions", async (req, res) => {
   try {
     const { q: query } = req.query;
 
@@ -181,83 +197,83 @@ router.get('/api/search/suggestions', async (req, res) => {
     const searchTerm = query as string;
 
     // Get suggestions from multiple sources
-    const [studyTitles, categoryNames, authorNames, journalNames] = await Promise.all([
-      // Study titles
-      db.execute(sql`
+    const [studyTitles, categoryNames, authorNames, journalNames] =
+      await Promise.all([
+        // Study titles
+        db.execute(sql`
         SELECT DISTINCT title as text, 'study' as type, id
         FROM studies 
-        WHERE LOWER(title) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
         ORDER BY LENGTH(title)
         LIMIT 5
       `),
-      
-      // Categories
-      db.execute(sql`
+
+        // Categories
+        db.execute(sql`
         SELECT DISTINCT category as text, 'category' as type, COUNT(*) as study_count
         FROM studies 
-        WHERE LOWER(category) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(category) LIKE LOWER(${"%" + searchTerm + "%"})
         GROUP BY category
         ORDER BY COUNT(*) DESC
         LIMIT 3
       `),
-      
-      // Authors
-      db.execute(sql`
+
+        // Authors
+        db.execute(sql`
         SELECT DISTINCT authors as text, 'author' as type, COUNT(*) as study_count
         FROM studies 
-        WHERE LOWER(authors) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(authors) LIKE LOWER(${"%" + searchTerm + "%"})
         GROUP BY authors
         ORDER BY COUNT(*) DESC
         LIMIT 3
       `),
-      
-      // Journals
-      db.execute(sql`
+
+        // Journals
+        db.execute(sql`
         SELECT DISTINCT journal as text, 'journal' as type, COUNT(*) as study_count
         FROM studies 
-        WHERE LOWER(journal) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(journal) LIKE LOWER(${"%" + searchTerm + "%"})
         GROUP BY journal
         ORDER BY COUNT(*) DESC
         LIMIT 3
-      `)
-    ]);
+      `),
+      ]);
 
     const suggestions = [
-      ...studyTitles.rows.map(row => ({
+      ...studyTitles.rows.map((row) => ({
         id: `study-${row.id}`,
         text: row.text,
-        type: row.type
+        type: row.type,
       })),
-      ...categoryNames.rows.map(row => ({
+      ...categoryNames.rows.map((row) => ({
         id: `category-${row.text}`,
         text: row.text,
         type: row.type,
-        studyCount: row.study_count
+        studyCount: row.study_count,
       })),
-      ...authorNames.rows.slice(0, 2).map(row => ({
+      ...authorNames.rows.slice(0, 2).map((row) => ({
         id: `author-${row.text}`,
         text: row.text,
         type: row.type,
-        studyCount: row.study_count
+        studyCount: row.study_count,
       })),
-      ...journalNames.rows.slice(0, 2).map(row => ({
+      ...journalNames.rows.slice(0, 2).map((row) => ({
         id: `journal-${row.text}`,
         text: row.text,
         type: row.type,
-        studyCount: row.study_count
-      }))
+        studyCount: row.study_count,
+      })),
     ];
 
     res.json(suggestions);
-
   } catch (error) {
-    console.error('Error fetching search suggestions:', error);
-    res.status(500).json({ error: 'Failed to fetch suggestions' });
+    console.error("Error fetching search suggestions:", error);
+    res.status(500).json({ error: "Failed to fetch suggestions" });
   }
 });
 
 // Filter options endpoint
-router.get('/api/search/filter-options', async (req, res) => {
+router.get("/api/search/filter-options", async (req, res) => {
   try {
     const [categoriesData, studyTypes, yearRange] = await Promise.all([
       // Categories with study counts
@@ -269,7 +285,7 @@ router.get('/api/search/filter-options', async (req, res) => {
         ORDER BY COUNT(*) DESC
         LIMIT 20
       `),
-      
+
       // Study types (extracted from categories/titles)
       db.execute(sql`
         SELECT 
@@ -293,7 +309,7 @@ router.get('/api/search/filter-options', async (req, res) => {
         WHERE LOWER(category) LIKE '%vitro%' OR LOWER(title) LIKE '%vitro%'
         ORDER BY count DESC
       `),
-      
+
       // Year range
       db.execute(sql`
         SELECT 
@@ -301,49 +317,47 @@ router.get('/api/search/filter-options', async (req, res) => {
           MAX(EXTRACT(YEAR FROM publish_date)) as max_year
         FROM studies 
         WHERE publish_date IS NOT NULL
-      `)
+      `),
     ]);
 
     const filterOptions = {
-      categories: categoriesData.rows.map(row => ({
+      categories: categoriesData.rows.map((row) => ({
         id: row.category,
         name: row.category,
-        studyCount: row.study_count
+        studyCount: row.study_count,
       })),
-      studyTypes: studyTypes.rows.filter(row => row.count > 0),
+      studyTypes: studyTypes.rows.filter((row) => row.count > 0),
       yearRange: {
         min: yearRange.rows[0]?.min_year || 1990,
-        max: yearRange.rows[0]?.max_year || new Date().getFullYear()
-      }
+        max: yearRange.rows[0]?.max_year || new Date().getFullYear(),
+      },
     };
 
     res.json(filterOptions);
-
   } catch (error) {
-    console.error('Error fetching filter options:', error);
-    res.status(500).json({ error: 'Failed to fetch filter options' });
+    console.error("Error fetching filter options:", error);
+    res.status(500).json({ error: "Failed to fetch filter options" });
   }
 });
 
 // Search analytics endpoint
-router.post('/api/search/analytics', async (req, res) => {
+router.post("/api/search/analytics", async (req, res) => {
   try {
     const { query, resultsCount, selectedStudyId, timestamp } = req.body;
 
     // Log search analytics for improving search quality
-    console.log('Search Analytics:', {
+    console.log("Search Analytics:", {
       query,
       resultsCount,
       selectedStudyId,
-      timestamp
+      timestamp,
     });
 
     // In a production system, you would store this in a dedicated analytics table
-    res.json({ success: true, message: 'Analytics recorded' });
-
+    res.json({ success: true, message: "Analytics recorded" });
   } catch (error) {
-    console.error('Error recording search analytics:', error);
-    res.status(500).json({ error: 'Failed to record analytics' });
+    console.error("Error recording search analytics:", error);
+    res.status(500).json({ error: "Failed to record analytics" });
   }
 });
 

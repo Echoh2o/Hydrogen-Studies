@@ -4,31 +4,31 @@
 
 export enum ErrorCode {
   // Client errors (4xx)
-  BAD_REQUEST = 'BAD_REQUEST',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-  NOT_FOUND = 'NOT_FOUND',
-  CONFLICT = 'CONFLICT',
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  FILE_TOO_LARGE = 'FILE_TOO_LARGE',
-  UNSUPPORTED_FILE_TYPE = 'UNSUPPORTED_FILE_TYPE',
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  SESSION_EXPIRED = 'SESSION_EXPIRED',
-  
+  BAD_REQUEST = "BAD_REQUEST",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  FORBIDDEN = "FORBIDDEN",
+  NOT_FOUND = "NOT_FOUND",
+  CONFLICT = "CONFLICT",
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  FILE_TOO_LARGE = "FILE_TOO_LARGE",
+  UNSUPPORTED_FILE_TYPE = "UNSUPPORTED_FILE_TYPE",
+  RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED",
+  SESSION_EXPIRED = "SESSION_EXPIRED",
+
   // Server errors (5xx)
-  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
-  DATABASE_ERROR = 'DATABASE_ERROR',
-  EXTERNAL_API_ERROR = 'EXTERNAL_API_ERROR',
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  GATEWAY_TIMEOUT = 'GATEWAY_TIMEOUT',
-  
+  INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR",
+  DATABASE_ERROR = "DATABASE_ERROR",
+  EXTERNAL_API_ERROR = "EXTERNAL_API_ERROR",
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
+  GATEWAY_TIMEOUT = "GATEWAY_TIMEOUT",
+
   // Specific service errors
-  OPENAI_ERROR = 'OPENAI_ERROR',
-  IMAGE_GENERATION_ERROR = 'IMAGE_GENERATION_ERROR',
-  EMAIL_SEND_ERROR = 'EMAIL_SEND_ERROR',
-  FILE_UPLOAD_ERROR = 'FILE_UPLOAD_ERROR',
-  SEARCH_ERROR = 'SEARCH_ERROR',
-  ENRICHMENT_ERROR = 'ENRICHMENT_ERROR',
+  OPENAI_ERROR = "OPENAI_ERROR",
+  IMAGE_GENERATION_ERROR = "IMAGE_GENERATION_ERROR",
+  EMAIL_SEND_ERROR = "EMAIL_SEND_ERROR",
+  FILE_UPLOAD_ERROR = "FILE_UPLOAD_ERROR",
+  SEARCH_ERROR = "SEARCH_ERROR",
+  ENRICHMENT_ERROR = "ENRICHMENT_ERROR",
 }
 
 export interface ErrorContext {
@@ -53,7 +53,7 @@ export class AppError extends Error {
     code: ErrorCode,
     isOperational = true,
     context?: ErrorContext,
-    originalError?: Error
+    originalError?: Error,
   ) {
     super(message);
     this.statusCode = statusCode;
@@ -61,7 +61,7 @@ export class AppError extends Error {
     this.isOperational = isOperational;
     this.context = {
       ...context,
-      timestamp: context?.timestamp || new Date().toISOString()
+      timestamp: context?.timestamp || new Date().toISOString(),
     };
     this.originalError = originalError;
 
@@ -75,7 +75,7 @@ export class AppError extends Error {
       code: this.code,
       statusCode: this.statusCode,
       context: this.context,
-      stack: process.env.NODE_ENV === 'development' ? this.stack : undefined,
+      stack: process.env.NODE_ENV === "development" ? this.stack : undefined,
     };
   }
 }
@@ -94,13 +94,13 @@ export class NotFoundError extends AppError {
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message = 'Unauthorized access', context?: ErrorContext) {
+  constructor(message = "Unauthorized access", context?: ErrorContext) {
     super(message, 401, ErrorCode.UNAUTHORIZED, true, context);
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message = 'Access forbidden', context?: ErrorContext) {
+  constructor(message = "Access forbidden", context?: ErrorContext) {
     super(message, 403, ErrorCode.FORBIDDEN, true, context);
   }
 }
@@ -112,16 +112,9 @@ export class DatabaseError extends AppError {
     message: string,
     retryable = false,
     context?: ErrorContext,
-    originalError?: Error
+    originalError?: Error,
   ) {
-    super(
-      message,
-      503,
-      ErrorCode.DATABASE_ERROR,
-      true,
-      context,
-      originalError
-    );
+    super(message, 503, ErrorCode.DATABASE_ERROR, true, context, originalError);
     this.retryable = retryable;
   }
 }
@@ -135,7 +128,7 @@ export class ExternalAPIError extends AppError {
     message: string,
     retryable = true,
     context?: ErrorContext,
-    originalError?: Error
+    originalError?: Error,
   ) {
     super(
       `${service} error: ${message}`,
@@ -143,7 +136,7 @@ export class ExternalAPIError extends AppError {
       ErrorCode.EXTERNAL_API_ERROR,
       true,
       context,
-      originalError
+      originalError,
     );
     this.service = service;
     this.retryable = retryable;
@@ -155,11 +148,11 @@ export class RateLimitError extends AppError {
 
   constructor(retryAfter?: number, context?: ErrorContext) {
     super(
-      'Rate limit exceeded. Please try again later.',
+      "Rate limit exceeded. Please try again later.",
       429,
       ErrorCode.RATE_LIMIT_EXCEEDED,
       true,
-      context
+      context,
     );
     this.retryAfter = retryAfter;
   }
@@ -173,7 +166,13 @@ export class FileUploadError extends AppError {
 
 export class SessionExpiredError extends AppError {
   constructor(context?: ErrorContext) {
-    super('Session has expired. Please log in again.', 401, ErrorCode.SESSION_EXPIRED, true, context);
+    super(
+      "Session has expired. Please log in again.",
+      401,
+      ErrorCode.SESSION_EXPIRED,
+      true,
+      context,
+    );
   }
 }
 
@@ -183,15 +182,36 @@ export class ErrorFactory {
     return new AppError(message, 400, ErrorCode.BAD_REQUEST, true, context);
   }
 
-  static serverError(message = 'Internal server error', context?: ErrorContext): AppError {
-    return new AppError(message, 500, ErrorCode.INTERNAL_SERVER_ERROR, false, context);
+  static serverError(
+    message = "Internal server error",
+    context?: ErrorContext,
+  ): AppError {
+    return new AppError(
+      message,
+      500,
+      ErrorCode.INTERNAL_SERVER_ERROR,
+      false,
+      context,
+    );
   }
 
-  static serviceUnavailable(message = 'Service temporarily unavailable', context?: ErrorContext): AppError {
-    return new AppError(message, 503, ErrorCode.SERVICE_UNAVAILABLE, true, context);
+  static serviceUnavailable(
+    message = "Service temporarily unavailable",
+    context?: ErrorContext,
+  ): AppError {
+    return new AppError(
+      message,
+      503,
+      ErrorCode.SERVICE_UNAVAILABLE,
+      true,
+      context,
+    );
   }
 
-  static timeout(message = 'Request timeout', context?: ErrorContext): AppError {
+  static timeout(
+    message = "Request timeout",
+    context?: ErrorContext,
+  ): AppError {
     return new AppError(message, 504, ErrorCode.GATEWAY_TIMEOUT, true, context);
   }
 
@@ -205,20 +225,20 @@ export function isRetryableError(error: any): boolean {
   if (error instanceof DatabaseError || error instanceof ExternalAPIError) {
     return error.retryable;
   }
-  
+
   // Check for common retryable error patterns
   const retryablePatterns = [
-    'ECONNREFUSED',
-    'ENOTFOUND',
-    'ETIMEDOUT',
-    'ECONNRESET',
-    'EPIPE',
-    'ENETUNREACH',
-    'EAI_AGAIN',
+    "ECONNREFUSED",
+    "ENOTFOUND",
+    "ETIMEDOUT",
+    "ECONNRESET",
+    "EPIPE",
+    "ENETUNREACH",
+    "EAI_AGAIN",
   ];
-  
-  const errorMessage = error?.message || error?.code || '';
-  return retryablePatterns.some(pattern => errorMessage.includes(pattern));
+
+  const errorMessage = error?.message || error?.code || "";
+  return retryablePatterns.some((pattern) => errorMessage.includes(pattern));
 }
 
 // Helper to get user-friendly error message
@@ -228,22 +248,22 @@ export function getUserFriendlyMessage(error: any): string {
   }
 
   const errorMap: Record<string, string> = {
-    ECONNREFUSED: 'Unable to connect to the service. Please try again later.',
-    ETIMEDOUT: 'The request took too long to complete. Please try again.',
-    ENOTFOUND: 'Service is currently unavailable. Please try again later.',
-    ECONNRESET: 'Connection was interrupted. Please try again.',
-    '404': 'The requested resource was not found.',
-    '500': 'An unexpected error occurred. Our team has been notified.',
-    '503': 'Service is temporarily unavailable. Please try again later.',
+    ECONNREFUSED: "Unable to connect to the service. Please try again later.",
+    ETIMEDOUT: "The request took too long to complete. Please try again.",
+    ENOTFOUND: "Service is currently unavailable. Please try again later.",
+    ECONNRESET: "Connection was interrupted. Please try again.",
+    "404": "The requested resource was not found.",
+    "500": "An unexpected error occurred. Our team has been notified.",
+    "503": "Service is temporarily unavailable. Please try again later.",
   };
 
-  const errorCode = error?.code || error?.statusCode || '';
-  
+  const errorCode = error?.code || error?.statusCode || "";
+
   for (const [key, message] of Object.entries(errorMap)) {
     if (String(errorCode).includes(key)) {
       return message;
     }
   }
 
-  return 'An unexpected error occurred. Please try again later.';
+  return "An unexpected error occurred. Please try again later.";
 }

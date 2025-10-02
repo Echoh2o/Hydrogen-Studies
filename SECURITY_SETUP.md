@@ -37,6 +37,7 @@ SESSION_SECRET=your_64_character_hex_string_here
 ```
 
 **Requirements:**
+
 - Minimum 32 characters (64 hex characters recommended)
 - Must be unique per environment
 - Never commit to version control
@@ -57,6 +58,7 @@ ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com,https://www.yo
 ```
 
 **Important:**
+
 - Only include HTTPS origins in production
 - Be specific - avoid wildcards
 - Include all subdomains that need access
@@ -106,7 +108,7 @@ Include the CSRF token in your forms:
 
 ```html
 <form method="POST" action="/api/endpoint">
-  <input type="hidden" name="_csrf" value="{{csrfToken}}">
+  <input type="hidden" name="_csrf" value="{{csrfToken}}" />
   <!-- Your form fields -->
 </form>
 ```
@@ -120,14 +122,14 @@ Include the token in the header:
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
 // Include in fetch requests
-fetch('/api/endpoint', {
-  method: 'POST',
+fetch("/api/endpoint", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken
+    "Content-Type": "application/json",
+    "X-CSRF-Token": csrfToken,
   },
-  credentials: 'include', // Important for cookies
-  body: JSON.stringify(data)
+  credentials: "include", // Important for cookies
+  body: JSON.stringify(data),
 });
 ```
 
@@ -137,7 +139,7 @@ The server provides the CSRF token in response headers:
 
 ```javascript
 // After any GET request, extract the token
-const token = response.headers.get('X-CSRF-Token');
+const token = response.headers.get("X-CSRF-Token");
 
 // Use in subsequent POST/PUT/DELETE requests
 ```
@@ -145,6 +147,7 @@ const token = response.headers.get('X-CSRF-Token');
 ### Excluded Endpoints
 
 The following endpoints don't require CSRF tokens:
+
 - All GET/HEAD/OPTIONS requests
 - `/health` - Health check endpoint
 - `/api/stats` - Read-only statistics
@@ -202,9 +205,9 @@ curl -X POST https://yourapp.com/api/endpoint \
 
 ```javascript
 // From a different domain, this should fail in production
-fetch('https://yourapp.com/api/endpoint', {
-  credentials: 'include'
-}).catch(err => console.log('CORS blocked:', err));
+fetch("https://yourapp.com/api/endpoint", {
+  credentials: "include",
+}).catch((err) => console.log("CORS blocked:", err));
 ```
 
 ## 7. Troubleshooting
@@ -212,37 +215,45 @@ fetch('https://yourapp.com/api/endpoint', {
 ### Session Issues
 
 **Problem**: Sessions lost on restart
+
 - **Solution**: Check DATABASE_URL and session table creation
 
 **Problem**: "SESSION_SECRET is required" error
+
 - **Solution**: Set SESSION_SECRET environment variable
 
 ### CSRF Issues
 
 **Problem**: "CSRF token missing" errors
+
 - **Solution**: Ensure client sends X-CSRF-Token header
 
 **Problem**: "Invalid CSRF token" errors
+
 - **Solution**: Check token is from current session
 
 ### CORS Issues
 
 **Problem**: CORS errors in production
+
 - **Solution**: Add origin to ALLOWED_ORIGINS
 
 **Problem**: Credentials not working
+
 - **Solution**: Ensure `credentials: 'include'` in requests
 
 ## Security Warnings
 
 ⚠️ **Never**:
+
 - Commit SESSION_SECRET to version control
 - Use weak or predictable secrets
 - Share secrets between environments
 - Disable CSRF protection for convenience
-- Use wildcard (*) CORS origins in production
+- Use wildcard (\*) CORS origins in production
 
 ✅ **Always**:
+
 - Use HTTPS in production
 - Rotate secrets regularly
 - Monitor for security errors

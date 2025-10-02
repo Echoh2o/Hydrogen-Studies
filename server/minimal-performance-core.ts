@@ -12,15 +12,18 @@ class SimpleCache {
 
   constructor() {
     // Cleanup every 5 minutes
-    setInterval(() => {
-      const now = Date.now();
-      const entries = Array.from(this.cache.entries());
-      for (const [key, entry] of entries) {
-        if (now > entry.expires) {
-          this.cache.delete(key);
+    setInterval(
+      () => {
+        const now = Date.now();
+        const entries = Array.from(this.cache.entries());
+        for (const [key, entry] of entries) {
+          if (now > entry.expires) {
+            this.cache.delete(key);
+          }
         }
-      }
-    }, 5 * 60 * 1000);
+      },
+      5 * 60 * 1000,
+    );
   }
 
   get(key: string): any | null {
@@ -35,7 +38,7 @@ class SimpleCache {
   set(key: string, data: any): void {
     this.cache.set(key, {
       data,
-      expires: Date.now() + this.ttl
+      expires: Date.now() + this.ttl,
     });
   }
 
@@ -53,29 +56,41 @@ export async function createEssentialIndexes(): Promise<void> {
     sql`CREATE INDEX IF NOT EXISTS idx_studies_search_abstract ON studies USING gin(to_tsvector('english', abstract))`,
     sql`CREATE INDEX IF NOT EXISTS idx_studies_categories ON studies USING gin(consumer_categories)`,
     sql`CREATE INDEX IF NOT EXISTS idx_studies_date ON studies (journal_publish_date DESC NULLS LAST)`,
-    sql`CREATE INDEX IF NOT EXISTS idx_studies_journal ON studies (journal)`
+    sql`CREATE INDEX IF NOT EXISTS idx_studies_journal ON studies (journal)`,
   ];
 
   try {
-    await Promise.all(indexes.map(index => db.execute(index)));
-    console.log('✓ Essential indexes created');
+    await Promise.all(indexes.map((index) => db.execute(index)));
+    console.log("✓ Essential indexes created");
   } catch (error) {
-    console.log('→ Indexes already exist or creation failed');
+    console.log("→ Indexes already exist or creation failed");
   }
 }
 
 // Optimized search function
-export async function fastSearch(query: string, filters: any = {}, page = 1, pageSize = 20): Promise<any> {
-  console.log('FastSearch called with:', {query, queryType: typeof query, queryLength: query?.length, filters, page, pageSize});
-  
-  const cacheKey = `search_${JSON.stringify({query, filters, page, pageSize})}`;
-  
+export async function fastSearch(
+  query: string,
+  filters: any = {},
+  page = 1,
+  pageSize = 20,
+): Promise<any> {
+  console.log("FastSearch called with:", {
+    query,
+    queryType: typeof query,
+    queryLength: query?.length,
+    filters,
+    page,
+    pageSize,
+  });
+
+  const cacheKey = `search_${JSON.stringify({ query, filters, page, pageSize })}`;
+
   // Temporarily disable cache for debugging search issues
   // const cached = cache.get(cacheKey);
   // if (cached) return cached;
 
   const offset = (page - 1) * pageSize;
-  
+
   try {
     let countQuery: any;
     let studiesQuery: any;
@@ -84,13 +99,13 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
       // Both search term and category filter
       const searchTerm = `%${query.trim()}%`;
       const conditionTerm = `%${filters.condition}%`;
-      
+
       countQuery = sql`
         SELECT COUNT(*) as total FROM studies 
         WHERE (title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm})
           AND consumer_categories ILIKE ${conditionTerm}
       `;
-      
+
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
                doi, array_to_string(keywords, ', ') as keywords, consumer_categories, slug
@@ -103,13 +118,13 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
     } else if (query && query.trim() && query.trim().length > 0) {
       // Only search term
       const searchTerm = `%${query.trim()}%`;
-      console.log('FastSearch executing with search term:', searchTerm);
-      
+      console.log("FastSearch executing with search term:", searchTerm);
+
       countQuery = sql`
         SELECT COUNT(*) as total FROM studies 
         WHERE title ILIKE ${searchTerm} OR abstract ILIKE ${searchTerm} OR array_to_string(keywords, ' ') ILIKE ${searchTerm}
       `;
-      
+
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
                doi, array_to_string(keywords, ', ') as keywords, consumer_categories, slug,
@@ -138,12 +153,12 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
     } else if (filters.condition) {
       // Only category filter
       const conditionTerm = `%${filters.condition}%`;
-      
+
       countQuery = sql`
         SELECT COUNT(*) as total FROM studies 
         WHERE consumer_categories ILIKE ${conditionTerm}
       `;
-      
+
       studiesQuery = sql`
         SELECT id, title, abstract, authors, journal, journal_publish_date, 
                doi, array_to_string(keywords, ', ') as keywords, consumer_categories, slug
@@ -166,12 +181,12 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
 
     const [countResult, studiesResult] = await Promise.all([
       db.execute(countQuery),
-      db.execute(studiesQuery)
+      db.execute(studiesQuery),
     ]);
 
-    const total = parseInt((countResult as any).rows[0]?.total || '0');
+    const total = parseInt((countResult as any).rows[0]?.total || "0");
     const studies = (studiesResult as any).rows || [];
-    
+
     // Production optimization: Remove debug logging for better performance
 
     const result = {
@@ -179,21 +194,20 @@ export async function fastSearch(query: string, filters: any = {}, page = 1, pag
       total,
       page,
       pageSize,
-      pageCount: Math.ceil(total / pageSize)
+      pageCount: Math.ceil(total / pageSize),
     };
 
     cache.set(cacheKey, result);
     return result;
-
   } catch (error) {
-    console.error('Search error:', error);
+    console.error("Search error:", error);
     return { data: [], total: 0, page, pageSize, pageCount: 0 };
   }
 }
 
 // Optimized category counts
 export async function fastCategoryCounts(): Promise<any> {
-  const cached = cache.get('category_counts');
+  const cached = cache.get("category_counts");
   if (cached) return cached;
 
   try {
@@ -307,34 +321,36 @@ export async function fastCategoryCounts(): Promise<any> {
       data: {
         condition: (conditionResult as any).rows || [],
         body_system: (bodySystemResult as any).rows || [],
-        life_stage: (lifeStageResult as any).rows || []
-      }
+        life_stage: (lifeStageResult as any).rows || [],
+      },
     };
 
-    cache.set('category_counts', response);
+    cache.set("category_counts", response);
     return response;
-
   } catch (error) {
-    console.error('Category counts error:', error);
-    return { success: false, data: { condition: [], body_system: [], life_stage: [] } };
+    console.error("Category counts error:", error);
+    return {
+      success: false,
+      data: { condition: [], body_system: [], life_stage: [] },
+    };
   }
 }
 
 // Fast trending searches
 export async function fastTrendingSearches(): Promise<string[]> {
-  const cached = cache.get('trending_searches');
+  const cached = cache.get("trending_searches");
   if (cached) return cached;
 
   const trending = [
-    'hydrogen water benefits',
-    'cardiovascular health',
-    'brain function',
-    'athletic performance',
-    'anti-aging research',
-    'inflammation reduction'
+    "hydrogen water benefits",
+    "cardiovascular health",
+    "brain function",
+    "athletic performance",
+    "anti-aging research",
+    "inflammation reduction",
   ];
 
-  cache.set('trending_searches', trending);
+  cache.set("trending_searches", trending);
   return trending;
 }
 
@@ -344,18 +360,18 @@ export function getSimpleStats(): any {
   return {
     memory: Math.round(usage.heapUsed / 1024 / 1024),
     cache: cache.size(),
-    uptime: Math.round(process.uptime())
+    uptime: Math.round(process.uptime()),
   };
 }
 
 // Initialize essential optimizations
 export async function initializeMinimalPerformance(): Promise<void> {
-  console.log('Initializing minimal performance optimizations...');
-  
+  console.log("Initializing minimal performance optimizations...");
+
   try {
     await createEssentialIndexes();
-    console.log('✓ Minimal performance core initialized');
+    console.log("✓ Minimal performance core initialized");
   } catch (error) {
-    console.error('Performance initialization error:', error);
+    console.error("Performance initialization error:", error);
   }
 }

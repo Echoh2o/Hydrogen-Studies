@@ -1,7 +1,7 @@
 export enum CategorizationModel {
-  CONDITION = 'condition',
-  BODY_SYSTEM = 'body_system',
-  LIFE_STAGE = 'life_stage'
+  CONDITION = "condition",
+  BODY_SYSTEM = "body_system",
+  LIFE_STAGE = "life_stage",
 }
 
 export interface CategoryCount {

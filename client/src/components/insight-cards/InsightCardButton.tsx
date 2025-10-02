@@ -1,19 +1,19 @@
-import { useLocation } from 'wouter';
-import { Share2 } from 'lucide-react';
-import { Button, ButtonProps } from '@/components/ui/button';
-import { motion } from 'framer-motion';
-import { InteractiveButton } from '@/components/ui/interactive-button';
+import { useLocation } from "wouter";
+import { Share2 } from "lucide-react";
+import { Button, ButtonProps } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { InteractiveButton } from "@/components/ui/interactive-button";
 
 interface InsightCardButtonProps extends ButtonProps {
   studyId: number;
-  variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link';
+  variant?: "default" | "outline" | "secondary" | "ghost" | "link";
 }
 
-export default function InsightCardButton({ 
-  studyId, 
-  variant = 'default',
+export default function InsightCardButton({
+  studyId,
+  variant = "default",
   className,
-  ...props 
+  ...props
 }: InsightCardButtonProps) {
   const [_location, setLocation] = useLocation();
 

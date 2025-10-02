@@ -4,7 +4,11 @@
  */
 
 import { OpenAI } from "openai";
-import { parseNaturalLanguageQuery, ParsedQuery, QueryIntent } from "./natural-language-parser";
+import {
+  parseNaturalLanguageQuery,
+  ParsedQuery,
+  QueryIntent,
+} from "./natural-language-parser";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -45,24 +49,28 @@ export interface QuerySuggestion {
  */
 export async function enhanceQueryUnderstanding(
   query: string,
-  context?: QueryContext
+  context?: QueryContext,
 ): Promise<EnhancedQuery> {
   try {
     // Parse the natural language query
     const parsed = await parseNaturalLanguageQuery(query);
-    
+
     // Correct spelling and expand abbreviations
     const corrected = await correctSpellingAndAbbreviations(query);
-    
+
     // Generate query expansions based on context
-    const expanded = await generateContextualExpansions(corrected, parsed, context);
-    
+    const expanded = await generateContextualExpansions(
+      corrected,
+      parsed,
+      context,
+    );
+
     // Generate suggestions
     const suggestions = await generateQuerySuggestions(query, parsed, context);
-    
+
     // Generate related queries
     const relatedQueries = generateRelatedQueries(parsed, context);
-    
+
     return {
       original: query,
       corrected,
@@ -71,12 +79,11 @@ export async function enhanceQueryUnderstanding(
       confidence: parsed.confidence,
       context: context || createDefaultContext(),
       suggestions,
-      relatedQueries
+      relatedQueries,
     };
-    
   } catch (error) {
     console.error("Error enhancing query understanding:", error);
-    
+
     // Fallback response
     return {
       original: query,
@@ -86,7 +93,7 @@ export async function enhanceQueryUnderstanding(
       confidence: 0.3,
       context: context || createDefaultContext(),
       suggestions: [],
-      relatedQueries: []
+      relatedQueries: [],
     };
   }
 }
@@ -117,36 +124,35 @@ async function correctSpellingAndAbbreviations(query: string): Promise<string> {
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: query }
+        { role: "user", content: query },
       ],
       temperature: 0.1,
-      max_tokens: 100
+      max_tokens: 100,
     });
 
     return completion.choices[0].message.content?.trim() || query;
-    
   } catch (error) {
     console.error("Error correcting query:", error);
-    
+
     // Basic fallback corrections
     let corrected = query;
     const replacements: Record<string, string> = {
-      "H2": "hydrogen",
-      "h2": "hydrogen",
-      "hidrogen": "hydrogen",
-      "hidrojen": "hydrogen",
-      "artritis": "arthritis",
-      "diabetis": "diabetes",
-      "alzhimer": "alzheimer",
-      "parkinsons": "parkinson's",
-      "inflamation": "inflammation"
+      H2: "hydrogen",
+      h2: "hydrogen",
+      hidrogen: "hydrogen",
+      hidrojen: "hydrogen",
+      artritis: "arthritis",
+      diabetis: "diabetes",
+      alzhimer: "alzheimer",
+      parkinsons: "parkinson's",
+      inflamation: "inflammation",
     };
-    
+
     for (const [wrong, right] of Object.entries(replacements)) {
       const regex = new RegExp(`\\b${wrong}\\b`, "gi");
       corrected = corrected.replace(regex, right);
     }
-    
+
     return corrected;
   }
 }
@@ -157,16 +163,18 @@ async function correctSpellingAndAbbreviations(query: string): Promise<string> {
 async function generateContextualExpansions(
   query: string,
   parsed: ParsedQuery,
-  context?: QueryContext
+  context?: QueryContext,
 ): Promise<string[]> {
   const expansions = [query];
-  
+
   try {
     // Use context to enhance expansions
-    const contextInfo = context ? `
+    const contextInfo = context
+      ? `
     Previous queries: ${context.previousQueries.join(", ")}
     User interests: ${context.userPreferences.interests.join(", ")}
-    ` : "";
+    `
+      : "";
 
     const systemPrompt = `Generate 3-5 query expansions for medical research search.
     Include synonyms, related terms, and alternative phrasings.
@@ -177,19 +185,23 @@ async function generateContextualExpansions(
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Query: "${query}"\nIntent: ${parsed.intent}` }
+        {
+          role: "user",
+          content: `Query: "${query}"\nIntent: ${parsed.intent}`,
+        },
       ],
       temperature: 0.4,
       max_tokens: 200,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
-    const result = JSON.parse(completion.choices[0].message.content || '{"expansions":[]}');
+    const result = JSON.parse(
+      completion.choices[0].message.content || '{"expansions":[]}',
+    );
     expansions.push(...(result.expansions || []));
-    
   } catch (error) {
     console.error("Error generating expansions:", error);
-    
+
     // Fallback expansions based on intent
     if (parsed.intent === QueryIntent.COMPARISON) {
       expansions.push(`${query} comparison`);
@@ -205,7 +217,7 @@ async function generateContextualExpansions(
       expansions.push(`${query} risks`);
     }
   }
-  
+
   // Add entity-based expansions
   if (parsed.entities.conditions?.length > 0) {
     for (const condition of parsed.entities.conditions) {
@@ -213,7 +225,7 @@ async function generateContextualExpansions(
       expansions.push(`${condition} hydrogen treatment`);
     }
   }
-  
+
   return [...new Set(expansions)]; // Remove duplicates
 }
 
@@ -223,10 +235,10 @@ async function generateContextualExpansions(
 async function generateQuerySuggestions(
   query: string,
   parsed: ParsedQuery,
-  context?: QueryContext
+  context?: QueryContext,
 ): Promise<QuerySuggestion[]> {
   const suggestions: QuerySuggestion[] = [];
-  
+
   try {
     const systemPrompt = `Generate helpful search suggestions for a medical research query.
     Suggest corrections, refinements, and alternatives.
@@ -236,37 +248,41 @@ async function generateQuerySuggestions(
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Query: "${query}"\nParsed entities: ${JSON.stringify(parsed.entities)}` }
+        {
+          role: "user",
+          content: `Query: "${query}"\nParsed entities: ${JSON.stringify(parsed.entities)}`,
+        },
       ],
       temperature: 0.5,
       max_tokens: 300,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
-    const result = JSON.parse(completion.choices[0].message.content || '{"suggestions":[]}');
+    const result = JSON.parse(
+      completion.choices[0].message.content || '{"suggestions":[]}',
+    );
     suggestions.push(...(result.suggestions || []));
-    
   } catch (error) {
     console.error("Error generating suggestions:", error);
   }
-  
+
   // Add intent-based suggestions
   if (parsed.confidence < 0.7) {
     suggestions.push({
       text: `Did you mean: ${query} clinical trials?`,
       type: "refinement",
-      confidence: 0.6
+      confidence: 0.6,
     });
   }
-  
+
   if (parsed.entities.conditions?.length === 0 && query.length > 10) {
     suggestions.push({
       text: "Try adding a specific condition (e.g., arthritis, diabetes)",
       type: "refinement",
-      confidence: 0.7
+      confidence: 0.7,
     });
   }
-  
+
   return suggestions;
 }
 
@@ -275,10 +291,10 @@ async function generateQuerySuggestions(
  */
 function generateRelatedQueries(
   parsed: ParsedQuery,
-  context?: QueryContext
+  context?: QueryContext,
 ): string[] {
   const related: string[] = [];
-  
+
   // Based on intent
   switch (parsed.intent) {
     case QueryIntent.COMPARISON:
@@ -308,22 +324,23 @@ function generateRelatedQueries(
       }
       break;
   }
-  
+
   // Based on entities
   if (parsed.entities.deliveryMethods?.length > 0) {
     const method = parsed.entities.deliveryMethods[0];
     related.push(`How to use hydrogen ${method}`);
     related.push(`Benefits of hydrogen ${method}`);
   }
-  
+
   // Add context-based suggestions
   if (context?.previousQueries?.length > 0) {
-    const lastQuery = context.previousQueries[context.previousQueries.length - 1];
+    const lastQuery =
+      context.previousQueries[context.previousQueries.length - 1];
     if (lastQuery !== parsed.originalQuery) {
       related.push(`More about: ${lastQuery}`);
     }
   }
-  
+
   return related.slice(0, 6);
 }
 
@@ -335,12 +352,12 @@ function createDefaultContext(): QueryContext {
     previousQueries: [],
     userPreferences: {
       interests: [],
-      preferredStudyTypes: []
+      preferredStudyTypes: [],
     },
     sessionContext: {
       viewedStudies: [],
-      appliedFilters: {}
-    }
+      appliedFilters: {},
+    },
   };
 }
 
@@ -352,33 +369,35 @@ export function analyzeQueryComplexity(query: string): {
   features: string[];
 } {
   const features: string[] = [];
-  
+
   // Check for comparison words
   if (/\bvs\b|\bversus\b|\bcompare\b|\bbetter\b/i.test(query)) {
     features.push("comparison");
   }
-  
+
   // Check for temporal constraints
   if (/\brecent\b|\blast\s+year\b|\b202\d\b|\blatest\b/i.test(query)) {
     features.push("temporal");
   }
-  
+
   // Check for effectiveness queries
   if (/\beffective\b|\bbest\b|\boptimal\b|\bsuccess\b/i.test(query)) {
     features.push("effectiveness");
   }
-  
+
   // Check for demographic specifiers
   if (/\belderly\b|\bchildren\b|\bathletes\b|\bpregnant\b/i.test(query)) {
     features.push("demographic");
   }
-  
+
   // Check for multiple conditions
-  const conditionMatches = query.match(/\b(arthritis|diabetes|heart|cancer|alzheimer|parkinson)\b/gi);
+  const conditionMatches = query.match(
+    /\b(arthritis|diabetes|heart|cancer|alzheimer|parkinson)\b/gi,
+  );
   if (conditionMatches && conditionMatches.length > 1) {
     features.push("multiple_conditions");
   }
-  
+
   // Determine complexity
   let complexity: "simple" | "moderate" | "complex";
   if (features.length === 0 || query.split(" ").length < 5) {
@@ -388,7 +407,7 @@ export function analyzeQueryComplexity(query: string): {
   } else {
     complexity = "complex";
   }
-  
+
   return { complexity, features };
 }
 
@@ -397,7 +416,7 @@ export function analyzeQueryComplexity(query: string): {
  */
 export function extractKeyPhrases(query: string): string[] {
   const phrases: string[] = [];
-  
+
   // Common medical phrases
   const patterns = [
     /hydrogen\s+(therapy|treatment|water|inhalation|gas)/gi,
@@ -406,15 +425,15 @@ export function extractKeyPhrases(query: string): string[] {
     /\b(side effects?|adverse events?)/gi,
     /\b(elderly|pediatric|adult|senior)\s+patients?/gi,
     /\b(cardiovascular|neurological|metabolic)\s+disease/gi,
-    /\b(oxidative stress|inflammation|immune)/gi
+    /\b(oxidative stress|inflammation|immune)/gi,
   ];
-  
+
   for (const pattern of patterns) {
     const matches = query.match(pattern);
     if (matches) {
-      phrases.push(...matches.map(m => m.toLowerCase()));
+      phrases.push(...matches.map((m) => m.toLowerCase()));
     }
   }
-  
+
   return [...new Set(phrases)];
 }

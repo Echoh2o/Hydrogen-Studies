@@ -3,7 +3,10 @@ import { db } from "../db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { monitorSchedule, keywords } from "@shared/schema";
-import { checkScheduledSearches, runKeywordMonitorNow } from "../keyword-monitor-service";
+import {
+  checkScheduledSearches,
+  runKeywordMonitorNow,
+} from "../keyword-monitor-service";
 
 const router = Router();
 
@@ -13,7 +16,7 @@ const scheduleSchema = z.object({
   frequency: z.string(),
   time: z.string(),
   days: z.array(z.string()),
-  sources: z.array(z.string())
+  sources: z.array(z.string()),
 });
 
 /**
@@ -23,28 +26,28 @@ const scheduleSchema = z.object({
 router.get("/status", async (req, res) => {
   try {
     // Set appropriate headers to ensure JSON response
-    res.setHeader('Content-Type', 'application/json');
-    
+    res.setHeader("Content-Type", "application/json");
+
     // Get the current status
     const status = await checkScheduledSearches();
-    
+
     // Create a standardized response format
     const response = {
       success: true,
-      data: status || { ran: false, message: "No status available" }
+      data: status || { ran: false, message: "No status available" },
     };
-    
+
     // Return JSON response
     return res.json(response);
   } catch (error) {
     console.error("Error checking scheduled search status:", error);
-    
+
     // Ensure error response is also JSON
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(500).json({ 
-      success: false, 
+    res.setHeader("Content-Type", "application/json");
+    return res.status(500).json({
+      success: false,
       message: "Failed to check schedule status",
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -55,22 +58,25 @@ router.get("/status", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const [schedule] = await db.select().from(monitorSchedule);
-    
+
     if (!schedule) {
       // Create default schedule if none exists
-      const [newSchedule] = await db.insert(monitorSchedule).values({
-        enabled: false,
-        frequency: "daily",
-        time: "00:00",
-        days: ["monday", "wednesday", "friday"],
-        sources: ["pubmed", "crossref", "europepmc"],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).returning();
-      
+      const [newSchedule] = await db
+        .insert(monitorSchedule)
+        .values({
+          enabled: false,
+          frequency: "daily",
+          time: "00:00",
+          days: ["monday", "wednesday", "friday"],
+          sources: ["pubmed", "crossref", "europepmc"],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
       return res.json(newSchedule);
     }
-    
+
     return res.json(schedule);
   } catch (error) {
     console.error("Error fetching schedule:", error);
@@ -84,22 +90,25 @@ router.get("/", async (req, res) => {
 router.get("/schedule", async (req, res) => {
   try {
     const [schedule] = await db.select().from(monitorSchedule);
-    
+
     if (!schedule) {
       // Create default schedule if none exists
-      const [newSchedule] = await db.insert(monitorSchedule).values({
-        enabled: false,
-        frequency: "daily",
-        time: "00:00",
-        days: ["monday", "wednesday", "friday"],
-        sources: ["pubmed", "crossref", "europepmc"],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).returning();
-      
+      const [newSchedule] = await db
+        .insert(monitorSchedule)
+        .values({
+          enabled: false,
+          frequency: "daily",
+          time: "00:00",
+          days: ["monday", "wednesday", "friday"],
+          sources: ["pubmed", "crossref", "europepmc"],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
       return res.json(newSchedule);
     }
-    
+
     return res.json(schedule);
   } catch (error) {
     console.error("Error fetching schedule:", error);
@@ -113,20 +122,20 @@ router.get("/schedule", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const data = scheduleSchema.parse(req.body);
-    
+
     const [existingSchedule] = await db.select().from(monitorSchedule);
-    
+
     if (existingSchedule) {
       // Update existing schedule
       const [updatedSchedule] = await db
         .update(monitorSchedule)
         .set({
           ...data,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(monitorSchedule.id, existingSchedule.id))
         .returning();
-      
+
       return res.json(updatedSchedule);
     } else {
       // Create new schedule
@@ -135,10 +144,10 @@ router.post("/", async (req, res) => {
         .values({
           ...data,
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .returning();
-      
+
       return res.json(newSchedule);
     }
   } catch (error) {
@@ -154,24 +163,24 @@ router.post("/run-now", async (req, res) => {
   try {
     // Get the schedule configuration to verify it exists
     const [schedule] = await db.select().from(monitorSchedule);
-    
+
     if (!schedule) {
       return res.status(404).json({ message: "Schedule not found" });
     }
-    
+
     // Run the keyword monitor immediately
     const result = await runKeywordMonitorNow();
-    
+
     if (!result.success) {
-      return res.status(400).json({ 
-        message: result.message || "Failed to run monitor", 
-        error: result.error 
+      return res.status(400).json({
+        message: result.message || "Failed to run monitor",
+        error: result.error,
       });
     }
-    
-    return res.json({ 
-      message: "Monitor completed successfully", 
-      results: result.results
+
+    return res.json({
+      message: "Monitor completed successfully",
+      results: result.results,
     });
   } catch (error) {
     console.error("Error running monitor:", error);
@@ -188,7 +197,7 @@ async function getActiveKeywords() {
       .select()
       .from(keywords)
       .where(eq(keywords.isActive, true));
-    
+
     return activeKeywords;
   } catch (error) {
     console.error("Error fetching active keywords:", error);

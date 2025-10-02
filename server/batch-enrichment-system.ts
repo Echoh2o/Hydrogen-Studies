@@ -3,10 +3,10 @@
  * Enriches all studies with authentic research data from PubMed, Europe PMC, and CrossRef APIs
  */
 
-import { db } from './db';
-import { studies } from '@shared/schema';
-import { eq, sql, isNull } from 'drizzle-orm';
-import { enrichStudySimple } from './simple-pubmed-enrichment';
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { eq, sql, isNull } from "drizzle-orm";
+import { enrichStudySimple } from "./simple-pubmed-enrichment";
 
 interface BatchProgress {
   total: number;
@@ -23,12 +23,12 @@ let forceStop = false;
 
 export async function startBatchEnrichment(): Promise<void> {
   if (isRunning) {
-    throw new Error('Batch enrichment is already running');
+    throw new Error("Batch enrichment is already running");
   }
 
-  console.log('Starting comprehensive batch enrichment of all studies...');
+  console.log("Starting comprehensive batch enrichment of all studies...");
   isRunning = true;
-  
+
   try {
     // Get all studies that need enrichment (have DOI but no author affiliations)
     const studiesToEnrichResult = await db.execute(sql`
@@ -42,10 +42,12 @@ export async function startBatchEnrichment(): Promise<void> {
 
     const studiesToEnrich = studiesToEnrichResult.rows || [];
     const total = studiesToEnrich.length;
-    console.log(`Found ${total} studies to enrich with authentic research data`);
+    console.log(
+      `Found ${total} studies to enrich with authentic research data`,
+    );
 
     if (total === 0) {
-      console.log('All studies are already enriched with authentic data');
+      console.log("All studies are already enriched with authentic data");
       isRunning = false;
       return;
     }
@@ -54,9 +56,9 @@ export async function startBatchEnrichment(): Promise<void> {
       total,
       completed: 0,
       failed: 0,
-      currentStudy: '',
-      estimatedTimeRemaining: 'Calculating...',
-      startTime: new Date()
+      currentStudy: "",
+      estimatedTimeRemaining: "Calculating...",
+      startTime: new Date(),
     };
 
     let completed = 0;
@@ -65,10 +67,12 @@ export async function startBatchEnrichment(): Promise<void> {
     for (const study of studiesToEnrich) {
       try {
         currentBatchProgress.currentStudy = study.title as string;
-        console.log(`Enriching study ${completed + 1}/${total}: ${study.title}`);
-        
+        console.log(
+          `Enriching study ${completed + 1}/${total}: ${study.title}`,
+        );
+
         const success = await enrichStudySimple(study.id as number);
-        
+
         if (success) {
           completed++;
           console.log(`✓ Successfully enriched study ${study.id}`);
@@ -79,19 +83,19 @@ export async function startBatchEnrichment(): Promise<void> {
 
         currentBatchProgress.completed = completed;
         currentBatchProgress.failed = failed;
-        
+
         // Calculate estimated time remaining
         const elapsed = Date.now() - currentBatchProgress.startTime.getTime();
         const avgTimePerStudy = elapsed / (completed + failed);
         const remaining = total - (completed + failed);
         const estimatedMs = remaining * avgTimePerStudy;
-        currentBatchProgress.estimatedTimeRemaining = formatDuration(estimatedMs);
+        currentBatchProgress.estimatedTimeRemaining =
+          formatDuration(estimatedMs);
 
         // Rate limiting - wait 2 seconds between requests to be respectful to APIs
         if (completed + failed < total) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
-
       } catch (error) {
         failed++;
         currentBatchProgress.failed = failed;
@@ -104,9 +108,8 @@ export async function startBatchEnrichment(): Promise<void> {
     console.log(`- Successfully enriched: ${completed}`);
     console.log(`- Failed: ${failed}`);
     console.log(`- Success rate: ${((completed / total) * 100).toFixed(1)}%`);
-
   } catch (error) {
-    console.error('Error in batch enrichment:', error);
+    console.error("Error in batch enrichment:", error);
     throw error;
   } finally {
     isRunning = false;
@@ -124,10 +127,10 @@ export function isBatchRunning(): boolean {
 
 export async function stopBatchEnrichment(): Promise<void> {
   if (!isRunning) {
-    throw new Error('No batch enrichment is currently running');
+    throw new Error("No batch enrichment is currently running");
   }
-  
-  console.log('Stopping batch enrichment...');
+
+  console.log("Stopping batch enrichment...");
   isRunning = false;
   currentBatchProgress = null;
 }
@@ -143,17 +146,21 @@ function formatDuration(ms: number): string {
 }
 
 export async function enrichSpecificStudies(studyIds: number[]): Promise<void> {
-  console.log(`Starting targeted enrichment for ${studyIds.length} specific studies`);
-  
+  console.log(
+    `Starting targeted enrichment for ${studyIds.length} specific studies`,
+  );
+
   let completed = 0;
   let failed = 0;
 
   for (const studyId of studyIds) {
     try {
-      console.log(`Enriching study ${completed + 1}/${studyIds.length}: ID ${studyId}`);
-      
+      console.log(
+        `Enriching study ${completed + 1}/${studyIds.length}: ID ${studyId}`,
+      );
+
       const success = await enrichStudySimple(studyId);
-      
+
       if (success) {
         completed++;
         console.log(`✓ Successfully enriched study ${studyId}`);
@@ -164,14 +171,15 @@ export async function enrichSpecificStudies(studyIds: number[]): Promise<void> {
 
       // Rate limiting
       if (completed + failed < studyIds.length) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
-
     } catch (error) {
       failed++;
       console.error(`Error enriching study ${studyId}:`, error);
     }
   }
 
-  console.log(`Targeted enrichment completed: ${completed} successful, ${failed} failed`);
+  console.log(
+    `Targeted enrichment completed: ${completed} successful, ${failed} failed`,
+  );
 }

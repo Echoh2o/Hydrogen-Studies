@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { MessageCircle, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { AdvancedChatWidget } from './AdvancedChatWidget';
+import React, { useState } from "react";
+import { MessageCircle, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AdvancedChatWidget } from "./AdvancedChatWidget";
 
 export function ChatLauncher() {
   const [isAdvancedChatOpen, setIsAdvancedChatOpen] = useState(false);
@@ -23,9 +23,9 @@ export function ChatLauncher() {
       </div>
 
       {/* Advanced Chat Widget */}
-      <AdvancedChatWidget 
-        isOpen={isAdvancedChatOpen} 
-        onClose={() => setIsAdvancedChatOpen(false)} 
+      <AdvancedChatWidget
+        isOpen={isAdvancedChatOpen}
+        onClose={() => setIsAdvancedChatOpen(false)}
       />
     </>
   );

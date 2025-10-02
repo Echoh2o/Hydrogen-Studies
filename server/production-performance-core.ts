@@ -1,18 +1,17 @@
-
 /**
  * Production Performance Core
  * Unified high-performance system for maximum speed and reliability
  */
 
-import { db } from './db';
-import { sql } from 'drizzle-orm';
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 // High-performance cache with intelligent cleanup
 class ProductionCache {
   private cache = new Map<string, { data: any; expires: number }>();
   private readonly DEFAULT_TTL = 300000; // 5 minutes
   private readonly MAX_SIZE = 2000;
-  
+
   constructor() {
     // Aggressive cleanup every 2 minutes
     setInterval(() => this.cleanup(), 120000);
@@ -36,27 +35,27 @@ class ProductionCache {
 
     this.cache.set(key, {
       data,
-      expires: Date.now() + (customTTL || this.DEFAULT_TTL)
+      expires: Date.now() + (customTTL || this.DEFAULT_TTL),
     });
   }
 
   private cleanup(): void {
     const now = Date.now();
     const toDelete: string[] = [];
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expires) {
         toDelete.push(key);
       }
     }
-    
-    toDelete.forEach(key => this.cache.delete(key));
+
+    toDelete.forEach((key) => this.cache.delete(key));
   }
 
   getStats() {
     return {
       size: this.cache.size,
-      maxSize: this.MAX_SIZE
+      maxSize: this.MAX_SIZE,
     };
   }
 
@@ -76,10 +75,10 @@ class PerformanceTracker {
     if (!this.metrics.has(endpoint)) {
       this.metrics.set(endpoint, []);
     }
-    
+
     const times = this.metrics.get(endpoint)!;
     times.push(responseTime);
-    
+
     // Keep only recent metrics
     if (times.length > this.MAX_METRICS_PER_ENDPOINT) {
       times.shift();
@@ -98,7 +97,7 @@ class PerformanceTracker {
       average: Math.round(avg),
       min,
       max,
-      count: times.length
+      count: times.length,
     };
   }
 
@@ -115,13 +114,13 @@ export const performanceTracker = new PerformanceTracker();
 
 // Optimized database queries
 export async function optimizedSearch(
-  query: string, 
-  filters: any = {}, 
-  page = 1, 
-  pageSize = 20
+  query: string,
+  filters: any = {},
+  page = 1,
+  pageSize = 20,
 ): Promise<any> {
-  const cacheKey = `search:${JSON.stringify({query, filters, page, pageSize})}`;
-  
+  const cacheKey = `search:${JSON.stringify({ query, filters, page, pageSize })}`;
+
   // Check cache first
   const cached = cache.get(cacheKey);
   if (cached) return cached;
@@ -138,7 +137,7 @@ export async function optimizedSearch(
       // Search + filter
       const searchTerm = `%${query.trim()}%`;
       const conditionTerm = `%${filters.condition}%`;
-      
+
       [countQuery, studiesQuery] = await Promise.all([
         sql`
           SELECT COUNT(*) as total FROM studies 
@@ -153,12 +152,12 @@ export async function optimizedSearch(
             AND consumer_categories ILIKE ${conditionTerm}
           ORDER BY journal_publish_date DESC NULLS LAST
           LIMIT ${pageSize} OFFSET ${offset}
-        `
+        `,
       ]);
     } else if (query?.trim()) {
       // Search only
       const searchTerm = `%${query.trim()}%`;
-      
+
       [countQuery, studiesQuery] = await Promise.all([
         sql`
           SELECT COUNT(*) as total FROM studies 
@@ -173,12 +172,12 @@ export async function optimizedSearch(
             CASE WHEN title ILIKE ${searchTerm} THEN 1 ELSE 2 END,
             journal_publish_date DESC NULLS LAST
           LIMIT ${pageSize} OFFSET ${offset}
-        `
+        `,
       ]);
     } else if (filters.condition) {
       // Filter only
       const conditionTerm = `%${filters.condition}%`;
-      
+
       [countQuery, studiesQuery] = await Promise.all([
         sql`
           SELECT COUNT(*) as total FROM studies 
@@ -191,7 +190,7 @@ export async function optimizedSearch(
           WHERE consumer_categories ILIKE ${conditionTerm}
           ORDER BY journal_publish_date DESC NULLS LAST
           LIMIT ${pageSize} OFFSET ${offset}
-        `
+        `,
       ]);
     } else {
       // No filters
@@ -203,49 +202,51 @@ export async function optimizedSearch(
           FROM studies 
           ORDER BY journal_publish_date DESC NULLS LAST
           LIMIT ${pageSize} OFFSET ${offset}
-        `
+        `,
       ]);
     }
 
     const [countResult, studiesResult] = await Promise.all([
       db.execute(countQuery),
-      db.execute(studiesQuery)
+      db.execute(studiesQuery),
     ]);
 
     const result = {
       data: (studiesResult as any).rows || [],
-      total: parseInt((countResult as any).rows[0]?.total || '0'),
+      total: parseInt((countResult as any).rows[0]?.total || "0"),
       page,
       pageSize,
-      pageCount: Math.ceil(parseInt((countResult as any).rows[0]?.total || '0') / pageSize)
+      pageCount: Math.ceil(
+        parseInt((countResult as any).rows[0]?.total || "0") / pageSize,
+      ),
     };
 
     // Cache result
     cache.set(cacheKey, result);
 
     // Track performance
-    performanceTracker.track('/api/search', Date.now() - startTime);
+    performanceTracker.track("/api/search", Date.now() - startTime);
 
     return result;
-
   } catch (error) {
-    console.error('Search error:', error);
-    performanceTracker.track('/api/search', Date.now() - startTime);
+    console.error("Search error:", error);
+    performanceTracker.track("/api/search", Date.now() - startTime);
     return { data: [], total: 0, page, pageSize, pageCount: 0 };
   }
 }
 
 export async function optimizedCategoryCounts(): Promise<any> {
-  const cacheKey = 'category_counts';
+  const cacheKey = "category_counts";
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
   const startTime = Date.now();
 
   try {
-    const [conditionResult, bodySystemResult, lifeStageResult] = await Promise.all([
-      // Condition categories
-      db.execute(sql`
+    const [conditionResult, bodySystemResult, lifeStageResult] =
+      await Promise.all([
+        // Condition categories
+        db.execute(sql`
         SELECT 
           CASE 
             WHEN consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' THEN 'Heart Disease & Hypertension'
@@ -271,8 +272,8 @@ export async function optimizedCategoryCounts(): Promise<any> {
         GROUP BY 1
         ORDER BY count DESC
       `),
-      // Body system categories
-      db.execute(sql`
+        // Body system categories
+        db.execute(sql`
         SELECT 
           CASE 
             WHEN consumer_categories::text LIKE '%Heart%' OR consumer_categories::text LIKE '%Cardiovascular%' THEN 'Cardiovascular System'
@@ -296,8 +297,8 @@ export async function optimizedCategoryCounts(): Promise<any> {
         GROUP BY 1
         ORDER BY count DESC
       `),
-      // Life stage categories
-      db.execute(sql`
+        // Life stage categories
+        db.execute(sql`
         SELECT 
           CASE 
             WHEN consumer_categories::text LIKE '%Adult%' AND NOT consumer_categories::text LIKE '%Older%' THEN 'Adults'
@@ -314,28 +315,30 @@ export async function optimizedCategoryCounts(): Promise<any> {
           )
         GROUP BY 1
         ORDER BY count DESC
-      `)
-    ]);
+      `),
+      ]);
 
     const result = {
       success: true,
       data: {
         condition: (conditionResult as any).rows || [],
         body_system: (bodySystemResult as any).rows || [],
-        life_stage: (lifeStageResult as any).rows || []
-      }
+        life_stage: (lifeStageResult as any).rows || [],
+      },
     };
 
     // Cache for 10 minutes (longer for category data)
     cache.set(cacheKey, result, 600000);
 
-    performanceTracker.track('/api/categories', Date.now() - startTime);
+    performanceTracker.track("/api/categories", Date.now() - startTime);
     return result;
-
   } catch (error) {
-    console.error('Category counts error:', error);
-    performanceTracker.track('/api/categories', Date.now() - startTime);
-    return { success: false, data: { condition: [], body_system: [], life_stage: [] } };
+    console.error("Category counts error:", error);
+    performanceTracker.track("/api/categories", Date.now() - startTime);
+    return {
+      success: false,
+      data: { condition: [], body_system: [], life_stage: [] },
+    };
   }
 }
 
@@ -352,18 +355,17 @@ export async function optimizedStudyById(id: number): Promise<any> {
     `);
 
     const study = (result as any).rows[0] || null;
-    
+
     if (study) {
       // Cache for 15 minutes (individual studies don't change often)
       cache.set(cacheKey, study, 900000);
     }
 
-    performanceTracker.track('/api/study', Date.now() - startTime);
+    performanceTracker.track("/api/study", Date.now() - startTime);
     return study;
-
   } catch (error) {
-    console.error('Study fetch error:', error);
-    performanceTracker.track('/api/study', Date.now() - startTime);
+    console.error("Study fetch error:", error);
+    performanceTracker.track("/api/study", Date.now() - startTime);
     return null;
   }
 }
@@ -374,17 +376,17 @@ export async function createOptimizedIndexes(): Promise<void> {
     // Full-text search indexes
     sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_title_gin ON studies USING gin(to_tsvector('english', title))`,
     sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_abstract_gin ON studies USING gin(to_tsvector('english', abstract))`,
-    
+
     // Category search indexes
     sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_consumer_categories ON studies USING gin(consumer_categories)`,
-    
+
     // Sorting indexes
     sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_date_desc ON studies (journal_publish_date DESC NULLS LAST)`,
     sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_id_asc ON studies (id ASC)`,
-    
+
     // Combined search indexes
     sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_title_ilike ON studies (title) WHERE title IS NOT NULL`,
-    sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_abstract_ilike ON studies (abstract) WHERE abstract IS NOT NULL`
+    sql`CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_studies_abstract_ilike ON studies (abstract) WHERE abstract IS NOT NULL`,
   ];
 
   for (const index of indexes) {
@@ -392,11 +394,11 @@ export async function createOptimizedIndexes(): Promise<void> {
       await db.execute(index);
     } catch (error) {
       // Index might already exist, continue
-      console.log('Index creation skipped (likely exists)');
+      console.log("Index creation skipped (likely exists)");
     }
   }
-  
-  console.log('✅ Optimized indexes ready');
+
+  console.log("✅ Optimized indexes ready");
 }
 
 // Performance monitoring endpoint data
@@ -405,43 +407,43 @@ export function getPerformanceMetrics() {
     cache: cache.getStats(),
     performance: performanceTracker.getAllStats(),
     uptime: Math.round(process.uptime()),
-    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
   };
 }
 
 // Health check function
 export async function healthCheck(): Promise<any> {
   const start = Date.now();
-  
+
   try {
     await db.execute(sql`SELECT 1`);
-    
+
     return {
-      status: 'healthy',
-      database: 'connected',
+      status: "healthy",
+      database: "connected",
       latency: Date.now() - start,
       cache: cache.getStats(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     return {
-      status: 'unhealthy',
-      database: 'disconnected',
+      status: "unhealthy",
+      database: "disconnected",
       latency: Date.now() - start,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      error: error instanceof Error ? error.message : "Unknown error",
+      timestamp: new Date().toISOString(),
     };
   }
 }
 
 // Initialize performance optimizations
 export async function initializeProductionPerformance(): Promise<void> {
-  console.log('🚀 Initializing production performance system...');
-  
+  console.log("🚀 Initializing production performance system...");
+
   try {
     await createOptimizedIndexes();
-    console.log('✅ Production performance system ready');
+    console.log("✅ Production performance system ready");
   } catch (error) {
-    console.error('Performance initialization error:', error);
+    console.error("Performance initialization error:", error);
   }
 }

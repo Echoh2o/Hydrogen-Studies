@@ -25,7 +25,7 @@ import {
   type Notification,
   type InsertNotification,
   type Study,
-  type BlogArticle
+  type BlogArticle,
 } from "@shared/schema";
 import { comparePasswords, hashPassword } from "./auth";
 
@@ -50,10 +50,10 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
  */
 export async function createUser(userData: InsertUser): Promise<User> {
   // Hash password if not already hashed
-  if (!userData.password.startsWith('$2b$')) {
+  if (!userData.password.startsWith("$2b$")) {
     userData.password = await hashPassword(userData.password);
   }
-  
+
   const [user] = await db.insert(users).values(userData).returning();
   return user;
 }
@@ -61,18 +61,21 @@ export async function createUser(userData: InsertUser): Promise<User> {
 /**
  * Update a user
  */
-export async function updateUser(id: number, userData: Partial<InsertUser>): Promise<User> {
+export async function updateUser(
+  id: number,
+  userData: Partial<InsertUser>,
+): Promise<User> {
   // If password is being updated, hash it
-  if (userData.password && !userData.password.startsWith('$2b$')) {
+  if (userData.password && !userData.password.startsWith("$2b$")) {
     userData.password = await hashPassword(userData.password);
   }
-  
+
   const [user] = await db
     .update(users)
     .set({ ...userData, updatedAt: new Date() })
     .where(eq(users.id, id))
     .returning();
-  
+
   return user;
 }
 
@@ -86,37 +89,44 @@ export async function deleteUser(id: number): Promise<void> {
 /**
  * Authenticate a user
  */
-export async function authenticateUser(email: string, password: string): Promise<User | null> {
+export async function authenticateUser(
+  email: string,
+  password: string,
+): Promise<User | null> {
   const user = await getUserByEmail(email);
   if (!user) return null;
-  
+
   const isPasswordValid = await comparePasswords(password, user.password);
   if (!isPasswordValid) return null;
-  
+
   return user;
 }
 
 /**
  * Get user preferences
  */
-export async function getUserPreferences(userId: number): Promise<UserPreferences | undefined> {
+export async function getUserPreferences(
+  userId: number,
+): Promise<UserPreferences | undefined> {
   const [preferences] = await db
     .select()
     .from(userPreferences)
     .where(eq(userPreferences.userId, userId));
-  
+
   return preferences;
 }
 
 /**
  * Create user preferences
  */
-export async function createUserPreferences(preferencesData: InsertUserPreferences): Promise<UserPreferences> {
+export async function createUserPreferences(
+  preferencesData: InsertUserPreferences,
+): Promise<UserPreferences> {
   const [preferences] = await db
     .insert(userPreferences)
     .values(preferencesData)
     .returning();
-  
+
   return preferences;
 }
 
@@ -125,33 +135,38 @@ export async function createUserPreferences(preferencesData: InsertUserPreferenc
  */
 export async function updateUserPreferences(
   id: number,
-  preferencesData: Partial<InsertUserPreferences>
+  preferencesData: Partial<InsertUserPreferences>,
 ): Promise<UserPreferences> {
   const [preferences] = await db
     .update(userPreferences)
     .set({ ...preferencesData, updatedAt: new Date() })
     .where(eq(userPreferences.id, id))
     .returning();
-  
+
   return preferences;
 }
 
 /**
  * Add a search to history
  */
-export async function addSearchHistory(searchData: InsertSearchHistory): Promise<SearchHistory> {
+export async function addSearchHistory(
+  searchData: InsertSearchHistory,
+): Promise<SearchHistory> {
   const [search] = await db
     .insert(searchHistory)
     .values(searchData)
     .returning();
-  
+
   return search;
 }
 
 /**
  * Get user search history
  */
-export async function getUserSearchHistory(userId: number, limit: number = 10): Promise<SearchHistory[]> {
+export async function getUserSearchHistory(
+  userId: number,
+  limit: number = 10,
+): Promise<SearchHistory[]> {
   return await db
     .select()
     .from(searchHistory)
@@ -163,7 +178,10 @@ export async function getUserSearchHistory(userId: number, limit: number = 10): 
 /**
  * Save a study for a user
  */
-export async function saveStudy(userId: number, studyId: number): Promise<UserStudyInteraction> {
+export async function saveStudy(
+  userId: number,
+  studyId: number,
+): Promise<UserStudyInteraction> {
   // Check if interaction exists
   const [existingInteraction] = await db
     .select()
@@ -171,26 +189,26 @@ export async function saveStudy(userId: number, studyId: number): Promise<UserSt
     .where(
       and(
         eq(userStudyInteractions.userId, userId),
-        eq(userStudyInteractions.studyId, studyId)
-      )
+        eq(userStudyInteractions.studyId, studyId),
+      ),
     );
-  
+
   if (existingInteraction) {
     // Update existing interaction
     const [updatedInteraction] = await db
       .update(userStudyInteractions)
-      .set({ 
+      .set({
         isSaved: true,
-        lastViewed: new Date()
+        lastViewed: new Date(),
       })
       .where(
         and(
           eq(userStudyInteractions.userId, userId),
-          eq(userStudyInteractions.studyId, studyId)
-        )
+          eq(userStudyInteractions.studyId, studyId),
+        ),
       )
       .returning();
-    
+
     return updatedInteraction;
   } else {
     // Create new interaction
@@ -201,10 +219,10 @@ export async function saveStudy(userId: number, studyId: number): Promise<UserSt
         studyId,
         isSaved: true,
         viewCount: 1,
-        lastViewed: new Date()
+        lastViewed: new Date(),
       })
       .returning();
-    
+
     return newInteraction;
   }
 }
@@ -212,22 +230,28 @@ export async function saveStudy(userId: number, studyId: number): Promise<UserSt
 /**
  * Unsave a study for a user
  */
-export async function unsaveStudy(userId: number, studyId: number): Promise<void> {
+export async function unsaveStudy(
+  userId: number,
+  studyId: number,
+): Promise<void> {
   await db
     .update(userStudyInteractions)
     .set({ isSaved: false })
     .where(
       and(
         eq(userStudyInteractions.userId, userId),
-        eq(userStudyInteractions.studyId, studyId)
-      )
+        eq(userStudyInteractions.studyId, studyId),
+      ),
     );
 }
 
 /**
  * Record a study view
  */
-export async function recordStudyView(userId: number, studyId: number): Promise<void> {
+export async function recordStudyView(
+  userId: number,
+  studyId: number,
+): Promise<void> {
   // Check if interaction exists
   const [existingInteraction] = await db
     .select()
@@ -235,35 +259,33 @@ export async function recordStudyView(userId: number, studyId: number): Promise<
     .where(
       and(
         eq(userStudyInteractions.userId, userId),
-        eq(userStudyInteractions.studyId, studyId)
-      )
+        eq(userStudyInteractions.studyId, studyId),
+      ),
     );
-  
+
   if (existingInteraction) {
     // Update existing interaction
     await db
       .update(userStudyInteractions)
-      .set({ 
+      .set({
         viewCount: existingInteraction.viewCount + 1,
-        lastViewed: new Date()
+        lastViewed: new Date(),
       })
       .where(
         and(
           eq(userStudyInteractions.userId, userId),
-          eq(userStudyInteractions.studyId, studyId)
-        )
+          eq(userStudyInteractions.studyId, studyId),
+        ),
       );
   } else {
     // Create new interaction
-    await db
-      .insert(userStudyInteractions)
-      .values({
-        userId,
-        studyId,
-        isSaved: false,
-        viewCount: 1,
-        lastViewed: new Date()
-      });
+    await db.insert(userStudyInteractions).values({
+      userId,
+      studyId,
+      isSaved: false,
+      viewCount: 1,
+      lastViewed: new Date(),
+    });
   }
 }
 
@@ -278,18 +300,21 @@ export async function getSavedStudies(userId: number): Promise<Study[]> {
     .where(
       and(
         eq(userStudyInteractions.userId, userId),
-        eq(userStudyInteractions.isSaved, true)
-      )
+        eq(userStudyInteractions.isSaved, true),
+      ),
     )
     .orderBy(desc(userStudyInteractions.lastViewed));
-  
-  return result.map(row => row.study);
+
+  return result.map((row) => row.study);
 }
 
 /**
  * Get recently viewed studies for a user
  */
-export async function getRecentlyViewedStudies(userId: number, limit: number = 10): Promise<Study[]> {
+export async function getRecentlyViewedStudies(
+  userId: number,
+  limit: number = 10,
+): Promise<Study[]> {
   const result = await db
     .select({ study: studies })
     .from(userStudyInteractions)
@@ -297,14 +322,17 @@ export async function getRecentlyViewedStudies(userId: number, limit: number = 1
     .where(eq(userStudyInteractions.userId, userId))
     .orderBy(desc(userStudyInteractions.lastViewed))
     .limit(limit);
-  
-  return result.map(row => row.study);
+
+  return result.map((row) => row.study);
 }
 
 /**
  * Save a blog for a user
  */
-export async function saveBlog(userId: number, blogId: number): Promise<UserBlogInteraction> {
+export async function saveBlog(
+  userId: number,
+  blogId: number,
+): Promise<UserBlogInteraction> {
   // Check if interaction exists
   const [existingInteraction] = await db
     .select()
@@ -312,26 +340,26 @@ export async function saveBlog(userId: number, blogId: number): Promise<UserBlog
     .where(
       and(
         eq(userBlogInteractions.userId, userId),
-        eq(userBlogInteractions.blogId, blogId)
-      )
+        eq(userBlogInteractions.blogId, blogId),
+      ),
     );
-  
+
   if (existingInteraction) {
     // Update existing interaction
     const [updatedInteraction] = await db
       .update(userBlogInteractions)
-      .set({ 
+      .set({
         isSaved: true,
-        lastViewed: new Date()
+        lastViewed: new Date(),
       })
       .where(
         and(
           eq(userBlogInteractions.userId, userId),
-          eq(userBlogInteractions.blogId, blogId)
-        )
+          eq(userBlogInteractions.blogId, blogId),
+        ),
       )
       .returning();
-    
+
     return updatedInteraction;
   } else {
     // Create new interaction
@@ -342,10 +370,10 @@ export async function saveBlog(userId: number, blogId: number): Promise<UserBlog
         blogId,
         isSaved: true,
         viewCount: 1,
-        lastViewed: new Date()
+        lastViewed: new Date(),
       })
       .returning();
-    
+
     return newInteraction;
   }
 }
@@ -353,22 +381,28 @@ export async function saveBlog(userId: number, blogId: number): Promise<UserBlog
 /**
  * Unsave a blog for a user
  */
-export async function unsaveBlog(userId: number, blogId: number): Promise<void> {
+export async function unsaveBlog(
+  userId: number,
+  blogId: number,
+): Promise<void> {
   await db
     .update(userBlogInteractions)
     .set({ isSaved: false })
     .where(
       and(
         eq(userBlogInteractions.userId, userId),
-        eq(userBlogInteractions.blogId, blogId)
-      )
+        eq(userBlogInteractions.blogId, blogId),
+      ),
     );
 }
 
 /**
  * Record a blog view
  */
-export async function recordBlogView(userId: number, blogId: number): Promise<void> {
+export async function recordBlogView(
+  userId: number,
+  blogId: number,
+): Promise<void> {
   // Check if interaction exists
   const [existingInteraction] = await db
     .select()
@@ -376,42 +410,40 @@ export async function recordBlogView(userId: number, blogId: number): Promise<vo
     .where(
       and(
         eq(userBlogInteractions.userId, userId),
-        eq(userBlogInteractions.blogId, blogId)
-      )
+        eq(userBlogInteractions.blogId, blogId),
+      ),
     );
-  
+
   if (existingInteraction) {
     // Update existing interaction
     await db
       .update(userBlogInteractions)
-      .set({ 
+      .set({
         viewCount: existingInteraction.viewCount + 1,
-        lastViewed: new Date()
+        lastViewed: new Date(),
       })
       .where(
         and(
           eq(userBlogInteractions.userId, userId),
-          eq(userBlogInteractions.blogId, blogId)
-        )
+          eq(userBlogInteractions.blogId, blogId),
+        ),
       );
   } else {
     // Create new interaction
-    await db
-      .insert(userBlogInteractions)
-      .values({
-        userId,
-        blogId,
-        isSaved: false,
-        viewCount: 1,
-        lastViewed: new Date()
-      });
+    await db.insert(userBlogInteractions).values({
+      userId,
+      blogId,
+      isSaved: false,
+      viewCount: 1,
+      lastViewed: new Date(),
+    });
   }
-  
+
   // Also update the blog view count
   await db
     .update(blogArticles)
-    .set({ 
-      viewCount: blogArticles.viewCount + 1 
+    .set({
+      viewCount: blogArticles.viewCount + 1,
     })
     .where(eq(blogArticles.id, blogId));
 }
@@ -427,18 +459,21 @@ export async function getSavedBlogs(userId: number): Promise<BlogArticle[]> {
     .where(
       and(
         eq(userBlogInteractions.userId, userId),
-        eq(userBlogInteractions.isSaved, true)
-      )
+        eq(userBlogInteractions.isSaved, true),
+      ),
     )
     .orderBy(desc(userBlogInteractions.lastViewed));
-  
-  return result.map(row => row.blog);
+
+  return result.map((row) => row.blog);
 }
 
 /**
  * Get recently viewed blogs for a user
  */
-export async function getRecentlyViewedBlogs(userId: string, limit: number = 10): Promise<BlogArticle[]> {
+export async function getRecentlyViewedBlogs(
+  userId: string,
+  limit: number = 10,
+): Promise<BlogArticle[]> {
   const result = await db
     .select({ blog: blogArticles })
     .from(userBlogInteractions)
@@ -446,35 +481,40 @@ export async function getRecentlyViewedBlogs(userId: string, limit: number = 10)
     .where(eq(userBlogInteractions.userId, userId))
     .orderBy(desc(userBlogInteractions.lastViewed))
     .limit(limit);
-  
-  return result.map(row => row.blog);
+
+  return result.map((row) => row.blog);
 }
 
 /**
  * Create a notification
  */
-export async function createNotification(notificationData: InsertNotification): Promise<Notification> {
+export async function createNotification(
+  notificationData: InsertNotification,
+): Promise<Notification> {
   const [notification] = await db
     .insert(notifications)
     .values(notificationData)
     .returning();
-  
+
   return notification;
 }
 
 /**
  * Get user notifications
  */
-export async function getUserNotifications(userId: string, unreadOnly: boolean = false): Promise<Notification[]> {
+export async function getUserNotifications(
+  userId: string,
+  unreadOnly: boolean = false,
+): Promise<Notification[]> {
   let query = db
     .select()
     .from(notifications)
     .where(eq(notifications.userId, userId));
-  
+
   if (unreadOnly) {
     query = query.where(eq(notifications.isRead, false));
   }
-  
+
   return await query.orderBy(desc(notifications.createdAt));
 }
 
@@ -491,7 +531,9 @@ export async function markNotificationAsRead(id: number): Promise<void> {
 /**
  * Mark all notifications as read for a user
  */
-export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+export async function markAllNotificationsAsRead(
+  userId: string,
+): Promise<void> {
   await db
     .update(notifications)
     .set({ isRead: true })

@@ -1,22 +1,47 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  ResponsiveContainer, Brush, ReferenceLine, ComposedChart
-} from 'recharts';
-import { 
-  Loader2, TrendingUp, TrendingDown, Award, 
-  Calendar, Filter, ZoomIn, ZoomOut, Download
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Brush,
+  ReferenceLine,
+  ComposedChart,
+} from "recharts";
+import {
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Award,
+  Calendar,
+  Filter,
+  ZoomIn,
+  ZoomOut,
+  Download,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface TimelineData {
   year: number;
@@ -35,46 +60,53 @@ interface ResearchTimelineProps {
   className?: string;
 }
 
-export default function ResearchTimeline({ 
-  onStudyClick, 
+export default function ResearchTimeline({
+  onStudyClick,
   onYearClick,
-  className 
+  className,
 }: ResearchTimelineProps) {
   const currentYear = new Date().getFullYear();
   const [startYear, setStartYear] = useState(2000);
   const [endYear, setEndYear] = useState(currentYear);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'area' | 'bar' | 'stacked'>('area');
+  const [viewMode, setViewMode] = useState<"area" | "bar" | "stacked">("area");
   const [zoomLevel, setZoomLevel] = useState(1);
 
   const { data: timelineData, isLoading } = useQuery<TimelineData[]>({
-    queryKey: ['/api/explorer/timeline-data', { startYear, endYear }],
+    queryKey: ["/api/explorer/timeline-data", { startYear, endYear }],
     queryFn: async () => {
-      const response = await fetch(`/api/explorer/timeline-data?startYear=${startYear}&endYear=${endYear}`);
-      if (!response.ok) throw new Error('Failed to fetch timeline data');
+      const response = await fetch(
+        `/api/explorer/timeline-data?startYear=${startYear}&endYear=${endYear}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch timeline data");
       return response.json();
-    }
+    },
   });
 
   // Process data for visualization
   const chartData = useMemo(() => {
     if (!timelineData) return [];
-    
-    return timelineData.map(yearData => {
+
+    return timelineData.map((yearData) => {
       const processedData: any = {
         year: yearData.year,
         total: yearData.count,
         ...yearData.categories,
       };
-      
+
       // Add momentum calculation
-      const prevYearData = timelineData.find(d => d.year === yearData.year - 1);
+      const prevYearData = timelineData.find(
+        (d) => d.year === yearData.year - 1,
+      );
       if (prevYearData) {
-        processedData.momentum = ((yearData.count - prevYearData.count) / prevYearData.count * 100).toFixed(1);
+        processedData.momentum = (
+          ((yearData.count - prevYearData.count) / prevYearData.count) *
+          100
+        ).toFixed(1);
       } else {
         processedData.momentum = 0;
       }
-      
+
       return processedData;
     });
   }, [timelineData]);
@@ -83,50 +115,57 @@ export default function ResearchTimeline({
   const categories = useMemo(() => {
     if (!timelineData) return [];
     const categorySet = new Set<string>();
-    timelineData.forEach(yearData => {
-      Object.keys(yearData.categories).forEach(cat => categorySet.add(cat));
+    timelineData.forEach((yearData) => {
+      Object.keys(yearData.categories).forEach((cat) => categorySet.add(cat));
     });
     return Array.from(categorySet);
   }, [timelineData]);
 
   // Calculate research momentum trends
   const researchTrends = useMemo(() => {
-    if (!chartData || chartData.length < 3) return { accelerating: [], declining: [] };
-    
-    const trends: { accelerating: string[], declining: string[] } = {
+    if (!chartData || chartData.length < 3)
+      return { accelerating: [], declining: [] };
+
+    const trends: { accelerating: string[]; declining: string[] } = {
       accelerating: [],
-      declining: []
+      declining: [],
     };
-    
-    categories.forEach(category => {
+
+    categories.forEach((category) => {
       const recentData = chartData.slice(-5);
       const earlierData = chartData.slice(-10, -5);
-      
-      const recentAvg = recentData.reduce((sum, d) => sum + (d[category] || 0), 0) / recentData.length;
-      const earlierAvg = earlierData.reduce((sum, d) => sum + (d[category] || 0), 0) / earlierData.length;
-      
+
+      const recentAvg =
+        recentData.reduce((sum, d) => sum + (d[category] || 0), 0) /
+        recentData.length;
+      const earlierAvg =
+        earlierData.reduce((sum, d) => sum + (d[category] || 0), 0) /
+        earlierData.length;
+
       if (earlierAvg > 0) {
         const change = ((recentAvg - earlierAvg) / earlierAvg) * 100;
         if (change > 20) trends.accelerating.push(category);
         else if (change < -20) trends.declining.push(category);
       }
     });
-    
+
     return trends;
   }, [chartData, categories]);
 
   // Find breakthrough studies
   const breakthroughStudies = useMemo(() => {
     if (!timelineData) return [];
-    
+
     const allBreakthroughs: Array<{ year: number; study: any }> = [];
-    timelineData.forEach(yearData => {
-      yearData.breakthroughs.forEach(study => {
+    timelineData.forEach((yearData) => {
+      yearData.breakthroughs.forEach((study) => {
         allBreakthroughs.push({ year: yearData.year, study });
       });
     });
-    
-    return allBreakthroughs.sort((a, b) => b.study.impact - a.study.impact).slice(0, 10);
+
+    return allBreakthroughs
+      .sort((a, b) => b.study.impact - a.study.impact)
+      .slice(0, 10);
   }, [timelineData]);
 
   const handleZoomIn = () => {
@@ -149,19 +188,20 @@ export default function ResearchTimeline({
 
   const handleExport = () => {
     const dataStr = JSON.stringify(chartData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const dataUri =
+      "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
     const exportFileDefaultName = `hydrogen-research-timeline-${startYear}-${endYear}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
+
+    const linkElement = document.createElement("a");
+    linkElement.setAttribute("href", dataUri);
+    linkElement.setAttribute("download", exportFileDefaultName);
     linkElement.click();
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const yearData = timelineData?.find(d => d.year === label);
-      
+      const yearData = timelineData?.find((d) => d.year === label);
+
       return (
         <Card className="p-3 shadow-lg">
           <p className="font-bold text-lg">{label}</p>
@@ -245,14 +285,22 @@ export default function ResearchTimeline({
             </Select>
 
             {/* Category Filter */}
-            <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)}>
-              <SelectTrigger className="w-48" data-testid="timeline-category-filter">
+            <Select
+              value={selectedCategory || "all"}
+              onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)}
+            >
+              <SelectTrigger
+                className="w-48"
+                data-testid="timeline-category-filter"
+              >
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -283,25 +331,28 @@ export default function ResearchTimeline({
           <Tabs value={viewMode} className="w-full">
             <TabsContent value="area" className="mt-4">
               <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={chartData} onClick={(e) => e && onYearClick?.(e.activeLabel)}>
+                <AreaChart
+                  data={chartData}
+                  onClick={(e) => e && onYearClick?.(e.activeLabel)}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Area 
-                    type="monotone" 
-                    dataKey={selectedCategory || "total"} 
-                    stroke="#3b82f6" 
-                    fill="#3b82f6" 
+                  <Area
+                    type="monotone"
+                    dataKey={selectedCategory || "total"}
+                    stroke="#3b82f6"
+                    fill="#3b82f6"
                     fillOpacity={0.6}
                     animationDuration={500}
                   />
                   {/* Breakthrough markers */}
                   {breakthroughStudies.map(({ year, study }) => (
-                    <ReferenceLine 
+                    <ReferenceLine
                       key={study.id}
-                      x={year} 
+                      x={year}
                       stroke="#ef4444"
                       strokeDasharray="5 5"
                       label={{ value: "★", position: "top" }}
@@ -313,14 +364,17 @@ export default function ResearchTimeline({
 
             <TabsContent value="bar" className="mt-4">
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={chartData} onClick={(e) => e && onYearClick?.(e.activeLabel)}>
+                <BarChart
+                  data={chartData}
+                  onClick={(e) => e && onYearClick?.(e.activeLabel)}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
                   <YAxis />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar 
-                    dataKey={selectedCategory || "total"} 
+                  <Bar
+                    dataKey={selectedCategory || "total"}
                     fill="#3b82f6"
                     animationDuration={500}
                   />
@@ -376,13 +430,15 @@ export default function ResearchTimeline({
           <CardContent>
             <div className="space-y-2">
               {researchTrends.accelerating.length > 0 ? (
-                researchTrends.accelerating.map(topic => (
+                researchTrends.accelerating.map((topic) => (
                   <Badge key={topic} variant="secondary" className="mr-2">
                     {topic}
                   </Badge>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No significantly accelerating areas detected</p>
+                <p className="text-sm text-gray-500">
+                  No significantly accelerating areas detected
+                </p>
               )}
             </div>
           </CardContent>
@@ -398,13 +454,15 @@ export default function ResearchTimeline({
           <CardContent>
             <div className="space-y-2">
               {researchTrends.declining.length > 0 ? (
-                researchTrends.declining.map(topic => (
+                researchTrends.declining.map((topic) => (
                   <Badge key={topic} variant="secondary" className="mr-2">
                     {topic}
                   </Badge>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No significantly declining areas detected</p>
+                <p className="text-sm text-gray-500">
+                  No significantly declining areas detected
+                </p>
               )}
             </div>
           </CardContent>
@@ -434,9 +492,7 @@ export default function ResearchTimeline({
                   <p className="font-semibold text-sm">{study.title}</p>
                   <p className="text-xs text-gray-500">Published in {year}</p>
                 </div>
-                <Badge className="ml-3">
-                  {study.impact} citations
-                </Badge>
+                <Badge className="ml-3">{study.impact} citations</Badge>
               </motion.div>
             ))}
           </div>

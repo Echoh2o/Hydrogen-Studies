@@ -1,10 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Study } from "@shared/schema";
-import { HiArrowRight, HiUser, HiBookOpen, HiQuote, HiDocument } from "react-icons/hi";
+import {
+  HiArrowRight,
+  HiUser,
+  HiBookOpen,
+  HiQuote,
+  HiDocument,
+} from "react-icons/hi";
 
 const RecentStudiesSection = () => {
-  const { data: recentStudies, isLoading, error } = useQuery({
+  const {
+    data: recentStudies,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["/api/recent-studies"],
   });
 
@@ -18,14 +28,21 @@ const RecentStudiesSection = () => {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">Recent Studies</h2>
-              <p className="text-neutral-600">The latest research on hydrogen gas and health</p>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                Recent Studies
+              </h2>
+              <p className="text-neutral-600">
+                The latest research on hydrogen gas and health
+              </p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, index) => (
-              <div key={index} className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden animate-pulse">
+              <div
+                key={index}
+                className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden animate-pulse"
+              >
                 <div className="border-b border-neutral-100 p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="bg-neutral-200 h-5 w-24 rounded-full"></div>
@@ -63,8 +80,12 @@ const RecentStudiesSection = () => {
     return (
       <section className="py-12 bg-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">Recent Studies</h2>
-          <p className="text-red-500">Error loading recent studies. Please try again later.</p>
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+            Recent Studies
+          </h2>
+          <p className="text-red-500">
+            Error loading recent studies. Please try again later.
+          </p>
         </div>
       </section>
     );
@@ -75,17 +96,27 @@ const RecentStudiesSection = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">Recent Studies</h2>
-            <p className="text-neutral-600">The latest research on hydrogen gas and health</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">
+              Recent Studies
+            </h2>
+            <p className="text-neutral-600">
+              The latest research on hydrogen gas and health
+            </p>
           </div>
-          <Link href="/recent" className="hidden md:flex items-center text-primary hover:text-primary-dark font-medium">
+          <Link
+            href="/recent"
+            className="hidden md:flex items-center text-primary hover:text-primary-dark font-medium"
+          >
             View All <HiArrowRight className="ml-2" />
           </Link>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {recentStudies?.map((study: Study) => (
-            <div key={study.id} className="bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition overflow-hidden">
+            <div
+              key={study.id}
+              className="bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition overflow-hidden"
+            >
               <div className="border-b border-neutral-100 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
@@ -94,11 +125,19 @@ const RecentStudiesSection = () => {
                   <span className="text-neutral-500 text-sm">{study.year}</span>
                 </div>
                 <h3 className="text-lg font-semibold mb-2 line-clamp-2">
-                  <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
+                  <Link
+                    href={
+                      study.slug
+                        ? `/study/${study.slug}`
+                        : `/study/id/${study.id}`
+                    }
+                  >
                     <a className="hover:text-primary">{study.title}</a>
                   </Link>
                 </h3>
-                <p className="text-neutral-600 text-sm line-clamp-3 mb-3">{study.abstract}</p>
+                <p className="text-neutral-600 text-sm line-clamp-3 mb-3">
+                  {study.abstract}
+                </p>
                 <div className="flex items-center text-sm text-neutral-500">
                   <span className="mr-4 flex items-center">
                     <HiUser className="mr-1" /> {study.authors}
@@ -114,10 +153,17 @@ const RecentStudiesSection = () => {
                     <HiQuote className="mr-1" /> {study.citations} citations
                   </span>
                   <span className="flex items-center text-neutral-500 text-sm">
-                    <HiDocument className="mr-1" /> {study.fullTextAvailable ? "Full text" : "Abstract only"}
+                    <HiDocument className="mr-1" />{" "}
+                    {study.fullTextAvailable ? "Full text" : "Abstract only"}
                   </span>
                 </div>
-                <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
+                <Link
+                  href={
+                    study.slug
+                      ? `/study/${study.slug}`
+                      : `/study/id/${study.id}`
+                  }
+                >
                   <a className="text-primary hover:text-primary-dark transition">
                     <HiArrowRight />
                   </a>
@@ -126,7 +172,7 @@ const RecentStudiesSection = () => {
             </div>
           ))}
         </div>
-        
+
         <div className="text-center mt-8 md:hidden">
           <Link href="/recent">
             <a className="inline-flex items-center text-primary hover:text-primary-dark font-medium">

@@ -1,347 +1,571 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HydrogenHealth - Science-Backed Hydrogen Water Benefits</title>
-    <meta name="description" content="Discover the science behind hydrogen water with 1,304+ peer-reviewed studies. Learn about health benefits, build confidence in scientific claims, and explore research-backed products.">
-    <link href="/dist/tailwind.css" rel="stylesheet">
-</head>
-<body class="bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+    <meta
+      name="description"
+      content="Discover the science behind hydrogen water with 1,304+ peer-reviewed studies. Learn about health benefits, build confidence in scientific claims, and explore research-backed products."
+    />
+    <link href="/dist/tailwind.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gradient-to-br from-blue-50 via-white to-cyan-50">
     <!-- Navigation -->
     <nav class="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-2">
-                    <svg class="h-8 w-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1L13 3L15 5V7H9V9H11V15H13V9H21ZM7 12V21C7 21.6 7.4 22 8 22H16C16.6 22 17 21.6 17 21V12H7Z"/>
-                    </svg>
-                    <span class="text-xl font-bold text-gray-900">HydrogenHealth</span>
-                </div>
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#benefits" class="text-gray-700 hover:text-blue-600 transition-colors">Benefits</a>
-                    <a href="#research" class="text-gray-700 hover:text-blue-600 transition-colors">Research</a>
-                    <a href="#products" class="text-gray-700 hover:text-blue-600 transition-colors">Products</a>
-                    <a href="/blog" class="text-gray-700 hover:text-blue-600 transition-colors">Blog</a>
-                    <a href="/advanced-search" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                        Advanced Search
-                    </a>
-                </div>
-            </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center space-x-2">
+            <svg
+              class="h-8 w-8 text-blue-600"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1L13 3L15 5V7H9V9H11V15H13V9H21ZM7 12V21C7 21.6 7.4 22 8 22H16C16.6 22 17 21.6 17 21V12H7Z"
+              />
+            </svg>
+            <span class="text-xl font-bold text-gray-900">HydrogenHealth</span>
+          </div>
+          <div class="hidden md:flex items-center space-x-8">
+            <a
+              href="#benefits"
+              class="text-gray-700 hover:text-blue-600 transition-colors"
+              >Benefits</a
+            >
+            <a
+              href="#research"
+              class="text-gray-700 hover:text-blue-600 transition-colors"
+              >Research</a
+            >
+            <a
+              href="#products"
+              class="text-gray-700 hover:text-blue-600 transition-colors"
+              >Products</a
+            >
+            <a
+              href="/blog"
+              class="text-gray-700 hover:text-blue-600 transition-colors"
+              >Blog</a
+            >
+            <a
+              href="/advanced-search"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Advanced Search
+            </a>
+          </div>
         </div>
+      </div>
     </nav>
 
     <!-- Hero Section -->
     <section class="relative py-20 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                    Discover the Science Behind
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600 block">
-                        Hydrogen Water
-                    </span>
-                </h1>
-                <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                    Explore 1,304+ peer-reviewed studies from leading universities worldwide. 
-                    Learn how molecular hydrogen could transform your health and wellness journey.
-                </p>
-                
-                <!-- Search Bar -->
-                <form onsubmit="handleSearch(event)" class="max-w-2xl mx-auto mb-8">
-                    <div class="relative">
-                        <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        <input
-                            type="text"
-                            id="searchInput"
-                            placeholder="Search studies by condition, benefit, or keyword..."
-                            class="w-full pl-12 pr-4 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-blue-500 shadow-lg focus:outline-none"
-                        />
-                        <button 
-                            type="submit"
-                            class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white rounded-full px-8 py-2 hover:bg-blue-700 transition-colors"
-                        >
-                            Search
-                        </button>
-                    </div>
-                </form>
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+          <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            Discover the Science Behind
+            <span
+              class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600 block"
+            >
+              Hydrogen Water
+            </span>
+          </h1>
+          <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Explore 1,304+ peer-reviewed studies from leading universities
+            worldwide. Learn how molecular hydrogen could transform your health
+            and wellness journey.
+          </p>
 
-                <div class="flex flex-wrap justify-center gap-4 mb-12">
-                    <span class="inline-flex items-center px-4 py-2 rounded-full bg-gray-100 text-gray-800">
-                        <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                        </svg>
-                        Watch: How It Works
-                    </span>
-                    <span class="inline-flex items-center px-4 py-2 rounded-full border border-gray-300 text-gray-700">
-                        <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-6h3v6h6v-6h3v6h3v-6c0-2.67-5.33-8-9-8s-9 5.33-9 8v6h3z"/>
-                        </svg>
-                        Join 50K+ Health Enthusiasts
-                    </span>
-                    <span class="inline-flex items-center px-4 py-2 rounded-full border border-gray-300 text-gray-700">
-                        <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M23 12l-2.44-2.78.34-3.68-3.61-.82-1.89-3.18L12 3 8.6 1.54 6.71 4.72l-3.61.81.34 3.68L1 12l2.44 2.78-.34 3.68 3.61.82 1.89 3.18L12 21l3.4 1.46 1.89-3.18 3.61-.81-.34-3.68L23 12zM10 17l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-                        </svg>
-                        Backed by Science
-                    </span>
-                </div>
+          <!-- Search Bar -->
+          <form onsubmit="handleSearch(event)" class="max-w-2xl mx-auto mb-8">
+            <div class="relative">
+              <svg
+                class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                ></path>
+              </svg>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search studies by condition, benefit, or keyword..."
+                class="w-full pl-12 pr-4 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-blue-500 shadow-lg focus:outline-none"
+              />
+              <button
+                type="submit"
+                class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white rounded-full px-8 py-2 hover:bg-blue-700 transition-colors"
+              >
+                Search
+              </button>
             </div>
+          </form>
 
-            <!-- Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
-                <div class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6">
-                    <div class="text-3xl font-bold text-blue-600 mb-2">1,304</div>
-                    <div class="text-sm text-gray-600">Scientific Studies</div>
-                </div>
-                <div class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6">
-                    <div class="text-3xl font-bold text-blue-600 mb-2">25+</div>
-                    <div class="text-sm text-gray-600">Countries Researching</div>
-                </div>
-                <div class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6">
-                    <div class="text-3xl font-bold text-blue-600 mb-2">500+</div>
-                    <div class="text-sm text-gray-600">Published Papers</div>
-                </div>
-                <div class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6">
-                    <div class="text-3xl font-bold text-blue-600 mb-2">15+</div>
-                    <div class="text-sm text-gray-600">Years of Research</div>
-                </div>
-            </div>
+          <div class="flex flex-wrap justify-center gap-4 mb-12">
+            <span
+              class="inline-flex items-center px-4 py-2 rounded-full bg-gray-100 text-gray-800"
+            >
+              <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              Watch: How It Works
+            </span>
+            <span
+              class="inline-flex items-center px-4 py-2 rounded-full border border-gray-300 text-gray-700"
+            >
+              <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-6h3v6h6v-6h3v6h3v-6c0-2.67-5.33-8-9-8s-9 5.33-9 8v6h3z"
+                />
+              </svg>
+              Join 50K+ Health Enthusiasts
+            </span>
+            <span
+              class="inline-flex items-center px-4 py-2 rounded-full border border-gray-300 text-gray-700"
+            >
+              <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M23 12l-2.44-2.78.34-3.68-3.61-.82-1.89-3.18L12 3 8.6 1.54 6.71 4.72l-3.61.81.34 3.68L1 12l2.44 2.78-.34 3.68 3.61.82 1.89 3.18L12 21l3.4 1.46 1.89-3.18 3.61-.81-.34-3.68L23 12zM10 17l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"
+                />
+              </svg>
+              Backed by Science
+            </span>
+          </div>
         </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+          <div
+            class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6"
+          >
+            <div class="text-3xl font-bold text-blue-600 mb-2">1,304</div>
+            <div class="text-sm text-gray-600">Scientific Studies</div>
+          </div>
+          <div
+            class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6"
+          >
+            <div class="text-3xl font-bold text-blue-600 mb-2">25+</div>
+            <div class="text-sm text-gray-600">Countries Researching</div>
+          </div>
+          <div
+            class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6"
+          >
+            <div class="text-3xl font-bold text-blue-600 mb-2">500+</div>
+            <div class="text-sm text-gray-600">Published Papers</div>
+          </div>
+          <div
+            class="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm rounded-lg p-6"
+          >
+            <div class="text-3xl font-bold text-blue-600 mb-2">15+</div>
+            <div class="text-sm text-gray-600">Years of Research</div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Benefits Section -->
     <section id="benefits" class="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    Science-Backed Health Benefits
-                </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Discover what thousands of peer-reviewed studies reveal about hydrogen water's 
-                    potential to support your health and wellness goals.
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-                <div class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6">
-                    <div class="text-center pb-4">
-                        <div class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit">
-                            <svg class="h-8 w-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5 2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.04L12,21.35Z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl mb-2 font-semibold">Heart Health</h3>
-                        <span class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm">47 studies</span>
-                    </div>
-                    <p class="text-center text-gray-600 leading-relaxed">
-                        Studies show hydrogen water may support cardiovascular function and reduce oxidative stress on heart tissue.
-                    </p>
-                </div>
-
-                <div class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6">
-                    <div class="text-center pb-4">
-                        <div class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit">
-                            <svg class="h-8 w-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M21.99 4C22 4 22 4 21.99 4L18.99 1L16.99 3L14.99 1L12.99 3L10.99 1L8.99 3L6.99 1L4.99 3L2.99 1L0.99 3L0.99 21L2.99 23L4.99 21L6.99 23L8.99 21L10.99 23L12.99 21L14.99 23L16.99 21L18.99 23L21.99 21V4Z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl mb-2 font-semibold">Brain Function</h3>
-                        <span class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm">32 studies</span>
-                    </div>
-                    <p class="text-center text-gray-600 leading-relaxed">
-                        Research indicates potential cognitive benefits and neuroprotective effects from molecular hydrogen.
-                    </p>
-                </div>
-
-                <div class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6">
-                    <div class="text-center pb-4">
-                        <div class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit">
-                            <svg class="h-8 w-8 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V14H16V20H8V14H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V14H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl mb-2 font-semibold">Antioxidant Power</h3>
-                        <span class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm">89 studies</span>
-                    </div>
-                    <p class="text-center text-gray-600 leading-relaxed">
-                        Hydrogen acts as a selective antioxidant, targeting harmful free radicals while preserving beneficial ones.
-                    </p>
-                </div>
-
-                <div class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6">
-                    <div class="text-center pb-4">
-                        <div class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit">
-                            <svg class="h-8 w-8 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M7,2V13H10V22L17,10H13L17,2H7Z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl mb-2 font-semibold">Energy & Recovery</h3>
-                        <span class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm">23 studies</span>
-                    </div>
-                    <p class="text-center text-gray-600 leading-relaxed">
-                        Athletes report improved performance and faster recovery times with hydrogen water supplementation.
-                    </p>
-                </div>
-            </div>
-
-            <div class="text-center">
-                <a href="/benefits" class="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
-                    Explore All Benefits
-                    <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </a>
-            </div>
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Science-Backed Health Benefits
+          </h2>
+          <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+            Discover what thousands of peer-reviewed studies reveal about
+            hydrogen water's potential to support your health and wellness
+            goals.
+          </p>
         </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          <div
+            class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6"
+          >
+            <div class="text-center pb-4">
+              <div
+                class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit"
+              >
+                <svg
+                  class="h-8 w-8 text-red-500"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5 2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.04L12,21.35Z"
+                  />
+                </svg>
+              </div>
+              <h3 class="text-xl mb-2 font-semibold">Heart Health</h3>
+              <span
+                class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm"
+                >47 studies</span
+              >
+            </div>
+            <p class="text-center text-gray-600 leading-relaxed">
+              Studies show hydrogen water may support cardiovascular function
+              and reduce oxidative stress on heart tissue.
+            </p>
+          </div>
+
+          <div
+            class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6"
+          >
+            <div class="text-center pb-4">
+              <div
+                class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit"
+              >
+                <svg
+                  class="h-8 w-8 text-blue-500"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M21.99 4C22 4 22 4 21.99 4L18.99 1L16.99 3L14.99 1L12.99 3L10.99 1L8.99 3L6.99 1L4.99 3L2.99 1L0.99 3L0.99 21L2.99 23L4.99 21L6.99 23L8.99 21L10.99 23L12.99 21L14.99 23L16.99 21L18.99 23L21.99 21V4Z"
+                  />
+                </svg>
+              </div>
+              <h3 class="text-xl mb-2 font-semibold">Brain Function</h3>
+              <span
+                class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm"
+                >32 studies</span
+              >
+            </div>
+            <p class="text-center text-gray-600 leading-relaxed">
+              Research indicates potential cognitive benefits and
+              neuroprotective effects from molecular hydrogen.
+            </p>
+          </div>
+
+          <div
+            class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6"
+          >
+            <div class="text-center pb-4">
+              <div
+                class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit"
+              >
+                <svg
+                  class="h-8 w-8 text-green-500"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V14H16V20H8V14H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V14H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"
+                  />
+                </svg>
+              </div>
+              <h3 class="text-xl mb-2 font-semibold">Antioxidant Power</h3>
+              <span
+                class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm"
+                >89 studies</span
+              >
+            </div>
+            <p class="text-center text-gray-600 leading-relaxed">
+              Hydrogen acts as a selective antioxidant, targeting harmful free
+              radicals while preserving beneficial ones.
+            </p>
+          </div>
+
+          <div
+            class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-none bg-gradient-to-br from-white to-gray-50 rounded-lg p-6"
+          >
+            <div class="text-center pb-4">
+              <div
+                class="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors w-fit"
+              >
+                <svg
+                  class="h-8 w-8 text-yellow-500"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M7,2V13H10V22L17,10H13L17,2H7Z" />
+                </svg>
+              </div>
+              <h3 class="text-xl mb-2 font-semibold">Energy & Recovery</h3>
+              <span
+                class="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm"
+                >23 studies</span
+              >
+            </div>
+            <p class="text-center text-gray-600 leading-relaxed">
+              Athletes report improved performance and faster recovery times
+              with hydrogen water supplementation.
+            </p>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <a
+            href="/benefits"
+            class="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+          >
+            Explore All Benefits
+            <svg
+              class="ml-2 h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              ></path>
+            </svg>
+          </a>
+        </div>
+      </div>
     </section>
 
     <!-- Research Credibility -->
-    <section id="research" class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
-        <div class="max-w-7xl mx-auto text-center">
-            <h2 class="text-3xl md:text-4xl font-bold mb-6">
-                Trusted by Leading Research Institutions
-            </h2>
-            <p class="text-xl mb-12 opacity-90 max-w-3xl mx-auto">
-                Our database includes studies from Harvard, Mayo Clinic, Tokyo Medical University, 
-                and hundreds of other prestigious institutions worldwide.
-            </p>
-            
-            <div class="grid md:grid-cols-3 gap-8 mb-12">
-                <div class="bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-lg p-8 text-center">
-                    <div class="text-3xl font-bold mb-2">25+</div>
-                    <div class="text-lg opacity-90">Countries</div>
-                    <div class="text-sm opacity-70 mt-2">Conducting hydrogen research</div>
-                </div>
-                <div class="bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-lg p-8 text-center">
-                    <div class="text-3xl font-bold mb-2">500+</div>
-                    <div class="text-lg opacity-90">Universities</div>
-                    <div class="text-sm opacity-70 mt-2">Publishing hydrogen studies</div>
-                </div>
-                <div class="bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-lg p-8 text-center">
-                    <div class="text-3xl font-bold mb-2">98%</div>
-                    <div class="text-lg opacity-90">Peer-Reviewed</div>
-                    <div class="text-sm opacity-70 mt-2">Studies in our database</div>
-                </div>
-            </div>
+    <section
+      id="research"
+      class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-cyan-600 text-white"
+    >
+      <div class="max-w-7xl mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-6">
+          Trusted by Leading Research Institutions
+        </h2>
+        <p class="text-xl mb-12 opacity-90 max-w-3xl mx-auto">
+          Our database includes studies from Harvard, Mayo Clinic, Tokyo Medical
+          University, and hundreds of other prestigious institutions worldwide.
+        </p>
 
-            <a href="/research" class="inline-flex items-center px-8 py-3 bg-white text-blue-600 rounded-full hover:bg-gray-100 transition-colors">
-                Browse Research Database
-                <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-            </a>
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+          <div
+            class="bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-lg p-8 text-center"
+          >
+            <div class="text-3xl font-bold mb-2">25+</div>
+            <div class="text-lg opacity-90">Countries</div>
+            <div class="text-sm opacity-70 mt-2">
+              Conducting hydrogen research
+            </div>
+          </div>
+          <div
+            class="bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-lg p-8 text-center"
+          >
+            <div class="text-3xl font-bold mb-2">500+</div>
+            <div class="text-lg opacity-90">Universities</div>
+            <div class="text-sm opacity-70 mt-2">
+              Publishing hydrogen studies
+            </div>
+          </div>
+          <div
+            class="bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-lg p-8 text-center"
+          >
+            <div class="text-3xl font-bold mb-2">98%</div>
+            <div class="text-lg opacity-90">Peer-Reviewed</div>
+            <div class="text-sm opacity-70 mt-2">Studies in our database</div>
+          </div>
         </div>
+
+        <a
+          href="/research"
+          class="inline-flex items-center px-8 py-3 bg-white text-blue-600 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          Browse Research Database
+          <svg
+            class="ml-2 h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            ></path>
+          </svg>
+        </a>
+      </div>
     </section>
 
     <!-- CTA Section -->
     <section id="products" class="py-20 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Ready to Experience the Science?
-            </h2>
-            <p class="text-xl text-gray-600 mb-8">
-                Join thousands who are already discovering the potential of hydrogen water. 
-                Start with our research-backed product recommendations.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/products" class="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
-                    View Products
-                    <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </a>
-                <a href="/blog" class="inline-flex items-center px-8 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors">
-                    Read Success Stories
-                </a>
-            </div>
+      <div class="max-w-4xl mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          Ready to Experience the Science?
+        </h2>
+        <p class="text-xl text-gray-600 mb-8">
+          Join thousands who are already discovering the potential of hydrogen
+          water. Start with our research-backed product recommendations.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/products"
+            class="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+          >
+            View Products
+            <svg
+              class="ml-2 h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              ></path>
+            </svg>
+          </a>
+          <a
+            href="/blog"
+            class="inline-flex items-center px-8 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors"
+          >
+            Read Success Stories
+          </a>
         </div>
+      </div>
     </section>
 
     <!-- Footer -->
     <footer class="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto">
-            <div class="grid md:grid-cols-4 gap-8">
-                <div>
-                    <div class="flex items-center space-x-2 mb-4">
-                        <svg class="h-6 w-6 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1L13 3L15 5V7H9V9H11V15H13V9H21ZM7 12V21C7 21.6 7.4 22 8 22H16C16.6 22 17 21.6 17 21V12H7Z"/>
-                        </svg>
-                        <span class="text-lg font-bold">HydrogenHealth</span>
-                    </div>
-                    <p class="text-gray-400 text-sm">
-                        Your trusted source for hydrogen water research and education.
-                    </p>
-                </div>
-                <div>
-                    <h3 class="font-semibold mb-4">Research</h3>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="/research" class="hover:text-white transition-colors">Browse Studies</a></li>
-                        <li><a href="/advanced-search" class="hover:text-white transition-colors">Advanced Search</a></li>
-                        <li><a href="/categories" class="hover:text-white transition-colors">By Category</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="font-semibold mb-4">Learn</h3>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="/blog" class="hover:text-white transition-colors">Blog</a></li>
-                        <li><a href="/benefits" class="hover:text-white transition-colors">Health Benefits</a></li>
-                        <li><a href="/how-it-works" class="hover:text-white transition-colors">How It Works</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="font-semibold mb-4">Products</h3>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="/products" class="hover:text-white transition-colors">Recommendations</a></li>
-                        <li><a href="/reviews" class="hover:text-white transition-colors">Reviews</a></li>
-                        <li><a href="/buying-guide" class="hover:text-white transition-colors">Buying Guide</a></li>
-                    </ul>
-                </div>
+      <div class="max-w-7xl mx-auto">
+        <div class="grid md:grid-cols-4 gap-8">
+          <div>
+            <div class="flex items-center space-x-2 mb-4">
+              <svg
+                class="h-6 w-6 text-blue-400"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1L13 3L15 5V7H9V9H11V15H13V9H21ZM7 12V21C7 21.6 7.4 22 8 22H16C16.6 22 17 21.6 17 21V12H7Z"
+                />
+              </svg>
+              <span class="text-lg font-bold">HydrogenHealth</span>
             </div>
-            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-                <p>&copy; 2024 HydrogenHealth. All rights reserved. | Based on 1,304 peer-reviewed studies</p>
-            </div>
+            <p class="text-gray-400 text-sm">
+              Your trusted source for hydrogen water research and education.
+            </p>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-4">Research</h3>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li>
+                <a href="/research" class="hover:text-white transition-colors"
+                  >Browse Studies</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/advanced-search"
+                  class="hover:text-white transition-colors"
+                  >Advanced Search</a
+                >
+              </li>
+              <li>
+                <a href="/categories" class="hover:text-white transition-colors"
+                  >By Category</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-4">Learn</h3>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li>
+                <a href="/blog" class="hover:text-white transition-colors"
+                  >Blog</a
+                >
+              </li>
+              <li>
+                <a href="/benefits" class="hover:text-white transition-colors"
+                  >Health Benefits</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/how-it-works"
+                  class="hover:text-white transition-colors"
+                  >How It Works</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-4">Products</h3>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li>
+                <a href="/products" class="hover:text-white transition-colors"
+                  >Recommendations</a
+                >
+              </li>
+              <li>
+                <a href="/reviews" class="hover:text-white transition-colors"
+                  >Reviews</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/buying-guide"
+                  class="hover:text-white transition-colors"
+                  >Buying Guide</a
+                >
+              </li>
+            </ul>
+          </div>
         </div>
+        <div
+          class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400"
+        >
+          <p>
+            &copy; 2024 HydrogenHealth. All rights reserved. | Based on 1,304
+            peer-reviewed studies
+          </p>
+        </div>
+      </div>
     </footer>
 
     <script>
-        function handleSearch(event) {
-            event.preventDefault();
-            const query = document.getElementById('searchInput').value.trim();
-            if (query) {
-                // Search studies using the API
-                searchStudies(query);
-            }
+      function handleSearch(event) {
+        event.preventDefault();
+        const query = document.getElementById("searchInput").value.trim();
+        if (query) {
+          // Search studies using the API
+          searchStudies(query);
         }
+      }
 
-        async function searchStudies(query) {
-            try {
-                document.getElementById('searchInput').disabled = true;
-                const response = await fetch(`/api/advanced-search?search=${encodeURIComponent(query)}&limit=20`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                // Create and show search results page
-                showSearchResults(query, data.studies, data.total);
-            } catch (error) {
-                console.error('Search error:', error);
-                const errorMessage = error.message.includes('HTTP') ? 
-                    'Server temporarily unavailable. Please try again.' : 
-                    'Search failed. Please check your connection.';
-                alert(errorMessage);
-            } finally {
-                document.getElementById('searchInput').disabled = false;
-            }
+      async function searchStudies(query) {
+        try {
+          document.getElementById("searchInput").disabled = true;
+          const response = await fetch(
+            `/api/advanced-search?search=${encodeURIComponent(query)}&limit=20`,
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          // Create and show search results page
+          showSearchResults(query, data.studies, data.total);
+        } catch (error) {
+          console.error("Search error:", error);
+          const errorMessage = error.message.includes("HTTP")
+            ? "Server temporarily unavailable. Please try again."
+            : "Search failed. Please check your connection.";
+          alert(errorMessage);
+        } finally {
+          document.getElementById("searchInput").disabled = false;
         }
+      }
 
-        function showSearchResults(query, studies, total) {
-            // Create search results HTML
-            const resultsHtml = `
+      function showSearchResults(query, studies, total) {
+        // Create search results HTML
+        const resultsHtml = `
                 <div class="min-h-screen bg-gray-50">
                     <div class="bg-white border-b">
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -359,9 +583,13 @@
                     </div>
                     
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        ${studies.length > 0 ? `
+                        ${
+                          studies.length > 0
+                            ? `
                             <div class="space-y-6">
-                                ${studies.map(study => `
+                                ${studies
+                                  .map(
+                                    (study) => `
                                     <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
                                         <div class="flex justify-between items-start mb-4">
                                             <div class="flex-1">
@@ -372,9 +600,13 @@
                                                     ${study.abstract.substring(0, 300)}...
                                                 </p>
                                             </div>
-                                            ${study.image_url ? `
+                                            ${
+                                              study.image_url
+                                                ? `
                                                 <img src="${study.image_url}" alt="Study illustration" class="w-24 h-24 object-cover rounded-lg ml-4">
-                                            ` : ''}
+                                            `
+                                                : ""
+                                            }
                                         </div>
                                         
                                         <div class="flex flex-wrap gap-2 mb-4">
@@ -387,7 +619,7 @@
                                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
                                                 ${study.sample_size} participants
                                             </span>
-                                            ${study.peer_reviewed ? '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">Peer Reviewed</span>' : ''}
+                                            ${study.peer_reviewed ? '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">Peer Reviewed</span>' : ""}
                                         </div>
                                         
                                         <div class="flex justify-between items-center text-sm text-gray-500">
@@ -398,9 +630,12 @@
                                             </div>
                                         </div>
                                     </div>
-                                `).join('')}
+                                `,
+                                  )
+                                  .join("")}
                             </div>
-                        ` : `
+                        `
+                            : `
                             <div class="text-center py-12">
                                 <svg class="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -411,85 +646,86 @@
                                     Browse All Studies
                                 </button>
                             </div>
-                        `}
+                        `
+                        }
                     </div>
                 </div>
             `;
-            
-            // Replace page content with search results
-            document.body.innerHTML = resultsHtml;
-        }
 
-        function goHome() {
-            window.location.reload();
-        }
+        // Replace page content with search results
+        document.body.innerHTML = resultsHtml;
+      }
 
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
+      function goHome() {
+        window.location.reload();
+      }
+
+      // Smooth scrolling for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
             });
+          }
         });
+      });
 
-        // Handle navigation links
-        document.addEventListener('click', function(e) {
-            const link = e.target.closest('a');
-            if (link && link.getAttribute('href')) {
-                const href = link.getAttribute('href');
-                
-                // Handle special routes
-                if (href === '/advanced-search') {
-                    e.preventDefault();
-                    showAdvancedSearch();
-                } else if (href === '/benefits') {
-                    e.preventDefault();
-                    showBenefitsPage();
-                } else if (href === '/products') {
-                    e.preventDefault();
-                    showProductsPage();
-                } else if (href === '/blog') {
-                    e.preventDefault();
-                    showBlogPage();
-                } else if (href === '/research') {
-                    e.preventDefault();
-                    showResearchPage();
-                }
-            }
-        });
+      // Handle navigation links
+      document.addEventListener("click", function (e) {
+        const link = e.target.closest("a");
+        if (link && link.getAttribute("href")) {
+          const href = link.getAttribute("href");
 
-        function showAdvancedSearch() {
-            const advancedHtml = createAdvancedSearchPage();
-            document.body.innerHTML = advancedHtml;
+          // Handle special routes
+          if (href === "/advanced-search") {
+            e.preventDefault();
+            showAdvancedSearch();
+          } else if (href === "/benefits") {
+            e.preventDefault();
+            showBenefitsPage();
+          } else if (href === "/products") {
+            e.preventDefault();
+            showProductsPage();
+          } else if (href === "/blog") {
+            e.preventDefault();
+            showBlogPage();
+          } else if (href === "/research") {
+            e.preventDefault();
+            showResearchPage();
+          }
         }
+      });
 
-        function showBenefitsPage() {
-            const benefitsHtml = createBenefitsPage();
-            document.body.innerHTML = benefitsHtml;
-        }
+      function showAdvancedSearch() {
+        const advancedHtml = createAdvancedSearchPage();
+        document.body.innerHTML = advancedHtml;
+      }
 
-        function showProductsPage() {
-            const productsHtml = createProductsPage();
-            document.body.innerHTML = productsHtml;
-        }
+      function showBenefitsPage() {
+        const benefitsHtml = createBenefitsPage();
+        document.body.innerHTML = benefitsHtml;
+      }
 
-        function showBlogPage() {
-            const blogHtml = createBlogPage();
-            document.body.innerHTML = blogHtml;
-        }
+      function showProductsPage() {
+        const productsHtml = createProductsPage();
+        document.body.innerHTML = productsHtml;
+      }
 
-        function showResearchPage() {
-            showAdvancedSearch(); // For now, research page is the advanced search
-        }
+      function showBlogPage() {
+        const blogHtml = createBlogPage();
+        document.body.innerHTML = blogHtml;
+      }
 
-        function createAdvancedSearchPage() {
-            return `
+      function showResearchPage() {
+        showAdvancedSearch(); // For now, research page is the advanced search
+      }
+
+      function createAdvancedSearchPage() {
+        return `
                 <div class="min-h-screen bg-gray-50">
                     <div class="bg-white border-b">
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -560,43 +796,48 @@
                     </div>
                 </div>
             `;
-        }
+      }
 
-        async function performAdvancedSearch(event) {
-            event.preventDefault();
-            
-            const search = document.getElementById('advancedSearch').value;
-            const category = document.getElementById('categoryFilter').value;
-            const country = document.getElementById('countryFilter').value;
-            const limit = document.getElementById('limitFilter').value;
-            
-            try {
-                const params = new URLSearchParams();
-                if (search) params.append('search', search);
-                if (category) params.append('category', category);
-                if (country) params.append('country', country);
-                params.append('limit', limit);
-                
-                const response = await fetch(`/api/advanced-search?${params}`);
-                const data = await response.json();
-                
-                showSearchResults(search || 'Advanced Search', data.studies, data.total);
-            } catch (error) {
-                console.error('Advanced search error:', error);
-                document.getElementById('advancedResults').innerHTML = '<p class="text-red-600">Search failed. Please try again.</p>';
-            }
-        }
+      async function performAdvancedSearch(event) {
+        event.preventDefault();
 
-        function clearFilters() {
-            document.getElementById('advancedSearch').value = '';
-            document.getElementById('categoryFilter').value = '';
-            document.getElementById('countryFilter').value = '';
-            document.getElementById('limitFilter').value = '20';
-            document.getElementById('advancedResults').innerHTML = '';
-        }
+        const search = document.getElementById("advancedSearch").value;
+        const category = document.getElementById("categoryFilter").value;
+        const country = document.getElementById("countryFilter").value;
+        const limit = document.getElementById("limitFilter").value;
 
-        function createBenefitsPage() {
-            return `
+        try {
+          const params = new URLSearchParams();
+          if (search) params.append("search", search);
+          if (category) params.append("category", category);
+          if (country) params.append("country", country);
+          params.append("limit", limit);
+
+          const response = await fetch(`/api/advanced-search?${params}`);
+          const data = await response.json();
+
+          showSearchResults(
+            search || "Advanced Search",
+            data.studies,
+            data.total,
+          );
+        } catch (error) {
+          console.error("Advanced search error:", error);
+          document.getElementById("advancedResults").innerHTML =
+            '<p class="text-red-600">Search failed. Please try again.</p>';
+        }
+      }
+
+      function clearFilters() {
+        document.getElementById("advancedSearch").value = "";
+        document.getElementById("categoryFilter").value = "";
+        document.getElementById("countryFilter").value = "";
+        document.getElementById("limitFilter").value = "20";
+        document.getElementById("advancedResults").innerHTML = "";
+      }
+
+      function createBenefitsPage() {
+        return `
                 <div class="min-h-screen bg-gray-50">
                     <div class="bg-white border-b">
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -719,10 +960,10 @@
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function createProductsPage() {
-            return `
+      function createProductsPage() {
+        return `
                 <div class="min-h-screen bg-gray-50">
                     <div class="bg-white border-b">
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -929,10 +1170,10 @@
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function createBlogPage() {
-            return `
+      function createBlogPage() {
+        return `
                 <div class="min-h-screen bg-gray-50">
                     <div class="bg-white border-b">
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -973,7 +1214,7 @@
                     </div>
                 </div>
             `;
-        }
+      }
     </script>
-</body>
+  </body>
 </html>

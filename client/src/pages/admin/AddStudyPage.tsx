@@ -1,6 +1,12 @@
 import { Helmet } from "react-helmet";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import AdminLayout from "@/components/admin/AdminLayout";
 import StudyForm from "@/components/admin/StudyForm";
 import { ArrowLeft } from "lucide-react";
@@ -8,13 +14,16 @@ import { Button } from "@/components/ui/button";
 
 export default function AddStudyPage() {
   const [, navigate] = useLocation();
-  
+
   const handleSuccess = () => {
     navigate("/admin/studies");
   };
-  
+
   return (
-    <AdminLayout title="Add New Study" description="Create a new hydrogen research study">
+    <AdminLayout
+      title="Add New Study"
+      description="Create a new hydrogen research study"
+    >
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Add New Study</h1>
@@ -23,7 +32,7 @@ export default function AddStudyPage() {
             Back to Studies
           </Button>
         </div>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Study Details</CardTitle>

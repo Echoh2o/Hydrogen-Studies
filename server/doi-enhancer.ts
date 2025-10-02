@@ -1,36 +1,36 @@
 /**
  * DOI Enhancer
- * 
+ *
  * This module provides functions to enhance study data quality
  * by normalizing and updating fields based on DOI information
  * from multiple data sources.
  */
 
-import { db } from './db';
-import { getCrossRefArticleByDOI } from './crossref-api';
-import { getSemanticScholarPaper } from './semantic-scholar-api';
-import { storage } from './storage';
-import { studies, type Study } from '@shared/schema';
-import { eq, and, or, isNull, like, asc, desc } from 'drizzle-orm';
+import { db } from "./db";
+import { getCrossRefArticleByDOI } from "./crossref-api";
+import { getSemanticScholarPaper } from "./semantic-scholar-api";
+import { storage } from "./storage";
+import { studies, type Study } from "@shared/schema";
+import { eq, and, or, isNull, like, asc, desc } from "drizzle-orm";
 
 /**
  * Fields that can be enhanced using DOI-based data normalization
  */
 export const ENHANCEABLE_FIELDS = [
-  'title',
-  'abstract',
-  'authors', 
-  'journal',
-  'publishDate',
-  'doi',
-  'pdfUrl',
-  'citationUrl', 
-  'keywords',
-  'peerReviewed',
-  'firstAuthor',
-  'lastAuthor',
-  'otherAuthors',
-  'pmid'
+  "title",
+  "abstract",
+  "authors",
+  "journal",
+  "publishDate",
+  "doi",
+  "pdfUrl",
+  "citationUrl",
+  "keywords",
+  "peerReviewed",
+  "firstAuthor",
+  "lastAuthor",
+  "otherAuthors",
+  "pmid",
 ];
 
 /**
@@ -48,74 +48,69 @@ export async function findStudiesNeedingEnhancement(options: {
     limit = 50,
     requireDoi = true,
     minQualityScore = 0,
-    missingFields = ['abstract', 'authors', 'journal']
+    missingFields = ["abstract", "authors", "journal"],
   } = options;
 
   try {
     // Simplified approach - use raw SQL to get data quality issues
     // This removes dependency on problematic Drizzle ORM syntax that isn't working
     let query = db.select().from(studies);
-    
+
     // Build basic filters
     const whereConditions = [];
-    
+
     // Only include studies with DOI (simpler condition)
     if (requireDoi) {
-      whereConditions.push(
-        studies.doi.notLike('')
-      );
+      whereConditions.push(studies.doi.notLike(""));
     }
-    
+
     // Look for common data quality issues using specific conditions
     // rather than trying to dynamically build them
     const qualityIssueConditions = [];
-    
-    if (missingFields.includes('abstract')) {
+
+    if (missingFields.includes("abstract")) {
       qualityIssueConditions.push(
         or(
           isNull(studies.abstract),
-          eq(studies.abstract, ''),
-          like(studies.abstract, '%No abstract available%')
-        )
+          eq(studies.abstract, ""),
+          like(studies.abstract, "%No abstract available%"),
+        ),
       );
     }
-    
-    if (missingFields.includes('authors')) {
+
+    if (missingFields.includes("authors")) {
       qualityIssueConditions.push(
-        or(
-          isNull(studies.authors),
-          eq(studies.authors, '')
-        )
+        or(isNull(studies.authors), eq(studies.authors, "")),
       );
     }
-    
-    if (missingFields.includes('journal')) {
+
+    if (missingFields.includes("journal")) {
       qualityIssueConditions.push(
         or(
           isNull(studies.journal),
-          eq(studies.journal, ''),
-          eq(studies.journal, 'Scientific Journal')
-        )
+          eq(studies.journal, ""),
+          eq(studies.journal, "Scientific Journal"),
+        ),
       );
     }
-    
+
     if (qualityIssueConditions.length > 0) {
       whereConditions.push(or(...qualityIssueConditions));
     }
-    
+
     // Apply all where conditions
     if (whereConditions.length > 0) {
       query = query.where(and(...whereConditions));
     }
-    
+
     // Get the studies that need enhancement with appropriate limits
     const studiesNeedingEnhancement = await query
       .orderBy(asc(studies.id))
       .limit(limit);
-    
+
     return studiesNeedingEnhancement;
   } catch (error) {
-    console.error('Error finding studies needing enhancement:', error);
+    console.error("Error finding studies needing enhancement:", error);
     return [];
   }
 }
@@ -133,45 +128,49 @@ export async function enhanceStudyWithDoi(studyId: number): Promise<{
   try {
     // Get the study
     const study = await storage.getStudyById(studyId);
-    
+
     if (!study) {
       return {
         success: false,
-        message: `Study with ID ${studyId} not found`
+        message: `Study with ID ${studyId} not found`,
       };
     }
-    
+
     // Make sure study has a DOI
     const doi = study.doi?.trim();
     if (!doi) {
       return {
         success: false,
-        message: 'Study has no DOI for enhancement'
+        message: "Study has no DOI for enhancement",
       };
     }
-    
+
     // Determine which fields need enhancement
     const fieldsToEnhance = determineFieldsToEnhance(study);
     if (fieldsToEnhance.length === 0) {
       return {
         success: true,
-        message: 'Study already has complete data',
-        enhancedFields: []
+        message: "Study already has complete data",
+        enhancedFields: [],
       };
     }
-    
+
     // Track enhanced fields
     const enhancedFields: string[] = [];
-    
+
     // First, try CrossRef (most academic sources use this)
     let enhancedData = {};
     try {
       const crossrefData = await getCrossRefArticleByDOI(doi);
       if (crossrefData) {
-        enhancedData = extractCrossRefData(crossrefData, study, fieldsToEnhance);
-        
+        enhancedData = extractCrossRefData(
+          crossrefData,
+          study,
+          fieldsToEnhance,
+        );
+
         // Check which fields were enhanced
-        Object.keys(enhancedData).forEach(field => {
+        Object.keys(enhancedData).forEach((field) => {
           if (!enhancedFields.includes(field)) {
             enhancedFields.push(field);
           }
@@ -181,65 +180,68 @@ export async function enhanceStudyWithDoi(studyId: number): Promise<{
       console.warn(`CrossRef enhancement failed for DOI ${doi}:`, error);
       // Continue to next source
     }
-    
+
     // Next, try Semantic Scholar if fields are still missing
     const remainingFields = fieldsToEnhance.filter(
-      field => !enhancedFields.includes(field)
+      (field) => !enhancedFields.includes(field),
     );
-    
+
     if (remainingFields.length > 0) {
       try {
         const semanticScholarData = await getSemanticScholarPaper(doi);
         if (semanticScholarData) {
           const semanticData = extractSemanticScholarData(
-            semanticScholarData, 
-            study, 
-            remainingFields
+            semanticScholarData,
+            study,
+            remainingFields,
           );
-          
+
           // Merge with enhanced data
           enhancedData = { ...enhancedData, ...semanticData };
-          
+
           // Update enhanced fields list
-          Object.keys(semanticData).forEach(field => {
+          Object.keys(semanticData).forEach((field) => {
             if (!enhancedFields.includes(field)) {
               enhancedFields.push(field);
             }
           });
         }
       } catch (error) {
-        console.warn(`Semantic Scholar enhancement failed for DOI ${doi}:`, error);
+        console.warn(
+          `Semantic Scholar enhancement failed for DOI ${doi}:`,
+          error,
+        );
       }
     }
-    
+
     // If we've enhanced any fields, update the study
     if (Object.keys(enhancedData).length > 0) {
       // Add updatedAt timestamp
       enhancedData = {
         ...enhancedData,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
-      
+
       // Update the study
       await storage.updateStudy(studyId, enhancedData);
-      
+
       return {
         success: true,
         message: `Successfully enhanced study data using DOI: ${doi}`,
-        enhancedFields
+        enhancedFields,
       };
     } else {
       return {
         success: false,
         message: `No additional data found for DOI: ${doi}`,
-        enhancedFields: []
+        enhancedFields: [],
       };
     }
   } catch (error) {
-    console.error('Error enhancing study with DOI:', error);
+    console.error("Error enhancing study with DOI:", error);
     return {
       success: false,
-      message: `Error enhancing study: ${error instanceof Error ? error.message : String(error)}`
+      message: `Error enhancing study: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -265,20 +267,22 @@ export async function batchEnhanceStudiesWithDoi(limit: number = 50): Promise<{
     const studies = await findStudiesNeedingEnhancement({
       limit,
       requireDoi: true,
-      missingFields: ['abstract', 'authors', 'journal', 'publishDate']
+      missingFields: ["abstract", "authors", "journal", "publishDate"],
     });
-    
+
     if (studies.length === 0) {
       return {
         total: 0,
         enhanced: 0,
         failed: 0,
-        details: []
+        details: [],
       };
     }
-    
-    console.log(`Found ${studies.length} studies that need DOI-based enhancement`);
-    
+
+    console.log(
+      `Found ${studies.length} studies that need DOI-based enhancement`,
+    );
+
     // Process each study
     const details: Array<{
       studyId: number;
@@ -286,49 +290,53 @@ export async function batchEnhanceStudiesWithDoi(limit: number = 50): Promise<{
       message: string;
       enhancedFields?: string[];
     }> = [];
-    
+
     let enhancedCount = 0;
     let failedCount = 0;
-    
+
     for (const study of studies) {
       // Add a delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       const result = await enhanceStudyWithDoi(study.id);
-      
+
       details.push({
         studyId: study.id,
         success: result.success,
         message: result.message,
-        enhancedFields: result.enhancedFields
+        enhancedFields: result.enhancedFields,
       });
-      
+
       if (result.success && (result.enhancedFields?.length ?? 0) > 0) {
         enhancedCount++;
         console.log(`Enhanced study ID ${study.id}: ${result.message}`);
       } else {
         failedCount++;
-        console.log(`Failed to enhance study ID ${study.id}: ${result.message}`);
+        console.log(
+          `Failed to enhance study ID ${study.id}: ${result.message}`,
+        );
       }
     }
-    
+
     return {
       total: studies.length,
       enhanced: enhancedCount,
       failed: failedCount,
-      details
+      details,
     };
   } catch (error) {
-    console.error('Error in batch DOI enhancement:', error);
+    console.error("Error in batch DOI enhancement:", error);
     return {
       total: 0,
       enhanced: 0,
       failed: 0,
-      details: [{
-        studyId: 0,
-        success: false,
-        message: `Error in batch enhancement: ${error instanceof Error ? error.message : String(error)}`
-      }]
+      details: [
+        {
+          studyId: 0,
+          success: false,
+          message: `Error in batch enhancement: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
     };
   }
 }
@@ -340,43 +348,51 @@ export async function batchEnhanceStudiesWithDoi(limit: number = 50): Promise<{
  */
 function determineFieldsToEnhance(study: Study): string[] {
   const fieldsToEnhance: string[] = [];
-  
+
   // Check for missing or incomplete fields
-  if (!study.abstract || study.abstract.trim() === '' || study.abstract.includes('No abstract available')) {
-    fieldsToEnhance.push('abstract');
+  if (
+    !study.abstract ||
+    study.abstract.trim() === "" ||
+    study.abstract.includes("No abstract available")
+  ) {
+    fieldsToEnhance.push("abstract");
   }
-  
-  if (!study.authors || study.authors.trim() === '') {
-    fieldsToEnhance.push('authors');
-    fieldsToEnhance.push('firstAuthor');
-    fieldsToEnhance.push('lastAuthor');
-    fieldsToEnhance.push('otherAuthors');
+
+  if (!study.authors || study.authors.trim() === "") {
+    fieldsToEnhance.push("authors");
+    fieldsToEnhance.push("firstAuthor");
+    fieldsToEnhance.push("lastAuthor");
+    fieldsToEnhance.push("otherAuthors");
   }
-  
-  if (!study.journal || study.journal.trim() === '' || study.journal === 'Scientific Journal') {
-    fieldsToEnhance.push('journal');
+
+  if (
+    !study.journal ||
+    study.journal.trim() === "" ||
+    study.journal === "Scientific Journal"
+  ) {
+    fieldsToEnhance.push("journal");
   }
-  
-  if (!study.publishDate || study.publishDate.trim() === '') {
-    fieldsToEnhance.push('publishDate');
+
+  if (!study.publishDate || study.publishDate.trim() === "") {
+    fieldsToEnhance.push("publishDate");
   }
-  
-  if (!study.pdfUrl || study.pdfUrl.trim() === '') {
-    fieldsToEnhance.push('pdfUrl');
+
+  if (!study.pdfUrl || study.pdfUrl.trim() === "") {
+    fieldsToEnhance.push("pdfUrl");
   }
-  
-  if (!study.citationUrl || study.citationUrl.trim() === '') {
-    fieldsToEnhance.push('citationUrl');
+
+  if (!study.citationUrl || study.citationUrl.trim() === "") {
+    fieldsToEnhance.push("citationUrl");
   }
-  
+
   if (!study.keywords || study.keywords.length === 0) {
-    fieldsToEnhance.push('keywords');
+    fieldsToEnhance.push("keywords");
   }
-  
+
   if (study.peerReviewed === null || study.peerReviewed === undefined) {
-    fieldsToEnhance.push('peerReviewed');
+    fieldsToEnhance.push("peerReviewed");
   }
-  
+
   return fieldsToEnhance;
 }
 
@@ -390,143 +406,145 @@ function determineFieldsToEnhance(study: Study): string[] {
 function extractCrossRefData(
   crossrefData: any,
   study: Study,
-  fieldsToEnhance: string[]
+  fieldsToEnhance: string[],
 ): Record<string, any> {
   const enhancedData: Record<string, any> = {};
-  
+
   // Title (only enhance if current title is very short or generic)
   if (
-    fieldsToEnhance.includes('title') && 
-    crossrefData.title && 
-    Array.isArray(crossrefData.title) && 
+    fieldsToEnhance.includes("title") &&
+    crossrefData.title &&
+    Array.isArray(crossrefData.title) &&
     crossrefData.title.length > 0 &&
-    (study.title.length < 20 || study.title.includes('Untitled'))
+    (study.title.length < 20 || study.title.includes("Untitled"))
   ) {
     enhancedData.title = crossrefData.title[0];
   }
-  
+
   // Abstract
   if (
-    fieldsToEnhance.includes('abstract') && 
-    crossrefData.abstract && 
-    crossrefData.abstract.trim() !== ''
+    fieldsToEnhance.includes("abstract") &&
+    crossrefData.abstract &&
+    crossrefData.abstract.trim() !== ""
   ) {
     // Clean up HTML tags if present
     let abstract = crossrefData.abstract;
-    abstract = abstract.replace(/<\/?[^>]+(>|$)/g, '');
+    abstract = abstract.replace(/<\/?[^>]+(>|$)/g, "");
     enhancedData.abstract = abstract;
   }
-  
+
   // Authors
   if (
-    fieldsToEnhance.includes('authors') && 
-    crossrefData.author && 
-    Array.isArray(crossrefData.author) && 
+    fieldsToEnhance.includes("authors") &&
+    crossrefData.author &&
+    Array.isArray(crossrefData.author) &&
     crossrefData.author.length > 0
   ) {
-    const authors = crossrefData.author.map((author: any) => {
-      return `${author.given || ''} ${author.family || ''}`.trim();
-    }).join(', ');
-    
+    const authors = crossrefData.author
+      .map((author: any) => {
+        return `${author.given || ""} ${author.family || ""}`.trim();
+      })
+      .join(", ");
+
     enhancedData.authors = authors;
-    
+
     // Also extract first, other, and last authors
     if (crossrefData.author.length > 0) {
-      const firstAuthor = `${crossrefData.author[0].given || ''} ${crossrefData.author[0].family || ''}`.trim();
+      const firstAuthor =
+        `${crossrefData.author[0].given || ""} ${crossrefData.author[0].family || ""}`.trim();
       enhancedData.firstAuthor = firstAuthor;
-      
+
       if (crossrefData.author.length > 1) {
-        const lastAuthor = `${crossrefData.author[crossrefData.author.length - 1].given || ''} ${crossrefData.author[crossrefData.author.length - 1].family || ''}`.trim();
+        const lastAuthor =
+          `${crossrefData.author[crossrefData.author.length - 1].given || ""} ${crossrefData.author[crossrefData.author.length - 1].family || ""}`.trim();
         enhancedData.lastAuthor = lastAuthor;
-        
+
         if (crossrefData.author.length > 2) {
-          const otherAuthors = crossrefData.author.slice(1, -1).map((author: any) => {
-            return `${author.given || ''} ${author.family || ''}`.trim();
-          }).join(', ');
+          const otherAuthors = crossrefData.author
+            .slice(1, -1)
+            .map((author: any) => {
+              return `${author.given || ""} ${author.family || ""}`.trim();
+            })
+            .join(", ");
           enhancedData.otherAuthors = otherAuthors;
         } else {
-          enhancedData.otherAuthors = '';
+          enhancedData.otherAuthors = "";
         }
       }
     }
   }
-  
+
   // Journal
   if (
-    fieldsToEnhance.includes('journal') && 
-    crossrefData['container-title'] && 
-    Array.isArray(crossrefData['container-title']) && 
-    crossrefData['container-title'].length > 0
+    fieldsToEnhance.includes("journal") &&
+    crossrefData["container-title"] &&
+    Array.isArray(crossrefData["container-title"]) &&
+    crossrefData["container-title"].length > 0
   ) {
-    enhancedData.journal = crossrefData['container-title'][0];
+    enhancedData.journal = crossrefData["container-title"][0];
   }
-  
+
   // Publication date
   if (
-    fieldsToEnhance.includes('publishDate') && 
-    crossrefData.published && 
-    crossrefData.published['date-parts'] && 
-    Array.isArray(crossrefData.published['date-parts']) && 
-    crossrefData.published['date-parts'].length > 0
+    fieldsToEnhance.includes("publishDate") &&
+    crossrefData.published &&
+    crossrefData.published["date-parts"] &&
+    Array.isArray(crossrefData.published["date-parts"]) &&
+    crossrefData.published["date-parts"].length > 0
   ) {
-    const dateParts = crossrefData.published['date-parts'][0];
+    const dateParts = crossrefData.published["date-parts"][0];
     if (dateParts && dateParts.length >= 1) {
       const year = dateParts[0];
-      const month = dateParts.length >= 2 ? String(dateParts[1]).padStart(2, '0') : '01';
-      const day = dateParts.length >= 3 ? String(dateParts[2]).padStart(2, '0') : '01';
+      const month =
+        dateParts.length >= 2 ? String(dateParts[1]).padStart(2, "0") : "01";
+      const day =
+        dateParts.length >= 3 ? String(dateParts[2]).padStart(2, "0") : "01";
       enhancedData.publishDate = `${year}-${month}-${day}`;
     }
   }
-  
+
   // PDF URL
   if (
-    fieldsToEnhance.includes('pdfUrl') && 
-    crossrefData.link && 
+    fieldsToEnhance.includes("pdfUrl") &&
+    crossrefData.link &&
     Array.isArray(crossrefData.link)
   ) {
-    const pdfLink = crossrefData.link.find((link: any) => 
-      link['content-type'] && link['content-type'].includes('pdf')
+    const pdfLink = crossrefData.link.find(
+      (link: any) =>
+        link["content-type"] && link["content-type"].includes("pdf"),
     );
-    
+
     if (pdfLink && pdfLink.URL) {
       enhancedData.pdfUrl = pdfLink.URL;
     }
   }
-  
+
   // Citation URL
-  if (
-    fieldsToEnhance.includes('citationUrl') && 
-    crossrefData.URL
-  ) {
+  if (fieldsToEnhance.includes("citationUrl") && crossrefData.URL) {
     enhancedData.citationUrl = crossrefData.URL;
-  } else if (
-    fieldsToEnhance.includes('citationUrl') && 
-    crossrefData.DOI
-  ) {
+  } else if (fieldsToEnhance.includes("citationUrl") && crossrefData.DOI) {
     enhancedData.citationUrl = `https://doi.org/${crossrefData.DOI}`;
   }
-  
+
   // Keywords
   if (
-    fieldsToEnhance.includes('keywords') && 
-    crossrefData.subject && 
-    Array.isArray(crossrefData.subject) && 
+    fieldsToEnhance.includes("keywords") &&
+    crossrefData.subject &&
+    Array.isArray(crossrefData.subject) &&
     crossrefData.subject.length > 0
   ) {
     enhancedData.keywords = crossrefData.subject;
   }
-  
+
   // Peer-reviewed status
-  if (
-    fieldsToEnhance.includes('peerReviewed')
-  ) {
+  if (fieldsToEnhance.includes("peerReviewed")) {
     // Most CrossRef articles with these types are peer-reviewed
     const type = crossrefData.type?.toLowerCase();
-    if (['journal-article', 'journal_article'].includes(type)) {
+    if (["journal-article", "journal_article"].includes(type)) {
       enhancedData.peerReviewed = true;
     }
   }
-  
+
   return enhancedData;
 }
 
@@ -540,89 +558,91 @@ function extractCrossRefData(
 function extractSemanticScholarData(
   semanticData: any,
   study: Study,
-  fieldsToEnhance: string[]
+  fieldsToEnhance: string[],
 ): Record<string, any> {
   const enhancedData: Record<string, any> = {};
-  
+
   // Abstract
   if (
-    fieldsToEnhance.includes('abstract') && 
-    semanticData.abstract && 
-    semanticData.abstract.trim() !== ''
+    fieldsToEnhance.includes("abstract") &&
+    semanticData.abstract &&
+    semanticData.abstract.trim() !== ""
   ) {
     enhancedData.abstract = semanticData.abstract;
   }
-  
+
   // Authors
   if (
-    fieldsToEnhance.includes('authors') && 
-    semanticData.authors && 
-    Array.isArray(semanticData.authors) && 
+    fieldsToEnhance.includes("authors") &&
+    semanticData.authors &&
+    Array.isArray(semanticData.authors) &&
     semanticData.authors.length > 0
   ) {
-    const authors = semanticData.authors.map((author: any) => author.name).join(', ');
+    const authors = semanticData.authors
+      .map((author: any) => author.name)
+      .join(", ");
     enhancedData.authors = authors;
-    
+
     // Also extract first, other, and last authors
     if (semanticData.authors.length > 0) {
       enhancedData.firstAuthor = semanticData.authors[0].name;
-      
+
       if (semanticData.authors.length > 1) {
-        enhancedData.lastAuthor = semanticData.authors[semanticData.authors.length - 1].name;
-        
+        enhancedData.lastAuthor =
+          semanticData.authors[semanticData.authors.length - 1].name;
+
         if (semanticData.authors.length > 2) {
-          enhancedData.otherAuthors = semanticData.authors.slice(1, -1).map((author: any) => author.name).join(', ');
+          enhancedData.otherAuthors = semanticData.authors
+            .slice(1, -1)
+            .map((author: any) => author.name)
+            .join(", ");
         } else {
-          enhancedData.otherAuthors = '';
+          enhancedData.otherAuthors = "";
         }
       }
     }
   }
-  
+
   // Journal
   if (
-    fieldsToEnhance.includes('journal') && 
-    semanticData.journal && 
+    fieldsToEnhance.includes("journal") &&
+    semanticData.journal &&
     semanticData.journal.name
   ) {
     enhancedData.journal = semanticData.journal.name;
   }
-  
+
   // Publication date
-  if (
-    fieldsToEnhance.includes('publishDate') && 
-    semanticData.year
-  ) {
+  if (fieldsToEnhance.includes("publishDate") && semanticData.year) {
     enhancedData.publishDate = `${semanticData.year}-01-01`;
   }
-  
+
   // PDF URL
   if (
-    fieldsToEnhance.includes('pdfUrl') && 
-    semanticData.openAccessPdf && 
+    fieldsToEnhance.includes("pdfUrl") &&
+    semanticData.openAccessPdf &&
     semanticData.openAccessPdf.url
   ) {
     enhancedData.pdfUrl = semanticData.openAccessPdf.url;
   }
-  
+
   // Citation URL
-  if (
-    fieldsToEnhance.includes('citationUrl') && 
-    semanticData.url
-  ) {
+  if (fieldsToEnhance.includes("citationUrl") && semanticData.url) {
     enhancedData.citationUrl = semanticData.url;
   }
-  
+
   // Keywords/Topics
   if (
-    fieldsToEnhance.includes('keywords') && 
-    semanticData.topics && 
-    Array.isArray(semanticData.topics) && 
+    fieldsToEnhance.includes("keywords") &&
+    semanticData.topics &&
+    Array.isArray(semanticData.topics) &&
     semanticData.topics.length > 0
   ) {
-    enhancedData.keywords = semanticData.topics.map((topic: any) => topic.topic);
+    enhancedData.keywords = semanticData.topics.map(
+      (topic: any) => topic.topic,
+    );
   }
-  
+
   return enhancedData;
 }
 
@@ -634,20 +654,21 @@ function extractSemanticScholarData(
 export function calculateDataQualityScore(study: Study): number {
   let score = 0;
   const totalChecks = 10;
-  
+
   // Check required fields
-  if (study.title && study.title.trim() !== '') score += 10;
-  if (study.abstract && study.abstract.trim() !== '') score += 10;
-  if (study.authors && study.authors.trim() !== '') score += 10;
-  if (study.journal && study.journal.trim() !== '') score += 10;
-  if (study.publishDate && study.publishDate.trim() !== '') score += 10;
-  
+  if (study.title && study.title.trim() !== "") score += 10;
+  if (study.abstract && study.abstract.trim() !== "") score += 10;
+  if (study.authors && study.authors.trim() !== "") score += 10;
+  if (study.journal && study.journal.trim() !== "") score += 10;
+  if (study.publishDate && study.publishDate.trim() !== "") score += 10;
+
   // Check optional but useful fields
-  if (study.doi && study.doi.trim() !== '') score += 10;
-  if (study.pdfUrl && study.pdfUrl.trim() !== '') score += 10;
-  if (study.citationUrl && study.citationUrl.trim() !== '') score += 10;
+  if (study.doi && study.doi.trim() !== "") score += 10;
+  if (study.pdfUrl && study.pdfUrl.trim() !== "") score += 10;
+  if (study.citationUrl && study.citationUrl.trim() !== "") score += 10;
   if (study.keywords && study.keywords.length > 0) score += 10;
-  if (study.peerReviewed !== null && study.peerReviewed !== undefined) score += 10;
-  
+  if (study.peerReviewed !== null && study.peerReviewed !== undefined)
+    score += 10;
+
   return score;
 }

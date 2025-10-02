@@ -3,11 +3,11 @@
  * Provides advanced meta tag optimization for different page types
  */
 
-import React from 'react';
-import { Helmet } from 'react-helmet';
+import React from "react";
+import { Helmet } from "react-helmet";
 
 interface MetaTagOptimizerProps {
-  pageType: 'home' | 'study' | 'category' | 'search' | 'list';
+  pageType: "home" | "study" | "category" | "search" | "list";
   title: string;
   description: string;
   keywords?: string[];
@@ -38,7 +38,7 @@ export const MetaTagOptimizer: React.FC<MetaTagOptimizerProps> = ({
   keywords = [],
   canonicalUrl,
   study,
-  category
+  category,
 }) => {
   const baseUrl = window.location.origin;
   const currentUrl = canonicalUrl || window.location.href;
@@ -46,47 +46,48 @@ export const MetaTagOptimizer: React.FC<MetaTagOptimizerProps> = ({
   // Generate page-specific optimizations
   const getPageSpecificTags = () => {
     switch (pageType) {
-      case 'home':
+      case "home":
         return {
-          robots: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
-          priority: '1.0',
-          changefreq: 'daily'
+          robots:
+            "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
+          priority: "1.0",
+          changefreq: "daily",
         };
 
-      case 'study':
+      case "study":
         return {
-          robots: 'index, follow, max-snippet:160, max-image-preview:large',
-          priority: '0.8',
-          changefreq: 'monthly',
-          articleType: 'research'
+          robots: "index, follow, max-snippet:160, max-image-preview:large",
+          priority: "0.8",
+          changefreq: "monthly",
+          articleType: "research",
         };
 
-      case 'category':
+      case "category":
         return {
-          robots: 'index, follow, max-snippet:200, max-image-preview:standard',
-          priority: '0.7',
-          changefreq: 'weekly'
+          robots: "index, follow, max-snippet:200, max-image-preview:standard",
+          priority: "0.7",
+          changefreq: "weekly",
         };
 
-      case 'search':
+      case "search":
         return {
-          robots: 'noindex, follow',
-          priority: '0.3',
-          changefreq: 'never'
+          robots: "noindex, follow",
+          priority: "0.3",
+          changefreq: "never",
         };
 
-      case 'list':
+      case "list":
         return {
-          robots: 'index, follow, max-snippet:150',
-          priority: '0.6',
-          changefreq: 'daily'
+          robots: "index, follow, max-snippet:150",
+          priority: "0.6",
+          changefreq: "daily",
         };
 
       default:
         return {
-          robots: 'index, follow',
-          priority: '0.5',
-          changefreq: 'weekly'
+          robots: "index, follow",
+          priority: "0.5",
+          changefreq: "weekly",
         };
     }
   };
@@ -95,26 +96,37 @@ export const MetaTagOptimizer: React.FC<MetaTagOptimizerProps> = ({
 
   // Generate optimized keywords
   const getOptimizedKeywords = () => {
-    const baseKeywords = ['hydrogen therapy', 'molecular hydrogen', 'hydrogen research'];
+    const baseKeywords = [
+      "hydrogen therapy",
+      "molecular hydrogen",
+      "hydrogen research",
+    ];
 
     if (study) {
       return [
         ...baseKeywords,
         study.category.toLowerCase(),
-        ...study.authors.split(',').map(a => a.trim()).slice(0, 2),
+        ...study.authors
+          .split(",")
+          .map((a) => a.trim())
+          .slice(0, 2),
         study.journal.toLowerCase(),
-        ...keywords
-      ].filter(Boolean).slice(0, 20);
+        ...keywords,
+      ]
+        .filter(Boolean)
+        .slice(0, 20);
     }
 
     if (category) {
       return [
         ...baseKeywords,
         category.name.toLowerCase(),
-        'health studies',
-        'medical research',
-        ...keywords
-      ].filter(Boolean).slice(0, 15);
+        "health studies",
+        "medical research",
+        ...keywords,
+      ]
+        .filter(Boolean)
+        .slice(0, 15);
     }
 
     return [...baseKeywords, ...keywords].slice(0, 10);
@@ -127,16 +139,17 @@ export const MetaTagOptimizer: React.FC<MetaTagOptimizerProps> = ({
     if (description) return description;
 
     if (study) {
-      const benefits = study.keywords?.slice(0, 2).join(', ') || 'health benefits';
+      const benefits =
+        study.keywords?.slice(0, 2).join(", ") || "health benefits";
       return `${study.title.substring(0, 120)}. Learn about ${benefits} from this ${study.journal} study. Evidence-based research with plain-language summary.`;
     }
 
     if (category) {
-      const studyCount = category.studyCount || 'multiple';
+      const studyCount = category.studyCount || "multiple";
       return `Discover ${studyCount} research studies on ${category.name}. Evidence-based insights into hydrogen therapy benefits, safety, and clinical applications.`;
     }
 
-    return 'Evidence-based hydrogen therapy research database. Access 1000+ studies with AI-powered analysis, safety information, and practical health insights.';
+    return "Evidence-based hydrogen therapy research database. Access 1000+ studies with AI-powered analysis, safety information, and practical health insights.";
   };
 
   const optimizedDescription = getOptimizedDescription();
@@ -146,7 +159,7 @@ export const MetaTagOptimizer: React.FC<MetaTagOptimizerProps> = ({
       {/* Core Meta Tags */}
       <title>{title}</title>
       <meta name="description" content={optimizedDescription} />
-      <meta name="keywords" content={optimizedKeywords.join(', ')} />
+      <meta name="keywords" content={optimizedKeywords.join(", ")} />
       <link rel="canonical" href={currentUrl} />
 
       {/* Robots and Indexing */}
@@ -157,7 +170,10 @@ export const MetaTagOptimizer: React.FC<MetaTagOptimizerProps> = ({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={optimizedDescription} />
       <meta property="og:url" content={currentUrl} />
-      <meta property="og:type" content={pageType === 'study' ? 'article' : 'website'} />
+      <meta
+        property="og:type"
+        content={pageType === "study" ? "article" : "website"}
+      />
       <meta property="og:site_name" content="Hydrogen Research Database" />
 
       {/* Twitter Card Enhanced */}

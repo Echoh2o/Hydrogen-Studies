@@ -1,26 +1,41 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { Loader2, Search, Database, AlertCircle, ExternalLink } from 'lucide-react';
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Loader2,
+  Search,
+  Database,
+  AlertCircle,
+  ExternalLink,
+} from "lucide-react";
 
 export default function SemanticScholarSearch() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedPaperId, setSelectedPaperId] = useState('');
+  const [selectedPaperId, setSelectedPaperId] = useState("");
   const [page, setPage] = useState(1);
   const [offset, setOffset] = useState(0);
   const limit = 10;
-  
+
   // Search mutation
   const searchMutation = useMutation({
-    mutationFn: async ({ query, offset }: { query: string, offset: number }) => {
-      const response = await apiRequest('GET', `/api/research/semantic-scholar/search?query=${encodeURIComponent(query)}&offset=${offset}&limit=${limit}`);
+    mutationFn: async ({
+      query,
+      offset,
+    }: {
+      query: string;
+      offset: number;
+    }) => {
+      const response = await apiRequest(
+        "GET",
+        `/api/research/semantic-scholar/search?query=${encodeURIComponent(query)}&offset=${offset}&limit=${limit}`,
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -32,13 +47,17 @@ export default function SemanticScholarSearch() {
         description: error.message || "Failed to search Semantic Scholar",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (paperId: string) => {
-      const response = await apiRequest('POST', `/api/semantic-scholar/import`, { paperId });
+      const response = await apiRequest(
+        "POST",
+        `/api/semantic-scholar/import`,
+        { paperId },
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -61,9 +80,9 @@ export default function SemanticScholarSearch() {
         description: error.message || "Failed to import study",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       toast({
@@ -76,25 +95,29 @@ export default function SemanticScholarSearch() {
     setOffset((page - 1) * limit);
     searchMutation.mutate({ query: searchQuery, offset });
   };
-  
+
   const handleImport = (paperId: string) => {
     setSelectedPaperId(paperId);
     importMutation.mutate(paperId);
   };
-  
+
   const formatAuthors = (authors: any[]) => {
     if (!authors || !authors.length) return "Unknown authors";
-    return authors.slice(0, 3).map((author: any) => author.name || "").join(", ") + 
-      (authors.length > 3 ? " et al." : "");
+    return (
+      authors
+        .slice(0, 3)
+        .map((author: any) => author.name || "")
+        .join(", ") + (authors.length > 3 ? " et al." : "")
+    );
   };
-  
+
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     const newOffset = (newPage - 1) * limit;
     setOffset(newOffset);
     searchMutation.mutate({ query: searchQuery, offset: newOffset });
   };
-  
+
   return (
     <div className="space-y-6">
       <div className="flex space-x-2">
@@ -107,9 +130,9 @@ export default function SemanticScholarSearch() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1"
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
-            <Button 
+            <Button
               onClick={handleSearch}
               disabled={searchMutation.isPending || !searchQuery.trim()}
               className="ml-2"
@@ -132,7 +155,7 @@ export default function SemanticScholarSearch() {
           </p>
         </div>
       </div>
-      
+
       {searchMutation.isPending ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
@@ -142,7 +165,7 @@ export default function SemanticScholarSearch() {
           <div className="text-sm text-gray-500">
             Showing {searchResults.length} results (page {page})
           </div>
-          
+
           {searchResults.map((paper: any, index: number) => (
             <Card key={index} className="overflow-hidden">
               <CardContent className="p-4">
@@ -150,13 +173,18 @@ export default function SemanticScholarSearch() {
                   <div className="flex-1 space-y-1">
                     <h3 className="font-medium text-base">{paper.title}</h3>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Authors:</span> {formatAuthors(paper.authors)}
+                      <span className="font-medium">Authors:</span>{" "}
+                      {formatAuthors(paper.authors)}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Journal:</span> {paper.venue || paper.journal?.name || "N/A"}
+                      <span className="font-medium">Journal:</span>{" "}
+                      {paper.venue || paper.journal?.name || "N/A"}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Year:</span> {paper.year || "N/A"} • <span className="font-medium">Citations:</span> {paper.citationCount || 0}
+                      <span className="font-medium">Year:</span>{" "}
+                      {paper.year || "N/A"} •{" "}
+                      <span className="font-medium">Citations:</span>{" "}
+                      {paper.citationCount || 0}
                     </div>
                     <div className="flex items-center mt-2">
                       {paper.isOpenAccess && (
@@ -164,11 +192,15 @@ export default function SemanticScholarSearch() {
                           Open Access
                         </span>
                       )}
-                      {paper.fieldsOfStudy && paper.fieldsOfStudy.map((field: string, i: number) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                          {field}
-                        </span>
-                      ))}
+                      {paper.fieldsOfStudy &&
+                        paper.fieldsOfStudy.map((field: string, i: number) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2"
+                          >
+                            {field}
+                          </span>
+                        ))}
                     </div>
                     {paper.abstract && (
                       <div className="text-sm text-gray-700 mt-2 border-t pt-2">
@@ -177,12 +209,16 @@ export default function SemanticScholarSearch() {
                     )}
                   </div>
                   <div className="md:ml-4 mt-3 md:mt-0 flex md:flex-col justify-end md:justify-center space-y-2">
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => handleImport(paper.paperId)}
-                      disabled={importMutation.isPending && selectedPaperId === paper.paperId}
+                      disabled={
+                        importMutation.isPending &&
+                        selectedPaperId === paper.paperId
+                      }
                     >
-                      {importMutation.isPending && selectedPaperId === paper.paperId ? (
+                      {importMutation.isPending &&
+                      selectedPaperId === paper.paperId ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Importing...
@@ -195,10 +231,10 @@ export default function SemanticScholarSearch() {
                       )}
                     </Button>
                     {paper.url && (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => window.open(paper.url, '_blank')}
+                        onClick={() => window.open(paper.url, "_blank")}
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View
@@ -209,7 +245,7 @@ export default function SemanticScholarSearch() {
               </CardContent>
             </Card>
           ))}
-          
+
           <div className="flex justify-between mt-4">
             <Button
               variant="outline"
@@ -224,7 +260,9 @@ export default function SemanticScholarSearch() {
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(page + 1)}
-              disabled={searchResults.length < limit || searchMutation.isPending}
+              disabled={
+                searchResults.length < limit || searchMutation.isPending
+              }
             >
               Next
             </Button>

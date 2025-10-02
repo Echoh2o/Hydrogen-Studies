@@ -1,31 +1,43 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { 
-  Brain, 
-  FileText, 
-  Clock, 
-  TrendingUp, 
-  Users, 
-  Tag, 
-  CheckCircle2, 
-  AlertCircle, 
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Brain,
+  FileText,
+  Clock,
+  TrendingUp,
+  Users,
+  Tag,
+  CheckCircle2,
+  AlertCircle,
   Loader2,
   Sparkles,
   Download,
-  Eye
-} from 'lucide-react';
+  Eye,
+} from "lucide-react";
 
 interface BlogRecommendation {
   studyId: number;
@@ -35,7 +47,7 @@ interface BlogRecommendation {
   studyJournal: string;
   studyCategory: string;
   studyPublishDate: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   reasonForRecommendation: string;
   suggestedBlogTypes: string[];
   estimatedReadership: string;
@@ -64,139 +76,199 @@ interface GenerationProgress {
 }
 
 const ARTICLE_TYPES = [
-  { value: 'explainer', label: 'Explainer Article', description: 'Comprehensive breakdown of the research' },
-  { value: 'summary', label: 'Research Summary', description: 'Concise overview of key findings' },
-  { value: 'implications', label: 'Health Implications', description: 'Real-world applications and benefits' },
-  { value: 'benefits', label: 'Benefits Guide', description: 'Focus on potential health advantages' },
-  { value: 'how-to', label: 'Practical Guide', description: 'How to apply research insights' }
+  {
+    value: "explainer",
+    label: "Explainer Article",
+    description: "Comprehensive breakdown of the research",
+  },
+  {
+    value: "summary",
+    label: "Research Summary",
+    description: "Concise overview of key findings",
+  },
+  {
+    value: "implications",
+    label: "Health Implications",
+    description: "Real-world applications and benefits",
+  },
+  {
+    value: "benefits",
+    label: "Benefits Guide",
+    description: "Focus on potential health advantages",
+  },
+  {
+    value: "how-to",
+    label: "Practical Guide",
+    description: "How to apply research insights",
+  },
 ];
 
 const READING_LEVELS = [
-  { value: '6th', label: '6th Grade (Ages 11-12)', description: 'Simple language, short sentences' },
-  { value: 'high-school', label: 'High School (Ages 14-18)', description: 'Moderate complexity' },
-  { value: 'general', label: 'General Adult', description: 'Accessible but comprehensive' }
+  {
+    value: "6th",
+    label: "6th Grade (Ages 11-12)",
+    description: "Simple language, short sentences",
+  },
+  {
+    value: "high-school",
+    label: "High School (Ages 14-18)",
+    description: "Moderate complexity",
+  },
+  {
+    value: "general",
+    label: "General Adult",
+    description: "Accessible but comprehensive",
+  },
 ];
 
 export function BlogRecommendationSystem() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const [selectedStudies, setSelectedStudies] = useState<Set<number>>(new Set());
-  const [generationOptions, setGenerationOptions] = useState<GenerationOptions>({
-    articleTypes: ['explainer', 'summary'],
-    readingLevel: 'general',
-    includeImages: true,
-    includeSEO: true,
-    saveToDatabase: false
-  });
-  const [generationProgress, setGenerationProgress] = useState<GenerationProgress>({
-    isGenerating: false,
-    currentStudy: '',
-    progress: 0,
-    totalStudies: 0,
-    completedStudies: 0,
-    generatedBlogs: 0,
-    errors: []
-  });
+
+  const [selectedStudies, setSelectedStudies] = useState<Set<number>>(
+    new Set(),
+  );
+  const [generationOptions, setGenerationOptions] = useState<GenerationOptions>(
+    {
+      articleTypes: ["explainer", "summary"],
+      readingLevel: "general",
+      includeImages: true,
+      includeSEO: true,
+      saveToDatabase: false,
+    },
+  );
+  const [generationProgress, setGenerationProgress] =
+    useState<GenerationProgress>({
+      isGenerating: false,
+      currentStudy: "",
+      progress: 0,
+      totalStudies: 0,
+      completedStudies: 0,
+      generatedBlogs: 0,
+      errors: [],
+    });
 
   // Fetch blog recommendations
-  const { data: recommendationsResponse, isLoading: isLoadingRecommendations, refetch } = useQuery({
-    queryKey: ['/api/blog-recommendations/recommendations'],
+  const {
+    data: recommendationsResponse,
+    isLoading: isLoadingRecommendations,
+    refetch,
+  } = useQuery({
+    queryKey: ["/api/blog-recommendations/recommendations"],
     staleTime: 300000, // 5 minutes
   });
-  
-  const recommendations: BlogRecommendation[] = Array.isArray((recommendationsResponse as any)?.data) 
-    ? (recommendationsResponse as any).data 
-    : Array.isArray(recommendationsResponse) 
-    ? (recommendationsResponse as BlogRecommendation[])
-    : [];
+
+  const recommendations: BlogRecommendation[] = Array.isArray(
+    (recommendationsResponse as any)?.data,
+  )
+    ? (recommendationsResponse as any).data
+    : Array.isArray(recommendationsResponse)
+      ? (recommendationsResponse as BlogRecommendation[])
+      : [];
 
   // Preview generation mutation
   const previewMutation = useMutation({
     mutationFn: async () => {
       const selectedStudyIds = Array.from(selectedStudies);
-      const response = await apiRequest('POST', '/api/blog-recommendations/preview', {
-        selectedStudyIds,
-        articleTypes: generationOptions.articleTypes
-      });
+      const response = await apiRequest(
+        "POST",
+        "/api/blog-recommendations/preview",
+        {
+          selectedStudyIds,
+          articleTypes: generationOptions.articleTypes,
+        },
+      );
       return response.json();
     },
     onSuccess: (data: any) => {
       toast({
-        title: 'Generation Preview',
+        title: "Generation Preview",
         description: `Will generate ${data.totalBlogsToGenerate} blogs for ${data.selectedStudiesCount} studies. Estimated time: ${data.estimatedTimeDisplay}`,
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Preview Failed',
-        description: error.message || 'Failed to create generation preview',
-        variant: 'destructive',
+        title: "Preview Failed",
+        description: error.message || "Failed to create generation preview",
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Bulk generation mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
       const selectedStudyIds = Array.from(selectedStudies);
-      
+
       setGenerationProgress({
         isGenerating: true,
-        currentStudy: 'Initializing...',
+        currentStudy: "Initializing...",
         progress: 0,
         totalStudies: selectedStudyIds.length,
         completedStudies: 0,
         generatedBlogs: 0,
-        errors: []
+        errors: [],
       });
 
-      const response = await apiRequest('POST', '/api/blog-recommendations/bulk-generate', {
-        selectedStudyIds,
-        ...generationOptions
-      });
+      const response = await apiRequest(
+        "POST",
+        "/api/blog-recommendations/bulk-generate",
+        {
+          selectedStudyIds,
+          ...generationOptions,
+        },
+      );
 
       return response.json();
     },
     onSuccess: (data: any) => {
       const summary = data?.summary || data?.data?.summary || {};
-      const successfulStudies = summary.successfulStudies || data?.results?.filter((r: any) => r.success)?.length || 0;
-      const totalBlogs = summary.totalBlogs || data?.results?.reduce((acc: number, r: any) => acc + (r.generatedBlogs?.length || 0), 0) || 0;
-      
-      setGenerationProgress(prev => ({
+      const successfulStudies =
+        summary.successfulStudies ||
+        data?.results?.filter((r: any) => r.success)?.length ||
+        0;
+      const totalBlogs =
+        summary.totalBlogs ||
+        data?.results?.reduce(
+          (acc: number, r: any) => acc + (r.generatedBlogs?.length || 0),
+          0,
+        ) ||
+        0;
+
+      setGenerationProgress((prev) => ({
         ...prev,
         isGenerating: false,
         progress: 100,
         completedStudies: successfulStudies,
-        generatedBlogs: totalBlogs
+        generatedBlogs: totalBlogs,
       }));
 
       toast({
-        title: 'Generation Complete',
+        title: "Generation Complete",
         description: `Generated ${totalBlogs} blog articles for ${successfulStudies} studies.`,
       });
 
       // Clear selections and refresh data
       setSelectedStudies(new Set());
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
       refetch();
     },
     onError: (error: any) => {
-      setGenerationProgress(prev => ({
+      setGenerationProgress((prev) => ({
         ...prev,
-        isGenerating: false
+        isGenerating: false,
       }));
-      
+
       toast({
-        title: 'Generation Failed',
-        description: error.message || 'Failed to generate blog articles',
-        variant: 'destructive',
+        title: "Generation Failed",
+        description: error.message || "Failed to generate blog articles",
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const toggleStudySelection = (studyId: number) => {
-    setSelectedStudies(prev => {
+    setSelectedStudies((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(studyId)) {
         newSet.delete(studyId);
@@ -215,7 +287,7 @@ export function BlogRecommendationSystem() {
     setSelectedStudies(new Set());
   };
 
-  const selectByPriority = (priority: 'high' | 'medium' | 'low') => {
+  const selectByPriority = (priority: "high" | "medium" | "low") => {
     const studyIds = recommendations
       .filter((r) => r.priority === priority)
       .map((r) => r.studyId);
@@ -224,10 +296,14 @@ export function BlogRecommendationSystem() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case "high":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low":
+        return "bg-green-100 text-green-800 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -285,17 +361,40 @@ export function BlogRecommendationSystem() {
                 <Button onClick={selectAllStudies} variant="outline" size="sm">
                   Select All ({recommendations.length})
                 </Button>
-                <Button onClick={clearAllSelections} variant="outline" size="sm">
+                <Button
+                  onClick={clearAllSelections}
+                  variant="outline"
+                  size="sm"
+                >
                   Clear All
                 </Button>
-                <Button onClick={() => selectByPriority('high')} variant="outline" size="sm">
-                  High Priority ({recommendations.filter((r) => r.priority === 'high').length})
+                <Button
+                  onClick={() => selectByPriority("high")}
+                  variant="outline"
+                  size="sm"
+                >
+                  High Priority (
+                  {recommendations.filter((r) => r.priority === "high").length})
                 </Button>
-                <Button onClick={() => selectByPriority('medium')} variant="outline" size="sm">
-                  Medium Priority ({recommendations.filter((r) => r.priority === 'medium').length})
+                <Button
+                  onClick={() => selectByPriority("medium")}
+                  variant="outline"
+                  size="sm"
+                >
+                  Medium Priority (
+                  {
+                    recommendations.filter((r) => r.priority === "medium")
+                      .length
+                  }
+                  )
                 </Button>
-                <Button onClick={() => selectByPriority('low')} variant="outline" size="sm">
-                  Low Priority ({recommendations.filter((r) => r.priority === 'low').length})
+                <Button
+                  onClick={() => selectByPriority("low")}
+                  variant="outline"
+                  size="sm"
+                >
+                  Low Priority (
+                  {recommendations.filter((r) => r.priority === "low").length})
                 </Button>
               </div>
               {selectedStudies.size > 0 && (
@@ -312,21 +411,30 @@ export function BlogRecommendationSystem() {
           <ScrollArea className="h-[600px]">
             <div className="space-y-4">
               {recommendations.map((recommendation) => (
-                <Card key={recommendation.studyId} className={`transition-all ${
-                  selectedStudies.has(recommendation.studyId) 
-                    ? 'ring-2 ring-primary shadow-md' 
-                    : 'hover:shadow-sm'
-                }`}>
+                <Card
+                  key={recommendation.studyId}
+                  className={`transition-all ${
+                    selectedStudies.has(recommendation.studyId)
+                      ? "ring-2 ring-primary shadow-md"
+                      : "hover:shadow-sm"
+                  }`}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedStudies.has(recommendation.studyId)}
-                        onCheckedChange={() => toggleStudySelection(recommendation.studyId)}
+                        onCheckedChange={() =>
+                          toggleStudySelection(recommendation.studyId)
+                        }
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge className={getPriorityColor(recommendation.priority)}>
+                          <Badge
+                            className={getPriorityColor(
+                              recommendation.priority,
+                            )}
+                          >
                             {recommendation.priority.toUpperCase()}
                           </Badge>
                           <Badge variant="outline">
@@ -353,23 +461,37 @@ export function BlogRecommendationSystem() {
                   <CardContent className="pt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
-                        <Label className="text-xs font-medium text-muted-foreground">SUGGESTED TYPES</Label>
+                        <Label className="text-xs font-medium text-muted-foreground">
+                          SUGGESTED TYPES
+                        </Label>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {recommendation.suggestedBlogTypes.map(type => (
-                            <Badge key={type} variant="outline" className="text-xs">
+                          {recommendation.suggestedBlogTypes.map((type) => (
+                            <Badge
+                              key={type}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {type}
                             </Badge>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs font-medium text-muted-foreground">SEO KEYWORDS</Label>
+                        <Label className="text-xs font-medium text-muted-foreground">
+                          SEO KEYWORDS
+                        </Label>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {recommendation.seoKeywords.slice(0, 4).map(keyword => (
-                            <Badge key={keyword} variant="secondary" className="text-xs">
-                              {keyword}
-                            </Badge>
-                          ))}
+                          {recommendation.seoKeywords
+                            .slice(0, 4)
+                            .map((keyword) => (
+                              <Badge
+                                key={keyword}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {keyword}
+                              </Badge>
+                            ))}
                           {recommendation.seoKeywords.length > 4 && (
                             <Badge variant="secondary" className="text-xs">
                               +{recommendation.seoKeywords.length - 4} more
@@ -381,7 +503,10 @@ export function BlogRecommendationSystem() {
                     <Separator className="my-3" />
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{recommendation.studyAuthors}</span>
-                      <span>{recommendation.studyJournal} • {recommendation.studyPublishDate}</span>
+                      <span>
+                        {recommendation.studyJournal} •{" "}
+                        {recommendation.studyPublishDate}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -406,27 +531,36 @@ export function BlogRecommendationSystem() {
                   Select which types of articles to generate for each study
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {ARTICLE_TYPES.map(type => (
-                    <div key={type.value} className="flex items-start space-x-3">
-                      <Checkbox 
-                        checked={generationOptions.articleTypes.includes(type.value)}
+                  {ARTICLE_TYPES.map((type) => (
+                    <div
+                      key={type.value}
+                      className="flex items-start space-x-3"
+                    >
+                      <Checkbox
+                        checked={generationOptions.articleTypes.includes(
+                          type.value,
+                        )}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setGenerationOptions(prev => ({
+                            setGenerationOptions((prev) => ({
                               ...prev,
-                              articleTypes: [...prev.articleTypes, type.value]
+                              articleTypes: [...prev.articleTypes, type.value],
                             }));
                           } else {
-                            setGenerationOptions(prev => ({
+                            setGenerationOptions((prev) => ({
                               ...prev,
-                              articleTypes: prev.articleTypes.filter(t => t !== type.value)
+                              articleTypes: prev.articleTypes.filter(
+                                (t) => t !== type.value,
+                              ),
                             }));
                           }
                         }}
                       />
                       <div className="space-y-1">
                         <p className="text-sm font-medium">{type.label}</p>
-                        <p className="text-xs text-muted-foreground">{type.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {type.description}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -441,21 +575,26 @@ export function BlogRecommendationSystem() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Target audience complexity level
                 </p>
-                <Select 
-                  value={generationOptions.readingLevel} 
-                  onValueChange={(value) => 
-                    setGenerationOptions(prev => ({ ...prev, readingLevel: value }))
+                <Select
+                  value={generationOptions.readingLevel}
+                  onValueChange={(value) =>
+                    setGenerationOptions((prev) => ({
+                      ...prev,
+                      readingLevel: value,
+                    }))
                   }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select reading level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {READING_LEVELS.map(level => (
+                    {READING_LEVELS.map((level) => (
                       <SelectItem key={level.value} value={level.value}>
                         <div>
                           <div className="font-medium">{level.label}</div>
-                          <div className="text-xs text-muted-foreground">{level.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {level.description}
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -467,44 +606,61 @@ export function BlogRecommendationSystem() {
 
               {/* Additional Options */}
               <div className="space-y-3">
-                <Label className="text-base font-medium">Additional Features</Label>
-                
+                <Label className="text-base font-medium">
+                  Additional Features
+                </Label>
+
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
+                  <Checkbox
                     checked={generationOptions.includeImages}
-                    onCheckedChange={(checked) => 
-                      setGenerationOptions(prev => ({ ...prev, includeImages: !!checked }))
+                    onCheckedChange={(checked) =>
+                      setGenerationOptions((prev) => ({
+                        ...prev,
+                        includeImages: !!checked,
+                      }))
                     }
                   />
                   <div>
                     <p className="text-sm font-medium">Generate Images</p>
-                    <p className="text-xs text-muted-foreground">Create AI-generated images for each article</p>
+                    <p className="text-xs text-muted-foreground">
+                      Create AI-generated images for each article
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
+                  <Checkbox
                     checked={generationOptions.includeSEO}
-                    onCheckedChange={(checked) => 
-                      setGenerationOptions(prev => ({ ...prev, includeSEO: !!checked }))
+                    onCheckedChange={(checked) =>
+                      setGenerationOptions((prev) => ({
+                        ...prev,
+                        includeSEO: !!checked,
+                      }))
                     }
                   />
                   <div>
                     <p className="text-sm font-medium">SEO Optimization</p>
-                    <p className="text-xs text-muted-foreground">Generate meta descriptions, keywords, and tags</p>
+                    <p className="text-xs text-muted-foreground">
+                      Generate meta descriptions, keywords, and tags
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
+                  <Checkbox
                     checked={generationOptions.saveToDatabase}
-                    onCheckedChange={(checked) => 
-                      setGenerationOptions(prev => ({ ...prev, saveToDatabase: !!checked }))
+                    onCheckedChange={(checked) =>
+                      setGenerationOptions((prev) => ({
+                        ...prev,
+                        saveToDatabase: !!checked,
+                      }))
                     }
                   />
                   <div>
                     <p className="text-sm font-medium">Save to Database</p>
-                    <p className="text-xs text-muted-foreground">Automatically save generated articles as drafts</p>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically save generated articles as drafts
+                    </p>
                   </div>
                 </div>
               </div>
@@ -513,17 +669,24 @@ export function BlogRecommendationSystem() {
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                <Button 
+                <Button
                   onClick={() => previewMutation.mutate()}
-                  disabled={selectedStudies.size === 0 || generationOptions.articleTypes.length === 0}
+                  disabled={
+                    selectedStudies.size === 0 ||
+                    generationOptions.articleTypes.length === 0
+                  }
                   variant="outline"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Preview Generation
                 </Button>
-                <Button 
+                <Button
                   onClick={() => generateMutation.mutate()}
-                  disabled={selectedStudies.size === 0 || generationOptions.articleTypes.length === 0 || generateMutation.isPending}
+                  disabled={
+                    selectedStudies.size === 0 ||
+                    generationOptions.articleTypes.length === 0 ||
+                    generateMutation.isPending
+                  }
                 >
                   {generateMutation.isPending ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -534,16 +697,21 @@ export function BlogRecommendationSystem() {
                 </Button>
               </div>
 
-              {selectedStudies.size > 0 && generationOptions.articleTypes.length > 0 && (
-                <div className="p-4 bg-primary/5 rounded-lg">
-                  <p className="text-sm font-medium">
-                    Will generate {selectedStudies.size * generationOptions.articleTypes.length} total articles
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {selectedStudies.size} studies × {generationOptions.articleTypes.length} article types
-                  </p>
-                </div>
-              )}
+              {selectedStudies.size > 0 &&
+                generationOptions.articleTypes.length > 0 && (
+                  <div className="p-4 bg-primary/5 rounded-lg">
+                    <p className="text-sm font-medium">
+                      Will generate{" "}
+                      {selectedStudies.size *
+                        generationOptions.articleTypes.length}{" "}
+                      total articles
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedStudies.size} studies ×{" "}
+                      {generationOptions.articleTypes.length} article types
+                    </p>
+                  </div>
+                )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -561,19 +729,29 @@ export function BlogRecommendationSystem() {
                 <div>
                   <div className="flex justify-between text-sm mb-2">
                     <span>Overall Progress</span>
-                    <span>{generationProgress.completedStudies} / {generationProgress.totalStudies} studies</span>
+                    <span>
+                      {generationProgress.completedStudies} /{" "}
+                      {generationProgress.totalStudies} studies
+                    </span>
                   </div>
-                  <Progress value={generationProgress.progress} className="w-full" />
+                  <Progress
+                    value={generationProgress.progress}
+                    className="w-full"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <Label>Current Study</Label>
-                    <p className="text-muted-foreground">{generationProgress.currentStudy}</p>
+                    <p className="text-muted-foreground">
+                      {generationProgress.currentStudy}
+                    </p>
                   </div>
                   <div>
                     <Label>Generated Articles</Label>
-                    <p className="text-muted-foreground">{generationProgress.generatedBlogs}</p>
+                    <p className="text-muted-foreground">
+                      {generationProgress.generatedBlogs}
+                    </p>
                   </div>
                 </div>
 
@@ -583,7 +761,9 @@ export function BlogRecommendationSystem() {
                     <ScrollArea className="h-20">
                       <div className="space-y-1">
                         {generationProgress.errors.map((error, index) => (
-                          <p key={index} className="text-xs text-destructive">{error}</p>
+                          <p key={index} className="text-xs text-destructive">
+                            {error}
+                          </p>
                         ))}
                       </div>
                     </ScrollArea>

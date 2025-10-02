@@ -1,10 +1,9 @@
-
 /**
  * SEO-Optimized Image Component
  * Provides WebP support, lazy loading, and proper SEO attributes
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 
 interface OptimizedImageProps {
   src: string;
@@ -19,13 +18,13 @@ interface OptimizedImageProps {
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
   alt,
-  className = '',
+  className = "",
   width,
   height,
   priority = false,
-  fallback = '/images/fallback-study-image.svg'
+  fallback = "/images/fallback-study-image.svg",
 }) => {
-  const [imageSrc, setImageSrc] = useState<string>('');
+  const [imageSrc, setImageSrc] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -46,8 +45,8 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           });
         },
         {
-          rootMargin: '50px 0px', // Start loading 50px before entering viewport
-        }
+          rootMargin: "50px 0px", // Start loading 50px before entering viewport
+        },
       );
 
       if (imgRef.current) {
@@ -64,9 +63,11 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
   const loadImage = () => {
     // Check WebP support and use optimized version if available
-    const webpSrc = src.replace(/\.(png|jpg|jpeg)$/, '.webp');
-    const optimizedSrc = src.includes('/study-images/') 
-      ? src.replace('/study-images/', '/study-images/optimized/').replace(/\.(png|jpg|jpeg)$/, '.webp')
+    const webpSrc = src.replace(/\.(png|jpg|jpeg)$/, ".webp");
+    const optimizedSrc = src.includes("/study-images/")
+      ? src
+          .replace("/study-images/", "/study-images/optimized/")
+          .replace(/\.(png|jpg|jpeg)$/, ".webp")
       : webpSrc;
 
     // Test if WebP version exists
@@ -93,13 +94,13 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   };
 
   return (
-    <div 
+    <div
       className={`relative overflow-hidden ${className}`}
       style={{ width, height }}
     >
       {/* Loading placeholder */}
       {!isLoaded && !hasError && (
-        <div 
+        <div
           className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center"
           style={{ width, height }}
         >
@@ -116,21 +117,21 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         height={height}
         className={`
           transition-opacity duration-300 
-          ${isLoaded ? 'opacity-100' : 'opacity-0'}
+          ${isLoaded ? "opacity-100" : "opacity-0"}
           ${className}
         `}
         onLoad={handleLoad}
         onError={handleError}
-        loading={priority ? 'eager' : 'lazy'}
+        loading={priority ? "eager" : "lazy"}
         decoding="async"
         // SEO attributes
         itemProp="image"
-        aria-describedby={`${alt.replace(/\s+/g, '-').toLowerCase()}-description`}
+        aria-describedby={`${alt.replace(/\s+/g, "-").toLowerCase()}-description`}
       />
 
       {/* Hidden description for screen readers */}
-      <span 
-        id={`${alt.replace(/\s+/g, '-').toLowerCase()}-description`}
+      <span
+        id={`${alt.replace(/\s+/g, "-").toLowerCase()}-description`}
         className="sr-only"
       >
         {alt}

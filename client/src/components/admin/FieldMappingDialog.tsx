@@ -1,16 +1,22 @@
-import React from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ColumnMapping {
   excelColumn: string;
@@ -34,7 +40,7 @@ export default function FieldMappingDialog({
   onUpdateMapping,
   onSave,
   onCancel,
-  dbFields
+  dbFields,
 }: FieldMappingDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -42,29 +48,39 @@ export default function FieldMappingDialog({
         <DialogHeader>
           <DialogTitle>Map Excel Columns to Database Fields</DialogTitle>
           <DialogDescription>
-            Select where each column from your file should be imported in the database.
-            Choose "Do not import this column" for any columns you want to skip.
+            Select where each column from your file should be imported in the
+            database. Choose "Do not import this column" for any columns you
+            want to skip.
           </DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="h-[50vh] mt-4">
           <div className="space-y-4 pr-4">
             {columnMappings.map((mapping, index) => (
-              <div key={index} className="grid grid-cols-2 gap-4 items-center pb-2 border-b">
+              <div
+                key={index}
+                className="grid grid-cols-2 gap-4 items-center pb-2 border-b"
+              >
                 <div>
-                  <Label className="text-sm font-medium">{mapping.excelColumn}</Label>
+                  <Label className="text-sm font-medium">
+                    {mapping.excelColumn}
+                  </Label>
                   <p className="text-xs text-muted-foreground">Excel Column</p>
                 </div>
                 <div>
                   <Select
                     value={mapping.dbField}
-                    onValueChange={(value) => onUpdateMapping(mapping.excelColumn, value)}
+                    onValueChange={(value) =>
+                      onUpdateMapping(mapping.excelColumn, value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Do not import this column" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__SKIP__">Do not import this column</SelectItem>
+                      <SelectItem value="__SKIP__">
+                        Do not import this column
+                      </SelectItem>
                       {dbFields.map((field) => (
                         <SelectItem key={field.value} value={field.value}>
                           {field.label}
@@ -77,14 +93,12 @@ export default function FieldMappingDialog({
             ))}
           </div>
         </ScrollArea>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={onSave}>
-            Save Mappings
-          </Button>
+          <Button onClick={onSave}>Save Mappings</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

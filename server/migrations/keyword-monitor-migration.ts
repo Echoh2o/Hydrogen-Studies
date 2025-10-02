@@ -1,12 +1,12 @@
 import { db } from "../db";
 import { sql } from "drizzle-orm";
-import { 
-  keywords, 
-  excludedKeywords, 
-  keywordGroups, 
-  keywordGroupMappings, 
+import {
+  keywords,
+  excludedKeywords,
+  keywordGroups,
+  keywordGroupMappings,
   monitorResults,
-  monitorSchedule
+  monitorSchedule,
 } from "@shared/schema";
 
 /**
@@ -14,7 +14,7 @@ import {
  */
 export async function runKeywordMonitorMigrations() {
   console.log("Running keyword monitoring migrations...");
-  
+
   try {
     // Create keywords table
     await db.execute(sql`
@@ -30,7 +30,7 @@ export async function runKeywordMonitorMigrations() {
       )
     `);
     console.log("Keywords table created successfully");
-    
+
     // Create excluded_keywords table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS excluded_keywords (
@@ -41,7 +41,7 @@ export async function runKeywordMonitorMigrations() {
       )
     `);
     console.log("Excluded keywords table created successfully");
-    
+
     // Create keyword_groups table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS keyword_groups (
@@ -53,7 +53,7 @@ export async function runKeywordMonitorMigrations() {
       )
     `);
     console.log("Keyword groups table created successfully");
-    
+
     // Create keyword_group_mappings table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS keyword_group_mappings (
@@ -63,7 +63,7 @@ export async function runKeywordMonitorMigrations() {
       )
     `);
     console.log("Keyword group mappings table created successfully");
-    
+
     // Create monitor_results table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS monitor_results (
@@ -85,7 +85,7 @@ export async function runKeywordMonitorMigrations() {
       )
     `);
     console.log("Monitor results table created successfully");
-    
+
     // Create monitor_schedule table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS monitor_schedule (
@@ -102,7 +102,7 @@ export async function runKeywordMonitorMigrations() {
       )
     `);
     console.log("Monitor schedule table created successfully");
-    
+
     // Insert some initial sample keyword data
     await insertSampleKeywordData();
 
@@ -121,7 +121,7 @@ async function insertSampleKeywordData() {
   try {
     const result = await db.execute(sql`SELECT COUNT(*) FROM keywords`);
     const count = parseInt(result.rows[0].count);
-    
+
     if (count > 0) {
       console.log("Sample keywords already exist, skipping initialization");
       return;
@@ -130,7 +130,7 @@ async function insertSampleKeywordData() {
     // Table might not exist yet or other error
     console.error("Error checking existing keywords:", error);
   }
-  
+
   // Sample hydrogen health keywords
   const sampleKeywords = [
     { term: "molecular hydrogen", category: "general" },
@@ -146,9 +146,9 @@ async function insertSampleKeywordData() {
     { term: "diabetes", category: "disease" },
     { term: "elderly", category: "demographic" },
     { term: "athletes", category: "demographic" },
-    { term: "hydrogen therapy", category: "general" }
+    { term: "hydrogen therapy", category: "general" },
   ];
-  
+
   // Insert the sample keywords
   for (const keyword of sampleKeywords) {
     await db.execute(sql`
@@ -157,7 +157,7 @@ async function insertSampleKeywordData() {
     `);
   }
   console.log(`Inserted ${sampleKeywords.length} sample keywords`);
-  
+
   // Sample excluded keywords
   const sampleExcludedKeywords = [
     { term: "hydrogen fuel cell", reason: "Related to energy, not health" },
@@ -165,9 +165,9 @@ async function insertSampleKeywordData() {
     { term: "electrolysis", reason: "Industrial process" },
     { term: "hydrogen storage", reason: "Related to energy, not health" },
     { term: "combustion", reason: "Not relevant to health benefits" },
-    { term: "green hydrogen", reason: "Related to energy, not health" }
+    { term: "green hydrogen", reason: "Related to energy, not health" },
   ];
-  
+
   // Insert the sample excluded keywords
   for (const excluded of sampleExcludedKeywords) {
     await db.execute(sql`
@@ -175,16 +175,30 @@ async function insertSampleKeywordData() {
       VALUES (${excluded.term}, ${excluded.reason}, NOW())
     `);
   }
-  console.log(`Inserted ${sampleExcludedKeywords.length} sample excluded keywords`);
-  
+  console.log(
+    `Inserted ${sampleExcludedKeywords.length} sample excluded keywords`,
+  );
+
   // Sample keyword groups
   const sampleGroups = [
-    { name: "Delivery Methods", description: "Keywords related to how hydrogen is administered" },
-    { name: "Mechanisms", description: "Keywords related to how hydrogen works in the body" },
-    { name: "Health Benefits", description: "Keywords related to specific health benefits" },
-    { name: "Target Populations", description: "Keywords related to specific demographics" }
+    {
+      name: "Delivery Methods",
+      description: "Keywords related to how hydrogen is administered",
+    },
+    {
+      name: "Mechanisms",
+      description: "Keywords related to how hydrogen works in the body",
+    },
+    {
+      name: "Health Benefits",
+      description: "Keywords related to specific health benefits",
+    },
+    {
+      name: "Target Populations",
+      description: "Keywords related to specific demographics",
+    },
   ];
-  
+
   // Insert the sample groups
   const insertedGroups = [];
   for (const group of sampleGroups) {
@@ -193,30 +207,35 @@ async function insertSampleKeywordData() {
       VALUES (${group.name}, ${group.description}, true, NOW())
       RETURNING id, name
     `);
-    
+
     if (result.rows && result.rows.length > 0) {
       insertedGroups.push(result.rows[0]);
     }
   }
   console.log(`Inserted ${insertedGroups.length} sample keyword groups`);
-  
+
   // Get all keywords for mapping
-  const keywordsResult = await db.execute(sql`SELECT id, term, category FROM keywords`);
+  const keywordsResult = await db.execute(
+    sql`SELECT id, term, category FROM keywords`,
+  );
   const keywordsList = keywordsResult.rows || [];
-  
+
   // Create sample mappings based on categories
   let mappingCount = 0;
-  
+
   for (const group of insertedGroups) {
-    let categoryToMatch = '';
-    
+    let categoryToMatch = "";
+
     if (group.name === "Delivery Methods") categoryToMatch = "delivery";
     else if (group.name === "Mechanisms") categoryToMatch = "mechanism";
     else if (group.name === "Health Benefits") categoryToMatch = "benefit";
-    else if (group.name === "Target Populations") categoryToMatch = "demographic";
-    
-    const matchingKeywords = keywordsList.filter(k => k.category === categoryToMatch);
-    
+    else if (group.name === "Target Populations")
+      categoryToMatch = "demographic";
+
+    const matchingKeywords = keywordsList.filter(
+      (k) => k.category === categoryToMatch,
+    );
+
     for (const keyword of matchingKeywords) {
       await db.execute(sql`
         INSERT INTO keyword_group_mappings (keyword_id, group_id)
@@ -225,7 +244,7 @@ async function insertSampleKeywordData() {
       mappingCount++;
     }
   }
-  
+
   if (mappingCount > 0) {
     console.log(`Inserted ${mappingCount} sample keyword-group mappings`);
   }

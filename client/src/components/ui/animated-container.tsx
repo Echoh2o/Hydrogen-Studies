@@ -24,7 +24,7 @@ export const AnimatedContainer = ({
       transition={{
         duration: 0.5,
         delay,
-        ease: "easeOut"
+        ease: "easeOut",
       }}
       className={className}
       {...props}
@@ -55,15 +55,15 @@ export const StaggeredContainer = ({
       variants={{
         visible: {
           transition: {
-            staggerChildren: 0.1
-          }
+            staggerChildren: 0.1,
+          },
         },
         exit: {
           transition: {
             staggerChildren: 0.05,
-            staggerDirection: -1
-          }
-        }
+            staggerDirection: -1,
+          },
+        },
       }}
       {...props}
     >
@@ -88,8 +88,12 @@ export const StaggeredItem = ({
 }) => {
   const defaultVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { ease: "easeOut", duration: 0.4 } },
-    exit: { opacity: 0, y: 20, transition: { ease: "easeIn", duration: 0.3 } }
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { ease: "easeOut", duration: 0.4 },
+    },
+    exit: { opacity: 0, y: 20, transition: { ease: "easeIn", duration: 0.3 } },
   };
 
   return (

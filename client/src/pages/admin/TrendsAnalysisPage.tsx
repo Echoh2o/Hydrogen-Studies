@@ -3,8 +3,8 @@
  * Displays the comprehensive trends dashboard for administrators
  */
 
-import TrendsDashboard from '@/components/trends/TrendsDashboard';
-import { Card } from '@/components/ui/card';
+import TrendsDashboard from "@/components/trends/TrendsDashboard";
+import { Card } from "@/components/ui/card";
 
 export default function TrendsAnalysisPage() {
   return (

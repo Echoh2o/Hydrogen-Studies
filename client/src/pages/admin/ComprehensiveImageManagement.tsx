@@ -1,15 +1,27 @@
-
 /**
  * Comprehensive Image Management Admin Page
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Progress } from '../../components/ui/progress';
-import { Badge } from '../../components/ui/badge';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import { RefreshCw, Play, Square, CheckCircle, AlertCircle, Image } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Progress } from "../../components/ui/progress";
+import { Badge } from "../../components/ui/badge";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import {
+  RefreshCw,
+  Play,
+  Square,
+  CheckCircle,
+  AlertCircle,
+  Image,
+} from "lucide-react";
 
 interface SystemStatus {
   totalStudies: number;
@@ -36,7 +48,7 @@ export default function ComprehensiveImageManagement() {
   useEffect(() => {
     fetchStatus();
     fetchStats();
-    
+
     // Set up polling for real-time updates
     const interval = setInterval(() => {
       fetchStatus();
@@ -48,13 +60,13 @@ export default function ComprehensiveImageManagement() {
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch('/api/comprehensive-images/system-status');
+      const response = await fetch("/api/comprehensive-images/system-status");
       const data = await response.json();
       if (data.success) {
         setStatus(data.status);
       }
     } catch (error) {
-      console.error('Error fetching status:', error);
+      console.error("Error fetching status:", error);
     } finally {
       setLoading(false);
     }
@@ -62,24 +74,29 @@ export default function ComprehensiveImageManagement() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/comprehensive-images/processing-stats');
+      const response = await fetch(
+        "/api/comprehensive-images/processing-stats",
+      );
       const data = await response.json();
       if (data.success) {
         setStats(data.stats);
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
 
   const startProcessing = async () => {
     setActionLoading(true);
     try {
-      const response = await fetch('/api/comprehensive-images/start-comprehensive-processing', {
-        method: 'POST'
-      });
+      const response = await fetch(
+        "/api/comprehensive-images/start-comprehensive-processing",
+        {
+          method: "POST",
+        },
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         fetchStatus();
         fetchStats();
@@ -87,8 +104,8 @@ export default function ComprehensiveImageManagement() {
         alert(data.message);
       }
     } catch (error) {
-      console.error('Error starting processing:', error);
-      alert('Failed to start processing');
+      console.error("Error starting processing:", error);
+      alert("Failed to start processing");
     } finally {
       setActionLoading(false);
     }
@@ -97,11 +114,14 @@ export default function ComprehensiveImageManagement() {
   const stopProcessing = async () => {
     setActionLoading(true);
     try {
-      const response = await fetch('/api/comprehensive-images/stop-processing', {
-        method: 'POST'
-      });
+      const response = await fetch(
+        "/api/comprehensive-images/stop-processing",
+        {
+          method: "POST",
+        },
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         fetchStatus();
         fetchStats();
@@ -109,8 +129,8 @@ export default function ComprehensiveImageManagement() {
         alert(data.message);
       }
     } catch (error) {
-      console.error('Error stopping processing:', error);
-      alert('Failed to stop processing');
+      console.error("Error stopping processing:", error);
+      alert("Failed to stop processing");
     } finally {
       setActionLoading(false);
     }
@@ -124,16 +144,19 @@ export default function ComprehensiveImageManagement() {
     );
   }
 
-  const completionPercentage = status 
+  const completionPercentage = status
     ? Math.round((status.studiesWithImages / status.totalStudies) * 100)
     : 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Comprehensive Image Management</h1>
+        <h1 className="text-3xl font-bold mb-2">
+          Comprehensive Image Management
+        </h1>
         <p className="text-gray-600">
-          Manage AI-generated images with SEO optimization and performance features
+          Manage AI-generated images with SEO optimization and performance
+          features
         </p>
       </div>
 
@@ -162,16 +185,22 @@ export default function ComprehensiveImageManagement() {
                 </div>
                 <div>
                   <p className="text-gray-500">With Images</p>
-                  <p className="font-semibold text-green-600">{status?.studiesWithImages || 0}</p>
+                  <p className="font-semibold text-green-600">
+                    {status?.studiesWithImages || 0}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Need Images</p>
-                  <p className="font-semibold text-orange-600">{status?.studiesNeedingImages || 0}</p>
+                  <p className="font-semibold text-orange-600">
+                    {status?.studiesNeedingImages || 0}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Status</p>
-                  <Badge variant={status?.isProcessing ? 'default' : 'secondary'}>
-                    {status?.isProcessing ? 'Processing' : 'Idle'}
+                  <Badge
+                    variant={status?.isProcessing ? "default" : "secondary"}
+                  >
+                    {status?.isProcessing ? "Processing" : "Idle"}
                   </Badge>
                 </div>
               </div>
@@ -183,7 +212,9 @@ export default function ComprehensiveImageManagement() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
-              <RefreshCw className={`h-5 w-5 ${stats?.isRunning ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-5 w-5 ${stats?.isRunning ? "animate-spin" : ""}`}
+              />
               Processing Stats
             </CardTitle>
           </CardHeader>
@@ -193,7 +224,9 @@ export default function ComprehensiveImageManagement() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500">Processed</p>
-                    <p className="font-semibold text-blue-600">{stats.processed}</p>
+                    <p className="font-semibold text-blue-600">
+                      {stats.processed}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500">Failed</p>
@@ -203,7 +236,9 @@ export default function ComprehensiveImageManagement() {
                 {stats.isRunning && (
                   <div>
                     <p className="text-gray-500 text-sm">Est. Time Remaining</p>
-                    <p className="font-semibold">{Math.ceil(stats.estimatedTimeRemaining / 60000)} minutes</p>
+                    <p className="font-semibold">
+                      {Math.ceil(stats.estimatedTimeRemaining / 60000)} minutes
+                    </p>
                   </div>
                 )}
               </div>
@@ -221,7 +256,7 @@ export default function ComprehensiveImageManagement() {
           <CardContent>
             <div className="space-y-3">
               {!status?.isProcessing ? (
-                <Button 
+                <Button
                   onClick={startProcessing}
                   disabled={actionLoading || status?.studiesNeedingImages === 0}
                   className="w-full"
@@ -230,7 +265,7 @@ export default function ComprehensiveImageManagement() {
                   Start Processing
                 </Button>
               ) : (
-                <Button 
+                <Button
                   onClick={stopProcessing}
                   disabled={actionLoading}
                   variant="destructive"
@@ -240,9 +275,12 @@ export default function ComprehensiveImageManagement() {
                   Stop Processing
                 </Button>
               )}
-              
-              <Button 
-                onClick={() => { fetchStatus(); fetchStats(); }}
+
+              <Button
+                onClick={() => {
+                  fetchStatus();
+                  fetchStats();
+                }}
                 variant="outline"
                 className="w-full"
               >
@@ -269,7 +307,9 @@ export default function ComprehensiveImageManagement() {
           <Alert>
             <RefreshCw className="h-4 w-4 animate-spin" />
             <AlertDescription>
-              Processing {status.studiesNeedingImages} studies. Images are being generated with SEO optimization and WebP conversion for fast loading.
+              Processing {status.studiesNeedingImages} studies. Images are being
+              generated with SEO optimization and WebP conversion for fast
+              loading.
             </AlertDescription>
           </Alert>
         )}
@@ -277,7 +317,9 @@ export default function ComprehensiveImageManagement() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Features:</strong> This system generates AI images with DALL-E 3, optimizes them to WebP format, creates SEO-friendly alt text, and implements lazy loading for better performance.
+            <strong>Features:</strong> This system generates AI images with
+            DALL-E 3, optimizes them to WebP format, creates SEO-friendly alt
+            text, and implements lazy loading for better performance.
           </AlertDescription>
         </Alert>
       </div>

@@ -7,6 +7,7 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 ## System Architecture
 
 ### Frontend Architecture
+
 - **Framework**: React with TypeScript using Vite for build optimization
 - **UI Library**: Shadcn/ui components with Radix UI primitives
 - **Styling**: Tailwind CSS with compiled production stylesheets
@@ -14,6 +15,7 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 - **Build Tool**: Vite with optimized production builds targeting modern browsers
 
 ### Backend Architecture
+
 - **Runtime**: Node.js 20 with Express.js framework
 - **Language**: TypeScript with ES modules
 - **Database ORM**: Drizzle ORM with type-safe queries
@@ -22,6 +24,7 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 - **Health Monitoring**: Real-time health checks with automatic recovery
 
 ### Data Storage Solutions
+
 - **Primary Database**: PostgreSQL 16 with connection pooling
 - **ORM**: Drizzle with schema-first approach and migration support
 - **Caching Layer**: Simple in-memory cache with 10-minute TTL
@@ -31,24 +34,28 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 ## Key Components
 
 ### Study Management System
+
 - **Data Model**: Comprehensive study schema with enhanced metadata fields
 - **Content Enhancement**: AI-powered plain language summaries and explanations
 - **Image Generation**: OpenAI DALL-E 3 integration for study visualizations
 - **Quality Assurance**: Automated data validation and enrichment processes
 
 ### Search and Discovery
+
 - **Full-Text Search**: PostgreSQL-based search with semantic query expansion
 - **Advanced Filtering**: Category, date range, author, and keyword filters
 - **Pagination**: Optimized pagination with configurable page sizes
 - **Trending Analysis**: Real-time tracking of popular searches and studies
 
 ### Content Enhancement Pipeline
+
 - **AI Integration**: OpenAI GPT-4o for content generation and improvement
 - **Research Enrichment**: Integration with PubMed, CrossRef, and Europe PMC APIs
 - **Consumer-Friendly Content**: Automated generation of simplified explanations
 - **SEO Optimization**: Automated meta descriptions, keywords, and slug generation
 
 ### Administrative Tools
+
 - **Health Monitoring**: Comprehensive system health tracking and alerting
 - **Performance Analytics**: Database query optimization and cache hit rate monitoring
 - **Content Management**: Bulk operations for study enhancement and categorization
@@ -66,16 +73,19 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 ## External Dependencies
 
 ### Core Infrastructure
+
 - **Database**: Neon PostgreSQL with WebSocket connections
 - **Deployment**: Replit with Cloud Run for production scaling
 - **CDN**: Static assets served through optimized build pipeline
 
 ### AI and Enhancement Services
+
 - **OpenAI**: GPT-4o for content generation and DALL-E 3 for image creation
 - **Research APIs**: PubMed, Europe PMC, CrossRef, and Semantic Scholar for data enrichment
 - **SendGrid**: Email notifications and newsletter delivery
 
 ### Development Tools
+
 - **Package Management**: npm with lock file for dependency consistency
 - **Type Safety**: TypeScript with strict configuration across all modules
 - **Code Quality**: ESLint and Prettier for consistent code formatting
@@ -84,11 +94,13 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 ## Deployment Strategy
 
 ### Development Environment
+
 - **Local Development**: Hot-reload development server with TypeScript compilation
 - **Database**: Local PostgreSQL with migration support
 - **Environment Variables**: Development-specific configuration
 
 ### Production Environment
+
 - **Build Process**: Vite production build with code splitting and optimization
 - **Server**: Node.js production server with health monitoring
 - **Database**: Optimized PostgreSQL with connection pooling and performance indexes
@@ -96,6 +108,7 @@ HydrogenStudies.com is a comprehensive research platform that aggregates, enhanc
 - **Monitoring**: Comprehensive error tracking and performance monitoring
 
 ### Performance Optimizations
+
 - **Startup Time**: Optimized from 15+ seconds to under 2 seconds
 - **Query Performance**: Sub-100ms response times for search operations
 - **Memory Management**: Efficient caching with automatic cleanup
@@ -108,6 +121,7 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 - October 1, 2025: Critical Security Fix - Protected All Admin Routes
+
   - Fixed navigation issue by replacing non-existent useNavigate with useLocation from wouter library
   - Wrapped ALL admin routes with ProtectedRoute component to prevent unauthorized access
   - Implemented role-based access control (admin-only for sensitive routes, admin/editor for content management)
@@ -117,6 +131,7 @@ Preferred communication style: Simple, everyday language.
   - Authentication routes (/login, /register) now properly integrated into main routing
 
 - June 19, 2025: Implemented AI-powered blog recommendation and auto-generation system
+
   - Built working blog recommendation API that analyzes studies and suggests blog topics
   - Added priority-based recommendations with SEO keywords and article type suggestions
   - Implemented bulk blog generation with OpenAI GPT-4o integration for content creation
@@ -127,6 +142,7 @@ Preferred communication style: Simple, everyday language.
   - Blog recommendation system now functional in admin interface with bulk selection capabilities
 
 - June 19, 2025: Fixed blog creation functionality and admin dashboard statistics
+
   - Added missing POST/PUT endpoints to server/routes/blog-routes.ts with proper Zod validation
   - Fixed slug validation pattern to match client-side requirements (lowercase letters, numbers, hyphens only)
   - Added study selection dropdown to blog creation form with first 50 studies available
@@ -139,6 +155,7 @@ Preferred communication style: Simple, everyday language.
   - Complete blog management workflow now functional from creation to publication
 
 - June 17, 2025: Fixed admin pages API endpoints and TypeScript errors
+
   - Resolved keyword monitor schedule API by adding `/schedule` route alias
   - Fixed batch enrichment API endpoints by registering enrichment routes
   - Created batch-specific endpoints (/api/enrichment/batch/status, /api/enrichment/batch/start, /api/enrichment/batch/stop)
@@ -147,6 +164,7 @@ Preferred communication style: Simple, everyday language.
   - All admin pages now return proper JSON responses instead of HTML
 
 - June 17, 2025: Fixed research import API endpoints
+
   - Resolved "Not Valid JSON" error in /admin/research-import page
   - Properly registered research unified routes in main server
   - PubMed, Europe PMC, and CrossRef searches now returning valid JSON responses
@@ -174,5 +192,6 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+
 - June 16, 2025. Initial setup
 - June 16, 2025. Navigation restructuring - eliminated /research page, integrated Studies into homepage header

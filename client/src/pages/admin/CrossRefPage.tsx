@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,8 +19,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { 
+} from "@/components/ui/table";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,14 +30,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Loader2, Search, FileDown, AlertCircle, CheckCircle2, BookCopy } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
+} from "@/components/ui/alert-dialog";
+import {
+  Loader2,
+  Search,
+  FileDown,
+  AlertCircle,
+  CheckCircle2,
+  BookCopy,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 export default function CrossRefPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPaper, setSelectedPaper] = useState<any>(null);
   const pageSize = 10;
@@ -45,60 +60,74 @@ export default function CrossRefPage() {
   const queryClient = useQueryClient();
 
   // Search query for CrossRef API
-  const { data: searchResults, isLoading: isSearching, error: searchError } = useQuery({
-    queryKey: ['/api/crossref/search', searchQuery, currentPage, pageSize],
+  const {
+    data: searchResults,
+    isLoading: isSearching,
+    error: searchError,
+  } = useQuery({
+    queryKey: ["/api/crossref/search", searchQuery, currentPage, pageSize],
     queryFn: async () => {
-      if (!searchQuery) return { items: [], totalResults: 0, page: 1, pageSize };
-      const response = await apiRequest("GET", `/api/crossref/search?q=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}`);
+      if (!searchQuery)
+        return { items: [], totalResults: 0, page: 1, pageSize };
+      const response = await apiRequest(
+        "GET",
+        `/api/crossref/search?q=${encodeURIComponent(searchQuery)}&page=${currentPage}&pageSize=${pageSize}`,
+      );
       return response.json();
     },
     enabled: !!searchQuery,
-    keepPreviousData: true
+    keepPreviousData: true,
   });
 
   // Get paper details when a paper is selected
   const { data: paperDetails, isLoading: isLoadingDetails } = useQuery({
-    queryKey: ['/api/crossref/article', selectedPaper?.doi],
+    queryKey: ["/api/crossref/article", selectedPaper?.doi],
     queryFn: async () => {
       if (!selectedPaper?.doi) return null;
-      const response = await apiRequest("GET", `/api/crossref/article/${encodeURIComponent(selectedPaper.doi)}`);
+      const response = await apiRequest(
+        "GET",
+        `/api/crossref/article/${encodeURIComponent(selectedPaper.doi)}`,
+      );
       return response.json();
     },
-    enabled: !!selectedPaper?.doi
+    enabled: !!selectedPaper?.doi,
   });
 
   // Import paper mutation
   const importPaperMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedPaper?.doi) throw new Error('No paper selected');
-      return apiRequest('POST', `/api/crossref/import/${encodeURIComponent(selectedPaper.doi)}`);
+      if (!selectedPaper?.doi) throw new Error("No paper selected");
+      return apiRequest(
+        "POST",
+        `/api/crossref/import/${encodeURIComponent(selectedPaper.doi)}`,
+      );
     },
     onSuccess: (data) => {
       toast({
         title: "Success",
         description: "Paper imported successfully",
-        variant: "success"
+        variant: "success",
       });
-      
+
       // Clear selected paper and refresh studies list
       setSelectedPaper(null);
-      queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
     },
     onError: (error: any) => {
       if (error.status === 409) {
         toast({
           title: "Paper already exists",
           description: "This paper is already in your database",
-          variant: "warning"
+          variant: "warning",
         });
       } else {
         toast({
           title: "Error",
           description: "Failed to import paper",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
-    }
+    },
   });
 
   // Handle search form submission
@@ -120,8 +149,8 @@ export default function CrossRefPage() {
   };
 
   // Calculate total pages for pagination
-  const totalPages = searchResults?.totalResults 
-    ? Math.ceil(searchResults.totalResults / pageSize) 
+  const totalPages = searchResults?.totalResults
+    ? Math.ceil(searchResults.totalResults / pageSize)
     : 0;
 
   // Handle page change
@@ -134,12 +163,13 @@ export default function CrossRefPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">CrossRef Integration</h1>
       </div>
-      
+
       <p className="text-muted-foreground">
-        Search for articles on CrossRef and import them directly into your hydrogen studies database.
-        CrossRef provides access to millions of scholarly articles with reliable metadata.
+        Search for articles on CrossRef and import them directly into your
+        hydrogen studies database. CrossRef provides access to millions of
+        scholarly articles with reliable metadata.
       </p>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Search Articles</CardTitle>
@@ -150,7 +180,9 @@ export default function CrossRefPage() {
         <CardContent>
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="flex-1">
-              <Label htmlFor="search" className="sr-only">Search Query</Label>
+              <Label htmlFor="search" className="sr-only">
+                Search Query
+              </Label>
               <Input
                 id="search"
                 placeholder="Search by title, author, keyword..."
@@ -159,13 +191,17 @@ export default function CrossRefPage() {
               />
             </div>
             <Button type="submit" disabled={isSearching}>
-              {isSearching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
+              {isSearching ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Search className="h-4 w-4 mr-2" />
+              )}
               Search
             </Button>
           </form>
         </CardContent>
       </Card>
-      
+
       {searchError ? (
         <Card className="border-destructive">
           <CardHeader className="text-destructive">
@@ -179,7 +215,7 @@ export default function CrossRefPage() {
           </CardContent>
         </Card>
       ) : null}
-      
+
       {searchResults?.items && searchResults.items.length > 0 ? (
         <Card>
           <CardHeader>
@@ -190,7 +226,9 @@ export default function CrossRefPage() {
           </CardHeader>
           <CardContent>
             <Table>
-              <TableCaption>Page {currentPage} of {totalPages}</TableCaption>
+              <TableCaption>
+                Page {currentPage} of {totalPages}
+              </TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
@@ -202,12 +240,19 @@ export default function CrossRefPage() {
               </TableHeader>
               <TableBody>
                 {searchResults.items.map((paper: any) => (
-                  <TableRow key={paper.id} className={selectedPaper?.id === paper.id ? "bg-muted" : ""}>
+                  <TableRow
+                    key={paper.id}
+                    className={selectedPaper?.id === paper.id ? "bg-muted" : ""}
+                  >
                     <TableCell className="font-medium max-w-md truncate">
                       {paper.title}
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">{paper.authors}</TableCell>
-                    <TableCell className="max-w-xs truncate">{paper.journal}</TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {paper.authors}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {paper.journal}
+                    </TableCell>
                     <TableCell>{paper.year}</TableCell>
                     <TableCell>
                       <Button
@@ -223,18 +268,18 @@ export default function CrossRefPage() {
                 ))}
               </TableBody>
             </Table>
-            
+
             {totalPages > 1 && (
               <div className="mt-4 flex justify-center">
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
-                      <PaginationPrevious 
+                      <PaginationPrevious
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
                       />
                     </PaginationItem>
-                    
+
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                       // Show first page, last page, current page and neighbors
                       let pageNum = i + 1;
@@ -250,7 +295,7 @@ export default function CrossRefPage() {
                           pageNum = currentPage - 2 + i;
                         }
                       }
-                      
+
                       return (
                         <PaginationItem key={pageNum}>
                           <PaginationLink
@@ -262,22 +307,24 @@ export default function CrossRefPage() {
                         </PaginationItem>
                       );
                     })}
-                    
-                    {totalPages > 5 && (currentPage < totalPages - 2) && (
+
+                    {totalPages > 5 && currentPage < totalPages - 2 && (
                       <>
                         <PaginationItem>
                           <PaginationEllipsis />
                         </PaginationItem>
                         <PaginationItem>
-                          <PaginationLink onClick={() => handlePageChange(totalPages)}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(totalPages)}
+                          >
                             {totalPages}
                           </PaginationLink>
                         </PaginationItem>
                       </>
                     )}
-                    
+
                     <PaginationItem>
-                      <PaginationNext 
+                      <PaginationNext
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage >= totalPages}
                       />
@@ -294,11 +341,13 @@ export default function CrossRefPage() {
             <CardTitle>No Results</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>No articles found for your search query. Try different keywords.</p>
+            <p>
+              No articles found for your search query. Try different keywords.
+            </p>
           </CardContent>
         </Card>
       ) : null}
-      
+
       {selectedPaper && (
         <Card>
           <CardHeader>
@@ -318,31 +367,33 @@ export default function CrossRefPage() {
                   <h3 className="text-lg font-semibold">Title</h3>
                   <p>{paperDetails.title}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-lg font-semibold">Authors</h3>
                   <p>{paperDetails.authors}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-lg font-semibold">Journal</h3>
                   <p>{paperDetails.journal}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-lg font-semibold">Year</h3>
                   <p>{paperDetails.year}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-lg font-semibold">DOI</h3>
                   <p>{paperDetails.doi}</p>
                 </div>
-                
+
                 {paperDetails.abstract && (
                   <div>
                     <h3 className="text-lg font-semibold">Abstract</h3>
-                    <p className="text-sm text-muted-foreground">{paperDetails.abstract}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {paperDetails.abstract}
+                    </p>
                   </div>
                 )}
               </div>
@@ -354,7 +405,10 @@ export default function CrossRefPage() {
             <Button variant="outline" onClick={() => setSelectedPaper(null)}>
               Close
             </Button>
-            <Button onClick={handleImport} disabled={importPaperMutation.isPending}>
+            <Button
+              onClick={handleImport}
+              disabled={importPaperMutation.isPending}
+            >
               {importPaperMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (

@@ -1,6 +1,6 @@
 /**
  * Image URL Handler for Study Images
- * 
+ *
  * Handles expired OpenAI DALL-E URLs and provides fallback image generation
  */
 
@@ -20,7 +20,7 @@ interface ImageValidationResult {
 export async function validateImageUrl(url: string): Promise<boolean> {
   try {
     // For OpenAI URLs, check if they contain expired tokens
-    if (url.includes('oaidalleapi') && url.includes('se=')) {
+    if (url.includes("oaidalleapi") && url.includes("se=")) {
       const match = url.match(/se=([^&]+)/);
       if (match) {
         const expiryDate = new Date(decodeURIComponent(match[1]));
@@ -29,7 +29,7 @@ export async function validateImageUrl(url: string): Promise<boolean> {
         }
       }
     }
-    
+
     // For other URLs, attempt a HEAD request (optional - can be resource intensive)
     return true;
   } catch (error) {
@@ -40,7 +40,9 @@ export async function validateImageUrl(url: string): Promise<boolean> {
 /**
  * Get valid image URL for a study, handling expired URLs
  */
-export async function getValidImageUrl(studyId: number): Promise<ImageValidationResult> {
+export async function getValidImageUrl(
+  studyId: number,
+): Promise<ImageValidationResult> {
   try {
     const [study] = await db
       .select({ imageUrl: studies.imageUrl })
@@ -52,14 +54,14 @@ export async function getValidImageUrl(studyId: number): Promise<ImageValidation
     }
 
     const isValid = await validateImageUrl(study.imageUrl);
-    
+
     return {
       isValid,
       needsReplacement: !isValid,
-      imageUrl: isValid ? study.imageUrl : undefined
+      imageUrl: isValid ? study.imageUrl : undefined,
     };
   } catch (error) {
-    console.error('Error validating image URL:', error);
+    console.error("Error validating image URL:", error);
     return { isValid: false, needsReplacement: false };
   }
 }
@@ -67,17 +69,19 @@ export async function getValidImageUrl(studyId: number): Promise<ImageValidation
 /**
  * Generate fallback image for studies with expired URLs
  */
-export async function generateFallbackImage(studyId: number): Promise<string | null> {
+export async function generateFallbackImage(
+  studyId: number,
+): Promise<string | null> {
   try {
     // For now, return null as the image generation function needs to be identified
     // This would typically call an image generation service
-    
+
     // Get study data for image generation
     const [study] = await db
       .select({
         title: studies.title,
         abstract: studies.abstract,
-        category: studies.category
+        category: studies.category,
       })
       .from(studies)
       .where(eq(studies.id, studyId));
@@ -88,25 +92,26 @@ export async function generateFallbackImage(studyId: number): Promise<string | n
 
     // Generate new image
     const imagePrompt = `Scientific illustration representing hydrogen research: ${study.title}. Focus on molecular hydrogen therapy, cellular mechanisms, and health benefits related to ${study.category}.`;
-    
+
     const result = await generateStudyImage(imagePrompt, study.title);
-    
+
     if (result.success && result.imageUrl) {
       // Update study with new image URL
       await db
         .update(studies)
-        .set({ 
+        .set({
           imageUrl: result.imageUrl,
-          imageAlt: result.imageAlt || `Scientific visualization for ${study.title}`
+          imageAlt:
+            result.imageAlt || `Scientific visualization for ${study.title}`,
         })
         .where(eq(studies.id, studyId));
-      
+
       return result.imageUrl;
     }
-    
+
     return null;
   } catch (error) {
-    console.error('Error generating fallback image:', error);
+    console.error("Error generating fallback image:", error);
     return null;
   }
 }
@@ -133,17 +138,17 @@ export async function processExpiredImages(limit: number = 10): Promise<{
 
     for (const study of studiesWithImages) {
       if (!study.imageUrl) continue;
-      
+
       processed++;
-      
+
       // Check if image URL is expired
-      if (study.imageUrl.includes('oaidalleapi')) {
+      if (study.imageUrl.includes("oaidalleapi")) {
         const isValid = await validateImageUrl(study.imageUrl);
-        
+
         if (!isValid) {
           console.log(`Regenerating expired image for study ${study.id}`);
           const newImageUrl = await generateFallbackImage(study.id);
-          
+
           if (newImageUrl) {
             updated++;
             console.log(`Updated image for study ${study.id}`);
@@ -155,7 +160,7 @@ export async function processExpiredImages(limit: number = 10): Promise<{
       }
     }
   } catch (error) {
-    console.error('Error processing expired images:', error);
+    console.error("Error processing expired images:", error);
   }
 
   return { processed, updated, failed };

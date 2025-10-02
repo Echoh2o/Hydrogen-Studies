@@ -1,17 +1,17 @@
-import React from 'react';
-import { Link } from 'wouter';
-import { Mail, Twitter, Linkedin, Github } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React from "react";
+import { Link } from "wouter";
+import { Mail, Twitter, Linkedin, Github } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function Footer() {
-  const [email, setEmail] = React.useState('');
+  const [email, setEmail] = React.useState("");
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Newsletter signup logic would go here
-    console.log('Newsletter signup:', email);
-    setEmail('');
+    console.log("Newsletter signup:", email);
+    setEmail("");
   };
 
   return (
@@ -27,17 +27,30 @@ export default function Footer() {
               <span className="font-bold text-xl">HydrogenStudies</span>
             </div>
             <p className="text-gray-300 text-sm">
-              The world's most comprehensive database of peer-reviewed hydrogen health research. 
-              Making scientific knowledge accessible to everyone.
+              The world's most comprehensive database of peer-reviewed hydrogen
+              health research. Making scientific knowledge accessible to
+              everyone.
             </p>
             <div className="flex space-x-4">
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-300 hover:text-white p-2"
+              >
                 <Twitter className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-300 hover:text-white p-2"
+              >
                 <Linkedin className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-300 hover:text-white p-2"
+              >
                 <Github className="h-4 w-4" />
               </Button>
             </div>
@@ -48,18 +61,27 @@ export default function Footer() {
             <h3 className="font-semibold text-lg">Explore</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/search" className="text-gray-300 hover:text-white transition-colors">
+                <Link
+                  href="/search"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   Browse Studies
                 </Link>
               </li>
 
               <li>
-                <Link href="/insights" className="text-gray-300 hover:text-white transition-colors">
+                <Link
+                  href="/insights"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   Research Insights
                 </Link>
               </li>
               <li>
-                <Link href="/chat" className="text-gray-300 hover:text-white transition-colors">
+                <Link
+                  href="/chat"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   AI Assistant
                 </Link>
               </li>
@@ -71,22 +93,34 @@ export default function Footer() {
             <h3 className="font-semibold text-lg">Learn</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/learn" className="text-gray-300 hover:text-white transition-colors">
+                <Link
+                  href="/learn"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   Hydrogen Basics
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="text-gray-300 hover:text-white transition-colors">
+                <Link
+                  href="/blog"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   Research Blog
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
+                <Link
+                  href="/about"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-300 hover:text-white transition-colors">
+                <Link
+                  href="/contact"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   Contact
                 </Link>
               </li>
@@ -108,7 +142,10 @@ export default function Footer() {
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 required
               />
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
                 Subscribe
               </Button>
             </form>
@@ -118,19 +155,34 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <div className="text-sm text-gray-400">
-            © 2024 HydrogenStudies. All rights reserved. 
+            © 2024 HydrogenStudies. All rights reserved.
             <span className="ml-2">
-              Powered by <Link href="https://echowater.com" className="text-blue-400 hover:text-blue-300">EchoWater</Link>
+              Powered by{" "}
+              <Link
+                href="https://echowater.com"
+                className="text-blue-400 hover:text-blue-300"
+              >
+                EchoWater
+              </Link>
             </span>
           </div>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link
+              href="/privacy"
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
               Privacy Policy
             </Link>
-            <Link href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link
+              href="/terms"
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
               Terms of Service
             </Link>
-            <Link href="/sitemap" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link
+              href="/sitemap"
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
               Sitemap
             </Link>
           </div>

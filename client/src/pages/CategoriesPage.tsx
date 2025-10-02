@@ -1,34 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { type Category } from "@/types";
-import { 
-  HiHeart, 
-  HiShieldExclamation, 
-  HiDatabase, 
-  HiClock, 
+import {
+  HiHeart,
+  HiShieldExclamation,
+  HiDatabase,
+  HiClock,
   HiBeaker,
-  HiArrowRight
+  HiArrowRight,
 } from "react-icons/hi";
 import { Brain } from "lucide-react";
 import { Helmet } from "react-helmet";
-import SiteHeader from '@/components/layout/SiteHeader';
+import SiteHeader from "@/components/layout/SiteHeader";
 
 const CategoriesPage = () => {
-  const { data: categoriesResponse, isLoading, error } = useQuery<Array<{
-    category: string;
-    count: string;
-  }>>({
+  const {
+    data: categoriesResponse,
+    isLoading,
+    error,
+  } = useQuery<
+    Array<{
+      category: string;
+      count: string;
+    }>
+  >({
     queryKey: ["/api/categories"],
   });
 
   // Helper function to map category names to icon types
   const getCategoryIconType = (categoryName: string): string => {
     const lowerName = categoryName.toLowerCase();
-    if (lowerName.includes("neuro") || lowerName.includes("brain")) return "brain";
-    if (lowerName.includes("heart") || lowerName.includes("cardio")) return "heartbeat";
-    if (lowerName.includes("inflam") || lowerName.includes("immune")) return "shield-virus";
-    if (lowerName.includes("metabol") || lowerName.includes("diabetes")) return "dna";
-    if (lowerName.includes("respiratory") || lowerName.includes("lung")) return "hourglass-half";
+    if (lowerName.includes("neuro") || lowerName.includes("brain"))
+      return "brain";
+    if (lowerName.includes("heart") || lowerName.includes("cardio"))
+      return "heartbeat";
+    if (lowerName.includes("inflam") || lowerName.includes("immune"))
+      return "shield-virus";
+    if (lowerName.includes("metabol") || lowerName.includes("diabetes"))
+      return "dna";
+    if (lowerName.includes("respiratory") || lowerName.includes("lung"))
+      return "hourglass-half";
     return "flask";
   };
 
@@ -39,7 +50,7 @@ const CategoriesPage = () => {
         name: item.category,
         description: `Research related to ${item.category.toLowerCase()}`,
         studyCount: parseInt(item.count || "0"),
-        icon: getCategoryIconType(item.category)
+        icon: getCategoryIconType(item.category),
       }))
     : [];
 
@@ -67,12 +78,17 @@ const CategoriesPage = () => {
       <SiteHeader />
       <Helmet>
         <title>Research Categories - Hydrogen Studies Database</title>
-        <meta name="description" content="Browse hydrogen research by category. Explore studies on neurology, cardiology, immunology, metabolism, longevity and more." />
+        <meta
+          name="description"
+          content="Browse hydrogen research by category. Explore studies on neurology, cardiology, immunology, metabolism, longevity and more."
+        />
       </Helmet>
-      
+
       <section className="bg-primary-gradient text-white py-12 md:py-16">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center">Research Categories</h1>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center">
+            Research Categories
+          </h1>
           <p className="text-lg md:text-xl text-center max-w-3xl mx-auto text-white/90">
             Browse hydrogen research by field of study
           </p>
@@ -84,7 +100,10 @@ const CategoriesPage = () => {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[...Array(9)].map((_, index) => (
-                <div key={index} className="bg-neutral-100 rounded-xl p-6 shadow-sm animate-pulse">
+                <div
+                  key={index}
+                  className="bg-neutral-100 rounded-xl p-6 shadow-sm animate-pulse"
+                >
                   <div className="bg-neutral-200 rounded-full w-12 h-12 mb-4"></div>
                   <div className="h-6 bg-neutral-200 rounded w-1/3 mb-2"></div>
                   <div className="h-4 bg-neutral-200 rounded w-full mb-1"></div>
@@ -96,18 +115,27 @@ const CategoriesPage = () => {
             </div>
           ) : error ? (
             <div className="text-center py-8">
-              <p className="text-red-500 mb-4">Error loading categories. Please try again later.</p>
+              <p className="text-red-500 mb-4">
+                Error loading categories. Please try again later.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {categories.map((category) => (
-                <Link key={category.id} href={`/search?q=${encodeURIComponent(category.name)}`}>
+                <Link
+                  key={category.id}
+                  href={`/search?q=${encodeURIComponent(category.name)}`}
+                >
                   <a className="bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition p-6 group">
                     <div className="bg-primary/10 rounded-full w-14 h-14 flex items-center justify-center mb-4 text-primary group-hover:bg-primary group-hover:text-white transition">
                       {getCategoryIcon(category.icon)}
                     </div>
-                    <h2 className="text-xl font-semibold mb-3">{category.name}</h2>
-                    <p className="text-neutral-600 mb-4">{category.description}</p>
+                    <h2 className="text-xl font-semibold mb-3">
+                      {category.name}
+                    </h2>
+                    <p className="text-neutral-600 mb-4">
+                      {category.description}
+                    </p>
                     <div className="text-primary font-medium flex items-center group-hover:translate-x-1 transition-transform">
                       Search Studies <HiArrowRight className="ml-2" />
                     </div>

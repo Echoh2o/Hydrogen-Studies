@@ -11,53 +11,66 @@ interface BlogImageGeneratorProps {
   className?: string;
 }
 
-export function BlogImageGenerator({ blogId, onSuccess, className }: BlogImageGeneratorProps) {
+export function BlogImageGenerator({
+  blogId,
+  onSuccess,
+  className,
+}: BlogImageGeneratorProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [generatedImage, setGeneratedImage] = useState<{ url: string; alt: string } | null>(null);
-  
+  const [generatedImage, setGeneratedImage] = useState<{
+    url: string;
+    alt: string;
+  } | null>(null);
+
   const handleGenerate = async () => {
     if (isGenerating) return;
-    
+
     setIsGenerating(true);
-    
+
     try {
-      const response = await apiRequest('POST', `/api/blogs/${blogId}/generate-image`);
+      const response = await apiRequest(
+        "POST",
+        `/api/blogs/${blogId}/generate-image`,
+      );
       const data = await response.json();
-      
+
       if (response.ok) {
         setGeneratedImage({
           url: data.imageUrl,
-          alt: data.imageAlt || 'Generated blog image'
+          alt: data.imageAlt || "Generated blog image",
         });
-        
+
         toast({
           title: "Image generated successfully",
-          description: "The AI has created a unique image for your blog post."
+          description: "The AI has created a unique image for your blog post.",
         });
-        
+
         if (onSuccess) {
           onSuccess(data.imageUrl, data.imageAlt);
         }
       } else {
         toast({
           title: "Image generation failed",
-          description: data.message || "There was an error generating the image. Please try again.",
-          variant: "destructive"
+          description:
+            data.message ||
+            "There was an error generating the image. Please try again.",
+          variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error generating image:", error);
       toast({
         title: "Image generation failed",
-        description: "There was an error generating the image. Please try again.",
-        variant: "destructive"
+        description:
+          "There was an error generating the image. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
     }
   };
-  
+
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="flex flex-col space-y-4">
@@ -85,18 +98,19 @@ export function BlogImageGenerator({ blogId, onSuccess, className }: BlogImageGe
             </>
           )}
         </Button>
-        
+
         <p className="text-sm text-muted-foreground">
-          AI will create a unique image based on your blog content. This may take a moment.
+          AI will create a unique image based on your blog content. This may
+          take a moment.
         </p>
       </div>
-      
+
       {generatedImage && (
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="relative pt-4">
-              <img 
-                src={generatedImage.url} 
+              <img
+                src={generatedImage.url}
                 alt={generatedImage.alt}
                 className="w-full h-auto rounded-md object-contain"
               />
@@ -107,13 +121,14 @@ export function BlogImageGenerator({ blogId, onSuccess, className }: BlogImageGe
           </CardContent>
         </Card>
       )}
-      
+
       {isGenerating && (
         <div className="flex flex-col items-center justify-center p-6 border border-dashed rounded-md">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
           <p className="text-sm font-medium">Creating your image...</p>
           <p className="text-xs text-muted-foreground text-center mt-1">
-            This typically takes 10-20 seconds as we generate a unique image for your content
+            This typically takes 10-20 seconds as we generate a unique image for
+            your content
           </p>
         </div>
       )}

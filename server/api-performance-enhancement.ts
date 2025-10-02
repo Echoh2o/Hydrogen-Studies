@@ -1,25 +1,29 @@
 /**
  * API Performance Enhancement
- * 
+ *
  * Adds memory caching and response optimization to existing routes
  */
 
-import { Router } from 'express';
-import { db } from './db';
-import { sql } from 'drizzle-orm';
-import { getCachedStudy, getCachedSearch, getCachedStats } from './simple-cache-system';
+import { Router } from "express";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+import {
+  getCachedStudy,
+  getCachedSearch,
+  getCachedStats,
+} from "./simple-cache-system";
 
 const router = Router();
 
 /**
  * Enhanced study endpoint with caching and selective field loading
  */
-router.get('/studies/enhanced/:id', async (req, res) => {
+router.get("/studies/enhanced/:id", async (req, res) => {
   try {
     const studyId = parseInt(req.params.id);
-    
+
     if (isNaN(studyId)) {
-      return res.status(400).json({ error: 'Invalid study ID' });
+      return res.status(400).json({ error: "Invalid study ID" });
     }
 
     const study = await getCachedStudy(studyId, async () => {
@@ -36,28 +40,27 @@ router.get('/studies/enhanced/:id', async (req, res) => {
     });
 
     if (!study) {
-      return res.status(404).json({ error: 'Study not found' });
+      return res.status(404).json({ error: "Study not found" });
     }
 
     // Set caching headers
-    res.set('Cache-Control', 'public, max-age=300');
-    res.set('ETag', `"study-${studyId}"`);
-    
+    res.set("Cache-Control", "public, max-age=300");
+    res.set("ETag", `"study-${studyId}"`);
+
     res.json({
       success: true,
-      data: study
+      data: study,
     });
-    
   } catch (error) {
-    console.error('Error fetching enhanced study:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching enhanced study:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 /**
  * Enhanced search with cursor-based pagination and caching
  */
-router.get('/search/enhanced', async (req, res) => {
+router.get("/search/enhanced", async (req, res) => {
   try {
     const {
       q: query,
@@ -66,7 +69,7 @@ router.get('/search/enhanced', async (req, res) => {
       endYear,
       hasCitations,
       limit = 20,
-      cursor = 0
+      cursor = 0,
     } = req.query;
 
     const searchParams = {
@@ -74,9 +77,9 @@ router.get('/search/enhanced', async (req, res) => {
       category: category as string,
       startYear: startYear ? parseInt(startYear as string) : undefined,
       endYear: endYear ? parseInt(endYear as string) : undefined,
-      hasCitations: hasCitations === 'true',
+      hasCitations: hasCitations === "true",
       limit: Math.min(parseInt(limit as string) || 20, 50),
-      cursor: parseInt(cursor as string) || 0
+      cursor: parseInt(cursor as string) || 0,
     };
 
     const results = await getCachedSearch(searchParams, async () => {
@@ -85,7 +88,9 @@ router.get('/search/enhanced', async (req, res) => {
       let paramIndex = 1;
 
       if (searchParams.query) {
-        whereConditions.push(`to_tsvector('english', title || ' ' || abstract) @@ plainto_tsquery('english', $${paramIndex})`);
+        whereConditions.push(
+          `to_tsvector('english', title || ' ' || abstract) @@ plainto_tsquery('english', $${paramIndex})`,
+        );
         queryParams.push(searchParams.query);
         paramIndex++;
       }
@@ -118,8 +123,11 @@ router.get('/search/enhanced', async (req, res) => {
         paramIndex++;
       }
 
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-      
+      const whereClause =
+        whereConditions.length > 0
+          ? `WHERE ${whereConditions.join(" AND ")}`
+          : "";
+
       const queryText = `
         SELECT 
           id, title, abstract, authors, journal, publish_date, category,
@@ -136,7 +144,7 @@ router.get('/search/enhanced', async (req, res) => {
 
       queryParams.push(searchParams.limit + 1);
       const result = await db.execute(sql.raw(queryText, queryParams));
-      
+
       const studies = result.rows.slice(0, searchParams.limit);
       const hasMore = result.rows.length > searchParams.limit;
       const nextCursor = hasMore ? studies[studies.length - 1]?.id : null;
@@ -145,33 +153,32 @@ router.get('/search/enhanced', async (req, res) => {
         studies,
         hasMore,
         nextCursor,
-        total: studies.length
+        total: studies.length,
       };
     });
 
-    res.set('Cache-Control', 'public, max-age=180');
+    res.set("Cache-Control", "public, max-age=180");
     res.json({
       success: true,
       data: results.studies,
       pagination: {
         hasMore: results.hasMore,
         nextCursor: results.nextCursor,
-        limit: searchParams.limit
-      }
+        limit: searchParams.limit,
+      },
     });
-    
   } catch (error) {
-    console.error('Error in enhanced search:', error);
-    res.status(500).json({ error: 'Search failed' });
+    console.error("Error in enhanced search:", error);
+    res.status(500).json({ error: "Search failed" });
   }
 });
 
 /**
  * Enhanced category statistics with caching
  */
-router.get('/categories/enhanced-stats', async (req, res) => {
+router.get("/categories/enhanced-stats", async (req, res) => {
   try {
-    const stats = await getCachedStats('categories', async () => {
+    const stats = await getCachedStats("categories", async () => {
       const result = await db.execute(sql`
         SELECT 
           category,
@@ -188,24 +195,23 @@ router.get('/categories/enhanced-stats', async (req, res) => {
       return result.rows;
     });
 
-    res.set('Cache-Control', 'public, max-age=1800');
+    res.set("Cache-Control", "public, max-age=1800");
     res.json({
       success: true,
-      data: stats
+      data: stats,
     });
-    
   } catch (error) {
-    console.error('Error fetching enhanced category stats:', error);
-    res.status(500).json({ error: 'Failed to fetch category statistics' });
+    console.error("Error fetching enhanced category stats:", error);
+    res.status(500).json({ error: "Failed to fetch category statistics" });
   }
 });
 
 /**
  * Enhanced database overview with caching
  */
-router.get('/stats/enhanced-overview', async (req, res) => {
+router.get("/stats/enhanced-overview", async (req, res) => {
   try {
-    const stats = await getCachedStats('overview', async () => {
+    const stats = await getCachedStats("overview", async () => {
       const result = await db.execute(sql`
         SELECT 
           COUNT(*) as total_studies,
@@ -224,65 +230,78 @@ router.get('/stats/enhanced-overview', async (req, res) => {
       return result.rows[0];
     });
 
-    res.set('Cache-Control', 'public, max-age=900');
+    res.set("Cache-Control", "public, max-age=900");
     res.json({
       success: true,
-      data: stats
+      data: stats,
     });
-    
   } catch (error) {
-    console.error('Error fetching enhanced database stats:', error);
-    res.status(500).json({ error: 'Failed to fetch database statistics' });
+    console.error("Error fetching enhanced database stats:", error);
+    res.status(500).json({ error: "Failed to fetch database statistics" });
   }
 });
 
 /**
  * Batch study retrieval for efficient multiple study access
  */
-router.post('/studies/batch-enhanced', async (req, res) => {
+router.post("/studies/batch-enhanced", async (req, res) => {
   try {
     const { ids, fields } = req.body;
-    
+
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ error: 'Invalid study IDs array' });
+      return res.status(400).json({ error: "Invalid study IDs array" });
     }
 
     if (ids.length > 50) {
-      return res.status(400).json({ error: 'Maximum 50 studies per batch request' });
+      return res
+        .status(400)
+        .json({ error: "Maximum 50 studies per batch request" });
     }
 
     // Allow selective field loading
     const selectedFields = fields || [
-      'id', 'title', 'abstract', 'authors', 'journal', 'publish_date', 
-      'category', 'citation_url', 'source_url', 'image_url'
+      "id",
+      "title",
+      "abstract",
+      "authors",
+      "journal",
+      "publish_date",
+      "category",
+      "citation_url",
+      "source_url",
+      "image_url",
     ];
 
-    const fieldsList = selectedFields.join(', ');
-    const placeholders = ids.map((_, index) => `$${index + 1}`).join(', ');
-    
-    const result = await db.execute(sql.raw(`
+    const fieldsList = selectedFields.join(", ");
+    const placeholders = ids.map((_, index) => `$${index + 1}`).join(", ");
+
+    const result = await db.execute(
+      sql.raw(
+        `
       SELECT ${fieldsList}
       FROM studies 
       WHERE id IN (${placeholders})
       ORDER BY 
         CASE WHEN citation_url IS NOT NULL AND citation_url != '' THEN 1 ELSE 2 END,
         publish_year DESC
-    `, ids));
+    `,
+        ids,
+      ),
+    );
 
-    res.set('Cache-Control', 'public, max-age=300');
+    res.set("Cache-Control", "public, max-age=300");
     res.json({
       success: true,
       data: result.rows,
       meta: {
         requested: ids.length,
         found: result.rows.length,
-        fields: selectedFields
-      }
+        fields: selectedFields,
+      },
     });
-    
   } catch (error) {
-    console.error('Error in enhanced batch fetch:', error);
-    res.status(500).json({ error: 'Batch fetch failed' });
+    console.error("Error in enhanced batch fetch:", error);
+    res.status(500).json({ error: "Batch fetch failed" });
   }
 });
 

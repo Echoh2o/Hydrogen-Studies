@@ -1,37 +1,65 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Loader2, 
-  Plus, 
-  Search, 
-  Trash, 
-  Edit, 
-  PlayCircle, 
-  Clock, 
-  CheckCircle, 
+import {
+  Loader2,
+  Plus,
+  Search,
+  Trash,
+  Edit,
+  PlayCircle,
+  Clock,
+  CheckCircle,
   XCircle,
   Filter,
   Lightbulb,
   AlertCircle,
   Save,
   CalendarClock,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import KeywordEditor from "@/components/admin/keyword-monitor/KeywordEditor";
 import ScheduleDialog from "@/components/admin/keyword-monitor/ScheduleDialog";
@@ -71,7 +99,7 @@ interface MonitorResult {
   publishDate: string;
   doi: string;
   matchedKeywords: string[];
-  status: 'pending' | 'approved' | 'rejected' | 'archived';
+  status: "pending" | "approved" | "rejected" | "archived";
   source: string;
   foundAt: string;
   reviewedBy?: string;
@@ -83,10 +111,17 @@ export default function KeywordMonitorPage() {
   const [activeTab, setActiveTab] = useState("keywords");
   const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
   const [selectedResults, setSelectedResults] = useState<number[]>([]);
-  const [newKeyword, setNewKeyword] = useState({ term: "", category: "general" });
-  const [newExcludedKeyword, setNewExcludedKeyword] = useState({ term: "", reason: "" });
+  const [newKeyword, setNewKeyword] = useState({
+    term: "",
+    category: "general",
+  });
+  const [newExcludedKeyword, setNewExcludedKeyword] = useState({
+    term: "",
+    reason: "",
+  });
   const [editingKeyword, setEditingKeyword] = useState<Keyword | null>(null);
-  const [editingExcluded, setEditingExcluded] = useState<ExcludedKeyword | null>(null);
+  const [editingExcluded, setEditingExcluded] =
+    useState<ExcludedKeyword | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -116,7 +151,7 @@ export default function KeywordMonitorPage() {
     queryKey: ["/api/keywords/groups"],
     enabled: activeTab === "groups",
   });
-  
+
   // This scheduleQuery will be used for both the StatusMonitor and ScheduleDialog components
 
   // Query for monitor results
@@ -124,7 +159,7 @@ export default function KeywordMonitorPage() {
     queryKey: ["/api/keywords/results", statusFilter],
     enabled: activeTab === "results",
   });
-  
+
   // Query for search schedule - used for both StatusMonitor and ScheduleDialog
   const scheduleQuery = useQuery({
     queryKey: ["/api/keywords/monitor/schedule"],
@@ -140,7 +175,7 @@ export default function KeywordMonitorPage() {
         },
         body: JSON.stringify(keywordData),
       });
-      
+
       if (!response.ok) throw new Error("Failed to add keyword");
       return response.json();
     },
@@ -173,7 +208,7 @@ export default function KeywordMonitorPage() {
         },
         body: JSON.stringify(excludedData),
       });
-      
+
       if (!response.ok) throw new Error("Failed to add excluded keyword");
       return response.json();
     },
@@ -206,7 +241,7 @@ export default function KeywordMonitorPage() {
         },
         body: JSON.stringify({ isActive }),
       });
-      
+
       if (!response.ok) throw new Error("Failed to update keyword status");
       return response.json();
     },
@@ -228,7 +263,7 @@ export default function KeywordMonitorPage() {
       const response = await fetch(`/api/keywords/${id}`, {
         method: "DELETE",
       });
-      
+
       if (!response.ok) throw new Error("Failed to delete keyword");
       return response.json();
     },
@@ -255,7 +290,7 @@ export default function KeywordMonitorPage() {
       const response = await fetch("/api/keywords/monitor/run", {
         method: "POST",
       });
-      
+
       if (!response.ok) throw new Error("Failed to run monitor");
       return response.json();
     },
@@ -286,7 +321,7 @@ export default function KeywordMonitorPage() {
         },
         body: JSON.stringify({ status }),
       });
-      
+
       if (!response.ok) throw new Error("Failed to update result status");
       return response.json();
     },
@@ -313,7 +348,7 @@ export default function KeywordMonitorPage() {
       });
       return;
     }
-    
+
     addKeywordMutation.mutate(newKeyword);
   };
 
@@ -327,7 +362,7 @@ export default function KeywordMonitorPage() {
       });
       return;
     }
-    
+
     addExcludedKeywordMutation.mutate(newExcludedKeyword);
   };
 
@@ -345,7 +380,11 @@ export default function KeywordMonitorPage() {
 
   // Handle running the monitor
   const handleRunMonitor = () => {
-    if (window.confirm("Are you sure you want to run the keyword monitor? This may take some time.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to run the keyword monitor? This may take some time.",
+      )
+    ) {
       runMonitorMutation.mutate();
     }
   };
@@ -365,10 +404,14 @@ export default function KeywordMonitorPage() {
       });
       return;
     }
-    
-    if (window.confirm(`Are you sure you want to approve ${selectedResults.length} results?`)) {
+
+    if (
+      window.confirm(
+        `Are you sure you want to approve ${selectedResults.length} results?`,
+      )
+    ) {
       // In a real implementation, this would be a batch operation
-      selectedResults.forEach(id => {
+      selectedResults.forEach((id) => {
         updateResultStatusMutation.mutate({ id, status: "approved" });
       });
     }
@@ -384,10 +427,14 @@ export default function KeywordMonitorPage() {
       });
       return;
     }
-    
-    if (window.confirm(`Are you sure you want to reject ${selectedResults.length} results?`)) {
+
+    if (
+      window.confirm(
+        `Are you sure you want to reject ${selectedResults.length} results?`,
+      )
+    ) {
       // In a real implementation, this would be a batch operation
-      selectedResults.forEach(id => {
+      selectedResults.forEach((id) => {
         updateResultStatusMutation.mutate({ id, status: "rejected" });
       });
     }
@@ -395,28 +442,30 @@ export default function KeywordMonitorPage() {
 
   // Toggle selection of a result
   const toggleResultSelection = (id: number) => {
-    setSelectedResults(prev => 
-      prev.includes(id) 
-        ? prev.filter(resultId => resultId !== id) 
-        : [...prev, id]
+    setSelectedResults((prev) =>
+      prev.includes(id)
+        ? prev.filter((resultId) => resultId !== id)
+        : [...prev, id],
     );
   };
 
   // Filter keywords by search term and group
   const getFilteredKeywords = (): Keyword[] => {
     if (!keywordsQuery.data) return [];
-    
+
     const keywords = keywordsQuery.data as Keyword[];
-    
-    return keywords.filter(keyword => {
+
+    return keywords.filter((keyword) => {
       // Apply search filter
-      const matchesSearch = searchTerm === "" || 
+      const matchesSearch =
+        searchTerm === "" ||
         keyword.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
         keyword.category.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       // Apply group filter
-      const matchesGroup = selectedGroup === "all" || keyword.category === selectedGroup;
-      
+      const matchesGroup =
+        selectedGroup === "all" || keyword.category === selectedGroup;
+
       return matchesSearch && matchesGroup;
     });
   };
@@ -424,20 +473,22 @@ export default function KeywordMonitorPage() {
   // Filter results by search term and status
   const getFilteredResults = (): MonitorResult[] => {
     if (!monitorResultsQuery.data) return [];
-    
+
     const results = monitorResultsQuery.data as MonitorResult[];
-    
-    return results.filter(result => {
+
+    return results.filter((result) => {
       // Apply search filter
-      const matchesSearch = searchTerm === "" || 
+      const matchesSearch =
+        searchTerm === "" ||
         result.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         result.abstract.toLowerCase().includes(searchTerm.toLowerCase()) ||
         result.authors.toLowerCase().includes(searchTerm.toLowerCase()) ||
         result.journal.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       // Apply status filter
-      const matchesStatus = statusFilter === "all" || result.status === statusFilter;
-      
+      const matchesStatus =
+        statusFilter === "all" || result.status === statusFilter;
+
       return matchesSearch && matchesStatus;
     });
   };
@@ -446,7 +497,7 @@ export default function KeywordMonitorPage() {
   const closeStatusAlert = () => {
     setProcessingStatus({ ...processingStatus, visible: false });
   };
-  
+
   // Handle toggling keyword active status
   const handleToggleKeywordActive = (id: number, isActive: boolean) => {
     updateKeywordStatusMutation.mutate({ id, isActive });
@@ -455,36 +506,41 @@ export default function KeywordMonitorPage() {
   // Get the filtered data
   const filteredKeywords = getFilteredKeywords();
   const filteredResults = getFilteredResults();
-  const excludedKeywords = excludedKeywordsQuery.data as ExcludedKeyword[] || [];
-  
+  const excludedKeywords =
+    (excludedKeywordsQuery.data as ExcludedKeyword[]) || [];
+
   // Get unique categories for filter dropdown
-  const uniqueCategories = keywordsQuery.data 
-    ? Array.from(new Set((keywordsQuery.data as Keyword[]).map(k => k.category))) 
+  const uniqueCategories = keywordsQuery.data
+    ? Array.from(
+        new Set((keywordsQuery.data as Keyword[]).map((k) => k.category)),
+      )
     : [];
 
   return (
-    <AdminLayout 
-      title="Keyword Monitor" 
+    <AdminLayout
+      title="Keyword Monitor"
       description="Manage keywords and monitor scientific databases for new studies"
     >
       {/* Status Alert */}
       {processingStatus.visible && (
-        <Alert 
-          variant={processingStatus.type === "error" ? "destructive" : "default"}
+        <Alert
+          variant={
+            processingStatus.type === "error" ? "destructive" : "default"
+          }
           className="mb-4"
         >
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>
-            {processingStatus.type === "success" 
-              ? "Success" 
-              : processingStatus.type === "error" 
-                ? "Error" 
+            {processingStatus.type === "success"
+              ? "Success"
+              : processingStatus.type === "error"
+                ? "Error"
                 : "Information"}
           </AlertTitle>
           <AlertDescription>{processingStatus.message}</AlertDescription>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="absolute top-2 right-2"
             onClick={closeStatusAlert}
           >
@@ -492,14 +548,20 @@ export default function KeywordMonitorPage() {
           </Button>
         </Alert>
       )}
-      
+
       {/* Status Monitor */}
       <div className="mb-6">
-        <SimpleStatusMonitor onConfigureSchedule={() => setShowScheduleDialog(true)} />
+        <SimpleStatusMonitor
+          onConfigureSchedule={() => setShowScheduleDialog(true)}
+        />
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="keywords" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        defaultValue="keywords"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <div className="flex justify-between items-center mb-4">
           <TabsList>
             <TabsTrigger value="keywords">Keywords</TabsTrigger>
@@ -507,7 +569,7 @@ export default function KeywordMonitorPage() {
             <TabsTrigger value="groups">Keyword Groups</TabsTrigger>
             <TabsTrigger value="results">Monitor Results</TabsTrigger>
           </TabsList>
-          
+
           <div className="flex space-x-2">
             {activeTab === "keywords" && (
               <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -530,7 +592,9 @@ export default function KeywordMonitorPage() {
                       <Input
                         id="term"
                         value={newKeyword.term}
-                        onChange={(e) => setNewKeyword({ ...newKeyword, term: e.target.value })}
+                        onChange={(e) =>
+                          setNewKeyword({ ...newKeyword, term: e.target.value })
+                        }
                         placeholder="e.g., hydrogen-rich water"
                       />
                     </div>
@@ -538,7 +602,9 @@ export default function KeywordMonitorPage() {
                       <Label htmlFor="category">Category</Label>
                       <Select
                         value={newKeyword.category}
-                        onValueChange={(value) => setNewKeyword({ ...newKeyword, category: value })}
+                        onValueChange={(value) =>
+                          setNewKeyword({ ...newKeyword, category: value })
+                        }
                       >
                         <SelectTrigger id="category">
                           <SelectValue placeholder="Select category" />
@@ -548,16 +614,24 @@ export default function KeywordMonitorPage() {
                           <SelectItem value="medical">Medical</SelectItem>
                           <SelectItem value="disease">Disease</SelectItem>
                           <SelectItem value="mechanism">Mechanism</SelectItem>
-                          <SelectItem value="delivery">Delivery Method</SelectItem>
+                          <SelectItem value="delivery">
+                            Delivery Method
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddDialog(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button onClick={handleAddKeyword} disabled={addKeywordMutation.isPending}>
+                    <Button
+                      onClick={handleAddKeyword}
+                      disabled={addKeywordMutation.isPending}
+                    >
                       {addKeywordMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -571,9 +645,12 @@ export default function KeywordMonitorPage() {
                 </DialogContent>
               </Dialog>
             )}
-            
+
             {activeTab === "excluded" && (
-              <Dialog open={showAddExcludedDialog} onOpenChange={setShowAddExcludedDialog}>
+              <Dialog
+                open={showAddExcludedDialog}
+                onOpenChange={setShowAddExcludedDialog}
+              >
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
@@ -593,7 +670,12 @@ export default function KeywordMonitorPage() {
                       <Input
                         id="excluded-term"
                         value={newExcludedKeyword.term}
-                        onChange={(e) => setNewExcludedKeyword({ ...newExcludedKeyword, term: e.target.value })}
+                        onChange={(e) =>
+                          setNewExcludedKeyword({
+                            ...newExcludedKeyword,
+                            term: e.target.value,
+                          })
+                        }
                         placeholder="e.g., hydrogen fuel cell"
                       />
                     </div>
@@ -602,16 +684,27 @@ export default function KeywordMonitorPage() {
                       <Textarea
                         id="reason"
                         value={newExcludedKeyword.reason}
-                        onChange={(e) => setNewExcludedKeyword({ ...newExcludedKeyword, reason: e.target.value })}
+                        onChange={(e) =>
+                          setNewExcludedKeyword({
+                            ...newExcludedKeyword,
+                            reason: e.target.value,
+                          })
+                        }
                         placeholder="e.g., Not related to medical applications"
                       />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowAddExcludedDialog(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddExcludedDialog(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button onClick={handleAddExcludedKeyword} disabled={addExcludedKeywordMutation.isPending}>
+                    <Button
+                      onClick={handleAddExcludedKeyword}
+                      disabled={addExcludedKeywordMutation.isPending}
+                    >
                       {addExcludedKeywordMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -625,10 +718,13 @@ export default function KeywordMonitorPage() {
                 </DialogContent>
               </Dialog>
             )}
-            
+
             {activeTab === "results" && (
               <div className="flex space-x-2">
-                <Button onClick={handleRunMonitor} disabled={runMonitorMutation.isPending}>
+                <Button
+                  onClick={handleRunMonitor}
+                  disabled={runMonitorMutation.isPending}
+                >
                   {runMonitorMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -641,9 +737,9 @@ export default function KeywordMonitorPage() {
                     </>
                   )}
                 </Button>
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   onClick={() => setShowScheduleDialog(true)}
                 >
                   <CalendarClock className="h-4 w-4 mr-2" />
@@ -651,10 +747,10 @@ export default function KeywordMonitorPage() {
                 </Button>
               </div>
             )}
-            
+
             {activeTab === "keywords" && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowScheduleDialog(true)}
               >
                 <CalendarClock className="h-4 w-4 mr-2" />
@@ -675,13 +771,10 @@ export default function KeywordMonitorPage() {
               className="pl-8 max-w-sm"
             />
           </div>
-          
+
           {activeTab === "keywords" && (
             <div className="flex items-center space-x-2">
-              <Select
-                value={selectedGroup}
-                onValueChange={setSelectedGroup}
-              >
+              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
@@ -696,13 +789,10 @@ export default function KeywordMonitorPage() {
               </Select>
             </div>
           )}
-          
+
           {activeTab === "results" && (
             <div className="flex items-center space-x-2">
-              <Select
-                value={statusFilter}
-                onValueChange={setStatusFilter}
-              >
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -714,18 +804,18 @@ export default function KeywordMonitorPage() {
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleBatchApprove}
                   disabled={selectedResults.length === 0}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Approve Selected ({selectedResults.length})
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleBatchReject}
                   disabled={selectedResults.length === 0}
                 >
@@ -776,42 +866,63 @@ export default function KeywordMonitorPage() {
                     <TableBody>
                       {filteredKeywords.map((keyword) => (
                         <TableRow key={keyword.id}>
-                          {editingKeyword && editingKeyword.id === keyword.id ? (
+                          {editingKeyword &&
+                          editingKeyword.id === keyword.id ? (
                             <TableCell colSpan={6}>
-                              <KeywordEditor 
-                                keyword={keyword} 
-                                onCancel={() => setEditingKeyword(null)} 
+                              <KeywordEditor
+                                keyword={keyword}
+                                onCancel={() => setEditingKeyword(null)}
                               />
                             </TableCell>
                           ) : (
                             <>
                               <TableCell>{keyword.term}</TableCell>
                               <TableCell>
-                                <Badge variant="outline">{keyword.category}</Badge>
+                                <Badge variant="outline">
+                                  {keyword.category}
+                                </Badge>
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center space-x-2">
                                   <Switch
                                     checked={keyword.isActive}
-                                    onCheckedChange={() => handleToggleKeywordActive(keyword.id, !keyword.isActive)}
+                                    onCheckedChange={() =>
+                                      handleToggleKeywordActive(
+                                        keyword.id,
+                                        !keyword.isActive,
+                                      )
+                                    }
                                   />
-                                  <span>{keyword.isActive ? "Active" : "Inactive"}</span>
+                                  <span>
+                                    {keyword.isActive ? "Active" : "Inactive"}
+                                  </span>
                                 </div>
                               </TableCell>
                               <TableCell>
                                 {keyword.lastSearched ? (
                                   <span className="flex items-center text-sm">
                                     <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-                                    {new Date(keyword.lastSearched).toLocaleDateString()}
+                                    {new Date(
+                                      keyword.lastSearched,
+                                    ).toLocaleDateString()}
                                   </span>
                                 ) : (
                                   "Never"
                                 )}
                               </TableCell>
                               <TableCell>
-                                {typeof keyword.matchCount === 'number' ? (
-                                  <Badge variant={keyword.matchCount > 0 ? "default" : "outline"}>
-                                    {keyword.matchCount} {keyword.matchCount === 1 ? "match" : "matches"}
+                                {typeof keyword.matchCount === "number" ? (
+                                  <Badge
+                                    variant={
+                                      keyword.matchCount > 0
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                  >
+                                    {keyword.matchCount}{" "}
+                                    {keyword.matchCount === 1
+                                      ? "match"
+                                      : "matches"}
                                   </Badge>
                                 ) : (
                                   "0"
@@ -819,18 +930,20 @@ export default function KeywordMonitorPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-2">
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
                                     onClick={() => setEditingKeyword(keyword)}
                                     title="Edit keyword"
                                   >
                                     <Edit className="h-4 w-4" />
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="icon"
-                                    onClick={() => handleDeleteKeyword(keyword.id)}
+                                    onClick={() =>
+                                      handleDeleteKeyword(keyword.id)
+                                    }
                                     title="Delete keyword"
                                   >
                                     <Trash className="h-4 w-4 text-destructive" />
@@ -848,20 +961,24 @@ export default function KeywordMonitorPage() {
             </CardContent>
             <CardFooter className="flex justify-between">
               <div className="text-xs text-muted-foreground">
-                {keywordsQuery.data ? (keywordsQuery.data as Keyword[]).length : 0} total keywords
+                {keywordsQuery.data
+                  ? (keywordsQuery.data as Keyword[]).length
+                  : 0}{" "}
+                total keywords
               </div>
             </CardFooter>
           </Card>
 
           {/* Edit Keyword Dialog */}
           {editingKeyword && (
-            <Dialog open={!!editingKeyword} onOpenChange={() => setEditingKeyword(null)}>
+            <Dialog
+              open={!!editingKeyword}
+              onOpenChange={() => setEditingKeyword(null)}
+            >
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Edit Keyword</DialogTitle>
-                  <DialogDescription>
-                    Update keyword details
-                  </DialogDescription>
+                  <DialogDescription>Update keyword details</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
@@ -869,14 +986,24 @@ export default function KeywordMonitorPage() {
                     <Input
                       id="edit-term"
                       value={editingKeyword.term}
-                      onChange={(e) => setEditingKeyword({ ...editingKeyword, term: e.target.value })}
+                      onChange={(e) =>
+                        setEditingKeyword({
+                          ...editingKeyword,
+                          term: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="edit-category">Category</Label>
                     <Select
                       value={editingKeyword.category}
-                      onValueChange={(value) => setEditingKeyword({ ...editingKeyword, category: value })}
+                      onValueChange={(value) =>
+                        setEditingKeyword({
+                          ...editingKeyword,
+                          category: value,
+                        })
+                      }
                     >
                       <SelectTrigger id="edit-category">
                         <SelectValue placeholder="Select category" />
@@ -886,7 +1013,9 @@ export default function KeywordMonitorPage() {
                         <SelectItem value="medical">Medical</SelectItem>
                         <SelectItem value="disease">Disease</SelectItem>
                         <SelectItem value="mechanism">Mechanism</SelectItem>
-                        <SelectItem value="delivery">Delivery Method</SelectItem>
+                        <SelectItem value="delivery">
+                          Delivery Method
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -894,15 +1023,21 @@ export default function KeywordMonitorPage() {
                     <Checkbox
                       id="edit-active"
                       checked={editingKeyword.isActive}
-                      onCheckedChange={(checked) => 
-                        setEditingKeyword({ ...editingKeyword, isActive: checked as boolean })
+                      onCheckedChange={(checked) =>
+                        setEditingKeyword({
+                          ...editingKeyword,
+                          isActive: checked as boolean,
+                        })
                       }
                     />
                     <Label htmlFor="edit-active">Active</Label>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setEditingKeyword(null)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingKeyword(null)}
+                  >
                     Cancel
                   </Button>
                   <Button>
@@ -936,7 +1071,10 @@ export default function KeywordMonitorPage() {
                 </div>
               ) : excludedKeywords.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
-                  <p>No excluded terms found. Add some to filter out irrelevant results.</p>
+                  <p>
+                    No excluded terms found. Add some to filter out irrelevant
+                    results.
+                  </p>
                 </div>
               ) : (
                 <ScrollArea className="h-[400px]">
@@ -950,35 +1088,42 @@ export default function KeywordMonitorPage() {
                     </TableHeader>
                     <TableBody>
                       {excludedKeywords
-                        .filter(keyword => 
-                          searchTerm === "" || 
-                          keyword.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          keyword.reason.toLowerCase().includes(searchTerm.toLowerCase())
+                        .filter(
+                          (keyword) =>
+                            searchTerm === "" ||
+                            keyword.term
+                              .toLowerCase()
+                              .includes(searchTerm.toLowerCase()) ||
+                            keyword.reason
+                              .toLowerCase()
+                              .includes(searchTerm.toLowerCase()),
                         )
                         .map((keyword) => (
-                        <TableRow key={keyword.id}>
-                          <TableCell>{keyword.term}</TableCell>
-                          <TableCell>{keyword.reason}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => setEditingExcluded(keyword)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => {/* Handle delete */}}
-                              >
-                                <Trash className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                          <TableRow key={keyword.id}>
+                            <TableCell>{keyword.term}</TableCell>
+                            <TableCell>{keyword.reason}</TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingExcluded(keyword)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    /* Handle delete */
+                                  }}
+                                >
+                                  <Trash className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </ScrollArea>
@@ -993,7 +1138,10 @@ export default function KeywordMonitorPage() {
 
           {/* Edit Excluded Keyword Dialog */}
           {editingExcluded && (
-            <Dialog open={!!editingExcluded} onOpenChange={() => setEditingExcluded(null)}>
+            <Dialog
+              open={!!editingExcluded}
+              onOpenChange={() => setEditingExcluded(null)}
+            >
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Edit Excluded Term</DialogTitle>
@@ -1007,7 +1155,12 @@ export default function KeywordMonitorPage() {
                     <Input
                       id="edit-excluded-term"
                       value={editingExcluded.term}
-                      onChange={(e) => setEditingExcluded({ ...editingExcluded, term: e.target.value })}
+                      onChange={(e) =>
+                        setEditingExcluded({
+                          ...editingExcluded,
+                          term: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="grid gap-2">
@@ -1015,12 +1168,20 @@ export default function KeywordMonitorPage() {
                     <Textarea
                       id="edit-reason"
                       value={editingExcluded.reason}
-                      onChange={(e) => setEditingExcluded({ ...editingExcluded, reason: e.target.value })}
+                      onChange={(e) =>
+                        setEditingExcluded({
+                          ...editingExcluded,
+                          reason: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setEditingExcluded(null)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingExcluded(null)}
+                  >
                     Cancel
                   </Button>
                   <Button>
@@ -1054,7 +1215,10 @@ export default function KeywordMonitorPage() {
                 </div>
               ) : !(keywordGroupsQuery.data as KeywordGroup[])?.length ? (
                 <div className="text-center py-10 text-muted-foreground">
-                  <p>No keyword groups found. Create groups to organize your keywords.</p>
+                  <p>
+                    No keyword groups found. Create groups to organize your
+                    keywords.
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1063,7 +1227,9 @@ export default function KeywordMonitorPage() {
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <CardTitle>{group.name}</CardTitle>
-                          <Badge variant={group.isActive ? "default" : "secondary"}>
+                          <Badge
+                            variant={group.isActive ? "default" : "secondary"}
+                          >
                             {group.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </div>
@@ -1072,10 +1238,12 @@ export default function KeywordMonitorPage() {
                       <CardContent>
                         <div className="flex flex-wrap gap-2">
                           {group.keywords.map((keyword) => (
-                            <Badge 
-                              key={keyword.id} 
+                            <Badge
+                              key={keyword.id}
                               variant="outline"
-                              className={keyword.isActive ? "bg-green-50" : "bg-gray-50"}
+                              className={
+                                keyword.isActive ? "bg-green-50" : "bg-gray-50"
+                              }
                             >
                               {keyword.term}
                             </Badge>
@@ -1123,11 +1291,13 @@ export default function KeywordMonitorPage() {
                   Studies found by the keyword monitor
                 </CardDescription>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: ["/api/keywords/results"] });
+                  queryClient.invalidateQueries({
+                    queryKey: ["/api/keywords/results"],
+                  });
                 }}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -1150,11 +1320,13 @@ export default function KeywordMonitorPage() {
                     <div className="mb-4">
                       <Search className="h-12 w-12 mx-auto text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-medium mb-2">No results found</h3>
+                    <h3 className="text-lg font-medium mb-2">
+                      No results found
+                    </h3>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                      No matches have been found for your keywords yet. 
-                      You can trigger a new search from the Monitor tab or 
-                      wait for the scheduled search to run automatically.
+                      No matches have been found for your keywords yet. You can
+                      trigger a new search from the Monitor tab or wait for the
+                      scheduled search to run automatically.
                     </p>
                     <div className="mt-4">
                       <Button
@@ -1176,12 +1348,14 @@ export default function KeywordMonitorPage() {
                         <TableHead className="w-[50px]">
                           <Checkbox
                             checked={
-                              filteredResults.length > 0 && 
+                              filteredResults.length > 0 &&
                               selectedResults.length === filteredResults.length
                             }
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedResults(filteredResults.map(r => r.id));
+                                setSelectedResults(
+                                  filteredResults.map((r) => r.id),
+                                );
                               } else {
                                 setSelectedResults([]);
                               }
@@ -1203,7 +1377,9 @@ export default function KeywordMonitorPage() {
                           <TableCell>
                             <Checkbox
                               checked={selectedResults.includes(result.id)}
-                              onCheckedChange={() => toggleResultSelection(result.id)}
+                              onCheckedChange={() =>
+                                toggleResultSelection(result.id)
+                              }
                               aria-label={`Select result ${result.id}`}
                             />
                           </TableCell>
@@ -1229,12 +1405,12 @@ export default function KeywordMonitorPage() {
                           <TableCell>
                             <Badge
                               variant={
-                                result.status === "approved" 
-                                  ? "default" 
-                                  : result.status === "rejected" 
-                                    ? "destructive" 
-                                    : result.status === "archived" 
-                                      ? "outline" 
+                                result.status === "approved"
+                                  ? "default"
+                                  : result.status === "rejected"
+                                    ? "destructive"
+                                    : result.status === "archived"
+                                      ? "outline"
                                       : "secondary"
                               }
                             >
@@ -1246,7 +1422,12 @@ export default function KeywordMonitorPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleUpdateResultStatus(result.id, "approved")}
+                                onClick={() =>
+                                  handleUpdateResultStatus(
+                                    result.id,
+                                    "approved",
+                                  )
+                                }
                                 disabled={result.status === "approved"}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
@@ -1255,7 +1436,12 @@ export default function KeywordMonitorPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleUpdateResultStatus(result.id, "rejected")}
+                                onClick={() =>
+                                  handleUpdateResultStatus(
+                                    result.id,
+                                    "rejected",
+                                  )
+                                }
                                 disabled={result.status === "rejected"}
                               >
                                 <XCircle className="h-4 w-4 mr-1 text-red-500" />
@@ -1272,7 +1458,10 @@ export default function KeywordMonitorPage() {
             </CardContent>
             <CardFooter className="flex justify-between">
               <div className="text-xs text-muted-foreground">
-                {monitorResultsQuery.data ? (monitorResultsQuery.data as MonitorResult[]).length : 0} total results
+                {monitorResultsQuery.data
+                  ? (monitorResultsQuery.data as MonitorResult[]).length
+                  : 0}{" "}
+                total results
               </div>
             </CardFooter>
           </Card>
@@ -1283,13 +1472,15 @@ export default function KeywordMonitorPage() {
       <ScheduleDialog
         open={showScheduleDialog}
         onOpenChange={setShowScheduleDialog}
-        currentSchedule={scheduleQuery.data as {
-          enabled: boolean;
-          frequency: string;
-          time: string;
-          days: string[];
-          sources: string[];
-        } | null}
+        currentSchedule={
+          scheduleQuery.data as {
+            enabled: boolean;
+            frequency: string;
+            time: string;
+            days: string[];
+            sources: string[];
+          } | null
+        }
       />
     </AdminLayout>
   );

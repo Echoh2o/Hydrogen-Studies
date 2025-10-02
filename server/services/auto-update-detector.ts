@@ -3,30 +3,32 @@
  * Monitors for new studies and triggers content update detection
  */
 
-import { db } from '../db';
-import { 
-  studies, 
+import { db } from "../db";
+import {
+  studies,
   blogArticles,
   updateNotifications,
   contentRelationships,
-  InsertUpdateNotification 
-} from '@shared/schema';
-import { eq, and, or, desc, gte, sql } from 'drizzle-orm';
-import { contentOptimizationService } from './content-optimization-service';
-import OpenAI from 'openai';
-import { handleOpenAIRequest } from '../utils/service-error-handlers';
-import { AppError, ErrorCode } from '../utils/app-errors';
+  InsertUpdateNotification,
+} from "@shared/schema";
+import { eq, and, or, desc, gte, sql } from "drizzle-orm";
+import { contentOptimizationService } from "./content-optimization-service";
+import OpenAI from "openai";
+import { handleOpenAIRequest } from "../utils/service-error-handlers";
+import { AppError, ErrorCode } from "../utils/app-errors";
 
 // Initialize OpenAI
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  timeout: 30000,
-  maxRetries: 2,
-}) : null;
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 30000,
+      maxRetries: 2,
+    })
+  : null;
 
 interface UpdateCheck {
   contentId: number;
-  contentType: 'blog' | 'study';
+  contentType: "blog" | "study";
   reason: string;
   priority: number;
   suggestedChanges?: string[];
@@ -41,20 +43,25 @@ export class AutoUpdateDetector {
    */
   start(intervalMinutes = 60) {
     if (this.isRunning) {
-      console.log('Auto-update detector is already running');
+      console.log("Auto-update detector is already running");
       return;
     }
 
     this.isRunning = true;
-    console.log(`Starting auto-update detector with ${intervalMinutes} minute interval`);
+    console.log(
+      `Starting auto-update detector with ${intervalMinutes} minute interval`,
+    );
 
     // Run initial check
     this.checkForUpdates();
 
     // Set up recurring check
-    this.checkInterval = setInterval(() => {
-      this.checkForUpdates();
-    }, intervalMinutes * 60 * 1000);
+    this.checkInterval = setInterval(
+      () => {
+        this.checkForUpdates();
+      },
+      intervalMinutes * 60 * 1000,
+    );
   }
 
   /**
@@ -66,7 +73,7 @@ export class AutoUpdateDetector {
       this.checkInterval = null;
     }
     this.isRunning = false;
-    console.log('Auto-update detector stopped');
+    console.log("Auto-update detector stopped");
   }
 
   /**
@@ -74,13 +81,14 @@ export class AutoUpdateDetector {
    */
   async checkForUpdates() {
     try {
-      console.log('Running auto-update detection check...');
+      console.log("Running auto-update detection check...");
 
       // Get recently added studies (last 7 days)
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-      const recentStudies = await db.select()
+      const recentStudies = await db
+        .select()
         .from(studies)
         .where(gte(studies.createdAt, oneWeekAgo))
         .orderBy(desc(studies.createdAt));
@@ -92,7 +100,8 @@ export class AutoUpdateDetector {
       // Process each new study
       for (const study of recentStudies) {
         // Check if we've already processed this study
-        const existingNotifications = await db.select()
+        const existingNotifications = await db
+          .select()
           .from(updateNotifications)
           .where(eq(updateNotifications.triggerContentId, study.id))
           .limit(1);
@@ -103,16 +112,21 @@ export class AutoUpdateDetector {
           updateChecks.push(...impactedContent);
 
           // Also detect relationships for the new study
-          await contentOptimizationService.detectContentRelationships('study', study.id);
+          await contentOptimizationService.detectContentRelationships(
+            "study",
+            study.id,
+          );
         }
       }
 
       // Process update checks and create notifications
       await this.processUpdateChecks(updateChecks, recentStudies);
 
-      console.log(`Auto-update detection complete. Created ${updateChecks.length} update checks.`);
+      console.log(
+        `Auto-update detection complete. Created ${updateChecks.length} update checks.`,
+      );
     } catch (error) {
-      console.error('Error in auto-update detection:', error);
+      console.error("Error in auto-update detection:", error);
     }
   }
 
@@ -123,44 +137,55 @@ export class AutoUpdateDetector {
     const updateChecks: UpdateCheck[] = [];
 
     // Find blogs in same category
-    const relatedBlogs = await db.select()
+    const relatedBlogs = await db
+      .select()
       .from(blogArticles)
       .where(
         or(
           eq(blogArticles.category, study.category),
-          sql`${blogArticles.keywords} && ${study.keywords}`
-        )
+          sql`${blogArticles.keywords} && ${study.keywords}`,
+        ),
       )
       .limit(20);
 
     // Analyze each blog for potential updates
     for (const blog of relatedBlogs) {
-      const updateNeeded = await this.analyzeContentForUpdates(blog, study, 'blog');
+      const updateNeeded = await this.analyzeContentForUpdates(
+        blog,
+        study,
+        "blog",
+      );
       if (updateNeeded) {
         updateChecks.push(updateNeeded);
       }
     }
 
     // Find studies that might be contradicted or supported
-    const relatedStudies = await db.select()
+    const relatedStudies = await db
+      .select()
       .from(studies)
       .where(
         and(
           eq(studies.category, study.category),
-          sql`${studies.id} != ${study.id}`
-        )
+          sql`${studies.id} != ${study.id}`,
+        ),
       )
       .limit(10);
 
     for (const relatedStudy of relatedStudies) {
-      const relationship = await this.analyzeStudyRelationship(relatedStudy, study);
-      if (relationship && relationship.type === 'contradicts') {
+      const relationship = await this.analyzeStudyRelationship(
+        relatedStudy,
+        study,
+      );
+      if (relationship && relationship.type === "contradicts") {
         updateChecks.push({
           contentId: relatedStudy.id,
-          contentType: 'study',
+          contentType: "study",
           reason: `New contradicting evidence from study: ${study.title}`,
           priority: 80,
-          suggestedChanges: [`Add note about contradicting findings from ${study.title}`]
+          suggestedChanges: [
+            `Add note about contradicting findings from ${study.title}`,
+          ],
         });
       }
     }
@@ -172,9 +197,9 @@ export class AutoUpdateDetector {
    * Analyze if content needs updates based on new study
    */
   private async analyzeContentForUpdates(
-    content: any, 
-    newStudy: any, 
-    contentType: 'blog' | 'study'
+    content: any,
+    newStudy: any,
+    contentType: "blog" | "study",
   ): Promise<UpdateCheck | null> {
     if (!openai) {
       // Fallback logic without AI
@@ -194,7 +219,7 @@ export class AutoUpdateDetector {
                 - New supporting evidence  
                 - Outdated statistics or claims
                 - Missing important context
-                Return JSON with: needsUpdate (boolean), reason (string), priority (0-100), suggestedChanges (array of strings)`
+                Return JSON with: needsUpdate (boolean), reason (string), priority (0-100), suggestedChanges (array of strings)`,
               },
               {
                 role: "user",
@@ -203,32 +228,34 @@ Content: ${content.content?.substring(0, 1000) || content.abstract?.substring(0,
 
 New study: "${newStudy.title}"
 Findings: ${newStudy.conclusion || newStudy.results}
-Published: ${newStudy.journalPublishDate}`
-              }
+Published: ${newStudy.journalPublishDate}`,
+              },
             ],
             max_tokens: 400,
             temperature: 0.3,
           });
 
-          const result = JSON.parse(completion.choices[0].message.content || '{}');
-          
+          const result = JSON.parse(
+            completion.choices[0].message.content || "{}",
+          );
+
           if (result.needsUpdate) {
             return {
               contentId: content.id,
               contentType,
               reason: result.reason,
               priority: result.priority,
-              suggestedChanges: result.suggestedChanges
+              suggestedChanges: result.suggestedChanges,
             };
           }
           return null;
         },
-        () => this.simpleUpdateCheck(content, newStudy, contentType)
+        () => this.simpleUpdateCheck(content, newStudy, contentType),
       );
 
       return analysis;
     } catch (error) {
-      console.error('Error analyzing content for updates:', error);
+      console.error("Error analyzing content for updates:", error);
       return this.simpleUpdateCheck(content, newStudy, contentType);
     }
   }
@@ -237,21 +264,25 @@ Published: ${newStudy.journalPublishDate}`
    * Simple update check without AI
    */
   private simpleUpdateCheck(
-    content: any, 
-    newStudy: any, 
-    contentType: 'blog' | 'study'
+    content: any,
+    newStudy: any,
+    contentType: "blog" | "study",
   ): UpdateCheck | null {
     // Check if content references similar topics
     const contentKeywords = content.keywords || [];
     const studyKeywords = newStudy.keywords || [];
-    const commonKeywords = contentKeywords.filter((k: string) => 
-      studyKeywords.includes(k)
+    const commonKeywords = contentKeywords.filter((k: string) =>
+      studyKeywords.includes(k),
     );
 
     if (commonKeywords.length > 2) {
       // Check if new study is more recent
-      const contentDate = new Date(content.journalPublishDate || content.createdAt);
-      const studyDate = new Date(newStudy.journalPublishDate || newStudy.createdAt);
+      const contentDate = new Date(
+        content.journalPublishDate || content.createdAt,
+      );
+      const studyDate = new Date(
+        newStudy.journalPublishDate || newStudy.createdAt,
+      );
 
       if (studyDate > contentDate) {
         return {
@@ -261,8 +292,8 @@ Published: ${newStudy.journalPublishDate}`
           priority: 50,
           suggestedChanges: [
             `Consider adding reference to new study: ${newStudy.title}`,
-            `Update statistics if newer data is available`
-          ]
+            `Update statistics if newer data is available`,
+          ],
         };
       }
     }
@@ -273,7 +304,10 @@ Published: ${newStudy.journalPublishDate}`
   /**
    * Analyze relationship between two studies
    */
-  private async analyzeStudyRelationship(study1: any, study2: any): Promise<any> {
+  private async analyzeStudyRelationship(
+    study1: any,
+    study2: any,
+  ): Promise<any> {
     if (!openai) return null;
 
     try {
@@ -284,7 +318,8 @@ Published: ${newStudy.journalPublishDate}`
             messages: [
               {
                 role: "system",
-                content: "Analyze the relationship between two studies. Return JSON with: type ('supports', 'contradicts', 'extends', 'unrelated'), confidence (0-100), explanation (string)"
+                content:
+                  "Analyze the relationship between two studies. Return JSON with: type ('supports', 'contradicts', 'extends', 'unrelated'), confidence (0-100), explanation (string)",
               },
               {
                 role: "user",
@@ -292,21 +327,21 @@ Published: ${newStudy.journalPublishDate}`
 Conclusion: ${study1.conclusion}
 
 Study 2: "${study2.title}"  
-Conclusion: ${study2.conclusion}`
-              }
+Conclusion: ${study2.conclusion}`,
+              },
             ],
             max_tokens: 200,
             temperature: 0.3,
           });
 
-          return JSON.parse(completion.choices[0].message.content || '{}');
+          return JSON.parse(completion.choices[0].message.content || "{}");
         },
-        () => null
+        () => null,
       );
 
       return analysis;
     } catch (error) {
-      console.error('Error analyzing study relationship:', error);
+      console.error("Error analyzing study relationship:", error);
       return null;
     }
   }
@@ -315,8 +350,8 @@ Conclusion: ${study2.conclusion}`
    * Process update checks and create notifications
    */
   private async processUpdateChecks(
-    updateChecks: UpdateCheck[], 
-    triggerStudies: any[]
+    updateChecks: UpdateCheck[],
+    triggerStudies: any[],
   ) {
     const notifications: InsertUpdateNotification[] = [];
 
@@ -325,23 +360,26 @@ Conclusion: ${study2.conclusion}`
       const triggerStudy = triggerStudies[0]; // Simplified - should match properly
 
       // Determine priority level
-      let priority: 'critical' | 'high' | 'medium' | 'low' = 'medium';
-      if (check.priority >= 80) priority = 'critical';
-      else if (check.priority >= 60) priority = 'high';
-      else if (check.priority >= 40) priority = 'medium';
-      else priority = 'low';
+      let priority: "critical" | "high" | "medium" | "low" = "medium";
+      if (check.priority >= 80) priority = "critical";
+      else if (check.priority >= 60) priority = "high";
+      else if (check.priority >= 40) priority = "medium";
+      else priority = "low";
 
       notifications.push({
         contentType: check.contentType,
         contentId: check.contentId,
-        triggerType: check.reason.includes('contradict') ? 'contradicting_evidence' : 
-                     check.reason.includes('support') ? 'supporting_evidence' : 'new_study',
+        triggerType: check.reason.includes("contradict")
+          ? "contradicting_evidence"
+          : check.reason.includes("support")
+            ? "supporting_evidence"
+            : "new_study",
         triggerContentId: triggerStudy?.id,
         priority,
         priorityScore: check.priority,
-        status: 'pending',
+        status: "pending",
         updateSummary: check.reason,
-        suggestedChanges: check.suggestedChanges?.join('\n'),
+        suggestedChanges: check.suggestedChanges?.join("\n"),
         impactedSections: [],
       });
     }
@@ -358,13 +396,14 @@ Conclusion: ${study2.conclusion}`
    */
   async detectUpdatesForStudy(studyId: number): Promise<UpdateCheck[]> {
     try {
-      const [study] = await db.select()
+      const [study] = await db
+        .select()
         .from(studies)
         .where(eq(studies.id, studyId))
         .limit(1);
 
       if (!study) {
-        throw new AppError('Study not found', 404, ErrorCode.NOT_FOUND);
+        throw new AppError("Study not found", 404, ErrorCode.NOT_FOUND);
       }
 
       const updateChecks = await this.findImpactedContent(study);
@@ -372,7 +411,7 @@ Conclusion: ${study2.conclusion}`
 
       return updateChecks;
     } catch (error) {
-      console.error('Error detecting updates for study:', error);
+      console.error("Error detecting updates for study:", error);
       throw error;
     }
   }

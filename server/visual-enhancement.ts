@@ -1,6 +1,6 @@
 /**
  * Visual Enhancement Phase 3
- * 
+ *
  * Generates AI images for studies that don't have them and improves visual assets
  */
 
@@ -37,17 +37,19 @@ let currentStats: VisualEnhancementStats = {
   failed: 0,
   imagesGenerated: 0,
   startTime: new Date(),
-  results: []
+  results: [],
 };
 
 /**
  * Generate an AI image for a study
  */
-async function generateStudyImage(study: any): Promise<{ success: boolean; imageUrl?: string; message?: string }> {
+async function generateStudyImage(
+  study: any,
+): Promise<{ success: boolean; imageUrl?: string; message?: string }> {
   try {
     // Create a focused prompt for the study image
     const imagePrompt = createImagePrompt(study);
-    
+
     const response = await openai.images.generate({
       model: "dall-e-3",
       prompt: imagePrompt,
@@ -62,12 +64,14 @@ async function generateStudyImage(study: any): Promise<{ success: boolean; image
     }
 
     return { success: true, imageUrl, message: "Image generated successfully" };
-
   } catch (error) {
     console.error(`Image generation error for study ${study.id}:`, error);
-    return { 
-      success: false, 
-      message: error instanceof Error ? error.message : "Unknown image generation error"
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unknown image generation error",
     };
   }
 }
@@ -76,34 +80,35 @@ async function generateStudyImage(study: any): Promise<{ success: boolean; image
  * Create an optimized image prompt for a hydrogen study
  */
 function createImagePrompt(study: any): string {
-  const category = study.category || 'General';
-  const healthConditions = study.health_conditions || '';
-  const deliveryMethod = study.delivery_method || '';
-  
+  const category = study.category || "General";
+  const healthConditions = study.health_conditions || "";
+  const deliveryMethod = study.delivery_method || "";
+
   // Base prompt components
-  let basePrompt = "Professional medical illustration, clean and modern style, ";
-  
+  let basePrompt =
+    "Professional medical illustration, clean and modern style, ";
+
   // Add category-specific elements
   switch (category.toLowerCase()) {
-    case 'cardiovascular':
+    case "cardiovascular":
       basePrompt += "heart and cardiovascular system, ";
       break;
-    case 'neurological':
+    case "neurological":
       basePrompt += "brain and nervous system, ";
       break;
-    case 'respiratory':
+    case "respiratory":
       basePrompt += "lungs and respiratory system, ";
       break;
-    case 'gastrointestinal':
+    case "gastrointestinal":
       basePrompt += "digestive system, ";
       break;
-    case 'cancer research':
+    case "cancer research":
       basePrompt += "cellular health and protection, ";
       break;
-    case 'metabolic':
+    case "metabolic":
       basePrompt += "metabolism and cellular energy, ";
       break;
-    case 'dermatology':
+    case "dermatology":
       basePrompt += "skin health and cellular regeneration, ";
       break;
     default:
@@ -111,9 +116,15 @@ function createImagePrompt(study: any): string {
   }
 
   // Add delivery method context
-  if (deliveryMethod.toLowerCase().includes('water') || deliveryMethod.toLowerCase().includes('drink')) {
+  if (
+    deliveryMethod.toLowerCase().includes("water") ||
+    deliveryMethod.toLowerCase().includes("drink")
+  ) {
     basePrompt += "hydrogen-rich water glass, ";
-  } else if (deliveryMethod.toLowerCase().includes('inhalation') || deliveryMethod.toLowerCase().includes('gas')) {
+  } else if (
+    deliveryMethod.toLowerCase().includes("inhalation") ||
+    deliveryMethod.toLowerCase().includes("gas")
+  ) {
     basePrompt += "hydrogen gas therapy, ";
   } else {
     basePrompt += "hydrogen therapy, ";
@@ -121,10 +132,10 @@ function createImagePrompt(study: any): string {
 
   // Add molecular representation
   basePrompt += "subtle H2 molecular symbols, ";
-  
+
   // Add health improvement visualization
   basePrompt += "showing cellular health improvement, antioxidant effects, ";
-  
+
   // Style specifications
   basePrompt += "soft blue and white color scheme, minimalist design, ";
   basePrompt += "scientific accuracy, no text overlays, ";
@@ -137,21 +148,23 @@ function createImagePrompt(study: any): string {
 /**
  * Process a single study for visual enhancement
  */
-async function processStudyVisualEnhancement(study: any): Promise<VisualEnhancementResult> {
+async function processStudyVisualEnhancement(
+  study: any,
+): Promise<VisualEnhancementResult> {
   try {
     // Check if study already has an image
-    if (study.image_url && study.image_url.trim() !== '') {
+    if (study.image_url && study.image_url.trim() !== "") {
       return {
         studyId: study.id,
         title: study.title,
         success: true,
-        imageGenerated: false
+        imageGenerated: false,
       };
     }
 
     // Generate new image
     const imageResult = await generateStudyImage(study);
-    
+
     if (imageResult.success && imageResult.imageUrl) {
       // Update database with new image
       await db.execute(sql`
@@ -166,7 +179,7 @@ async function processStudyVisualEnhancement(study: any): Promise<VisualEnhancem
         title: study.title,
         success: true,
         imageGenerated: true,
-        imageUrl: imageResult.imageUrl
+        imageUrl: imageResult.imageUrl,
       };
     } else {
       console.error(`✗ Study ${study.id}: ${imageResult.message}`);
@@ -175,10 +188,9 @@ async function processStudyVisualEnhancement(study: any): Promise<VisualEnhancem
         title: study.title,
         success: false,
         imageGenerated: false,
-        error: imageResult.message
+        error: imageResult.message,
       };
     }
-
   } catch (error) {
     console.error(`✗ Study ${study.id}: ${error}`);
     return {
@@ -186,7 +198,7 @@ async function processStudyVisualEnhancement(study: any): Promise<VisualEnhancem
       title: study.title,
       success: false,
       imageGenerated: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -204,7 +216,7 @@ export async function generateAllStudyImages(): Promise<VisualEnhancementStats> 
     failed: 0,
     imagesGenerated: 0,
     startTime: new Date(),
-    results: []
+    results: [],
   };
 
   try {
@@ -232,13 +244,15 @@ export async function generateAllStudyImages(): Promise<VisualEnhancementStats> 
     for (let i = 0; i < studies.length; i += batchSize) {
       const batchNumber = Math.floor(i / batchSize) + 1;
       const batch = studies.slice(i, i + batchSize);
-      
-      console.log(`📦 Processing batch ${batchNumber}/${totalBatches}: ${batch.length} studies`);
+
+      console.log(
+        `📦 Processing batch ${batchNumber}/${totalBatches}: ${batch.length} studies`,
+      );
 
       // Process batch sequentially to avoid overwhelming the API
       for (const study of batch) {
         const result = await processStudyVisualEnhancement(study);
-        
+
         currentStats.results.push(result);
         currentStats.totalProcessed++;
         if (result.success) {
@@ -248,7 +262,7 @@ export async function generateAllStudyImages(): Promise<VisualEnhancementStats> 
         }
 
         // Delay between studies for API rate limiting
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
       console.log(`✓ Batch ${batchNumber} completed`);
@@ -256,12 +270,15 @@ export async function generateAllStudyImages(): Promise<VisualEnhancementStats> 
       // Longer delay between batches
       if (i + batchSize < studies.length) {
         console.log("⏳ Waiting 5 seconds before next batch...");
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
 
     currentStats.endTime = new Date();
-    const duration = Math.round((currentStats.endTime.getTime() - currentStats.startTime.getTime()) / 1000);
+    const duration = Math.round(
+      (currentStats.endTime.getTime() - currentStats.startTime.getTime()) /
+        1000,
+    );
 
     console.log("\n🎉 Visual enhancement completed!");
     console.log(`📊 Results:`);
@@ -272,7 +289,6 @@ export async function generateAllStudyImages(): Promise<VisualEnhancementStats> 
     console.log(`   - Duration: ${duration} seconds`);
 
     return currentStats;
-
   } catch (error) {
     console.error("❌ Error in visual enhancement:", error);
     currentStats.endTime = new Date();
@@ -299,11 +315,13 @@ export async function getImageCoverage() {
   `);
 
   const stats = result.rows[0];
-  
+
   return {
     totalStudies: Number(stats.total_studies),
     withImages: Number(stats.with_images),
     withoutImages: Number(stats.total_studies) - Number(stats.with_images),
-    imagePercentage: Math.round((Number(stats.with_images) / Number(stats.total_studies)) * 100)
+    imagePercentage: Math.round(
+      (Number(stats.with_images) / Number(stats.total_studies)) * 100,
+    ),
   };
 }

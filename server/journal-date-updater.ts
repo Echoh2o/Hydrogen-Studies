@@ -3,19 +3,21 @@
  * This module provides functionality to update the journal publication dates
  * for studies in the database using DOI lookups.
  */
-import { db } from './db';
-import { studies } from '@shared/schema';
-import { eq, isNull, not } from 'drizzle-orm';
-import { getCrossRefArticleByDOI } from './crossref-api';
-import { getArticleByDOI } from './europepmc-api';
-import axios from 'axios';
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { eq, isNull, not } from "drizzle-orm";
+import { getCrossRefArticleByDOI } from "./crossref-api";
+import { getArticleByDOI } from "./europepmc-api";
+import axios from "axios";
 
 /**
  * Update journal publication dates for studies with DOIs
  * This function finds studies with DOIs but missing journal publication dates
  * and attempts to retrieve and update the correct publication dates.
  */
-export async function updateJournalPublicationDates(limit: number = 50): Promise<{
+export async function updateJournalPublicationDates(
+  limit: number = 50,
+): Promise<{
   success: boolean;
   totalUpdated: number;
   failedDois: string[];
@@ -26,65 +28,66 @@ export async function updateJournalPublicationDates(limit: number = 50): Promise
     const studiesToUpdate = await db
       .select()
       .from(studies)
-      .where(
-        not(isNull(studies.doi)),
-        isNull(studies.journalPublishDate)
-      )
+      .where(not(isNull(studies.doi)), isNull(studies.journalPublishDate))
       .limit(limit);
-    
+
     if (!studiesToUpdate.length) {
       return {
         success: true,
         totalUpdated: 0,
         failedDois: [],
-        message: 'No studies found that need journal publication date updates'
+        message: "No studies found that need journal publication date updates",
       };
     }
-    
+
     const failedDois: string[] = [];
     let totalUpdated = 0;
-    
+
     // Process each study
     for (const study of studiesToUpdate) {
       if (!study.doi) continue;
-      
+
       try {
         // Find the journal publication date from multiple data sources
         const journalPublishDate = await findJournalPublicationDate(study.doi);
-        
+
         if (!journalPublishDate) {
           failedDois.push(study.doi);
           continue;
         }
-        
+
         // Update the study with the found date
-        await db.update(studies)
+        await db
+          .update(studies)
           .set({ journalPublishDate })
           .where(eq(studies.id, study.id));
-        
+
         totalUpdated++;
-        
+
         // Add a small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
-        console.error(`Error updating journal date for DOI ${study.doi}:`, error);
+        console.error(
+          `Error updating journal date for DOI ${study.doi}:`,
+          error,
+        );
         failedDois.push(study.doi);
       }
     }
-    
+
     return {
       success: true,
       totalUpdated,
       failedDois,
-      message: `Updated ${totalUpdated} studies with journal publication dates. Failed for ${failedDois.length} DOIs.`
+      message: `Updated ${totalUpdated} studies with journal publication dates. Failed for ${failedDois.length} DOIs.`,
     };
   } catch (error) {
-    console.error('Error updating journal publication dates:', error);
+    console.error("Error updating journal publication dates:", error);
     return {
       success: false,
       totalUpdated: 0,
       failedDois: [],
-      message: `Error updating journal publication dates: ${error.message}`
+      message: `Error updating journal publication dates: ${error.message}`,
     };
   }
 }
@@ -104,11 +107,11 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
   } catch (error) {
     console.log(`CrossRef lookup failed for DOI ${doi}:`, error.message);
   }
-  
+
   // Try Europe PMC as a backup
   try {
     const europePmcData = await getArticleByDOI(doi);
-    
+
     // Check journal issue date
     if (europePmcData?.journalInfo?.journalIssueDate) {
       const dateStr = europePmcData.journalInfo.journalIssueDate;
@@ -117,18 +120,22 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
         return formattedDate;
       }
     }
-    
+
     // Check first publication date
     if (europePmcData?.firstPublicationDate) {
-      const formattedDate = formatEuropePMCDate(europePmcData.firstPublicationDate);
+      const formattedDate = formatEuropePMCDate(
+        europePmcData.firstPublicationDate,
+      );
       if (formattedDate) {
         return formattedDate;
       }
     }
-    
+
     // Check electronic publication date
     if (europePmcData?.electronicPublicationDate) {
-      const formattedDate = formatEuropePMCDate(europePmcData.electronicPublicationDate);
+      const formattedDate = formatEuropePMCDate(
+        europePmcData.electronicPublicationDate,
+      );
       if (formattedDate) {
         return formattedDate;
       }
@@ -136,25 +143,25 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
   } catch (error) {
     console.log(`Europe PMC lookup failed for DOI ${doi}:`, error.message);
   }
-  
+
   // Last resort: Try DOI.org API
   try {
     const response = await axios.get(`https://doi.org/${doi}`, {
       headers: {
-        'Accept': 'application/json'
-      }
+        Accept: "application/json",
+      },
     });
-    
+
     if (response.data.published) {
       const publishedDate = new Date(response.data.published);
       if (!isNaN(publishedDate.getTime())) {
-        return publishedDate.toISOString().split('T')[0];
+        return publishedDate.toISOString().split("T")[0];
       }
     }
   } catch (error) {
     console.log(`DOI.org lookup failed for DOI ${doi}:`, error.message);
   }
-  
+
   return null;
 }
 
@@ -163,7 +170,7 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
  */
 function extractCrossRefDate(data: any): string | null {
   if (!data) return null;
-  
+
   // Try to get the publication date from published field
   if (data.published) {
     const dateParts = data.published["date-parts"]?.[0];
@@ -171,7 +178,7 @@ function extractCrossRefDate(data: any): string | null {
       return formatDateParts(dateParts);
     }
   }
-  
+
   // Try created date as fallback
   if (data.created) {
     const dateParts = data.created["date-parts"]?.[0];
@@ -179,7 +186,7 @@ function extractCrossRefDate(data: any): string | null {
       return formatDateParts(dateParts);
     }
   }
-  
+
   return null;
 }
 
@@ -188,8 +195,10 @@ function extractCrossRefDate(data: any): string | null {
  */
 function formatDateParts(dateParts: number[]): string {
   const year = dateParts[0];
-  const month = dateParts.length > 1 ? String(dateParts[1]).padStart(2, '0') : '01';
-  const day = dateParts.length > 2 ? String(dateParts[2]).padStart(2, '0') : '01';
+  const month =
+    dateParts.length > 1 ? String(dateParts[1]).padStart(2, "0") : "01";
+  const day =
+    dateParts.length > 2 ? String(dateParts[2]).padStart(2, "0") : "01";
   return `${year}-${month}-${day}`;
 }
 
@@ -198,24 +207,24 @@ function formatDateParts(dateParts: number[]): string {
  */
 function formatEuropePMCDate(dateStr: string): string | null {
   try {
-    const dateParts = dateStr.split(' ');
+    const dateParts = dateStr.split(" ");
     if (dateParts.length === 0) return null;
-    
+
     const year = dateParts[0];
-    let month = '01';
-    let day = '01';
-    
+    let month = "01";
+    let day = "01";
+
     if (dateParts.length >= 2) {
       month = getMonthNumber(dateParts[1]);
-      
+
       if (dateParts.length >= 3) {
         day = padZero(parseInt(dateParts[2]));
       }
     }
-    
+
     return `${year}-${month}-${day}`;
   } catch (error) {
-    console.error('Error formatting Europe PMC date:', error);
+    console.error("Error formatting Europe PMC date:", error);
     return null;
   }
 }
@@ -225,21 +234,32 @@ function formatEuropePMCDate(dateStr: string): string | null {
  */
 function getMonthNumber(monthName: string): string {
   const months: { [key: string]: string } = {
-    'Jan': '01', 'January': '01',
-    'Feb': '02', 'February': '02', 
-    'Mar': '03', 'March': '03',
-    'Apr': '04', 'April': '04',
-    'May': '05',
-    'Jun': '06', 'June': '06',
-    'Jul': '07', 'July': '07',
-    'Aug': '08', 'August': '08',
-    'Sep': '09', 'September': '09',
-    'Oct': '10', 'October': '10',
-    'Nov': '11', 'November': '11',
-    'Dec': '12', 'December': '12'
+    Jan: "01",
+    January: "01",
+    Feb: "02",
+    February: "02",
+    Mar: "03",
+    March: "03",
+    Apr: "04",
+    April: "04",
+    May: "05",
+    Jun: "06",
+    June: "06",
+    Jul: "07",
+    July: "07",
+    Aug: "08",
+    August: "08",
+    Sep: "09",
+    September: "09",
+    Oct: "10",
+    October: "10",
+    Nov: "11",
+    November: "11",
+    Dec: "12",
+    December: "12",
   };
-  
-  return months[monthName] || '01';
+
+  return months[monthName] || "01";
 }
 
 /**

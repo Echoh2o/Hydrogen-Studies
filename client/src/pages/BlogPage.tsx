@@ -6,25 +6,29 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft, Calendar, Eye, Share } from "lucide-react";
 import { Helmet } from "react-helmet";
-import ReactMarkdown from 'react-markdown';
-import SiteHeader from '@/components/layout/SiteHeader';
+import ReactMarkdown from "react-markdown";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function BlogPage() {
   const { id } = useParams();
   const blogId = parseInt(id);
-  
+
   // Fetch blog article
-  const { data: blog, isLoading, error } = useQuery({
+  const {
+    data: blog,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [`/api/blogs/${blogId}`],
-    enabled: !!blogId
+    enabled: !!blogId,
   });
-  
+
   // Fetch related study
   const { data: study } = useQuery({
     queryKey: [`/api/studies/${blog?.studyId}`],
-    enabled: !!blog?.studyId
+    enabled: !!blog?.studyId,
   });
-  
+
   // Show loading state
   if (isLoading) {
     return (
@@ -42,7 +46,7 @@ export default function BlogPage() {
       </div>
     );
   }
-  
+
   // Show error state
   if (error) {
     return (
@@ -56,56 +60,58 @@ export default function BlogPage() {
       </div>
     );
   }
-  
+
   // If blog not found
   if (!blog) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Article Not Found</h1>
-        <p className="text-neutral-600 mb-6">The article you're looking for doesn't exist or has been removed.</p>
+        <p className="text-neutral-600 mb-6">
+          The article you're looking for doesn't exist or has been removed.
+        </p>
         <Link to="/">
           <Button>Return to Homepage</Button>
         </Link>
       </div>
     );
   }
-  
+
   return (
     <>
       <SiteHeader />
       <Helmet>
         <title>{blog.title} | Hydrogen Studies Blog</title>
         <meta name="description" content={blog.summary} />
-        
+
         {/* Schema.org markup for article */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Article",
-            "headline": blog.title,
-            "description": blog.summary,
-            "image": blog.imageUrl || "",
-            "datePublished": blog.createdAt,
-            "author": {
+            headline: blog.title,
+            description: blog.summary,
+            image: blog.imageUrl || "",
+            datePublished: blog.createdAt,
+            author: {
               "@type": "Organization",
-              "name": "Hydrogen Studies Research"
+              name: "Hydrogen Studies Research",
             },
-            "publisher": {
+            publisher: {
               "@type": "Organization",
-              "name": "Hydrogen Studies Research",
-              "logo": {
+              name: "Hydrogen Studies Research",
+              logo: {
                 "@type": "ImageObject",
-                "url": "/logo.png"
-              }
+                url: "/logo.png",
+              },
             },
-            "mainEntityOfPage": {
+            mainEntityOfPage: {
               "@type": "WebPage",
-              "@id": window.location.href
-            }
+              "@id": window.location.href,
+            },
           })}
         </script>
       </Helmet>
-      
+
       <div className="bg-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Back button */}
@@ -117,10 +123,12 @@ export default function BlogPage() {
               </Button>
             </Link>
           </div>
-          
+
           {/* Article header */}
           <header className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-3">{blog.title}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-3">
+              {blog.title}
+            </h1>
             <div className="flex items-center text-neutral-500 text-sm mb-6">
               <span className="flex items-center mr-4">
                 <Calendar className="h-4 w-4 mr-1" />
@@ -131,18 +139,18 @@ export default function BlogPage() {
                 {blog.viewCount || 0} views
               </span>
             </div>
-            
+
             {/* Featured image */}
             {blog.imageUrl && (
               <div className="mb-6">
-                <img 
+                <img
                   src={blog.imageUrl}
                   alt={blog.imageAlt || "Article illustration"}
                   className="w-full h-auto max-h-[400px] object-cover rounded-lg shadow-md"
                 />
               </div>
             )}
-            
+
             {/* Article summary */}
             <div className="bg-neutral-50 p-4 rounded-md border border-neutral-200 mb-6">
               <p className="text-neutral-700 font-medium italic">
@@ -150,18 +158,18 @@ export default function BlogPage() {
               </p>
             </div>
           </header>
-          
+
           {/* Article content */}
           <article className="prose prose-neutral max-w-none mb-8">
-            <ReactMarkdown>
-              {blog.content}
-            </ReactMarkdown>
+            <ReactMarkdown>{blog.content}</ReactMarkdown>
           </article>
-          
+
           {/* Related study box */}
           {study && (
             <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 mb-8">
-              <h3 className="text-xl font-semibold mb-2">Based on Scientific Research</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Based on Scientific Research
+              </h3>
               <p className="text-neutral-700 mb-4">
                 This article is based on peer-reviewed scientific research:
               </p>
@@ -171,24 +179,23 @@ export default function BlogPage() {
                   <strong>Authors:</strong> {study.authors}
                 </p>
                 <p className="text-sm text-neutral-600 mb-3">
-                  <strong>Published:</strong> {formatDate(study.publishDate)} in {study.journal}
+                  <strong>Published:</strong> {formatDate(study.publishDate)} in{" "}
+                  {study.journal}
                 </p>
                 <Link to={`/study/${study.id}`}>
-                  <Button size="sm">
-                    View Original Research
-                  </Button>
+                  <Button size="sm">View Original Research</Button>
                 </Link>
               </div>
             </div>
           )}
-          
+
           {/* Share section */}
           <div className="border-t border-b py-6 my-8">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Share this article</h3>
               <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);

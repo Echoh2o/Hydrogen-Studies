@@ -1,43 +1,49 @@
-
-import { Router } from 'express';
-import { db } from '../db';
-import { studies } from '../../shared/schema';
-import { sql } from 'drizzle-orm';
+import { Router } from "express";
+import { db } from "../db";
+import { studies } from "../../shared/schema";
+import { sql } from "drizzle-orm";
 
 const router = Router();
 
 // Get comprehensive analytics data
-router.get('/analytics', async (req, res) => {
+router.get("/analytics", async (req, res) => {
   try {
     // Get basic statistics
-    const totalStudiesResult = await db.select({ count: sql<number>`count(*)` }).from(studies);
+    const totalStudiesResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(studies);
     const totalStudies = totalStudiesResult[0]?.count || 0;
 
     // Get citation statistics
-    const citationStats = await db.select({
-      totalCitations: sql<number>`sum(citation_count)`,
-      avgCitations: sql<number>`avg(citation_count)`,
-      maxCitations: sql<number>`max(citation_count)`
-    }).from(studies).where(sql`citation_count IS NOT NULL`);
+    const citationStats = await db
+      .select({
+        totalCitations: sql<number>`sum(citation_count)`,
+        avgCitations: sql<number>`avg(citation_count)`,
+        maxCitations: sql<number>`max(citation_count)`,
+      })
+      .from(studies)
+      .where(sql`citation_count IS NOT NULL`);
 
     // Get studies with citations for network analysis
-    const citedStudiesResult = await db.select({ count: sql<number>`count(*)` })
+    const citedStudiesResult = await db
+      .select({ count: sql<number>`count(*)` })
       .from(studies)
       .where(sql`citation_count > 0`);
 
     const connectedStudies = citedStudiesResult[0]?.count || 0;
 
     // Get high impact studies
-    const highImpactStudies = await db.select({
-      id: studies.id,
-      title: studies.title,
-      citations: studies.citationCount,
-      year: sql<number>`EXTRACT(YEAR FROM publish_date)`
-    })
-    .from(studies)
-    .where(sql`citation_count > 10`)
-    .orderBy(sql`citation_count DESC`)
-    .limit(10);
+    const highImpactStudies = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        citations: studies.citationCount,
+        year: sql<number>`EXTRACT(YEAR FROM publish_date)`,
+      })
+      .from(studies)
+      .where(sql`citation_count > 10`)
+      .orderBy(sql`citation_count DESC`)
+      .limit(10);
 
     res.json({
       totalStudies,
@@ -45,16 +51,15 @@ router.get('/analytics', async (req, res) => {
       avgCitations: citationStats[0]?.avgCitations || 0,
       maxCitations: citationStats[0]?.maxCitations || 0,
       connectedStudies,
-      highImpactStudies: highImpactStudies.map(study => ({
+      highImpactStudies: highImpactStudies.map((study) => ({
         title: study.title,
         citations: study.citations || 0,
-        year: study.year || new Date().getFullYear()
-      }))
+        year: study.year || new Date().getFullYear(),
+      })),
     });
-
   } catch (error) {
-    console.error('Error fetching analytics data:', error);
-    
+    console.error("Error fetching analytics data:", error);
+
     // Return fallback data instead of error
     res.json({
       totalStudies: 1326,
@@ -63,16 +68,29 @@ router.get('/analytics', async (req, res) => {
       maxCitations: 425,
       connectedStudies: 850,
       highImpactStudies: [
-        { title: "Molecular hydrogen: a preventive and therapeutic medical gas", citations: 425, year: 2010 },
-        { title: "Hydrogen water prevents oxidative stress in athletes", citations: 318, year: 2012 },
-        { title: "Effects of hydrogen-rich water on fatigue in hemodialysis patients", citations: 267, year: 2014 }
-      ]
+        {
+          title: "Molecular hydrogen: a preventive and therapeutic medical gas",
+          citations: 425,
+          year: 2010,
+        },
+        {
+          title: "Hydrogen water prevents oxidative stress in athletes",
+          citations: 318,
+          year: 2012,
+        },
+        {
+          title:
+            "Effects of hydrogen-rich water on fatigue in hemodialysis patients",
+          citations: 267,
+          year: 2014,
+        },
+      ],
     });
   }
 });
 
 // Get publication timeline data
-router.get('/timeline', async (req, res) => {
+router.get("/timeline", async (req, res) => {
   try {
     // Get yearly publication counts
     const yearlyDataQuery = `
@@ -100,7 +118,7 @@ router.get('/timeline', async (req, res) => {
       year: parseInt(row.year),
       annual: parseInt(row.annual),
       cumulative: parseInt(row.cumulative),
-      growthRate: parseFloat(row.growth_rate) || 0
+      growthRate: parseFloat(row.growth_rate) || 0,
     }));
 
     // Get category breakdown by year
@@ -132,18 +150,17 @@ router.get('/timeline', async (req, res) => {
       neurological: parseInt(row.neurological),
       metabolic: parseInt(row.metabolic),
       inflammatory: parseInt(row.inflammatory),
-      other: parseInt(row.other)
+      other: parseInt(row.other),
     }));
 
     res.json({
       yearlyData,
       categoryBreakdown,
-      cumulativeData: yearlyData // Same data, different perspective
+      cumulativeData: yearlyData, // Same data, different perspective
     });
-
   } catch (error) {
-    console.error('Error fetching timeline data:', error);
-    
+    console.error("Error fetching timeline data:", error);
+
     // Return fallback timeline data
     const fallbackYearlyData = [
       { year: 2010, annual: 75, cumulative: 412, growthRate: 21 },
@@ -159,26 +176,26 @@ router.get('/timeline', async (req, res) => {
       { year: 2020, annual: 305, cumulative: 2201, growthRate: 14 },
       { year: 2021, annual: 348, cumulative: 2549, growthRate: 14 },
       { year: 2022, annual: 395, cumulative: 2944, growthRate: 14 },
-      { year: 2023, annual: 450, cumulative: 3394, growthRate: 14 }
+      { year: 2023, annual: 450, cumulative: 3394, growthRate: 14 },
     ];
-    
+
     res.json({
       yearlyData: fallbackYearlyData,
-      categoryBreakdown: fallbackYearlyData.map(d => ({
+      categoryBreakdown: fallbackYearlyData.map((d) => ({
         year: d.year,
         cardiovascular: Math.floor(d.annual * 0.25),
-        neurological: Math.floor(d.annual * 0.20),
+        neurological: Math.floor(d.annual * 0.2),
         metabolic: Math.floor(d.annual * 0.18),
         inflammatory: Math.floor(d.annual * 0.22),
-        other: Math.floor(d.annual * 0.15)
+        other: Math.floor(d.annual * 0.15),
       })),
-      cumulativeData: fallbackYearlyData
+      cumulativeData: fallbackYearlyData,
     });
   }
 });
 
 // Get citation network data
-router.get('/citation-network', async (req, res) => {
+router.get("/citation-network", async (req, res) => {
   try {
     // Get studies with citation data for network nodes
     const nodesQuery = `
@@ -200,31 +217,37 @@ router.get('/citation-network', async (req, res) => {
     const nodesResult = await db.execute(sql.raw(nodesQuery));
     const nodes = nodesResult.rows.map((row: any) => ({
       id: row.id.toString(),
-      title: row.title || 'Untitled Study',
+      title: row.title || "Untitled Study",
       citations: parseInt(row.citations) || 0,
-      category: row.category || 'General',
+      category: row.category || "General",
       year: parseInt(row.year) || new Date().getFullYear(),
-      connections: [] // Will be populated with actual citation data
+      connections: [], // Will be populated with actual citation data
     }));
 
     // Generate simplified citation links based on categories and years
     // In a real implementation, this would come from actual citation data
-    const links: Array<{source: string, target: string, strength: number}> = [];
-    
+    const links: Array<{ source: string; target: string; strength: number }> =
+      [];
+
     nodes.forEach((sourceNode, sourceIndex) => {
       // Create connections to studies in the same category or nearby years
       nodes.forEach((targetNode, targetIndex) => {
         if (sourceIndex !== targetIndex && links.length < 200) {
           const categoryMatch = sourceNode.category === targetNode.category;
-          const yearProximity = Math.abs(sourceNode.year - targetNode.year) <= 2;
-          const citationSimilarity = Math.abs(sourceNode.citations - targetNode.citations) < 50;
-          
-          if ((categoryMatch && yearProximity) || (categoryMatch && citationSimilarity)) {
+          const yearProximity =
+            Math.abs(sourceNode.year - targetNode.year) <= 2;
+          const citationSimilarity =
+            Math.abs(sourceNode.citations - targetNode.citations) < 50;
+
+          if (
+            (categoryMatch && yearProximity) ||
+            (categoryMatch && citationSimilarity)
+          ) {
             const strength = categoryMatch ? 0.8 : 0.4;
             links.push({
               source: sourceNode.id,
               target: targetNode.id,
-              strength
+              strength,
             });
           }
         }
@@ -232,16 +255,16 @@ router.get('/citation-network', async (req, res) => {
     });
 
     // Get top cited studies
-    const topCited = nodes.slice(0, 10).map(node => ({
+    const topCited = nodes.slice(0, 10).map((node) => ({
       title: node.title,
       citations: node.citations,
       year: node.year,
-      category: node.category
+      category: node.category,
     }));
 
     // Calculate network statistics
     const totalConnections = links.length;
-    const clusters = new Set(nodes.map(n => n.category)).size;
+    const clusters = new Set(nodes.map((n) => n.category)).size;
 
     res.json({
       nodes,
@@ -252,30 +275,60 @@ router.get('/citation-network', async (req, res) => {
         totalNodes: nodes.length,
         totalConnections,
         clusters,
-        averageCitations: nodes.reduce((sum, node) => sum + node.citations, 0) / nodes.length
-      }
+        averageCitations:
+          nodes.reduce((sum, node) => sum + node.citations, 0) / nodes.length,
+      },
     });
-
   } catch (error) {
-    console.error('Error fetching citation network data:', error);
-    
+    console.error("Error fetching citation network data:", error);
+
     // Return fallback network data
     const fallbackNodes = [
-      { id: '1', title: 'Molecular hydrogen: preventive and therapeutic medical gas', citations: 425, category: 'Cardiovascular', year: 2010 },
-      { id: '2', title: 'Hydrogen water prevents oxidative stress in athletes', citations: 318, category: 'Exercise', year: 2012 },
-      { id: '3', title: 'Effects of hydrogen-rich water on fatigue in hemodialysis', citations: 267, category: 'Renal', year: 2014 },
-      { id: '4', title: 'Hydrogen inhalation therapy for COPD patients', citations: 189, category: 'Respiratory', year: 2016 },
-      { id: '5', title: 'Neuroprotective effects of molecular hydrogen', citations: 234, category: 'Neurological', year: 2015 }
+      {
+        id: "1",
+        title: "Molecular hydrogen: preventive and therapeutic medical gas",
+        citations: 425,
+        category: "Cardiovascular",
+        year: 2010,
+      },
+      {
+        id: "2",
+        title: "Hydrogen water prevents oxidative stress in athletes",
+        citations: 318,
+        category: "Exercise",
+        year: 2012,
+      },
+      {
+        id: "3",
+        title: "Effects of hydrogen-rich water on fatigue in hemodialysis",
+        citations: 267,
+        category: "Renal",
+        year: 2014,
+      },
+      {
+        id: "4",
+        title: "Hydrogen inhalation therapy for COPD patients",
+        citations: 189,
+        category: "Respiratory",
+        year: 2016,
+      },
+      {
+        id: "5",
+        title: "Neuroprotective effects of molecular hydrogen",
+        citations: 234,
+        category: "Neurological",
+        year: 2015,
+      },
     ];
-    
+
     const fallbackLinks = [
-      { source: '1', target: '2', strength: 0.8 },
-      { source: '1', target: '5', strength: 0.7 },
-      { source: '2', target: '3', strength: 0.6 },
-      { source: '3', target: '4', strength: 0.4 },
-      { source: '4', target: '5', strength: 0.5 }
+      { source: "1", target: "2", strength: 0.8 },
+      { source: "1", target: "5", strength: 0.7 },
+      { source: "2", target: "3", strength: 0.6 },
+      { source: "3", target: "4", strength: 0.4 },
+      { source: "4", target: "5", strength: 0.5 },
     ];
-    
+
     res.json({
       nodes: fallbackNodes,
       links: fallbackLinks,
@@ -285,14 +338,14 @@ router.get('/citation-network', async (req, res) => {
         totalNodes: fallbackNodes.length,
         totalConnections: fallbackLinks.length,
         clusters: 5,
-        averageCitations: 246.6
-      }
+        averageCitations: 246.6,
+      },
     });
   }
 });
 
 // Get research impact metrics
-router.get('/impact-metrics', async (req, res) => {
+router.get("/impact-metrics", async (req, res) => {
   try {
     // Calculate H-index approximation
     const hIndexQuery = `
@@ -304,8 +357,10 @@ router.get('/impact-metrics', async (req, res) => {
     `;
 
     const citationResult = await db.execute(sql.raw(hIndexQuery));
-    const citations = citationResult.rows.map((row: any) => parseInt(row.citation_count));
-    
+    const citations = citationResult.rows.map((row: any) =>
+      parseInt(row.citation_count),
+    );
+
     // Calculate H-index
     let hIndex = 0;
     for (let i = 0; i < citations.length; i++) {
@@ -334,27 +389,31 @@ router.get('/impact-metrics', async (req, res) => {
     const recentTrends = trendsResult.rows.map((row: any) => ({
       year: parseInt(row.year),
       avgCitations: parseFloat(row.avg_citations),
-      studyCount: parseInt(row.study_count)
+      studyCount: parseInt(row.study_count),
     }));
 
     // Calculate growth in citations
-    const citationGrowth = recentTrends.length > 1 ? 
-      ((recentTrends[recentTrends.length - 1].avgCitations - recentTrends[0].avgCitations) / 
-       recentTrends[0].avgCitations * 100) : 0;
+    const citationGrowth =
+      recentTrends.length > 1
+        ? ((recentTrends[recentTrends.length - 1].avgCitations -
+            recentTrends[0].avgCitations) /
+            recentTrends[0].avgCitations) *
+          100
+        : 0;
 
     res.json({
       hIndex,
-      averageCitations: citations.reduce((sum, c) => sum + c, 0) / citations.length,
+      averageCitations:
+        citations.reduce((sum, c) => sum + c, 0) / citations.length,
       citationGrowth: Math.round(citationGrowth),
       recentTrends,
-      totalCitations: citations.reduce((sum, c) => sum + c, 0)
+      totalCitations: citations.reduce((sum, c) => sum + c, 0),
     });
-
   } catch (error) {
-    console.error('Error fetching impact metrics:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch impact metrics',
-      details: error instanceof Error ? error.message : 'Unknown error'
+    console.error("Error fetching impact metrics:", error);
+    res.status(500).json({
+      error: "Failed to fetch impact metrics",
+      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });

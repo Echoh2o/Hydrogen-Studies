@@ -1,11 +1,24 @@
 import React, { useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Users, UserPlus, Shield, Search, Filter } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -22,7 +35,7 @@ export default function UsersPage() {
       role: "admin",
       status: "active",
       lastLogin: "2025-06-17",
-      joinDate: "2025-01-01"
+      joinDate: "2025-01-01",
     },
     {
       id: 2,
@@ -31,7 +44,7 @@ export default function UsersPage() {
       role: "editor",
       status: "active",
       lastLogin: "2025-06-16",
-      joinDate: "2025-02-15"
+      joinDate: "2025-02-15",
     },
     {
       id: 3,
@@ -40,37 +53,49 @@ export default function UsersPage() {
       role: "reviewer",
       status: "active",
       lastLogin: "2025-06-15",
-      joinDate: "2025-03-01"
-    }
+      joinDate: "2025-03-01",
+    },
   ];
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = selectedRole === "all" || user.role === selectedRole;
     return matchesSearch && matchesRole;
   });
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case "admin": return "destructive";
-      case "editor": return "default";
-      case "reviewer": return "secondary";
-      default: return "outline";
+      case "admin":
+        return "destructive";
+      case "editor":
+        return "default";
+      case "reviewer":
+        return "secondary";
+      default:
+        return "outline";
     }
   };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "active": return "default";
-      case "inactive": return "secondary";
-      case "suspended": return "destructive";
-      default: return "outline";
+      case "active":
+        return "default";
+      case "inactive":
+        return "secondary";
+      case "suspended":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
   return (
-    <AdminLayout title="User Management" description="Manage user accounts, roles, and permissions">
+    <AdminLayout
+      title="User Management"
+      description="Manage user accounts, roles, and permissions"
+    >
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
@@ -139,7 +164,9 @@ export default function UsersPage() {
                           <TableCell>
                             <div>
                               <div className="font-medium">{user.name}</div>
-                              <div className="text-sm text-muted-foreground">{user.email}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {user.email}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -155,7 +182,9 @@ export default function UsersPage() {
                           <TableCell>{user.lastLogin}</TableCell>
                           <TableCell>{user.joinDate}</TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">Edit</Button>
+                            <Button variant="ghost" size="sm">
+                              Edit
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -237,8 +266,9 @@ export default function UsersPage() {
                 <Alert>
                   <Shield className="h-4 w-4" />
                   <AlertDescription>
-                    Role permissions are currently managed through the application code. 
-                    Advanced permission management can be implemented as needed.
+                    Role permissions are currently managed through the
+                    application code. Advanced permission management can be
+                    implemented as needed.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -257,7 +287,9 @@ export default function UsersPage() {
                 <Alert>
                   <Users className="h-4 w-4" />
                   <AlertDescription>
-                    Activity logging will track user actions once the system is fully deployed and users begin interacting with the platform.
+                    Activity logging will track user actions once the system is
+                    fully deployed and users begin interacting with the
+                    platform.
                   </AlertDescription>
                 </Alert>
               </CardContent>
