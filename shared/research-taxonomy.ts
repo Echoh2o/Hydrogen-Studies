@@ -14,8 +14,8 @@ export const researchTaxonomy = [
       "Neurological Benefits",
       "Respiratory Benefits",
       "Skin Health",
-      "Gut Health"
-    ]
+      "Gut Health",
+    ],
   },
   {
     name: "Demographics",
@@ -26,8 +26,8 @@ export const researchTaxonomy = [
       "Elderly",
       "Athletes",
       "Pregnant Women",
-      "People with Chronic Conditions"
-    ]
+      "People with Chronic Conditions",
+    ],
   },
   {
     name: "Mechanisms of Action",
@@ -39,8 +39,8 @@ export const researchTaxonomy = [
       "Autophagy Enhancement",
       "Inflammatory Pathway Modulation",
       "Immune System Modulation",
-      "Endothelial Function"
-    ]
+      "Endothelial Function",
+    ],
   },
   {
     name: "Delivery Methods",
@@ -51,8 +51,8 @@ export const researchTaxonomy = [
       "Hydrogen Bathing",
       "Hydrogen Tablets",
       "Topical Hydrogen Application",
-      "Hydrogen-producing Intestinal Bacteria"
-    ]
+      "Hydrogen-producing Intestinal Bacteria",
+    ],
   },
   {
     name: "Medical Conditions",
@@ -66,8 +66,8 @@ export const researchTaxonomy = [
       "Skin Conditions",
       "Respiratory Conditions",
       "Post-exercise Recovery",
-      "Chronic Fatigue"
-    ]
+      "Chronic Fatigue",
+    ],
   },
   {
     name: "Research Methodologies",
@@ -78,8 +78,8 @@ export const researchTaxonomy = [
       "Systematic Reviews",
       "Meta-analyses",
       "Case Studies",
-      "Observational Studies"
-    ]
+      "Observational Studies",
+    ],
   },
   {
     name: "Time Frames",
@@ -88,8 +88,8 @@ export const researchTaxonomy = [
       "Short-term Effects",
       "Medium-term Effects",
       "Long-term Effects",
-      "Preventative Effects"
-    ]
+      "Preventative Effects",
+    ],
   },
   {
     name: "Metrics & Outcomes",
@@ -100,7 +100,7 @@ export const researchTaxonomy = [
       "Performance Metrics",
       "Survival Rates",
       "Side Effects",
-      "Dosage Optimization"
-    ]
-  }
+      "Dosage Optimization",
+    ],
+  },
 ];

@@ -1,4 +1,12 @@
-import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  timestamp,
+  primaryKey,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { studies } from "./schema";
@@ -16,14 +24,22 @@ export const benefits = pgTable("benefits", {
 });
 
 // Study benefits mapping table
-export const studyBenefits = pgTable("study_benefits", {
-  studyId: integer("study_id").notNull().references(() => studies.id),
-  benefitId: integer("benefit_id").notNull().references(() => benefits.id),
-}, (table) => {
-  return {
-    pk: primaryKey({ columns: [table.studyId, table.benefitId] }),
-  }
-});
+export const studyBenefits = pgTable(
+  "study_benefits",
+  {
+    studyId: integer("study_id")
+      .notNull()
+      .references(() => studies.id),
+    benefitId: integer("benefit_id")
+      .notNull()
+      .references(() => benefits.id),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.studyId, table.benefitId] }),
+    };
+  },
+);
 
 // Demographics table schema (men, women, children, athletes, elderly)
 export const demographics = pgTable("demographics", {
@@ -38,14 +54,22 @@ export const demographics = pgTable("demographics", {
 });
 
 // Study demographics mapping table
-export const studyDemographics = pgTable("study_demographics", {
-  studyId: integer("study_id").notNull().references(() => studies.id),
-  demographicId: integer("demographic_id").notNull().references(() => demographics.id),
-}, (table) => {
-  return {
-    pk: primaryKey({ columns: [table.studyId, table.demographicId] }),
-  }
-});
+export const studyDemographics = pgTable(
+  "study_demographics",
+  {
+    studyId: integer("study_id")
+      .notNull()
+      .references(() => studies.id),
+    demographicId: integer("demographic_id")
+      .notNull()
+      .references(() => demographics.id),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.studyId, table.demographicId] }),
+    };
+  },
+);
 
 // Mechanisms table schema (antioxidant, anti-inflammatory, mitochondrial, apoptosis-regulation)
 export const mechanisms = pgTable("mechanisms", {
@@ -60,14 +84,22 @@ export const mechanisms = pgTable("mechanisms", {
 });
 
 // Study mechanisms mapping table
-export const studyMechanisms = pgTable("study_mechanisms", {
-  studyId: integer("study_id").notNull().references(() => studies.id),
-  mechanismId: integer("mechanism_id").notNull().references(() => mechanisms.id),
-}, (table) => {
-  return {
-    pk: primaryKey({ columns: [table.studyId, table.mechanismId] }),
-  }
-});
+export const studyMechanisms = pgTable(
+  "study_mechanisms",
+  {
+    studyId: integer("study_id")
+      .notNull()
+      .references(() => studies.id),
+    mechanismId: integer("mechanism_id")
+      .notNull()
+      .references(() => mechanisms.id),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.studyId, table.mechanismId] }),
+    };
+  },
+);
 
 // Delivery methods table schema (inhalation, drinking water, bathing, IV, tablet)
 export const deliveryMethods = pgTable("delivery_methods", {
@@ -82,14 +114,22 @@ export const deliveryMethods = pgTable("delivery_methods", {
 });
 
 // Study delivery methods mapping table
-export const studyDeliveryMethods = pgTable("study_delivery_methods", {
-  studyId: integer("study_id").notNull().references(() => studies.id),
-  deliveryMethodId: integer("delivery_method_id").notNull().references(() => deliveryMethods.id),
-}, (table) => {
-  return {
-    pk: primaryKey({ columns: [table.studyId, table.deliveryMethodId] }),
-  }
-});
+export const studyDeliveryMethods = pgTable(
+  "study_delivery_methods",
+  {
+    studyId: integer("study_id")
+      .notNull()
+      .references(() => studies.id),
+    deliveryMethodId: integer("delivery_method_id")
+      .notNull()
+      .references(() => deliveryMethods.id),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.studyId, table.deliveryMethodId] }),
+    };
+  },
+);
 
 // Study duration categorization (acute, chronic, long-term follow-up)
 export const durationCategories = pgTable("duration_categories", {
@@ -103,19 +143,30 @@ export const durationCategories = pgTable("duration_categories", {
 });
 
 // Study duration mapping table
-export const studyDurations = pgTable("study_durations", {
-  studyId: integer("study_id").notNull().references(() => studies.id),
-  durationCategoryId: integer("duration_category_id").notNull().references(() => durationCategories.id),
-}, (table) => {
-  return {
-    pk: primaryKey({ columns: [table.studyId, table.durationCategoryId] }),
-  }
-});
+export const studyDurations = pgTable(
+  "study_durations",
+  {
+    studyId: integer("study_id")
+      .notNull()
+      .references(() => studies.id),
+    durationCategoryId: integer("duration_category_id")
+      .notNull()
+      .references(() => durationCategories.id),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.studyId, table.durationCategoryId] }),
+    };
+  },
+);
 
 // Study results interpretation for consumer-friendly display
 export const studyOutcomes = pgTable("study_outcomes", {
   id: serial("id").primaryKey(),
-  studyId: integer("study_id").notNull().references(() => studies.id).unique(),
+  studyId: integer("study_id")
+    .notNull()
+    .references(() => studies.id)
+    .unique(),
   plainEnglishSummary: text("plain_english_summary").notNull(),
   keyFindings: text("key_findings").array(),
   significanceLevel: text("significance_level"), // "significant", "trending", "inconclusive"
@@ -128,28 +179,53 @@ export const studyOutcomes = pgTable("study_outcomes", {
 });
 
 // Create insertion schemas
-export const insertBenefitSchema = createInsertSchema(benefits).omit({ id: true, createdAt: true });
+export const insertBenefitSchema = createInsertSchema(benefits).omit({
+  id: true,
+  createdAt: true,
+});
 export const insertStudyBenefitSchema = createInsertSchema(studyBenefits);
-export const insertDemographicSchema = createInsertSchema(demographics).omit({ id: true, createdAt: true });
-export const insertStudyDemographicSchema = createInsertSchema(studyDemographics);
-export const insertMechanismSchema = createInsertSchema(mechanisms).omit({ id: true, createdAt: true });
+export const insertDemographicSchema = createInsertSchema(demographics).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertStudyDemographicSchema =
+  createInsertSchema(studyDemographics);
+export const insertMechanismSchema = createInsertSchema(mechanisms).omit({
+  id: true,
+  createdAt: true,
+});
 export const insertStudyMechanismSchema = createInsertSchema(studyMechanisms);
-export const insertDeliveryMethodSchema = createInsertSchema(deliveryMethods).omit({ id: true, createdAt: true });
-export const insertStudyDeliveryMethodSchema = createInsertSchema(studyDeliveryMethods);
-export const insertDurationCategorySchema = createInsertSchema(durationCategories).omit({ id: true, createdAt: true });
+export const insertDeliveryMethodSchema = createInsertSchema(
+  deliveryMethods,
+).omit({ id: true, createdAt: true });
+export const insertStudyDeliveryMethodSchema =
+  createInsertSchema(studyDeliveryMethods);
+export const insertDurationCategorySchema = createInsertSchema(
+  durationCategories,
+).omit({ id: true, createdAt: true });
 export const insertStudyDurationSchema = createInsertSchema(studyDurations);
-export const insertStudyOutcomeSchema = createInsertSchema(studyOutcomes).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertStudyOutcomeSchema = createInsertSchema(studyOutcomes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 // Types for insertion
 export type InsertBenefit = z.infer<typeof insertBenefitSchema>;
 export type InsertStudyBenefit = z.infer<typeof insertStudyBenefitSchema>;
 export type InsertDemographic = z.infer<typeof insertDemographicSchema>;
-export type InsertStudyDemographic = z.infer<typeof insertStudyDemographicSchema>;
+export type InsertStudyDemographic = z.infer<
+  typeof insertStudyDemographicSchema
+>;
 export type InsertMechanism = z.infer<typeof insertMechanismSchema>;
 export type InsertStudyMechanism = z.infer<typeof insertStudyMechanismSchema>;
 export type InsertDeliveryMethod = z.infer<typeof insertDeliveryMethodSchema>;
-export type InsertStudyDeliveryMethod = z.infer<typeof insertStudyDeliveryMethodSchema>;
-export type InsertDurationCategory = z.infer<typeof insertDurationCategorySchema>;
+export type InsertStudyDeliveryMethod = z.infer<
+  typeof insertStudyDeliveryMethodSchema
+>;
+export type InsertDurationCategory = z.infer<
+  typeof insertDurationCategorySchema
+>;
 export type InsertStudyDuration = z.infer<typeof insertStudyDurationSchema>;
 export type InsertStudyOutcome = z.infer<typeof insertStudyOutcomeSchema>;
 

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { 
-  PlusCircle, 
-  Loader2, 
-  Search, 
+import {
+  PlusCircle,
+  Loader2,
+  Search,
   ArrowUpDown,
   Filter,
   Check,
@@ -15,7 +15,7 @@ import {
   ChevronsRight,
   Edit,
   Eye,
-  MoreHorizontal
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,14 +28,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -51,7 +58,7 @@ export default function StudiesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState("desc");
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -62,18 +69,26 @@ export default function StudiesPage() {
   queryParams.set("limit", pageSize.toString());
   queryParams.set("sortBy", sortBy);
   queryParams.set("sortOrder", sortOrder);
-  
+
   if (searchQuery) {
     queryParams.set("search", searchQuery);
   }
-  
+
   if (selectedCategory && selectedCategory !== "all") {
     queryParams.set("category", selectedCategory);
   }
 
   // Fetch studies with pagination
   const studiesQuery = useQuery({
-    queryKey: ["/api/studies", currentPage, pageSize, searchQuery, selectedCategory, sortBy, sortOrder],
+    queryKey: [
+      "/api/studies",
+      currentPage,
+      pageSize,
+      searchQuery,
+      selectedCategory,
+      sortBy,
+      sortOrder,
+    ],
     queryFn: async () => {
       const response = await fetch(`/api/studies?${queryParams.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch studies");
@@ -111,7 +126,9 @@ export default function StudiesPage() {
   const studies = studiesQuery.data?.data || [];
   const totalStudies = studiesQuery.data?.total || 0;
   const totalPages = studiesQuery.data?.totalPages || 1;
-  const categories = Array.isArray(categoriesQuery.data) ? categoriesQuery.data : [];
+  const categories = Array.isArray(categoriesQuery.data)
+    ? categoriesQuery.data
+    : [];
 
   // Handle search input change with debounce effect
   const handleSearchChange = (value: string) => {
@@ -140,8 +157,9 @@ export default function StudiesPage() {
   const goToFirstPage = () => setCurrentPage(1);
   const goToLastPage = () => setCurrentPage(totalPages);
   const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
-  const goToNextPage = () => setCurrentPage(Math.min(totalPages, currentPage + 1));
-  
+  const goToNextPage = () =>
+    setCurrentPage(Math.min(totalPages, currentPage + 1));
+
   const handlePageSizeChange = (newSize: string) => {
     setPageSize(parseInt(newSize));
     setCurrentPage(1); // Reset to first page on page size change
@@ -151,7 +169,7 @@ export default function StudiesPage() {
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -173,7 +191,7 @@ export default function StudiesPage() {
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   };
 
@@ -226,19 +244,17 @@ export default function StudiesPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => handleCategoryChange("all")}
                   className="flex items-center justify-between"
                   key="all"
                 >
                   All Categories
-                  {selectedCategory === "all" && (
-                    <Check className="h-4 w-4" />
-                  )}
+                  {selectedCategory === "all" && <Check className="h-4 w-4" />}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {categories.map((category) => (
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     key={category.name}
                     onClick={() => handleCategoryChange(category.name)}
                     className="flex items-center justify-between"
@@ -261,13 +277,19 @@ export default function StudiesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => toggleSort("publish_date")}>
-                  Date {sortBy === "publish_date" && (sortOrder === "asc" ? "(Oldest)" : "(Newest)")}
+                  Date{" "}
+                  {sortBy === "publish_date" &&
+                    (sortOrder === "asc" ? "(Oldest)" : "(Newest)")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => toggleSort("title")}>
-                  Title {sortBy === "title" && (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
+                  Title{" "}
+                  {sortBy === "title" &&
+                    (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => toggleSort("category")}>
-                  Category {sortBy === "category" && (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
+                  Category{" "}
+                  {sortBy === "category" &&
+                    (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -277,11 +299,18 @@ export default function StudiesPage() {
         {/* Results info */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground">
-            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalStudies)} of {totalStudies} studies
+            Showing {(currentPage - 1) * pageSize + 1} to{" "}
+            {Math.min(currentPage * pageSize, totalStudies)} of {totalStudies}{" "}
+            studies
           </p>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">Items per page:</label>
-            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <label className="text-sm text-muted-foreground">
+              Items per page:
+            </label>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={handlePageSizeChange}
+            >
               <SelectTrigger className="w-20">
                 <SelectValue />
               </SelectTrigger>
@@ -301,8 +330,8 @@ export default function StudiesPage() {
               No studies found matching your criteria.
             </p>
             {searchQuery || selectedCategory !== "all" ? (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedCategory("all");
@@ -335,7 +364,9 @@ export default function StudiesPage() {
                       <div className="max-w-[350px]">
                         <p className="font-medium truncate">{study.title}</p>
                         {study.journal && (
-                          <p className="text-sm text-muted-foreground truncate">{study.journal}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {study.journal}
+                          </p>
                         )}
                       </div>
                     </TableCell>
@@ -343,11 +374,15 @@ export default function StudiesPage() {
                       {study.category ? (
                         <Badge variant="outline">{study.category}</Badge>
                       ) : (
-                        <span className="text-muted-foreground">Uncategorized</span>
+                        <span className="text-muted-foreground">
+                          Uncategorized
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm truncate max-w-[200px]">{study.authors || "N/A"}</p>
+                      <p className="text-sm truncate max-w-[200px]">
+                        {study.authors || "N/A"}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <p className="text-sm">{formatDate(study.publishDate)}</p>
@@ -400,12 +435,14 @@ export default function StudiesPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            
+
             {/* Page numbers */}
             <div className="flex items-center gap-1">
-              {getPageNumbers().map((page, index) => (
+              {getPageNumbers().map((page, index) =>
                 page === -1 ? (
-                  <span key={`ellipsis-${index}`} className="px-2">...</span>
+                  <span key={`ellipsis-${index}`} className="px-2">
+                    ...
+                  </span>
                 ) : (
                   <Button
                     key={page}
@@ -416,10 +453,10 @@ export default function StudiesPage() {
                   >
                     {page}
                   </Button>
-                )
-              ))}
+                ),
+              )}
             </div>
-            
+
             <Button
               variant="outline"
               size="icon"
@@ -437,7 +474,7 @@ export default function StudiesPage() {
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <p className="text-sm text-muted-foreground">
             Page {currentPage} of {totalPages}
           </p>

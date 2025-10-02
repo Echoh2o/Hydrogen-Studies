@@ -1,26 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import WYSIWYGEditor from './WYSIWYGEditor';
-import { insertStudySchema, type InsertStudy } from '@shared/schema';
-import { z } from 'zod';
-import { 
-  Save, 
-  Eye, 
-  Globe, 
-  FileText, 
-  Tags, 
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import WYSIWYGEditor from "./WYSIWYGEditor";
+import { insertStudySchema, type InsertStudy } from "@shared/schema";
+import { z } from "zod";
+import {
+  Save,
+  Eye,
+  Globe,
+  FileText,
+  Tags,
   Image as ImageIcon,
   Link,
   Calendar,
@@ -30,8 +30,8 @@ import {
   Activity,
   Heart,
   Zap,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 // Extended schema for the form with all fields
 const studyFormSchema = insertStudySchema.extend({
@@ -50,7 +50,7 @@ interface StudyEditorProps {
   initialData?: Partial<StudyFormData>;
   onSave?: (study: any) => void;
   onCancel?: () => void;
-  mode?: 'create' | 'edit';
+  mode?: "create" | "edit";
 }
 
 const StudyEditor: React.FC<StudyEditorProps> = ({
@@ -58,39 +58,39 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
   initialData,
   onSave,
   onCancel,
-  mode = 'create'
+  mode = "create",
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [previewMode, setPreviewMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('basic');
+  const [activeTab, setActiveTab] = useState("basic");
 
   const form = useForm<StudyFormData>({
     resolver: zodResolver(studyFormSchema),
     defaultValues: {
-      title: '',
-      abstract: '',
-      authors: '',
-      journal: '',
-      publishDate: new Date().toISOString().split('T')[0],
-      category: '',
-      methods: '',
-      results: '',
-      conclusion: '',
-      doi: '',
-      url: '',
-      pdfUrl: '',
-      citationUrl: '',
-      imageUrl: '',
-      imageAlt: '',
-      plainLanguageTitle: '',
-      consumerFriendlyMethods: '',
-      consumerFriendlyResults: '',
-      consumerFriendlyConclusion: '',
-      seoTitle: '',
-      seoDescription: '',
-      seoKeywords: '',
-      slug: '',
+      title: "",
+      abstract: "",
+      authors: "",
+      journal: "",
+      publishDate: new Date().toISOString().split("T")[0],
+      category: "",
+      methods: "",
+      results: "",
+      conclusion: "",
+      doi: "",
+      url: "",
+      pdfUrl: "",
+      citationUrl: "",
+      imageUrl: "",
+      imageAlt: "",
+      plainLanguageTitle: "",
+      consumerFriendlyMethods: "",
+      consumerFriendlyResults: "",
+      consumerFriendlyConclusion: "",
+      seoTitle: "",
+      seoDescription: "",
+      seoKeywords: "",
+      slug: "",
       keywords: [],
       tags: [],
       healthBenefits: [],
@@ -100,31 +100,32 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
       isPublished: false,
       isFeatured: false,
       peerReviewed: true,
-      ...initialData
-    }
+      ...initialData,
+    },
   });
 
   const saveMutation = useMutation({
     mutationFn: async (data: StudyFormData) => {
-      const endpoint = studyId ? `/api/studies/${studyId}` : '/api/studies';
-      const method = studyId ? 'PUT' : 'POST';
+      const endpoint = studyId ? `/api/studies/${studyId}` : "/api/studies";
+      const method = studyId ? "PUT" : "POST";
       return apiRequest(method, endpoint, data);
     },
     onSuccess: (data) => {
       toast({
-        title: `Study ${mode === 'create' ? 'created' : 'updated'} successfully`,
-        description: `The study has been ${mode === 'create' ? 'created' : 'updated'} and saved.`,
+        title: `Study ${mode === "create" ? "created" : "updated"} successfully`,
+        description: `The study has been ${mode === "create" ? "created" : "updated"} and saved.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/studies'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
       onSave?.(data);
     },
     onError: (error: any) => {
       toast({
-        title: `Failed to ${mode === 'create' ? 'create' : 'update'} study`,
-        description: error.message || 'An error occurred while saving the study.',
-        variant: 'destructive',
+        title: `Failed to ${mode === "create" ? "create" : "update"} study`,
+        description:
+          error.message || "An error occurred while saving the study.",
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleSubmit = (data: StudyFormData) => {
@@ -134,24 +135,24 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
       .trim();
   };
 
   const handleTitleChange = (title: string) => {
-    form.setValue('title', title);
-    if (!form.getValues('slug')) {
-      form.setValue('slug', generateSlug(title));
+    form.setValue("title", title);
+    if (!form.getValues("slug")) {
+      form.setValue("slug", generateSlug(title));
     }
-    if (!form.getValues('seoTitle')) {
-      form.setValue('seoTitle', title);
+    if (!form.getValues("seoTitle")) {
+      form.setValue("seoTitle", title);
     }
   };
 
-  const keywordString = form.watch('keywords')?.join(', ') || '';
-  const tagString = form.watch('tags')?.join(', ') || '';
+  const keywordString = form.watch("keywords")?.join(", ") || "";
+  const tagString = form.watch("tags")?.join(", ") || "";
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -159,16 +160,15 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {mode === 'create' ? 'Create New Study' : 'Edit Study'}
+            {mode === "create" ? "Create New Study" : "Edit Study"}
           </h1>
           <p className="text-gray-600 mt-1">
-            {mode === 'create' 
-              ? 'Add a new research study to the database' 
-              : 'Modify the study details and content'
-            }
+            {mode === "create"
+              ? "Add a new research study to the database"
+              : "Modify the study details and content"}
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <Button
             type="button"
@@ -177,9 +177,9 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
             className="flex items-center"
           >
             <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? 'Edit' : 'Preview'}
+            {previewMode ? "Edit" : "Preview"}
           </Button>
-          
+
           <Button
             type="button"
             onClick={() => handleSubmit(form.getValues())}
@@ -191,9 +191,9 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {mode === 'create' ? 'Create Study' : 'Save Changes'}
+            {mode === "create" ? "Create Study" : "Save Changes"}
           </Button>
-          
+
           {onCancel && (
             <Button
               type="button"
@@ -214,37 +214,47 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
                 <Globe className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  Status: 
-                </span>
-                <Badge variant={form.watch('isPublished') ? 'default' : 'secondary'}>
-                  {form.watch('isPublished') ? 'Published' : 'Draft'}
+                <span className="text-sm text-gray-600">Status:</span>
+                <Badge
+                  variant={form.watch("isPublished") ? "default" : "secondary"}
+                >
+                  {form.watch("isPublished") ? "Published" : "Draft"}
                 </Badge>
               </div>
-              
-              {form.watch('isFeatured') && (
-                <Badge variant="outline" className="border-yellow-200 text-yellow-800">
+
+              {form.watch("isFeatured") && (
+                <Badge
+                  variant="outline"
+                  className="border-yellow-200 text-yellow-800"
+                >
                   Featured
                 </Badge>
               )}
-              
-              {form.watch('peerReviewed') && (
-                <Badge variant="outline" className="border-green-200 text-green-800">
+
+              {form.watch("peerReviewed") && (
+                <Badge
+                  variant="outline"
+                  className="border-green-200 text-green-800"
+                >
                   Peer Reviewed
                 </Badge>
               )}
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <Switch
-                checked={form.watch('isFeatured')}
-                onCheckedChange={(checked) => form.setValue('isFeatured', checked)}
+                checked={form.watch("isFeatured")}
+                onCheckedChange={(checked) =>
+                  form.setValue("isFeatured", checked)
+                }
               />
               <Label className="text-sm">Featured</Label>
-              
+
               <Switch
-                checked={form.watch('isPublished')}
-                onCheckedChange={(checked) => form.setValue('isPublished', checked)}
+                checked={form.watch("isPublished")}
+                onCheckedChange={(checked) =>
+                  form.setValue("isPublished", checked)
+                }
               />
               <Label className="text-sm">Published</Label>
             </div>
@@ -253,7 +263,11 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
       </Card>
 
       {/* Main Editor */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="basic" className="flex items-center">
             <FileText className="h-4 w-4 mr-2" />
@@ -297,18 +311,18 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                   <Input
                     id="title"
                     placeholder="Enter the study title"
-                    value={form.watch('title')}
+                    value={form.watch("title")}
                     onChange={(e) => handleTitleChange(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
                   <Input
                     id="category"
                     placeholder="e.g., Clinical Trial, Research Study"
-                    value={form.watch('category')}
-                    onChange={(e) => form.setValue('category', e.target.value)}
+                    value={form.watch("category")}
+                    onChange={(e) => form.setValue("category", e.target.value)}
                   />
                 </div>
               </div>
@@ -318,8 +332,8 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                 <Input
                   id="authors"
                   placeholder="Enter author names separated by commas"
-                  value={form.watch('authors')}
-                  onChange={(e) => form.setValue('authors', e.target.value)}
+                  value={form.watch("authors")}
+                  onChange={(e) => form.setValue("authors", e.target.value)}
                 />
               </div>
 
@@ -329,28 +343,30 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                   <Input
                     id="journal"
                     placeholder="Journal name"
-                    value={form.watch('journal')}
-                    onChange={(e) => form.setValue('journal', e.target.value)}
+                    value={form.watch("journal")}
+                    onChange={(e) => form.setValue("journal", e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="publishDate">Publish Date</Label>
                   <Input
                     id="publishDate"
                     type="date"
-                    value={form.watch('publishDate')}
-                    onChange={(e) => form.setValue('publishDate', e.target.value)}
+                    value={form.watch("publishDate")}
+                    onChange={(e) =>
+                      form.setValue("publishDate", e.target.value)
+                    }
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="doi">DOI</Label>
                   <Input
                     id="doi"
                     placeholder="10.1000/xyz123"
-                    value={form.watch('doi') || ''}
-                    onChange={(e) => form.setValue('doi', e.target.value)}
+                    value={form.watch("doi") || ""}
+                    onChange={(e) => form.setValue("doi", e.target.value)}
                   />
                 </div>
               </div>
@@ -358,8 +374,8 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
               <div className="space-y-2">
                 <WYSIWYGEditor
                   label="Abstract *"
-                  value={form.watch('abstract')}
-                  onChange={(value) => form.setValue('abstract', value)}
+                  value={form.watch("abstract")}
+                  onChange={(value) => form.setValue("abstract", value)}
                   placeholder="Enter the study abstract..."
                   height="200px"
                   toolbar="basic"
@@ -381,24 +397,24 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
             <CardContent className="space-y-6">
               <WYSIWYGEditor
                 label="Methods"
-                value={form.watch('methods') || ''}
-                onChange={(value) => form.setValue('methods', value)}
+                value={form.watch("methods") || ""}
+                onChange={(value) => form.setValue("methods", value)}
                 placeholder="Describe the study methodology..."
                 height="250px"
               />
-              
+
               <WYSIWYGEditor
                 label="Results"
-                value={form.watch('results') || ''}
-                onChange={(value) => form.setValue('results', value)}
+                value={form.watch("results") || ""}
+                onChange={(value) => form.setValue("results", value)}
                 placeholder="Describe the study results..."
                 height="250px"
               />
-              
+
               <WYSIWYGEditor
                 label="Conclusion"
-                value={form.watch('conclusion') || ''}
-                onChange={(value) => form.setValue('conclusion', value)}
+                value={form.watch("conclusion") || ""}
+                onChange={(value) => form.setValue("conclusion", value)}
                 placeholder="Describe the study conclusion..."
                 height="200px"
               />
@@ -421,31 +437,39 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                 <Input
                   id="plainLanguageTitle"
                   placeholder="A simplified version of the study title"
-                  value={form.watch('plainLanguageTitle') || ''}
-                  onChange={(e) => form.setValue('plainLanguageTitle', e.target.value)}
+                  value={form.watch("plainLanguageTitle") || ""}
+                  onChange={(e) =>
+                    form.setValue("plainLanguageTitle", e.target.value)
+                  }
                 />
               </div>
-              
+
               <WYSIWYGEditor
                 label="Consumer-Friendly Methods"
-                value={form.watch('consumerFriendlyMethods') || ''}
-                onChange={(value) => form.setValue('consumerFriendlyMethods', value)}
+                value={form.watch("consumerFriendlyMethods") || ""}
+                onChange={(value) =>
+                  form.setValue("consumerFriendlyMethods", value)
+                }
                 placeholder="Explain the study methods in simple terms..."
                 height="200px"
               />
-              
+
               <WYSIWYGEditor
                 label="Consumer-Friendly Results"
-                value={form.watch('consumerFriendlyResults') || ''}
-                onChange={(value) => form.setValue('consumerFriendlyResults', value)}
+                value={form.watch("consumerFriendlyResults") || ""}
+                onChange={(value) =>
+                  form.setValue("consumerFriendlyResults", value)
+                }
                 placeholder="Explain the study results in simple terms..."
                 height="200px"
               />
-              
+
               <WYSIWYGEditor
                 label="Consumer-Friendly Conclusion"
-                value={form.watch('consumerFriendlyConclusion') || ''}
-                onChange={(value) => form.setValue('consumerFriendlyConclusion', value)}
+                value={form.watch("consumerFriendlyConclusion") || ""}
+                onChange={(value) =>
+                  form.setValue("consumerFriendlyConclusion", value)
+                }
                 placeholder="Explain the study conclusion in simple terms..."
                 height="200px"
               />
@@ -470,42 +494,74 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                     id="keywords"
                     placeholder="Enter keywords separated by commas"
                     value={keywordString}
-                    onChange={(e) => form.setValue('keywords', e.target.value.split(',').map(k => k.trim()).filter(k => k))}
+                    onChange={(e) =>
+                      form.setValue(
+                        "keywords",
+                        e.target.value
+                          .split(",")
+                          .map((k) => k.trim())
+                          .filter((k) => k),
+                      )
+                    }
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="tags">Tags</Label>
                   <Textarea
                     id="tags"
                     placeholder="Enter tags separated by commas"
                     value={tagString}
-                    onChange={(e) => form.setValue('tags', e.target.value.split(',').map(t => t.trim()).filter(t => t))}
+                    onChange={(e) =>
+                      form.setValue(
+                        "tags",
+                        e.target.value
+                          .split(",")
+                          .map((t) => t.trim())
+                          .filter((t) => t),
+                      )
+                    }
                     rows={3}
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="healthBenefits">Health Benefits</Label>
                   <Textarea
                     id="healthBenefits"
                     placeholder="Enter health benefits separated by commas"
-                    value={form.watch('healthBenefits')?.join(', ') || ''}
-                    onChange={(e) => form.setValue('healthBenefits', e.target.value.split(',').map(b => b.trim()).filter(b => b))}
+                    value={form.watch("healthBenefits")?.join(", ") || ""}
+                    onChange={(e) =>
+                      form.setValue(
+                        "healthBenefits",
+                        e.target.value
+                          .split(",")
+                          .map((b) => b.trim())
+                          .filter((b) => b),
+                      )
+                    }
                     rows={2}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="healthConditions">Health Conditions</Label>
                   <Textarea
                     id="healthConditions"
                     placeholder="Enter health conditions separated by commas"
-                    value={form.watch('healthConditions')?.join(', ') || ''}
-                    onChange={(e) => form.setValue('healthConditions', e.target.value.split(',').map(c => c.trim()).filter(c => c))}
+                    value={form.watch("healthConditions")?.join(", ") || ""}
+                    onChange={(e) =>
+                      form.setValue(
+                        "healthConditions",
+                        e.target.value
+                          .split(",")
+                          .map((c) => c.trim())
+                          .filter((c) => c),
+                      )
+                    }
                     rows={2}
                   />
                 </div>
@@ -529,39 +585,41 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                 <Input
                   id="slug"
                   placeholder="url-friendly-slug"
-                  value={form.watch('slug') || ''}
-                  onChange={(e) => form.setValue('slug', e.target.value)}
+                  value={form.watch("slug") || ""}
+                  onChange={(e) => form.setValue("slug", e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="seoTitle">SEO Title</Label>
                 <Input
                   id="seoTitle"
                   placeholder="Optimized title for search engines"
-                  value={form.watch('seoTitle') || ''}
-                  onChange={(e) => form.setValue('seoTitle', e.target.value)}
+                  value={form.watch("seoTitle") || ""}
+                  onChange={(e) => form.setValue("seoTitle", e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="seoDescription">SEO Description</Label>
                 <Textarea
                   id="seoDescription"
                   placeholder="Brief description for search results (150-160 characters)"
-                  value={form.watch('seoDescription') || ''}
-                  onChange={(e) => form.setValue('seoDescription', e.target.value)}
+                  value={form.watch("seoDescription") || ""}
+                  onChange={(e) =>
+                    form.setValue("seoDescription", e.target.value)
+                  }
                   rows={3}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="seoKeywords">SEO Keywords</Label>
                 <Textarea
                   id="seoKeywords"
                   placeholder="Enter SEO keywords separated by commas"
-                  value={form.watch('seoKeywords') || ''}
-                  onChange={(e) => form.setValue('seoKeywords', e.target.value)}
+                  value={form.watch("seoKeywords") || ""}
+                  onChange={(e) => form.setValue("seoKeywords", e.target.value)}
                   rows={2}
                 />
               </div>
@@ -585,50 +643,52 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                   <Input
                     id="imageUrl"
                     placeholder="https://example.com/image.jpg"
-                    value={form.watch('imageUrl') || ''}
-                    onChange={(e) => form.setValue('imageUrl', e.target.value)}
+                    value={form.watch("imageUrl") || ""}
+                    onChange={(e) => form.setValue("imageUrl", e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="imageAlt">Image Alt Text</Label>
                   <Input
                     id="imageAlt"
                     placeholder="Descriptive text for the image"
-                    value={form.watch('imageAlt') || ''}
-                    onChange={(e) => form.setValue('imageAlt', e.target.value)}
+                    value={form.watch("imageAlt") || ""}
+                    onChange={(e) => form.setValue("imageAlt", e.target.value)}
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="url">Study URL</Label>
                   <Input
                     id="url"
                     placeholder="https://example.com/study"
-                    value={form.watch('url') || ''}
-                    onChange={(e) => form.setValue('url', e.target.value)}
+                    value={form.watch("url") || ""}
+                    onChange={(e) => form.setValue("url", e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="pdfUrl">PDF URL</Label>
                   <Input
                     id="pdfUrl"
                     placeholder="https://example.com/study.pdf"
-                    value={form.watch('pdfUrl') || ''}
-                    onChange={(e) => form.setValue('pdfUrl', e.target.value)}
+                    value={form.watch("pdfUrl") || ""}
+                    onChange={(e) => form.setValue("pdfUrl", e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="citationUrl">Citation URL</Label>
                   <Input
                     id="citationUrl"
                     placeholder="https://example.com/citation"
-                    value={form.watch('citationUrl') || ''}
-                    onChange={(e) => form.setValue('citationUrl', e.target.value)}
+                    value={form.watch("citationUrl") || ""}
+                    onChange={(e) =>
+                      form.setValue("citationUrl", e.target.value)
+                    }
                   />
                 </div>
               </div>

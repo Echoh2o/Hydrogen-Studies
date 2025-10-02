@@ -3,7 +3,13 @@ import { Pencil, Trash, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 
@@ -21,10 +27,13 @@ interface KeywordEditorProps {
   onCancel: () => void;
 }
 
-export default function KeywordEditor({ keyword, onCancel }: KeywordEditorProps) {
+export default function KeywordEditor({
+  keyword,
+  onCancel,
+}: KeywordEditorProps) {
   const [formData, setFormData] = useState({
     term: keyword.term,
-    category: keyword.category
+    category: keyword.category,
   });
 
   const updateKeywordMutation = useMutation({
@@ -36,20 +45,20 @@ export default function KeywordEditor({ keyword, onCancel }: KeywordEditorProps)
         },
         body: JSON.stringify(data),
       });
-      
+
       if (!response.ok) throw new Error("Failed to update keyword");
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
       onCancel();
-    }
+    },
   });
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -59,7 +68,10 @@ export default function KeywordEditor({ keyword, onCancel }: KeywordEditorProps)
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-3 bg-secondary/20 rounded-md">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 p-3 bg-secondary/20 rounded-md"
+    >
       <div className="space-y-1">
         <Label htmlFor="term">Keyword Term</Label>
         <Input
@@ -69,11 +81,11 @@ export default function KeywordEditor({ keyword, onCancel }: KeywordEditorProps)
           className="bg-white"
         />
       </div>
-      
+
       <div className="space-y-1">
         <Label htmlFor="category">Category</Label>
-        <Select 
-          value={formData.category} 
+        <Select
+          value={formData.category}
           onValueChange={(value) => handleChange("category", value)}
         >
           <SelectTrigger id="category">
@@ -89,19 +101,14 @@ export default function KeywordEditor({ keyword, onCancel }: KeywordEditorProps)
           </SelectContent>
         </Select>
       </div>
-      
+
       <div className="flex justify-end space-x-2 pt-2">
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
-          onClick={onCancel}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           size="sm"
           disabled={updateKeywordMutation.isPending}
         >

@@ -1,12 +1,25 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle, Clock, Play, Square, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Play,
+  Square,
+  RefreshCw,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ContentStats {
@@ -65,16 +78,18 @@ export default function AdminMonitoringPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // Query for monitoring status
-  const { data: monitoringStatus, isLoading: statusLoading } = useQuery<MonitoringStatus>({
-    queryKey: ["/api/admin/monitoring/status"],
-    refetchInterval: autoRefresh ? 30000 : false, // Refresh every 30 seconds
-  });
+  const { data: monitoringStatus, isLoading: statusLoading } =
+    useQuery<MonitoringStatus>({
+      queryKey: ["/api/admin/monitoring/status"],
+      refetchInterval: autoRefresh ? 30000 : false, // Refresh every 30 seconds
+    });
 
   // Query for fresh analysis
-  const { data: contentStats, isLoading: analysisLoading } = useQuery<ContentStats>({
-    queryKey: ["/api/admin/monitoring/analyze"],
-    refetchInterval: autoRefresh ? 60000 : false, // Refresh every minute
-  });
+  const { data: contentStats, isLoading: analysisLoading } =
+    useQuery<ContentStats>({
+      queryKey: ["/api/admin/monitoring/analyze"],
+      refetchInterval: autoRefresh ? 60000 : false, // Refresh every minute
+    });
 
   // Mutations for triggering processes
   const consumerContentMutation = useMutation({
@@ -85,7 +100,9 @@ export default function AdminMonitoringPage() {
         description: data.message,
         variant: data.started ? "default" : "destructive",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/monitoring/status"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/monitoring/status"],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -97,14 +114,17 @@ export default function AdminMonitoringPage() {
   });
 
   const researchEnrichmentMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/trigger/research-enrichment", "POST"),
+    mutationFn: () =>
+      apiRequest("/api/admin/trigger/research-enrichment", "POST"),
     onSuccess: (data: any) => {
       toast({
         title: data.started ? "Process Started" : "Process Failed",
         description: data.message,
         variant: data.started ? "default" : "destructive",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/monitoring/status"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/monitoring/status"],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -116,14 +136,17 @@ export default function AdminMonitoringPage() {
   });
 
   const visualEnhancementMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/trigger/visual-enhancement", "POST"),
+    mutationFn: () =>
+      apiRequest("/api/admin/trigger/visual-enhancement", "POST"),
     onSuccess: (data: any) => {
       toast({
         title: data.started ? "Process Started" : "Process Failed",
         description: data.message,
         variant: data.started ? "default" : "destructive",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/monitoring/status"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/monitoring/status"],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -141,7 +164,9 @@ export default function AdminMonitoringPage() {
         title: "Processes Stopped",
         description: data.message,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/monitoring/status"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/monitoring/status"],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -153,29 +178,63 @@ export default function AdminMonitoringPage() {
   });
 
   const refreshAnalysis = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/admin/monitoring/analyze"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/admin/monitoring/status"] });
+    queryClient.invalidateQueries({
+      queryKey: ["/api/admin/monitoring/analyze"],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["/api/admin/monitoring/status"],
+    });
   };
 
   const stats = contentStats || monitoringStatus?.stats;
 
   const getStatusBadge = (percentage: number, isComplete: boolean) => {
     if (isComplete || percentage >= 99) {
-      return <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Complete</Badge>;
+      return (
+        <Badge variant="default" className="bg-green-500">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Complete
+        </Badge>
+      );
     } else if (percentage >= 95) {
-      return <Badge variant="secondary" className="bg-yellow-500"><AlertCircle className="w-3 h-3 mr-1" />Nearly Complete</Badge>;
+      return (
+        <Badge variant="secondary" className="bg-yellow-500">
+          <AlertCircle className="w-3 h-3 mr-1" />
+          Nearly Complete
+        </Badge>
+      );
     } else if (percentage >= 50) {
-      return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />In Progress</Badge>;
+      return (
+        <Badge variant="secondary">
+          <Clock className="w-3 h-3 mr-1" />
+          In Progress
+        </Badge>
+      );
     } else {
-      return <Badge variant="destructive"><AlertCircle className="w-3 h-3 mr-1" />Needs Work</Badge>;
+      return (
+        <Badge variant="destructive">
+          <AlertCircle className="w-3 h-3 mr-1" />
+          Needs Work
+        </Badge>
+      );
     }
   };
 
   const getProcessStatusBadge = (process: ProcessStatus) => {
     if (process.isRunning) {
-      return <Badge variant="default" className="bg-blue-500"><Play className="w-3 h-3 mr-1" />Running</Badge>;
+      return (
+        <Badge variant="default" className="bg-blue-500">
+          <Play className="w-3 h-3 mr-1" />
+          Running
+        </Badge>
+      );
     } else {
-      return <Badge variant="secondary"><Square className="w-3 h-3 mr-1" />Stopped</Badge>;
+      return (
+        <Badge variant="secondary">
+          <Square className="w-3 h-3 mr-1" />
+          Stopped
+        </Badge>
+      );
     }
   };
 
@@ -195,11 +254,12 @@ export default function AdminMonitoringPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Database Monitoring Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Database Monitoring Dashboard
+            </h1>
             <p className="text-gray-600 mt-1">
               Monitor and maintain 100% completion across all content types
             </p>
@@ -210,14 +270,16 @@ export default function AdminMonitoringPage() {
               onClick={refreshAnalysis}
               disabled={analysisLoading}
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${analysisLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${analysisLoading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
             <Button
               variant="outline"
               onClick={() => setAutoRefresh(!autoRefresh)}
             >
-              {autoRefresh ? 'Disable' : 'Enable'} Auto-refresh
+              {autoRefresh ? "Disable" : "Enable"} Auto-refresh
             </Button>
           </div>
         </div>
@@ -227,43 +289,31 @@ export default function AdminMonitoringPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Studies</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Studies
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalStudies.toLocaleString()}</div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Phase 1 Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold">{stats.plainLanguageTitles.percentage}%</div>
-                  {getStatusBadge(stats.plainLanguageTitles.percentage, stats.completionStatus.phase1Complete)}
+                <div className="text-2xl font-bold">
+                  {stats.totalStudies.toLocaleString()}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Phase 2 Status</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Phase 1 Status
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="text-2xl font-bold">
-                    {Math.round((
-                      stats.consumerContent.methods.percentage + 
-                      stats.consumerContent.results.percentage + 
-                      stats.consumerContent.conclusions.percentage
-                    ) / 3)}%
+                    {stats.plainLanguageTitles.percentage}%
                   </div>
                   {getStatusBadge(
-                    (stats.consumerContent.methods.percentage + 
-                     stats.consumerContent.results.percentage + 
-                     stats.consumerContent.conclusions.percentage) / 3,
-                    stats.completionStatus.phase2Complete
+                    stats.plainLanguageTitles.percentage,
+                    stats.completionStatus.phase1Complete,
                   )}
                 </div>
               </CardContent>
@@ -271,20 +321,53 @@ export default function AdminMonitoringPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Overall Status</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Phase 2 Status
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="text-2xl font-bold">
-                    {stats.completionStatus.allComplete ? '100' : 'In Progress'}%
+                    {Math.round(
+                      (stats.consumerContent.methods.percentage +
+                        stats.consumerContent.results.percentage +
+                        stats.consumerContent.conclusions.percentage) /
+                        3,
+                    )}
+                    %
+                  </div>
+                  {getStatusBadge(
+                    (stats.consumerContent.methods.percentage +
+                      stats.consumerContent.results.percentage +
+                      stats.consumerContent.conclusions.percentage) /
+                      3,
+                    stats.completionStatus.phase2Complete,
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Overall Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold">
+                    {stats.completionStatus.allComplete ? "100" : "In Progress"}
+                    %
                   </div>
                   {stats.completionStatus.allComplete ? (
                     <Badge variant="default" className="bg-green-500">
-                      <CheckCircle className="w-3 h-3 mr-1" />All Complete
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      All Complete
                     </Badge>
                   ) : (
                     <Badge variant="secondary">
-                      <Clock className="w-3 h-3 mr-1" />In Progress
+                      <Clock className="w-3 h-3 mr-1" />
+                      In Progress
                     </Badge>
                   )}
                 </div>
@@ -302,13 +385,15 @@ export default function AdminMonitoringPage() {
           <TabsContent value="content-status" className="space-y-6">
             {stats && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
                 {/* Phase 1: Plain Language Titles */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       Phase 1: Plain Language Titles
-                      {getStatusBadge(stats.plainLanguageTitles.percentage, stats.completionStatus.phase1Complete)}
+                      {getStatusBadge(
+                        stats.plainLanguageTitles.percentage,
+                        stats.completionStatus.phase1Complete,
+                      )}
                     </CardTitle>
                     <CardDescription>
                       SEO-optimized, consumer-friendly study titles
@@ -318,12 +403,16 @@ export default function AdminMonitoringPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Progress</span>
-                        <span>{stats.plainLanguageTitles.complete}/{stats.totalStudies}</span>
+                        <span>
+                          {stats.plainLanguageTitles.complete}/
+                          {stats.totalStudies}
+                        </span>
                       </div>
                       <Progress value={stats.plainLanguageTitles.percentage} />
                     </div>
                     <div className="text-sm text-gray-600">
-                      {stats.plainLanguageTitles.missing} studies need plain language titles
+                      {stats.plainLanguageTitles.missing} studies need plain
+                      language titles
                     </div>
                   </CardContent>
                 </Card>
@@ -334,10 +423,11 @@ export default function AdminMonitoringPage() {
                     <CardTitle className="flex items-center justify-between">
                       Phase 2: Consumer Content
                       {getStatusBadge(
-                        (stats.consumerContent.methods.percentage + 
-                         stats.consumerContent.results.percentage + 
-                         stats.consumerContent.conclusions.percentage) / 3,
-                        stats.completionStatus.phase2Complete
+                        (stats.consumerContent.methods.percentage +
+                          stats.consumerContent.results.percentage +
+                          stats.consumerContent.conclusions.percentage) /
+                          3,
+                        stats.completionStatus.phase2Complete,
                       )}
                     </CardTitle>
                     <CardDescription>
@@ -349,23 +439,38 @@ export default function AdminMonitoringPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Methods</span>
-                          <span>{stats.consumerContent.methods.complete}/{stats.totalStudies}</span>
+                          <span>
+                            {stats.consumerContent.methods.complete}/
+                            {stats.totalStudies}
+                          </span>
                         </div>
-                        <Progress value={stats.consumerContent.methods.percentage} />
+                        <Progress
+                          value={stats.consumerContent.methods.percentage}
+                        />
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Results</span>
-                          <span>{stats.consumerContent.results.complete}/{stats.totalStudies}</span>
+                          <span>
+                            {stats.consumerContent.results.complete}/
+                            {stats.totalStudies}
+                          </span>
                         </div>
-                        <Progress value={stats.consumerContent.results.percentage} />
+                        <Progress
+                          value={stats.consumerContent.results.percentage}
+                        />
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Conclusions</span>
-                          <span>{stats.consumerContent.conclusions.complete}/{stats.totalStudies}</span>
+                          <span>
+                            {stats.consumerContent.conclusions.complete}/
+                            {stats.totalStudies}
+                          </span>
                         </div>
-                        <Progress value={stats.consumerContent.conclusions.percentage} />
+                        <Progress
+                          value={stats.consumerContent.conclusions.percentage}
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -376,7 +481,10 @@ export default function AdminMonitoringPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       Research Enrichment
-                      {getStatusBadge(stats.researchEnrichment.percentage, false)}
+                      {getStatusBadge(
+                        stats.researchEnrichment.percentage,
+                        false,
+                      )}
                     </CardTitle>
                     <CardDescription>
                       Academic database links and citations
@@ -386,12 +494,16 @@ export default function AdminMonitoringPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Progress</span>
-                        <span>{stats.researchEnrichment.complete}/{stats.totalStudies}</span>
+                        <span>
+                          {stats.researchEnrichment.complete}/
+                          {stats.totalStudies}
+                        </span>
                       </div>
                       <Progress value={stats.researchEnrichment.percentage} />
                     </div>
                     <div className="text-sm text-gray-600">
-                      {stats.researchEnrichment.missing} studies need research links
+                      {stats.researchEnrichment.missing} studies need research
+                      links
                     </div>
                   </CardContent>
                 </Card>
@@ -401,7 +513,10 @@ export default function AdminMonitoringPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       Visual Content
-                      {getStatusBadge(stats.visualContent.percentage, stats.completionStatus.phase3Complete)}
+                      {getStatusBadge(
+                        stats.visualContent.percentage,
+                        stats.completionStatus.phase3Complete,
+                      )}
                     </CardTitle>
                     <CardDescription>
                       Generated scientific illustrations
@@ -411,7 +526,9 @@ export default function AdminMonitoringPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Progress</span>
-                        <span>{stats.visualContent.complete}/{stats.totalStudies}</span>
+                        <span>
+                          {stats.visualContent.complete}/{stats.totalStudies}
+                        </span>
                       </div>
                       <Progress value={stats.visualContent.percentage} />
                     </div>
@@ -426,14 +543,15 @@ export default function AdminMonitoringPage() {
 
           <TabsContent value="process-control" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
               {/* Consumer Content Generation */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     Consumer Content
-                    {monitoringStatus?.processes && 
-                     getProcessStatusBadge(monitoringStatus.processes.consumerContentGeneration)}
+                    {monitoringStatus?.processes &&
+                      getProcessStatusBadge(
+                        monitoringStatus.processes.consumerContentGeneration,
+                      )}
                   </CardTitle>
                   <CardDescription>
                     Generate simplified explanations
@@ -442,18 +560,36 @@ export default function AdminMonitoringPage() {
                 <CardContent className="space-y-4">
                   {monitoringStatus?.processes?.consumerContentGeneration && (
                     <div className="space-y-2 text-sm">
-                      <div>Studies Processed: {monitoringStatus.processes.consumerContentGeneration.studiesProcessed}</div>
-                      {monitoringStatus.processes.consumerContentGeneration.lastRun && (
-                        <div>Last Run: {new Date(monitoringStatus.processes.consumerContentGeneration.lastRun).toLocaleString()}</div>
+                      <div>
+                        Studies Processed:{" "}
+                        {
+                          monitoringStatus.processes.consumerContentGeneration
+                            .studiesProcessed
+                        }
+                      </div>
+                      {monitoringStatus.processes.consumerContentGeneration
+                        .lastRun && (
+                        <div>
+                          Last Run:{" "}
+                          {new Date(
+                            monitoringStatus.processes.consumerContentGeneration.lastRun,
+                          ).toLocaleString()}
+                        </div>
                       )}
                     </div>
                   )}
                   <Button
                     onClick={() => consumerContentMutation.mutate()}
-                    disabled={consumerContentMutation.isPending || monitoringStatus?.processes?.consumerContentGeneration?.isRunning}
+                    disabled={
+                      consumerContentMutation.isPending ||
+                      monitoringStatus?.processes?.consumerContentGeneration
+                        ?.isRunning
+                    }
                     className="w-full"
                   >
-                    {consumerContentMutation.isPending ? 'Starting...' : 'Start Consumer Content'}
+                    {consumerContentMutation.isPending
+                      ? "Starting..."
+                      : "Start Consumer Content"}
                   </Button>
                 </CardContent>
               </Card>
@@ -463,8 +599,10 @@ export default function AdminMonitoringPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     Research Enrichment
-                    {monitoringStatus?.processes && 
-                     getProcessStatusBadge(monitoringStatus.processes.researchEnrichment)}
+                    {monitoringStatus?.processes &&
+                      getProcessStatusBadge(
+                        monitoringStatus.processes.researchEnrichment,
+                      )}
                   </CardTitle>
                   <CardDescription>
                     Enrich with academic database links
@@ -473,18 +611,35 @@ export default function AdminMonitoringPage() {
                 <CardContent className="space-y-4">
                   {monitoringStatus?.processes?.researchEnrichment && (
                     <div className="space-y-2 text-sm">
-                      <div>Studies Processed: {monitoringStatus.processes.researchEnrichment.studiesProcessed}</div>
-                      {monitoringStatus.processes.researchEnrichment.lastRun && (
-                        <div>Last Run: {new Date(monitoringStatus.processes.researchEnrichment.lastRun).toLocaleString()}</div>
+                      <div>
+                        Studies Processed:{" "}
+                        {
+                          monitoringStatus.processes.researchEnrichment
+                            .studiesProcessed
+                        }
+                      </div>
+                      {monitoringStatus.processes.researchEnrichment
+                        .lastRun && (
+                        <div>
+                          Last Run:{" "}
+                          {new Date(
+                            monitoringStatus.processes.researchEnrichment.lastRun,
+                          ).toLocaleString()}
+                        </div>
                       )}
                     </div>
                   )}
                   <Button
                     onClick={() => researchEnrichmentMutation.mutate()}
-                    disabled={researchEnrichmentMutation.isPending || monitoringStatus?.processes?.researchEnrichment?.isRunning}
+                    disabled={
+                      researchEnrichmentMutation.isPending ||
+                      monitoringStatus?.processes?.researchEnrichment?.isRunning
+                    }
                     className="w-full"
                   >
-                    {researchEnrichmentMutation.isPending ? 'Starting...' : 'Start Research Enrichment'}
+                    {researchEnrichmentMutation.isPending
+                      ? "Starting..."
+                      : "Start Research Enrichment"}
                   </Button>
                 </CardContent>
               </Card>
@@ -494,8 +649,10 @@ export default function AdminMonitoringPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     Visual Enhancement
-                    {monitoringStatus?.processes && 
-                     getProcessStatusBadge(monitoringStatus.processes.visualEnhancement)}
+                    {monitoringStatus?.processes &&
+                      getProcessStatusBadge(
+                        monitoringStatus.processes.visualEnhancement,
+                      )}
                   </CardTitle>
                   <CardDescription>
                     Generate scientific illustrations
@@ -504,18 +661,34 @@ export default function AdminMonitoringPage() {
                 <CardContent className="space-y-4">
                   {monitoringStatus?.processes?.visualEnhancement && (
                     <div className="space-y-2 text-sm">
-                      <div>Studies Processed: {monitoringStatus.processes.visualEnhancement.studiesProcessed}</div>
+                      <div>
+                        Studies Processed:{" "}
+                        {
+                          monitoringStatus.processes.visualEnhancement
+                            .studiesProcessed
+                        }
+                      </div>
                       {monitoringStatus.processes.visualEnhancement.lastRun && (
-                        <div>Last Run: {new Date(monitoringStatus.processes.visualEnhancement.lastRun).toLocaleString()}</div>
+                        <div>
+                          Last Run:{" "}
+                          {new Date(
+                            monitoringStatus.processes.visualEnhancement.lastRun,
+                          ).toLocaleString()}
+                        </div>
                       )}
                     </div>
                   )}
                   <Button
                     onClick={() => visualEnhancementMutation.mutate()}
-                    disabled={visualEnhancementMutation.isPending || monitoringStatus?.processes?.visualEnhancement?.isRunning}
+                    disabled={
+                      visualEnhancementMutation.isPending ||
+                      monitoringStatus?.processes?.visualEnhancement?.isRunning
+                    }
                     className="w-full"
                   >
-                    {visualEnhancementMutation.isPending ? 'Starting...' : 'Start Visual Enhancement'}
+                    {visualEnhancementMutation.isPending
+                      ? "Starting..."
+                      : "Start Visual Enhancement"}
                   </Button>
                 </CardContent>
               </Card>
@@ -524,7 +697,9 @@ export default function AdminMonitoringPage() {
             {/* Emergency Controls */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-red-600">Emergency Controls</CardTitle>
+                <CardTitle className="text-red-600">
+                  Emergency Controls
+                </CardTitle>
                 <CardDescription>
                   Stop all running processes if needed
                 </CardDescription>
@@ -535,7 +710,9 @@ export default function AdminMonitoringPage() {
                   onClick={() => stopProcessesMutation.mutate()}
                   disabled={stopProcessesMutation.isPending}
                 >
-                  {stopProcessesMutation.isPending ? 'Stopping...' : 'Stop All Processes'}
+                  {stopProcessesMutation.isPending
+                    ? "Stopping..."
+                    : "Stop All Processes"}
                 </Button>
               </CardContent>
             </Card>

@@ -1,6 +1,6 @@
 /**
  * Plain Language Title Generator
- * 
+ *
  * Generates SEO-optimized consumer-friendly titles for hydrogen research studies
  */
 
@@ -34,7 +34,7 @@ let currentStats: TitleGenerationStats = {
   successful: 0,
   failed: 0,
   startTime: new Date(),
-  results: []
+  results: [],
 };
 
 /**
@@ -57,7 +57,7 @@ Study Details:
 Title: ${study.title}
 Abstract: ${study.abstract?.substring(0, 400)}...
 Category: ${study.category}
-Health Conditions: ${study.health_conditions || 'General health'}
+Health Conditions: ${study.health_conditions || "General health"}
 
 Examples:
 - "Hydrogen Water Reduces Heart Disease Risk - Clinical Trial"
@@ -74,7 +74,7 @@ Return only the plain language title:`;
     });
 
     const title = response.choices[0].message.content?.trim();
-    
+
     if (!title) {
       throw new Error("No title generated");
     }
@@ -85,13 +85,13 @@ Return only the plain language title:`;
     }
 
     return title;
-
   } catch (error) {
     console.error("Error generating title:", error);
-    
+
     // Create fallback title based on category and health conditions
     const category = study.category || "Health";
-    const condition = study.health_conditions?.split(',')[0]?.trim() || category;
+    const condition =
+      study.health_conditions?.split(",")[0]?.trim() || category;
     return `Hydrogen Study on ${condition} - Research Findings`;
   }
 }
@@ -116,9 +116,8 @@ async function processStudyTitle(study: any): Promise<TitleGenerationResult> {
       studyId: study.id,
       originalTitle: study.title,
       plainLanguageTitle,
-      success: true
+      success: true,
     };
-
   } catch (error) {
     console.error(`✗ Study ${study.id}: ${error}`);
     return {
@@ -126,7 +125,7 @@ async function processStudyTitle(study: any): Promise<TitleGenerationResult> {
       originalTitle: study.title,
       plainLanguageTitle: "",
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -143,7 +142,7 @@ export async function generateAllPlainLanguageTitles(): Promise<TitleGenerationS
     successful: 0,
     failed: 0,
     startTime: new Date(),
-    results: []
+    results: [],
   };
 
   try {
@@ -157,7 +156,9 @@ export async function generateAllPlainLanguageTitles(): Promise<TitleGenerationS
     `);
 
     const studies = studiesResult.rows;
-    console.log(`📚 Found ${studies.length} studies needing plain language titles`);
+    console.log(
+      `📚 Found ${studies.length} studies needing plain language titles`,
+    );
 
     if (studies.length === 0) {
       console.log("✅ All studies already have plain language titles!");
@@ -171,15 +172,17 @@ export async function generateAllPlainLanguageTitles(): Promise<TitleGenerationS
     for (let i = 0; i < studies.length; i += batchSize) {
       const batchNumber = Math.floor(i / batchSize) + 1;
       const batch = studies.slice(i, i + batchSize);
-      
-      console.log(`📦 Processing batch ${batchNumber}/${totalBatches}: ${batch.length} studies`);
+
+      console.log(
+        `📦 Processing batch ${batchNumber}/${totalBatches}: ${batch.length} studies`,
+      );
 
       // Process batch concurrently
-      const batchPromises = batch.map(study => processStudyTitle(study));
+      const batchPromises = batch.map((study) => processStudyTitle(study));
       const batchResults = await Promise.all(batchPromises);
-      
+
       // Update stats
-      batchResults.forEach(result => {
+      batchResults.forEach((result) => {
         currentStats.results.push(result);
         currentStats.totalProcessed++;
         if (result.success) {
@@ -189,17 +192,22 @@ export async function generateAllPlainLanguageTitles(): Promise<TitleGenerationS
         }
       });
 
-      console.log(`✓ Batch ${batchNumber} completed: ${batchResults.filter(r => r.success).length}/${batchResults.length} successful`);
+      console.log(
+        `✓ Batch ${batchNumber} completed: ${batchResults.filter((r) => r.success).length}/${batchResults.length} successful`,
+      );
 
       // Rate limiting: wait between batches
       if (i + batchSize < studies.length) {
         console.log("⏳ Waiting 2 seconds before next batch...");
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
     currentStats.endTime = new Date();
-    const duration = Math.round((currentStats.endTime.getTime() - currentStats.startTime.getTime()) / 1000);
+    const duration = Math.round(
+      (currentStats.endTime.getTime() - currentStats.startTime.getTime()) /
+        1000,
+    );
 
     console.log("\n🎉 Plain language title generation completed!");
     console.log(`📊 Results:`);
@@ -207,10 +215,11 @@ export async function generateAllPlainLanguageTitles(): Promise<TitleGenerationS
     console.log(`   - Successful: ${currentStats.successful}`);
     console.log(`   - Failed: ${currentStats.failed}`);
     console.log(`   - Duration: ${duration} seconds`);
-    console.log(`   - Success rate: ${Math.round((currentStats.successful / currentStats.totalProcessed) * 100)}%`);
+    console.log(
+      `   - Success rate: ${Math.round((currentStats.successful / currentStats.totalProcessed) * 100)}%`,
+    );
 
     return currentStats;
-
   } catch (error) {
     console.error("❌ Error in title generation process:", error);
     currentStats.endTime = new Date();
@@ -238,20 +247,25 @@ export async function getPlainLanguageTitleStats() {
   `);
 
   const stats = result.rows[0];
-  const completionPercentage = Math.round((Number(stats.with_plain_titles) / Number(stats.total_studies)) * 100);
+  const completionPercentage = Math.round(
+    (Number(stats.with_plain_titles) / Number(stats.total_studies)) * 100,
+  );
 
   return {
     totalStudies: Number(stats.total_studies),
     withPlainTitles: Number(stats.with_plain_titles),
     withoutPlainTitles: Number(stats.without_plain_titles),
-    completionPercentage
+    completionPercentage,
   };
 }
 
 /**
  * Generate titles for a specific batch of studies
  */
-export async function generateTitlesForBatch(startId: number, endId: number): Promise<TitleGenerationResult[]> {
+export async function generateTitlesForBatch(
+  startId: number,
+  endId: number,
+): Promise<TitleGenerationResult[]> {
   const studiesResult = await db.execute(sql`
     SELECT id, title, abstract, category, health_conditions, body_systems
     FROM studies 
@@ -261,10 +275,12 @@ export async function generateTitlesForBatch(startId: number, endId: number): Pr
   `);
 
   const studies = studiesResult.rows;
-  console.log(`Processing batch: studies ${startId}-${endId} (${studies.length} studies)`);
+  console.log(
+    `Processing batch: studies ${startId}-${endId} (${studies.length} studies)`,
+  );
 
   const results = await Promise.all(
-    studies.map(study => processStudyTitle(study))
+    studies.map((study) => processStudyTitle(study)),
   );
 
   return results;

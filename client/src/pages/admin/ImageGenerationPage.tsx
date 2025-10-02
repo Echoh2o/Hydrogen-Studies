@@ -42,7 +42,9 @@ const ImageGenerationPage: React.FC = () => {
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
   const [autoGenStarted, setAutoGenStarted] = useState<boolean>(false);
   const [isLoadingStudies, setIsLoadingStudies] = useState<boolean>(true);
-  const [studiesNeedingImages, setStudiesNeedingImages] = useState<number[]>([]);
+  const [studiesNeedingImages, setStudiesNeedingImages] = useState<number[]>(
+    [],
+  );
   const [isGeneratingSingle, setIsGeneratingSingle] = useState<boolean>(false);
   const [isGeneratingBatch, setIsGeneratingBatch] = useState<boolean>(false);
   const [isGeneratingAll, setIsGeneratingAll] = useState<boolean>(false);
@@ -51,13 +53,15 @@ const ImageGenerationPage: React.FC = () => {
   const fetchStudiesNeedingImages = async () => {
     setIsLoadingStudies(true);
     try {
-      const response = await fetch('/api/image-generation/find-studies-needing-images');
+      const response = await fetch(
+        "/api/image-generation/find-studies-needing-images",
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         setStudiesNeedingImages(data.studyIds || []);
       } else {
-        console.error('Error fetching studies needing images:', data.message);
+        console.error("Error fetching studies needing images:", data.message);
         toast({
           title: "Error",
           description: "Failed to fetch studies needing images",
@@ -65,7 +69,7 @@ const ImageGenerationPage: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching studies needing images:', error);
+      console.error("Error fetching studies needing images:", error);
       toast({
         title: "Error",
         description: "Failed to fetch studies needing images",
@@ -80,26 +84,29 @@ const ImageGenerationPage: React.FC = () => {
   const generateSingleImage = async (studyId: number) => {
     setSelectedStudyId(studyId);
     setIsGeneratingSingle(true);
-    
+
     try {
-      const response = await fetch(`/api/image-generation/generate/${studyId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
+      const response = await fetch(
+        `/api/image-generation/generate/${studyId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
       const data = await response.json();
-      
+
       if (data.success) {
         toast({
           title: "Image Generated",
           description: `Successfully generated image for study #${studyId}`,
           variant: "default",
         });
-        
+
         // Refresh the list of studies needing images
         fetchStudiesNeedingImages();
       } else {
-        console.error('Error generating image:', data.message);
+        console.error("Error generating image:", data.message);
         toast({
           title: "Error",
           description: `Failed to generate image: ${data.message}`,
@@ -107,7 +114,7 @@ const ImageGenerationPage: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error generating image:', error);
+      console.error("Error generating image:", error);
       toast({
         title: "Error",
         description: "Failed to generate image. Please try again.",
@@ -122,42 +129,49 @@ const ImageGenerationPage: React.FC = () => {
   // Generate images in batch
   const generateBatchImages = async () => {
     setIsGeneratingBatch(true);
-    
+
     try {
       // First, get the studies needing images
-      const listResponse = await fetch(`/api/image-generation/find-studies-needing-images?limit=${batchSize}`);
+      const listResponse = await fetch(
+        `/api/image-generation/find-studies-needing-images?limit=${batchSize}`,
+      );
       const listData = await listResponse.json();
-      
-      if (!listData.success || !listData.studyIds || listData.studyIds.length === 0) {
+
+      if (
+        !listData.success ||
+        !listData.studyIds ||
+        listData.studyIds.length === 0
+      ) {
         toast({
           title: "No Studies Found",
-          description: "No studies need images or there was an error finding them.",
+          description:
+            "No studies need images or there was an error finding them.",
           variant: "destructive",
         });
         setIsGeneratingBatch(false);
         return;
       }
-      
+
       // Now start the batch process
-      const response = await fetch('/api/image-generation/batch-generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studyIds: listData.studyIds })
+      const response = await fetch("/api/image-generation/batch-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studyIds: listData.studyIds }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         toast({
           title: "Batch Processing Started",
           description: `Started processing ${listData.studyIds.length} studies. This will run in the background.`,
           variant: "default",
         });
-        
+
         // Wait a moment then refresh the list
         setTimeout(fetchStudiesNeedingImages, 5000);
       } else {
-        console.error('Error batch generating images:', data.message);
+        console.error("Error batch generating images:", data.message);
         toast({
           title: "Error",
           description: `Failed to start batch generation: ${data.message}`,
@@ -165,10 +179,11 @@ const ImageGenerationPage: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error batch generating images:', error);
+      console.error("Error batch generating images:", error);
       toast({
         title: "Error",
-        description: "Failed to start batch image generation. Please try again.",
+        description:
+          "Failed to start batch image generation. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -178,32 +193,38 @@ const ImageGenerationPage: React.FC = () => {
 
   // Auto-generate all images
   const autoGenerateAllImages = async () => {
-    if (!confirm("This will start generating images for ALL studies without images. The process will run in the background and may take a significant amount of time. Do you want to continue?")) {
+    if (
+      !confirm(
+        "This will start generating images for ALL studies without images. The process will run in the background and may take a significant amount of time. Do you want to continue?",
+      )
+    ) {
       return;
     }
-    
+
     setIsGeneratingAll(true);
-    
+
     try {
-      const response = await fetch('/api/image-generation/auto-generate-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await fetch("/api/image-generation/auto-generate-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setAutoGenStarted(true);
         toast({
           title: "Auto-Generation Started",
-          description: data.message || "Started generating images for all studies that need them. This process will run in the background.",
+          description:
+            data.message ||
+            "Started generating images for all studies that need them. This process will run in the background.",
           variant: "default",
         });
-        
+
         // Wait a moment then refresh the list
         setTimeout(fetchStudiesNeedingImages, 5000);
       } else {
-        console.error('Error auto generating images:', data.message);
+        console.error("Error auto generating images:", data.message);
         toast({
           title: "Error",
           description: `Failed to start auto generation: ${data.message}`,
@@ -211,7 +232,7 @@ const ImageGenerationPage: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error starting auto image generation:', error);
+      console.error("Error starting auto image generation:", error);
       toast({
         title: "Error",
         description: "Failed to start auto image generation. Please try again.",
@@ -228,7 +249,10 @@ const ImageGenerationPage: React.FC = () => {
   }, []);
 
   return (
-    <AdminLayout title="Image Generation" description="Generate scientific images for studies without media">      
+    <AdminLayout
+      title="Image Generation"
+      description="Generate scientific images for studies without media"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -245,12 +269,16 @@ const ImageGenerationPage: React.FC = () => {
                 `${studiesNeedingImages.length} studies need images`
               )}
             </p>
-            <Button onClick={fetchStudiesNeedingImages} variant="outline" className="w-full">
+            <Button
+              onClick={fetchStudiesNeedingImages}
+              variant="outline"
+              className="w-full"
+            >
               Refresh List
             </Button>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Batch Generate</CardTitle>
@@ -270,8 +298,8 @@ const ImageGenerationPage: React.FC = () => {
               />
               <span className="text-muted-foreground">studies at once</span>
             </div>
-            <Button 
-              onClick={generateBatchImages} 
+            <Button
+              onClick={generateBatchImages}
               disabled={isGeneratingBatch || studiesNeedingImages.length === 0}
               className="w-full"
             >
@@ -286,7 +314,7 @@ const ImageGenerationPage: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
-        
+
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader>
             <CardTitle className="flex items-center text-blue-700">
@@ -303,16 +331,18 @@ const ImageGenerationPage: React.FC = () => {
                 <Activity className="h-4 w-4" />
                 <AlertTitle>Auto-Generation In Progress</AlertTitle>
                 <AlertDescription>
-                  Image generation is running in the background. This process may take some time to complete.
+                  Image generation is running in the background. This process
+                  may take some time to complete.
                 </AlertDescription>
               </Alert>
             ) : (
               <>
                 <p className="text-muted-foreground mb-4">
-                  This will find all studies without images and generate AI visuals for them in the background.
+                  This will find all studies without images and generate AI
+                  visuals for them in the background.
                 </p>
-                <Button 
-                  onClick={autoGenerateAllImages} 
+                <Button
+                  onClick={autoGenerateAllImages}
                   disabled={isGeneratingAll}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 >
@@ -330,9 +360,9 @@ const ImageGenerationPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       <h2 className="text-xl font-semibold mb-4">Studies Needing Images</h2>
-      
+
       {isLoadingStudies ? (
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -345,7 +375,7 @@ const ImageGenerationPage: React.FC = () => {
             </Card>
           ))}
         </div>
-      ) : (studiesNeedingImages.length === 0) ? (
+      ) : studiesNeedingImages.length === 0 ? (
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-6">
             <div className="flex items-center text-green-600 mb-2">
@@ -364,7 +394,9 @@ const ImageGenerationPage: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">Study #{studyId}</h3>
+                    <h3 className="font-semibold text-lg mb-1">
+                      Study #{studyId}
+                    </h3>
                     <p className="text-muted-foreground text-sm mb-3">
                       Missing Image
                     </p>

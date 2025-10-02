@@ -1,20 +1,31 @@
-import React from 'react';
-import { Link, useParams } from 'wouter';
-import { ArrowLeft, Calendar, User, Clock, Tag, Share2, BookOpen, Heart, MessageCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import SiteHeader from '@/components/layout/SiteHeader';
+import React from "react";
+import { Link, useParams } from "wouter";
+import {
+  ArrowLeft,
+  Calendar,
+  User,
+  Clock,
+  Tag,
+  Share2,
+  BookOpen,
+  Heart,
+  MessageCircle,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function BlogArticlePage() {
   const { id } = useParams();
 
   // This would normally fetch from your database
   const article = {
-    id: parseInt(id || '1'),
-    title: 'Top 5 Hydrogen Studies on Gut Health: What the Research Shows',
-    summary: 'A comprehensive analysis of the latest research on hydrogen therapy for digestive health and gut microbiome support.',
+    id: parseInt(id || "1"),
+    title: "Top 5 Hydrogen Studies on Gut Health: What the Research Shows",
+    summary:
+      "A comprehensive analysis of the latest research on hydrogen therapy for digestive health and gut microbiome support.",
     content: `
 # Introduction
 
@@ -116,42 +127,51 @@ For those interested in diving deeper into the research, here are key studies re
 4. *"Hydrogen's impact on intestinal barrier function"* - Gut Health Journal (2023)
 5. *"Antioxidant effects of molecular hydrogen in digestive health"* - Free Radical Biology (2022)
     `,
-    author: 'Dr. Sarah Chen',
-    authorBio: 'Dr. Chen is a board-certified gastroenterologist with over 15 years of experience in integrative digestive health. She specializes in hydrogen therapy research and has published over 30 peer-reviewed articles.',
-    publishDate: '2024-01-15',
-    readTime: '8 min read',
-    category: 'Research Insights',
-    imageUrl: 'https://placehold.co/800x400/e2f3ff/003366?text=Gut+Health+Research',
-    tags: ['gut health', 'microbiome', 'research analysis', 'digestive health', 'hydrogen water'],
-    relatedStudies: [542, 678, 923, 1045, 1156]
+    author: "Dr. Sarah Chen",
+    authorBio:
+      "Dr. Chen is a board-certified gastroenterologist with over 15 years of experience in integrative digestive health. She specializes in hydrogen therapy research and has published over 30 peer-reviewed articles.",
+    publishDate: "2024-01-15",
+    readTime: "8 min read",
+    category: "Research Insights",
+    imageUrl:
+      "https://placehold.co/800x400/e2f3ff/003366?text=Gut+Health+Research",
+    tags: [
+      "gut health",
+      "microbiome",
+      "research analysis",
+      "digestive health",
+      "hydrogen water",
+    ],
+    relatedStudies: [542, 678, 923, 1045, 1156],
   };
 
   const relatedArticles = [
     {
       id: 2,
-      title: 'How Athletes Are Using Hydrogen Water for Performance Enhancement',
-      category: 'Product Applications',
-      readTime: '6 min read'
+      title:
+        "How Athletes Are Using Hydrogen Water for Performance Enhancement",
+      category: "Product Applications",
+      readTime: "6 min read",
     },
     {
       id: 3,
-      title: 'Understanding Hydrogen Inhalation Therapy: A Beginner\'s Guide',
-      category: 'Health Benefits',
-      readTime: '10 min read'
+      title: "Understanding Hydrogen Inhalation Therapy: A Beginner's Guide",
+      category: "Health Benefits",
+      readTime: "10 min read",
     },
     {
       id: 4,
-      title: 'The Science Behind Hydrogen\'s Anti-Inflammatory Effects',
-      category: 'Research Insights',
-      readTime: '7 min read'
-    }
+      title: "The Science Behind Hydrogen's Anti-Inflammatory Effects",
+      category: "Research Insights",
+      readTime: "7 min read",
+    },
   ];
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -174,132 +194,233 @@ For those interested in diving deeper into the research, here are key studies re
         {/* Back Navigation - removed sticky nav since we have SiteHeader */}
         <div className="bg-white border-b">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/blog" className="flex items-center text-blue-600 hover:text-blue-700">
+            <Link
+              href="/blog"
+              className="flex items-center text-blue-600 hover:text-blue-700"
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Blog
             </Link>
           </div>
         </div>
 
-      {/* Article Header */}
-      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="mb-8">
-          <div className="flex items-center space-x-4 mb-6">
-            <Badge className="bg-blue-100 text-blue-800">{article.category}</Badge>
-            <div className="flex items-center text-gray-500 text-sm space-x-4">
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-1" />
-                {formatDate(article.publishDate)}
-              </div>
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                {article.readTime}
-              </div>
-            </div>
-          </div>
-
-          <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-            {article.title}
-          </h1>
-
-          <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-            {article.summary}
-          </p>
-
-          <div className="flex items-center justify-between pb-8 border-b">
-            <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
-                <User className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">{article.author}</p>
-                <p className="text-sm text-gray-600">Medical Expert & Researcher</p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={handleShare} className="flex items-center">
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
-            </Button>
-          </div>
-        </header>
-
-        {/* Featured Image */}
-        <div className="mb-8">
-          <img
-            src={article.imageUrl}
-            alt={article.title}
-            className="w-full h-64 sm:h-80 object-cover rounded-lg"
-          />
-        </div>
-
-        {/* Article Content */}
-        <div className="prose prose-lg max-w-none">
-          {article.content.split('\n').map((paragraph, index) => {
-            if (paragraph.startsWith('# ')) {
-              return <h1 key={index} className="text-3xl font-bold text-gray-900 mt-12 mb-6">{paragraph.slice(2)}</h1>;
-            } else if (paragraph.startsWith('## ')) {
-              return <h2 key={index} className="text-2xl font-bold text-gray-900 mt-10 mb-4">{paragraph.slice(3)}</h2>;
-            } else if (paragraph.startsWith('### ')) {
-              return <h3 key={index} className="text-xl font-semibold text-gray-900 mt-8 mb-3">{paragraph.slice(4)}</h3>;
-            } else if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
-              return <p key={index} className="font-semibold text-gray-900 mb-4">{paragraph.slice(2, -2)}</p>;
-            } else if (paragraph.startsWith('*') && paragraph.endsWith('*') && !paragraph.includes('**')) {
-              return <p key={index} className="italic text-gray-700 bg-blue-50 p-4 rounded-lg mb-6 border-l-4 border-blue-600">{paragraph.slice(1, -1)}</p>;
-            } else if (paragraph.startsWith('- ')) {
-              return <li key={index} className="text-gray-700 mb-2">{paragraph.slice(2)}</li>;
-            } else if (paragraph.trim() === '') {
-              return null;
-            } else {
-              return <p key={index} className="text-gray-700 mb-6 leading-relaxed">{paragraph}</p>;
-            }
-          })}
-        </div>
-
-        {/* Tags */}
-        <div className="mt-12 pt-8 border-t">
-          <div className="flex items-center space-x-2 mb-6">
-            <Tag className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Tags:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {article.tags.map((tag, index) => (
-              <Badge key={index} variant="outline" className="hover:bg-blue-50 cursor-pointer">
-                {tag}
+        {/* Article Header */}
+        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <header className="mb-8">
+            <div className="flex items-center space-x-4 mb-6">
+              <Badge className="bg-blue-100 text-blue-800">
+                {article.category}
               </Badge>
-            ))}
-          </div>
-        </div>
-
-        {/* Author Bio */}
-        <div className="mt-12 pt-8 border-t">
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <div className="flex items-start space-x-4">
-              <div className="h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="h-8 w-8 text-white" />
+              <div className="flex items-center text-gray-500 text-sm space-x-4">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  {formatDate(article.publishDate)}
+                </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-1" />
+                  {article.readTime}
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">About {article.author}</h3>
-                <p className="text-gray-600">{article.authorBio}</p>
+            </div>
+
+            <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
+              {article.title}
+            </h1>
+
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              {article.summary}
+            </p>
+
+            <div className="flex items-center justify-between pb-8 border-b">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {article.author}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Medical Expert & Researcher
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleShare}
+                className="flex items-center"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+            </div>
+          </header>
+
+          {/* Featured Image */}
+          <div className="mb-8">
+            <img
+              src={article.imageUrl}
+              alt={article.title}
+              className="w-full h-64 sm:h-80 object-cover rounded-lg"
+            />
+          </div>
+
+          {/* Article Content */}
+          <div className="prose prose-lg max-w-none">
+            {article.content.split("\n").map((paragraph, index) => {
+              if (paragraph.startsWith("# ")) {
+                return (
+                  <h1
+                    key={index}
+                    className="text-3xl font-bold text-gray-900 mt-12 mb-6"
+                  >
+                    {paragraph.slice(2)}
+                  </h1>
+                );
+              } else if (paragraph.startsWith("## ")) {
+                return (
+                  <h2
+                    key={index}
+                    className="text-2xl font-bold text-gray-900 mt-10 mb-4"
+                  >
+                    {paragraph.slice(3)}
+                  </h2>
+                );
+              } else if (paragraph.startsWith("### ")) {
+                return (
+                  <h3
+                    key={index}
+                    className="text-xl font-semibold text-gray-900 mt-8 mb-3"
+                  >
+                    {paragraph.slice(4)}
+                  </h3>
+                );
+              } else if (
+                paragraph.startsWith("**") &&
+                paragraph.endsWith("**")
+              ) {
+                return (
+                  <p key={index} className="font-semibold text-gray-900 mb-4">
+                    {paragraph.slice(2, -2)}
+                  </p>
+                );
+              } else if (
+                paragraph.startsWith("*") &&
+                paragraph.endsWith("*") &&
+                !paragraph.includes("**")
+              ) {
+                return (
+                  <p
+                    key={index}
+                    className="italic text-gray-700 bg-blue-50 p-4 rounded-lg mb-6 border-l-4 border-blue-600"
+                  >
+                    {paragraph.slice(1, -1)}
+                  </p>
+                );
+              } else if (paragraph.startsWith("- ")) {
+                return (
+                  <li key={index} className="text-gray-700 mb-2">
+                    {paragraph.slice(2)}
+                  </li>
+                );
+              } else if (paragraph.trim() === "") {
+                return null;
+              } else {
+                return (
+                  <p key={index} className="text-gray-700 mb-6 leading-relaxed">
+                    {paragraph}
+                  </p>
+                );
+              }
+            })}
+          </div>
+
+          {/* Tags */}
+          <div className="mt-12 pt-8 border-t">
+            <div className="flex items-center space-x-2 mb-6">
+              <Tag className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Tags:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {article.tags.map((tag, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="hover:bg-blue-50 cursor-pointer"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Author Bio */}
+          <div className="mt-12 pt-8 border-t">
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="flex items-start space-x-4">
+                <div className="h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    About {article.author}
+                  </h3>
+                  <p className="text-gray-600">{article.authorBio}</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Related Studies */}
-        {article.relatedStudies && article.relatedStudies.length > 0 && (
-          <div className="mt-12 pt-8 border-t">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-              <BookOpen className="h-5 w-5 mr-2" />
-              Related Research Studies
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {article.relatedStudies.slice(0, 3).map((studyId, index) => (
-                <Link key={index} href={`/study/id/${studyId}`}>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          {/* Related Studies */}
+          {article.relatedStudies && article.relatedStudies.length > 0 && (
+            <div className="mt-12 pt-8 border-t">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                <BookOpen className="h-5 w-5 mr-2" />
+                Related Research Studies
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {article.relatedStudies.slice(0, 3).map((studyId, index) => (
+                  <Link key={index} href={`/study/id/${studyId}`}>
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                      <CardHeader>
+                        <CardTitle className="text-sm">
+                          Study #{studyId}
+                        </CardTitle>
+                        <p className="text-xs text-gray-600">
+                          Referenced in this article - click to view full study
+                          details
+                        </p>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </article>
+
+        {/* Related Articles */}
+        <section className="bg-gray-50 py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">
+              Related Articles
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {relatedArticles.map((relatedArticle) => (
+                <Link
+                  key={relatedArticle.id}
+                  href={`/blog/${relatedArticle.id}`}
+                >
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                     <CardHeader>
-                      <CardTitle className="text-sm">Study #{studyId}</CardTitle>
-                      <p className="text-xs text-gray-600">
-                        Referenced in this article - click to view full study details
+                      <Badge variant="secondary" className="w-fit mb-2">
+                        {relatedArticle.category}
+                      </Badge>
+                      <CardTitle className="text-lg line-clamp-2">
+                        {relatedArticle.title}
+                      </CardTitle>
+                      <p className="text-sm text-gray-500">
+                        {relatedArticle.readTime}
                       </p>
                     </CardHeader>
                   </Card>
@@ -307,29 +428,8 @@ For those interested in diving deeper into the research, here are key studies re
               ))}
             </div>
           </div>
-        )}
-      </article>
-
-      {/* Related Articles */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Articles</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {relatedArticles.map((relatedArticle) => (
-              <Link key={relatedArticle.id} href={`/blog/${relatedArticle.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <Badge variant="secondary" className="w-fit mb-2">{relatedArticle.category}</Badge>
-                    <CardTitle className="text-lg line-clamp-2">{relatedArticle.title}</CardTitle>
-                    <p className="text-sm text-gray-500">{relatedArticle.readTime}</p>
-                  </CardHeader>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
     </>
   );
 }

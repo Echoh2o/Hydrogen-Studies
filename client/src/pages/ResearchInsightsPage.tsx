@@ -3,14 +3,23 @@ import ResearchTrendsChart from "@/components/visualizations/ResearchTrendsChart
 import HealthOutcomesMap from "@/components/visualizations/HealthOutcomesMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, Activity, Database, Calendar, Users, Heart, Brain } from 'lucide-react';
+import {
+  BarChart3,
+  TrendingUp,
+  Activity,
+  Database,
+  Calendar,
+  Users,
+  Heart,
+  Brain,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import SiteHeader from '@/components/layout/SiteHeader';
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function ResearchInsightsPage() {
   // Get database statistics
   const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: ['/api/studies/stats'],
+    queryKey: ["/api/studies/stats"],
     staleTime: 5 * 60 * 1000,
   });
 
@@ -39,10 +48,10 @@ export default function ResearchInsightsPage() {
                 Research Insights & Analytics
               </h1>
               <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                Discover patterns, trends, and breakthrough insights from our comprehensive 
-                hydrogen health research database
+                Discover patterns, trends, and breakthrough insights from our
+                comprehensive hydrogen health research database
               </p>
-              
+
               {/* Quick Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
@@ -73,7 +82,6 @@ export default function ResearchInsightsPage() {
         {/* Main Content */}
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-7xl mx-auto space-y-12">
-            
             {/* Research Trends Section */}
             <section>
               <div className="text-center mb-8">
@@ -81,8 +89,8 @@ export default function ResearchInsightsPage() {
                   Publication Trends & Research Categories
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Track the evolution of hydrogen health research over time and explore 
-                  the distribution across different health areas
+                  Track the evolution of hydrogen health research over time and
+                  explore the distribution across different health areas
                 </p>
               </div>
               <ResearchTrendsChart className="w-full" />
@@ -95,8 +103,8 @@ export default function ResearchInsightsPage() {
                   Health Outcomes by Body System
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Explore how hydrogen research shows benefits across different body systems 
-                  and discover the most promising areas of research
+                  Explore how hydrogen research shows benefits across different
+                  body systems and discover the most promising areas of research
                 </p>
               </div>
               <HealthOutcomesMap />
@@ -109,10 +117,11 @@ export default function ResearchInsightsPage() {
                   Key Research Insights
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Highlighted findings from our comprehensive analysis of hydrogen health studies
+                  Highlighted findings from our comprehensive analysis of
+                  hydrogen health studies
                 </p>
               </div>
-              
+
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Cardiovascular Insights */}
                 <Card className="border-red-200 hover:shadow-lg transition-shadow">
@@ -124,14 +133,21 @@ export default function ResearchInsightsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="text-2xl font-bold text-red-600">180+ Studies</div>
+                      <div className="text-2xl font-bold text-red-600">
+                        180+ Studies
+                      </div>
                       <p className="text-gray-600 text-sm">
-                        Hydrogen shows significant cardioprotective effects, with studies demonstrating 
-                        reduced oxidative stress and improved circulation.
+                        Hydrogen shows significant cardioprotective effects,
+                        with studies demonstrating reduced oxidative stress and
+                        improved circulation.
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="text-xs">Reduced Inflammation</Badge>
-                        <Badge variant="secondary" className="text-xs">Better Circulation</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Reduced Inflammation
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Better Circulation
+                        </Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -147,14 +163,21 @@ export default function ResearchInsightsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="text-2xl font-bold text-purple-600">150+ Studies</div>
+                      <div className="text-2xl font-bold text-purple-600">
+                        150+ Studies
+                      </div>
                       <p className="text-gray-600 text-sm">
-                        Strong neuroprotective effects shown across multiple studies, with promising 
-                        results for cognitive function and brain health.
+                        Strong neuroprotective effects shown across multiple
+                        studies, with promising results for cognitive function
+                        and brain health.
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="text-xs">Neuroprotection</Badge>
-                        <Badge variant="secondary" className="text-xs">Cognitive Support</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Neuroprotection
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Cognitive Support
+                        </Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -170,14 +193,21 @@ export default function ResearchInsightsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="text-2xl font-bold text-green-600">300% Increase</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        300% Increase
+                      </div>
                       <p className="text-gray-600 text-sm">
-                        Hydrogen health research has grown dramatically since 2010, with accelerating 
-                        interest from the scientific community.
+                        Hydrogen health research has grown dramatically since
+                        2010, with accelerating interest from the scientific
+                        community.
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="text-xs">Global Interest</Badge>
-                        <Badge variant="secondary" className="text-xs">Peer-Reviewed</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Global Interest
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Peer-Reviewed
+                        </Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -187,20 +217,23 @@ export default function ResearchInsightsPage() {
 
             {/* Call to Action */}
             <section className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white text-center">
-              <h2 className="text-2xl font-bold mb-4">Explore the Research Yourself</h2>
+              <h2 className="text-2xl font-bold mb-4">
+                Explore the Research Yourself
+              </h2>
               <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
-                Dive deeper into our comprehensive database of hydrogen health studies. 
-                Search by condition, body system, or research area to find the studies most relevant to you.
+                Dive deeper into our comprehensive database of hydrogen health
+                studies. Search by condition, body system, or research area to
+                find the studies most relevant to you.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a 
-                  href="/improved-search" 
+                <a
+                  href="/improved-search"
                   className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
                 >
                   Advanced Search
                 </a>
-                <a 
-                  href="/explore-by-condition" 
+                <a
+                  href="/explore-by-condition"
                   className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition-colors"
                 >
                   Browse by Condition

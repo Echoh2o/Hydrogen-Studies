@@ -28,7 +28,8 @@ export default function CookieConsent() {
   return (
     <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg z-50 p-4 flex flex-col sm:flex-row justify-between items-center border-t border-neutral-200">
       <p className="text-neutral-800 text-sm md:text-base mb-3 sm:mb-0">
-        This website uses cookies to ensure you get the best experience on our website.
+        This website uses cookies to ensure you get the best experience on our
+        website.
       </p>
       <div className="flex space-x-3">
         <Button

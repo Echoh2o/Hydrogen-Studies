@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react';
-import { Link, useLocation } from 'wouter';
-import { cn } from '@/lib/utils';
+import React, { ReactNode } from "react";
+import { Link, useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 import {
   Database,
   BarChart2,
@@ -15,10 +15,10 @@ import {
   Calendar,
   RefreshCcw,
   Home,
-  Folders, 
+  Folders,
   KeyRound,
-  FolderTree
-} from 'lucide-react';
+  FolderTree,
+} from "lucide-react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -26,83 +26,83 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [location] = useLocation();
-  
+
   const isActive = (path: string) => {
     return location === path || location.startsWith(`${path}/`);
   };
-  
+
   const menu = [
-    { 
-      name: 'Dashboard', 
-      path: '/admin', 
-      icon: <Home className="h-5 w-5" /> 
+    {
+      name: "Dashboard",
+      path: "/admin",
+      icon: <Home className="h-5 w-5" />,
     },
-    { 
-      name: 'Studies Management', 
-      path: '/admin/studies', 
-      icon: <FileText className="h-5 w-5" /> 
+    {
+      name: "Studies Management",
+      path: "/admin/studies",
+      icon: <FileText className="h-5 w-5" />,
     },
-    { 
-      name: 'Blogs Management', 
-      path: '/admin/blogs', 
-      icon: <BookOpen className="h-5 w-5" /> 
+    {
+      name: "Blogs Management",
+      path: "/admin/blogs",
+      icon: <BookOpen className="h-5 w-5" />,
     },
-    { 
-      name: 'Data Import', 
-      path: '/admin/data-import', 
-      icon: <Upload className="h-5 w-5" /> 
-    },
-    { divider: true },
-    { 
-      name: 'Research Database',
-      path: '/admin/research-database',
-      icon: <Database className="h-5 w-5" /> 
-    },
-    { 
-      name: 'Content Enrichment', 
-      path: '/admin/content-enrichment', 
-      icon: <Layers className="h-5 w-5" /> 
-    },
-    { 
-      name: 'Batch Enrichment', 
-      path: '/admin/batch-enrichment', 
-      icon: <RefreshCcw className="h-5 w-5" /> 
-    },
-    { 
-      name: 'Batch Categorization', 
-      path: '/admin/batch-categorization', 
-      icon: <FolderTree className="h-5 w-5" /> 
-    },
-    { 
-      name: 'Image Generation', 
-      path: '/admin/image-generation', 
-      icon: <Image className="h-5 w-5" /> 
-    },
-    { 
-      name: 'Keyword Monitor', 
-      path: '/admin/keyword-monitor', 
-      icon: <KeyRound className="h-5 w-5" /> 
+    {
+      name: "Data Import",
+      path: "/admin/data-import",
+      icon: <Upload className="h-5 w-5" />,
     },
     { divider: true },
-    { 
-      name: 'Analytics', 
-      path: '/admin/analytics', 
-      icon: <BarChart2 className="h-5 w-5" /> 
+    {
+      name: "Research Database",
+      path: "/admin/research-database",
+      icon: <Database className="h-5 w-5" />,
     },
-    { 
-      name: 'Journal Dates', 
-      path: '/admin/journal-dates', 
-      icon: <Calendar className="h-5 w-5" /> 
+    {
+      name: "Content Enrichment",
+      path: "/admin/content-enrichment",
+      icon: <Layers className="h-5 w-5" />,
     },
-    { 
-      name: 'Categories', 
-      path: '/admin/categories', 
-      icon: <Tag className="h-5 w-5" /> 
+    {
+      name: "Batch Enrichment",
+      path: "/admin/batch-enrichment",
+      icon: <RefreshCcw className="h-5 w-5" />,
     },
-    { 
-      name: 'Settings', 
-      path: '/admin/settings', 
-      icon: <Settings className="h-5 w-5" /> 
+    {
+      name: "Batch Categorization",
+      path: "/admin/batch-categorization",
+      icon: <FolderTree className="h-5 w-5" />,
+    },
+    {
+      name: "Image Generation",
+      path: "/admin/image-generation",
+      icon: <Image className="h-5 w-5" />,
+    },
+    {
+      name: "Keyword Monitor",
+      path: "/admin/keyword-monitor",
+      icon: <KeyRound className="h-5 w-5" />,
+    },
+    { divider: true },
+    {
+      name: "Analytics",
+      path: "/admin/analytics",
+      icon: <BarChart2 className="h-5 w-5" />,
+    },
+    {
+      name: "Journal Dates",
+      path: "/admin/journal-dates",
+      icon: <Calendar className="h-5 w-5" />,
+    },
+    {
+      name: "Categories",
+      path: "/admin/categories",
+      icon: <Tag className="h-5 w-5" />,
+    },
+    {
+      name: "Settings",
+      path: "/admin/settings",
+      icon: <Settings className="h-5 w-5" />,
     },
   ];
 
@@ -115,9 +115,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
         <nav className="p-4">
           <ul className="space-y-1">
-            {menu.map((item, i) => 
+            {menu.map((item, i) =>
               item.divider ? (
-                <li key={`divider-${i}`} className="my-4 border-t border-gray-200"></li>
+                <li
+                  key={`divider-${i}`}
+                  className="my-4 border-t border-gray-200"
+                ></li>
               ) : (
                 <li key={item.path}>
                   <Link href={item.path}>
@@ -134,12 +137,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     </a>
                   </Link>
                 </li>
-              )
+              ),
             )}
           </ul>
         </nav>
       </aside>
-      
+
       {/* Main content */}
       <main className="flex-1">
         <div className="flex items-center justify-between p-6 border-b bg-white">
@@ -152,7 +155,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </Link>
           </div>
         </div>
-        
+
         {children}
       </main>
     </div>

@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +28,11 @@ interface ScheduleData {
   days?: string[];
 }
 
-export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonitorProps) {
+export default function SimpleStatusMonitor({
+  onConfigureSchedule,
+}: StatusMonitorProps) {
   const [runningSearch, setRunningSearch] = useState(false);
-  
+
   // Fetch current schedule
   const scheduleQuery = useQuery({
     queryKey: ["/api/keywords/monitor/schedule"],
@@ -32,7 +41,7 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
 
   // State for success message
   const [showSuccess, setShowSuccess] = useState(false);
-  
+
   // Run search now mutation
   const runSearchMutation = useMutation({
     mutationFn: async () => {
@@ -40,24 +49,26 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
       const response = await fetch("/api/keywords/monitor/schedule/run", {
         method: "POST",
       });
-      
+
       const data = await response.json();
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/keywords/monitor/schedule"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/keywords/monitor/schedule"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/keywords/results"] });
       setRunningSearch(false);
-      
+
       // Show success message and auto-hide after 3 seconds
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     },
     onError: () => {
       setRunningSearch(false);
-    }
+    },
   });
-  
+
   // Cast the query data to our defined schema type with defaults
   const scheduleData: ScheduleData = (scheduleQuery.data as ScheduleData) || {
     enabled: false,
@@ -66,13 +77,14 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
     sources: [],
     lastRun: null,
     nextRun: null,
-    days: []
+    days: [],
   };
-  
+
   // Determine the schedule state
   const isScheduleEnabled = !!scheduleData.enabled;
-  const hasScheduleSources = Array.isArray(scheduleData.sources) && scheduleData.sources.length > 0;
-  
+  const hasScheduleSources =
+    Array.isArray(scheduleData.sources) && scheduleData.sources.length > 0;
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -84,7 +96,7 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
         </CardTitle>
         <CardDescription>Current monitoring schedule status</CardDescription>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Success message */}
         {showSuccess && (
@@ -92,17 +104,18 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
             <CheckCircle className="h-4 w-4" />
             <AlertTitle>Search Started</AlertTitle>
             <AlertDescription>
-              The keyword search has been started successfully. Any matches will appear in the "Monitor Results" tab.
+              The keyword search has been started successfully. Any matches will
+              appear in the "Monitor Results" tab.
             </AlertDescription>
           </Alert>
         )}
-      
+
         {scheduleQuery.isLoading && (
           <div className="flex justify-center py-6">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
-        
+
         {scheduleQuery.isError && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -110,35 +123,45 @@ export default function SimpleStatusMonitor({ onConfigureSchedule }: StatusMonit
             </AlertDescription>
           </Alert>
         )}
-        
+
         {!scheduleQuery.isLoading && !scheduleQuery.isError && (
           <div className="grid gap-4">
             <p>
-              <strong>Status:</strong> {isScheduleEnabled ? "Active" : "Inactive"}
+              <strong>Status:</strong>{" "}
+              {isScheduleEnabled ? "Active" : "Inactive"}
             </p>
             <p>
               <strong>Frequency:</strong> {scheduleData.frequency || "Not set"}
             </p>
             <p>
-              <strong>Next Run:</strong> {scheduleData.nextRun ? new Date(scheduleData.nextRun).toLocaleString() : "Not scheduled"}
+              <strong>Next Run:</strong>{" "}
+              {scheduleData.nextRun
+                ? new Date(scheduleData.nextRun).toLocaleString()
+                : "Not scheduled"}
             </p>
             <p>
-              <strong>Last Run:</strong> {scheduleData.lastRun ? new Date(scheduleData.lastRun).toLocaleString() : "Never run"}
+              <strong>Last Run:</strong>{" "}
+              {scheduleData.lastRun
+                ? new Date(scheduleData.lastRun).toLocaleString()
+                : "Never run"}
             </p>
             <p>
-              <strong>Sources:</strong> {hasScheduleSources && scheduleData.sources ? scheduleData.sources.join(", ") : "No sources configured"}
+              <strong>Sources:</strong>{" "}
+              {hasScheduleSources && scheduleData.sources
+                ? scheduleData.sources.join(", ")
+                : "No sources configured"}
             </p>
           </div>
         )}
       </CardContent>
-      
+
       <CardFooter className="flex justify-between">
         <Button variant="outline" onClick={onConfigureSchedule}>
           Configure Schedule
         </Button>
-        
-        <Button 
-          onClick={() => runSearchMutation.mutate()} 
+
+        <Button
+          onClick={() => runSearchMutation.mutate()}
           disabled={runningSearch || !isScheduleEnabled || !hasScheduleSources}
         >
           {runningSearch ? (

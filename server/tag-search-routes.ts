@@ -14,7 +14,7 @@ import { eq, desc, ilike, sql, and, inArray } from "drizzle-orm";
 export async function getAllTags(req: Request, res: Response) {
   try {
     const { category, limit = 50 } = req.query;
-    
+
     let query = db
       .select({
         id: tags.id,
@@ -23,7 +23,7 @@ export async function getAllTags(req: Request, res: Response) {
         category: tags.category,
         description: tags.description,
         color: tags.color,
-        usageCount: tags.usageCount
+        usageCount: tags.usageCount,
       })
       .from(tags)
       .orderBy(desc(tags.usageCount))
@@ -34,15 +34,15 @@ export async function getAllTags(req: Request, res: Response) {
     }
 
     const allTags = await query;
-    
+
     res.json({
       success: true,
       tags: allTags,
-      total: allTags.length
+      total: allTags.length,
     });
   } catch (error) {
-    console.error('Error getting all tags:', error);
-    res.status(500).json({ message: 'Failed to retrieve tags' });
+    console.error("Error getting all tags:", error);
+    res.status(500).json({ message: "Failed to retrieve tags" });
   }
 }
 
@@ -59,7 +59,7 @@ export async function getTagCategories(req: Request, res: Response) {
         description: tagCategories.description,
         color: tagCategories.color,
         sortOrder: tagCategories.sortOrder,
-        tagCount: sql<number>`COUNT(${tags.id})::int`
+        tagCount: sql<number>`COUNT(${tags.id})::int`,
       })
       .from(tagCategories)
       .leftJoin(tags, eq(tags.category, tagCategories.slug))
@@ -69,20 +69,20 @@ export async function getTagCategories(req: Request, res: Response) {
         tagCategories.slug,
         tagCategories.description,
         tagCategories.color,
-        tagCategories.sortOrder
+        tagCategories.sortOrder,
       )
       .orderBy(tagCategories.sortOrder);
 
     res.json({
       success: true,
-      categories: categories.map(cat => ({
+      categories: categories.map((cat) => ({
         ...cat,
-        tagCount: cat.tagCount || 0
-      }))
+        tagCount: cat.tagCount || 0,
+      })),
     });
   } catch (error) {
-    console.error('Error getting tag categories:', error);
-    res.status(500).json({ message: 'Failed to retrieve tag categories' });
+    console.error("Error getting tag categories:", error);
+    res.status(500).json({ message: "Failed to retrieve tag categories" });
   }
 }
 
@@ -91,13 +91,13 @@ export async function getTagCategories(req: Request, res: Response) {
  */
 export async function searchStudiesByTags(req: Request, res: Response) {
   try {
-    const { 
-      tagIds, 
-      tagNames, 
-      category, 
-      limit = 20, 
+    const {
+      tagIds,
+      tagNames,
+      category,
+      limit = 20,
       offset = 0,
-      matchType = 'any' // 'any' or 'all'
+      matchType = "any", // 'any' or 'all'
     } = req.query;
 
     let tagIdsArray: number[] = [];
@@ -105,7 +105,9 @@ export async function searchStudiesByTags(req: Request, res: Response) {
     // Handle tag IDs
     if (tagIds) {
       const ids = Array.isArray(tagIds) ? tagIds : [tagIds];
-      tagIdsArray = ids.map(id => parseInt(id as string)).filter(id => !isNaN(id));
+      tagIdsArray = ids
+        .map((id) => parseInt(id as string))
+        .filter((id) => !isNaN(id));
     }
 
     // Handle tag names (convert to IDs)
@@ -115,8 +117,8 @@ export async function searchStudiesByTags(req: Request, res: Response) {
         .select({ id: tags.id })
         .from(tags)
         .where(inArray(tags.name, names as string[]));
-      
-      tagIdsArray.push(...tagsByName.map(t => t.id));
+
+      tagIdsArray.push(...tagsByName.map((t) => t.id));
     }
 
     // Handle category filter
@@ -125,8 +127,8 @@ export async function searchStudiesByTags(req: Request, res: Response) {
         .select({ id: tags.id })
         .from(tags)
         .where(eq(tags.category, category as string));
-      
-      tagIdsArray = tagsInCategory.map(t => t.id);
+
+      tagIdsArray = tagsInCategory.map((t) => t.id);
     }
 
     if (tagIdsArray.length === 0) {
@@ -134,14 +136,14 @@ export async function searchStudiesByTags(req: Request, res: Response) {
         success: true,
         studies: [],
         total: 0,
-        tags: []
+        tags: [],
       });
     }
 
     // Build the query based on match type
     let studyQuery;
-    
-    if (matchType === 'all') {
+
+    if (matchType === "all") {
       // Find studies that have ALL specified tags
       studyQuery = db
         .select({
@@ -153,7 +155,7 @@ export async function searchStudiesByTags(req: Request, res: Response) {
           publishDate: studies.publishDate,
           category: studies.category,
           imageUrl: studies.imageUrl,
-          viewCount: studies.viewCount
+          viewCount: studies.viewCount,
         })
         .from(studies)
         .innerJoin(studyTags, eq(studyTags.studyId, studies.id))
@@ -167,7 +169,7 @@ export async function searchStudiesByTags(req: Request, res: Response) {
           studies.publishDate,
           studies.category,
           studies.imageUrl,
-          studies.viewCount
+          studies.viewCount,
         )
         .having(sql`COUNT(DISTINCT ${studyTags.tagId}) = ${tagIdsArray.length}`)
         .orderBy(desc(studies.viewCount))
@@ -185,7 +187,7 @@ export async function searchStudiesByTags(req: Request, res: Response) {
           publishDate: studies.publishDate,
           category: studies.category,
           imageUrl: studies.imageUrl,
-          viewCount: studies.viewCount
+          viewCount: studies.viewCount,
         })
         .from(studies)
         .innerJoin(studyTags, eq(studyTags.studyId, studies.id))
@@ -198,9 +200,9 @@ export async function searchStudiesByTags(req: Request, res: Response) {
     const matchedStudies = await studyQuery;
 
     // Get tags for the matched studies
-    const studyIds = matchedStudies.map(s => s.id);
+    const studyIds = matchedStudies.map((s) => s.id);
     let studyTagsData = [];
-    
+
     if (studyIds.length > 0) {
       studyTagsData = await db
         .select({
@@ -210,7 +212,7 @@ export async function searchStudiesByTags(req: Request, res: Response) {
           tagCategory: tags.category,
           tagColor: tags.color,
           confidence: studyTags.confidence,
-          source: studyTags.source
+          source: studyTags.source,
         })
         .from(studyTags)
         .innerJoin(tags, eq(tags.id, studyTags.tagId))
@@ -219,34 +221,37 @@ export async function searchStudiesByTags(req: Request, res: Response) {
     }
 
     // Group tags by study
-    const studiesWithTags = matchedStudies.map(study => ({
+    const studiesWithTags = matchedStudies.map((study) => ({
       ...study,
       tags: studyTagsData
-        .filter(st => st.studyId === study.id)
-        .map(st => ({
+        .filter((st) => st.studyId === study.id)
+        .map((st) => ({
           id: st.tagId,
           name: st.tagName,
           category: st.tagCategory,
           color: st.tagColor,
           confidence: st.confidence,
-          source: st.source
-        }))
+          source: st.source,
+        })),
     }));
 
     // Get total count for pagination
-    const totalCountQuery = matchType === 'all' 
-      ? db
-          .select({ count: sql<number>`COUNT(DISTINCT ${studies.id})::int` })
-          .from(studies)
-          .innerJoin(studyTags, eq(studyTags.studyId, studies.id))
-          .where(inArray(studyTags.tagId, tagIdsArray))
-          .groupBy(studies.id)
-          .having(sql`COUNT(DISTINCT ${studyTags.tagId}) = ${tagIdsArray.length}`)
-      : db
-          .select({ count: sql<number>`COUNT(DISTINCT ${studies.id})::int` })
-          .from(studies)
-          .innerJoin(studyTags, eq(studyTags.studyId, studies.id))
-          .where(inArray(studyTags.tagId, tagIdsArray));
+    const totalCountQuery =
+      matchType === "all"
+        ? db
+            .select({ count: sql<number>`COUNT(DISTINCT ${studies.id})::int` })
+            .from(studies)
+            .innerJoin(studyTags, eq(studyTags.studyId, studies.id))
+            .where(inArray(studyTags.tagId, tagIdsArray))
+            .groupBy(studies.id)
+            .having(
+              sql`COUNT(DISTINCT ${studyTags.tagId}) = ${tagIdsArray.length}`,
+            )
+        : db
+            .select({ count: sql<number>`COUNT(DISTINCT ${studies.id})::int` })
+            .from(studies)
+            .innerJoin(studyTags, eq(studyTags.studyId, studies.id))
+            .where(inArray(studyTags.tagId, tagIdsArray));
 
     const [totalResult] = await totalCountQuery;
     const total = totalResult?.count || 0;
@@ -257,7 +262,7 @@ export async function searchStudiesByTags(req: Request, res: Response) {
         id: tags.id,
         name: tags.name,
         category: tags.category,
-        color: tags.color
+        color: tags.color,
       })
       .from(tags)
       .where(inArray(tags.id, tagIdsArray));
@@ -271,13 +276,12 @@ export async function searchStudiesByTags(req: Request, res: Response) {
       pagination: {
         limit: parseInt(limit as string),
         offset: parseInt(offset as string),
-        hasMore: parseInt(offset as string) + parseInt(limit as string) < total
-      }
+        hasMore: parseInt(offset as string) + parseInt(limit as string) < total,
+      },
     });
-
   } catch (error) {
-    console.error('Error searching studies by tags:', error);
-    res.status(500).json({ message: 'Failed to search studies by tags' });
+    console.error("Error searching studies by tags:", error);
+    res.status(500).json({ message: "Failed to search studies by tags" });
   }
 }
 
@@ -287,13 +291,15 @@ export async function searchStudiesByTags(req: Request, res: Response) {
 export async function getRelatedTags(req: Request, res: Response) {
   try {
     const { tagIds, limit = 10 } = req.query;
-    
+
     if (!tagIds) {
-      return res.status(400).json({ message: 'Tag IDs are required' });
+      return res.status(400).json({ message: "Tag IDs are required" });
     }
 
     const ids = Array.isArray(tagIds) ? tagIds : [tagIds];
-    const tagIdsArray = ids.map(id => parseInt(id as string)).filter(id => !isNaN(id));
+    const tagIdsArray = ids
+      .map((id) => parseInt(id as string))
+      .filter((id) => !isNaN(id));
 
     if (tagIdsArray.length === 0) {
       return res.json({ success: true, relatedTags: [] });
@@ -305,7 +311,7 @@ export async function getRelatedTags(req: Request, res: Response) {
       .from(studyTags)
       .where(inArray(studyTags.tagId, tagIdsArray));
 
-    const studyIds = studiesWithTags.map(s => s.studyId);
+    const studyIds = studiesWithTags.map((s) => s.studyId);
 
     if (studyIds.length === 0) {
       return res.json({ success: true, relatedTags: [] });
@@ -318,15 +324,15 @@ export async function getRelatedTags(req: Request, res: Response) {
         name: tags.name,
         category: tags.category,
         color: tags.color,
-        coOccurrenceCount: sql<number>`COUNT(${studyTags.studyId})::int`
+        coOccurrenceCount: sql<number>`COUNT(${studyTags.studyId})::int`,
       })
       .from(tags)
       .innerJoin(studyTags, eq(studyTags.tagId, tags.id))
       .where(
         and(
           inArray(studyTags.studyId, studyIds),
-          sql`${tags.id} NOT IN (${tagIdsArray.join(',')})`
-        )
+          sql`${tags.id} NOT IN (${tagIdsArray.join(",")})`,
+        ),
       )
       .groupBy(tags.id, tags.name, tags.category, tags.color)
       .orderBy(sql`COUNT(${studyTags.studyId}) DESC`)
@@ -334,12 +340,11 @@ export async function getRelatedTags(req: Request, res: Response) {
 
     res.json({
       success: true,
-      relatedTags
+      relatedTags,
     });
-
   } catch (error) {
-    console.error('Error getting related tags:', error);
-    res.status(500).json({ message: 'Failed to get related tags' });
+    console.error("Error getting related tags:", error);
+    res.status(500).json({ message: "Failed to get related tags" });
   }
 }
 
@@ -349,7 +354,7 @@ export async function getRelatedTags(req: Request, res: Response) {
 export async function getPopularTagsByCategory(req: Request, res: Response) {
   try {
     const { limit = 5 } = req.query;
-    
+
     const popularTags = await db
       .select({
         category: tags.category,
@@ -360,25 +365,24 @@ export async function getPopularTagsByCategory(req: Request, res: Response) {
             'usageCount', ${tags.usageCount},
             'color', ${tags.color}
           ) ORDER BY ${tags.usageCount} DESC
-        )`
+        )`,
       })
       .from(tags)
       .where(sql`${tags.usageCount} > 0`)
       .groupBy(tags.category);
 
     // Limit tags per category
-    const limitedTags = popularTags.map(cat => ({
+    const limitedTags = popularTags.map((cat) => ({
       category: cat.category,
-      tags: (cat.tags || []).slice(0, parseInt(limit as string))
+      tags: (cat.tags || []).slice(0, parseInt(limit as string)),
     }));
 
     res.json({
       success: true,
-      popularTagsByCategory: limitedTags
+      popularTagsByCategory: limitedTags,
     });
-
   } catch (error) {
-    console.error('Error getting popular tags by category:', error);
-    res.status(500).json({ message: 'Failed to get popular tags by category' });
+    console.error("Error getting popular tags by category:", error);
+    res.status(500).json({ message: "Failed to get popular tags by category" });
   }
 }

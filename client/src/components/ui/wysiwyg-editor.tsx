@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
+import React, { useState, useEffect } from "react";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 interface WysiwygEditorProps {
   id?: string;
@@ -20,14 +20,14 @@ interface WysiwygEditorProps {
 }
 
 const toolbarOptions = [
-  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-  ['bold', 'italic', 'underline', 'strike'],
-  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-  [{ 'indent': '-1'}, { 'indent': '+1' }],
-  [{ 'align': [] }],
-  ['link', 'image', 'blockquote', 'code-block'],
-  [{ 'color': [] }, { 'background': [] }],
-  ['clean']
+  [{ header: [1, 2, 3, 4, 5, 6, false] }],
+  ["bold", "italic", "underline", "strike"],
+  [{ list: "ordered" }, { list: "bullet" }],
+  [{ indent: "-1" }, { indent: "+1" }],
+  [{ align: [] }],
+  ["link", "image", "blockquote", "code-block"],
+  [{ color: [] }, { background: [] }],
+  ["clean"],
 ];
 
 export function WysiwygEditor({
@@ -42,22 +42,22 @@ export function WysiwygEditor({
   required = false,
   readOnly = false,
   error,
-  description
+  description,
 }: WysiwygEditorProps) {
   // Init with empty string if value is undefined
-  const [editorValue, setEditorValue] = useState(value || '');
-  
+  const [editorValue, setEditorValue] = useState(value || "");
+
   // Update local state when prop value changes
   useEffect(() => {
-    setEditorValue(value || '');
+    setEditorValue(value || "");
   }, [value]);
-  
+
   // Handle editor changes
   const handleChange = (content: string) => {
     setEditorValue(content);
     onChange(content);
   };
-  
+
   // Quill modules configuration
   const modules = {
     toolbar: toolbarOptions,
@@ -65,25 +65,22 @@ export function WysiwygEditor({
       matchVisual: false,
     },
   };
-  
+
   return (
     <div className="space-y-2">
       {label && (
         <div className="flex items-baseline justify-between">
-          <Label 
-            htmlFor={id || name} 
-            className="font-medium"
-          >
+          <Label htmlFor={id || name} className="font-medium">
             {label} {required && <span className="text-red-500">*</span>}
           </Label>
         </div>
       )}
-      
-      <div 
+
+      <div
         className={cn(
           "border rounded-md overflow-hidden",
           error ? "border-red-500" : "border-input",
-          className
+          className,
         )}
         style={{ minHeight: height }}
       >
@@ -99,11 +96,9 @@ export function WysiwygEditor({
           style={{ height: `calc(${height} - 42px)` }} // Adjust for toolbar height
         />
       </div>
-      
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
-      
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
       {description && !error && (
         <p className="text-sm text-muted-foreground">{description}</p>
       )}

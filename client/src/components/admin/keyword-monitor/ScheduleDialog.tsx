@@ -1,15 +1,21 @@
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -28,10 +34,10 @@ interface ScheduleDialogProps {
   } | null;
 }
 
-export default function ScheduleDialog({ 
-  open, 
+export default function ScheduleDialog({
+  open,
   onOpenChange,
-  currentSchedule
+  currentSchedule,
 }: ScheduleDialogProps) {
   // Initialize with current schedule or defaults
   const [schedule, setSchedule] = useState({
@@ -39,7 +45,7 @@ export default function ScheduleDialog({
     frequency: currentSchedule?.frequency || "daily",
     time: currentSchedule?.time || "00:00",
     days: currentSchedule?.days || ["monday", "wednesday", "friday"],
-    sources: currentSchedule?.sources || ["pubmed", "crossref", "europepmc"]
+    sources: currentSchedule?.sources || ["pubmed", "crossref", "europepmc"],
   });
 
   // Available schedule frequencies
@@ -47,7 +53,7 @@ export default function ScheduleDialog({
     { value: "daily", label: "Daily" },
     { value: "weekly", label: "Weekly" },
     { value: "monthly", label: "Monthly" },
-    { value: "custom", label: "Custom Days" }
+    { value: "custom", label: "Custom Days" },
   ];
 
   // Available days for custom schedule
@@ -58,14 +64,14 @@ export default function ScheduleDialog({
     { value: "thursday", label: "Thursday" },
     { value: "friday", label: "Friday" },
     { value: "saturday", label: "Saturday" },
-    { value: "sunday", label: "Sunday" }
+    { value: "sunday", label: "Sunday" },
   ];
 
   // Available sources to search
   const sources = [
     { value: "pubmed", label: "PubMed" },
     { value: "crossref", label: "CrossRef" },
-    { value: "europepmc", label: "Europe PMC" }
+    { value: "europepmc", label: "Europe PMC" },
   ];
 
   // Update schedule mutation
@@ -74,21 +80,23 @@ export default function ScheduleDialog({
       const response = await fetch("/api/keywords/monitor/schedule", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(scheduleData)
+        body: JSON.stringify(scheduleData),
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to update schedule");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/keywords/monitor/schedule"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/keywords/monitor/schedule"],
+      });
       onOpenChange(false);
-    }
+    },
   });
 
   // Handle form submit
@@ -99,52 +107,52 @@ export default function ScheduleDialog({
 
   // Toggle schedule enabled state
   const toggleEnabled = () => {
-    setSchedule(prev => ({
+    setSchedule((prev) => ({
       ...prev,
-      enabled: !prev.enabled
+      enabled: !prev.enabled,
     }));
   };
 
   // Update frequency
   const updateFrequency = (value: string) => {
-    setSchedule(prev => ({
+    setSchedule((prev) => ({
       ...prev,
-      frequency: value
+      frequency: value,
     }));
   };
 
   // Update time
   const updateTime = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSchedule(prev => ({
+    setSchedule((prev) => ({
       ...prev,
-      time: e.target.value
+      time: e.target.value,
     }));
   };
 
   // Toggle day selection for custom schedule
   const toggleDay = (day: string) => {
-    setSchedule(prev => {
+    setSchedule((prev) => {
       const newDays = prev.days.includes(day)
-        ? prev.days.filter(d => d !== day)
+        ? prev.days.filter((d) => d !== day)
         : [...prev.days, day];
-      
+
       return {
         ...prev,
-        days: newDays
+        days: newDays,
       };
     });
   };
 
   // Toggle source selection
   const toggleSource = (source: string) => {
-    setSchedule(prev => {
+    setSchedule((prev) => {
       const newSources = prev.sources.includes(source)
-        ? prev.sources.filter(s => s !== source)
+        ? prev.sources.filter((s) => s !== source)
         : [...prev.sources, source];
-      
+
       return {
         ...prev,
-        sources: newSources
+        sources: newSources,
       };
     });
   };
@@ -158,7 +166,8 @@ export default function ScheduleDialog({
             Schedule Automatic Study Searches
           </DialogTitle>
           <DialogDescription>
-            Configure when and how often to search scientific databases for new hydrogen health studies.
+            Configure when and how often to search scientific databases for new
+            hydrogen health studies.
           </DialogDescription>
         </DialogHeader>
 
@@ -190,7 +199,7 @@ export default function ScheduleDialog({
                 <SelectValue placeholder="Select frequency" />
               </SelectTrigger>
               <SelectContent>
-                {frequencies.map(freq => (
+                {frequencies.map((freq) => (
                   <SelectItem key={freq.value} value={freq.value}>
                     {freq.label}
                   </SelectItem>
@@ -216,11 +225,13 @@ export default function ScheduleDialog({
             <div className="space-y-2">
               <Label>Days to Run</Label>
               <div className="grid grid-cols-4 gap-2">
-                {days.map(day => (
+                {days.map((day) => (
                   <Button
                     key={day.value}
                     type="button"
-                    variant={schedule.days.includes(day.value) ? "default" : "outline"}
+                    variant={
+                      schedule.days.includes(day.value) ? "default" : "outline"
+                    }
                     size="sm"
                     onClick={() => toggleDay(day.value)}
                     disabled={!schedule.enabled}
@@ -237,11 +248,15 @@ export default function ScheduleDialog({
           <div className="space-y-2">
             <Label>Sources to Search</Label>
             <div className="grid grid-cols-3 gap-2">
-              {sources.map(source => (
+              {sources.map((source) => (
                 <Button
                   key={source.value}
                   type="button"
-                  variant={schedule.sources.includes(source.value) ? "default" : "outline"}
+                  variant={
+                    schedule.sources.includes(source.value)
+                      ? "default"
+                      : "outline"
+                  }
                   size="sm"
                   onClick={() => toggleSource(source.value)}
                   disabled={!schedule.enabled}

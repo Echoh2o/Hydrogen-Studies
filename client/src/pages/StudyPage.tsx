@@ -4,15 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { HiArrowLeft, HiDownload, HiExternalLink, HiUser, HiBookOpen, HiCalendar, HiDocumentText, HiClipboardCheck, HiPhotograph, HiShare, HiHeart } from "react-icons/hi";
+import {
+  HiArrowLeft,
+  HiDownload,
+  HiExternalLink,
+  HiUser,
+  HiBookOpen,
+  HiCalendar,
+  HiDocumentText,
+  HiClipboardCheck,
+  HiPhotograph,
+  HiShare,
+  HiHeart,
+} from "react-icons/hi";
 import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
-import JsonLd, { generateMedicalArticleSchema, generateBreadcrumbSchema } from "@/components/seo/JsonLd";
+import JsonLd, {
+  generateMedicalArticleSchema,
+  generateBreadcrumbSchema,
+} from "@/components/seo/JsonLd";
 import SEOHead from "@/components/seo/SEOHead";
 import StructuredData from "@/components/seo/StructuredData";
 import { useEffect, useRef } from "react";
-import SiteHeader from '@/components/layout/SiteHeader';
+import SiteHeader from "@/components/layout/SiteHeader";
 
 // Simple pure component for rendering a study image or fallback
 interface StudyImageProps {
@@ -25,21 +40,25 @@ interface StudyImageProps {
   year?: number;
 }
 
-const StudyImage = ({ 
-  studyId, 
-  imageUrl, 
-  imageAlt, 
+const StudyImage = ({
+  studyId,
+  imageUrl,
+  imageAlt,
   title = "Hydrogen Research Study",
   authors = "Hydrogen Researchers",
   journal = "Scientific Journal",
-  year 
+  year,
 }: StudyImageProps) => {
   // If image URL is provided and seems valid, return an actual image
-  if (imageUrl && imageUrl.trim() !== '' && !imageUrl.includes('placehold.co')) {
+  if (
+    imageUrl &&
+    imageUrl.trim() !== "" &&
+    !imageUrl.includes("placehold.co")
+  ) {
     return (
       <div className="w-full rounded-md shadow-md overflow-hidden bg-white">
-        <img 
-          src={imageUrl} 
+        <img
+          src={imageUrl}
           alt={imageAlt || `Study visualization: ${title}`}
           className="w-full object-cover h-auto max-h-96"
           loading="lazy"
@@ -47,36 +66,38 @@ const StudyImage = ({
             // On error, replace with a styled div
             const target = e.target as HTMLImageElement;
             const parent = target.parentNode as HTMLElement;
-            
+
             if (parent) {
               // Create a fallback element
-              const fallback = document.createElement('div');
-              fallback.className = "w-full h-96 bg-sky-50 flex flex-col items-center justify-center p-6 text-center";
-              
+              const fallback = document.createElement("div");
+              fallback.className =
+                "w-full h-96 bg-sky-50 flex flex-col items-center justify-center p-6 text-center";
+
               // Add study ID
-              const idEl = document.createElement('div');
+              const idEl = document.createElement("div");
               idEl.className = "text-blue-900 text-lg font-semibold mb-2";
               idEl.textContent = `Study #${studyId}`;
               fallback.appendChild(idEl);
-              
+
               // Add title
-              const titleEl = document.createElement('h3');
-              titleEl.className = "text-blue-900 text-xl font-bold mb-4 max-w-lg";
+              const titleEl = document.createElement("h3");
+              titleEl.className =
+                "text-blue-900 text-xl font-bold mb-4 max-w-lg";
               titleEl.textContent = title;
               fallback.appendChild(titleEl);
-              
+
               // Add authors
-              const authorsEl = document.createElement('p');
+              const authorsEl = document.createElement("p");
               authorsEl.className = "text-blue-800 mb-4";
               authorsEl.textContent = authors;
               fallback.appendChild(authorsEl);
-              
+
               // Add journal info
-              const journalEl = document.createElement('p');
+              const journalEl = document.createElement("p");
               journalEl.className = "text-blue-700 text-sm mb-8";
               journalEl.textContent = `${journal} (${year || new Date().getFullYear()})`;
               fallback.appendChild(journalEl);
-              
+
               // Replace the img with the fallback
               parent.replaceChild(fallback, target);
             }
@@ -85,26 +106,22 @@ const StudyImage = ({
       </div>
     );
   }
-  
+
   // Otherwise, render a styled div with study information
   return (
     <div className="w-full h-96 bg-gradient-to-br from-sky-50 to-blue-50 rounded-md shadow-md flex flex-col items-center justify-center p-6 text-center">
       <div className="text-blue-900 text-lg font-semibold mb-2">
         Study #{studyId}
       </div>
-      
-      <h3 className="text-blue-900 text-xl font-bold mb-4 max-w-lg">
-        {title}
-      </h3>
-      
-      <p className="text-blue-800 mb-4">
-        {authors}
-      </p>
-      
+
+      <h3 className="text-blue-900 text-xl font-bold mb-4 max-w-lg">{title}</h3>
+
+      <p className="text-blue-800 mb-4">{authors}</p>
+
       <p className="text-blue-700 text-sm mb-8">
         {journal} ({year || new Date().getFullYear()})
       </p>
-      
+
       {/* Simple hydrogen molecule visualization with CSS */}
       <div className="flex items-center justify-center mt-4 gap-8">
         <div className="w-16 h-16 rounded-full bg-blue-500 opacity-70 shadow-lg"></div>
@@ -153,59 +170,65 @@ const StudyPage = () => {
     fullTextAvailable?: boolean;
   }
 
-  const { data: study, isLoading, error } = useQuery<Study>({
+  const {
+    data: study,
+    isLoading,
+    error,
+  } = useQuery<Study>({
     queryKey: [`/api/studies/${studyId}`],
   });
-  
+
   // Create fallback image directly as base64-encoded SVG data URI
-  const fallbackImageBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPkh5ZHJvZ2VuIFJlc2VhcmNoIFN0dWR5PC90ZXh0PjxjaXJjbGUgY3g9IjQwMCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDY2Y2MiIG9wYWNpdHk9IjAuNyIvPjxjaXJjbGUgY3g9IjM0MCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDMzNjYiIG9wYWNpdHk9IjAuNyIvPjxsaW5lIHgxPSIzNzAiIHkxPSIzNTAiIHgyPSI0MzAiIHkyPSIzNTAiIHN0cm9rZT0iIzAwMzM2NiIgc3Ryb2tlLXdpZHRoPSI0Ii8+PC9zdmc+";
-  
+  const fallbackImageBase64 =
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPkh5ZHJvZ2VuIFJlc2VhcmNoIFN0dWR5PC90ZXh0PjxjaXJjbGUgY3g9IjQwMCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDY2Y2MiIG9wYWNpdHk9IjAuNyIvPjxjaXJjbGUgY3g9IjM0MCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDMzNjYiIG9wYWNpdHk9IjAuNyIvPjxsaW5lIHgxPSIzNzAiIHkxPSIzNTAiIHgyPSI0MzAiIHkyPSIzNTAiIHN0cm9rZT0iIzAwMzM2NiIgc3Ryb2tlLXdpZHRoPSI0Ii8+PC9zdmc+";
+
   // Special case for study #1000 that has known issues
-  const study1000ImageBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN0dWR5ICMxMDAwPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiIGZvbnQtd2VpZ2h0PSJib2xkIj5GdXR1cmUgRGlyZWN0aW9ucyBpbiBIeWRyb2dlbiBTdHVkaWVzPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN1biwgWHVlanVuLCBPaHRhLCBTaGlnZW88L3RleHQ+PHRleHQgeD0iNDAwIiB5PSIyOTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMzM2NiI+SHlkcm9nZW4gTW9sZWN1bGFyIEJpb2xvZ3kgYW5kIE1lZGljaW5lICgyMDE1KTwvdGV4dD48Y2lyY2xlIGN4PSI0MDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDA2NmNjIiBvcGFjaXR5PSIwLjciLz48Y2lyY2xlIGN4PSIzNDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDAzMzY2IiBvcGFjaXR5PSIwLjciLz48bGluZSB4MT0iMzcwIiB5MT0iMzgwIiB4Mj0iNDMwIiB5Mj0iMzgwIiBzdHJva2U9IiMwMDMzNjYiIHN0cm9rZS13aWR0aD0iNCIvPjwvc3ZnPg==";
-  
+  const study1000ImageBase64 =
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN0dWR5ICMxMDAwPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiIGZvbnQtd2VpZ2h0PSJib2xkIj5GdXR1cmUgRGlyZWN0aW9ucyBpbiBIeWRyb2dlbiBTdHVkaWVzPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN1biwgWHVlanVuLCBPaHRhLCBTaGlnZW88L3RleHQ+PHRleHQgeD0iNDAwIiB5PSIyOTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMzM2NiI+SHlkcm9nZW4gTW9sZWN1bGFyIEJpb2xvZ3kgYW5kIE1lZGljaW5lICgyMDE1KTwvdGV4dD48Y2lyY2xlIGN4PSI0MDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDA2NmNjIiBvcGFjaXR5PSIwLjciLz48Y2lyY2xlIGN4PSIzNDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDAzMzY2IiBvcGFjaXR5PSIwLjciLz48bGluZSB4MT0iMzcwIiB5MT0iMzgwIiB4Mj0iNDMwIiB5Mj0iMzgwIiBzdHJva2U9IiMwMDMzNjYiIHN0cm9rZS13aWR0aD0iNCIvPjwvc3ZnPg==";
+
   // Enhanced helper function to process image URLs correctly and handle all edge cases
   const getProcessedImageUrl = (study?: Study) => {
     if (!study) return fallbackImageBase64;
-    
+
     // Special handling for study #1000
     if (studyId === 1000) {
       return study1000ImageBase64;
     }
-    
+
     // Check for both camelCase and snake_case property names
     const imageUrl = study.imageUrl || study.image_url;
-    
+
     // If no URL provided or it's null/empty, use fallback
-    if (!imageUrl || imageUrl.trim() === '') return fallbackImageBase64;
-    
+    if (!imageUrl || imageUrl.trim() === "") return fallbackImageBase64;
+
     // If it's already a data URI, use it directly
-    if (imageUrl.startsWith('data:')) {
+    if (imageUrl.startsWith("data:")) {
       return imageUrl;
     }
-    
+
     // If it's already a fully qualified URL (starts with http/https), use it directly
-    if (imageUrl.startsWith('http')) {
+    if (imageUrl.startsWith("http")) {
       // Sometimes external URLs might have issues, if it's a placeholder service, use our embedded fallback
-      if (imageUrl.includes('placehold.co')) {
+      if (imageUrl.includes("placehold.co")) {
         return fallbackImageBase64;
       }
       return imageUrl;
     }
-    
+
     // For any other case, use our embedded fallback to ensure something always displays
     return fallbackImageBase64;
   };
-  
+
   // Mutation for generating an AI image for this study
   const generateImageMutation = useMutation({
     mutationFn: () => {
       return fetch(`/api/images/generate/${studyId}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      }).then(res => {
-        if (!res.ok) throw new Error('Failed to generate image');
+      }).then((res) => {
+        if (!res.ok) throw new Error("Failed to generate image");
         return res.json();
       });
     },
@@ -213,30 +236,32 @@ const StudyPage = () => {
       queryClient.invalidateQueries({ queryKey: [`/api/studies/${studyId}`] });
       toast({
         title: "Image Generated Successfully",
-        description: "A new scientific visualization has been created for this study.",
+        description:
+          "A new scientific visualization has been created for this study.",
       });
     },
     onError: (error) => {
-      console.error('Image generation error:', error);
+      console.error("Image generation error:", error);
       toast({
         title: "Image Generation Failed",
         description: "Unable to generate an image. Please try again later.",
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Get all studies for related studies section
   const { data: allStudies } = useQuery<any[]>({
-    queryKey: ['/api/studies'],
+    queryKey: ["/api/studies"],
   });
 
   // Get related studies (same category, exclude current)
-  const relatedStudies = (allStudies && study && Array.isArray(allStudies))
-    ? allStudies
-        .filter((s: any) => s.category === study.category && s.id !== studyId)
-        .slice(0, 3)
-    : [];
+  const relatedStudies =
+    allStudies && study && Array.isArray(allStudies)
+      ? allStudies
+          .filter((s: any) => s.category === study.category && s.id !== studyId)
+          .slice(0, 3)
+      : [];
 
   if (isLoading) {
     return (
@@ -269,8 +294,8 @@ const StudyPage = () => {
             <CardContent className="pt-6 pb-6">
               <h1 className="text-xl font-bold mb-4">Study Not Found</h1>
               <p className="text-neutral-600 mb-6">
-                {error instanceof Error 
-                  ? error.message 
+                {error instanceof Error
+                  ? error.message
                   : "We couldn't find the study you're looking for. It may have been removed or the ID is incorrect."}
               </p>
               <Link href="/recent">
@@ -290,43 +315,91 @@ const StudyPage = () => {
     <>
       <SiteHeader />
       <Helmet>
-        <title>{(study.plainLanguageTitle || study.plain_language_title || study.title)} | Hydrogen Studies Research</title>
-        <meta name="description" content={study.abstract?.substring(0, 160) + "..."} />
-        <meta name="keywords" content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, research study, scientific evidence, health effects`} />
+        <title>
+          {study.plainLanguageTitle ||
+            study.plain_language_title ||
+            study.title}{" "}
+          | Hydrogen Studies Research
+        </title>
+        <meta
+          name="description"
+          content={study.abstract?.substring(0, 160) + "..."}
+        />
+        <meta
+          name="keywords"
+          content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, research study, scientific evidence, health effects`}
+        />
         <meta name="author" content={study.authors} />
         <meta name="date" content={study.publishDate} />
-        <link rel="canonical" href={`https://hydrogenstudies.com/study/${study.slug || study.id}`} />
-        
+        <link
+          rel="canonical"
+          href={`https://hydrogenstudies.com/study/${study.slug || study.id}`}
+        />
+
         {/* Open Graph Tags */}
-        <meta property="og:title" content={`${(study.plainLanguageTitle || study.plain_language_title || study.title)} | Hydrogen Studies`} />
-        <meta property="og:description" content={study.abstract?.substring(0, 200) + "..."} />
+        <meta
+          property="og:title"
+          content={`${study.plainLanguageTitle || study.plain_language_title || study.title} | Hydrogen Studies`}
+        />
+        <meta
+          property="og:description"
+          content={study.abstract?.substring(0, 200) + "..."}
+        />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://hydrogenstudies.com/study/${study.slug || study.id}`} />
-        <meta property="og:image" content={study.imageUrl || study.image_url || fallbackImageBase64} />
+        <meta
+          property="og:url"
+          content={`https://hydrogenstudies.com/study/${study.slug || study.id}`}
+        />
+        <meta
+          property="og:image"
+          content={study.imageUrl || study.image_url || fallbackImageBase64}
+        />
         <meta property="article:published_time" content={study.publishDate} />
         <meta property="article:section" content={study.category} />
-        
+
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={study.plainLanguageTitle || study.plain_language_title || study.title} />
-        <meta name="twitter:description" content={study.abstract?.substring(0, 200) + "..."} />
-        <meta name="twitter:image" content={study.imageUrl || study.image_url || fallbackImageBase64} />
+        <meta
+          name="twitter:title"
+          content={
+            study.plainLanguageTitle ||
+            study.plain_language_title ||
+            study.title
+          }
+        />
+        <meta
+          name="twitter:description"
+          content={study.abstract?.substring(0, 200) + "..."}
+        />
+        <meta
+          name="twitter:image"
+          content={study.imageUrl || study.image_url || fallbackImageBase64}
+        />
       </Helmet>
-      
+
       {/* Structured Data */}
-      <JsonLd 
+      <JsonLd
         type="MedicalScholarlyArticle"
         data={generateMedicalArticleSchema(study)}
       />
-      
+
       {/* Breadcrumb Schema */}
-      <JsonLd 
+      <JsonLd
         type="BreadcrumbList"
         data={generateBreadcrumbSchema([
-          { name: 'Home', url: 'https://hydrogenstudies.com' },
-          { name: 'Research Studies', url: 'https://hydrogenstudies.com/studies' },
-          { name: study.category, url: `https://hydrogenstudies.com/category/${encodeURIComponent(study.category)}` },
-          { name: study.title, url: `https://hydrogenstudies.com/study/${study.slug || study.id}` }
+          { name: "Home", url: "https://hydrogenstudies.com" },
+          {
+            name: "Research Studies",
+            url: "https://hydrogenstudies.com/studies",
+          },
+          {
+            name: study.category,
+            url: `https://hydrogenstudies.com/category/${encodeURIComponent(study.category)}`,
+          },
+          {
+            name: study.title,
+            url: `https://hydrogenstudies.com/study/${study.slug || study.id}`,
+          },
         ])}
       />
 
@@ -335,30 +408,80 @@ const StudyPage = () => {
           <div className="max-w-4xl mx-auto">
             {/* Breadcrumb */}
             <nav aria-label="Breadcrumb" className="mb-6">
-              <ol className="flex items-center text-sm text-neutral-500" itemScope itemType="https://schema.org/BreadcrumbList">
-                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center">
+              <ol
+                className="flex items-center text-sm text-neutral-500"
+                itemScope
+                itemType="https://schema.org/BreadcrumbList"
+              >
+                <li
+                  itemProp="itemListElement"
+                  itemScope
+                  itemType="https://schema.org/ListItem"
+                  className="inline-flex items-center"
+                >
                   <Link href="/">
-                    <span itemProp="name" className="hover:text-primary cursor-pointer">Home</span>
+                    <span
+                      itemProp="name"
+                      className="hover:text-primary cursor-pointer"
+                    >
+                      Home
+                    </span>
                   </Link>
                   <meta itemProp="position" content="1" />
-                  <span className="mx-2" aria-hidden="true">/</span>
+                  <span className="mx-2" aria-hidden="true">
+                    /
+                  </span>
                 </li>
-                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center">
+                <li
+                  itemProp="itemListElement"
+                  itemScope
+                  itemType="https://schema.org/ListItem"
+                  className="inline-flex items-center"
+                >
                   <Link href="/categories">
-                    <span itemProp="name" className="hover:text-primary cursor-pointer">Categories</span>
+                    <span
+                      itemProp="name"
+                      className="hover:text-primary cursor-pointer"
+                    >
+                      Categories
+                    </span>
                   </Link>
                   <meta itemProp="position" content="2" />
-                  <span className="mx-2" aria-hidden="true">/</span>
+                  <span className="mx-2" aria-hidden="true">
+                    /
+                  </span>
                 </li>
-                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center">
-                  <Link href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}>
-                    <span itemProp="name" className="hover:text-primary cursor-pointer">{study.category}</span>
+                <li
+                  itemProp="itemListElement"
+                  itemScope
+                  itemType="https://schema.org/ListItem"
+                  className="inline-flex items-center"
+                >
+                  <Link
+                    href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}
+                  >
+                    <span
+                      itemProp="name"
+                      className="hover:text-primary cursor-pointer"
+                    >
+                      {study.category}
+                    </span>
                   </Link>
                   <meta itemProp="position" content="3" />
-                  <span className="mx-2" aria-hidden="true">/</span>
+                  <span className="mx-2" aria-hidden="true">
+                    /
+                  </span>
                 </li>
-                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem" className="inline-flex items-center" aria-current="page">
-                  <span itemProp="name" className="text-neutral-800">Study</span>
+                <li
+                  itemProp="itemListElement"
+                  itemScope
+                  itemType="https://schema.org/ListItem"
+                  className="inline-flex items-center"
+                  aria-current="page"
+                >
+                  <span itemProp="name" className="text-neutral-800">
+                    Study
+                  </span>
                   <meta itemProp="position" content="4" />
                 </li>
               </ol>
@@ -368,19 +491,30 @@ const StudyPage = () => {
             <header className="mb-6 md:mb-8">
               {/* Mobile-first category and date */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/15 w-fit">
+                <Badge
+                  variant="secondary"
+                  className="bg-primary/10 text-primary hover:bg-primary/15 w-fit"
+                >
                   {study.category}
                 </Badge>
                 {study.year && (
-                  <time dateTime={study.year.toString()} className="text-neutral-500 flex items-center text-sm">
-                    <HiCalendar className="mr-1 w-4 h-4" aria-hidden="true" /> 
-                    {study.publishDate ? new Date(study.publishDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : study.year}
+                  <time
+                    dateTime={study.year.toString()}
+                    className="text-neutral-500 flex items-center text-sm"
+                  >
+                    <HiCalendar className="mr-1 w-4 h-4" aria-hidden="true" />
+                    {study.publishDate
+                      ? new Date(study.publishDate).toLocaleDateString(
+                          "en-GB",
+                          { day: "2-digit", month: "2-digit", year: "numeric" },
+                        )
+                      : study.year}
                   </time>
                 )}
               </div>
-              
+
               {/* SEO-optimized main title with academic subtitle */}
-              {(study.plainLanguageTitle || study.plain_language_title) ? (
+              {study.plainLanguageTitle || study.plain_language_title ? (
                 <div className="mb-4">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight text-primary">
                     {study.plainLanguageTitle || study.plain_language_title}
@@ -390,36 +524,67 @@ const StudyPage = () => {
                   </h2>
                 </div>
               ) : (
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 leading-tight">{study.title}</h1>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 leading-tight">
+                  {study.title}
+                </h1>
               )}
-              
+
               {/* Mobile-friendly metadata stack */}
               <div className="space-y-2 md:space-y-0 md:flex md:flex-wrap md:items-center text-neutral-600 text-sm">
                 <div className="flex items-center">
-                  <HiUser className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
-                  <span itemProp="author" className="line-clamp-1">{study.authors}</span>
+                  <HiUser
+                    className="mr-2 w-4 h-4 flex-shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span itemProp="author" className="line-clamp-1">
+                    {study.authors}
+                  </span>
                 </div>
                 <div className="flex items-center md:ml-6">
-                  <HiBookOpen className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
-                  <span itemProp="publisher" className="line-clamp-1">{study.journal}</span>
+                  <HiBookOpen
+                    className="mr-2 w-4 h-4 flex-shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span itemProp="publisher" className="line-clamp-1">
+                    {study.journal}
+                  </span>
                 </div>
                 <div className="flex items-center md:ml-6">
-                  <HiCalendar className="mr-2 w-4 h-4 flex-shrink-0" aria-hidden="true" /> 
-                  <span>{study.publishDate ? new Date(study.publishDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : study.year || 'Date not available'}</span>
+                  <HiCalendar
+                    className="mr-2 w-4 h-4 flex-shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    {study.publishDate
+                      ? new Date(study.publishDate).toLocaleDateString(
+                          "en-GB",
+                          { day: "2-digit", month: "2-digit", year: "numeric" },
+                        )
+                      : study.year || "Date not available"}
+                  </span>
                 </div>
               </div>
             </header>
 
             {/* Mobile-Optimized Study Content */}
-            <article className="bg-white border border-neutral-200 rounded-lg md:rounded-xl shadow-sm mb-6 md:mb-10" itemScope itemType="https://schema.org/MedicalScholarlyArticle">
+            <article
+              className="bg-white border border-neutral-200 rounded-lg md:rounded-xl shadow-sm mb-6 md:mb-10"
+              itemScope
+              itemType="https://schema.org/MedicalScholarlyArticle"
+            >
               <div className="p-4 sm:p-6 md:p-8">
                 <section aria-labelledby="visualization-heading">
-                  <h2 id="visualization-heading" className="text-xl font-semibold mb-4">Research Visualization</h2>
+                  <h2
+                    id="visualization-heading"
+                    className="text-xl font-semibold mb-4"
+                  >
+                    Research Visualization
+                  </h2>
                   {/* Study Image - Simplified implementation */}
                   <figure className="mb-8 rounded-lg overflow-hidden">
                     <div className="relative">
                       {/* StudyImage component that handles all fallback cases */}
-                      <StudyImage 
+                      <StudyImage
                         studyId={studyId}
                         imageUrl={study.imageUrl || study.image_url}
                         imageAlt={study.imageAlt || study.image_alt}
@@ -428,28 +593,30 @@ const StudyPage = () => {
                         journal={study.journal}
                         year={study.publishYear || study.year}
                       />
-                      
+
                       {/* Generate Image Button */}
                       <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
-                        <Button 
+                        <Button
                           variant="secondary"
                           className="flex items-center gap-2 bg-white hover:bg-neutral-100"
                           onClick={() => generateImageMutation.mutate()}
                           disabled={generateImageMutation.isPending}
                         >
                           <HiPhotograph className="w-4 h-4" />
-                          {generateImageMutation.isPending ? 'Generating...' : 'Generate Scientific Visual'}
+                          {generateImageMutation.isPending
+                            ? "Generating..."
+                            : "Generate Scientific Visual"}
                         </Button>
                       </div>
                     </div>
-                    
+
                     <figcaption className="flex justify-between items-start mt-2">
                       <p className="text-xs text-neutral-500 italic">
-                        {(study.autoGeneratedImage || study.auto_generated_image) ? 
-                          "AI-generated visualization of the study's hydrogen mechanisms and effects" : 
-                          "Visual representation of hydrogen effects related to this research"}
+                        {study.autoGeneratedImage || study.auto_generated_image
+                          ? "AI-generated visualization of the study's hydrogen mechanisms and effects"
+                          : "Visual representation of hydrogen effects related to this research"}
                       </p>
-                      
+
                       {/* Image attribution if available */}
                       {(study.imageAlt || study.image_alt) && (
                         <span className="text-xs text-neutral-400">
@@ -462,36 +629,70 @@ const StudyPage = () => {
 
                 {/* Mobile-Optimized Simple Summary Section */}
                 {(study as any).summaryMarkdown && (
-                  <section aria-labelledby="summary-heading" className="mb-6 md:mb-8">
-                    <h2 id="summary-heading" className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-blue-600">What This Study Means for You</h2>
+                  <section
+                    aria-labelledby="summary-heading"
+                    className="mb-6 md:mb-8"
+                  >
+                    <h2
+                      id="summary-heading"
+                      className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-blue-600"
+                    >
+                      What This Study Means for You
+                    </h2>
                     <div className="bg-blue-50 border-l-4 border-blue-400 p-4 md:p-6 rounded-r-lg">
                       <div className="prose prose-sm md:prose max-w-none prose-blue">
-                        <div dangerouslySetInnerHTML={{ __html: (study as any).summaryMarkdown }} />
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: (study as any).summaryMarkdown,
+                          }}
+                        />
                       </div>
                     </div>
                   </section>
                 )}
 
                 {/* Mobile-Optimized Key Benefits Section */}
-                {((study as any).keywords && (study as any).keywords.length > 0) && (
-                  <section aria-labelledby="benefits-heading" className="mb-6 md:mb-8">
-                    <h2 id="benefits-heading" className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-green-600">Key Health Benefits Found</h2>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 md:p-6">
-                      <div className="flex flex-wrap gap-2">
-                        {(study as any).keywords.slice(0, 6).map((keyword: string, index: number) => (
-                          <Badge key={index} variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs md:text-sm">
-                            {keyword}
-                          </Badge>
-                        ))}
+                {(study as any).keywords &&
+                  (study as any).keywords.length > 0 && (
+                    <section
+                      aria-labelledby="benefits-heading"
+                      className="mb-6 md:mb-8"
+                    >
+                      <h2
+                        id="benefits-heading"
+                        className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-green-600"
+                      >
+                        Key Health Benefits Found
+                      </h2>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 md:p-6">
+                        <div className="flex flex-wrap gap-2">
+                          {(study as any).keywords
+                            .slice(0, 6)
+                            .map((keyword: string, index: number) => (
+                              <Badge
+                                key={index}
+                                variant="outline"
+                                className="bg-green-100 text-green-800 border-green-300 text-xs md:text-sm"
+                              >
+                                {keyword}
+                              </Badge>
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  </section>
-                )}
+                    </section>
+                  )}
 
                 <section aria-labelledby="abstract-heading">
-                  <h2 id="abstract-heading" className="text-xl font-semibold mb-4">Research Abstract</h2>
+                  <h2
+                    id="abstract-heading"
+                    className="text-xl font-semibold mb-4"
+                  >
+                    Research Abstract
+                  </h2>
                   <div className="prose max-w-none prose-neutral mb-8">
-                    <p className="text-lg leading-relaxed" itemProp="abstract">{study.abstract}</p>
+                    <p className="text-lg leading-relaxed" itemProp="abstract">
+                      {study.abstract}
+                    </p>
                   </div>
                 </section>
 
@@ -499,8 +700,16 @@ const StudyPage = () => {
                 {study.methods && (
                   <section aria-labelledby="methods-heading">
                     <Separator className="my-6" />
-                    <h2 id="methods-heading" className="text-xl font-semibold mb-4">Methods</h2>
-                    <div className="prose max-w-none prose-neutral mb-6" itemProp="methodDescription">
+                    <h2
+                      id="methods-heading"
+                      className="text-xl font-semibold mb-4"
+                    >
+                      Methods
+                    </h2>
+                    <div
+                      className="prose max-w-none prose-neutral mb-6"
+                      itemProp="methodDescription"
+                    >
                       <p>{study.methods}</p>
                     </div>
                   </section>
@@ -510,8 +719,16 @@ const StudyPage = () => {
                 {study.results && (
                   <section aria-labelledby="results-heading">
                     <Separator className="my-6" />
-                    <h2 id="results-heading" className="text-xl font-semibold mb-4">Results</h2>
-                    <div className="prose max-w-none prose-neutral mb-6" itemProp="resultDescription">
+                    <h2
+                      id="results-heading"
+                      className="text-xl font-semibold mb-4"
+                    >
+                      Results
+                    </h2>
+                    <div
+                      className="prose max-w-none prose-neutral mb-6"
+                      itemProp="resultDescription"
+                    >
                       <p>{study.results}</p>
                     </div>
                   </section>
@@ -519,46 +736,91 @@ const StudyPage = () => {
 
                 {/* Conclusion Section */}
                 {/* Mobile-Optimized Practical Application Section */}
-                <section aria-labelledby="practical-heading" className="mb-6 md:mb-8">
-                  <h2 id="practical-heading" className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-purple-600">How to Apply This Research</h2>
+                <section
+                  aria-labelledby="practical-heading"
+                  className="mb-6 md:mb-8"
+                >
+                  <h2
+                    id="practical-heading"
+                    className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-purple-600"
+                  >
+                    How to Apply This Research
+                  </h2>
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 md:p-6">
                     <div className="space-y-4">
                       <div className="flex items-start space-x-3">
                         <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-base md:text-sm font-semibold">💧</span>
+                          <span className="text-purple-600 text-base md:text-sm font-semibold">
+                            💧
+                          </span>
                         </div>
                         <div className="flex-1">
                           <Link href="/products" className="group">
-                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">Hydrogen Water</h3>
-                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">This research suggests drinking hydrogen-rich water may provide health benefits. View our Echo Flask and Hydrogen Prebiotic products.</p>
+                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
+                              Hydrogen Water
+                            </h3>
+                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">
+                              This research suggests drinking hydrogen-rich
+                              water may provide health benefits. View our Echo
+                              Flask and Hydrogen Prebiotic products.
+                            </p>
                           </Link>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
                         <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-base md:text-sm font-semibold">🫁</span>
+                          <span className="text-purple-600 text-base md:text-sm font-semibold">
+                            🫁
+                          </span>
                         </div>
                         <div className="flex-1">
-                          <a href="https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine" target="_blank" rel="noopener noreferrer" className="group">
-                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">Hydrogen Inhalation</h3>
-                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Some studies show benefits from breathing hydrogen gas. View the Echo Refresh hydrogen inhalation machine for safe, professional-grade equipment.</p>
+                          <a
+                            href="https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group"
+                          >
+                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
+                              Hydrogen Inhalation
+                            </h3>
+                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">
+                              Some studies show benefits from breathing hydrogen
+                              gas. View the Echo Refresh hydrogen inhalation
+                              machine for safe, professional-grade equipment.
+                            </p>
                           </a>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
                         <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-base md:text-sm font-semibold">🛁</span>
+                          <span className="text-purple-600 text-base md:text-sm font-semibold">
+                            🛁
+                          </span>
                         </div>
                         <div className="flex-1">
-                          <a href="https://echowater.com/products/echo-revive" target="_blank" rel="noopener noreferrer" className="group">
-                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">Hydrogen Baths</h3>
-                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">Bathing in hydrogen-enriched water may provide skin and overall health benefits through absorption. View the Echo Revive bath water machine.</p>
+                          <a
+                            href="https://echowater.com/products/echo-revive"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group"
+                          >
+                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
+                              Hydrogen Baths
+                            </h3>
+                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">
+                              Bathing in hydrogen-enriched water may provide
+                              skin and overall health benefits through
+                              absorption. View the Echo Revive bath water
+                              machine.
+                            </p>
                           </a>
                         </div>
                       </div>
                       <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
                         <p className="text-xs md:text-sm text-yellow-800 leading-relaxed">
-                          <strong>Remember:</strong> Always talk to your doctor before starting any new health routine. These are research findings, not medical advice.
+                          <strong>Remember:</strong> Always talk to your doctor
+                          before starting any new health routine. These are
+                          research findings, not medical advice.
                         </p>
                       </div>
                     </div>
@@ -568,8 +830,16 @@ const StudyPage = () => {
                 {study.conclusion && (
                   <section aria-labelledby="conclusion-heading">
                     <Separator className="my-6" />
-                    <h2 id="conclusion-heading" className="text-xl font-semibold mb-4">Research Conclusion</h2>
-                    <div className="prose max-w-none prose-neutral mb-6" itemProp="conclusion">
+                    <h2
+                      id="conclusion-heading"
+                      className="text-xl font-semibold mb-4"
+                    >
+                      Research Conclusion
+                    </h2>
+                    <div
+                      className="prose max-w-none prose-neutral mb-6"
+                      itemProp="conclusion"
+                    >
                       <p>{study.conclusion}</p>
                     </div>
                   </section>
@@ -578,15 +848,19 @@ const StudyPage = () => {
                 {/* Study Metadata */}
                 <Separator className="my-6" />
                 <section aria-labelledby="metadata-heading" className="mt-6">
-                  <h2 id="metadata-heading" className="sr-only">Study Metadata</h2>
+                  <h2 id="metadata-heading" className="sr-only">
+                    Study Metadata
+                  </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {study.doi && (
                       <div>
-                        <p className="text-sm font-medium text-neutral-500 mb-1">DOI Reference</p>
+                        <p className="text-sm font-medium text-neutral-500 mb-1">
+                          DOI Reference
+                        </p>
                         <p className="text-sm">
-                          <a 
-                            href={`https://doi.org/${study.doi}`} 
-                            target="_blank" 
+                          <a
+                            href={`https://doi.org/${study.doi}`}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary hover:underline flex items-center"
                             itemProp="identifier"
@@ -596,33 +870,45 @@ const StudyPage = () => {
                         </p>
                       </div>
                     )}
-                    
+
                     {study.pdfUrl && (
                       <div>
-                        <p className="text-sm font-medium text-neutral-500 mb-1">Full Text Access</p>
-                        <Button 
-                          variant="outline" 
+                        <p className="text-sm font-medium text-neutral-500 mb-1">
+                          Full Text Access
+                        </p>
+                        <Button
+                          variant="outline"
                           size="sm"
                           className="flex items-center text-sm"
                           asChild
                         >
-                          <a href={study.pdfUrl} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={study.pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <HiDownload className="mr-1" /> Download PDF
                           </a>
                         </Button>
                       </div>
                     )}
-                    
+
                     {study.citationUrl && (
                       <div>
-                        <p className="text-sm font-medium text-neutral-500 mb-1">Citation Information</p>
-                        <Button 
-                          variant="outline" 
+                        <p className="text-sm font-medium text-neutral-500 mb-1">
+                          Citation Information
+                        </p>
+                        <Button
+                          variant="outline"
                           size="sm"
                           className="flex items-center text-sm"
                           asChild
                         >
-                          <a href={study.citationUrl} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={study.citationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             <HiClipboardCheck className="mr-1" /> Copy Citation
                           </a>
                         </Button>
@@ -635,18 +921,40 @@ const StudyPage = () => {
 
             {/* Mobile-Optimized Related Studies Section */}
             {relatedStudies.length > 0 && (
-              <section aria-labelledby="related-studies-heading" className="mt-8 md:mt-12">
-                <h2 id="related-studies-heading" className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Related Studies</h2>
+              <section
+                aria-labelledby="related-studies-heading"
+                className="mt-8 md:mt-12"
+              >
+                <h2
+                  id="related-studies-heading"
+                  className="text-xl md:text-2xl font-bold mb-4 md:mb-6"
+                >
+                  Related Studies
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   {relatedStudies.map((relatedStudy: any) => (
-                    <Link key={relatedStudy.id} href={relatedStudy.slug ? `/study/${relatedStudy.slug}` : `/study/id/${relatedStudy.id}`}>
+                    <Link
+                      key={relatedStudy.id}
+                      href={
+                        relatedStudy.slug
+                          ? `/study/${relatedStudy.slug}`
+                          : `/study/id/${relatedStudy.id}`
+                      }
+                    >
                       <Card className="h-full hover:shadow-md transition-shadow">
                         <CardContent className="p-4 md:p-5">
-                          <Badge variant="outline" className="mb-2 md:mb-3 text-xs">
+                          <Badge
+                            variant="outline"
+                            className="mb-2 md:mb-3 text-xs"
+                          >
                             {relatedStudy.category}
                           </Badge>
-                          <h3 className="font-bold mb-2 line-clamp-2 text-sm md:text-base">{relatedStudy.title}</h3>
-                          <p className="text-xs md:text-sm text-neutral-600 line-clamp-3">{relatedStudy.abstract}</p>
+                          <h3 className="font-bold mb-2 line-clamp-2 text-sm md:text-base">
+                            {relatedStudy.title}
+                          </h3>
+                          <p className="text-xs md:text-sm text-neutral-600 line-clamp-3">
+                            {relatedStudy.abstract}
+                          </p>
                         </CardContent>
                       </Card>
                     </Link>
@@ -666,7 +974,7 @@ const StudyPage = () => {
                       navigator.share({
                         title: study.title,
                         text: `Check out this hydrogen research study: ${study.title}`,
-                        url: window.location.href
+                        url: window.location.href,
                       });
                     } else {
                       navigator.clipboard.writeText(window.location.href);
@@ -684,7 +992,9 @@ const StudyPage = () => {
 
             {/* Related Blogs */}
             <section aria-labelledby="related-blogs-heading" className="mt-12">
-              <h2 id="related-blogs-heading" className="sr-only">Related Blog Articles</h2>
+              <h2 id="related-blogs-heading" className="sr-only">
+                Related Blog Articles
+              </h2>
               <RelatedBlogs studyId={study.id} />
             </section>
           </div>

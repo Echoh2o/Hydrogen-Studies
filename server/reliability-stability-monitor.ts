@@ -1,23 +1,24 @@
 /**
  * Reliability & Stability Monitoring System
- * 
+ *
  * Comprehensive monitoring for uptime, error rates, performance degradation,
  * and automatic recovery mechanisms
  */
 
-import { db as pool } from './db';
-import { sql } from 'drizzle-orm';
+import { db as pool } from "./db";
+import { sql } from "drizzle-orm";
 
 // Simple cache fallback if the performance optimizer doesn't exist
 let performanceCache: { clear: () => void };
 
 try {
-  performanceCache = require('./database-performance-optimizer').performanceCache;
+  performanceCache =
+    require("./database-performance-optimizer").performanceCache;
 } catch (error) {
   performanceCache = {
     clear: () => {
-      console.log('Performance cache cleared (fallback)');
-    }
+      console.log("Performance cache cleared (fallback)");
+    },
   };
 }
 
@@ -33,7 +34,7 @@ interface SystemMetrics {
 }
 
 interface HealthCheck {
-  status: 'healthy' | 'degraded' | 'critical';
+  status: "healthy" | "degraded" | "critical";
   timestamp: Date;
   metrics: SystemMetrics;
   issues: string[];
@@ -51,13 +52,15 @@ export class ReliabilityMonitor {
   async performHealthCheck(): Promise<HealthCheck> {
     const issues: string[] = [];
     const recoveryActions: string[] = [];
-    
+
     // Check memory usage
     const memUsage = process.memoryUsage();
     const memoryThreshold = 200 * 1024 * 1024; // 200MB
     if (memUsage.heapUsed > memoryThreshold) {
-      issues.push(`High memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
-      recoveryActions.push('Clear cache and trigger garbage collection');
+      issues.push(
+        `High memory usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+      );
+      recoveryActions.push("Clear cache and trigger garbage collection");
     }
 
     // Check database connectivity
@@ -67,42 +70,49 @@ export class ReliabilityMonitor {
       const start = Date.now();
       await pool.execute(sql`SELECT 1`);
       dbResponseTime = Date.now() - start;
-      
+
       if (dbResponseTime > 1000) {
         issues.push(`Slow database response: ${dbResponseTime}ms`);
-        recoveryActions.push('Optimize database queries and check connection pool');
+        recoveryActions.push(
+          "Optimize database queries and check connection pool",
+        );
       }
     } catch (error) {
       databaseHealth = false;
-      issues.push('Database connection failed');
-      recoveryActions.push('Restart database connection pool');
+      issues.push("Database connection failed");
+      recoveryActions.push("Restart database connection pool");
     }
 
     // Check error rate
-    const errorRate = this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
+    const errorRate =
+      this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
     if (errorRate > 5) {
       issues.push(`High error rate: ${errorRate.toFixed(1)}%`);
-      recoveryActions.push('Review error logs and implement fixes');
+      recoveryActions.push("Review error logs and implement fixes");
     }
 
     // Check average response time
-    const avgResponseTime = this.responseTimes.length > 0 
-      ? this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length 
-      : 0;
-    
+    const avgResponseTime =
+      this.responseTimes.length > 0
+        ? this.responseTimes.reduce((a, b) => a + b, 0) /
+          this.responseTimes.length
+        : 0;
+
     if (avgResponseTime > 500) {
-      issues.push(`Slow response times: ${avgResponseTime.toFixed(0)}ms average`);
-      recoveryActions.push('Optimize API endpoints and database queries');
+      issues.push(
+        `Slow response times: ${avgResponseTime.toFixed(0)}ms average`,
+      );
+      recoveryActions.push("Optimize API endpoints and database queries");
     }
 
     // Determine overall status
-    let status: 'healthy' | 'degraded' | 'critical';
+    let status: "healthy" | "degraded" | "critical";
     if (!databaseHealth || errorRate > 10) {
-      status = 'critical';
+      status = "critical";
     } else if (issues.length > 2 || errorRate > 5) {
-      status = 'degraded';
+      status = "degraded";
     } else {
-      status = 'healthy';
+      status = "healthy";
     }
 
     const healthCheck: HealthCheck = {
@@ -116,10 +126,10 @@ export class ReliabilityMonitor {
         errorRate,
         responseTime: avgResponseTime,
         cacheHitRate: 85, // Placeholder - could implement tracking
-        databaseHealth
+        databaseHealth,
       },
       issues,
-      recoveryActions
+      recoveryActions,
     };
 
     // Store health history (keep last 100 checks)
@@ -131,9 +141,17 @@ export class ReliabilityMonitor {
     return healthCheck;
   }
 
-  async autoRecovery(): Promise<{ attempted: string[]; successful: string[]; failed: string[] }> {
+  async autoRecovery(): Promise<{
+    attempted: string[];
+    successful: string[];
+    failed: string[];
+  }> {
     if (this.isRecovering) {
-      return { attempted: [], successful: [], failed: ['Recovery already in progress'] };
+      return {
+        attempted: [],
+        successful: [],
+        failed: ["Recovery already in progress"],
+      };
     }
 
     this.isRecovering = true;
@@ -145,34 +163,35 @@ export class ReliabilityMonitor {
       // Clear cache if memory is high
       const memUsage = process.memoryUsage();
       if (memUsage.heapUsed > 150 * 1024 * 1024) {
-        attempted.push('Clear performance cache');
+        attempted.push("Clear performance cache");
         try {
           performanceCache.clear();
           global.gc && global.gc(); // Force garbage collection if available
-          successful.push('Cache cleared and garbage collection triggered');
+          successful.push("Cache cleared and garbage collection triggered");
         } catch (error) {
-          failed.push('Failed to clear cache');
+          failed.push("Failed to clear cache");
         }
       }
 
       // Reset error counters if error rate is high
-      if (this.requestCount > 0 && (this.errorCount / this.requestCount) > 0.1) {
-        attempted.push('Reset error counters');
+      if (this.requestCount > 0 && this.errorCount / this.requestCount > 0.1) {
+        attempted.push("Reset error counters");
         this.errorCount = 0;
         this.requestCount = 0;
         this.responseTimes = [];
-        successful.push('Error counters reset');
+        successful.push("Error counters reset");
       }
 
       // Database connection pool refresh
-      attempted.push('Database connection health check');
+      attempted.push("Database connection health check");
       try {
         await pool.execute(sql`SELECT version()`);
-        successful.push('Database connection verified');
+        successful.push("Database connection verified");
       } catch (error) {
-        failed.push('Database connection failed - manual intervention required');
+        failed.push(
+          "Database connection failed - manual intervention required",
+        );
       }
-
     } finally {
       this.isRecovering = false;
     }
@@ -183,7 +202,7 @@ export class ReliabilityMonitor {
   trackRequest(responseTime: number, hasError: boolean = false): void {
     this.requestCount++;
     if (hasError) this.errorCount++;
-    
+
     this.responseTimes.push(responseTime);
     // Keep only last 1000 response times
     if (this.responseTimes.length > 1000) {
@@ -193,10 +212,13 @@ export class ReliabilityMonitor {
 
   getMetrics(): SystemMetrics {
     const memUsage = process.memoryUsage();
-    const errorRate = this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
-    const avgResponseTime = this.responseTimes.length > 0 
-      ? this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length 
-      : 0;
+    const errorRate =
+      this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
+    const avgResponseTime =
+      this.responseTimes.length > 0
+        ? this.responseTimes.reduce((a, b) => a + b, 0) /
+          this.responseTimes.length
+        : 0;
 
     return {
       uptime: Date.now() - this.startTime,
@@ -206,7 +228,7 @@ export class ReliabilityMonitor {
       errorRate,
       responseTime: avgResponseTime,
       cacheHitRate: 85,
-      databaseHealth: true
+      databaseHealth: true,
     };
   }
 
@@ -216,9 +238,9 @@ export class ReliabilityMonitor {
 
   generateStabilityReport(): string {
     const recent = this.healthHistory.slice(-10);
-    const healthyCount = recent.filter(h => h.status === 'healthy').length;
-    const degradedCount = recent.filter(h => h.status === 'degraded').length;
-    const criticalCount = recent.filter(h => h.status === 'critical').length;
+    const healthyCount = recent.filter((h) => h.status === "healthy").length;
+    const degradedCount = recent.filter((h) => h.status === "degraded").length;
+    const criticalCount = recent.filter((h) => h.status === "critical").length;
 
     const uptime = Date.now() - this.startTime;
     const uptimeHours = Math.floor(uptime / (1000 * 60 * 60));
@@ -230,9 +252,9 @@ Generated: ${new Date().toISOString()}
 Uptime: ${uptimeHours}h ${uptimeMinutes}m
 
 HEALTH STATUS (Last 10 checks):
-• Healthy: ${healthyCount}/10 (${(healthyCount/10*100).toFixed(0)}%)
-• Degraded: ${degradedCount}/10 (${(degradedCount/10*100).toFixed(0)}%)
-• Critical: ${criticalCount}/10 (${(criticalCount/10*100).toFixed(0)}%)
+• Healthy: ${healthyCount}/10 (${((healthyCount / 10) * 100).toFixed(0)}%)
+• Degraded: ${degradedCount}/10 (${((degradedCount / 10) * 100).toFixed(0)}%)
+• Critical: ${criticalCount}/10 (${((criticalCount / 10) * 100).toFixed(0)}%)
 
 PERFORMANCE METRICS:
 • Total Requests: ${this.requestCount}
@@ -250,26 +272,28 @@ ${this.generateRecommendations()}
     const metrics = this.getMetrics();
 
     if (metrics.errorRate > 2) {
-      recommendations.push('• Investigate and fix recurring errors');
-    }
-    
-    if (metrics.responseTime > 200) {
-      recommendations.push('• Optimize slow API endpoints');
-    }
-    
-    if (metrics.memoryUsage.heapUsed > 100 * 1024 * 1024) {
-      recommendations.push('• Monitor memory usage and implement cleanup');
+      recommendations.push("• Investigate and fix recurring errors");
     }
 
-    if (this.healthHistory.filter(h => h.status === 'healthy').length < 8) {
-      recommendations.push('• Review system health checks and address recurring issues');
+    if (metrics.responseTime > 200) {
+      recommendations.push("• Optimize slow API endpoints");
+    }
+
+    if (metrics.memoryUsage.heapUsed > 100 * 1024 * 1024) {
+      recommendations.push("• Monitor memory usage and implement cleanup");
+    }
+
+    if (this.healthHistory.filter((h) => h.status === "healthy").length < 8) {
+      recommendations.push(
+        "• Review system health checks and address recurring issues",
+      );
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('• System is operating within optimal parameters');
+      recommendations.push("• System is operating within optimal parameters");
     }
 
-    return recommendations.join('\n');
+    return recommendations.join("\n");
   }
 }
 
@@ -277,13 +301,13 @@ ${this.generateRecommendations()}
 export function performanceTracker(monitor: ReliabilityMonitor) {
   return (req: any, res: any, next: any) => {
     const start = Date.now();
-    
-    res.on('finish', () => {
+
+    res.on("finish", () => {
       const responseTime = Date.now() - start;
       const hasError = res.statusCode >= 400;
       monitor.trackRequest(responseTime, hasError);
     });
-    
+
     next();
   };
 }

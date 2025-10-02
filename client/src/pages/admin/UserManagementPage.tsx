@@ -2,24 +2,30 @@
  * User Management Page
  * Admin interface for managing users, roles, and permissions
  */
-import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -27,7 +33,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -36,38 +42,37 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Users, 
-  Search, 
-  Edit, 
-  Shield, 
-  UserCheck, 
-  UserX, 
-  Clock, 
+  Users,
+  Search,
+  Edit,
+  Shield,
+  UserCheck,
+  UserX,
+  Clock,
   Activity,
   AlertCircle,
   RefreshCw,
   Filter,
   ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
-import { format } from 'date-fns';
+  ChevronRight,
+} from "lucide-react";
+import { format } from "date-fns";
 
 // User role options
 const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin', color: 'bg-red-100 text-red-800' },
-  { value: 'editor', label: 'Editor', color: 'bg-blue-100 text-blue-800' },
-  { value: 'customer', label: 'Customer', color: 'bg-green-100 text-green-800' },
-  { value: 'visitor', label: 'Visitor', color: 'bg-gray-100 text-gray-800' },
+  { value: "admin", label: "Admin", color: "bg-red-100 text-red-800" },
+  { value: "editor", label: "Editor", color: "bg-blue-100 text-blue-800" },
+  {
+    value: "customer",
+    label: "Customer",
+    color: "bg-green-100 text-green-800",
+  },
+  { value: "visitor", label: "Visitor", color: "bg-gray-100 text-gray-800" },
 ];
 
 interface User {
@@ -96,21 +101,28 @@ interface AuditLog {
 
 export default function UserManagementPage() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLogsDialog, setShowLogsDialog] = useState(false);
-  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>("all");
 
   // Fetch users
-  const { data: users, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/auth/users'],
+  const {
+    data: users,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["/api/auth/users"],
     staleTime: 30 * 1000,
   });
 
   // Fetch audit logs for selected user
   const { data: auditLogs, isLoading: logsLoading } = useQuery({
-    queryKey: selectedUser ? [`/api/auth/audit-logs?userId=${selectedUser.id}`] : null,
+    queryKey: selectedUser
+      ? [`/api/auth/audit-logs?userId=${selectedUser.id}`]
+      : null,
     enabled: !!selectedUser && showLogsDialog,
   });
 
@@ -118,59 +130,60 @@ export default function UserManagementPage() {
   const updateUserMutation = useMutation({
     mutationFn: ({ userId, data }: { userId: string; data: any }) =>
       apiRequest(`/api/auth/users/${userId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/users'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/users"] });
       toast({
-        title: 'User updated',
-        description: 'User information has been updated successfully.',
+        title: "User updated",
+        description: "User information has been updated successfully.",
       });
       setShowEditDialog(false);
     },
     onError: (error: any) => {
       toast({
-        title: 'Update failed',
-        description: error.response?.data?.error || 'Failed to update user',
-        variant: 'destructive',
+        title: "Update failed",
+        description: error.response?.data?.error || "Failed to update user",
+        variant: "destructive",
       });
     },
   });
 
   // Filter users based on search and role
-  const filteredUsers = users?.users?.filter((user: User) => {
-    const matchesSearch = 
-      !searchQuery ||
-      user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.lastName?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
-    return matchesSearch && matchesRole;
-  }) || [];
+  const filteredUsers =
+    users?.users?.filter((user: User) => {
+      const matchesSearch =
+        !searchQuery ||
+        user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.lastName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesRole = roleFilter === "all" || user.role === roleFilter;
+
+      return matchesSearch && matchesRole;
+    }) || [];
 
   const handleUpdateUser = (userId: string, updates: any) => {
     updateUserMutation.mutate({ userId, data: updates });
   };
 
   const getRoleBadge = (role: string) => {
-    const roleConfig = ROLE_OPTIONS.find(r => r.value === role);
-    return roleConfig ? roleConfig.color : 'bg-gray-100 text-gray-800';
+    const roleConfig = ROLE_OPTIONS.find((r) => r.value === role);
+    return roleConfig ? roleConfig.color : "bg-gray-100 text-gray-800";
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Never';
-    return format(new Date(dateString), 'MMM d, yyyy h:mm a');
+    if (!dateString) return "Never";
+    return format(new Date(dateString), "MMM d, yyyy h:mm a");
   };
 
   return (
-    <ProtectedRoute requiredRoles={['admin']}>
+    <ProtectedRoute requiredRoles={["admin"]}>
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
@@ -210,13 +223,16 @@ export default function UserManagementPage() {
                 />
               </div>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-full md:w-48" data-testid="select-role-filter">
+                <SelectTrigger
+                  className="w-full md:w-48"
+                  data-testid="select-role-filter"
+                >
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  {ROLE_OPTIONS.map(role => (
+                  {ROLE_OPTIONS.map((role) => (
                     <SelectItem key={role.value} value={role.value}>
                       {role.label}
                     </SelectItem>
@@ -265,7 +281,9 @@ export default function UserManagementPage() {
                         <TableCell>
                           <div>
                             <div className="font-medium">{user.username}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                            <div className="text-sm text-gray-500">
+                              {user.email}
+                            </div>
                             {(user.firstName || user.lastName) && (
                               <div className="text-sm text-gray-500">
                                 {user.firstName} {user.lastName}
@@ -355,7 +373,7 @@ export default function UserManagementPage() {
                   <Label htmlFor="role">Role</Label>
                   <Select
                     defaultValue={selectedUser.role}
-                    onValueChange={(value) => 
+                    onValueChange={(value) =>
                       setSelectedUser({ ...selectedUser, role: value })
                     }
                   >
@@ -363,7 +381,7 @@ export default function UserManagementPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ROLE_OPTIONS.map(role => (
+                      {ROLE_OPTIONS.map((role) => (
                         <SelectItem key={role.value} value={role.value}>
                           {role.label}
                         </SelectItem>
@@ -446,14 +464,14 @@ export default function UserManagementPage() {
                     {auditLogs?.logs?.map((log: AuditLog) => (
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">
-                          {log.action.replace(/_/g, ' ')}
+                          {log.action.replace(/_/g, " ")}
                         </TableCell>
                         <TableCell>
-                          {log.entityType || '-'}
+                          {log.entityType || "-"}
                           {log.entityId && ` #${log.entityId}`}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {log.ipAddress || '-'}
+                          {log.ipAddress || "-"}
                         </TableCell>
                         <TableCell className="text-sm">
                           {formatDate(log.createdAt)}

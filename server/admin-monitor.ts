@@ -1,6 +1,6 @@
 /**
  * Admin Study Database Monitor
- * 
+ *
  * Hourly monitoring and manual control system for study content enhancement
  */
 
@@ -64,7 +64,7 @@ let currentStats: ContentStats | null = null;
 let processStatus: EnhancementProcessStatus = {
   consumerContentGeneration: { isRunning: false, studiesProcessed: 0 },
   researchEnrichment: { isRunning: false, studiesProcessed: 0 },
-  visualEnhancement: { isRunning: false, studiesProcessed: 0 }
+  visualEnhancement: { isRunning: false, studiesProcessed: 0 },
 };
 
 /**
@@ -95,48 +95,60 @@ export async function analyzeContentCompleteness(): Promise<ContentStats> {
       totalStudies: total,
       plainLanguageTitles: {
         complete: Number(stats.plain_titles_complete),
-        percentage: Math.round((Number(stats.plain_titles_complete) / total) * 100 * 10) / 10,
-        missing: total - Number(stats.plain_titles_complete)
+        percentage:
+          Math.round((Number(stats.plain_titles_complete) / total) * 100 * 10) /
+          10,
+        missing: total - Number(stats.plain_titles_complete),
       },
       consumerContent: {
         methods: {
           complete: Number(stats.methods_complete),
-          percentage: Math.round((Number(stats.methods_complete) / total) * 100 * 10) / 10,
-          missing: total - Number(stats.methods_complete)
+          percentage:
+            Math.round((Number(stats.methods_complete) / total) * 100 * 10) /
+            10,
+          missing: total - Number(stats.methods_complete),
         },
         results: {
           complete: Number(stats.results_complete),
-          percentage: Math.round((Number(stats.results_complete) / total) * 100 * 10) / 10,
-          missing: total - Number(stats.results_complete)
+          percentage:
+            Math.round((Number(stats.results_complete) / total) * 100 * 10) /
+            10,
+          missing: total - Number(stats.results_complete),
         },
         conclusions: {
           complete: Number(stats.conclusions_complete),
-          percentage: Math.round((Number(stats.conclusions_complete) / total) * 100 * 10) / 10,
-          missing: total - Number(stats.conclusions_complete)
-        }
+          percentage:
+            Math.round(
+              (Number(stats.conclusions_complete) / total) * 100 * 10,
+            ) / 10,
+          missing: total - Number(stats.conclusions_complete),
+        },
       },
       researchEnrichment: {
         complete: Number(stats.research_enriched),
-        percentage: Math.round((Number(stats.research_enriched) / total) * 100 * 10) / 10,
-        missing: total - Number(stats.research_enriched)
+        percentage:
+          Math.round((Number(stats.research_enriched) / total) * 100 * 10) / 10,
+        missing: total - Number(stats.research_enriched),
       },
       visualContent: {
         complete: Number(stats.visual_complete),
-        percentage: Math.round((Number(stats.visual_complete) / total) * 100 * 10) / 10,
-        missing: total - Number(stats.visual_complete)
+        percentage:
+          Math.round((Number(stats.visual_complete) / total) * 100 * 10) / 10,
+        missing: total - Number(stats.visual_complete),
       },
       lastUpdated: new Date(),
       completionStatus: {
         phase1Complete: Number(stats.plain_titles_complete) >= total * 0.99,
-        phase2Complete: Number(stats.methods_complete) >= total * 0.95 && 
-                       Number(stats.results_complete) >= total * 0.95 && 
-                       Number(stats.conclusions_complete) >= total * 0.95,
+        phase2Complete:
+          Number(stats.methods_complete) >= total * 0.95 &&
+          Number(stats.results_complete) >= total * 0.95 &&
+          Number(stats.conclusions_complete) >= total * 0.95,
         phase3Complete: Number(stats.visual_complete) >= total * 0.95,
-        allComplete: false
-      }
+        allComplete: false,
+      },
     };
 
-    contentStats.completionStatus.allComplete = 
+    contentStats.completionStatus.allComplete =
       contentStats.completionStatus.phase1Complete &&
       contentStats.completionStatus.phase2Complete &&
       contentStats.completionStatus.phase3Complete;
@@ -145,9 +157,8 @@ export async function analyzeContentCompleteness(): Promise<ContentStats> {
     lastMonitoringCheck = new Date();
 
     return contentStats;
-
   } catch (error) {
-    console.error('Error analyzing content completeness:', error);
+    console.error("Error analyzing content completeness:", error);
     throw error;
   }
 }
@@ -155,48 +166,82 @@ export async function analyzeContentCompleteness(): Promise<ContentStats> {
 /**
  * Manual enhancement process triggers
  */
-export async function triggerConsumerContentGeneration(): Promise<{ started: boolean; message: string }> {
+export async function triggerConsumerContentGeneration(): Promise<{
+  started: boolean;
+  message: string;
+}> {
   try {
     if (processStatus.consumerContentGeneration.isRunning) {
-      return { started: false, message: 'Consumer content generation is already running' };
+      return {
+        started: false,
+        message: "Consumer content generation is already running",
+      };
     }
 
-    const { autoStartConsumerContent } = await import('./auto-restart-consumer-content');
+    const { autoStartConsumerContent } = await import(
+      "./auto-restart-consumer-content"
+    );
     processStatus.consumerContentGeneration.isRunning = true;
     processStatus.consumerContentGeneration.lastRun = new Date();
 
     await autoStartConsumerContent();
-    
-    return { started: true, message: 'Consumer content generation started successfully' };
+
+    return {
+      started: true,
+      message: "Consumer content generation started successfully",
+    };
   } catch (error) {
     processStatus.consumerContentGeneration.isRunning = false;
-    return { started: false, message: `Failed to start consumer content generation: ${error}` };
+    return {
+      started: false,
+      message: `Failed to start consumer content generation: ${error}`,
+    };
   }
 }
 
-export async function triggerResearchEnrichment(): Promise<{ started: boolean; message: string }> {
+export async function triggerResearchEnrichment(): Promise<{
+  started: boolean;
+  message: string;
+}> {
   try {
     if (processStatus.researchEnrichment.isRunning) {
-      return { started: false, message: 'Research enrichment is already running' };
+      return {
+        started: false,
+        message: "Research enrichment is already running",
+      };
     }
 
-    const { manualStartResearchEnrichment } = await import('./auto-research-enrichment');
+    const { manualStartResearchEnrichment } = await import(
+      "./auto-research-enrichment"
+    );
     processStatus.researchEnrichment.isRunning = true;
     processStatus.researchEnrichment.lastRun = new Date();
 
     const result = await manualStartResearchEnrichment();
-    
-    return { started: true, message: 'Research enrichment started successfully' };
+
+    return {
+      started: true,
+      message: "Research enrichment started successfully",
+    };
   } catch (error) {
     processStatus.researchEnrichment.isRunning = false;
-    return { started: false, message: `Failed to start research enrichment: ${error}` };
+    return {
+      started: false,
+      message: `Failed to start research enrichment: ${error}`,
+    };
   }
 }
 
-export async function triggerVisualEnhancement(): Promise<{ started: boolean; message: string }> {
+export async function triggerVisualEnhancement(): Promise<{
+  started: boolean;
+  message: string;
+}> {
   try {
     if (processStatus.visualEnhancement.isRunning) {
-      return { started: false, message: 'Visual enhancement is already running' };
+      return {
+        started: false,
+        message: "Visual enhancement is already running",
+      };
     }
 
     processStatus.visualEnhancement.isRunning = true;
@@ -209,20 +254,32 @@ export async function triggerVisualEnhancement(): Promise<{ started: boolean; me
     `);
 
     const count = Number(studiesNeedingImages.rows[0]?.count) || 0;
-    
+
     if (count === 0) {
       processStatus.visualEnhancement.isRunning = false;
-      return { started: false, message: 'All studies already have images - visual content is 100% complete!' };
+      return {
+        started: false,
+        message:
+          "All studies already have images - visual content is 100% complete!",
+      };
     }
 
     // Start visual content completion
-    const { startVisualContentCompletion } = await import('./complete-visual-content');
+    const { startVisualContentCompletion } = await import(
+      "./complete-visual-content"
+    );
     await startVisualContentCompletion();
-    
-    return { started: true, message: `Visual content generation started for ${count} studies. This requires OpenAI API access for image generation.` };
+
+    return {
+      started: true,
+      message: `Visual content generation started for ${count} studies. This requires OpenAI API access for image generation.`,
+    };
   } catch (error) {
     processStatus.visualEnhancement.isRunning = false;
-    return { started: false, message: `Failed to start visual enhancement: ${error}` };
+    return {
+      started: false,
+      message: `Failed to start visual enhancement: ${error}`,
+    };
   }
 }
 
@@ -233,8 +290,8 @@ export function stopAllProcesses(): { stopped: boolean; message: string } {
   processStatus.consumerContentGeneration.isRunning = false;
   processStatus.researchEnrichment.isRunning = false;
   processStatus.visualEnhancement.isRunning = false;
-  
-  return { stopped: true, message: 'All enhancement processes stopped' };
+
+  return { stopped: true, message: "All enhancement processes stopped" };
 }
 
 /**
@@ -248,7 +305,7 @@ export function getMonitoringStatus(): {
   return {
     stats: currentStats,
     processes: processStatus,
-    lastCheck: lastMonitoringCheck
+    lastCheck: lastMonitoringCheck,
   };
 }
 
@@ -257,32 +314,53 @@ export function getMonitoringStatus(): {
  */
 export async function hourlyMonitoringCheck(): Promise<void> {
   try {
-    console.log('Running hourly content monitoring check...');
-    
+    console.log("Running hourly content monitoring check...");
+
     const stats = await analyzeContentCompleteness();
-    
-    console.log('Content Completeness Report:');
-    console.log(`- Phase 1 (Plain Titles): ${stats.plainLanguageTitles.percentage}% (${stats.plainLanguageTitles.complete}/${stats.totalStudies})`);
+
+    console.log("Content Completeness Report:");
+    console.log(
+      `- Phase 1 (Plain Titles): ${stats.plainLanguageTitles.percentage}% (${stats.plainLanguageTitles.complete}/${stats.totalStudies})`,
+    );
     console.log(`- Phase 2 Consumer Content:`);
-    console.log(`  - Methods: ${stats.consumerContent.methods.percentage}% (${stats.consumerContent.methods.complete}/${stats.totalStudies})`);
-    console.log(`  - Results: ${stats.consumerContent.results.percentage}% (${stats.consumerContent.results.complete}/${stats.totalStudies})`);
-    console.log(`  - Conclusions: ${stats.consumerContent.conclusions.percentage}% (${stats.consumerContent.conclusions.complete}/${stats.totalStudies})`);
-    console.log(`- Phase 3 (Visual): ${stats.visualContent.percentage}% (${stats.visualContent.complete}/${stats.totalStudies})`);
-    console.log(`- Research Enrichment: ${stats.researchEnrichment.percentage}% (${stats.researchEnrichment.complete}/${stats.totalStudies})`);
+    console.log(
+      `  - Methods: ${stats.consumerContent.methods.percentage}% (${stats.consumerContent.methods.complete}/${stats.totalStudies})`,
+    );
+    console.log(
+      `  - Results: ${stats.consumerContent.results.percentage}% (${stats.consumerContent.results.complete}/${stats.totalStudies})`,
+    );
+    console.log(
+      `  - Conclusions: ${stats.consumerContent.conclusions.percentage}% (${stats.consumerContent.conclusions.complete}/${stats.totalStudies})`,
+    );
+    console.log(
+      `- Phase 3 (Visual): ${stats.visualContent.percentage}% (${stats.visualContent.complete}/${stats.totalStudies})`,
+    );
+    console.log(
+      `- Research Enrichment: ${stats.researchEnrichment.percentage}% (${stats.researchEnrichment.complete}/${stats.totalStudies})`,
+    );
 
     // Auto-trigger processes if completion drops below thresholds
-    if (!stats.completionStatus.phase2Complete && !processStatus.consumerContentGeneration.isRunning) {
-      console.log('Phase 2 below 95% completion, auto-triggering consumer content generation...');
+    if (
+      !stats.completionStatus.phase2Complete &&
+      !processStatus.consumerContentGeneration.isRunning
+    ) {
+      console.log(
+        "Phase 2 below 95% completion, auto-triggering consumer content generation...",
+      );
       await triggerConsumerContentGeneration();
     }
 
-    if (!stats.completionStatus.phase3Complete && !processStatus.visualEnhancement.isRunning) {
-      console.log('Phase 3 below 95% completion, auto-triggering visual enhancement...');
+    if (
+      !stats.completionStatus.phase3Complete &&
+      !processStatus.visualEnhancement.isRunning
+    ) {
+      console.log(
+        "Phase 3 below 95% completion, auto-triggering visual enhancement...",
+      );
       await triggerVisualEnhancement();
     }
-    
   } catch (error) {
-    console.error('Error in hourly monitoring check:', error);
+    console.error("Error in hourly monitoring check:", error);
   }
 }
 
@@ -290,15 +368,18 @@ export async function hourlyMonitoringCheck(): Promise<void> {
  * Initialize monitoring system
  */
 export function initializeMonitoring(): void {
-  console.log('Initializing admin monitoring system...');
-  
+  console.log("Initializing admin monitoring system...");
+
   // Run initial check
   hourlyMonitoringCheck().catch(console.error);
-  
+
   // Set up hourly monitoring
-  setInterval(() => {
-    hourlyMonitoringCheck().catch(console.error);
-  }, 60 * 60 * 1000); // Every hour
-  
-  console.log('Admin monitoring system initialized with hourly checks');
+  setInterval(
+    () => {
+      hourlyMonitoringCheck().catch(console.error);
+    },
+    60 * 60 * 1000,
+  ); // Every hour
+
+  console.log("Admin monitoring system initialized with hourly checks");
 }

@@ -1,30 +1,29 @@
-
 /**
  * Comprehensive Image System API Routes
  */
 
-import { Router } from 'express';
-import { 
-  ensureAllStudiesHaveOptimizedImages, 
-  getSystemStatus, 
+import { Router } from "express";
+import {
+  ensureAllStudiesHaveOptimizedImages,
+  getSystemStatus,
   getProcessingStats,
-  stopProcessing 
-} from '../comprehensive-image-system';
+  stopProcessing,
+} from "../comprehensive-image-system";
 
 const router = Router();
 
 /**
  * Start comprehensive image processing
  */
-router.post('/start-comprehensive-processing', async (req, res) => {
+router.post("/start-comprehensive-processing", async (req, res) => {
   try {
     const result = await ensureAllStudiesHaveOptimizedImages();
     res.json(result);
   } catch (error) {
-    console.error('Error starting comprehensive processing:', error);
+    console.error("Error starting comprehensive processing:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to start processing'
+      message: "Failed to start processing",
     });
   }
 });
@@ -32,18 +31,18 @@ router.post('/start-comprehensive-processing', async (req, res) => {
 /**
  * Get system status
  */
-router.get('/system-status', async (req, res) => {
+router.get("/system-status", async (req, res) => {
   try {
     const status = await getSystemStatus();
     res.json({
       success: true,
-      status
+      status,
     });
   } catch (error) {
-    console.error('Error getting system status:', error);
+    console.error("Error getting system status:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get status'
+      message: "Failed to get status",
     });
   }
 });
@@ -51,18 +50,18 @@ router.get('/system-status', async (req, res) => {
 /**
  * Get processing statistics
  */
-router.get('/processing-stats', (req, res) => {
+router.get("/processing-stats", (req, res) => {
   try {
     const stats = getProcessingStats();
     res.json({
       success: true,
-      stats
+      stats,
     });
   } catch (error) {
-    console.error('Error getting processing stats:', error);
+    console.error("Error getting processing stats:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get stats'
+      message: "Failed to get stats",
     });
   }
 });
@@ -70,15 +69,15 @@ router.get('/processing-stats', (req, res) => {
 /**
  * Stop processing
  */
-router.post('/stop-processing', (req, res) => {
+router.post("/stop-processing", (req, res) => {
   try {
     const result = stopProcessing();
     res.json(result);
   } catch (error) {
-    console.error('Error stopping processing:', error);
+    console.error("Error stopping processing:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to stop processing'
+      message: "Failed to stop processing",
     });
   }
 });

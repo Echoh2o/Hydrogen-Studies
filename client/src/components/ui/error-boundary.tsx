@@ -1,5 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { ErrorDisplay } from './loading-states';
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import { ErrorDisplay } from "./loading-states";
 
 interface Props {
   children: ReactNode;
@@ -18,7 +18,7 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -28,8 +28,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error to an error reporting service
-    console.error('Error caught by ErrorBoundary:', error);
-    console.error('Component stack:', errorInfo.componentStack);
+    console.error("Error caught by ErrorBoundary:", error);
+    console.error("Component stack:", errorInfo.componentStack);
   }
 
   public render() {
@@ -38,11 +38,11 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
-      
+
       return (
-        <ErrorDisplay 
-          title="Something went wrong" 
-          message={this.state.error?.message || 'An unexpected error occurred'} 
+        <ErrorDisplay
+          title="Something went wrong"
+          message={this.state.error?.message || "An unexpected error occurred"}
           onRetry={() => this.setState({ hasError: false, error: null })}
         />
       );

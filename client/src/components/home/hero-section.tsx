@@ -10,7 +10,7 @@ export default function HeroSection() {
 
   // Fetch total studies count for the counter
   const { data: studies = [] } = useQuery<any[]>({
-    queryKey: ['/api/studies'],
+    queryKey: ["/api/studies"],
     staleTime: 60000, // 1 minute
   });
 
@@ -32,20 +32,25 @@ export default function HeroSection() {
               The Complete Database for Hydrogen Research
             </h1>
             <p className="text-lg md:text-xl opacity-90 mb-4">
-              Access peer-reviewed studies on molecular hydrogen gas and its health applications.
+              Access peer-reviewed studies on molecular hydrogen gas and its
+              health applications.
             </p>
-            
+
             {/* Studies Counter */}
             <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-8 shadow-inner">
               <div className="bg-secondary rounded-xl px-4 py-3 mr-4">
-                <span className="text-2xl font-bold text-white">{totalStudies}</span>
+                <span className="text-2xl font-bold text-white">
+                  {totalStudies}
+                </span>
               </div>
               <div>
                 <p className="font-semibold text-white">Published Studies</p>
-                <p className="text-sm text-white/80">Peer-reviewed research in our database</p>
+                <p className="text-sm text-white/80">
+                  Peer-reviewed research in our database
+                </p>
               </div>
             </div>
-            
+
             <form onSubmit={handleSearch} className="relative">
               <Input
                 type="text"
@@ -54,13 +59,22 @@ export default function HeroSection() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Button 
+              <Button
                 type="submit"
-                variant="ghost" 
+                variant="ghost"
                 size="icon"
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                >
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
@@ -75,11 +89,25 @@ export default function HeroSection() {
               className="rounded-lg shadow-lg w-full h-auto"
             >
               <defs>
-                <radialGradient id="blueGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <radialGradient
+                  id="blueGlow"
+                  cx="50%"
+                  cy="50%"
+                  r="50%"
+                  fx="50%"
+                  fy="50%"
+                >
                   <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
                   <stop offset="100%" stopColor="#1A73E8" stopOpacity="0" />
                 </radialGradient>
-                <radialGradient id="redGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <radialGradient
+                  id="redGlow"
+                  cx="50%"
+                  cy="50%"
+                  r="50%"
+                  fx="50%"
+                  fy="50%"
+                >
                   <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
                   <stop offset="100%" stopColor="#EA4335" stopOpacity="0" />
                 </radialGradient>
@@ -87,10 +115,37 @@ export default function HeroSection() {
               <rect width="800" height="600" fill="#0D2149" rx="10" ry="10" />
               <g transform="translate(400, 300)">
                 {/* Electron orbits */}
-                <ellipse cx="0" cy="0" rx="280" ry="120" fill="none" stroke="#1A73E880" strokeWidth="2" transform="rotate(0)" />
-                <ellipse cx="0" cy="0" rx="280" ry="120" fill="none" stroke="#1A73E880" strokeWidth="2" transform="rotate(60)" />
-                <ellipse cx="0" cy="0" rx="280" ry="120" fill="none" stroke="#1A73E880" strokeWidth="2" transform="rotate(120)" />
-                
+                <ellipse
+                  cx="0"
+                  cy="0"
+                  rx="280"
+                  ry="120"
+                  fill="none"
+                  stroke="#1A73E880"
+                  strokeWidth="2"
+                  transform="rotate(0)"
+                />
+                <ellipse
+                  cx="0"
+                  cy="0"
+                  rx="280"
+                  ry="120"
+                  fill="none"
+                  stroke="#1A73E880"
+                  strokeWidth="2"
+                  transform="rotate(60)"
+                />
+                <ellipse
+                  cx="0"
+                  cy="0"
+                  rx="280"
+                  ry="120"
+                  fill="none"
+                  stroke="#1A73E880"
+                  strokeWidth="2"
+                  transform="rotate(120)"
+                />
+
                 {/* Electrons */}
                 <circle cx="-280" cy="0" r="20" fill="url(#blueGlow)" />
                 <circle cx="280" cy="0" r="20" fill="url(#blueGlow)" />
@@ -98,18 +153,35 @@ export default function HeroSection() {
                 <circle cx="140" cy="104" r="20" fill="url(#blueGlow)" />
                 <circle cx="-140" cy="104" r="20" fill="url(#blueGlow)" />
                 <circle cx="140" cy="-104" r="20" fill="url(#blueGlow)" />
-                
+
                 {/* Protons */}
                 <circle cx="-60" cy="0" r="40" fill="#EA4335" />
                 <circle cx="-60" cy="0" r="60" fill="url(#redGlow)" />
                 <circle cx="60" cy="0" r="40" fill="#EA4335" />
                 <circle cx="60" cy="0" r="60" fill="url(#redGlow)" />
-                
+
                 {/* Bond */}
-                <line x1="-60" y1="0" x2="60" y2="0" stroke="#ffffff" strokeWidth="8" strokeDasharray="5,5" />
-                
+                <line
+                  x1="-60"
+                  y1="0"
+                  x2="60"
+                  y2="0"
+                  stroke="#ffffff"
+                  strokeWidth="8"
+                  strokeDasharray="5,5"
+                />
+
                 {/* H2 label */}
-                <text x="0" y="150" fill="#ffffff" fontSize="60" fontWeight="bold" textAnchor="middle">H₂</text>
+                <text
+                  x="0"
+                  y="150"
+                  fill="#ffffff"
+                  fontSize="60"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  H₂
+                </text>
               </g>
             </svg>
           </div>

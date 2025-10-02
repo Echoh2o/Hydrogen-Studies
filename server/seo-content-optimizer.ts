@@ -1,12 +1,13 @@
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { eq, sql, ilike } from "drizzle-orm";
+import OpenAI from "openai";
 
-import { db } from './db';
-import { studies } from '@shared/schema';
-import { eq, sql, ilike } from 'drizzle-orm';
-import OpenAI from 'openai';
-
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-}) : null;
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 interface SEOOptimization {
   studyId: number;
@@ -17,22 +18,28 @@ interface SEOOptimization {
   internalLinks: string[];
 }
 
-export async function optimizeStudyForSEO(studyId: number): Promise<SEOOptimization> {
-  const study = await db.select().from(studies).where(eq(studies.id, studyId)).limit(1);
-  
+export async function optimizeStudyForSEO(
+  studyId: number,
+): Promise<SEOOptimization> {
+  const study = await db
+    .select()
+    .from(studies)
+    .where(eq(studies.id, studyId))
+    .limit(1);
+
   if (!study.length || !openai) {
-    throw new Error('Study not found or OpenAI not configured');
+    throw new Error("Study not found or OpenAI not configured");
   }
 
   const studyData = study[0];
-  
+
   const prompt = `
   Optimize this hydrogen therapy research study for SEO:
   
   Title: ${studyData.title}
   Abstract: ${studyData.abstract}
   Category: ${studyData.category}
-  Keywords: ${studyData.keywords?.join(', ')}
+  Keywords: ${studyData.keywords?.join(", ")}
   
   Please provide:
   1. 5-8 long-tail keywords this study should target
@@ -54,17 +61,19 @@ export async function optimizeStudyForSEO(studyId: number): Promise<SEOOptimizat
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.3
+      temperature: 0.3,
     });
 
-    const optimization = JSON.parse(response.choices[0].message.content || '{}');
-    
+    const optimization = JSON.parse(
+      response.choices[0].message.content || "{}",
+    );
+
     return {
       studyId,
-      ...optimization
+      ...optimization,
     };
   } catch (error) {
-    console.error('SEO optimization failed:', error);
+    console.error("SEO optimization failed:", error);
     throw error;
   }
 }
@@ -83,11 +92,11 @@ export async function generateContentClusters(): Promise<any> {
     ORDER BY COUNT(*) DESC
   `);
 
-  return categoryGroups.rows.map(group => ({
+  return categoryGroups.rows.map((group) => ({
     topic: group.category,
     studyCount: group.study_count,
     keywords: group.all_keywords?.filter(Boolean).slice(0, 20),
     pillarPageOpportunity: group.study_count >= 10,
-    clusterStrength: Math.min(group.study_count / 5, 10)
+    clusterStrength: Math.min(group.study_count / 5, 10),
   }));
 }

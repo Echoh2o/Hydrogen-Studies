@@ -56,7 +56,7 @@ export interface StudyOutcome {
   studyId: number;
   outcomeType: string;
   description: string;
-  significance: 'positive' | 'negative' | 'neutral' | 'mixed';
+  significance: "positive" | "negative" | "neutral" | "mixed";
   metrics?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -76,7 +76,13 @@ export interface Study {
   pdfUrl?: string;
   imageUrl?: string;
   peerReviewed: boolean;
-  studyType: 'human' | 'animal' | 'in vitro' | 'review' | 'meta-analysis' | 'other';
+  studyType:
+    | "human"
+    | "animal"
+    | "in vitro"
+    | "review"
+    | "meta-analysis"
+    | "other";
   sampleSize?: number;
   studyDesign?: string;
   fundingSource?: string;

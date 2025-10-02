@@ -3,25 +3,31 @@
  * Manage content relationships, updates, and versioning
  */
 
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -29,13 +35,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle, 
-  RefreshCw, 
-  Link, 
+} from "@/components/ui/dialog";
+import {
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  Link,
   GitBranch,
   Bell,
   History,
@@ -45,10 +51,10 @@ import {
   PlayCircle,
   PauseCircle,
   AlertTriangle,
-  Info
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+  Info,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface UpdateNotification {
   id: number;
@@ -93,69 +99,93 @@ interface DashboardStats {
 }
 
 export default function ContentOptimizationPage() {
-  const [selectedTab, setSelectedTab] = useState('notifications');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('pending');
-  const [selectedNotification, setSelectedNotification] = useState<UpdateNotification | null>(null);
+  const [selectedTab, setSelectedTab] = useState("notifications");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("pending");
+  const [selectedNotification, setSelectedNotification] =
+    useState<UpdateNotification | null>(null);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
 
   // Fetch dashboard stats
   const { data: stats, refetch: refetchStats } = useQuery({
-    queryKey: ['/api/content-optimization/dashboard/stats'],
+    queryKey: ["/api/content-optimization/dashboard/stats"],
   });
 
   // Fetch notifications
   const { data: notifications, isLoading: notificationsLoading } = useQuery({
-    queryKey: ['/api/content-optimization/notifications', filterStatus, filterPriority],
+    queryKey: [
+      "/api/content-optimization/notifications",
+      filterStatus,
+      filterPriority,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filterStatus !== 'all') params.append('status', filterStatus);
-      if (filterPriority !== 'all') params.append('priority', filterPriority);
-      const response = await fetch(`/api/content-optimization/notifications?${params}`);
+      if (filterStatus !== "all") params.append("status", filterStatus);
+      if (filterPriority !== "all") params.append("priority", filterPriority);
+      const response = await fetch(
+        `/api/content-optimization/notifications?${params}`,
+      );
       return response.json();
     },
   });
 
   // Apply notification mutation
   const applyNotification = useMutation({
-    mutationFn: async (data: { notificationId: number; reviewedBy: string }) => {
-      return apiRequest('/api/content-optimization/notifications/apply', {
-        method: 'POST',
+    mutationFn: async (data: {
+      notificationId: number;
+      reviewedBy: string;
+    }) => {
+      return apiRequest("/api/content-optimization/notifications/apply", {
+        method: "POST",
         body: JSON.stringify(data),
       });
     },
     onSuccess: () => {
       toast({
-        title: 'Update Applied',
-        description: 'The content update has been applied successfully.',
+        title: "Update Applied",
+        description: "The content update has been applied successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/content-optimization/notifications'] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/content-optimization/notifications"],
+      });
       refetchStats();
       setSelectedNotification(null);
     },
     onError: () => {
       toast({
-        title: 'Error',
-        description: 'Failed to apply update. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to apply update. Please try again.",
+        variant: "destructive",
       });
     },
   });
 
   // Reject notification mutation
   const rejectNotification = useMutation({
-    mutationFn: async (data: { id: number; notes: string; reviewedBy: string }) => {
-      return apiRequest(`/api/content-optimization/notifications/${data.id}/reject`, {
-        method: 'POST',
-        body: JSON.stringify({ notes: data.notes, reviewedBy: data.reviewedBy }),
-      });
+    mutationFn: async (data: {
+      id: number;
+      notes: string;
+      reviewedBy: string;
+    }) => {
+      return apiRequest(
+        `/api/content-optimization/notifications/${data.id}/reject`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            notes: data.notes,
+            reviewedBy: data.reviewedBy,
+          }),
+        },
+      );
     },
     onSuccess: () => {
       toast({
-        title: 'Update Rejected',
-        description: 'The update notification has been rejected.',
+        title: "Update Rejected",
+        description: "The update notification has been rejected.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/content-optimization/notifications'] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/content-optimization/notifications"],
+      });
       refetchStats();
       setSelectedNotification(null);
     },
@@ -164,40 +194,50 @@ export default function ContentOptimizationPage() {
   // Start/stop auto-update detector
   const toggleAutoUpdate = useMutation({
     mutationFn: async (enable: boolean) => {
-      const endpoint = enable ? 'start' : 'stop';
+      const endpoint = enable ? "start" : "stop";
       return apiRequest(`/api/content-optimization/auto-update/${endpoint}`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ intervalMinutes: 60 }),
       });
     },
     onSuccess: (_, enable) => {
       setAutoUpdateEnabled(enable);
       toast({
-        title: enable ? 'Auto-Update Started' : 'Auto-Update Stopped',
-        description: enable 
-          ? 'Content will be automatically checked for updates every hour.' 
-          : 'Automatic update detection has been stopped.',
+        title: enable ? "Auto-Update Started" : "Auto-Update Stopped",
+        description: enable
+          ? "Content will be automatically checked for updates every hour."
+          : "Automatic update detection has been stopped.",
       });
     },
   });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+      case "critical":
+        return "bg-red-500";
+      case "high":
+        return "bg-orange-500";
+      case "medium":
+        return "bg-yellow-500";
+      case "low":
+        return "bg-blue-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case 'critical': return <AlertCircle className="h-4 w-4" />;
-      case 'high': return <AlertTriangle className="h-4 w-4" />;
-      case 'medium': return <Info className="h-4 w-4" />;
-      case 'low': return <Info className="h-4 w-4" />;
-      default: return null;
+      case "critical":
+        return <AlertCircle className="h-4 w-4" />;
+      case "high":
+        return <AlertTriangle className="h-4 w-4" />;
+      case "medium":
+        return <Info className="h-4 w-4" />;
+      case "low":
+        return <Info className="h-4 w-4" />;
+      default:
+        return null;
     }
   };
 
@@ -208,12 +248,17 @@ export default function ContentOptimizationPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Pending Updates</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Pending Updates
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {stats?.data?.pendingNotifications?.map((item: any) => (
-                  <div key={item.priority} className="flex items-center justify-between">
+                  <div
+                    key={item.priority}
+                    className="flex items-center justify-between"
+                  >
                     <Badge className={getPriorityColor(item.priority)}>
                       {item.priority}
                     </Badge>
@@ -226,20 +271,28 @@ export default function ContentOptimizationPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Recent Updates</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Recent Updates
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats?.data?.recentUpdates || 0}</div>
+              <div className="text-3xl font-bold">
+                {stats?.data?.recentUpdates || 0}
+              </div>
               <p className="text-xs text-muted-foreground">Last 7 days</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Content Relationships</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Content Relationships
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats?.data?.totalRelationships || 0}</div>
+              <div className="text-3xl font-bold">
+                {stats?.data?.totalRelationships || 0}
+              </div>
               <p className="text-xs text-muted-foreground">Total tracked</p>
             </CardContent>
           </Card>
@@ -250,7 +303,8 @@ export default function ContentOptimizationPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {stats?.data?.smartLinks?.active || 0} / {stats?.data?.smartLinks?.total || 0}
+                {stats?.data?.smartLinks?.active || 0} /{" "}
+                {stats?.data?.smartLinks?.total || 0}
               </div>
               <p className="text-xs text-muted-foreground">Active / Total</p>
             </CardContent>
@@ -263,7 +317,7 @@ export default function ContentOptimizationPage() {
             <CardTitle className="flex items-center justify-between">
               <span>Auto-Update Detection</span>
               <Button
-                variant={autoUpdateEnabled ? 'destructive' : 'default'}
+                variant={autoUpdateEnabled ? "destructive" : "default"}
                 size="sm"
                 onClick={() => toggleAutoUpdate.mutate(!autoUpdateEnabled)}
                 disabled={toggleAutoUpdate.isPending}
@@ -282,9 +336,9 @@ export default function ContentOptimizationPage() {
               </Button>
             </CardTitle>
             <CardDescription>
-              {autoUpdateEnabled 
-                ? 'System is actively monitoring for content updates'
-                : 'Automatic update detection is currently disabled'}
+              {autoUpdateEnabled
+                ? "System is actively monitoring for content updates"
+                : "Automatic update detection is currently disabled"}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -353,47 +407,62 @@ export default function ContentOptimizationPage() {
                 ) : (
                   <ScrollArea className="h-[500px]">
                     <div className="space-y-4">
-                      {notifications?.data?.map((notification: UpdateNotification) => (
-                        <Card key={notification.id} className="cursor-pointer hover:bg-accent"
-                              onClick={() => setSelectedNotification(notification)}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  {getPriorityIcon(notification.priority)}
-                                  <Badge className={getPriorityColor(notification.priority)}>
-                                    {notification.priority}
-                                  </Badge>
-                                  <Badge variant="outline">
-                                    {notification.contentType}
-                                  </Badge>
-                                  <Badge variant="secondary">
-                                    {notification.triggerType}
-                                  </Badge>
+                      {notifications?.data?.map(
+                        (notification: UpdateNotification) => (
+                          <Card
+                            key={notification.id}
+                            className="cursor-pointer hover:bg-accent"
+                            onClick={() =>
+                              setSelectedNotification(notification)
+                            }
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    {getPriorityIcon(notification.priority)}
+                                    <Badge
+                                      className={getPriorityColor(
+                                        notification.priority,
+                                      )}
+                                    >
+                                      {notification.priority}
+                                    </Badge>
+                                    <Badge variant="outline">
+                                      {notification.contentType}
+                                    </Badge>
+                                    <Badge variant="secondary">
+                                      {notification.triggerType}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm font-medium mb-1">
+                                    {notification.updateSummary}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Created{" "}
+                                    {format(
+                                      new Date(notification.createdAt),
+                                      "PPp",
+                                    )}
+                                  </p>
                                 </div>
-                                <p className="text-sm font-medium mb-1">
-                                  {notification.updateSummary}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Created {format(new Date(notification.createdAt), 'PPp')}
-                                </p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedNotification(notification);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedNotification(notification);
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        ),
+                      )}
                       {notifications?.data?.length === 0 && (
                         <div className="text-center py-8 text-muted-foreground">
                           No notifications found with current filters
@@ -419,9 +488,10 @@ export default function ContentOptimizationPage() {
                   <Info className="h-4 w-4" />
                   <AlertTitle>Relationship Tracking</AlertTitle>
                   <AlertDescription>
-                    The system automatically detects and tracks relationships between studies, 
-                    blog articles, and other content. These relationships help identify when 
-                    content needs updates based on new research.
+                    The system automatically detects and tracks relationships
+                    between studies, blog articles, and other content. These
+                    relationships help identify when content needs updates based
+                    on new research.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -441,8 +511,9 @@ export default function ContentOptimizationPage() {
                   <History className="h-4 w-4" />
                   <AlertTitle>Version Control</AlertTitle>
                   <AlertDescription>
-                    All content changes are tracked with complete version history, allowing 
-                    you to review what changed, when it changed, and who made the changes.
+                    All content changes are tracked with complete version
+                    history, allowing you to review what changed, when it
+                    changed, and who made the changes.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -452,7 +523,10 @@ export default function ContentOptimizationPage() {
 
         {/* Notification Detail Dialog */}
         {selectedNotification && (
-          <Dialog open={!!selectedNotification} onOpenChange={() => setSelectedNotification(null)}>
+          <Dialog
+            open={!!selectedNotification}
+            onOpenChange={() => setSelectedNotification(null)}
+          >
             <DialogContent className="max-w-3xl">
               <DialogHeader>
                 <DialogTitle>Update Notification Details</DialogTitle>
@@ -464,17 +538,25 @@ export default function ContentOptimizationPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium mb-1">Content Type</p>
-                    <Badge variant="outline">{selectedNotification.contentType}</Badge>
+                    <Badge variant="outline">
+                      {selectedNotification.contentType}
+                    </Badge>
                   </div>
                   <div>
                     <p className="text-sm font-medium mb-1">Priority</p>
-                    <Badge className={getPriorityColor(selectedNotification.priority)}>
+                    <Badge
+                      className={getPriorityColor(
+                        selectedNotification.priority,
+                      )}
+                    >
                       {selectedNotification.priority}
                     </Badge>
                   </div>
                   <div>
                     <p className="text-sm font-medium mb-1">Trigger Type</p>
-                    <Badge variant="secondary">{selectedNotification.triggerType}</Badge>
+                    <Badge variant="secondary">
+                      {selectedNotification.triggerType}
+                    </Badge>
                   </div>
                   <div>
                     <p className="text-sm font-medium mb-1">Status</p>
@@ -486,12 +568,16 @@ export default function ContentOptimizationPage() {
 
                 <div>
                   <p className="text-sm font-medium mb-2">Update Summary</p>
-                  <p className="text-sm">{selectedNotification.updateSummary}</p>
+                  <p className="text-sm">
+                    {selectedNotification.updateSummary}
+                  </p>
                 </div>
 
                 {selectedNotification.suggestedChanges && (
                   <div>
-                    <p className="text-sm font-medium mb-2">Suggested Changes</p>
+                    <p className="text-sm font-medium mb-2">
+                      Suggested Changes
+                    </p>
                     <Card>
                       <CardContent className="p-3">
                         <pre className="text-sm whitespace-pre-wrap">
@@ -502,28 +588,35 @@ export default function ContentOptimizationPage() {
                   </div>
                 )}
 
-                {selectedNotification.impactedSections && selectedNotification.impactedSections.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">Impacted Sections</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNotification.impactedSections.map((section, idx) => (
-                        <Badge key={idx} variant="outline">{section}</Badge>
-                      ))}
+                {selectedNotification.impactedSections &&
+                  selectedNotification.impactedSections.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">
+                        Impacted Sections
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedNotification.impactedSections.map(
+                          (section, idx) => (
+                            <Badge key={idx} variant="outline">
+                              {section}
+                            </Badge>
+                          ),
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedNotification.status === 'pending' && (
+                {selectedNotification.status === "pending" && (
                   <div className="flex justify-end gap-2 pt-4">
                     <Button
                       variant="outline"
                       onClick={() => {
-                        const notes = prompt('Rejection reason (optional):');
+                        const notes = prompt("Rejection reason (optional):");
                         if (notes !== null) {
                           rejectNotification.mutate({
                             id: selectedNotification.id,
-                            notes: notes || '',
-                            reviewedBy: 'admin' // Should use actual user ID
+                            notes: notes || "",
+                            reviewedBy: "admin", // Should use actual user ID
                           });
                         }
                       }}
@@ -535,7 +628,7 @@ export default function ContentOptimizationPage() {
                       onClick={() => {
                         applyNotification.mutate({
                           notificationId: selectedNotification.id,
-                          reviewedBy: 'admin' // Should use actual user ID
+                          reviewedBy: "admin", // Should use actual user ID
                         });
                       }}
                     >

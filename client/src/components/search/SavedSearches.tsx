@@ -3,12 +3,18 @@
  * Allows users to save and quickly access frequent search queries
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { HiBookmark, HiTrash, HiEdit, HiSearch, HiPlus } from "react-icons/hi";
 import { useToast } from "@/hooks/use-toast";
@@ -33,34 +39,37 @@ interface SavedSearchesProps {
 
 export const SavedSearches: React.FC<SavedSearchesProps> = ({
   onLoadSearch,
-  currentSearch
+  currentSearch,
 }) => {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchName, setSearchName] = useState('');
+  const [searchName, setSearchName] = useState("");
   const [editingSearch, setEditingSearch] = useState<SavedSearch | null>(null);
   const { toast } = useToast();
 
   // Load saved searches from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('hydrogenstudies_saved_searches');
+    const saved = localStorage.getItem("hydrogenstudies_saved_searches");
     if (saved) {
       try {
         const parsed = JSON.parse(saved).map((search: any) => ({
           ...search,
           createdAt: new Date(search.createdAt),
-          lastUsed: new Date(search.lastUsed)
+          lastUsed: new Date(search.lastUsed),
         }));
         setSavedSearches(parsed);
       } catch (error) {
-        console.error('Error loading saved searches:', error);
+        console.error("Error loading saved searches:", error);
       }
     }
   }, []);
 
   // Save searches to localStorage
   const saveToStorage = (searches: SavedSearch[]) => {
-    localStorage.setItem('hydrogenstudies_saved_searches', JSON.stringify(searches));
+    localStorage.setItem(
+      "hydrogenstudies_saved_searches",
+      JSON.stringify(searches),
+    );
     setSavedSearches(searches);
   };
 
@@ -70,7 +79,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
       toast({
         title: "Error",
         description: "Please enter a name for your search",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -82,18 +91,18 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
       filters: currentSearch.filters,
       createdAt: new Date(),
       lastUsed: new Date(),
-      useCount: 0
+      useCount: 0,
     };
 
     const updated = [newSearch, ...savedSearches].slice(0, 20); // Keep max 20 saved searches
     saveToStorage(updated);
-    
-    setSearchName('');
+
+    setSearchName("");
     setIsModalOpen(false);
-    
+
     toast({
       title: "Success",
-      description: "Search saved successfully"
+      description: "Search saved successfully",
     });
   };
 
@@ -101,47 +110,47 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
   const updateSearch = () => {
     if (!editingSearch || !searchName.trim()) return;
 
-    const updated = savedSearches.map(search => 
-      search.id === editingSearch.id 
+    const updated = savedSearches.map((search) =>
+      search.id === editingSearch.id
         ? { ...search, name: searchName.trim() }
-        : search
+        : search,
     );
-    
+
     saveToStorage(updated);
     setEditingSearch(null);
-    setSearchName('');
+    setSearchName("");
     setIsModalOpen(false);
-    
+
     toast({
       title: "Success",
-      description: "Search updated successfully"
+      description: "Search updated successfully",
     });
   };
 
   // Load saved search
   const loadSearch = (search: SavedSearch) => {
-    const updated = savedSearches.map(s => 
-      s.id === search.id 
+    const updated = savedSearches.map((s) =>
+      s.id === search.id
         ? { ...s, lastUsed: new Date(), useCount: s.useCount + 1 }
-        : s
+        : s,
     );
     saveToStorage(updated);
     onLoadSearch(search);
-    
+
     toast({
       title: "Search Loaded",
-      description: `Loaded search: ${search.name}`
+      description: `Loaded search: ${search.name}`,
     });
   };
 
   // Delete saved search
   const deleteSearch = (searchId: string) => {
-    const updated = savedSearches.filter(s => s.id !== searchId);
+    const updated = savedSearches.filter((s) => s.id !== searchId);
     saveToStorage(updated);
-    
+
     toast({
       title: "Search Deleted",
-      description: "Saved search removed"
+      description: "Saved search removed",
     });
   };
 
@@ -155,7 +164,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
   // Open save modal
   const openSaveModal = () => {
     setEditingSearch(null);
-    setSearchName('');
+    setSearchName("");
     setIsModalOpen(true);
   };
 
@@ -165,8 +174,8 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
         <h3 className="text-lg font-semibold">Saved Searches</h3>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={openSaveModal}
               disabled={!currentSearch?.query}
@@ -175,14 +184,14 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
               Save Current Search
             </Button>
           </DialogTrigger>
-          
+
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingSearch ? 'Edit Saved Search' : 'Save Current Search'}
+                {editingSearch ? "Edit Saved Search" : "Save Current Search"}
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="search-name">Search Name</Label>
@@ -192,30 +201,36 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       editingSearch ? updateSearch() : saveCurrentSearch();
                     }
                   }}
                 />
               </div>
-              
+
               {currentSearch && !editingSearch && (
                 <div className="text-sm text-gray-600">
-                  <p><strong>Query:</strong> {currentSearch.query || 'All studies'}</p>
-                  <p><strong>Filters:</strong> {
-                    Object.keys(currentSearch.filters || {}).length > 0 
+                  <p>
+                    <strong>Query:</strong>{" "}
+                    {currentSearch.query || "All studies"}
+                  </p>
+                  <p>
+                    <strong>Filters:</strong>{" "}
+                    {Object.keys(currentSearch.filters || {}).length > 0
                       ? `${Object.keys(currentSearch.filters).length} active filters`
-                      : 'No filters'
-                  }</p>
+                      : "No filters"}
+                  </p>
                 </div>
               )}
-              
+
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={editingSearch ? updateSearch : saveCurrentSearch}>
-                  {editingSearch ? 'Update' : 'Save'}
+                <Button
+                  onClick={editingSearch ? updateSearch : saveCurrentSearch}
+                >
+                  {editingSearch ? "Update" : "Save"}
                 </Button>
               </div>
             </div>
@@ -228,7 +243,9 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
           <CardContent className="py-8 text-center text-gray-500">
             <HiBookmark className="h-8 w-8 mx-auto mb-2 text-gray-300" />
             <p>No saved searches yet</p>
-            <p className="text-sm">Save your frequent searches for quick access</p>
+            <p className="text-sm">
+              Save your frequent searches for quick access
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -236,7 +253,10 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
           {savedSearches
             .sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime())
             .map((search) => (
-              <Card key={search.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={search.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardContent className="py-3">
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -246,17 +266,18 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                           Used {search.useCount} times
                         </Badge>
                       </div>
-                      
+
                       <div className="text-sm text-gray-600 mt-1">
                         <p className="truncate">
-                          <strong>Query:</strong> {search.query || 'All studies'}
+                          <strong>Query:</strong>{" "}
+                          {search.query || "All studies"}
                         </p>
                         <p className="text-xs">
                           Last used: {search.lastUsed.toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-1 ml-2">
                       <Button
                         variant="ghost"
@@ -266,7 +287,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                       >
                         <HiSearch className="h-4 w-4" />
                       </Button>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -275,7 +296,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                       >
                         <HiEdit className="h-4 w-4" />
                       </Button>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"

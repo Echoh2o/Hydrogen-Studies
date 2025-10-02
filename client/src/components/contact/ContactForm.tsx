@@ -24,15 +24,21 @@ import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 const contactFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
-  subject: z.string().min(5, { message: "Subject must be at least 5 characters" }),
-  message: z.string().min(10, { message: "Message must be at least 10 characters" }),
+  subject: z
+    .string()
+    .min(5, { message: "Subject must be at least 5 characters" }),
+  message: z
+    .string()
+    .min(10, { message: "Message must be at least 10 characters" }),
 });
 
 // Extract type from schema
 type ContactFormValues = z.infer<typeof contactFormSchema>;
 
 export default function ContactForm() {
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
 
   // Initialize form
   const form = useForm<ContactFormValues>({
@@ -72,7 +78,8 @@ export default function ContactForm() {
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertTitle className="text-green-800">Message Sent!</AlertTitle>
           <AlertDescription className="text-green-700">
-            Thank you for contacting us. We'll get back to you as soon as possible.
+            Thank you for contacting us. We'll get back to you as soon as
+            possible.
           </AlertDescription>
         </Alert>
       )}
@@ -82,7 +89,8 @@ export default function ContactForm() {
           <AlertCircle className="h-4 w-4 text-red-600" />
           <AlertTitle className="text-red-800">Something went wrong</AlertTitle>
           <AlertDescription className="text-red-700">
-            We couldn't send your message. Please try again or email us directly at support@hydrogenstudies.com.
+            We couldn't send your message. Please try again or email us directly
+            at support@hydrogenstudies.com.
           </AlertDescription>
         </Alert>
       )}
@@ -111,7 +119,11 @@ export default function ContactForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your email address" type="email" {...field} />
+                    <Input
+                      placeholder="Your email address"
+                      type="email"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,7 +159,8 @@ export default function ContactForm() {
                   />
                 </FormControl>
                 <FormDescription>
-                  Please provide as much detail as possible so we can best assist you.
+                  Please provide as much detail as possible so we can best
+                  assist you.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

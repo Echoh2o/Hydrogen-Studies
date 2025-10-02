@@ -1,26 +1,35 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { Loader2, Search, Database, AlertCircle, ExternalLink } from 'lucide-react';
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Loader2,
+  Search,
+  Database,
+  AlertCircle,
+  ExternalLink,
+} from "lucide-react";
 
 export default function PubMedSearch() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedPmid, setSelectedPmid] = useState('');
+  const [selectedPmid, setSelectedPmid] = useState("");
   const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const resultsPerPage = 10;
-  
+
   // Search mutation
   const searchMutation = useMutation({
-    mutationFn: async ({ query, page }: { query: string, page: number }) => {
-      const response = await apiRequest('GET', `/api/research/pubmed/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${resultsPerPage}`);
+    mutationFn: async ({ query, page }: { query: string; page: number }) => {
+      const response = await apiRequest(
+        "GET",
+        `/api/research/pubmed/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${resultsPerPage}`,
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -33,13 +42,15 @@ export default function PubMedSearch() {
         description: error.message || "Failed to search PubMed",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (pmid: string) => {
-      const response = await apiRequest('POST', `/api/research/pubmed/import`, { pmid });
+      const response = await apiRequest("POST", `/api/research/pubmed/import`, {
+        pmid,
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -62,9 +73,9 @@ export default function PubMedSearch() {
         description: error.message || "Failed to import study",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       toast({
@@ -76,24 +87,28 @@ export default function PubMedSearch() {
     }
     searchMutation.mutate({ query: searchQuery, page });
   };
-  
+
   const handleImport = (pmid: string) => {
     setSelectedPmid(pmid);
     importMutation.mutate(pmid);
   };
-  
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
     } catch (error) {
       return dateString;
     }
   };
-  
+
   const totalPages = Math.ceil(totalResults / resultsPerPage);
-  
+
   return (
     <div className="space-y-6">
       <div className="flex space-x-2">
@@ -106,9 +121,9 @@ export default function PubMedSearch() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1"
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
-            <Button 
+            <Button
               onClick={handleSearch}
               disabled={searchMutation.isPending || !searchQuery.trim()}
               className="ml-2"
@@ -131,7 +146,7 @@ export default function PubMedSearch() {
           </p>
         </div>
       </div>
-      
+
       {searchMutation.isPending ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
@@ -139,9 +154,10 @@ export default function PubMedSearch() {
       ) : searchResults.length > 0 ? (
         <div className="space-y-4">
           <div className="text-sm text-gray-500">
-            Showing {searchResults.length} of {totalResults} results (page {page} of {totalPages || 1})
+            Showing {searchResults.length} of {totalResults} results (page{" "}
+            {page} of {totalPages || 1})
           </div>
-          
+
           {searchResults.map((article: any, index: number) => (
             <Card key={index} className="overflow-hidden">
               <CardContent className="p-4">
@@ -149,13 +165,16 @@ export default function PubMedSearch() {
                   <div className="flex-1 space-y-1">
                     <h3 className="font-medium text-base">{article.title}</h3>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Authors:</span> {article.authors || "N/A"}
+                      <span className="font-medium">Authors:</span>{" "}
+                      {article.authors || "N/A"}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Journal:</span> {article.journal || "N/A"}
+                      <span className="font-medium">Journal:</span>{" "}
+                      {article.journal || "N/A"}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Published:</span> {formatDate(article.pubDate)}
+                      <span className="font-medium">Published:</span>{" "}
+                      {formatDate(article.pubDate)}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       <span className="font-medium">PMID:</span> {article.pmid}
@@ -167,12 +186,16 @@ export default function PubMedSearch() {
                     )}
                   </div>
                   <div className="md:ml-4 mt-3 md:mt-0 flex md:flex-col justify-end md:justify-center space-y-2">
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => handleImport(article.pmid)}
-                      disabled={importMutation.isPending && selectedPmid === article.pmid}
+                      disabled={
+                        importMutation.isPending &&
+                        selectedPmid === article.pmid
+                      }
                     >
-                      {importMutation.isPending && selectedPmid === article.pmid ? (
+                      {importMutation.isPending &&
+                      selectedPmid === article.pmid ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Importing...
@@ -185,10 +208,15 @@ export default function PubMedSearch() {
                       )}
                     </Button>
                     {article.doi && (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
-                        onClick={() => window.open(`https://doi.org/${article.doi}`, '_blank')}
+                        onClick={() =>
+                          window.open(
+                            `https://doi.org/${article.doi}`,
+                            "_blank",
+                          )
+                        }
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View DOI
@@ -199,7 +227,7 @@ export default function PubMedSearch() {
               </CardContent>
             </Card>
           ))}
-          
+
           <div className="flex justify-between mt-4">
             <Button
               variant="outline"

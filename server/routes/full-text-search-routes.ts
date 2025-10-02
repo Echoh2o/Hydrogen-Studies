@@ -3,21 +3,21 @@
  * Provides advanced text search with fuzzy matching and relevance scoring
  */
 
-import { Router } from 'express';
-import { db } from '../db';
-import { studies } from '@shared/schema';
-import { sql, desc, or, and, ilike } from 'drizzle-orm';
+import { Router } from "express";
+import { db } from "../db";
+import { studies } from "@shared/schema";
+import { sql, desc, or, and, ilike } from "drizzle-orm";
 
 const router = Router();
 
 // Full-text search with semantic ranking
-router.get('/api/search/fulltext', async (req, res) => {
+router.get("/api/search/fulltext", async (req, res) => {
   try {
     const {
-      q: query = '',
+      q: query = "",
       page = 1,
       pageSize = 20,
-      threshold = 0.1
+      threshold = 0.1,
     } = req.query;
 
     if (!query || (query as string).length < 2) {
@@ -26,12 +26,13 @@ router.get('/api/search/fulltext', async (req, res) => {
         total: 0,
         page: parseInt(page as string),
         pageSize: parseInt(pageSize as string),
-        pageCount: 0
+        pageCount: 0,
       });
     }
 
     const searchQuery = query as string;
-    const offset = (parseInt(page as string) - 1) * parseInt(pageSize as string);
+    const offset =
+      (parseInt(page as string) - 1) * parseInt(pageSize as string);
     const limit = parseInt(pageSize as string);
 
     // Build comprehensive full-text search with ranking
@@ -43,43 +44,43 @@ router.get('/api/search/fulltext', async (req, res) => {
           (
             -- Title match (highest weight)
             CASE 
-              WHEN LOWER(title) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 20
+              WHEN LOWER(title) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 20
               ELSE 0
             END +
             
             -- Exact phrase in abstract (high weight)
             CASE 
-              WHEN LOWER(abstract) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 15
+              WHEN LOWER(abstract) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 15
               ELSE 0
             END +
             
             -- Author match (medium weight)
             CASE 
-              WHEN LOWER(authors) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 10
+              WHEN LOWER(authors) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 10
               ELSE 0
             END +
             
             -- Journal match (medium weight)
             CASE 
-              WHEN LOWER(journal) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 8
+              WHEN LOWER(journal) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 8
               ELSE 0
             END +
             
             -- Category match (medium weight)
             CASE 
-              WHEN LOWER(category) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 8
+              WHEN LOWER(category) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 8
               ELSE 0
             END +
             
             -- DOI match (low weight)
             CASE 
-              WHEN LOWER(doi) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 5
+              WHEN LOWER(doi) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 5
               ELSE 0
             END +
             
             -- Keywords match (medium weight)
             CASE 
-              WHEN LOWER(keywords) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 7
+              WHEN LOWER(keywords) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 7
               ELSE 0
             END +
             
@@ -97,13 +98,13 @@ router.get('/api/search/fulltext', async (req, res) => {
           
         FROM studies
         WHERE 
-          LOWER(title) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-          LOWER(abstract) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-          LOWER(authors) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-          LOWER(journal) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-          LOWER(category) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-          LOWER(doi) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-          LOWER(keywords) LIKE LOWER(${'%' + searchQuery + '%'})
+          LOWER(title) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+          LOWER(abstract) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+          LOWER(authors) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+          LOWER(journal) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+          LOWER(category) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+          LOWER(doi) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+          LOWER(keywords) LIKE LOWER(${"%" + searchQuery + "%"})
       )
       SELECT * FROM ranked_studies
       WHERE relevance_score > ${parseFloat(threshold as string)}
@@ -116,13 +117,13 @@ router.get('/api/search/fulltext', async (req, res) => {
       SELECT COUNT(*) as total
       FROM studies
       WHERE 
-        LOWER(title) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-        LOWER(abstract) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-        LOWER(authors) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-        LOWER(journal) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-        LOWER(category) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-        LOWER(doi) LIKE LOWER(${'%' + searchQuery + '%'}) OR
-        LOWER(keywords) LIKE LOWER(${'%' + searchQuery + '%'})
+        LOWER(title) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+        LOWER(abstract) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+        LOWER(authors) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+        LOWER(journal) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+        LOWER(category) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+        LOWER(doi) LIKE LOWER(${"%" + searchQuery + "%"}) OR
+        LOWER(keywords) LIKE LOWER(${"%" + searchQuery + "%"})
     `);
 
     const total = countResult.rows[0]?.total || 0;
@@ -136,17 +137,16 @@ router.get('/api/search/fulltext', async (req, res) => {
       pageCount,
       searchQuery,
       hasNextPage: parseInt(page as string) < pageCount,
-      hasPreviousPage: parseInt(page as string) > 1
+      hasPreviousPage: parseInt(page as string) > 1,
     });
-
   } catch (error) {
-    console.error('Error performing full-text search:', error);
-    res.status(500).json({ error: 'Full-text search failed' });
+    console.error("Error performing full-text search:", error);
+    res.status(500).json({ error: "Full-text search failed" });
   }
 });
 
 // Search suggestions with fuzzy matching
-router.get('/api/search/fuzzy-suggestions', async (req, res) => {
+router.get("/api/search/fuzzy-suggestions", async (req, res) => {
   try {
     const { q: query } = req.query;
 
@@ -165,12 +165,12 @@ router.get('/api/search/fuzzy-suggestions', async (req, res) => {
           'study_title' as type,
           id,
           CASE 
-            WHEN LOWER(title) LIKE LOWER(${'%' + searchTerm + '%'}) THEN 
+            WHEN LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"}) THEN 
               LENGTH(${searchTerm}) * 1.0 / LENGTH(title)
             ELSE 0
           END as similarity_score
         FROM studies 
-        WHERE LOWER(title) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
         
         UNION ALL
         
@@ -180,12 +180,12 @@ router.get('/api/search/fuzzy-suggestions', async (req, res) => {
           'category' as type,
           NULL as id,
           CASE 
-            WHEN LOWER(category) LIKE LOWER(${'%' + searchTerm + '%'}) THEN 
+            WHEN LOWER(category) LIKE LOWER(${"%" + searchTerm + "%"}) THEN 
               LENGTH(${searchTerm}) * 1.0 / LENGTH(category)
             ELSE 0
           END as similarity_score
         FROM studies 
-        WHERE LOWER(category) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(category) LIKE LOWER(${"%" + searchTerm + "%"})
         
         UNION ALL
         
@@ -195,12 +195,12 @@ router.get('/api/search/fuzzy-suggestions', async (req, res) => {
           'author' as type,
           NULL as id,
           CASE 
-            WHEN LOWER(authors) LIKE LOWER(${'%' + searchTerm + '%'}) THEN 
+            WHEN LOWER(authors) LIKE LOWER(${"%" + searchTerm + "%"}) THEN 
               LENGTH(${searchTerm}) * 1.0 / LENGTH(authors)
             ELSE 0
           END as similarity_score
         FROM studies 
-        WHERE LOWER(authors) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(authors) LIKE LOWER(${"%" + searchTerm + "%"})
         
         UNION ALL
         
@@ -210,12 +210,12 @@ router.get('/api/search/fuzzy-suggestions', async (req, res) => {
           'journal' as type,
           NULL as id,
           CASE 
-            WHEN LOWER(journal) LIKE LOWER(${'%' + searchTerm + '%'}) THEN 
+            WHEN LOWER(journal) LIKE LOWER(${"%" + searchTerm + "%"}) THEN 
               LENGTH(${searchTerm}) * 1.0 / LENGTH(journal)
             ELSE 0
           END as similarity_score
         FROM studies 
-        WHERE LOWER(journal) LIKE LOWER(${'%' + searchTerm + '%'})
+        WHERE LOWER(journal) LIKE LOWER(${"%" + searchTerm + "%"})
       )
       SELECT 
         text,
@@ -228,29 +228,24 @@ router.get('/api/search/fuzzy-suggestions', async (req, res) => {
       LIMIT 15
     `);
 
-    const formattedSuggestions = suggestions.rows.map(row => ({
+    const formattedSuggestions = suggestions.rows.map((row) => ({
       id: row.id ? `${row.type}-${row.id}` : `${row.type}-${row.text}`,
       text: row.text,
       type: row.type,
-      relevanceScore: row.similarity_score
+      relevanceScore: row.similarity_score,
     }));
 
     res.json(formattedSuggestions);
-
   } catch (error) {
-    console.error('Error fetching fuzzy suggestions:', error);
-    res.status(500).json({ error: 'Failed to fetch suggestions' });
+    console.error("Error fetching fuzzy suggestions:", error);
+    res.status(500).json({ error: "Failed to fetch suggestions" });
   }
 });
 
 // Advanced search with boolean operators
-router.get('/api/search/boolean', async (req, res) => {
+router.get("/api/search/boolean", async (req, res) => {
   try {
-    const {
-      query = '',
-      page = 1,
-      pageSize = 20
-    } = req.query;
+    const { query = "", page = 1, pageSize = 20 } = req.query;
 
     if (!query) {
       return res.json({
@@ -258,12 +253,13 @@ router.get('/api/search/boolean', async (req, res) => {
         total: 0,
         page: parseInt(page as string),
         pageSize: parseInt(pageSize as string),
-        pageCount: 0
+        pageCount: 0,
       });
     }
 
     const searchQuery = query as string;
-    const offset = (parseInt(page as string) - 1) * parseInt(pageSize as string);
+    const offset =
+      (parseInt(page as string) - 1) * parseInt(pageSize as string);
     const limit = parseInt(pageSize as string);
 
     // Parse boolean operators (AND, OR, NOT)
@@ -271,7 +267,7 @@ router.get('/api/search/boolean', async (req, res) => {
     let conditions: string[] = [];
 
     for (let i = 0; i < terms.length; i += 2) {
-      const term = terms[i].trim().replace(/['"]/g, '');
+      const term = terms[i].trim().replace(/['"]/g, "");
       const operator = terms[i + 1];
 
       if (term) {
@@ -283,7 +279,7 @@ router.get('/api/search/boolean', async (req, res) => {
           LOWER(category) LIKE LOWER('%${term}%')
         )`;
 
-        if (operator && operator.toUpperCase() === 'NOT') {
+        if (operator && operator.toUpperCase() === "NOT") {
           conditions.push(`NOT ${condition}`);
         } else {
           conditions.push(condition);
@@ -291,14 +287,15 @@ router.get('/api/search/boolean', async (req, res) => {
       }
     }
 
-    const whereClause = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
+    const whereClause =
+      conditions.length > 0 ? conditions.join(" AND ") : "1=1";
 
     const results = await db.execute(sql`
       SELECT *,
         (
-          CASE WHEN LOWER(title) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 10 ELSE 0 END +
-          CASE WHEN LOWER(abstract) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 5 ELSE 0 END +
-          CASE WHEN LOWER(authors) LIKE LOWER(${'%' + searchQuery + '%'}) THEN 3 ELSE 0 END
+          CASE WHEN LOWER(title) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 10 ELSE 0 END +
+          CASE WHEN LOWER(abstract) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 5 ELSE 0 END +
+          CASE WHEN LOWER(authors) LIKE LOWER(${"%" + searchQuery + "%"}) THEN 3 ELSE 0 END
         ) as relevance_score
       FROM studies
       WHERE ${sql.raw(whereClause)}
@@ -323,69 +320,66 @@ router.get('/api/search/boolean', async (req, res) => {
       pageCount,
       searchQuery,
       hasNextPage: parseInt(page as string) < pageCount,
-      hasPreviousPage: parseInt(page as string) > 1
+      hasPreviousPage: parseInt(page as string) > 1,
     });
-
   } catch (error) {
-    console.error('Error performing boolean search:', error);
-    res.status(500).json({ error: 'Boolean search failed' });
+    console.error("Error performing boolean search:", error);
+    res.status(500).json({ error: "Boolean search failed" });
   }
 });
 
 // Search history and analytics
-router.post('/api/search/log', async (req, res) => {
+router.post("/api/search/log", async (req, res) => {
   try {
     const {
       query,
       resultsCount,
-      searchType = 'standard',
+      searchType = "standard",
       timestamp = new Date().toISOString(),
-      userAgent = '',
-      sessionId = ''
+      userAgent = "",
+      sessionId = "",
     } = req.body;
 
     // Log search for analytics (in production, store in dedicated analytics table)
-    console.log('Search Analytics:', {
+    console.log("Search Analytics:", {
       query,
       resultsCount,
       searchType,
       timestamp,
-      userAgent: req.headers['user-agent'] || userAgent,
+      userAgent: req.headers["user-agent"] || userAgent,
       sessionId,
-      ip: req.ip
+      ip: req.ip,
     });
 
-    res.json({ success: true, message: 'Search logged successfully' });
-
+    res.json({ success: true, message: "Search logged successfully" });
   } catch (error) {
-    console.error('Error logging search:', error);
-    res.status(500).json({ error: 'Failed to log search' });
+    console.error("Error logging search:", error);
+    res.status(500).json({ error: "Failed to log search" });
   }
 });
 
 // Popular search terms
-router.get('/api/search/popular-terms', async (req, res) => {
+router.get("/api/search/popular-terms", async (req, res) => {
   try {
     // In a production system, this would query actual search logs
     // For now, return common hydrogen research terms
     const popularTerms = [
-      { term: 'antioxidant', count: 156, trend: 'up' },
-      { term: 'neuroprotection', count: 143, trend: 'up' },
-      { term: 'cardiovascular', count: 128, trend: 'stable' },
-      { term: 'inflammation', count: 121, trend: 'up' },
-      { term: 'diabetes', count: 98, trend: 'down' },
-      { term: 'oxidative stress', count: 87, trend: 'up' },
-      { term: 'clinical trial', count: 76, trend: 'stable' },
-      { term: 'metabolic syndrome', count: 65, trend: 'up' },
-      { term: 'aging', count: 54, trend: 'stable' },
-      { term: 'cancer', count: 43, trend: 'down' }
+      { term: "antioxidant", count: 156, trend: "up" },
+      { term: "neuroprotection", count: 143, trend: "up" },
+      { term: "cardiovascular", count: 128, trend: "stable" },
+      { term: "inflammation", count: 121, trend: "up" },
+      { term: "diabetes", count: 98, trend: "down" },
+      { term: "oxidative stress", count: 87, trend: "up" },
+      { term: "clinical trial", count: 76, trend: "stable" },
+      { term: "metabolic syndrome", count: 65, trend: "up" },
+      { term: "aging", count: 54, trend: "stable" },
+      { term: "cancer", count: 43, trend: "down" },
     ];
 
     res.json(popularTerms);
-
   } catch (error) {
-    console.error('Error fetching popular terms:', error);
-    res.status(500).json({ error: 'Failed to fetch popular terms' });
+    console.error("Error fetching popular terms:", error);
+    res.status(500).json({ error: "Failed to fetch popular terms" });
   }
 });
 

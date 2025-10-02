@@ -10,16 +10,16 @@ import { sql } from "drizzle-orm";
 import {
   parseNaturalLanguageQuery,
   generateSearchSuggestions,
-  correctAndExpandQuery
+  correctAndExpandQuery,
 } from "../services/natural-language-parser";
 import {
   performSemanticSearch,
-  SemanticSearchResponse
+  SemanticSearchResponse,
 } from "../services/semantic-search-engine";
 import {
   enhanceQueryUnderstanding,
   analyzeQueryComplexity,
-  extractKeyPhrases
+  extractKeyPhrases,
 } from "../services/query-understanding";
 
 const router = Router();
@@ -30,44 +30,43 @@ const router = Router();
  */
 router.post("/api/search/natural-language", async (req, res) => {
   try {
-    const { 
-      query, 
-      page = 1, 
-      pageSize = 20,
-      context = null 
-    } = req.body;
-    
+    const { query, page = 1, pageSize = 20, context = null } = req.body;
+
     if (!query || typeof query !== "string" || query.trim().length === 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Query is required",
-        message: "Please provide a search query" 
+        message: "Please provide a search query",
       });
     }
-    
+
     const offset = (page - 1) * pageSize;
-    
+
     console.log(`Natural language search: "${query}"`);
-    
+
     // Step 1: Parse and understand the query
     const parsedQuery = await parseNaturalLanguageQuery(query);
     console.log("Parsed query:", parsedQuery);
-    
+
     // Step 2: Enhance query understanding with context
     const enhancedQuery = await enhanceQueryUnderstanding(query, context);
     console.log("Enhanced query:", enhancedQuery);
-    
+
     // Step 3: Perform semantic search
-    const searchResults = await performSemanticSearch(parsedQuery, pageSize, offset);
-    
+    const searchResults = await performSemanticSearch(
+      parsedQuery,
+      pageSize,
+      offset,
+    );
+
     // Step 4: Log search analytics
     logSearchAnalytics({
       query,
       parsedIntent: parsedQuery.intent,
       confidence: parsedQuery.confidence,
       resultsCount: searchResults.totalCount,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
-    
+
     // Return comprehensive response
     res.json({
       success: true,
@@ -76,39 +75,45 @@ router.post("/api/search/natural-language", async (req, res) => {
         corrected: enhancedQuery.corrected,
         intent: parsedQuery.intent,
         confidence: parsedQuery.confidence,
-        complexity: analyzeQueryComplexity(query)
+        complexity: analyzeQueryComplexity(query),
       },
       interpretation: {
         understood: parsedQuery.explanation,
         entities: parsedQuery.entities,
         filters: parsedQuery.filters,
-        expandedQueries: parsedQuery.expandedQueries
+        expandedQueries: parsedQuery.expandedQueries,
       },
       results: searchResults.results,
       pagination: {
         page,
         pageSize,
         totalCount: searchResults.totalCount,
-        totalPages: Math.ceil(searchResults.totalCount / pageSize)
+        totalPages: Math.ceil(searchResults.totalCount / pageSize),
       },
       facets: searchResults.facets,
       suggestions: {
-        corrections: enhancedQuery.suggestions.filter(s => s.type === "correction"),
-        refinements: enhancedQuery.suggestions.filter(s => s.type === "refinement"),
-        alternatives: enhancedQuery.suggestions.filter(s => s.type === "alternative"),
-        related: enhancedQuery.relatedQueries
+        corrections: enhancedQuery.suggestions.filter(
+          (s) => s.type === "correction",
+        ),
+        refinements: enhancedQuery.suggestions.filter(
+          (s) => s.type === "refinement",
+        ),
+        alternatives: enhancedQuery.suggestions.filter(
+          (s) => s.type === "alternative",
+        ),
+        related: enhancedQuery.relatedQueries,
       },
       debug: {
         keyPhrases: extractKeyPhrases(query),
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
-    
   } catch (error) {
     console.error("Natural language search error:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Search failed",
-      message: "An error occurred while processing your search. Please try again."
+      message:
+        "An error occurred while processing your search. Please try again.",
     });
   }
 });
@@ -120,23 +125,22 @@ router.post("/api/search/natural-language", async (req, res) => {
 router.post("/api/search/parse-query", async (req, res) => {
   try {
     const { query } = req.body;
-    
+
     if (!query) {
       return res.status(400).json({ error: "Query is required" });
     }
-    
+
     const parsed = await parseNaturalLanguageQuery(query);
-    
+
     res.json({
       success: true,
-      parsed
+      parsed,
     });
-    
   } catch (error) {
     console.error("Query parsing error:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to parse query",
-      message: "Could not understand your search query"
+      message: "Could not understand your search query",
     });
   }
 });
@@ -148,18 +152,17 @@ router.post("/api/search/parse-query", async (req, res) => {
 router.get("/api/search/nl-suggestions", async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q || typeof q !== "string" || q.length < 2) {
       return res.json({ suggestions: [] });
     }
-    
+
     const suggestions = await generateSearchSuggestions(q);
-    
+
     res.json({
       suggestions,
-      query: q
+      query: q,
     });
-    
   } catch (error) {
     console.error("Suggestions error:", error);
     res.json({ suggestions: [] });
@@ -173,25 +176,24 @@ router.get("/api/search/nl-suggestions", async (req, res) => {
 router.post("/api/search/correct-query", async (req, res) => {
   try {
     const { query } = req.body;
-    
+
     if (!query) {
       return res.status(400).json({ error: "Query is required" });
     }
-    
+
     const corrected = await correctAndExpandQuery(query);
-    
+
     res.json({
       original: query,
       corrected,
-      changed: query !== corrected
+      changed: query !== corrected,
     });
-    
   } catch (error) {
     console.error("Query correction error:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to correct query",
       original: req.body.query,
-      corrected: req.body.query
+      corrected: req.body.query,
     });
   }
 });
@@ -203,15 +205,14 @@ router.post("/api/search/correct-query", async (req, res) => {
 router.get("/api/search/popular-queries", async (req, res) => {
   try {
     const { category } = req.query;
-    
+
     // Get popular queries from database or cache
     const popularQueries = await getPopularQueries(category as string);
-    
+
     res.json({
       queries: popularQueries,
-      category: category || "all"
+      category: category || "all",
     });
-    
   } catch (error) {
     console.error("Popular queries error:", error);
     res.json({ queries: getDefaultPopularQueries() });
@@ -230,8 +231,8 @@ router.get("/api/search/query-examples", async (req, res) => {
         "Studies for arthritis in elderly patients",
         "Hydrogen therapy for diabetes management",
         "Heart disease treatment with molecular hydrogen",
-        "Cancer research using hydrogen therapy"
-      ]
+        "Cancer research using hydrogen therapy",
+      ],
     },
     {
       category: "Comparisons",
@@ -239,8 +240,8 @@ router.get("/api/search/query-examples", async (req, res) => {
         "Compare hydrogen water vs inhalation for heart health",
         "Which is better: H2 tablets or hydrogen water?",
         "Hydrogen therapy vs traditional antioxidants",
-        "Effectiveness of different hydrogen delivery methods"
-      ]
+        "Effectiveness of different hydrogen delivery methods",
+      ],
     },
     {
       category: "Demographics",
@@ -248,8 +249,8 @@ router.get("/api/search/query-examples", async (req, res) => {
         "Hydrogen therapy for athletes over 40",
         "Studies on children with autism and hydrogen",
         "Elderly patients with cognitive decline",
-        "Pregnant women and hydrogen safety"
-      ]
+        "Pregnant women and hydrogen safety",
+      ],
     },
     {
       category: "Effectiveness",
@@ -257,8 +258,8 @@ router.get("/api/search/query-examples", async (req, res) => {
         "Most effective hydrogen therapy for inflammation",
         "Success rates of hydrogen for post-surgery recovery",
         "Best hydrogen treatment for oxidative stress",
-        "Clinical evidence for hydrogen benefits"
-      ]
+        "Clinical evidence for hydrogen benefits",
+      ],
     },
     {
       category: "Recent Research",
@@ -266,8 +267,8 @@ router.get("/api/search/query-examples", async (req, res) => {
         "Latest hydrogen therapy breakthroughs 2024",
         "Recent studies on hydrogen and longevity",
         "New discoveries in hydrogen medicine",
-        "Cutting-edge hydrogen research this year"
-      ]
+        "Cutting-edge hydrogen research this year",
+      ],
     },
     {
       category: "Side Effects & Safety",
@@ -275,11 +276,11 @@ router.get("/api/search/query-examples", async (req, res) => {
         "Side effects of hydrogen inhalation",
         "Is hydrogen water safe for daily use?",
         "Contraindications for hydrogen therapy",
-        "Long-term effects of molecular hydrogen"
-      ]
-    }
+        "Long-term effects of molecular hydrogen",
+      ],
+    },
   ];
-  
+
   res.json({ examples });
 });
 
@@ -290,28 +291,27 @@ router.get("/api/search/query-examples", async (req, res) => {
 router.post("/api/search/detect-intent", async (req, res) => {
   try {
     const { query } = req.body;
-    
+
     if (!query) {
       return res.status(400).json({ error: "Query is required" });
     }
-    
+
     const parsed = await parseNaturalLanguageQuery(query);
     const complexity = analyzeQueryComplexity(query);
-    
+
     res.json({
       query,
       intent: parsed.intent,
       confidence: parsed.confidence,
       complexity,
       entities: parsed.entities,
-      keyPhrases: extractKeyPhrases(query)
+      keyPhrases: extractKeyPhrases(query),
     });
-    
   } catch (error) {
     console.error("Intent detection error:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to detect intent",
-      query: req.body.query
+      query: req.body.query,
     });
   }
 });
@@ -323,48 +323,53 @@ router.post("/api/search/detect-intent", async (req, res) => {
 router.post("/api/search/batch", async (req, res) => {
   try {
     const { queries, pageSize = 10 } = req.body;
-    
+
     if (!queries || !Array.isArray(queries) || queries.length === 0) {
       return res.status(400).json({ error: "Queries array is required" });
     }
-    
+
     if (queries.length > 5) {
-      return res.status(400).json({ error: "Maximum 5 queries allowed per batch" });
+      return res
+        .status(400)
+        .json({ error: "Maximum 5 queries allowed per batch" });
     }
-    
+
     const results = await Promise.all(
       queries.map(async (query) => {
         try {
           const parsed = await parseNaturalLanguageQuery(query);
-          const searchResults = await performSemanticSearch(parsed, pageSize, 0);
-          
+          const searchResults = await performSemanticSearch(
+            parsed,
+            pageSize,
+            0,
+          );
+
           return {
             query,
             success: true,
             totalCount: searchResults.totalCount,
             topResults: searchResults.results.slice(0, 3),
-            intent: parsed.intent
+            intent: parsed.intent,
           };
         } catch (error) {
           return {
             query,
             success: false,
-            error: "Failed to search"
+            error: "Failed to search",
           };
         }
-      })
+      }),
     );
-    
+
     res.json({
       success: true,
-      results
+      results,
     });
-    
   } catch (error) {
     console.error("Batch search error:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Batch search failed",
-      message: "Could not process multiple queries"
+      message: "Could not process multiple queries",
     });
   }
 });
@@ -376,11 +381,11 @@ router.post("/api/search/batch", async (req, res) => {
 router.post("/api/search/save", async (req, res) => {
   try {
     const { query, name, filters, userId } = req.body;
-    
+
     if (!query || !name) {
       return res.status(400).json({ error: "Query and name are required" });
     }
-    
+
     // Save to database (simplified for now)
     const saved = {
       id: Date.now(),
@@ -388,18 +393,17 @@ router.post("/api/search/save", async (req, res) => {
       name,
       filters: filters || {},
       userId: userId || "anonymous",
-      createdAt: new Date()
+      createdAt: new Date(),
     };
-    
+
     res.json({
       success: true,
-      saved
+      saved,
     });
-    
   } catch (error) {
     console.error("Save search error:", error);
-    res.status(500).json({ 
-      error: "Failed to save search"
+    res.status(500).json({
+      error: "Failed to save search",
     });
   }
 });
@@ -418,15 +422,19 @@ async function getPopularQueries(category?: string): Promise<string[]> {
     "hydrogen vs antioxidants",
     "recent hydrogen research",
     "hydrogen water dosage",
-    "hydrogen therapy safety"
+    "hydrogen therapy safety",
   ];
-  
+
   if (category === "recent") {
-    return allQueries.filter(q => q.includes("recent") || q.includes("clinical"));
+    return allQueries.filter(
+      (q) => q.includes("recent") || q.includes("clinical"),
+    );
   } else if (category === "conditions") {
-    return allQueries.filter(q => q.includes("inflammation") || q.includes("therapy"));
+    return allQueries.filter(
+      (q) => q.includes("inflammation") || q.includes("therapy"),
+    );
   }
-  
+
   return allQueries.slice(0, 5);
 }
 
@@ -436,7 +444,7 @@ function getDefaultPopularQueries(): string[] {
     "hydrogen water research",
     "molecular hydrogen studies",
     "hydrogen clinical trials",
-    "hydrogen safety studies"
+    "hydrogen safety studies",
   ];
 }
 
@@ -444,7 +452,7 @@ function logSearchAnalytics(data: any): void {
   // In production, this would log to analytics service
   console.log("Search analytics:", {
     ...data,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 

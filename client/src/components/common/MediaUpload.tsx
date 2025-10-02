@@ -2,7 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, Upload, Image as ImageIcon, FileVideo, FileAudio } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  Image as ImageIcon,
+  FileVideo,
+  FileAudio,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -13,18 +19,23 @@ interface MediaUploadProps {
   className?: string;
 }
 
-export function MediaUpload({ entityId, entityType, onSuccess, className }: MediaUploadProps) {
+export function MediaUpload({
+  entityId,
+  entityType,
+  onSuccess,
+  className,
+}: MediaUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [imageAlt, setImageAlt] = useState<string>("");
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     setFile(selectedFile);
-    
+
     // Create preview for image files
-    if (selectedFile && selectedFile.type.startsWith('image/')) {
+    if (selectedFile && selectedFile.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
@@ -34,59 +45,61 @@ export function MediaUpload({ entityId, entityType, onSuccess, className }: Medi
       setPreviewUrl(null);
     }
   };
-  
+
   const handleUpload = async () => {
     if (!file) {
       toast({
         title: "No file selected",
         description: "Please select a file to upload.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     setIsUploading(true);
-    
+
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      
+      formData.append("file", file);
+
       if (imageAlt) {
-        formData.append('imageAlt', imageAlt);
+        formData.append("imageAlt", imageAlt);
       }
-      
-      const endpoint = entityType === 'study' 
-        ? `/api/studies/${entityId}/media` 
-        : `/api/blogs/${entityId}/media`;
-      
+
+      const endpoint =
+        entityType === "study"
+          ? `/api/studies/${entityId}/media`
+          : `/api/blogs/${entityId}/media`;
+
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         body: formData,
         // Don't set Content-Type here, the browser will set it with the proper boundary for multipart/form-data
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         toast({
           title: "Upload successful",
-          description: "The media file has been uploaded successfully."
+          description: "The media file has been uploaded successfully.",
         });
-        
+
         // Reset form
         setFile(null);
         setImageAlt("");
         setPreviewUrl(null);
-        
+
         // Call onSuccess callback if provided
         if (onSuccess) {
-          onSuccess(data.mediaUrl, data.fileType || 'image');
+          onSuccess(data.mediaUrl, data.fileType || "image");
         }
       } else {
         const errorData = await response.json();
         toast({
           title: "Upload failed",
-          description: errorData.message || "There was an error uploading the file.",
-          variant: "destructive"
+          description:
+            errorData.message || "There was an error uploading the file.",
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -94,47 +107,43 @@ export function MediaUpload({ entityId, entityType, onSuccess, className }: Medi
       toast({
         title: "Upload failed",
         description: "There was an error uploading the file.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
     }
   };
-  
+
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="space-y-2">
         <Label htmlFor="media-file">Upload Media</Label>
-        <Input 
-          id="media-file" 
-          type="file" 
+        <Input
+          id="media-file"
+          type="file"
           onChange={handleFileChange}
-          accept={
-            entityType === 'blog' 
-              ? "image/*" 
-              : "image/*,video/*,audio/*"
-          }
+          accept={entityType === "blog" ? "image/*" : "image/*,video/*,audio/*"}
           disabled={isUploading}
         />
         <p className="text-sm text-muted-foreground">
-          {entityType === 'blog' 
-            ? "Only image files are supported for blog articles." 
+          {entityType === "blog"
+            ? "Only image files are supported for blog articles."
             : "Supported formats: images, videos, and audio files."}
         </p>
       </div>
-      
+
       {previewUrl && (
         <div className="mt-2">
           <p className="text-sm font-medium mb-1">Preview:</p>
-          <img 
-            src={previewUrl} 
-            alt="Preview" 
+          <img
+            src={previewUrl}
+            alt="Preview"
             className="max-h-48 max-w-full rounded-md object-contain"
           />
         </div>
       )}
-      
-      {file && file.type.startsWith('image/') && (
+
+      {file && file.type.startsWith("image/") && (
         <div className="space-y-2">
           <Label htmlFor="image-alt">Image Alt Text</Label>
           <Input
@@ -146,7 +155,7 @@ export function MediaUpload({ entityId, entityType, onSuccess, className }: Medi
           />
         </div>
       )}
-      
+
       <div className="flex items-center space-x-2">
         <Button
           type="button"
@@ -166,7 +175,7 @@ export function MediaUpload({ entityId, entityType, onSuccess, className }: Medi
             </>
           )}
         </Button>
-        
+
         {file && (
           <p className="text-sm text-muted-foreground">
             Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)
@@ -179,14 +188,14 @@ export function MediaUpload({ entityId, entityType, onSuccess, className }: Medi
 
 function getFileTypeIcon(file: File | null) {
   if (!file) return null;
-  
-  if (file.type.startsWith('image/')) {
+
+  if (file.type.startsWith("image/")) {
     return <ImageIcon className="ml-2 h-4 w-4" />;
-  } else if (file.type.startsWith('video/')) {
+  } else if (file.type.startsWith("video/")) {
     return <FileVideo className="ml-2 h-4 w-4" />;
-  } else if (file.type.startsWith('audio/')) {
+  } else if (file.type.startsWith("audio/")) {
     return <FileAudio className="ml-2 h-4 w-4" />;
   }
-  
+
   return null;
 }

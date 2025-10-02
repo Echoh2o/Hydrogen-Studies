@@ -1,8 +1,20 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
-import { Button } from './button';
-import { Alert, AlertDescription, AlertTitle } from './alert';
-import { AlertCircle, RefreshCw, Home, ChevronDown, ChevronUp } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
+import { Component, ErrorInfo, ReactNode } from "react";
+import { Button } from "./button";
+import { Alert, AlertDescription, AlertTitle } from "./alert";
+import {
+  AlertCircle,
+  RefreshCw,
+  Home,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./card";
 
 interface Props {
   children: ReactNode;
@@ -45,7 +57,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log to console with full context
-    console.error('Error caught by ErrorBoundary:', {
+    console.error("Error caught by ErrorBoundary:", {
       message: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -53,7 +65,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     });
 
     // Update state with error info
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       errorInfo,
       errorCount: prevState.errorCount + 1,
     }));
@@ -64,7 +76,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     }
 
     // Send error to monitoring service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       this.reportErrorToService(error, errorInfo);
     }
   }
@@ -82,7 +94,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     };
 
     // Log for now - replace with actual service call
-    console.log('Error report:', errorReport);
+    console.log("Error report:", errorReport);
   }
 
   private handleRetry = () => {
@@ -105,11 +117,11 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
   };
 
   private handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   private toggleDetails = () => {
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       showDetails: !prevState.showDetails,
     }));
   };
@@ -122,30 +134,37 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
   private getErrorMessage(): string {
     const { error } = this.state;
-    if (!error) return 'An unexpected error occurred';
+    if (!error) return "An unexpected error occurred";
 
     // User-friendly error messages based on error type
-    if (error.message.includes('Network')) {
-      return 'Network connection issue. Please check your internet connection.';
+    if (error.message.includes("Network")) {
+      return "Network connection issue. Please check your internet connection.";
     }
-    if (error.message.includes('Permission')) {
-      return 'You don\'t have permission to access this resource.';
+    if (error.message.includes("Permission")) {
+      return "You don't have permission to access this resource.";
     }
-    if (error.message.includes('chunk')) {
-      return 'Application resources failed to load. Please refresh the page.';
+    if (error.message.includes("chunk")) {
+      return "Application resources failed to load. Please refresh the page.";
     }
-    if (error.message.includes('Cannot read')) {
-      return 'Something went wrong while loading the page content.';
+    if (error.message.includes("Cannot read")) {
+      return "Something went wrong while loading the page content.";
     }
 
     // Fallback to error message in development, generic in production
-    return process.env.NODE_ENV === 'development' 
-      ? error.message 
-      : 'Something unexpected happened. Our team has been notified.';
+    return process.env.NODE_ENV === "development"
+      ? error.message
+      : "Something unexpected happened. Our team has been notified.";
   }
 
   public render() {
-    const { hasError, error, errorInfo, errorCount, showDetails, isRecovering } = this.state;
+    const {
+      hasError,
+      error,
+      errorInfo,
+      errorCount,
+      showDetails,
+      isRecovering,
+    } = this.state;
     const { fallback, children, retryable = true } = this.props;
 
     if (isRecovering) {
@@ -190,8 +209,8 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Multiple Errors Detected</AlertTitle>
                   <AlertDescription>
-                    This component has encountered {errorCount} errors. 
-                    If the problem persists, please contact support.
+                    This component has encountered {errorCount} errors. If the
+                    problem persists, please contact support.
                   </AlertDescription>
                 </Alert>
               )}
@@ -208,7 +227,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                     Try Again
                   </Button>
                 )}
-                
+
                 <Button
                   onClick={this.handleGoHome}
                   variant="outline"
@@ -219,7 +238,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                   Go to Home
                 </Button>
 
-                {process.env.NODE_ENV === 'development' && (
+                {process.env.NODE_ENV === "development" && (
                   <Button
                     onClick={this.toggleDetails}
                     variant="ghost"
@@ -241,34 +260,42 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                 )}
               </div>
 
-              {process.env.NODE_ENV === 'development' && showDetails && errorInfo && (
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-sm mb-1">Error Message:</h4>
-                        <pre className="text-xs bg-background p-2 rounded overflow-x-auto">
-                          {error.message}
-                        </pre>
+              {process.env.NODE_ENV === "development" &&
+                showDetails &&
+                errorInfo && (
+                  <Card className="bg-muted/50">
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-semibold text-sm mb-1">
+                            Error Message:
+                          </h4>
+                          <pre className="text-xs bg-background p-2 rounded overflow-x-auto">
+                            {error.message}
+                          </pre>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold text-sm mb-1">
+                            Stack Trace:
+                          </h4>
+                          <pre className="text-xs bg-background p-2 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                            {error.stack}
+                          </pre>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold text-sm mb-1">
+                            Component Stack:
+                          </h4>
+                          <pre className="text-xs bg-background p-2 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                            {errorInfo.componentStack}
+                          </pre>
+                        </div>
                       </div>
-                      
-                      <div>
-                        <h4 className="font-semibold text-sm mb-1">Stack Trace:</h4>
-                        <pre className="text-xs bg-background p-2 rounded overflow-x-auto max-h-40 overflow-y-auto">
-                          {error.stack}
-                        </pre>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold text-sm mb-1">Component Stack:</h4>
-                        <pre className="text-xs bg-background p-2 rounded overflow-x-auto max-h-40 overflow-y-auto">
-                          {errorInfo.componentStack}
-                        </pre>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                )}
             </CardContent>
           </Card>
         </div>
@@ -284,11 +311,11 @@ export function AsyncErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <EnhancedErrorBoundary
       retryable={true}
-      showDetails={process.env.NODE_ENV === 'development'}
+      showDetails={process.env.NODE_ENV === "development"}
       onError={(error, errorInfo) => {
         // Additional async error handling
-        if (error.message.includes('Failed to fetch')) {
-          console.error('API request failed:', error);
+        if (error.message.includes("Failed to fetch")) {
+          console.error("API request failed:", error);
         }
       }}
     >
@@ -316,7 +343,10 @@ export function PageErrorBoundary({ children }: { children: ReactNode }) {
                 <Button onClick={() => window.location.reload()}>
                   Refresh Page
                 </Button>
-                <Button variant="outline" onClick={() => window.location.href = '/'}>
+                <Button
+                  variant="outline"
+                  onClick={() => (window.location.href = "/")}
+                >
                   Go Home
                 </Button>
               </div>

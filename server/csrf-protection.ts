@@ -3,22 +3,22 @@
  * Implements double-submit cookie pattern for CSRF protection
  */
 
-import crypto from 'crypto';
-import { Request, Response, NextFunction } from 'express';
+import crypto from "crypto";
+import { Request, Response, NextFunction } from "express";
 
 interface CsrfSession {
   csrfSecret?: string;
 }
 
-const CSRF_HEADER = 'x-csrf-token';
-const CSRF_COOKIE = 'csrf-token';
-const CSRF_FIELD = '_csrf';
+const CSRF_HEADER = "x-csrf-token";
+const CSRF_COOKIE = "csrf-token";
+const CSRF_FIELD = "_csrf";
 
 /**
  * Generates a CSRF token using crypto
  */
 function generateToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return crypto.randomBytes(32).toString("hex");
 }
 
 /**
@@ -26,19 +26,23 @@ function generateToken(): string {
  */
 function hashToken(token: string, secret: string): string {
   return crypto
-    .createHash('sha256')
+    .createHash("sha256")
     .update(token + secret)
-    .digest('hex');
+    .digest("hex");
 }
 
 /**
  * Verifies a CSRF token against the session secret
  */
-function verifyToken(token: string, secret: string, hashedToken: string): boolean {
+function verifyToken(
+  token: string,
+  secret: string,
+  hashedToken: string,
+): boolean {
   const expectedHash = hashToken(token, secret);
   return crypto.timingSafeEqual(
     Buffer.from(expectedHash),
-    Buffer.from(hashedToken)
+    Buffer.from(hashedToken),
   );
 }
 
@@ -51,7 +55,7 @@ interface CsrfOptions {
   cookie?: {
     httpOnly?: boolean;
     secure?: boolean;
-    sameSite?: 'strict' | 'lax' | 'none';
+    sameSite?: "strict" | "lax" | "none";
   };
 }
 
@@ -60,30 +64,30 @@ interface CsrfOptions {
  */
 export function csrfProtection(options: CsrfOptions = {}) {
   const {
-    ignoreMethods = ['GET', 'HEAD', 'OPTIONS'],
-    ignoreRoutes = ['/health', '/api/stats', '/api/search'],
-    cookie = {}
+    ignoreMethods = ["GET", "HEAD", "OPTIONS"],
+    ignoreRoutes = ["/health", "/api/stats", "/api/search"],
+    cookie = {},
   } = options;
 
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === "production";
   const cookieOptions = {
     httpOnly: cookie.httpOnly !== false,
     secure: cookie.secure ?? isProduction,
-    sameSite: cookie.sameSite ?? (isProduction ? 'strict' : 'lax')
+    sameSite: cookie.sameSite ?? (isProduction ? "strict" : "lax"),
   };
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Skip CSRF check for ignored methods
     if (ignoreMethods.includes(req.method)) {
       // Generate token for GET requests to provide to forms
-      if (req.method === 'GET' && req.session) {
+      if (req.method === "GET" && req.session) {
         ensureCsrfToken(req, res, cookieOptions);
       }
       return next();
     }
 
     // Skip CSRF check for ignored routes
-    if (ignoreRoutes.some(route => req.path.startsWith(route))) {
+    if (ignoreRoutes.some((route) => req.path.startsWith(route))) {
       return next();
     }
 
@@ -94,11 +98,11 @@ export function csrfProtection(options: CsrfOptions = {}) {
 
     // Get token from request
     const token = getTokenFromRequest(req);
-    
+
     if (!token) {
-      return res.status(403).json({ 
-        error: 'CSRF token missing',
-        message: 'This request requires a valid CSRF token'
+      return res.status(403).json({
+        error: "CSRF token missing",
+        message: "This request requires a valid CSRF token",
       });
     }
 
@@ -107,35 +111,35 @@ export function csrfProtection(options: CsrfOptions = {}) {
     const secret = session.csrfSecret;
 
     if (!secret) {
-      return res.status(403).json({ 
-        error: 'CSRF validation failed',
-        message: 'No CSRF secret in session'
+      return res.status(403).json({
+        error: "CSRF validation failed",
+        message: "No CSRF secret in session",
       });
     }
 
     // Get the hashed token from cookie
     const hashedToken = req.cookies?.[CSRF_COOKIE];
-    
+
     if (!hashedToken) {
-      return res.status(403).json({ 
-        error: 'CSRF validation failed',
-        message: 'No CSRF cookie present'
+      return res.status(403).json({
+        error: "CSRF validation failed",
+        message: "No CSRF cookie present",
       });
     }
 
     // Verify token
     try {
       if (!verifyToken(token, secret, hashedToken)) {
-        return res.status(403).json({ 
-          error: 'CSRF validation failed',
-          message: 'Invalid CSRF token'
+        return res.status(403).json({
+          error: "CSRF validation failed",
+          message: "Invalid CSRF token",
         });
       }
     } catch (error) {
-      console.error('CSRF verification error:', error);
-      return res.status(403).json({ 
-        error: 'CSRF validation failed',
-        message: 'Token verification failed'
+      console.error("CSRF verification error:", error);
+      return res.status(403).json({
+        error: "CSRF validation failed",
+        message: "Token verification failed",
       });
     }
 
@@ -149,7 +153,7 @@ export function csrfProtection(options: CsrfOptions = {}) {
  */
 function ensureCsrfToken(req: Request, res: Response, cookieOptions: any) {
   const session = req.session as any;
-  
+
   // Generate secret if it doesn't exist
   if (!session.csrfSecret) {
     session.csrfSecret = generateToken();
@@ -158,10 +162,10 @@ function ensureCsrfToken(req: Request, res: Response, cookieOptions: any) {
   // Generate token and set cookie
   const token = generateToken();
   const hashedToken = hashToken(token, session.csrfSecret);
-  
+
   res.cookie(CSRF_COOKIE, hashedToken, {
     ...cookieOptions,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
   });
 
   // Attach token to response locals for use in templates
@@ -197,11 +201,11 @@ function getTokenFromRequest(req: Request): string | undefined {
 export function csrfToken() {
   return (req: Request, res: Response, next: NextFunction) => {
     // Make token available to views
-    res.locals.csrfToken = res.locals.csrfToken || '';
-    
+    res.locals.csrfToken = res.locals.csrfToken || "";
+
     // Add a helper function to get the token
     res.locals.getCsrfToken = () => res.locals.csrfToken;
-    
+
     next();
   };
 }
@@ -211,6 +215,6 @@ export function csrfToken() {
  */
 export function addCsrfToResponse(req: Request, res: Response) {
   if (res.locals.csrfToken) {
-    res.setHeader('X-CSRF-Token', res.locals.csrfToken);
+    res.setHeader("X-CSRF-Token", res.locals.csrfToken);
   }
 }

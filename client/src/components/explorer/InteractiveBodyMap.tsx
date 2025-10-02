@@ -1,11 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Loader2, Info, Activity, Brain, Heart, Wind, Shield } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
+  Loader2,
+  Info,
+  Activity,
+  Brain,
+  Heart,
+  Wind,
+  Shield,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface BodySystemData {
   system: string;
@@ -21,7 +34,10 @@ interface InteractiveBodyMapProps {
   className?: string;
 }
 
-export default function InteractiveBodyMap({ onSystemClick, className }: InteractiveBodyMapProps) {
+export default function InteractiveBodyMap({
+  onSystemClick,
+  className,
+}: InteractiveBodyMapProps) {
   const [hoveredSystem, setHoveredSystem] = useState<string | null>(null);
   const [selectedSystem, setSelectedSystem] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -29,30 +45,34 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const { data: systemsData, isLoading } = useQuery<BodySystemData[]>({
-    queryKey: ['/api/explorer/body-systems']
+    queryKey: ["/api/explorer/body-systems"],
   });
 
   // Create a map for quick lookup
-  const systemDataMap = systemsData?.reduce((acc, system) => {
-    acc[system.system] = system;
-    return acc;
-  }, {} as Record<string, BodySystemData>) || {};
+  const systemDataMap =
+    systemsData?.reduce(
+      (acc, system) => {
+        acc[system.system] = system;
+        return acc;
+      },
+      {} as Record<string, BodySystemData>,
+    ) || {};
 
   const getSystemColor = (system: string) => {
     const data = systemDataMap[system];
-    if (!data) return '#e0e0e0';
-    
+    if (!data) return "#e0e0e0";
+
     const score = data.impactScore;
-    if (score >= 80) return '#10b981'; // emerald-500
-    if (score >= 60) return '#3b82f6'; // blue-500
-    if (score >= 40) return '#8b5cf6'; // violet-500
-    if (score >= 20) return '#f59e0b'; // amber-500
-    return '#6b7280'; // gray-500
+    if (score >= 80) return "#10b981"; // emerald-500
+    if (score >= 60) return "#3b82f6"; // blue-500
+    if (score >= 40) return "#8b5cf6"; // violet-500
+    if (score >= 20) return "#f59e0b"; // amber-500
+    return "#6b7280"; // gray-500
   };
 
   const getSystemOpacity = (system: string) => {
@@ -86,7 +106,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
             <div>
               <p className="text-sm font-semibold mb-1">Key Benefits:</p>
               <div className="flex flex-wrap gap-1">
-                {data.benefits.map(benefit => (
+                {data.benefits.map((benefit) => (
                   <Badge key={benefit} variant="secondary" className="text-xs">
                     {benefit}
                   </Badge>
@@ -97,7 +117,9 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
           {data.conditions.length > 0 && (
             <div>
               <p className="text-sm font-semibold mb-1">Conditions Studied:</p>
-              <p className="text-xs text-gray-600">{data.conditions.join(', ')}</p>
+              <p className="text-xs text-gray-600">
+                {data.conditions.join(", ")}
+              </p>
             </div>
           )}
         </div>
@@ -132,28 +154,35 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   stroke="#374151"
                   strokeWidth="2"
                 />
-                
+
                 {/* Head */}
-                <circle cx="200" cy="50" r="25" fill="none" stroke="#374151" strokeWidth="2" />
+                <circle
+                  cx="200"
+                  cy="50"
+                  r="25"
+                  fill="none"
+                  stroke="#374151"
+                  strokeWidth="2"
+                />
               </g>
 
               {/* Interactive body systems */}
-              
+
               {/* Brain/Neurological System */}
               <motion.g
                 id="neurological"
                 className="cursor-pointer"
-                onClick={() => handleSystemClick('neurological')}
-                onMouseEnter={() => setHoveredSystem('neurological')}
+                onClick={() => handleSystemClick("neurological")}
+                onMouseEnter={() => setHoveredSystem("neurological")}
                 onMouseLeave={() => setHoveredSystem(null)}
-                animate={{ opacity: getSystemOpacity('neurological') }}
+                animate={{ opacity: getSystemOpacity("neurological") }}
                 data-testid="body-system-neurological"
               >
                 <circle
                   cx="200"
                   cy="45"
                   r="18"
-                  fill={getSystemColor('neurological')}
+                  fill={getSystemColor("neurological")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -164,10 +193,10 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               <motion.g
                 id="cardiovascular"
                 className="cursor-pointer"
-                onClick={() => handleSystemClick('cardiovascular')}
-                onMouseEnter={() => setHoveredSystem('cardiovascular')}
+                onClick={() => handleSystemClick("cardiovascular")}
+                onMouseEnter={() => setHoveredSystem("cardiovascular")}
                 onMouseLeave={() => setHoveredSystem(null)}
-                animate={{ opacity: getSystemOpacity('cardiovascular') }}
+                animate={{ opacity: getSystemOpacity("cardiovascular") }}
                 data-testid="body-system-cardiovascular"
               >
                 <ellipse
@@ -175,7 +204,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   cy="140"
                   rx="25"
                   ry="30"
-                  fill={getSystemColor('cardiovascular')}
+                  fill={getSystemColor("cardiovascular")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -186,10 +215,10 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               <motion.g
                 id="respiratory"
                 className="cursor-pointer"
-                onClick={() => handleSystemClick('respiratory')}
-                onMouseEnter={() => setHoveredSystem('respiratory')}
+                onClick={() => handleSystemClick("respiratory")}
+                onMouseEnter={() => setHoveredSystem("respiratory")}
                 onMouseLeave={() => setHoveredSystem(null)}
-                animate={{ opacity: getSystemOpacity('respiratory') }}
+                animate={{ opacity: getSystemOpacity("respiratory") }}
                 data-testid="body-system-respiratory"
               >
                 <ellipse
@@ -197,7 +226,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   cy="140"
                   rx="25"
                   ry="30"
-                  fill={getSystemColor('respiratory')}
+                  fill={getSystemColor("respiratory")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -208,10 +237,10 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               <motion.g
                 id="digestive"
                 className="cursor-pointer"
-                onClick={() => handleSystemClick('digestive')}
-                onMouseEnter={() => setHoveredSystem('digestive')}
+                onClick={() => handleSystemClick("digestive")}
+                onMouseEnter={() => setHoveredSystem("digestive")}
                 onMouseLeave={() => setHoveredSystem(null)}
-                animate={{ opacity: getSystemOpacity('digestive') }}
+                animate={{ opacity: getSystemOpacity("digestive") }}
                 data-testid="body-system-digestive"
               >
                 <ellipse
@@ -219,7 +248,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   cy="220"
                   rx="30"
                   ry="40"
-                  fill={getSystemColor('digestive')}
+                  fill={getSystemColor("digestive")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -230,17 +259,17 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               <motion.g
                 id="immune"
                 className="cursor-pointer"
-                onClick={() => handleSystemClick('immune')}
-                onMouseEnter={() => setHoveredSystem('immune')}
+                onClick={() => handleSystemClick("immune")}
+                onMouseEnter={() => setHoveredSystem("immune")}
                 onMouseLeave={() => setHoveredSystem(null)}
-                animate={{ opacity: getSystemOpacity('immune') }}
+                animate={{ opacity: getSystemOpacity("immune") }}
                 data-testid="body-system-immune"
               >
                 <circle
                   cx="160"
                   cy="200"
                   r="15"
-                  fill={getSystemColor('immune')}
+                  fill={getSystemColor("immune")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -248,7 +277,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   cx="240"
                   cy="200"
                   r="15"
-                  fill={getSystemColor('immune')}
+                  fill={getSystemColor("immune")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -260,10 +289,10 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               <motion.g
                 id="renal"
                 className="cursor-pointer"
-                onClick={() => handleSystemClick('renal')}
-                onMouseEnter={() => setHoveredSystem('renal')}
+                onClick={() => handleSystemClick("renal")}
+                onMouseEnter={() => setHoveredSystem("renal")}
                 onMouseLeave={() => setHoveredSystem(null)}
-                animate={{ opacity: getSystemOpacity('renal') }}
+                animate={{ opacity: getSystemOpacity("renal") }}
                 data-testid="body-system-renal"
               >
                 <ellipse
@@ -271,7 +300,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   cy="280"
                   rx="20"
                   ry="25"
-                  fill={getSystemColor('renal')}
+                  fill={getSystemColor("renal")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -280,7 +309,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   cy="280"
                   rx="20"
                   ry="25"
-                  fill={getSystemColor('renal')}
+                  fill={getSystemColor("renal")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -290,10 +319,10 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               <motion.g
                 id="musculoskeletal"
                 className="cursor-pointer"
-                onClick={() => handleSystemClick('musculoskeletal')}
-                onMouseEnter={() => setHoveredSystem('musculoskeletal')}
+                onClick={() => handleSystemClick("musculoskeletal")}
+                onMouseEnter={() => setHoveredSystem("musculoskeletal")}
                 onMouseLeave={() => setHoveredSystem(null)}
-                animate={{ opacity: getSystemOpacity('musculoskeletal') }}
+                animate={{ opacity: getSystemOpacity("musculoskeletal") }}
                 data-testid="body-system-musculoskeletal"
               >
                 <rect
@@ -302,7 +331,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   width="15"
                   height="180"
                   rx="5"
-                  fill={getSystemColor('musculoskeletal')}
+                  fill={getSystemColor("musculoskeletal")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -312,7 +341,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   width="15"
                   height="180"
                   rx="5"
-                  fill={getSystemColor('musculoskeletal')}
+                  fill={getSystemColor("musculoskeletal")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -322,7 +351,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   width="40"
                   height="15"
                   rx="5"
-                  fill={getSystemColor('musculoskeletal')}
+                  fill={getSystemColor("musculoskeletal")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -332,7 +361,7 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                   width="40"
                   height="15"
                   rx="5"
-                  fill={getSystemColor('musculoskeletal')}
+                  fill={getSystemColor("musculoskeletal")}
                   stroke="#fff"
                   strokeWidth="2"
                 />
@@ -342,7 +371,9 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               {hoveredSystem && systemDataMap[hoveredSystem] && !isMobile && (
                 <foreignObject x="10" y="10" width="150" height="80">
                   <div className="bg-white p-2 rounded shadow-lg border">
-                    <p className="font-semibold text-sm capitalize">{hoveredSystem}</p>
+                    <p className="font-semibold text-sm capitalize">
+                      {hoveredSystem}
+                    </p>
                     <p className="text-xs text-gray-600">
                       {systemDataMap[hoveredSystem].count} studies
                     </p>
@@ -368,12 +399,15 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm text-gray-600">
-                    Click on any body system to explore hydrogen therapy research in that area.
+                    Click on any body system to explore hydrogen therapy
+                    research in that area.
                   </p>
-                  
+
                   {/* Legend */}
                   <div className="border-t pt-3">
-                    <p className="text-sm font-semibold mb-2">Impact Score Legend:</p>
+                    <p className="text-sm font-semibold mb-2">
+                      Impact Score Legend:
+                    </p>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-emerald-500 rounded" />
@@ -400,9 +434,11 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
 
                   {/* Top Systems */}
                   <div className="border-t pt-3">
-                    <p className="text-sm font-semibold mb-2">Top Researched Systems:</p>
+                    <p className="text-sm font-semibold mb-2">
+                      Top Researched Systems:
+                    </p>
                     <div className="space-y-2">
-                      {systemsData?.slice(0, 5).map(system => (
+                      {systemsData?.slice(0, 5).map((system) => (
                         <button
                           key={system.system}
                           onClick={() => handleSystemClick(system.system)}
@@ -410,14 +446,20 @@ export default function InteractiveBodyMap({ onSystemClick, className }: Interac
                           data-testid={`top-system-${system.system}`}
                         >
                           <div className="flex justify-between items-center">
-                            <span className="text-sm capitalize">{system.system}</span>
+                            <span className="text-sm capitalize">
+                              {system.system}
+                            </span>
                             <Badge variant="outline" className="text-xs">
                               {system.count} studies
                             </Badge>
                           </div>
                           <div className="flex gap-1 mt-1">
-                            {system.benefits.slice(0, 2).map(benefit => (
-                              <Badge key={benefit} variant="secondary" className="text-xs">
+                            {system.benefits.slice(0, 2).map((benefit) => (
+                              <Badge
+                                key={benefit}
+                                variant="secondary"
+                                className="text-xs"
+                              >
                                 {benefit}
                               </Badge>
                             ))}

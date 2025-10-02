@@ -2,19 +2,19 @@
  * Multi-Format Content Generation API Routes
  */
 
-import { Router, Request, Response } from 'express';
-import { 
+import { Router, Request, Response } from "express";
+import {
   generateMultiFormatContent,
   getStudyMultiFormatContent,
   updateMultiFormatContent,
   deleteMultiFormatContent,
   batchGenerateAllFormats,
-  ContentFormat
-} from '../multi-format-generator';
-import { db } from '../db';
-import { multiFormatContent, studies } from '@shared/schema';
-import { eq, and, desc } from 'drizzle-orm';
-import { AppError, ErrorCode } from '../utils/app-errors';
+  ContentFormat,
+} from "../multi-format-generator";
+import { db } from "../db";
+import { multiFormatContent, studies } from "@shared/schema";
+import { eq, and, desc } from "drizzle-orm";
+import { AppError, ErrorCode } from "../utils/app-errors";
 
 const router = Router();
 
@@ -22,12 +22,16 @@ const router = Router();
  * Generate multi-format content for a study
  * POST /api/multi-format/generate
  */
-router.post('/generate', async (req: Request, res: Response) => {
+router.post("/generate", async (req: Request, res: Response) => {
   try {
     const { studyId, formats, options } = req.body;
 
     if (!studyId) {
-      throw new AppError('Study ID is required', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError(
+        "Study ID is required",
+        400,
+        ErrorCode.VALIDATION_ERROR,
+      );
     }
 
     // Fetch the study
@@ -36,19 +40,20 @@ router.post('/generate', async (req: Request, res: Response) => {
     });
 
     if (!study) {
-      throw new AppError('Study not found', 404, ErrorCode.NOT_FOUND);
+      throw new AppError("Study not found", 404, ErrorCode.NOT_FOUND);
     }
 
     // Parse formats or use all if not specified
-    const selectedFormats = formats && Array.isArray(formats) 
-      ? formats.filter(f => Object.values(ContentFormat).includes(f))
-      : Object.values(ContentFormat);
+    const selectedFormats =
+      formats && Array.isArray(formats)
+        ? formats.filter((f) => Object.values(ContentFormat).includes(f))
+        : Object.values(ContentFormat);
 
     // Generate content
     const results = await generateMultiFormatContent(
       study,
       selectedFormats,
-      options || {}
+      options || {},
     );
 
     res.json({
@@ -57,15 +62,16 @@ router.post('/generate', async (req: Request, res: Response) => {
       data: {
         generated: results.contents,
         errors: results.errors,
-        warnings: results.warnings
-      }
+        warnings: results.warnings,
+      },
     });
   } catch (error) {
-    console.error('Error generating multi-format content:', error);
+    console.error("Error generating multi-format content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to generate content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to generate content",
+      error: error,
     });
   }
 });
@@ -74,26 +80,27 @@ router.post('/generate', async (req: Request, res: Response) => {
  * Get all multi-format content for a study
  * GET /api/multi-format/study/:studyId
  */
-router.get('/study/:studyId', async (req: Request, res: Response) => {
+router.get("/study/:studyId", async (req: Request, res: Response) => {
   try {
     const studyId = parseInt(req.params.studyId);
 
     if (isNaN(studyId)) {
-      throw new AppError('Invalid study ID', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError("Invalid study ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
     const content = await getStudyMultiFormatContent(studyId);
 
     res.json({
       success: true,
-      data: content
+      data: content,
     });
   } catch (error) {
-    console.error('Error fetching multi-format content:', error);
+    console.error("Error fetching multi-format content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to fetch content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to fetch content",
+      error: error,
     });
   }
 });
@@ -102,12 +109,12 @@ router.get('/study/:studyId', async (req: Request, res: Response) => {
  * Get specific format content
  * GET /api/multi-format/:id
  */
-router.get('/:id', async (req: Request, res: Response) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
 
     if (isNaN(contentId)) {
-      throw new AppError('Invalid content ID', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
     const content = await db.query.multiFormatContent.findFirst({
@@ -115,19 +122,20 @@ router.get('/:id', async (req: Request, res: Response) => {
     });
 
     if (!content) {
-      throw new AppError('Content not found', 404, ErrorCode.NOT_FOUND);
+      throw new AppError("Content not found", 404, ErrorCode.NOT_FOUND);
     }
 
     res.json({
       success: true,
-      data: content
+      data: content,
     });
   } catch (error) {
-    console.error('Error fetching content:', error);
+    console.error("Error fetching content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to fetch content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to fetch content",
+      error: error,
     });
   }
 });
@@ -136,13 +144,13 @@ router.get('/:id', async (req: Request, res: Response) => {
  * Update multi-format content
  * PUT /api/multi-format/:id
  */
-router.put('/:id', async (req: Request, res: Response) => {
+router.put("/:id", async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
     const updates = req.body;
 
     if (isNaN(contentId)) {
-      throw new AppError('Invalid content ID', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
     // Remove fields that shouldn't be updated directly
@@ -154,14 +162,15 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Content updated successfully'
+      message: "Content updated successfully",
     });
   } catch (error) {
-    console.error('Error updating content:', error);
+    console.error("Error updating content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to update content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to update content",
+      error: error,
     });
   }
 });
@@ -170,26 +179,27 @@ router.put('/:id', async (req: Request, res: Response) => {
  * Delete multi-format content
  * DELETE /api/multi-format/:id
  */
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
 
     if (isNaN(contentId)) {
-      throw new AppError('Invalid content ID', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
     await deleteMultiFormatContent(contentId);
 
     res.json({
       success: true,
-      message: 'Content deleted successfully'
+      message: "Content deleted successfully",
     });
   } catch (error) {
-    console.error('Error deleting content:', error);
+    console.error("Error deleting content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to delete content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to delete content",
+      error: error,
     });
   }
 });
@@ -198,12 +208,16 @@ router.delete('/:id', async (req: Request, res: Response) => {
  * Batch generate all formats for a study
  * POST /api/multi-format/batch-generate
  */
-router.post('/batch-generate', async (req: Request, res: Response) => {
+router.post("/batch-generate", async (req: Request, res: Response) => {
   try {
     const { studyId } = req.body;
 
     if (!studyId) {
-      throw new AppError('Study ID is required', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError(
+        "Study ID is required",
+        400,
+        ErrorCode.VALIDATION_ERROR,
+      );
     }
 
     const result = await batchGenerateAllFormats(studyId);
@@ -211,14 +225,15 @@ router.post('/batch-generate', async (req: Request, res: Response) => {
     res.json({
       success: result.success,
       message: `Generated ${result.generated} formats`,
-      data: result
+      data: result,
     });
   } catch (error) {
-    console.error('Error in batch generation:', error);
+    console.error("Error in batch generation:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Batch generation failed',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Batch generation failed",
+      error: error,
     });
   }
 });
@@ -227,13 +242,13 @@ router.post('/batch-generate', async (req: Request, res: Response) => {
  * Get all multi-format content with pagination
  * GET /api/multi-format
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
     const formatType = req.query.formatType as string;
-    const isPublished = req.query.isPublished === 'true';
+    const isPublished = req.query.isPublished === "true";
 
     // Build where conditions
     const conditions = [];
@@ -260,7 +275,7 @@ router.get('/', async (req: Request, res: Response) => {
       .select({ count: multiFormatContent.id })
       .from(multiFormatContent)
       .where(whereClause);
-    
+
     const totalCount = countResult.length;
 
     res.json({
@@ -270,15 +285,16 @@ router.get('/', async (req: Request, res: Response) => {
         page,
         limit,
         total: totalCount,
-        pages: Math.ceil(totalCount / limit)
-      }
+        pages: Math.ceil(totalCount / limit),
+      },
     });
   } catch (error) {
-    console.error('Error fetching multi-format content:', error);
+    console.error("Error fetching multi-format content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to fetch content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to fetch content",
+      error: error,
     });
   }
 });
@@ -287,13 +303,13 @@ router.get('/', async (req: Request, res: Response) => {
  * Publish/unpublish content
  * POST /api/multi-format/:id/publish
  */
-router.post('/:id/publish', async (req: Request, res: Response) => {
+router.post("/:id/publish", async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
     const { isPublished } = req.body;
 
     if (isNaN(contentId)) {
-      throw new AppError('Invalid content ID', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
     await db
@@ -307,14 +323,17 @@ router.post('/:id/publish', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Content ${isPublished ? 'published' : 'unpublished'} successfully`
+      message: `Content ${isPublished ? "published" : "unpublished"} successfully`,
     });
   } catch (error) {
-    console.error('Error updating publish status:', error);
+    console.error("Error updating publish status:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to update publish status',
-      error: error
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update publish status",
+      error: error,
     });
   }
 });
@@ -323,22 +342,30 @@ router.post('/:id/publish', async (req: Request, res: Response) => {
  * Schedule content for future publication
  * POST /api/multi-format/:id/schedule
  */
-router.post('/:id/schedule', async (req: Request, res: Response) => {
+router.post("/:id/schedule", async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
     const { scheduledFor } = req.body;
 
     if (isNaN(contentId)) {
-      throw new AppError('Invalid content ID', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
     if (!scheduledFor) {
-      throw new AppError('Scheduled date is required', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError(
+        "Scheduled date is required",
+        400,
+        ErrorCode.VALIDATION_ERROR,
+      );
     }
 
     const scheduledDate = new Date(scheduledFor);
     if (scheduledDate <= new Date()) {
-      throw new AppError('Scheduled date must be in the future', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError(
+        "Scheduled date must be in the future",
+        400,
+        ErrorCode.VALIDATION_ERROR,
+      );
     }
 
     await db
@@ -351,14 +378,15 @@ router.post('/:id/schedule', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Content scheduled for ${scheduledDate.toISOString()}`
+      message: `Content scheduled for ${scheduledDate.toISOString()}`,
     });
   } catch (error) {
-    console.error('Error scheduling content:', error);
+    console.error("Error scheduling content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to schedule content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to schedule content",
+      error: error,
     });
   }
 });
@@ -367,7 +395,7 @@ router.post('/:id/schedule', async (req: Request, res: Response) => {
  * Get content statistics
  * GET /api/multi-format/stats
  */
-router.get('/stats', async (req: Request, res: Response) => {
+router.get("/stats", async (req: Request, res: Response) => {
   try {
     // Get format distribution
     const formatStats = await db
@@ -403,15 +431,16 @@ router.get('/stats', async (req: Request, res: Response) => {
         publishedCount: publishedCount.length,
         unpublishedCount: unpublishedCount.length,
         totalContent: publishedCount.length + unpublishedCount.length,
-        recentContent: recentContent
-      }
+        recentContent: recentContent,
+      },
     });
   } catch (error) {
-    console.error('Error fetching statistics:', error);
+    console.error("Error fetching statistics:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to fetch statistics',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to fetch statistics",
+      error: error,
     });
   }
 });
@@ -420,13 +449,13 @@ router.get('/stats', async (req: Request, res: Response) => {
  * Export content in specific format
  * GET /api/multi-format/:id/export
  */
-router.get('/:id/export', async (req: Request, res: Response) => {
+router.get("/:id/export", async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
-    const exportFormat = req.query.format as string || 'json';
+    const exportFormat = (req.query.format as string) || "json";
 
     if (isNaN(contentId)) {
-      throw new AppError('Invalid content ID', 400, ErrorCode.VALIDATION_ERROR);
+      throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
     const content = await db.query.multiFormatContent.findFirst({
@@ -434,41 +463,51 @@ router.get('/:id/export', async (req: Request, res: Response) => {
     });
 
     if (!content) {
-      throw new AppError('Content not found', 404, ErrorCode.NOT_FOUND);
+      throw new AppError("Content not found", 404, ErrorCode.NOT_FOUND);
     }
 
     // Export based on format
     switch (exportFormat) {
-      case 'txt':
+      case "txt":
         // Export as plain text
         const textContent = generateTextExport(content);
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Content-Disposition', `attachment; filename="${content.formatType}_${content.id}.txt"`);
+        res.setHeader("Content-Type", "text/plain");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${content.formatType}_${content.id}.txt"`,
+        );
         res.send(textContent);
         break;
-        
-      case 'html':
+
+      case "html":
         // Export as HTML
         const htmlContent = generateHtmlExport(content);
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `attachment; filename="${content.formatType}_${content.id}.html"`);
+        res.setHeader("Content-Type", "text/html");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${content.formatType}_${content.id}.html"`,
+        );
         res.send(htmlContent);
         break;
-        
-      case 'json':
+
+      case "json":
       default:
         // Export as JSON
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', `attachment; filename="${content.formatType}_${content.id}.json"`);
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${content.formatType}_${content.id}.json"`,
+        );
         res.json(content);
         break;
     }
   } catch (error) {
-    console.error('Error exporting content:', error);
+    console.error("Error exporting content:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to export content',
-      error: error
+      message:
+        error instanceof Error ? error.message : "Failed to export content",
+      error: error,
     });
   }
 });
@@ -477,13 +516,13 @@ router.get('/:id/export', async (req: Request, res: Response) => {
  * Generate plain text export
  */
 function generateTextExport(content: any): string {
-  let text = `${content.title}\n${'='.repeat(content.title.length)}\n\n`;
-  
+  let text = `${content.title}\n${"=".repeat(content.title.length)}\n\n`;
+
   switch (content.formatType) {
     case ContentFormat.PODCAST:
       text += `PODCAST SCRIPT\n\n`;
-      text += `Intro:\n${content.podcastIntro || ''}\n\n`;
-      text += `Main Content:\n${content.podcastScript || ''}\n\n`;
+      text += `Intro:\n${content.podcastIntro || ""}\n\n`;
+      text += `Main Content:\n${content.podcastScript || ""}\n\n`;
       if (content.podcastQA) {
         text += `Q&A Segment:\n`;
         const qa = JSON.parse(content.podcastQA);
@@ -491,10 +530,10 @@ function generateTextExport(content: any): string {
           text += `Q: ${item.question}\nA: ${item.answer}\n\n`;
         });
       }
-      text += `Outro:\n${content.podcastOutro || ''}\n\n`;
-      text += `Show Notes:\n${content.podcastShowNotes || ''}\n`;
+      text += `Outro:\n${content.podcastOutro || ""}\n\n`;
+      text += `Show Notes:\n${content.podcastShowNotes || ""}\n`;
       break;
-      
+
     case ContentFormat.SOCIAL_TWITTER:
     case ContentFormat.SOCIAL_LINKEDIN:
     case ContentFormat.SOCIAL_INSTAGRAM:
@@ -507,17 +546,17 @@ function generateTextExport(content: any): string {
           text += `${index + 1}. ${tweet}\n\n`;
         });
       } else {
-        text += `${content.socialContent || ''}\n\n`;
+        text += `${content.socialContent || ""}\n\n`;
       }
       if (content.hashtags && content.hashtags.length > 0) {
-        text += `Hashtags: ${content.hashtags.map((tag: string) => `#${tag}`).join(' ')}\n`;
+        text += `Hashtags: ${content.hashtags.map((tag: string) => `#${tag}`).join(" ")}\n`;
       }
       break;
-      
+
     case ContentFormat.VIDEO_YOUTUBE:
     case ContentFormat.VIDEO_SHORT:
       text += `VIDEO SCRIPT\n\n`;
-      text += content.videoScript || '';
+      text += content.videoScript || "";
       if (content.videoStoryboard) {
         text += `\n\nSTORYBOARD:\n`;
         const storyboard = JSON.parse(content.videoStoryboard);
@@ -528,17 +567,17 @@ function generateTextExport(content: any): string {
         });
       }
       break;
-      
+
     case ContentFormat.NEWSLETTER:
       text += `EMAIL NEWSLETTER\n\n`;
-      text += `Subject: ${content.newsletterSubjectLine || ''}\n`;
-      text += `Preheader: ${content.newsletterPreheader || ''}\n\n`;
-      text += `Content:\n${content.newsletterPlainText || ''}\n`;
+      text += `Subject: ${content.newsletterSubjectLine || ""}\n`;
+      text += `Preheader: ${content.newsletterPreheader || ""}\n\n`;
+      text += `Content:\n${content.newsletterPlainText || ""}\n`;
       break;
-      
+
     case ContentFormat.INFOGRAPHIC:
       text += `INFOGRAPHIC DATA\n\n`;
-      text += `Title: ${content.infographicTitle || ''}\n\n`;
+      text += `Title: ${content.infographicTitle || ""}\n\n`;
       if (content.keyStatistics) {
         text += `Key Statistics:\n`;
         const stats = JSON.parse(content.keyStatistics);
@@ -547,11 +586,15 @@ function generateTextExport(content: any): string {
         });
       }
       break;
-      
+
     default:
-      text += content.socialContent || content.podcastScript || content.videoScript || 'No content available';
+      text +=
+        content.socialContent ||
+        content.podcastScript ||
+        content.videoScript ||
+        "No content available";
   }
-  
+
   return text;
 }
 
@@ -580,18 +623,18 @@ function generateHtmlExport(content: any): string {
     <h1>${content.title}</h1>
     <div class="meta">Format: ${content.formatType} | Created: ${new Date(content.createdAt).toLocaleString()}</div>
 `;
-  
+
   switch (content.formatType) {
     case ContentFormat.PODCAST:
       html += `
         <h2>Podcast Script</h2>
         <div class="section">
           <h3>Introduction</h3>
-          <p>${content.podcastIntro || ''}</p>
+          <p>${content.podcastIntro || ""}</p>
         </div>
         <div class="section">
           <h3>Main Content</h3>
-          <p>${content.podcastScript?.replace(/\n/g, '<br>') || ''}</p>
+          <p>${content.podcastScript?.replace(/\n/g, "<br>") || ""}</p>
         </div>`;
       if (content.podcastQA) {
         html += `<div class="section"><h3>Q&A Segment</h3>`;
@@ -608,35 +651,35 @@ function generateHtmlExport(content: any): string {
       html += `
         <div class="section">
           <h3>Outro</h3>
-          <p>${content.podcastOutro || ''}</p>
+          <p>${content.podcastOutro || ""}</p>
         </div>
         <div class="section">
           <h3>Show Notes</h3>
-          <p>${content.podcastShowNotes?.replace(/\n/g, '<br>') || ''}</p>
+          <p>${content.podcastShowNotes?.replace(/\n/g, "<br>") || ""}</p>
         </div>`;
       break;
-      
+
     case ContentFormat.NEWSLETTER:
       html += `
         <h2>Email Newsletter</h2>
         <div class="section">
-          <p><strong>Subject:</strong> ${content.newsletterSubjectLine || ''}</p>
-          <p><strong>Preheader:</strong> ${content.newsletterPreheader || ''}</p>
+          <p><strong>Subject:</strong> ${content.newsletterSubjectLine || ""}</p>
+          <p><strong>Preheader:</strong> ${content.newsletterPreheader || ""}</p>
         </div>
         <div class="section">
           <h3>HTML Content</h3>
-          ${content.newsletterHtml || ''}
+          ${content.newsletterHtml || ""}
         </div>`;
       break;
-      
+
     default:
-      html += `<div class="section">${content.socialContent || content.podcastScript || 'No content available'}</div>`;
+      html += `<div class="section">${content.socialContent || content.podcastScript || "No content available"}</div>`;
   }
-  
+
   html += `
 </body>
 </html>`;
-  
+
   return html;
 }
 

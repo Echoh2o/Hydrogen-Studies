@@ -1,6 +1,6 @@
 /**
  * Targeted Studies Enrichment System
- * 
+ *
  * Focuses on enriching critical missing fields:
  * - Keywords/tags for search and categorization
  * - Health conditions for navigation
@@ -8,9 +8,9 @@
  * - Conclusions for study summaries
  */
 
-import { db } from './db';
-import { sql } from 'drizzle-orm';
-import OpenAI from 'openai';
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -33,18 +33,20 @@ let enrichmentStats: EnrichmentStats = {
   conclusionsAdded: 0,
   errors: 0,
   startTime: new Date(),
-  isRunning: false
+  isRunning: false,
 };
 
 /**
  * Start targeted enrichment of critical missing fields
  */
-export async function startTargetedEnrichment(batchSize: number = 10): Promise<EnrichmentStats> {
+export async function startTargetedEnrichment(
+  batchSize: number = 10,
+): Promise<EnrichmentStats> {
   if (enrichmentStats.isRunning) {
-    throw new Error('Enrichment is already running');
+    throw new Error("Enrichment is already running");
   }
 
-  console.log('Starting targeted enrichment process...');
+  console.log("Starting targeted enrichment process...");
   enrichmentStats.isRunning = true;
   enrichmentStats.startTime = new Date();
   enrichmentStats.totalProcessed = 0;
@@ -55,8 +57,8 @@ export async function startTargetedEnrichment(batchSize: number = 10): Promise<E
   enrichmentStats.errors = 0;
 
   // Run enrichment in background
-  processEnrichmentBatches(batchSize).catch(error => {
-    console.error('Enrichment process failed:', error);
+  processEnrichmentBatches(batchSize).catch((error) => {
+    console.error("Enrichment process failed:", error);
     enrichmentStats.isRunning = false;
   });
 
@@ -76,8 +78,8 @@ export function getEnrichmentStatus(): EnrichmentStats {
 async function processEnrichmentBatches(batchSize: number): Promise<void> {
   try {
     // Get studies that need enrichment (prioritize those missing critical fields)
-    const { pool } = await import('./db');
-    
+    const { pool } = await import("./db");
+
     const query = `
       SELECT id, title, abstract, methods, results
       FROM studies 
@@ -88,26 +90,27 @@ async function processEnrichmentBatches(batchSize: number): Promise<void> {
       ORDER BY id
       LIMIT 500
     `;
-    
+
     const result = await pool.query(query);
     const studiesNeedingEnrichment = result.rows;
-    
-    console.log(`Found ${studiesNeedingEnrichment.length} studies needing enrichment`);
-    
+
+    console.log(
+      `Found ${studiesNeedingEnrichment.length} studies needing enrichment`,
+    );
+
     // Process in batches
     for (let i = 0; i < studiesNeedingEnrichment.length; i += batchSize) {
       const batch = studiesNeedingEnrichment.slice(i, i + batchSize);
       await processBatch(batch);
-      
+
       // Small delay between batches to avoid overwhelming the API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    
+
     enrichmentStats.isRunning = false;
-    console.log('Targeted enrichment completed successfully');
-    
+    console.log("Targeted enrichment completed successfully");
   } catch (error) {
-    console.error('Error in enrichment process:', error);
+    console.error("Error in enrichment process:", error);
     enrichmentStats.isRunning = false;
     throw error;
   }
@@ -135,8 +138,8 @@ async function enrichSingleStudy(study: any): Promise<void> {
   const studyContent = `
     Title: ${study.title}
     Abstract: ${study.abstract}
-    Methods: ${study.methods || 'Not provided'}
-    Results: ${study.results || 'Not provided'}
+    Methods: ${study.methods || "Not provided"}
+    Results: ${study.results || "Not provided"}
   `;
 
   // Generate comprehensive enrichment data
@@ -166,33 +169,41 @@ async function enrichSingleStudy(study: any): Promise<void> {
       messages: [
         {
           role: "system",
-          content: "You are a medical research expert specializing in hydrogen therapy studies. Provide accurate, scientific analysis in the requested JSON format."
+          content:
+            "You are a medical research expert specializing in hydrogen therapy studies. Provide accurate, scientific analysis in the requested JSON format.",
         },
         {
           role: "user",
-          content: enrichmentPrompt
-        }
+          content: enrichmentPrompt,
+        },
       ],
       response_format: { type: "json_object" },
       max_tokens: 1000,
-      temperature: 0.3
+      temperature: 0.3,
     });
 
-    const enrichmentData = JSON.parse(response.choices[0].message.content || '{}');
-    
+    const enrichmentData = JSON.parse(
+      response.choices[0].message.content || "{}",
+    );
+
     // Update the study with enriched data
     await updateStudyWithEnrichment(study.id, enrichmentData);
-    
+
     // Update stats
     if (enrichmentData.keywords?.length > 0) enrichmentStats.keywordsAdded++;
-    if (enrichmentData.health_conditions) enrichmentStats.healthConditionsAdded++;
+    if (enrichmentData.health_conditions)
+      enrichmentStats.healthConditionsAdded++;
     if (enrichmentData.body_systems) enrichmentStats.bodySystemsAdded++;
     if (enrichmentData.conclusion) enrichmentStats.conclusionsAdded++;
-    
-    console.log(`Enriched study ${study.id}: ${study.title.substring(0, 50)}...`);
-    
+
+    console.log(
+      `Enriched study ${study.id}: ${study.title.substring(0, 50)}...`,
+    );
   } catch (error) {
-    console.error(`Failed to generate enrichment for study ${study.id}:`, error);
+    console.error(
+      `Failed to generate enrichment for study ${study.id}:`,
+      error,
+    );
     throw error;
   }
 }
@@ -200,9 +211,12 @@ async function enrichSingleStudy(study: any): Promise<void> {
 /**
  * Update study with enrichment data
  */
-async function updateStudyWithEnrichment(studyId: number, enrichmentData: any): Promise<void> {
-  const { pool } = await import('./db');
-  
+async function updateStudyWithEnrichment(
+  studyId: number,
+  enrichmentData: any,
+): Promise<void> {
+  const { pool } = await import("./db");
+
   const updateQuery = `
     UPDATE studies 
     SET 
@@ -212,13 +226,13 @@ async function updateStudyWithEnrichment(studyId: number, enrichmentData: any): 
       conclusion = COALESCE($5, conclusion)
     WHERE id = $1
   `;
-  
+
   await pool.query(updateQuery, [
     studyId,
     enrichmentData.keywords || null,
     enrichmentData.health_conditions || null,
     enrichmentData.body_systems || null,
-    enrichmentData.conclusion || null
+    enrichmentData.conclusion || null,
   ]);
 }
 
@@ -226,8 +240,8 @@ async function updateStudyWithEnrichment(studyId: number, enrichmentData: any): 
  * Get enrichment progress summary
  */
 export async function getEnrichmentSummary(): Promise<any> {
-  const { pool } = await import('./db');
-  
+  const { pool } = await import("./db");
+
   const query = `
     SELECT 
       COUNT(*) as total_studies,
@@ -237,7 +251,7 @@ export async function getEnrichmentSummary(): Promise<any> {
       COUNT(CASE WHEN conclusion IS NOT NULL AND conclusion != '' THEN 1 END) as with_conclusions
     FROM studies
   `;
-  
+
   const result = await pool.query(query);
   return result.rows[0];
 }

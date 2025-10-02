@@ -4,9 +4,32 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Eye, FileEdit, FilePlus, Search, Trash2 } from "lucide-react";
@@ -17,8 +40,12 @@ export default function BlogsAdmin() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("published");
-  const [selectedBlogId, setSelectedBlogId] = useState<number | undefined>(undefined);
-  const [selectedStudyId, setSelectedStudyId] = useState<number | undefined>(undefined);
+  const [selectedBlogId, setSelectedBlogId] = useState<number | undefined>(
+    undefined,
+  );
+  const [selectedStudyId, setSelectedStudyId] = useState<number | undefined>(
+    undefined,
+  );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [sortField, setSortField] = useState<string>("createdAt");
@@ -26,33 +53,33 @@ export default function BlogsAdmin() {
 
   // Fetch all blog articles
   const { data: blogs = [], isLoading } = useQuery({
-    queryKey: ['/api/blogs'],
+    queryKey: ["/api/blogs"],
     staleTime: 30000, // 30 seconds
   });
-  
+
   // Fetch studies for the filter dropdown
   const { data: studies = [] } = useQuery({
-    queryKey: ['/api/studies'],
+    queryKey: ["/api/studies"],
     staleTime: 60000, // 1 minute
-    enabled: activeTab === 'byStudy', // Only fetch when byStudy tab is active
+    enabled: activeTab === "byStudy", // Only fetch when byStudy tab is active
   });
 
   // Filter blogs based on search query and active tab
   const filteredBlogs = blogs.filter((blog: any) => {
-    const matchesSearch = 
+    const matchesSearch =
       blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       blog.summary.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Filter based on the active tab
-    if (activeTab === 'published') {
+    if (activeTab === "published") {
       return matchesSearch && blog.isPublished === true;
-    } else if (activeTab === 'drafts') {
+    } else if (activeTab === "drafts") {
       return matchesSearch && blog.isPublished === false;
-    } else if (activeTab === 'withImages') {
+    } else if (activeTab === "withImages") {
       return matchesSearch && blog.imageUrl;
-    } else if (activeTab === 'withoutImages') {
+    } else if (activeTab === "withoutImages") {
       return matchesSearch && !blog.imageUrl;
-    } else if (activeTab === 'byStudy') {
+    } else if (activeTab === "byStudy") {
       // Filter by selected study if one is selected
       if (selectedStudyId) {
         return matchesSearch && blog.studyId === selectedStudyId;
@@ -63,36 +90,36 @@ export default function BlogsAdmin() {
       return matchesSearch;
     }
   });
-  
+
   // Sort the filtered blogs
   const sortedBlogs = [...filteredBlogs].sort((a, b) => {
     // Handle special sorting for date fields
-    if (sortField === 'createdAt' || sortField === 'updatedAt') {
+    if (sortField === "createdAt" || sortField === "updatedAt") {
       const dateA = new Date(a[sortField]).getTime();
       const dateB = new Date(b[sortField]).getTime();
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
     }
-    
+
     // Handle numeric fields
-    if (sortField === 'id' || sortField === 'studyId') {
-      return sortOrder === 'asc' 
-        ? a[sortField] - b[sortField] 
+    if (sortField === "id" || sortField === "studyId") {
+      return sortOrder === "asc"
+        ? a[sortField] - b[sortField]
         : b[sortField] - a[sortField];
     }
-    
+
     // Handle special case for articleType field
-    if (sortField === 'articleType') {
-      const valueA = a.type?.toString().toLowerCase() || '';
-      const valueB = b.type?.toString().toLowerCase() || '';
-      return sortOrder === 'asc'
+    if (sortField === "articleType") {
+      const valueA = a.type?.toString().toLowerCase() || "";
+      const valueB = b.type?.toString().toLowerCase() || "";
+      return sortOrder === "asc"
         ? valueA.localeCompare(valueB)
         : valueB.localeCompare(valueA);
     }
-    
+
     // Default string comparison for other fields like title
-    const valueA = a[sortField]?.toString().toLowerCase() || '';
-    const valueB = b[sortField]?.toString().toLowerCase() || '';
-    return sortOrder === 'asc'
+    const valueA = a[sortField]?.toString().toLowerCase() || "";
+    const valueB = b[sortField]?.toString().toLowerCase() || "";
+    return sortOrder === "asc"
       ? valueA.localeCompare(valueB)
       : valueB.localeCompare(valueA);
   });
@@ -111,7 +138,7 @@ export default function BlogsAdmin() {
         title: "Blog article deleted",
         description: "The blog article has been deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
     },
     onError: (error) => {
       toast({
@@ -119,7 +146,7 @@ export default function BlogsAdmin() {
         description: error.message || "Failed to delete blog article",
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Handle delete blog
@@ -136,57 +163,81 @@ export default function BlogsAdmin() {
   // Format reading level for display
   const formatReadingLevel = (level: string) => {
     switch (level) {
-      case "elementary": return "Elementary (Grades 1-5)";
-      case "middle": return "Middle School (Grades 6-8)";
-      case "high": return "High School (Grades 9-12)";
-      case "general": return "General Audience";
-      case "professional": return "Professional";
-      case "academic": return "Academic";
-      default: return level;
+      case "elementary":
+        return "Elementary (Grades 1-5)";
+      case "middle":
+        return "Middle School (Grades 6-8)";
+      case "high":
+        return "High School (Grades 9-12)";
+      case "general":
+        return "General Audience";
+      case "professional":
+        return "Professional";
+      case "academic":
+        return "Academic";
+      default:
+        return level;
     }
   };
-  
+
   // Helper to reset search and filters
   const clearFilters = () => {
     setSearchQuery("");
-    if (activeTab === 'byStudy') {
+    if (activeTab === "byStudy") {
       setSelectedStudyId(undefined);
     }
   };
-  
+
   // Format article type for display
   const formatArticleType = (type: string) => {
     switch (type) {
-      case "overview": return "Overview";
-      case "practical_application": return "Practical App";
-      case "comparison": return "Comparison";
-      case "elon_simple": return "Elon Overview";
-      case "elon_benefits": return "Elon Benefits";
-      case "elon_future": return "Elon Future";
-      case "elon_faq": return "Elon FAQ";
-      default: return type || "Standard";
+      case "overview":
+        return "Overview";
+      case "practical_application":
+        return "Practical App";
+      case "comparison":
+        return "Comparison";
+      case "elon_simple":
+        return "Elon Overview";
+      case "elon_benefits":
+        return "Elon Benefits";
+      case "elon_future":
+        return "Elon Future";
+      case "elon_faq":
+        return "Elon FAQ";
+      default:
+        return type || "Standard";
     }
   };
-  
+
   // Get color class for article type
   const getArticleTypeColor = (type: string) => {
     if (!type) return "bg-blue-100 text-blue-700";
-    
+
     if (type.startsWith("elon_")) {
       switch (type) {
-        case "elon_simple": return "bg-purple-100 text-purple-700";
-        case "elon_benefits": return "bg-fuchsia-100 text-fuchsia-700";
-        case "elon_future": return "bg-violet-100 text-violet-700";
-        case "elon_faq": return "bg-pink-100 text-pink-700";
-        default: return "bg-purple-100 text-purple-700";
+        case "elon_simple":
+          return "bg-purple-100 text-purple-700";
+        case "elon_benefits":
+          return "bg-fuchsia-100 text-fuchsia-700";
+        case "elon_future":
+          return "bg-violet-100 text-violet-700";
+        case "elon_faq":
+          return "bg-pink-100 text-pink-700";
+        default:
+          return "bg-purple-100 text-purple-700";
       }
     }
-    
+
     switch (type) {
-      case "overview": return "bg-blue-100 text-blue-700";
-      case "practical_application": return "bg-emerald-100 text-emerald-700";
-      case "comparison": return "bg-indigo-100 text-indigo-700";
-      default: return "bg-blue-100 text-blue-700";
+      case "overview":
+        return "bg-blue-100 text-blue-700";
+      case "practical_application":
+        return "bg-emerald-100 text-emerald-700";
+      case "comparison":
+        return "bg-indigo-100 text-indigo-700";
+      default:
+        return "bg-blue-100 text-blue-700";
     }
   };
 
@@ -196,7 +247,9 @@ export default function BlogsAdmin() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl font-bold">Blog Articles</CardTitle>
+              <CardTitle className="text-2xl font-bold">
+                Blog Articles
+              </CardTitle>
               <CardDescription>Manage all blog articles</CardDescription>
             </div>
             <div className="flex items-center gap-4">
@@ -210,36 +263,59 @@ export default function BlogsAdmin() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  {(searchQuery || (activeTab === 'byStudy' && selectedStudyId)) && (
-                    <button 
+                  {(searchQuery ||
+                    (activeTab === "byStudy" && selectedStudyId)) && (
+                    <button
                       className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
                       onClick={clearFilters}
                       type="button"
                       aria-label="Clear search"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
                       </svg>
                     </button>
                   )}
                 </div>
-                
-                {activeTab === 'byStudy' && (
-                  <select 
+
+                {activeTab === "byStudy" && (
+                  <select
                     className="h-10 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
                     value={selectedStudyId || ""}
-                    onChange={(e) => setSelectedStudyId(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                    onChange={(e) =>
+                      setSelectedStudyId(
+                        e.target.value
+                          ? parseInt(e.target.value, 10)
+                          : undefined,
+                      )
+                    }
                   >
                     <option value="">All Studies</option>
                     {studies.map((study: any) => (
                       <option key={study.id} value={study.id}>
-                        {study.title.substring(0, 40)}{study.title.length > 40 ? '...' : ''}
+                        {study.title.substring(0, 40)}
+                        {study.title.length > 40 ? "..." : ""}
                       </option>
                     ))}
                   </select>
                 )}
               </div>
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <Dialog
+                open={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+              >
                 <DialogTrigger asChild>
                   <Button>
                     <FilePlus className="mr-2 h-4 w-4" />
@@ -253,11 +329,13 @@ export default function BlogsAdmin() {
                       Fill out the form below to create a new blog article
                     </DialogDescription>
                   </DialogHeader>
-                  <BlogForm 
+                  <BlogForm
                     onSuccess={() => {
                       setIsCreateDialogOpen(false);
-                      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
-                    }} 
+                      queryClient.invalidateQueries({
+                        queryKey: ["/api/blogs"],
+                      });
+                    }}
                   />
                 </DialogContent>
               </Dialog>
@@ -265,7 +343,11 @@ export default function BlogsAdmin() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
+          <Tabs
+            defaultValue="all"
+            className="w-full"
+            onValueChange={setActiveTab}
+          >
             <TabsList className="w-full md:w-auto grid grid-cols-6 md:inline-flex mb-4">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="published">Published</TabsTrigger>
@@ -274,11 +356,11 @@ export default function BlogsAdmin() {
               <TabsTrigger value="withoutImages">Without Images</TabsTrigger>
               <TabsTrigger value="byStudy">By Study</TabsTrigger>
             </TabsList>
-            
+
             <div className="flex flex-col md:flex-row gap-2 mb-4">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium">Sort by:</span>
-                <select 
+                <select
                   className="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm shadow-sm"
                   value={sortField}
                   onChange={(e) => setSortField(e.target.value)}
@@ -290,40 +372,68 @@ export default function BlogsAdmin() {
                 </select>
                 <button
                   className="p-1 rounded-md border border-input bg-background"
-                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                  aria-label={sortOrder === "asc" ? "Sort descending" : "Sort ascending"}
-                  title={sortOrder === "asc" ? "Sort descending" : "Sort ascending"}
+                  onClick={() =>
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                  }
+                  aria-label={
+                    sortOrder === "asc" ? "Sort descending" : "Sort ascending"
+                  }
+                  title={
+                    sortOrder === "asc" ? "Sort descending" : "Sort ascending"
+                  }
                 >
                   {sortOrder === "asc" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m3 8 4-4 4 4"/>
-                      <path d="M7 4v16"/>
-                      <path d="M11 12h10"/>
-                      <path d="M11 16h7"/>
-                      <path d="M11 20h4"/>
-                      <path d="M11 8h10"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m3 8 4-4 4 4" />
+                      <path d="M7 4v16" />
+                      <path d="M11 12h10" />
+                      <path d="M11 16h7" />
+                      <path d="M11 20h4" />
+                      <path d="M11 8h10" />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m3 16 4 4 4-4"/>
-                      <path d="M7 20V4"/>
-                      <path d="M11 12h10"/>
-                      <path d="M11 16h7"/>
-                      <path d="M11 20h4"/>
-                      <path d="M11 8h10"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m3 16 4 4 4-4" />
+                      <path d="M7 20V4" />
+                      <path d="M11 12h10" />
+                      <path d="M11 16h7" />
+                      <path d="M11 20h4" />
+                      <path d="M11 8h10" />
                     </svg>
                   )}
                 </button>
               </div>
             </div>
-            
+
             {isLoading ? (
-              <div className="flex justify-center p-4">Loading blog articles...</div>
+              <div className="flex justify-center p-4">
+                Loading blog articles...
+              </div>
             ) : sortedBlogs.length === 0 ? (
               <div className="text-center p-6 border rounded-md bg-muted/40">
                 <p className="text-muted-foreground">
-                  {searchQuery 
-                    ? "No blog articles match your search" 
+                  {searchQuery
+                    ? "No blog articles match your search"
                     : "No blog articles found. Create your first article!"}
                 </p>
               </div>
@@ -333,82 +443,92 @@ export default function BlogsAdmin() {
                   <thead>
                     <tr className="bg-muted/50 border-b">
                       <th className="text-left p-3 font-medium">
-                        <button 
+                        <button
                           className="font-medium flex items-center gap-1"
                           onClick={() => {
-                            if (sortField === 'title') {
-                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            if (sortField === "title") {
+                              setSortOrder(
+                                sortOrder === "asc" ? "desc" : "asc",
+                              );
                             } else {
-                              setSortField('title');
-                              setSortOrder('asc');
+                              setSortField("title");
+                              setSortOrder("asc");
                             }
                           }}
                         >
                           Title
-                          {sortField === 'title' && (
+                          {sortField === "title" && (
                             <span className="text-xs">
-                              {sortOrder === 'asc' ? '↑' : '↓'}
+                              {sortOrder === "asc" ? "↑" : "↓"}
                             </span>
                           )}
                         </button>
                       </th>
                       <th className="text-left p-3 font-medium">
-                        <button 
+                        <button
                           className="font-medium flex items-center gap-1"
                           onClick={() => {
-                            if (sortField === 'studyId') {
-                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            if (sortField === "studyId") {
+                              setSortOrder(
+                                sortOrder === "asc" ? "desc" : "asc",
+                              );
                             } else {
-                              setSortField('studyId');
-                              setSortOrder('asc');
+                              setSortField("studyId");
+                              setSortOrder("asc");
                             }
                           }}
                         >
                           Study
-                          {sortField === 'studyId' && (
+                          {sortField === "studyId" && (
                             <span className="text-xs">
-                              {sortOrder === 'asc' ? '↑' : '↓'}
+                              {sortOrder === "asc" ? "↑" : "↓"}
                             </span>
                           )}
                         </button>
                       </th>
                       <th className="text-left p-3 font-medium hidden md:table-cell">
-                        <button 
+                        <button
                           className="font-medium flex items-center gap-1"
                           onClick={() => {
-                            if (sortField === 'articleType') {
-                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            if (sortField === "articleType") {
+                              setSortOrder(
+                                sortOrder === "asc" ? "desc" : "asc",
+                              );
                             } else {
-                              setSortField('articleType');
-                              setSortOrder('asc');
+                              setSortField("articleType");
+                              setSortOrder("asc");
                             }
                           }}
                         >
                           Type
-                          {sortField === 'articleType' && (
+                          {sortField === "articleType" && (
                             <span className="text-xs">
-                              {sortOrder === 'asc' ? '↑' : '↓'}
+                              {sortOrder === "asc" ? "↑" : "↓"}
                             </span>
                           )}
                         </button>
                       </th>
-                      <th className="text-left p-3 font-medium hidden md:table-cell">Status</th>
                       <th className="text-left p-3 font-medium hidden md:table-cell">
-                        <button 
+                        Status
+                      </th>
+                      <th className="text-left p-3 font-medium hidden md:table-cell">
+                        <button
                           className="font-medium flex items-center gap-1"
                           onClick={() => {
-                            if (sortField === 'createdAt') {
-                              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            if (sortField === "createdAt") {
+                              setSortOrder(
+                                sortOrder === "asc" ? "desc" : "asc",
+                              );
                             } else {
-                              setSortField('createdAt');
-                              setSortOrder('desc');
+                              setSortField("createdAt");
+                              setSortOrder("desc");
                             }
                           }}
                         >
                           Created
-                          {sortField === 'createdAt' && (
+                          {sortField === "createdAt" && (
                             <span className="text-xs">
-                              {sortOrder === 'asc' ? '↑' : '↓'}
+                              {sortOrder === "asc" ? "↑" : "↓"}
                             </span>
                           )}
                         </button>
@@ -422,11 +542,18 @@ export default function BlogsAdmin() {
                       <tr key={blog.id} className="border-b hover:bg-muted/20">
                         <td className="p-3">
                           <div>
-                            <p className="font-medium text-foreground">{blog.title}</p>
-                            <p className="text-xs text-muted-foreground max-w-[300px] truncate">{blog.summary}</p>
+                            <p className="font-medium text-foreground">
+                              {blog.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground max-w-[300px] truncate">
+                              {blog.summary}
+                            </p>
                             {blog.editorNotes && (
                               <div className="mt-1 text-xs bg-amber-50 border border-amber-200 p-1 rounded text-amber-700">
-                                <span className="font-semibold">Editor Notes:</span> {truncateText(blog.editorNotes, 100)}
+                                <span className="font-semibold">
+                                  Editor Notes:
+                                </span>{" "}
+                                {truncateText(blog.editorNotes, 100)}
                               </div>
                             )}
                           </div>
@@ -437,7 +564,9 @@ export default function BlogsAdmin() {
                           </span>
                         </td>
                         <td className="p-3 hidden md:table-cell">
-                          <span className={`text-xs ${getArticleTypeColor(blog.articleType)} px-2 py-1 rounded-full`}>
+                          <span
+                            className={`text-xs ${getArticleTypeColor(blog.articleType)} px-2 py-1 rounded-full`}
+                          >
                             {formatArticleType(blog.articleType)}
                           </span>
                         </td>
@@ -458,9 +587,9 @@ export default function BlogsAdmin() {
                         <td className="p-3">
                           {blog.imageUrl ? (
                             <div className="relative h-10 w-10 rounded-md overflow-hidden">
-                              <img 
-                                src={blog.imageUrl} 
-                                alt={blog.imageAlt || "Blog image"} 
+                              <img
+                                src={blog.imageUrl}
+                                alt={blog.imageAlt || "Blog image"}
                                 className="object-cover h-full w-full"
                               />
                             </div>
@@ -472,17 +601,19 @@ export default function BlogsAdmin() {
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
+                            <Button
+                              variant="outline"
+                              size="icon"
                               title="View"
-                              onClick={() => window.open(`/blogs/${blog.slug}`, '_blank')}
+                              onClick={() =>
+                                window.open(`/blogs/${blog.slug}`, "_blank")
+                              }
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
+                            <Button
+                              variant="outline"
+                              size="icon"
                               title="Edit"
                               onClick={() => openEditDialog(blog.id)}
                             >
@@ -490,9 +621,9 @@ export default function BlogsAdmin() {
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="icon" 
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   className="text-destructive hover:bg-destructive/10"
                                   title="Delete"
                                 >
@@ -501,9 +632,12 @@ export default function BlogsAdmin() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Blog Article</AlertDialogTitle>
+                                  <AlertDialogTitle>
+                                    Delete Blog Article
+                                  </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to delete this blog article? This action cannot be undone.
+                                    Are you sure you want to delete this blog
+                                    article? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -534,17 +668,15 @@ export default function BlogsAdmin() {
         <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Blog Article</DialogTitle>
-            <DialogDescription>
-              Edit the blog article details
-            </DialogDescription>
+            <DialogDescription>Edit the blog article details</DialogDescription>
           </DialogHeader>
           {selectedBlogId && (
-            <BlogForm 
+            <BlogForm
               blogId={selectedBlogId}
               onSuccess={() => {
                 setIsEditDialogOpen(false);
-                queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
-              }} 
+                queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
+              }}
             />
           )}
         </DialogContent>

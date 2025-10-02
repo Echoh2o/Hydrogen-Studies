@@ -3,8 +3,8 @@
  * Generates JSON-LD schema markup for research studies
  */
 
-import React from 'react';
-import { Helmet } from 'react-helmet';
+import React from "react";
+import { Helmet } from "react-helmet";
 
 interface Study {
   id: number;
@@ -21,109 +21,117 @@ interface Study {
 
 interface StructuredDataProps {
   study?: Study;
-  type: 'study' | 'organization' | 'website' | 'breadcrumb';
+  type: "study" | "organization" | "website" | "breadcrumb";
   breadcrumbs?: Array<{ name: string; url: string }>;
 }
 
-export const StructuredData: React.FC<StructuredDataProps> = ({ study, type, breadcrumbs }) => {
+export const StructuredData: React.FC<StructuredDataProps> = ({
+  study,
+  type,
+  breadcrumbs,
+}) => {
   const generateStudySchema = (study: Study) => ({
     "@context": "https://schema.org",
     "@type": ["Article", "ScholarlyArticle"],
-    "headline": study.title,
-    "description": study.abstract?.substring(0, 200),
-    "author": {
+    headline: study.title,
+    description: study.abstract?.substring(0, 200),
+    author: {
       "@type": "Person",
-      "name": study.authors?.split(',')[0] || "Research Team"
+      name: study.authors?.split(",")[0] || "Research Team",
     },
-    "publisher": {
+    publisher: {
       "@type": "Organization",
-      "name": "Hydrogen Research Database",
-      "logo": {
+      name: "Hydrogen Research Database",
+      logo: {
         "@type": "ImageObject",
-        "url": `${window.location.origin}/favicon.svg`
-      }
+        url: `${window.location.origin}/favicon.svg`,
+      },
     },
-    "datePublished": study.publishDate,
-    "dateModified": study.publishDate,
-    "image": {
+    datePublished: study.publishDate,
+    dateModified: study.publishDate,
+    image: {
       "@type": "ImageObject",
-      "url": study.imageUrl,
-      "width": 800,
-      "height": 600
+      url: study.imageUrl,
+      width: 800,
+      height: 600,
     },
-    "about": {
+    about: {
       "@type": "MedicalCondition",
-      "name": study.category
+      name: study.category,
     },
-    "keywords": study.keywords?.join(', '),
-    "citation": {
+    keywords: study.keywords?.join(", "),
+    citation: {
       "@type": "CreativeWork",
-      "name": study.journal,
-      "identifier": study.doi
+      name: study.journal,
+      identifier: study.doi,
     },
-    "inLanguage": "en-US",
-    "isAccessibleForFree": true
+    inLanguage: "en-US",
+    isAccessibleForFree: true,
   });
 
   const generateOrganizationSchema = () => ({
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Hydrogen Research Database",
-    "url": window.location.origin,
-    "logo": `${window.location.origin}/logo.png`,
-    "description": "Comprehensive database of hydrogen health research studies with advanced categorization and search capabilities",
-    "foundingDate": "2023",
-    "contactPoint": {
+    name: "Hydrogen Research Database",
+    url: window.location.origin,
+    logo: `${window.location.origin}/logo.png`,
+    description:
+      "Comprehensive database of hydrogen health research studies with advanced categorization and search capabilities",
+    foundingDate: "2023",
+    contactPoint: {
       "@type": "ContactPoint",
-      "contactType": "customer service",
-      "email": "info@hydrogenstudies.com"
+      contactType: "customer service",
+      email: "info@hydrogenstudies.com",
     },
-    "sameAs": [
+    sameAs: [
       "https://twitter.com/hydrogenstudies",
-      "https://linkedin.com/company/hydrogenstudies"
-    ]
+      "https://linkedin.com/company/hydrogenstudies",
+    ],
   });
 
   const generateWebsiteSchema = () => ({
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Hydrogen Research Database",
-    "url": window.location.origin,
-    "description": "Advanced hydrogen health research database with AI-powered categorization",
-    "potentialAction": {
+    name: "Hydrogen Research Database",
+    url: window.location.origin,
+    description:
+      "Advanced hydrogen health research database with AI-powered categorization",
+    potentialAction: {
       "@type": "SearchAction",
-      "target": {
+      target: {
         "@type": "EntryPoint",
-        "urlTemplate": `${window.location.origin}/search?q={search_term_string}`
+        urlTemplate: `${window.location.origin}/search?q={search_term_string}`,
       },
-      "query-input": "required name=search_term_string"
+      "query-input": "required name=search_term_string",
     },
-    "publisher": {
+    publisher: {
       "@type": "Organization",
-      "name": "Hydrogen Research Database"
-    }
+      name: "Hydrogen Research Database",
+    },
   });
 
-  const generateBreadcrumbSchema = (breadcrumbs: Array<{ name: string; url: string }>) => ({
+  const generateBreadcrumbSchema = (
+    breadcrumbs: Array<{ name: string; url: string }>,
+  ) => ({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    "itemListElement": breadcrumbs.map((item, index) => ({
+    itemListElement: breadcrumbs.map((item, index) => ({
       "@type": "ListItem",
-      "position": index + 1,
-      "name": item.name,
-      "item": item.url
-    }))
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
   });
 
   const getSchemaData = () => {
     switch (type) {
-      case 'study':
+      case "study":
         return study ? generateStudySchema(study) : null;
-      case 'organization':
+      case "organization":
         return generateOrganizationSchema();
-      case 'website':
+      case "website":
         return generateWebsiteSchema();
-      case 'breadcrumb':
+      case "breadcrumb":
         return breadcrumbs ? generateBreadcrumbSchema(breadcrumbs) : null;
       default:
         return null;
@@ -136,9 +144,7 @@ export const StructuredData: React.FC<StructuredDataProps> = ({ study, type, bre
 
   return (
     <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(schemaData)}
-      </script>
+      <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
     </Helmet>
   );
 };

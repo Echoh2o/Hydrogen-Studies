@@ -3,10 +3,10 @@
  * Handles tracking, analysis, and insights for content performance
  */
 
-import { db } from '../db';
-import { 
-  contentAnalytics, 
-  userEngagement, 
+import { db } from "../db";
+import {
+  contentAnalytics,
+  userEngagement,
   contentInsights,
   studies,
   blogArticles,
@@ -17,37 +17,48 @@ import {
   InsertContentInsights,
   ContentAnalytics,
   UserEngagement,
-  ContentInsights
-} from '@shared/schema';
-import { eq, and, gte, lte, desc, asc, sql, gt, lt, inArray } from 'drizzle-orm';
-import { withRetry } from '../utils/database-wrapper';
-import { AppError, ErrorCode } from '../utils/app-errors';
+  ContentInsights,
+} from "@shared/schema";
+import {
+  eq,
+  and,
+  gte,
+  lte,
+  desc,
+  asc,
+  sql,
+  gt,
+  lt,
+  inArray,
+} from "drizzle-orm";
+import { withRetry } from "../utils/database-wrapper";
+import { AppError, ErrorCode } from "../utils/app-errors";
 
 // Content types supported
 export enum ContentType {
-  STUDY = 'study',
-  BLOG = 'blog',
-  ARTICLE = 'article'
+  STUDY = "study",
+  BLOG = "blog",
+  ARTICLE = "article",
 }
 
 // Engagement actions
 export enum EngagementAction {
-  VIEW = 'view',
-  LIKE = 'like',
-  SHARE = 'share',
-  DOWNLOAD = 'download',
-  COMMENT = 'comment',
-  CLICK = 'click',
-  SCROLL = 'scroll',
-  TIME_SPENT = 'time_spent'
+  VIEW = "view",
+  LIKE = "like",
+  SHARE = "share",
+  DOWNLOAD = "download",
+  COMMENT = "comment",
+  CLICK = "click",
+  SCROLL = "scroll",
+  TIME_SPENT = "time_spent",
 }
 
 // Period types for analytics aggregation
 export enum PeriodType {
-  HOURLY = 'hourly',
-  DAILY = 'daily',
-  WEEKLY = 'weekly',
-  MONTHLY = 'monthly'
+  HOURLY = "hourly",
+  DAILY = "daily",
+  WEEKLY = "weekly",
+  MONTHLY = "monthly",
 }
 
 interface TrackViewParams {
@@ -122,14 +133,14 @@ class ContentAnalyticsService {
         uniqueViewers: 1,
       });
     } catch (error) {
-      console.error('Error tracking view:', error);
+      console.error("Error tracking view:", error);
       throw new AppError(
-        'Failed to track content view',
+        "Failed to track content view",
         500,
         ErrorCode.INTERNAL_SERVER_ERROR,
         false,
         { params },
-        error as Error
+        error as Error,
       );
     }
   }
@@ -143,7 +154,7 @@ class ContentAnalyticsService {
       const engagementScore = this.calculateEngagementScore(
         params.action,
         params.timeSpent,
-        params.scrollDepth
+        params.scrollDepth,
       );
 
       // Record engagement
@@ -163,7 +174,7 @@ class ContentAnalyticsService {
 
       // Update analytics based on action
       const updates: Partial<InsertContentAnalytics> = {};
-      
+
       switch (params.action) {
         case EngagementAction.SHARE:
           updates.shareCount = 1;
@@ -190,17 +201,21 @@ class ContentAnalyticsService {
       }
 
       if (Object.keys(updates).length > 0) {
-        await this.updateContentAnalytics(params.contentType, params.contentId, updates);
+        await this.updateContentAnalytics(
+          params.contentType,
+          params.contentId,
+          updates,
+        );
       }
     } catch (error) {
-      console.error('Error tracking engagement:', error);
+      console.error("Error tracking engagement:", error);
       throw new AppError(
-        'Failed to track engagement',
+        "Failed to track engagement",
         500,
         ErrorCode.INTERNAL_SERVER_ERROR,
         false,
         { params },
-        error as Error
+        error as Error,
       );
     }
   }
@@ -211,19 +226,19 @@ class ContentAnalyticsService {
   async getTopContent(
     limit: number = 10,
     contentType?: ContentType,
-    period?: { start: Date; end: Date }
+    period?: { start: Date; end: Date },
   ): Promise<any[]> {
     try {
       const conditions = [];
-      
+
       if (contentType) {
         conditions.push(eq(contentAnalytics.contentType, contentType));
       }
-      
+
       if (period) {
         conditions.push(
           gte(contentAnalytics.periodStart, period.start),
-          lte(contentAnalytics.periodEnd, period.end)
+          lte(contentAnalytics.periodEnd, period.end),
         );
       }
 
@@ -239,19 +254,19 @@ class ContentAnalyticsService {
         analytics.map(async (item) => {
           const content = await this.getContentDetails(
             item.contentType as ContentType,
-            item.contentId
+            item.contentId,
           );
           return {
             ...item,
             content,
             performanceScore: this.calculatePerformanceScore(item),
           };
-        })
+        }),
       );
 
       return enriched;
     } catch (error) {
-      console.error('Error getting top content:', error);
+      console.error("Error getting top content:", error);
       throw error;
     }
   }
@@ -261,7 +276,7 @@ class ContentAnalyticsService {
    */
   async getContentInsights(
     contentType: ContentType,
-    contentId: number
+    contentId: number,
   ): Promise<ContentInsights | null> {
     try {
       const [insight] = await db
@@ -270,8 +285,8 @@ class ContentAnalyticsService {
         .where(
           and(
             eq(contentInsights.contentType, contentType),
-            eq(contentInsights.contentId, contentId)
-          )
+            eq(contentInsights.contentId, contentId),
+          ),
         )
         .limit(1);
 
@@ -282,7 +297,7 @@ class ContentAnalyticsService {
 
       return insight;
     } catch (error) {
-      console.error('Error getting content insights:', error);
+      console.error("Error getting content insights:", error);
       throw error;
     }
   }
@@ -293,21 +308,27 @@ class ContentAnalyticsService {
   async getRecommendations(
     userId?: string,
     sessionId?: string,
-    limit: number = 5
+    limit: number = 5,
   ): Promise<ContentRecommendation[]> {
     try {
       // Get user's engagement history
-      const userHistory = await this.getUserEngagementHistory(userId, sessionId);
-      
+      const userHistory = await this.getUserEngagementHistory(
+        userId,
+        sessionId,
+      );
+
       // Analyze patterns
       const preferences = this.analyzeUserPreferences(userHistory);
-      
+
       // Get high-performing content matching preferences
-      const recommendations = await this.findMatchingContent(preferences, limit);
-      
+      const recommendations = await this.findMatchingContent(
+        preferences,
+        limit,
+      );
+
       return recommendations;
     } catch (error) {
-      console.error('Error getting recommendations:', error);
+      console.error("Error getting recommendations:", error);
       throw error;
     }
   }
@@ -326,15 +347,17 @@ class ContentAnalyticsService {
           conversionRate: sql<number>`avg(${contentAnalytics.conversionRate})`,
         })
         .from(contentAnalytics)
-        .where(sql`${contentAnalytics.abTestMetrics}::jsonb->>'testId' = ${testId}`)
+        .where(
+          sql`${contentAnalytics.abTestMetrics}::jsonb->>'testId' = ${testId}`,
+        )
         .groupBy(contentAnalytics.abTestVersion);
 
       // Calculate statistical significance
       const analysis = this.analyzeABTestResults(results);
-      
+
       return analysis;
     } catch (error) {
-      console.error('Error getting A/B test results:', error);
+      console.error("Error getting A/B test results:", error);
       throw error;
     }
   }
@@ -344,48 +367,59 @@ class ContentAnalyticsService {
    */
   async generateOptimizationSuggestions(
     contentType: ContentType,
-    contentId: number
+    contentId: number,
   ): Promise<string[]> {
     try {
       // Get current performance
-      const performance = await this.getContentPerformance(contentType, contentId);
-      
+      const performance = await this.getContentPerformance(
+        contentType,
+        contentId,
+      );
+
       // Get top performers in same category
       const topPerformers = await this.getTopContent(5, contentType);
-      
+
       // Generate suggestions
       const suggestions = [];
-      
+
       // Compare metrics
       if (performance.avgTimeSpent < topPerformers[0]?.avgTimeSpent * 0.7) {
-        suggestions.push('Consider improving content engagement - average time spent is below category leaders');
+        suggestions.push(
+          "Consider improving content engagement - average time spent is below category leaders",
+        );
       }
-      
+
       if (performance.bounceRate > 50) {
-        suggestions.push('High bounce rate detected - improve introduction and hook readers early');
+        suggestions.push(
+          "High bounce rate detected - improve introduction and hook readers early",
+        );
       }
-      
+
       if (performance.shareCount < performance.viewCount * 0.01) {
-        suggestions.push('Low share rate - add social sharing prompts and shareable quotes');
+        suggestions.push(
+          "Low share rate - add social sharing prompts and shareable quotes",
+        );
       }
-      
+
       if (performance.conversionRate < 20) {
-        suggestions.push('Improve related content recommendations to increase conversion');
+        suggestions.push(
+          "Improve related content recommendations to increase conversion",
+        );
       }
-      
+
       return suggestions;
     } catch (error) {
-      console.error('Error generating suggestions:', error);
+      console.error("Error generating suggestions:", error);
       throw error;
     }
   }
 
   // Private helper methods
-  
+
   private async updateContentAnalytics(
     contentType: ContentType,
     contentId: number,
-    updates: Partial<InsertContentAnalytics>
+    updates: Partial<InsertContentAnalytics>,
   ): Promise<void> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -402,23 +436,24 @@ class ContentAnalyticsService {
           eq(contentAnalytics.contentId, contentId),
           eq(contentAnalytics.periodType, PeriodType.DAILY),
           gte(contentAnalytics.periodStart, today),
-          lt(contentAnalytics.periodStart, tomorrow)
-        )
+          lt(contentAnalytics.periodStart, tomorrow),
+        ),
       )
       .limit(1);
 
     if (existing) {
       // Update existing record
       const updatedValues: any = {};
-      
+
       for (const [key, value] of Object.entries(updates)) {
-        if (typeof value === 'number') {
-          updatedValues[key] = sql`${contentAnalytics[key as keyof typeof contentAnalytics]} + ${value}`;
+        if (typeof value === "number") {
+          updatedValues[key] =
+            sql`${contentAnalytics[key as keyof typeof contentAnalytics]} + ${value}`;
         } else {
           updatedValues[key] = value;
         }
       }
-      
+
       await db
         .update(contentAnalytics)
         .set(updatedValues)
@@ -439,10 +474,10 @@ class ContentAnalyticsService {
   private calculateEngagementScore(
     action: EngagementAction,
     timeSpent?: number,
-    scrollDepth?: number
+    scrollDepth?: number,
   ): number {
     let score = 0;
-    
+
     // Action scores
     const actionScores = {
       [EngagementAction.VIEW]: 1,
@@ -454,28 +489,30 @@ class ContentAnalyticsService {
       [EngagementAction.SCROLL]: 1,
       [EngagementAction.TIME_SPENT]: 2,
     };
-    
+
     score += actionScores[action] || 0;
-    
+
     // Time bonus
     if (timeSpent) {
-      if (timeSpent > 300) score += 3; // 5+ minutes
-      else if (timeSpent > 120) score += 2; // 2+ minutes
+      if (timeSpent > 300)
+        score += 3; // 5+ minutes
+      else if (timeSpent > 120)
+        score += 2; // 2+ minutes
       else if (timeSpent > 60) score += 1; // 1+ minute
     }
-    
+
     // Scroll depth bonus
     if (scrollDepth) {
       if (scrollDepth > 80) score += 2;
       else if (scrollDepth > 50) score += 1;
     }
-    
+
     return score;
   }
 
   private calculatePerformanceScore(analytics: ContentAnalytics): number {
     let score = 0;
-    
+
     // Weighted scoring
     score += analytics.viewCount * 0.2;
     score += analytics.uniqueViewers * 0.3;
@@ -483,13 +520,13 @@ class ContentAnalyticsService {
     score += (100 - analytics.bounceRate) * 0.5;
     score += analytics.shareCount * 5;
     score += analytics.conversionRate * 2;
-    
+
     return Math.round(score);
   }
 
   private async getContentDetails(
     contentType: ContentType,
-    contentId: number
+    contentId: number,
   ): Promise<any> {
     try {
       switch (contentType) {
@@ -500,7 +537,7 @@ class ContentAnalyticsService {
             .where(eq(studies.id, contentId))
             .limit(1);
           return study;
-          
+
         case ContentType.BLOG:
           const [blog] = await db
             .select()
@@ -508,7 +545,7 @@ class ContentAnalyticsService {
             .where(eq(blogArticles.id, contentId))
             .limit(1);
           return blog;
-          
+
         case ContentType.ARTICLE:
           const [article] = await db
             .select()
@@ -516,30 +553,36 @@ class ContentAnalyticsService {
             .where(eq(scientificArticles.id, contentId))
             .limit(1);
           return article;
-          
+
         default:
           return null;
       }
     } catch (error) {
-      console.error('Error getting content details:', error);
+      console.error("Error getting content details:", error);
       return null;
     }
   }
 
   private async generateContentInsights(
     contentType: ContentType,
-    contentId: number
+    contentId: number,
   ): Promise<ContentInsights | null> {
     try {
       // Get performance metrics
-      const performance = await this.getContentPerformance(contentType, contentId);
-      
+      const performance = await this.getContentPerformance(
+        contentType,
+        contentId,
+      );
+
       // Get similar high performers
-      const similarContent = await this.findSimilarHighPerformers(contentType, contentId);
-      
+      const similarContent = await this.findSimilarHighPerformers(
+        contentType,
+        contentId,
+      );
+
       // Analyze patterns
       const patterns = await this.analyzeSuccessPatterns(contentType);
-      
+
       // Generate insights
       const insights: InsertContentInsights = {
         contentType,
@@ -548,10 +591,13 @@ class ContentAnalyticsService {
         optimalLength: patterns.optimalLength,
         bestKeywords: patterns.keywords,
         bestTags: patterns.tags,
-        improvementSuggestions: await this.generateOptimizationSuggestions(contentType, contentId),
-        similarHighPerformers: similarContent.map(c => String(c.contentId)),
+        improvementSuggestions: await this.generateOptimizationSuggestions(
+          contentType,
+          contentId,
+        ),
+        similarHighPerformers: similarContent.map((c) => String(c.contentId)),
         optimalPublishTime: patterns.optimalPublishTime,
-        primaryAudience: 'general', // TODO: Implement audience segmentation
+        primaryAudience: "general", // TODO: Implement audience segmentation
         audiencePreferences: JSON.stringify({}),
         readingLevel: 8, // TODO: Calculate from content
         missingTopics: [],
@@ -559,20 +605,20 @@ class ContentAnalyticsService {
         predictedEngagement: Math.round(performance.engagementScore * 1.2),
         confidenceScore: 75,
       };
-      
+
       // Save insights
       await db.insert(contentInsights).values(insights);
-      
+
       return insights as ContentInsights;
     } catch (error) {
-      console.error('Error generating insights:', error);
+      console.error("Error generating insights:", error);
       return null;
     }
   }
 
   private async getContentPerformance(
     contentType: ContentType,
-    contentId: number
+    contentId: number,
   ): Promise<ContentPerformanceMetrics> {
     const [metrics] = await db
       .select({
@@ -587,8 +633,8 @@ class ContentAnalyticsService {
       .where(
         and(
           eq(contentAnalytics.contentType, contentType),
-          eq(contentAnalytics.contentId, contentId)
-        )
+          eq(contentAnalytics.contentId, contentId),
+        ),
       );
 
     return {
@@ -604,18 +650,18 @@ class ContentAnalyticsService {
 
   private async getUserEngagementHistory(
     userId?: string,
-    sessionId?: string
+    sessionId?: string,
   ): Promise<UserEngagement[]> {
     const conditions = [];
-    
+
     if (userId) {
       conditions.push(eq(userEngagement.userId, userId));
     } else if (sessionId) {
       conditions.push(eq(userEngagement.sessionId, sessionId));
     }
-    
+
     if (conditions.length === 0) return [];
-    
+
     return await db
       .select()
       .from(userEngagement)
@@ -630,79 +676,78 @@ class ContentAnalyticsService {
       categories: {} as Record<string, number>,
       avgTimeSpent: 0,
       preferredLength: 0,
-      engagementPattern: '',
+      engagementPattern: "",
     };
-    
+
     // Analyze engagement history
-    history.forEach(engagement => {
-      preferences.contentTypes[engagement.contentType] = 
-        (preferences.contentTypes[engagement.contentType] || 0) + engagement.engagementScore;
-      
+    history.forEach((engagement) => {
+      preferences.contentTypes[engagement.contentType] =
+        (preferences.contentTypes[engagement.contentType] || 0) +
+        engagement.engagementScore;
+
       preferences.avgTimeSpent += engagement.timeSpent;
     });
-    
+
     if (history.length > 0) {
       preferences.avgTimeSpent /= history.length;
     }
-    
+
     return preferences;
   }
 
   private async findMatchingContent(
     preferences: any,
-    limit: number
+    limit: number,
   ): Promise<ContentRecommendation[]> {
     // Get high-performing content matching preferences
     const topContent = await this.getTopContent(limit * 2);
-    
+
     // Score and rank based on preferences
-    const scored = topContent.map(content => ({
+    const scored = topContent.map((content) => ({
       contentType: content.contentType as ContentType,
       contentId: content.contentId,
-      title: content.content?.title || '',
+      title: content.content?.title || "",
       score: this.scoreContentMatch(content, preferences),
       reason: this.generateRecommendationReason(content, preferences),
     }));
-    
+
     // Sort by score and return top N
-    return scored
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    return scored.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
   private scoreContentMatch(content: any, preferences: any): number {
     let score = content.performanceScore || 0;
-    
+
     // Boost score if content type matches preference
     if (preferences.contentTypes[content.contentType]) {
-      score *= 1 + (preferences.contentTypes[content.contentType] / 100);
+      score *= 1 + preferences.contentTypes[content.contentType] / 100;
     }
-    
+
     return score;
   }
 
   private generateRecommendationReason(content: any, preferences: any): string {
     if (content.viewCount > 1000) {
-      return 'Trending content with high engagement';
+      return "Trending content with high engagement";
     }
-    
+
     if (preferences.contentTypes[content.contentType] > 10) {
-      return 'Based on your reading history';
+      return "Based on your reading history";
     }
-    
-    return 'Recommended for you';
+
+    return "Recommended for you";
   }
 
   private async findSimilarHighPerformers(
     contentType: ContentType,
     contentId: number,
-    limit: number = 5
+    limit: number = 5,
   ): Promise<ContentAnalytics[]> {
     // Get content details for comparison
     const content = await this.getContentDetails(contentType, contentId);
-    
+
     if (!content) return [];
-    
+
     // Find similar content with high performance
     const similar = await db
       .select()
@@ -711,67 +756,71 @@ class ContentAnalyticsService {
         and(
           eq(contentAnalytics.contentType, contentType),
           gt(contentAnalytics.viewCount, 100), // High performers
-          sql`${contentAnalytics.contentId} != ${contentId}`
-        )
+          sql`${contentAnalytics.contentId} != ${contentId}`,
+        ),
       )
       .orderBy(desc(contentAnalytics.viewCount))
       .limit(limit);
-    
+
     return similar;
   }
 
   private async analyzeSuccessPatterns(contentType: ContentType): Promise<any> {
     // Get top performing content
     const topContent = await this.getTopContent(20, contentType);
-    
+
     const patterns = {
-      headlinePattern: '',
+      headlinePattern: "",
       optimalLength: 0,
       keywords: [] as string[],
       tags: [] as string[],
-      optimalPublishTime: '',
+      optimalPublishTime: "",
     };
-    
+
     // Analyze patterns (simplified version)
     if (topContent.length > 0) {
       // Calculate average content length
       let totalLength = 0;
-      topContent.forEach(item => {
+      topContent.forEach((item) => {
         if (item.content?.content) {
-          totalLength += item.content.content.split(' ').length;
+          totalLength += item.content.content.split(" ").length;
         }
       });
       patterns.optimalLength = Math.round(totalLength / topContent.length);
-      
+
       // Determine optimal publish time (placeholder)
-      patterns.optimalPublishTime = '10:00 AM';
+      patterns.optimalPublishTime = "10:00 AM";
     }
-    
+
     return patterns;
   }
 
   private analyzeABTestResults(results: any[]): any {
     if (results.length < 2) {
       return {
-        status: 'insufficient_data',
-        message: 'Need at least 2 versions for comparison',
+        status: "insufficient_data",
+        message: "Need at least 2 versions for comparison",
       };
     }
-    
+
     // Sort by conversion rate
     const sorted = results.sort((a, b) => b.conversionRate - a.conversionRate);
-    
+
     const winner = sorted[0];
     const control = sorted[1];
-    
+
     // Calculate improvement
-    const improvement = ((winner.conversionRate - control.conversionRate) / control.conversionRate) * 100;
-    
+    const improvement =
+      ((winner.conversionRate - control.conversionRate) /
+        control.conversionRate) *
+      100;
+
     // Simple significance check (would use proper statistics in production)
-    const isSignificant = winner.viewCount > 100 && control.viewCount > 100 && improvement > 10;
-    
+    const isSignificant =
+      winner.viewCount > 100 && control.viewCount > 100 && improvement > 10;
+
     return {
-      status: 'complete',
+      status: "complete",
       winner: winner.version,
       control: control.version,
       improvement: `${improvement.toFixed(1)}%`,

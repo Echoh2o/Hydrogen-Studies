@@ -1,27 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import WYSIWYGEditor from './WYSIWYGEditor';
-import { insertBlogArticleSchema, type InsertBlogArticle } from '@shared/schema';
-import { z } from 'zod';
-import { 
-  Save, 
-  Eye, 
-  Globe, 
-  FileText, 
-  Target, 
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import WYSIWYGEditor from "./WYSIWYGEditor";
+import {
+  insertBlogArticleSchema,
+  type InsertBlogArticle,
+} from "@shared/schema";
+import { z } from "zod";
+import {
+  Save,
+  Eye,
+  Globe,
+  FileText,
+  Target,
   Image as ImageIcon,
   Link as LinkIcon,
   Calendar,
@@ -32,8 +41,8 @@ import {
   Zap,
   Loader2,
   Search,
-  Plus
-} from 'lucide-react';
+  Plus,
+} from "lucide-react";
 
 // Extended schema for the blog form
 const blogFormSchema = insertBlogArticleSchema.extend({
@@ -47,7 +56,7 @@ interface BlogEditorProps {
   initialData?: Partial<BlogFormData>;
   onSave?: (blog: any) => void;
   onCancel?: () => void;
-  mode?: 'create' | 'edit';
+  mode?: "create" | "edit";
   preselectedStudyId?: number;
 }
 
@@ -56,66 +65,70 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   initialData,
   onSave,
   onCancel,
-  mode = 'create',
-  preselectedStudyId
+  mode = "create",
+  preselectedStudyId,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [previewMode, setPreviewMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('content');
-  const [studySearchQuery, setStudySearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState("content");
+  const [studySearchQuery, setStudySearchQuery] = useState("");
 
   // Fetch studies for linking
   const { data: studies = [] } = useQuery({
-    queryKey: ['/api/studies'],
-    select: (data: any[]) => data.map(study => ({
-      id: study.id,
-      title: study.title,
-      category: study.category,
-      authors: study.authors
-    }))
+    queryKey: ["/api/studies"],
+    select: (data: any[]) =>
+      data.map((study) => ({
+        id: study.id,
+        title: study.title,
+        category: study.category,
+        authors: study.authors,
+      })),
   });
 
   const form = useForm<BlogFormData>({
     resolver: zodResolver(blogFormSchema),
     defaultValues: {
       studyId: preselectedStudyId || 0,
-      title: '',
-      slug: '',
-      summary: '',
-      content: '',
-      quickInsights: '',
-      imageUrl: '',
-      imageAlt: '',
-      readingLevel: 'general',
-      articleType: 'general',
+      title: "",
+      slug: "",
+      summary: "",
+      content: "",
+      quickInsights: "",
+      imageUrl: "",
+      imageAlt: "",
+      readingLevel: "general",
+      articleType: "general",
       isPublished: false,
-      editorNotes: '',
-      ...initialData
-    }
+      editorNotes: "",
+      ...initialData,
+    },
   });
 
   const saveMutation = useMutation({
     mutationFn: async (data: BlogFormData) => {
-      const endpoint = blogId ? `/api/blog-articles/${blogId}` : '/api/blog-articles';
-      const method = blogId ? 'PUT' : 'POST';
+      const endpoint = blogId
+        ? `/api/blog-articles/${blogId}`
+        : "/api/blog-articles";
+      const method = blogId ? "PUT" : "POST";
       return apiRequest(method, endpoint, data);
     },
     onSuccess: (data) => {
       toast({
-        title: `Blog ${mode === 'create' ? 'created' : 'updated'} successfully`,
-        description: `The blog post has been ${mode === 'create' ? 'created' : 'updated'} and saved.`,
+        title: `Blog ${mode === "create" ? "created" : "updated"} successfully`,
+        description: `The blog post has been ${mode === "create" ? "created" : "updated"} and saved.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/blog-articles'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-articles"] });
       onSave?.(data);
     },
     onError: (error: any) => {
       toast({
-        title: `Failed to ${mode === 'create' ? 'create' : 'update'} blog`,
-        description: error.message || 'An error occurred while saving the blog post.',
-        variant: 'destructive',
+        title: `Failed to ${mode === "create" ? "create" : "update"} blog`,
+        description:
+          error.message || "An error occurred while saving the blog post.",
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleSubmit = (data: BlogFormData) => {
@@ -125,44 +138,47 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
       .trim();
   };
 
   const handleTitleChange = (title: string) => {
-    form.setValue('title', title);
-    if (!form.getValues('slug')) {
-      form.setValue('slug', generateSlug(title));
+    form.setValue("title", title);
+    if (!form.getValues("slug")) {
+      form.setValue("slug", generateSlug(title));
     }
   };
 
-  const filteredStudies = studies.filter(study =>
-    study.title.toLowerCase().includes(studySearchQuery.toLowerCase()) ||
-    study.category.toLowerCase().includes(studySearchQuery.toLowerCase()) ||
-    study.authors.toLowerCase().includes(studySearchQuery.toLowerCase())
+  const filteredStudies = studies.filter(
+    (study) =>
+      study.title.toLowerCase().includes(studySearchQuery.toLowerCase()) ||
+      study.category.toLowerCase().includes(studySearchQuery.toLowerCase()) ||
+      study.authors.toLowerCase().includes(studySearchQuery.toLowerCase()),
   );
 
-  const selectedStudy = studies.find(study => study.id === form.watch('studyId'));
+  const selectedStudy = studies.find(
+    (study) => study.id === form.watch("studyId"),
+  );
 
   const readingLevels = [
-    { value: 'beginner', label: 'Beginner' },
-    { value: 'general', label: 'General' },
-    { value: 'intermediate', label: 'Intermediate' },
-    { value: 'advanced', label: 'Advanced' },
-    { value: 'expert', label: 'Expert' }
+    { value: "beginner", label: "Beginner" },
+    { value: "general", label: "General" },
+    { value: "intermediate", label: "Intermediate" },
+    { value: "advanced", label: "Advanced" },
+    { value: "expert", label: "Expert" },
   ];
 
   const articleTypes = [
-    { value: 'general', label: 'General Article' },
-    { value: 'research_summary', label: 'Research Summary' },
-    { value: 'case_study', label: 'Case Study' },
-    { value: 'how_to', label: 'How-To Guide' },
-    { value: 'comparison', label: 'Comparison' },
-    { value: 'news', label: 'News' },
-    { value: 'opinion', label: 'Opinion' },
-    { value: 'interview', label: 'Interview' }
+    { value: "general", label: "General Article" },
+    { value: "research_summary", label: "Research Summary" },
+    { value: "case_study", label: "Case Study" },
+    { value: "how_to", label: "How-To Guide" },
+    { value: "comparison", label: "Comparison" },
+    { value: "news", label: "News" },
+    { value: "opinion", label: "Opinion" },
+    { value: "interview", label: "Interview" },
   ];
 
   return (
@@ -171,16 +187,15 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {mode === 'create' ? 'Create New Blog Post' : 'Edit Blog Post'}
+            {mode === "create" ? "Create New Blog Post" : "Edit Blog Post"}
           </h1>
           <p className="text-gray-600 mt-1">
-            {mode === 'create' 
-              ? 'Write and publish a new blog article' 
-              : 'Modify the blog post content and settings'
-            }
+            {mode === "create"
+              ? "Write and publish a new blog article"
+              : "Modify the blog post content and settings"}
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <Button
             type="button"
@@ -189,9 +204,9 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
             className="flex items-center"
           >
             <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? 'Edit' : 'Preview'}
+            {previewMode ? "Edit" : "Preview"}
           </Button>
-          
+
           <Button
             type="button"
             onClick={() => handleSubmit(form.getValues())}
@@ -203,9 +218,9 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {mode === 'create' ? 'Create Blog' : 'Save Changes'}
+            {mode === "create" ? "Create Blog" : "Save Changes"}
           </Button>
-          
+
           {onCancel && (
             <Button
               type="button"
@@ -227,32 +242,40 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
               <div className="flex items-center space-x-2">
                 <Globe className="h-4 w-4 text-gray-500" />
                 <span className="text-sm text-gray-600">Status:</span>
-                <Badge variant={form.watch('isPublished') ? 'default' : 'secondary'}>
-                  {form.watch('isPublished') ? 'Published' : 'Draft'}
+                <Badge
+                  variant={form.watch("isPublished") ? "default" : "secondary"}
+                >
+                  {form.watch("isPublished") ? "Published" : "Draft"}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <BookOpen className="h-4 w-4 text-gray-500" />
                 <span className="text-sm text-gray-600">Reading Level:</span>
                 <Badge variant="outline">
-                  {readingLevels.find(level => level.value === form.watch('readingLevel'))?.label || 'General'}
+                  {readingLevels.find(
+                    (level) => level.value === form.watch("readingLevel"),
+                  )?.label || "General"}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <span className="text-sm text-gray-600">Type:</span>
                 <Badge variant="outline">
-                  {articleTypes.find(type => type.value === form.watch('articleType'))?.label || 'General Article'}
+                  {articleTypes.find(
+                    (type) => type.value === form.watch("articleType"),
+                  )?.label || "General Article"}
                 </Badge>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <Switch
-                checked={form.watch('isPublished')}
-                onCheckedChange={(checked) => form.setValue('isPublished', checked)}
+                checked={form.watch("isPublished")}
+                onCheckedChange={(checked) =>
+                  form.setValue("isPublished", checked)
+                }
               />
               <Label className="text-sm">Published</Label>
             </div>
@@ -261,7 +284,11 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
       </Card>
 
       {/* Main Editor */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="content" className="flex items-center">
             <FileText className="h-4 w-4 mr-2" />
@@ -301,18 +328,18 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   <Input
                     id="title"
                     placeholder="Enter an engaging blog title"
-                    value={form.watch('title')}
+                    value={form.watch("title")}
                     onChange={(e) => handleTitleChange(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="slug">URL Slug</Label>
                   <Input
                     id="slug"
                     placeholder="url-friendly-slug"
-                    value={form.watch('slug')}
-                    onChange={(e) => form.setValue('slug', e.target.value)}
+                    value={form.watch("slug")}
+                    onChange={(e) => form.setValue("slug", e.target.value)}
                   />
                 </div>
               </div>
@@ -321,14 +348,16 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="readingLevel">Reading Level</Label>
                   <Select
-                    value={form.watch('readingLevel')}
-                    onValueChange={(value) => form.setValue('readingLevel', value)}
+                    value={form.watch("readingLevel")}
+                    onValueChange={(value) =>
+                      form.setValue("readingLevel", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select reading level" />
                     </SelectTrigger>
                     <SelectContent>
-                      {readingLevels.map(level => (
+                      {readingLevels.map((level) => (
                         <SelectItem key={level.value} value={level.value}>
                           {level.label}
                         </SelectItem>
@@ -336,18 +365,20 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="articleType">Article Type</Label>
                   <Select
-                    value={form.watch('articleType')}
-                    onValueChange={(value) => form.setValue('articleType', value)}
+                    value={form.watch("articleType")}
+                    onValueChange={(value) =>
+                      form.setValue("articleType", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select article type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {articleTypes.map(type => (
+                      {articleTypes.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
                         </SelectItem>
@@ -362,16 +393,16 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 <Textarea
                   id="summary"
                   placeholder="Write a compelling summary of the blog post..."
-                  value={form.watch('summary')}
-                  onChange={(e) => form.setValue('summary', e.target.value)}
+                  value={form.watch("summary")}
+                  onChange={(e) => form.setValue("summary", e.target.value)}
                   rows={4}
                 />
               </div>
 
               <WYSIWYGEditor
                 label="Blog Content *"
-                value={form.watch('content')}
-                onChange={(value) => form.setValue('content', value)}
+                value={form.watch("content")}
+                onChange={(value) => form.setValue("content", value)}
                 placeholder="Start writing your blog post..."
                 height="400px"
               />
@@ -381,8 +412,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 <Textarea
                   id="editorNotes"
                   placeholder="Internal notes for editors (not visible to readers)"
-                  value={form.watch('editorNotes') || ''}
-                  onChange={(e) => form.setValue('editorNotes', e.target.value)}
+                  value={form.watch("editorNotes") || ""}
+                  onChange={(e) => form.setValue("editorNotes", e.target.value)}
                   rows={3}
                 />
               </div>
@@ -418,20 +449,22 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 <div className="max-h-60 overflow-y-auto border rounded-md">
                   {filteredStudies.length > 0 ? (
                     <div className="p-2 space-y-2">
-                      {filteredStudies.slice(0, 10).map(study => (
+                      {filteredStudies.slice(0, 10).map((study) => (
                         <div
                           key={study.id}
                           className={`p-3 rounded-md cursor-pointer transition-colors ${
-                            form.watch('studyId') === study.id
-                              ? 'bg-blue-50 border-blue-200 border'
-                              : 'bg-gray-50 hover:bg-gray-100'
+                            form.watch("studyId") === study.id
+                              ? "bg-blue-50 border-blue-200 border"
+                              : "bg-gray-50 hover:bg-gray-100"
                           }`}
                           onClick={() => {
-                            form.setValue('studyId', study.id);
-                            setStudySearchQuery('');
+                            form.setValue("studyId", study.id);
+                            setStudySearchQuery("");
                           }}
                         >
-                          <div className="font-medium text-sm">{study.title}</div>
+                          <div className="font-medium text-sm">
+                            {study.title}
+                          </div>
                           <div className="text-xs text-gray-600 mt-1">
                             {study.category} • {study.authors}
                           </div>
@@ -456,7 +489,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => form.setValue('studyId', 0)}
+                        onClick={() => form.setValue("studyId", 0)}
                         className="text-blue-700 hover:text-blue-900"
                       >
                         Remove
@@ -489,8 +522,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
             <CardContent>
               <WYSIWYGEditor
                 label="Quick Insights"
-                value={form.watch('quickInsights') || ''}
-                onChange={(value) => form.setValue('quickInsights', value)}
+                value={form.watch("quickInsights") || ""}
+                onChange={(value) => form.setValue("quickInsights", value)}
                 placeholder="Add quick takeaways or key insights from the blog post..."
                 height="300px"
                 toolbar="basic"
@@ -514,25 +547,25 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 <Input
                   id="seoTitle"
                   placeholder="Optimized title for search engines"
-                  value={form.watch('title')}
-                  onChange={(e) => form.setValue('title', e.target.value)}
+                  value={form.watch("title")}
+                  onChange={(e) => form.setValue("title", e.target.value)}
                 />
                 <p className="text-xs text-gray-600">
                   Recommended length: 50-60 characters
                 </p>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="seoDescription">Meta Description</Label>
                 <Textarea
                   id="seoDescription"
                   placeholder="Brief description for search results (150-160 characters)"
-                  value={form.watch('summary')}
-                  onChange={(e) => form.setValue('summary', e.target.value)}
+                  value={form.watch("summary")}
+                  onChange={(e) => form.setValue("summary", e.target.value)}
                   rows={3}
                 />
                 <p className="text-xs text-gray-600">
-                  Current length: {form.watch('summary').length} characters
+                  Current length: {form.watch("summary").length} characters
                 </p>
               </div>
             </CardContent>
@@ -555,32 +588,32 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   <Input
                     id="imageUrl"
                     placeholder="https://example.com/image.jpg"
-                    value={form.watch('imageUrl') || ''}
-                    onChange={(e) => form.setValue('imageUrl', e.target.value)}
+                    value={form.watch("imageUrl") || ""}
+                    onChange={(e) => form.setValue("imageUrl", e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="imageAlt">Image Alt Text</Label>
                   <Input
                     id="imageAlt"
                     placeholder="Descriptive text for the image"
-                    value={form.watch('imageAlt') || ''}
-                    onChange={(e) => form.setValue('imageAlt', e.target.value)}
+                    value={form.watch("imageAlt") || ""}
+                    onChange={(e) => form.setValue("imageAlt", e.target.value)}
                   />
                 </div>
               </div>
-              
-              {form.watch('imageUrl') && (
+
+              {form.watch("imageUrl") && (
                 <div className="mt-4">
                   <Label>Image Preview</Label>
                   <div className="mt-2 border rounded-md overflow-hidden">
                     <img
-                      src={form.watch('imageUrl') || ''}
-                      alt={form.watch('imageAlt') || 'Preview'}
+                      src={form.watch("imageUrl") || ""}
+                      alt={form.watch("imageAlt") || "Preview"}
                       className="w-full h-48 object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                   </div>

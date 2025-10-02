@@ -1,24 +1,33 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { Loader2, Search, Database, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Loader2,
+  Search,
+  Database,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 export default function CrossRefSearch() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedDoi, setSelectedDoi] = useState('');
+  const [selectedDoi, setSelectedDoi] = useState("");
   const [page, setPage] = useState(1);
-  
+
   // Search mutation
   const searchMutation = useMutation({
-    mutationFn: async ({ query, page }: { query: string, page: number }) => {
-      const response = await apiRequest('GET', `/api/research/crossref/search?query=${encodeURIComponent(query)}&page=${page}`);
+    mutationFn: async ({ query, page }: { query: string; page: number }) => {
+      const response = await apiRequest(
+        "GET",
+        `/api/research/crossref/search?query=${encodeURIComponent(query)}&page=${page}`,
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -30,13 +39,15 @@ export default function CrossRefSearch() {
         description: error.message || "Failed to search CrossRef",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (doi: string) => {
-      const response = await apiRequest('POST', `/api/crossref/import`, { doi });
+      const response = await apiRequest("POST", `/api/crossref/import`, {
+        doi,
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -59,9 +70,9 @@ export default function CrossRefSearch() {
         description: error.message || "Failed to import study",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       toast({
@@ -73,18 +84,22 @@ export default function CrossRefSearch() {
     }
     searchMutation.mutate({ query: searchQuery, page });
   };
-  
+
   const handleImport = (doi: string) => {
     setSelectedDoi(doi);
     importMutation.mutate(doi);
   };
-  
+
   const formatAuthors = (authors: any[]) => {
     if (!authors || !authors.length) return "Unknown authors";
-    return authors.slice(0, 3).map((author: any) => author.family || author.name || "").join(", ") + 
-      (authors.length > 3 ? " et al." : "");
+    return (
+      authors
+        .slice(0, 3)
+        .map((author: any) => author.family || author.name || "")
+        .join(", ") + (authors.length > 3 ? " et al." : "")
+    );
   };
-  
+
   return (
     <div className="space-y-6">
       <div className="flex space-x-2">
@@ -97,9 +112,9 @@ export default function CrossRefSearch() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1"
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
-            <Button 
+            <Button
               onClick={handleSearch}
               disabled={searchMutation.isPending || !searchQuery.trim()}
               className="ml-2"
@@ -122,7 +137,7 @@ export default function CrossRefSearch() {
           </p>
         </div>
       </div>
-      
+
       {searchMutation.isPending ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
@@ -132,7 +147,7 @@ export default function CrossRefSearch() {
           <div className="text-sm text-gray-500">
             Showing {searchResults.length} results
           </div>
-          
+
           {searchResults.map((item: any, index: number) => (
             <Card key={index} className="overflow-hidden">
               <CardContent className="p-4">
@@ -140,23 +155,28 @@ export default function CrossRefSearch() {
                   <div className="flex-1 space-y-1">
                     <h3 className="font-medium text-base">{item.title}</h3>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Authors:</span> {formatAuthors(item.author)}
+                      <span className="font-medium">Authors:</span>{" "}
+                      {formatAuthors(item.author)}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Journal:</span> {item.container_title || "N/A"}
+                      <span className="font-medium">Journal:</span>{" "}
+                      {item.container_title || "N/A"}
                     </div>
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Year:</span> {item.published?.year || "N/A"}
+                      <span className="font-medium">Year:</span>{" "}
+                      {item.published?.year || "N/A"}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       <span className="font-medium">DOI:</span> {item.DOI}
                     </div>
                   </div>
                   <div className="md:ml-4 mt-3 md:mt-0 flex md:flex-col justify-end md:justify-center">
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => handleImport(item.DOI)}
-                      disabled={importMutation.isPending && selectedDoi === item.DOI}
+                      disabled={
+                        importMutation.isPending && selectedDoi === item.DOI
+                      }
                     >
                       {importMutation.isPending && selectedDoi === item.DOI ? (
                         <>
@@ -175,7 +195,7 @@ export default function CrossRefSearch() {
               </CardContent>
             </Card>
           ))}
-          
+
           <div className="flex justify-between mt-4">
             <Button
               variant="outline"

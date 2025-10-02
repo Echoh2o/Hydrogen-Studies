@@ -2,27 +2,41 @@
  * Login Page Component
  * Handles user authentication with email/username and password
  */
-import { useState } from 'react';
-import { Link, useLocation } from 'wouter';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, LogIn, User, Lock, AlertCircle } from 'lucide-react';
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, LogIn, User, Lock, AlertCircle } from "lucide-react";
 
 // Form validation schema
 const loginSchema = z.object({
-  usernameOrEmail: z.string().min(1, 'Username or email is required'),
-  password: z.string().min(1, 'Password is required'),
+  usernameOrEmail: z.string().min(1, "Username or email is required"),
+  password: z.string().min(1, "Password is required"),
   rememberMe: z.boolean().optional(),
 });
 
@@ -31,18 +45,18 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const [loginError, setLoginError] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>("");
 
   // Get redirect path from URL params or default to home
-  const params = new URLSearchParams(location.split('?')[1] || '');
-  const redirectTo = params.get('redirect') || '/';
+  const params = new URLSearchParams(location.split("?")[1] || "");
+  const redirectTo = params.get("redirect") || "/";
 
   // Form setup
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      usernameOrEmail: '',
-      password: '',
+      usernameOrEmail: "",
+      password: "",
       rememberMe: false,
     },
   });
@@ -50,36 +64,37 @@ export default function LoginPage() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (data: LoginFormData) => {
-      const response = await apiRequest('POST', '/api/auth/login', data);
+      const response = await apiRequest("POST", "/api/auth/login", data);
       return await response.json();
     },
     onSuccess: (response) => {
       // Clear any cached auth data
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/check-session'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/check-session"] });
+
       toast({
-        title: 'Login successful',
+        title: "Login successful",
         description: `Welcome back, ${response.user.username || response.user.email}!`,
       });
-      
+
       // Redirect to the intended page or home
       navigate(redirectTo);
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
+      const errorMessage =
+        error.response?.data?.error || error.message || "Login failed";
       setLoginError(errorMessage);
-      
+
       toast({
-        title: 'Login failed',
+        title: "Login failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: LoginFormData) => {
-    setLoginError('');
+    setLoginError("");
     loginMutation.mutate(data);
   };
 
@@ -87,7 +102,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-12">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Welcome Back
+          </CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>
@@ -172,7 +189,10 @@ export default function LoginPage() {
                   )}
                 />
 
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -200,17 +220,20 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-center text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
-            <Link href="/register" className="text-primary font-semibold hover:underline">
+            Don't have an account?{" "}
+            <Link
+              href="/register"
+              className="text-primary font-semibold hover:underline"
+            >
               Sign up
             </Link>
           </div>
           <div className="text-xs text-center text-gray-500 dark:text-gray-500">
-            By logging in, you agree to our{' '}
+            By logging in, you agree to our{" "}
             <Link href="/terms" className="text-primary hover:underline">
               Terms of Service
-            </Link>{' '}
-            and{' '}
+            </Link>{" "}
+            and{" "}
             <Link href="/privacy" className="text-primary hover:underline">
               Privacy Policy
             </Link>

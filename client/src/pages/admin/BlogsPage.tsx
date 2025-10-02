@@ -2,16 +2,16 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { 
-  PlusCircle, 
-  Loader2, 
-  Search, 
+import {
+  PlusCircle,
+  Loader2,
+  Search,
   ArrowUpDown,
   Filter,
   Check,
   X,
   Edit,
-  Eye
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,14 +24,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 export default function BlogsPage() {
@@ -49,7 +56,10 @@ export default function BlogsPage() {
   // Loading state
   if (blogsQuery.isLoading) {
     return (
-      <AdminLayout title="Blog Management" description="Manage all blog articles and content">
+      <AdminLayout
+        title="Blog Management"
+        description="Manage all blog articles and content"
+      >
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -60,7 +70,10 @@ export default function BlogsPage() {
   // Error state
   if (blogsQuery.isError) {
     return (
-      <AdminLayout title="Blog Management" description="Manage all blog articles and content">
+      <AdminLayout
+        title="Blog Management"
+        description="Manage all blog articles and content"
+      >
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>
             Failed to load blog articles. Please try again later.
@@ -81,19 +94,19 @@ export default function BlogsPage() {
       blogs = blogsData;
     } else if (Array.isArray(blogsData?.blogs)) {
       blogs = blogsData.blogs;
-    } else if (blogsData && typeof blogsData === 'object') {
+    } else if (blogsData && typeof blogsData === "object") {
       // If it's an object, try to extract any array property
       const possibleArrays = Object.values(blogsData).filter(Array.isArray);
-      blogs = possibleArrays.length > 0 ? possibleArrays[0] as any[] : [];
+      blogs = possibleArrays.length > 0 ? (possibleArrays[0] as any[]) : [];
     }
-    
+
     // Ensure blogs is always an array
     if (!Array.isArray(blogs)) {
-      console.warn('Blogs data is not an array:', blogsData);
+      console.warn("Blogs data is not an array:", blogsData);
       blogs = [];
     }
   } catch (error) {
-    console.error('Error processing blogs data:', error);
+    console.error("Error processing blogs data:", error);
     blogs = [];
   }
 
@@ -149,181 +162,193 @@ export default function BlogsPage() {
   };
 
   return (
-    <AdminLayout title="Blog Management" description="Manage all blog articles and content">
+    <AdminLayout
+      title="Blog Management"
+      description="Manage all blog articles and content"
+    >
       <Card>
-      <CardHeader>
-        <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
-          <div>
-            <CardTitle>Manage Blog Articles</CardTitle>
-            <CardDescription>
-              Create, edit, and manage blog content
-            </CardDescription>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
+            <div>
+              <CardTitle>Manage Blog Articles</CardTitle>
+              <CardDescription>
+                Create, edit, and manage blog content
+              </CardDescription>
+            </div>
+            <Button asChild>
+              <Link href="/admin/blogs/add">
+                <PlusCircle className="mr-2 h-4 w-4" /> Create New Blog
+              </Link>
+            </Button>
           </div>
-          <Button asChild>
-            <Link href="/admin/blogs/add">
-              <PlusCircle className="mr-2 h-4 w-4" /> Create New Blog
-            </Link>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {/* Filters and search */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search articles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+        </CardHeader>
+        <CardContent>
+          {/* Filters and search */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Status
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setSelectedStatus("all")}
+                    className="flex items-center justify-between"
+                  >
+                    All Statuses
+                    {selectedStatus === "all" && <Check className="h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setSelectedStatus("published")}
+                    className="flex items-center justify-between"
+                  >
+                    Published
+                    {selectedStatus === "published" && (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setSelectedStatus("draft")}
+                    className="flex items-center justify-between"
+                  >
+                    Draft
+                    {selectedStatus === "draft" && (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => toggleSort("date")}>
+                    Date{" "}
+                    {sortBy === "date" &&
+                      (sortDirection === "asc" ? "(Oldest)" : "(Newest)")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toggleSort("title")}>
+                    Title{" "}
+                    {sortBy === "title" &&
+                      (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toggleSort("type")}>
+                    Type{" "}
+                    {sortBy === "type" &&
+                      (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Status
+          {/* Blogs table */}
+          {sortedBlogs.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">
+                No blog articles found matching your criteria.
+              </p>
+              {searchQuery || selectedStatus !== "all" ? (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedStatus("all");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" /> Clear Filters
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem 
-                  onClick={() => setSelectedStatus("all")}
-                  className="flex items-center justify-between"
-                >
-                  All Statuses
-                  {selectedStatus === "all" && (
-                    <Check className="h-4 w-4" />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => setSelectedStatus("published")}
-                  className="flex items-center justify-between"
-                >
-                  Published
-                  {selectedStatus === "published" && (
-                    <Check className="h-4 w-4" />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSelectedStatus("draft")}
-                  className="flex items-center justify-between"
-                >
-                  Draft
-                  {selectedStatus === "draft" && (
-                    <Check className="h-4 w-4" />
-                  )}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
-                  Sort
+              ) : (
+                <Button asChild>
+                  <Link href="/admin/blogs/add">Create Your First Blog</Link>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => toggleSort("date")}>
-                  Date {sortBy === "date" && (sortDirection === "asc" ? "(Oldest)" : "(Newest)")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toggleSort("title")}>
-                  Title {sortBy === "title" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toggleSort("type")}>
-                  Type {sortBy === "type" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Blogs table */}
-        {sortedBlogs.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">
-              No blog articles found matching your criteria.
-            </p>
-            {searchQuery || selectedStatus !== "all" ? (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedStatus("all");
-                }}
-              >
-                <X className="h-4 w-4 mr-2" /> Clear Filters
-              </Button>
-            ) : (
-              <Button asChild>
-                <Link href="/admin/blogs/add">Create Your First Blog</Link>
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[350px]">Title</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Published</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedBlogs.map((blog) => (
-                  <TableRow key={blog.id}>
-                    <TableCell className="font-medium">
-                      <div className="max-w-xs truncate">{blog.title}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{blog.articleType}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {blog.isPublished ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                          Published
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Draft</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {blog.publishDate ? new Date(blog.publishDate).toLocaleDateString() : "Not published"}
-                    </TableCell>
-                    <TableCell>
-                      {blog.viewCount || 0}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" asChild className="mr-1">
-                        <Link href={`/admin/blogs/edit/${blog.id}`}>
-                          <Edit className="h-4 w-4 mr-1" /> Edit
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/blog/${blog.id}`}>
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Link>
-                      </Button>
-                    </TableCell>
+              )}
+            </div>
+          ) : (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[350px]">Title</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Published</TableHead>
+                    <TableHead>Views</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter>
-        <p className="text-sm text-muted-foreground">
-          Showing {sortedBlogs.length} of {blogs.length} blog articles
-        </p>
-      </CardFooter>
+                </TableHeader>
+                <TableBody>
+                  {sortedBlogs.map((blog) => (
+                    <TableRow key={blog.id}>
+                      <TableCell className="font-medium">
+                        <div className="max-w-xs truncate">{blog.title}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{blog.articleType}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {blog.isPublished ? (
+                          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                            Published
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Draft</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {blog.publishDate
+                          ? new Date(blog.publishDate).toLocaleDateString()
+                          : "Not published"}
+                      </TableCell>
+                      <TableCell>{blog.viewCount || 0}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="mr-1"
+                        >
+                          <Link href={`/admin/blogs/edit/${blog.id}`}>
+                            <Edit className="h-4 w-4 mr-1" /> Edit
+                          </Link>
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/blog/${blog.id}`}>
+                            <Eye className="h-4 w-4 mr-1" /> View
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">
+            Showing {sortedBlogs.length} of {blogs.length} blog articles
+          </p>
+        </CardFooter>
       </Card>
     </AdminLayout>
   );

@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, BookOpen, Search, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import React, { useState, useRef, useEffect } from "react";
+import { Send, Bot, User, Sparkles, BookOpen, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
   metadata?: {
@@ -32,20 +32,25 @@ interface AdvancedChatWidgetProps {
   onClose: () => void;
 }
 
-export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps) {
+export function AdvancedChatWidget({
+  isOpen,
+  onClose,
+}: AdvancedChatWidgetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string>();
   const [relatedStudies, setRelatedStudies] = useState<any[]>([]);
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
-  const [productRecommendations, setProductRecommendations] = useState<any[]>([]);
+  const [productRecommendations, setProductRecommendations] = useState<any[]>(
+    [],
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Focus input when chat opens
@@ -60,49 +65,51 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
 
     const userMessage: ChatMessage = {
       id: `user_${Date.now()}`,
-      role: 'user',
+      role: "user",
       content: input.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/advanced-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/advanced-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: userMessage.content,
-          conversationId
-        })
+          conversationId,
+        }),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const data: { success: boolean; data: ChatResponse } = await response.json();
+      const data: { success: boolean; data: ChatResponse } =
+        await response.json();
 
       if (data.success) {
-        setMessages(prev => [...prev, data.data.message]);
+        setMessages((prev) => [...prev, data.data.message]);
         setConversationId(data.data.conversationId);
         setRelatedStudies(data.data.relatedStudies);
         setSuggestedQuestions(data.data.suggestedQuestions);
         setProductRecommendations(data.data.productRecommendations);
       } else {
-        throw new Error('Invalid response format');
+        throw new Error("Invalid response format");
       }
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error("Chat error:", error);
       const errorMessage: ChatMessage = {
         id: `error_${Date.now()}`,
-        role: 'assistant',
-        content: 'I apologize, but I encountered an error. Please try again or rephrase your question.',
-        timestamp: new Date()
+        role: "assistant",
+        content:
+          "I apologize, but I encountered an error. Please try again or rephrase your question.",
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +121,7 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -132,7 +139,9 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
             </div>
             <div>
               <h3 className="font-semibold">Hydrogen Research Assistant</h3>
-              <p className="text-sm text-muted-foreground">AI-powered research insights</p>
+              <p className="text-sm text-muted-foreground">
+                AI-powered research insights
+              </p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -147,16 +156,19 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
               {messages.length === 0 && (
                 <div className="text-center py-8">
                   <Bot className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <h4 className="text-lg font-medium mb-2">Welcome to Hydrogen Research Chat</h4>
+                  <h4 className="text-lg font-medium mb-2">
+                    Welcome to Hydrogen Research Chat
+                  </h4>
                   <p className="text-muted-foreground mb-4">
-                    Ask me anything about hydrogen health research, studies, or applications.
+                    Ask me anything about hydrogen health research, studies, or
+                    applications.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-md mx-auto">
                     {[
                       "What are the benefits of hydrogen water?",
                       "How does hydrogen therapy work?",
                       "Studies on hydrogen and inflammation",
-                      "Hydrogen for athletic performance"
+                      "Hydrogen for athletic performance",
                     ].map((question, index) => (
                       <Button
                         key={index}
@@ -175,21 +187,21 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`mb-4 flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
                     className={`flex gap-3 max-w-[80%] ${
-                      message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                      message.role === "user" ? "flex-row-reverse" : "flex-row"
                     }`}
                   >
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        message.role === 'user'
-                          ? 'bg-blue-500'
-                          : 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                        message.role === "user"
+                          ? "bg-blue-500"
+                          : "bg-gradient-to-r from-blue-500 to-cyan-500"
                       }`}
                     >
-                      {message.role === 'user' ? (
+                      {message.role === "user" ? (
                         <User className="w-4 h-4 text-white" />
                       ) : (
                         <Bot className="w-4 h-4 text-white" />
@@ -197,24 +209,29 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
                     </div>
                     <div
                       className={`rounded-lg p-3 ${
-                        message.role === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-muted'
+                        message.role === "user"
+                          ? "bg-blue-500 text-white"
+                          : "bg-muted"
                       }`}
                     >
-                      <div className="whitespace-pre-wrap">{message.content}</div>
+                      <div className="whitespace-pre-wrap">
+                        {message.content}
+                      </div>
                       {message.metadata && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {message.metadata.confidence && (
                             <Badge variant="secondary" className="text-xs">
-                              Confidence: {Math.round(message.metadata.confidence * 100)}%
+                              Confidence:{" "}
+                              {Math.round(message.metadata.confidence * 100)}%
                             </Badge>
                           )}
-                          {message.metadata.studiesReferenced && message.metadata.studiesReferenced.length > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              {message.metadata.studiesReferenced.length} studies referenced
-                            </Badge>
-                          )}
+                          {message.metadata.studiesReferenced &&
+                            message.metadata.studiesReferenced.length > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                {message.metadata.studiesReferenced.length}{" "}
+                                studies referenced
+                              </Badge>
+                            )}
                         </div>
                       )}
                     </div>
@@ -232,10 +249,18 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                          <div
+                            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.1s" }}
+                          />
+                          <div
+                            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          />
                         </div>
-                        <span className="text-sm text-muted-foreground">Researching...</span>
+                        <span className="text-sm text-muted-foreground">
+                          Researching...
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -248,7 +273,9 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
             {/* Suggested Questions */}
             {suggestedQuestions.length > 0 && (
               <div className="border-t p-4">
-                <p className="text-sm text-muted-foreground mb-2">Suggested questions:</p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Suggested questions:
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {suggestedQuestions.map((question, index) => (
                     <Button
@@ -301,7 +328,9 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
                   <div className="space-y-2">
                     {relatedStudies.slice(0, 3).map((study) => (
                       <Card key={study.id} className="p-3">
-                        <h5 className="font-medium text-sm mb-1">{study.title}</h5>
+                        <h5 className="font-medium text-sm mb-1">
+                          {study.title}
+                        </h5>
                         <p className="text-xs text-muted-foreground mb-2">
                           {study.authors} • {study.publishDate}
                         </p>
@@ -324,7 +353,9 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
                   <div className="space-y-2">
                     {productRecommendations.map((product, index) => (
                       <Card key={index} className="p-3">
-                        <h5 className="font-medium text-sm mb-1">{product.name}</h5>
+                        <h5 className="font-medium text-sm mb-1">
+                          {product.name}
+                        </h5>
                         <p className="text-xs text-muted-foreground mb-2">
                           {product.description}
                         </p>
@@ -332,7 +363,7 @@ export function AdvancedChatWidget({ isOpen, onClose }: AdvancedChatWidgetProps)
                           size="sm"
                           variant="outline"
                           className="w-full text-xs"
-                          onClick={() => window.open(product.url, '_blank')}
+                          onClick={() => window.open(product.url, "_blank")}
                         >
                           Learn More
                         </Button>

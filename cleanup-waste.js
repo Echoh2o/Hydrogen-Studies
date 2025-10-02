@@ -4,65 +4,65 @@
  * Codebase Cleanup - Remove Waste and Redundancy
  */
 
-import fs from 'fs/promises';
-import path from 'path';
+import fs from "fs/promises";
+import path from "path";
 
 const wastePatterns = [
   // Duplicate server files
-  'build-production.js',
-  'corrected-api-server.js', 
-  'fast-startup-server.js',
-  'lightweight-production-server.js',
-  'minimal-production-server.js',
-  'minimal-server.js',
-  'minimal-stable-server.js',
-  'optimized-server.js',
-  'production-optimized-server.js',
-  'production-ready-server.js',
-  'production-server.js',
-  'reliable-server.js',
-  'simple-build.js',
-  'simple-dev-server.js',
-  'stable-production.js',
-  'start-minimal.js',
-  'start-production-backup.js',
-  'start-production-old.js',
-  'ultra-stable-server.js',
+  "build-production.js",
+  "corrected-api-server.js",
+  "fast-startup-server.js",
+  "lightweight-production-server.js",
+  "minimal-production-server.js",
+  "minimal-server.js",
+  "minimal-stable-server.js",
+  "optimized-server.js",
+  "production-optimized-server.js",
+  "production-ready-server.js",
+  "production-server.js",
+  "reliable-server.js",
+  "simple-build.js",
+  "simple-dev-server.js",
+  "stable-production.js",
+  "start-minimal.js",
+  "start-production-backup.js",
+  "start-production-old.js",
+  "ultra-stable-server.js",
 
   // Duplicate build files
-  'package-minimal.json',
-  'package-production.json',
-  'package-stable.json',
+  "package-minimal.json",
+  "package-production.json",
+  "package-stable.json",
 
   // Test/debug files
-  'test-api.js',
-  'test-homepage.js',
-  'test-image-generation.js',
-  'corrected-server.log',
-  'fast-server.log',
-  'optimized-server.log',
-  'server.log',
+  "test-api.js",
+  "test-homepage.js",
+  "test-image-generation.js",
+  "corrected-server.log",
+  "fast-server.log",
+  "optimized-server.log",
+  "server.log",
 
   // Temporary scripts
-  'batch-categorize.ts',
-  'fix-categorization.ts',
-  'initialize-tagging.ts',
-  'regenerate-all-images.ts',
-  'optimized-image-regeneration.ts',
+  "batch-categorize.ts",
+  "fix-categorization.ts",
+  "initialize-tagging.ts",
+  "regenerate-all-images.ts",
+  "optimized-image-regeneration.ts",
 
   // Documentation files that are outdated
-  'cleanup-summary.md',
-  'deployment-check.md',
-  'system-optimizations.md',
-  'FEATURE_AUDIT_REPORT.md',
-  'RELIABILITY_ASSESSMENT.md',
-  'RELIABILITY_IMPROVEMENTS.md',
-  'STABILITY_IMPROVEMENTS_SUMMARY.md',
-  'SYSTEM_OPTIMIZATIONS_SUMMARY.md'
+  "cleanup-summary.md",
+  "deployment-check.md",
+  "system-optimizations.md",
+  "FEATURE_AUDIT_REPORT.md",
+  "RELIABILITY_ASSESSMENT.md",
+  "RELIABILITY_IMPROVEMENTS.md",
+  "STABILITY_IMPROVEMENTS_SUMMARY.md",
+  "SYSTEM_OPTIMIZATIONS_SUMMARY.md",
 ];
 
 async function cleanupWaste() {
-  console.log('Analyzing codebase waste...\n');
+  console.log("Analyzing codebase waste...\n");
 
   let removed = [];
   let preserved = [];
@@ -91,7 +91,7 @@ async function cleanupWaste() {
         console.log(`→ Preserved: ${file} (referenced)`);
       }
     } catch (error) {
-      if (error.code !== 'ENOENT') {
+      if (error.code !== "ENOENT") {
         errors.push({ file, error: error.message });
         console.log(`✗ Error with ${file}: ${error.message}`);
       }
@@ -110,14 +110,14 @@ async function cleanupWaste() {
     }
   }
 
-  console.log('\n=== CLEANUP SUMMARY ===');
+  console.log("\n=== CLEANUP SUMMARY ===");
   console.log(`Files removed: ${removed.length}`);
   console.log(`Files preserved: ${preserved.length}`);
   console.log(`Errors: ${errors.length}`);
 
   if (removed.length > 0) {
-    console.log('\nRemoved files:');
-    removed.forEach(file => console.log(`  - ${file}`));
+    console.log("\nRemoved files:");
+    removed.forEach((file) => console.log(`  - ${file}`));
   }
 
   // Calculate space saved (estimate)
@@ -128,59 +128,59 @@ async function cleanupWaste() {
     removed: removed.length,
     preserved: preserved.length,
     errors: errors.length,
-    files: { removed, preserved, errors }
+    files: { removed, preserved, errors },
   };
 }
 
 async function checkIfFileIsReferenced(filename) {
   // Get just the filename from the full path
   const basename = path.basename(filename);
-  
+
   // Force removal of known redundant files
   const forceRemove = [
-    'build-production.js',
-    'corrected-api-server.js', 
-    'fast-startup-server.js',
-    'lightweight-production-server.js',
-    'minimal-production-server.js',
-    'minimal-server.js',
-    'minimal-stable-server.js',
-    'optimized-server.js',
-    'production-optimized-server.js',
-    'production-ready-server.js',
-    'production-server.js',
-    'reliable-server.js',
-    'simple-build.js',
-    'simple-dev-server.js',
-    'stable-production.js',
-    'start-minimal.js',
-    'start-production-backup.js',
-    'start-production-old.js',
-    'ultra-stable-server.js',
-    'package-minimal.json',
-    'package-production.json',
-    'package-stable.json',
-    'corrected-server.log',
-    'fast-server.log',
-    'optimized-server.log',
-    'server.log',
-    'batch-categorize.ts',
-    'fix-categorization.ts',
-    'initialize-tagging.ts',
-    'regenerate-all-images.ts',
-    'optimized-image-regeneration.ts',
-    'test-api.js',
-    'test-homepage.js',
-    'test-image-generation.js',
-    'test-image-generation.ts',
-    'cleanup-summary.md',
-    'deployment-check.md',
-    'system-optimizations.md',
-    'FEATURE_AUDIT_REPORT.md',
-    'RELIABILITY_ASSESSMENT.md',
-    'RELIABILITY_IMPROVEMENTS.md',
-    'STABILITY_IMPROVEMENTS_SUMMARY.md',
-    'SYSTEM_OPTIMIZATIONS_SUMMARY.md'
+    "build-production.js",
+    "corrected-api-server.js",
+    "fast-startup-server.js",
+    "lightweight-production-server.js",
+    "minimal-production-server.js",
+    "minimal-server.js",
+    "minimal-stable-server.js",
+    "optimized-server.js",
+    "production-optimized-server.js",
+    "production-ready-server.js",
+    "production-server.js",
+    "reliable-server.js",
+    "simple-build.js",
+    "simple-dev-server.js",
+    "stable-production.js",
+    "start-minimal.js",
+    "start-production-backup.js",
+    "start-production-old.js",
+    "ultra-stable-server.js",
+    "package-minimal.json",
+    "package-production.json",
+    "package-stable.json",
+    "corrected-server.log",
+    "fast-server.log",
+    "optimized-server.log",
+    "server.log",
+    "batch-categorize.ts",
+    "fix-categorization.ts",
+    "initialize-tagging.ts",
+    "regenerate-all-images.ts",
+    "optimized-image-regeneration.ts",
+    "test-api.js",
+    "test-homepage.js",
+    "test-image-generation.js",
+    "test-image-generation.ts",
+    "cleanup-summary.md",
+    "deployment-check.md",
+    "system-optimizations.md",
+    "FEATURE_AUDIT_REPORT.md",
+    "RELIABILITY_ASSESSMENT.md",
+    "RELIABILITY_IMPROVEMENTS.md",
+    "STABILITY_IMPROVEMENTS_SUMMARY.md",
+    "SYSTEM_OPTIMIZATIONS_SUMMARY.md",
   ];
 
   return !forceRemove.includes(basename);
@@ -195,7 +195,11 @@ async function findCodeFiles() {
 
       for (const entry of entries) {
         // Validate entry name to prevent path traversal
-        if (entry.name.includes('..') || entry.name.includes('/') || entry.name.includes('\\')) {
+        if (
+          entry.name.includes("..") ||
+          entry.name.includes("/") ||
+          entry.name.includes("\\")
+        ) {
           console.warn(`Skipping potentially unsafe file: ${entry.name}`);
           return;
         }
@@ -221,7 +225,7 @@ async function findCodeFiles() {
     }
   }
 
-  await scan('.');
+  await scan(".");
   return files;
 }
 
@@ -238,7 +242,7 @@ async function findEmptyDirectories() {
       }
 
       for (const entry of entries) {
-        if (entry.startsWith('.')) continue;
+        if (entry.startsWith(".")) continue;
 
         const fullPath = path.join(dir, entry);
         const stat = await fs.stat(fullPath);
@@ -252,16 +256,16 @@ async function findEmptyDirectories() {
     }
   }
 
-  await scan('./temp_files');
+  await scan("./temp_files");
   return emptyDirs;
 }
 
 cleanupWaste()
-  .then(result => {
-    console.log('\nCleanup complete.');
+  .then((result) => {
+    console.log("\nCleanup complete.");
     process.exit(0);
   })
-  .catch(error => {
-    console.error('Cleanup failed:', error);
+  .catch((error) => {
+    console.error("Cleanup failed:", error);
     process.exit(1);
   });

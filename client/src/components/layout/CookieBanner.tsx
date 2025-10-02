@@ -25,12 +25,25 @@ const CookieBanner = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white shadow-md p-4 z-50 border-t border-neutral-200">
       <div className="container mx-auto flex flex-col md:flex-row items-center justify-between">
-        <p className="mb-4 md:mb-0 md:mr-6">This website uses cookies to ensure you get the best experience on our website.</p>
+        <p className="mb-4 md:mb-0 md:mr-6">
+          This website uses cookies to ensure you get the best experience on our
+          website.
+        </p>
         <div className="flex space-x-3">
           <Link href="/privacy#cookies">
-            <Button variant="outline" className="border-primary text-primary hover:text-primary-dark">MORE INFO</Button>
+            <Button
+              variant="outline"
+              className="border-primary text-primary hover:text-primary-dark"
+            >
+              MORE INFO
+            </Button>
           </Link>
-          <Button onClick={handleAccept} className="bg-primary text-white hover:bg-primary-dark">YES, I ACCEPT</Button>
+          <Button
+            onClick={handleAccept}
+            className="bg-primary text-white hover:bg-primary-dark"
+          >
+            YES, I ACCEPT
+          </Button>
         </div>
       </div>
     </div>

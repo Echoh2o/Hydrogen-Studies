@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Category } from "@/types";
 
 export default function AdvancedSearchSection() {
@@ -16,45 +22,47 @@ export default function AdvancedSearchSection() {
     yearFrom: "",
     yearTo: "",
     category: "",
-    peerReviewed: false
+    peerReviewed: false,
   });
-  
+
   // Fetch categories from API
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
+    queryKey: ["/api/categories"],
     staleTime: 300000, // 5 minutes
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setSearchParams(prev => ({ ...prev, [name]: value }));
+    setSearchParams((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (value: string) => {
-    setSearchParams(prev => ({ ...prev, category: value }));
+    setSearchParams((prev) => ({ ...prev, category: value }));
   };
 
   const handleCheckboxChange = (checked: boolean) => {
-    setSearchParams(prev => ({ ...prev, peerReviewed: checked }));
+    setSearchParams((prev) => ({ ...prev, peerReviewed: checked }));
   };
 
   const handleAdvancedSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const queryParams = new URLSearchParams();
-    
-    if (searchParams.keyword) queryParams.append("keyword", searchParams.keyword);
+
+    if (searchParams.keyword)
+      queryParams.append("keyword", searchParams.keyword);
     if (searchParams.author) queryParams.append("author", searchParams.author);
-    if (searchParams.yearFrom) queryParams.append("yearFrom", searchParams.yearFrom);
+    if (searchParams.yearFrom)
+      queryParams.append("yearFrom", searchParams.yearFrom);
     if (searchParams.yearTo) queryParams.append("yearTo", searchParams.yearTo);
-    
+
     // Only add category if it's not "all"
     if (searchParams.category && searchParams.category !== "all") {
       queryParams.append("category", searchParams.category);
     }
-    
+
     if (searchParams.peerReviewed) queryParams.append("peerReviewed", "true");
-    
+
     // Navigate to studies page with filters
     setLocation(`/studies?${queryParams.toString()}`);
   };
@@ -64,11 +72,18 @@ export default function AdvancedSearchSection() {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-neutral-100 rounded-xl p-6 shadow-sm">
-            <h2 className="text-2xl font-bold font-heading text-neutral-900 mb-6">Advanced Search</h2>
+            <h2 className="text-2xl font-bold font-heading text-neutral-900 mb-6">
+              Advanced Search
+            </h2>
             <form onSubmit={handleAdvancedSearch}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <Label htmlFor="keyword" className="text-neutral-700 font-medium">Keywords</Label>
+                  <Label
+                    htmlFor="keyword"
+                    className="text-neutral-700 font-medium"
+                  >
+                    Keywords
+                  </Label>
                   <Input
                     id="keyword"
                     name="keyword"
@@ -79,7 +94,12 @@ export default function AdvancedSearchSection() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="author" className="text-neutral-700 font-medium">Author</Label>
+                  <Label
+                    htmlFor="author"
+                    className="text-neutral-700 font-medium"
+                  >
+                    Author
+                  </Label>
                   <Input
                     id="author"
                     name="author"
@@ -90,7 +110,12 @@ export default function AdvancedSearchSection() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="yearFrom" className="text-neutral-700 font-medium">Year Range</Label>
+                  <Label
+                    htmlFor="yearFrom"
+                    className="text-neutral-700 font-medium"
+                  >
+                    Year Range
+                  </Label>
                   <div className="flex space-x-2 mt-2">
                     <Input
                       id="yearFrom"
@@ -113,17 +138,25 @@ export default function AdvancedSearchSection() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="category" className="text-neutral-700 font-medium">Category</Label>
+                  <Label
+                    htmlFor="category"
+                    className="text-neutral-700 font-medium"
+                  >
+                    Category
+                  </Label>
                   <Select
                     value={searchParams.category}
                     onValueChange={handleSelectChange}
                   >
-                    <SelectTrigger id="category" className="w-full border border-neutral-300 mt-2">
+                    <SelectTrigger
+                      id="category"
+                      className="w-full border border-neutral-300 mt-2"
+                    >
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map(category => (
+                      {categories.map((category) => (
                         <SelectItem key={category.id} value={category.name}>
                           {category.name}
                         </SelectItem>
@@ -134,19 +167,22 @@ export default function AdvancedSearchSection() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="peer-reviewed" 
+                  <Checkbox
+                    id="peer-reviewed"
                     checked={searchParams.peerReviewed}
                     onCheckedChange={handleCheckboxChange}
                   />
-                  <Label 
-                    htmlFor="peer-reviewed" 
+                  <Label
+                    htmlFor="peer-reviewed"
                     className="text-sm text-neutral-700"
                   >
                     Peer-reviewed only
                   </Label>
                 </div>
-                <Button type="submit" className="bg-primary text-white hover:bg-primary/90">
+                <Button
+                  type="submit"
+                  className="bg-primary text-white hover:bg-primary/90"
+                >
                   Search Studies
                 </Button>
               </div>

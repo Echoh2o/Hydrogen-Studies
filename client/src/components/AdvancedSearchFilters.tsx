@@ -4,9 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SearchFilters {
   query: string;
@@ -29,7 +39,10 @@ interface AdvancedSearchFiltersProps {
   totalResults?: number;
 }
 
-export function AdvancedSearchFilters({ onFiltersChange, totalResults }: AdvancedSearchFiltersProps) {
+export function AdvancedSearchFilters({
+  onFiltersChange,
+  totalResults,
+}: AdvancedSearchFiltersProps) {
   const [filters, setFilters] = useState<SearchFilters>({
     query: "",
     healthBenefits: [],
@@ -43,7 +56,7 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
     category: "all",
     aiEnhanced: null,
     readingLevel: "all",
-    sortBy: "relevance"
+    sortBy: "relevance",
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -53,45 +66,87 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
     bodySystems: [],
     lifeStages: [],
     studyTypes: [],
-    mechanisms: []
+    mechanisms: [],
   });
 
   // Pre-defined filter options based on hydrogen research
   const filterOptions = {
     healthBenefits: [
-      "Antioxidant Effects", "Anti-inflammatory", "Neuroprotection", "Cardioprotection",
-      "Improved Recovery", "Enhanced Performance", "Reduced Oxidative Stress",
-      "Cell Protection", "Energy Metabolism", "Immune Support"
+      "Antioxidant Effects",
+      "Anti-inflammatory",
+      "Neuroprotection",
+      "Cardioprotection",
+      "Improved Recovery",
+      "Enhanced Performance",
+      "Reduced Oxidative Stress",
+      "Cell Protection",
+      "Energy Metabolism",
+      "Immune Support",
     ],
     healthConditions: [
-      "Diabetes", "Cardiovascular Disease", "Neurodegenerative Disease", "Cancer",
-      "Kidney Disease", "Liver Disease", "Metabolic Syndrome", "Hypertension",
-      "Cognitive Decline", "Athletic Performance", "Chronic Fatigue", "Inflammation"
+      "Diabetes",
+      "Cardiovascular Disease",
+      "Neurodegenerative Disease",
+      "Cancer",
+      "Kidney Disease",
+      "Liver Disease",
+      "Metabolic Syndrome",
+      "Hypertension",
+      "Cognitive Decline",
+      "Athletic Performance",
+      "Chronic Fatigue",
+      "Inflammation",
     ],
     bodySystems: [
-      "Cardiovascular", "Nervous", "Respiratory", "Digestive", "Immune",
-      "Musculoskeletal", "Endocrine", "Renal", "Hepatic", "Integumentary"
+      "Cardiovascular",
+      "Nervous",
+      "Respiratory",
+      "Digestive",
+      "Immune",
+      "Musculoskeletal",
+      "Endocrine",
+      "Renal",
+      "Hepatic",
+      "Integumentary",
     ],
     lifeStages: [
-      "Elderly", "Adults", "Athletes", "Children", "Pregnant Women",
-      "Post-menopausal", "Active Adults", "Sedentary Population"
+      "Elderly",
+      "Adults",
+      "Athletes",
+      "Children",
+      "Pregnant Women",
+      "Post-menopausal",
+      "Active Adults",
+      "Sedentary Population",
     ],
     studyTypes: [
-      "Human Clinical Trial", "Animal Study", "In Vitro Study", "Randomized Controlled Trial",
-      "Observational Study", "Case Study", "Systematic Review", "Meta-analysis"
+      "Human Clinical Trial",
+      "Animal Study",
+      "In Vitro Study",
+      "Randomized Controlled Trial",
+      "Observational Study",
+      "Case Study",
+      "Systematic Review",
+      "Meta-analysis",
     ],
     mechanisms: [
-      "Selective Antioxidant", "Gene Expression", "Signal Modulation", "Enzymatic Activity",
-      "Membrane Protection", "Mitochondrial Function", "Inflammatory Pathways",
-      "Oxidative Balance", "Cellular Signaling"
-    ]
+      "Selective Antioxidant",
+      "Gene Expression",
+      "Signal Modulation",
+      "Enzymatic Activity",
+      "Membrane Protection",
+      "Mitochondrial Function",
+      "Inflammatory Pathways",
+      "Oxidative Balance",
+      "Cellular Signaling",
+    ],
   };
 
   const readingLevels = [
     { value: "beginner", label: "Beginner Friendly" },
     { value: "intermediate", label: "Intermediate" },
     { value: "advanced", label: "Scientific Level" },
-    { value: "expert", label: "Expert/Research" }
+    { value: "expert", label: "Expert/Research" },
   ];
 
   const sortOptions = [
@@ -100,7 +155,7 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
     { value: "oldest", label: "Oldest First" },
     { value: "title", label: "Title A-Z" },
     { value: "popularity", label: "Most Popular" },
-    { value: "rating", label: "Highest Rated" }
+    { value: "rating", label: "Highest Rated" },
   ];
 
   useEffect(() => {
@@ -108,20 +163,26 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
   }, [filters, onFiltersChange]);
 
   const updateFilter = (key: keyof SearchFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const addArrayFilter = (category: keyof typeof filterOptions, value: string) => {
-    setFilters(prev => ({
+  const addArrayFilter = (
+    category: keyof typeof filterOptions,
+    value: string,
+  ) => {
+    setFilters((prev) => ({
       ...prev,
-      [category]: [...prev[category], value]
+      [category]: [...prev[category], value],
     }));
   };
 
-  const removeArrayFilter = (category: keyof typeof filterOptions, value: string) => {
-    setFilters(prev => ({
+  const removeArrayFilter = (
+    category: keyof typeof filterOptions,
+    value: string,
+  ) => {
+    setFilters((prev) => ({
       ...prev,
-      [category]: prev[category].filter(item => item !== value)
+      [category]: prev[category].filter((item) => item !== value),
     }));
   };
 
@@ -139,7 +200,7 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
       category: "all",
       aiEnhanced: null,
       readingLevel: "all",
-      sortBy: "relevance"
+      sortBy: "relevance",
     });
   };
 
@@ -159,10 +220,14 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
     return count;
   };
 
-  const FilterSection = ({ title, category, options }: { 
-    title: string; 
-    category: keyof typeof filterOptions; 
-    options: string[] 
+  const FilterSection = ({
+    title,
+    category,
+    options,
+  }: {
+    title: string;
+    category: keyof typeof filterOptions;
+    options: string[];
   }) => (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left hover:bg-gray-50 rounded-lg">
@@ -236,7 +301,7 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
                   </Badge>
                 )}
               </Button>
-              
+
               {getActiveFilterCount() > 0 && (
                 <Button
                   variant="ghost"
@@ -268,17 +333,28 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
                   />
                 </Badge>
               )}
-              
-              {Object.entries(filterOptions).map(([category, options]) => 
-                filters[category as keyof typeof filterOptions].map((value: string) => (
-                  <Badge key={`${category}-${value}`} variant="secondary" className="flex items-center gap-1">
-                    {value}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => removeArrayFilter(category as keyof typeof filterOptions, value)}
-                    />
-                  </Badge>
-                ))
+
+              {Object.entries(filterOptions).map(([category, options]) =>
+                filters[category as keyof typeof filterOptions].map(
+                  (value: string) => (
+                    <Badge
+                      key={`${category}-${value}`}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      {value}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() =>
+                          removeArrayFilter(
+                            category as keyof typeof filterOptions,
+                            value,
+                          )
+                        }
+                      />
+                    </Badge>
+                  ),
+                ),
               )}
             </div>
           )}
@@ -288,38 +364,40 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t">
               {/* Filter Categories */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900">Research Categories</h3>
-                
+                <h3 className="font-semibold text-gray-900">
+                  Research Categories
+                </h3>
+
                 <FilterSection
                   title="Health Benefits"
                   category="healthBenefits"
                   options={filterOptions.healthBenefits}
                 />
-                
+
                 <FilterSection
                   title="Health Conditions"
                   category="healthConditions"
                   options={filterOptions.healthConditions}
                 />
-                
+
                 <FilterSection
                   title="Body Systems"
                   category="bodySystems"
                   options={filterOptions.bodySystems}
                 />
-                
+
                 <FilterSection
                   title="Life Stages"
                   category="lifeStages"
                   options={filterOptions.lifeStages}
                 />
-                
+
                 <FilterSection
                   title="Study Types"
                   category="studyTypes"
                   options={filterOptions.studyTypes}
                 />
-                
+
                 <FilterSection
                   title="Mechanisms"
                   category="mechanisms"
@@ -329,11 +407,15 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
 
               {/* Additional Filters */}
               <div className="space-y-6">
-                <h3 className="font-semibold text-gray-900">Additional Filters</h3>
-                
+                <h3 className="font-semibold text-gray-900">
+                  Additional Filters
+                </h3>
+
                 {/* Publication Year Range */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">Publication Year</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Publication Year
+                  </label>
                   <div className="grid grid-cols-2 gap-3">
                     <Input
                       placeholder="From year"
@@ -356,14 +438,21 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
 
                 {/* Reading Level */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">Reading Level</label>
-                  <Select value={filters.readingLevel} onValueChange={(value) => updateFilter("readingLevel", value)}>
+                  <label className="text-sm font-medium text-gray-700">
+                    Reading Level
+                  </label>
+                  <Select
+                    value={filters.readingLevel}
+                    onValueChange={(value) =>
+                      updateFilter("readingLevel", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select reading level" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Levels</SelectItem>
-                      {readingLevels.map(level => (
+                      {readingLevels.map((level) => (
                         <SelectItem key={level.value} value={level.value}>
                           {level.label}
                         </SelectItem>
@@ -374,10 +463,21 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
 
                 {/* AI Enhanced Content */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">Content Type</label>
-                  <Select 
-                    value={filters.aiEnhanced === null ? "all" : filters.aiEnhanced.toString()} 
-                    onValueChange={(value) => updateFilter("aiEnhanced", value === "all" ? null : value === "true")}
+                  <label className="text-sm font-medium text-gray-700">
+                    Content Type
+                  </label>
+                  <Select
+                    value={
+                      filters.aiEnhanced === null
+                        ? "all"
+                        : filters.aiEnhanced.toString()
+                    }
+                    onValueChange={(value) =>
+                      updateFilter(
+                        "aiEnhanced",
+                        value === "all" ? null : value === "true",
+                      )
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="All content" />
@@ -392,13 +492,18 @@ export function AdvancedSearchFilters({ onFiltersChange, totalResults }: Advance
 
                 {/* Sort Options */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">Sort By</label>
-                  <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
+                  <label className="text-sm font-medium text-gray-700">
+                    Sort By
+                  </label>
+                  <Select
+                    value={filters.sortBy}
+                    onValueChange={(value) => updateFilter("sortBy", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {sortOptions.map(option => (
+                      {sortOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

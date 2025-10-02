@@ -3,11 +3,25 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,11 +36,16 @@ const blogSchema = z.object({
   content: z.string().min(50, "Content must be at least 50 characters"),
   studyId: z.number().min(1, "Please select a study"),
   readingLevel: z.string().default("general"),
-  slug: z.string().min(3, "Slug must be at least 3 characters")
-    .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/, "Slug must contain only lowercase letters, numbers, and hyphens (no leading/trailing hyphens)"),
+  slug: z
+    .string()
+    .min(3, "Slug must be at least 3 characters")
+    .regex(
+      /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/,
+      "Slug must contain only lowercase letters, numbers, and hyphens (no leading/trailing hyphens)",
+    ),
   isPublished: z.boolean().default(false),
   editorNotes: z.string().optional(),
-  articleType: z.string().optional()
+  articleType: z.string().optional(),
 });
 
 type BlogFormValues = z.infer<typeof blogSchema>;
@@ -40,24 +59,27 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdBlogId, setCreatedBlogId] = useState<number | undefined>(blogId);
-  
+  const [createdBlogId, setCreatedBlogId] = useState<number | undefined>(
+    blogId,
+  );
+
   // Fetch studies for dropdown
   const { data: studiesResponse } = useQuery({
-    queryKey: ['/api/studies/first/50'],
+    queryKey: ["/api/studies/first/50"],
     staleTime: 300000, // 5 minutes
   });
-  
-  const studies: Array<{id: number, title: string}> = (studiesResponse as any)?.data || [];
-  
+
+  const studies: Array<{ id: number; title: string }> =
+    (studiesResponse as any)?.data || [];
+
   // If editing, fetch blog data
   const { data: blogResponse } = useQuery({
     queryKey: [`/api/blogs/${blogId}`],
     enabled: !!blogId,
   });
-  
+
   const blogData = (blogResponse as any)?.data;
-  
+
   // Initialize form with default values or existing blog data
   const form = useForm<BlogFormValues>({
     resolver: zodResolver(blogSchema),
@@ -70,30 +92,34 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
       slug: blogData?.slug || "",
       isPublished: blogData?.isPublished || false,
       editorNotes: blogData?.editorNotes || "",
-      articleType: blogData?.articleType || ""
+      articleType: blogData?.articleType || "",
     },
-    values: blogData
+    values: blogData,
   });
-  
+
   // Create slug from title
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Remove duplicate hyphens
+      .replace(/[^\w\s-]/g, "") // Remove special characters
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Remove duplicate hyphens
       .trim();
   };
-  
+
   // Update slug when title changes
   const watchTitle = form.watch("title");
   useState(() => {
     // Only update slug if it's empty or hasn't been manually edited
-    if (!form.getValues("slug") || form.getValues("slug") === generateSlug(form.getValues("title").slice(0, -1))) {
+    if (
+      !form.getValues("slug") ||
+      form.getValues("slug") ===
+        generateSlug(form.getValues("title").slice(0, -1))
+    ) {
       form.setValue("slug", generateSlug(watchTitle));
     }
   });
-  
+
   // Create/Update blog mutation
   const blogMutation = useMutation({
     mutationFn: async (data: BlogFormValues) => {
@@ -110,19 +136,19 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
     onSuccess: (data) => {
       toast({
         title: blogId ? "Blog updated" : "Blog created",
-        description: blogId 
-          ? "The blog article was successfully updated" 
+        description: blogId
+          ? "The blog article was successfully updated"
           : "The blog article was successfully created",
       });
-      
+
       // Save the created blog ID for the media upload section
       if (!blogId && data && data.id) {
         setCreatedBlogId(data.id);
       }
-      
+
       // Invalidate blogs queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
+
       // Reset form if creating new blog
       if (!blogId) {
         form.reset({
@@ -134,10 +160,10 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
           slug: "",
           isPublished: false,
           editorNotes: "",
-          articleType: ""
+          articleType: "",
         });
       }
-      
+
       // Call success callback if provided
       if (onSuccess) {
         onSuccess();
@@ -152,15 +178,15 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
     },
     onSettled: () => {
       setIsSubmitting(false);
-    }
+    },
   });
-  
+
   // Form submission handler
   const onSubmit = (values: BlogFormValues) => {
     setIsSubmitting(true);
     blogMutation.mutate(values);
   };
-  
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -179,7 +205,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               </FormItem>
             )}
           />
-          
+
           {/* Slug */}
           <FormField
             control={form.control}
@@ -188,20 +214,21 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               <FormItem className="md:col-span-2">
                 <FormLabel>URL Slug</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="url-friendly-slug" 
-                    {...field} 
+                  <Input
+                    placeholder="url-friendly-slug"
+                    {...field}
                     value={field.value || ""}
                   />
                 </FormControl>
                 <FormDescription>
-                  The URL-friendly version of the title. Automatically generated but you can edit it.
+                  The URL-friendly version of the title. Automatically generated
+                  but you can edit it.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
           {/* Related Study */}
           <FormField
             control={form.control}
@@ -209,8 +236,8 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Related Study</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(parseInt(value))} 
+                <Select
+                  onValueChange={(value) => field.onChange(parseInt(value))}
                   value={field.value ? field.value.toString() : ""}
                 >
                   <FormControl>
@@ -219,7 +246,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {studies.map((study: {id: number, title: string}) => (
+                    {studies.map((study: { id: number; title: string }) => (
                       <SelectItem key={study.id} value={study.id.toString()}>
                         {study.title}
                       </SelectItem>
@@ -230,7 +257,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               </FormItem>
             )}
           />
-          
+
           {/* Reading Level */}
           <FormField
             control={form.control}
@@ -238,8 +265,8 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Reading Level</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
+                <Select
+                  onValueChange={field.onChange}
                   defaultValue={field.value}
                   value={field.value}
                 >
@@ -249,9 +276,15 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="elementary">Elementary (Grades 1-5)</SelectItem>
-                    <SelectItem value="middle">Middle School (Grades 6-8)</SelectItem>
-                    <SelectItem value="high">High School (Grades 9-12)</SelectItem>
+                    <SelectItem value="elementary">
+                      Elementary (Grades 1-5)
+                    </SelectItem>
+                    <SelectItem value="middle">
+                      Middle School (Grades 6-8)
+                    </SelectItem>
+                    <SelectItem value="high">
+                      High School (Grades 9-12)
+                    </SelectItem>
                     <SelectItem value="general">General Audience</SelectItem>
                     <SelectItem value="professional">Professional</SelectItem>
                     <SelectItem value="academic">Academic</SelectItem>
@@ -261,7 +294,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               </FormItem>
             )}
           />
-          
+
           {/* Summary */}
           <FormField
             control={form.control}
@@ -270,9 +303,9 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               <FormItem className="md:col-span-2">
                 <FormLabel>Summary</FormLabel>
                 <FormControl>
-                  <Textarea 
-                    placeholder="Brief summary of the blog article" 
-                    className="min-h-[100px]" 
+                  <Textarea
+                    placeholder="Brief summary of the blog article"
+                    className="min-h-[100px]"
                     {...field}
                   />
                 </FormControl>
@@ -280,7 +313,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               </FormItem>
             )}
           />
-          
+
           {/* Content */}
           <FormField
             control={form.control}
@@ -289,9 +322,9 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               <FormItem className="md:col-span-2">
                 <FormLabel>Content</FormLabel>
                 <FormControl>
-                  <Textarea 
-                    placeholder="Main content of the blog article" 
-                    className="min-h-[300px]" 
+                  <Textarea
+                    placeholder="Main content of the blog article"
+                    className="min-h-[300px]"
                     {...field}
                   />
                 </FormControl>
@@ -307,8 +340,8 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Article Type</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
+                <Select
+                  onValueChange={field.onChange}
                   defaultValue={field.value}
                   value={field.value}
                 >
@@ -319,11 +352,19 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="overview">Overview</SelectItem>
-                    <SelectItem value="practical_application">Practical Application</SelectItem>
+                    <SelectItem value="practical_application">
+                      Practical Application
+                    </SelectItem>
                     <SelectItem value="comparison">Comparison</SelectItem>
-                    <SelectItem value="elon_simple">Elon-Style Overview</SelectItem>
-                    <SelectItem value="elon_benefits">Elon-Style Benefits</SelectItem>
-                    <SelectItem value="elon_future">Elon-Style Future Impact</SelectItem>
+                    <SelectItem value="elon_simple">
+                      Elon-Style Overview
+                    </SelectItem>
+                    <SelectItem value="elon_benefits">
+                      Elon-Style Benefits
+                    </SelectItem>
+                    <SelectItem value="elon_future">
+                      Elon-Style Future Impact
+                    </SelectItem>
                     <SelectItem value="elon_faq">Elon-Style FAQ</SelectItem>
                   </SelectContent>
                 </Select>
@@ -334,7 +375,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               </FormItem>
             )}
           />
-          
+
           {/* Editor Notes */}
           <FormField
             control={form.control}
@@ -343,20 +384,21 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
               <FormItem className="md:col-span-2">
                 <FormLabel>Editor Notes</FormLabel>
                 <FormControl>
-                  <Textarea 
-                    placeholder="Notes for editors about this article" 
-                    className="min-h-[100px]" 
+                  <Textarea
+                    placeholder="Notes for editors about this article"
+                    className="min-h-[100px]"
                     {...field}
                   />
                 </FormControl>
                 <FormDescription>
-                  Private notes about the article that won't be displayed publicly
+                  Private notes about the article that won't be displayed
+                  publicly
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-          
+
           {/* Published Status */}
           <FormField
             control={form.control}
@@ -370,9 +412,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>
-                    Published
-                  </FormLabel>
+                  <FormLabel>Published</FormLabel>
                   <FormDescription>
                     When checked, this article will be visible to the public
                   </FormDescription>
@@ -381,10 +421,10 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
             )}
           />
         </div>
-        
+
         {/* Submit Button */}
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={isSubmitting}
           className="w-full md:w-auto"
         >
@@ -401,7 +441,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
           )}
         </Button>
       </form>
-      
+
       {/* Media Upload Section - Only shown after blog is created or when editing */}
       {createdBlogId && (
         <Card className="mt-8">
@@ -410,18 +450,22 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Upload a featured image for this blog article. This image will be displayed at the top of the article and in article listings.
+              Upload a featured image for this blog article. This image will be
+              displayed at the top of the article and in article listings.
             </p>
-            
-            <MediaUpload 
-              entityId={createdBlogId} 
+
+            <MediaUpload
+              entityId={createdBlogId}
               entityType="blog"
               onSuccess={(mediaUrl) => {
                 toast({
                   title: "Image uploaded",
-                  description: "The image has been successfully uploaded and set as the featured image for this blog article."
+                  description:
+                    "The image has been successfully uploaded and set as the featured image for this blog article.",
                 });
-                queryClient.invalidateQueries({ queryKey: [`/api/blogs/${createdBlogId}`] });
+                queryClient.invalidateQueries({
+                  queryKey: [`/api/blogs/${createdBlogId}`],
+                });
               }}
             />
           </CardContent>

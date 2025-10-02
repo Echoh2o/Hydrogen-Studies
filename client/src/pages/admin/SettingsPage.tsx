@@ -1,13 +1,25 @@
 import React, { useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Settings, Database, Mail, Shield, Globe, Bell } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -19,18 +31,21 @@ export default function SettingsPage() {
     autoPublish: false,
     maintenanceMode: false,
     defaultLanguage: "en",
-    timezone: "UTC"
+    timezone: "UTC",
   });
 
   const handleSettingChange = (key: string, value: any) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
   return (
-    <AdminLayout title="Settings" description="Configure your platform settings and preferences">
+    <AdminLayout
+      title="Settings"
+      description="Configure your platform settings and preferences"
+    >
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
@@ -66,12 +81,19 @@ export default function SettingsPage() {
                     <Input
                       id="siteTitle"
                       value={settings.siteTitle}
-                      onChange={(e) => handleSettingChange('siteTitle', e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange("siteTitle", e.target.value)
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="defaultLanguage">Default Language</Label>
-                    <Select value={settings.defaultLanguage} onValueChange={(value) => handleSettingChange('defaultLanguage', value)}>
+                    <Select
+                      value={settings.defaultLanguage}
+                      onValueChange={(value) =>
+                        handleSettingChange("defaultLanguage", value)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -88,7 +110,9 @@ export default function SettingsPage() {
                   <Textarea
                     id="siteDescription"
                     value={settings.siteDescription}
-                    onChange={(e) => handleSettingChange('siteDescription', e.target.value)}
+                    onChange={(e) =>
+                      handleSettingChange("siteDescription", e.target.value)
+                    }
                     rows={3}
                   />
                 </div>
@@ -118,12 +142,19 @@ export default function SettingsPage() {
                   </div>
                   <Switch
                     checked={settings.autoPublish}
-                    onCheckedChange={(checked) => handleSettingChange('autoPublish', checked)}
+                    onCheckedChange={(checked) =>
+                      handleSettingChange("autoPublish", checked)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Select value={settings.timezone} onValueChange={(value) => handleSettingChange('timezone', value)}>
+                  <Select
+                    value={settings.timezone}
+                    onValueChange={(value) =>
+                      handleSettingChange("timezone", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -160,13 +191,16 @@ export default function SettingsPage() {
                   </div>
                   <Switch
                     checked={settings.emailNotifications}
-                    onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
+                    onCheckedChange={(checked) =>
+                      handleSettingChange("emailNotifications", checked)
+                    }
                   />
                 </div>
                 <Alert>
                   <Mail className="h-4 w-4" />
                   <AlertDescription>
-                    Email notifications require SENDGRID_API_KEY to be configured in environment variables.
+                    Email notifications require SENDGRID_API_KEY to be
+                    configured in environment variables.
                   </AlertDescription>
                 </Alert>
                 <Button>Save Notification Settings</Button>
@@ -189,8 +223,9 @@ export default function SettingsPage() {
                 <Alert>
                   <Shield className="h-4 w-4" />
                   <AlertDescription>
-                    Security settings are managed through Replit's built-in authentication system. 
-                    Additional security features can be configured as needed.
+                    Security settings are managed through Replit's built-in
+                    authentication system. Additional security features can be
+                    configured as needed.
                   </AlertDescription>
                 </Alert>
                 <Button>Review Security Settings</Button>
@@ -219,7 +254,9 @@ export default function SettingsPage() {
                   </div>
                   <Switch
                     checked={settings.maintenanceMode}
-                    onCheckedChange={(checked) => handleSettingChange('maintenanceMode', checked)}
+                    onCheckedChange={(checked) =>
+                      handleSettingChange("maintenanceMode", checked)
+                    }
                   />
                 </div>
                 <div className="space-y-4">
@@ -227,11 +264,15 @@ export default function SettingsPage() {
                   <div className="grid gap-2 text-sm">
                     <div className="flex justify-between">
                       <span>Database Connection:</span>
-                      <span className="text-green-600 font-medium">Connected</span>
+                      <span className="text-green-600 font-medium">
+                        Connected
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>API Status:</span>
-                      <span className="text-green-600 font-medium">Operational</span>
+                      <span className="text-green-600 font-medium">
+                        Operational
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Cache Status:</span>
