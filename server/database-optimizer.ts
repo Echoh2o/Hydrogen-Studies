@@ -1,11 +1,11 @@
 /**
  * Database Performance and Quality Optimizer
- * 
+ *
  * Addresses critical performance bottlenecks and data quality issues
  */
 
-import { db } from './db';
-import { sql } from 'drizzle-orm';
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 interface OptimizationReport {
   performanceImprovements: string[];
@@ -21,56 +21,57 @@ export async function optimizeDatabase(): Promise<OptimizationReport> {
     dataQualityFixes: [],
     indexesCreated: [],
     storageOptimizations: [],
-    recommendedNextSteps: []
+    recommendedNextSteps: [],
   };
 
-  console.log('🔧 Starting database optimization...');
+  console.log("🔧 Starting database optimization...");
 
   try {
     // 1. Create composite indexes for common search patterns
     await createSearchIndexes(report);
-    
+
     // 2. Optimize storage by cleaning up redundant data
     await optimizeStorage(report);
-    
+
     // 3. Fix data quality issues
     await fixDataQuality(report);
-    
+
     // 4. Update database statistics
     await updateStatistics(report);
 
-    console.log('✅ Database optimization completed');
+    console.log("✅ Database optimization completed");
     return report;
-
   } catch (error) {
-    console.error('❌ Database optimization failed:', error);
+    console.error("❌ Database optimization failed:", error);
     throw error;
   }
 }
 
 async function createSearchIndexes(report: OptimizationReport): Promise<void> {
-  console.log('📊 Creating performance indexes...');
+  console.log("📊 Creating performance indexes...");
 
   const indexes = [
     {
-      name: 'idx_studies_compound_search',
-      sql: `CREATE INDEX IF NOT EXISTS idx_studies_compound_search ON studies(category, publish_year, journal) WHERE category IS NOT NULL`
+      name: "idx_studies_compound_search",
+      sql: `CREATE INDEX IF NOT EXISTS idx_studies_compound_search ON studies(category, publish_year, journal) WHERE category IS NOT NULL`,
     },
     {
-      name: 'idx_studies_date_range',
-      sql: `CREATE INDEX IF NOT EXISTS idx_studies_date_range ON studies(publish_date) WHERE publish_date IS NOT NULL`
+      name: "idx_studies_date_range",
+      sql: `CREATE INDEX IF NOT EXISTS idx_studies_date_range ON studies(publish_date) WHERE publish_date IS NOT NULL`,
     },
     {
-      name: 'idx_studies_content_length',
-      sql: `CREATE INDEX IF NOT EXISTS idx_studies_content_length ON studies(LENGTH(abstract), LENGTH(methods)) WHERE abstract IS NOT NULL`
-    }
+      name: "idx_studies_content_length",
+      sql: `CREATE INDEX IF NOT EXISTS idx_studies_content_length ON studies(LENGTH(abstract), LENGTH(methods)) WHERE abstract IS NOT NULL`,
+    },
   ];
 
   for (const index of indexes) {
     try {
       await db.execute(sql.raw(index.sql));
       report.indexesCreated.push(index.name);
-      report.performanceImprovements.push(`Created ${index.name} for faster queries`);
+      report.performanceImprovements.push(
+        `Created ${index.name} for faster queries`,
+      );
     } catch (error) {
       console.warn(`Index ${index.name} creation skipped:`, error);
     }
@@ -78,28 +79,28 @@ async function createSearchIndexes(report: OptimizationReport): Promise<void> {
 }
 
 async function optimizeStorage(report: OptimizationReport): Promise<void> {
-  console.log('💾 Optimizing storage efficiency...');
+  console.log("💾 Optimizing storage efficiency...");
 
   // Remove empty string values and normalize to NULL for better indexing
   const cleanupQueries = [
     {
-      description: 'Normalize empty strings to NULL',
+      description: "Normalize empty strings to NULL",
       sql: `UPDATE studies SET 
         authors = NULLIF(TRIM(authors), ''),
         journal = NULLIF(TRIM(journal), ''),
         doi = NULLIF(TRIM(doi), ''),
         abstract = NULLIF(TRIM(abstract), ''),
-        title = NULLIF(TRIM(title), '')`
+        title = NULLIF(TRIM(title), '')`,
     },
     {
-      description: 'Clean up duplicate whitespace',
+      description: "Clean up duplicate whitespace",
       sql: `UPDATE studies SET 
         title = REGEXP_REPLACE(title, '\\s+', ' ', 'g'),
         abstract = REGEXP_REPLACE(abstract, '\\s+', ' ', 'g'),
         methods = REGEXP_REPLACE(methods, '\\s+', ' ', 'g'),
         results = REGEXP_REPLACE(results, '\\s+', ' ', 'g')
-        WHERE title IS NOT NULL`
-    }
+        WHERE title IS NOT NULL`,
+    },
   ];
 
   for (const query of cleanupQueries) {
@@ -113,11 +114,12 @@ async function optimizeStorage(report: OptimizationReport): Promise<void> {
 }
 
 async function fixDataQuality(report: OptimizationReport): Promise<void> {
-  console.log('🔍 Fixing data quality issues...');
+  console.log("🔍 Fixing data quality issues...");
 
   // Fix missing images with proper placeholders
   try {
-    const imageUpdateResult = await db.execute(sql.raw(`
+    const imageUpdateResult = await db.execute(
+      sql.raw(`
       UPDATE studies 
       SET 
         image_url = CASE 
@@ -137,16 +139,20 @@ async function fixDataQuality(report: OptimizationReport): Promise<void> {
           ELSE image_alt
         END
       WHERE image_url IS NULL OR image_url = '' OR image_alt IS NULL OR image_alt = ''
-    `));
-    
-    report.dataQualityFixes.push('Generated study-specific placeholder images for missing visuals');
+    `),
+    );
+
+    report.dataQualityFixes.push(
+      "Generated study-specific placeholder images for missing visuals",
+    );
   } catch (error) {
-    console.warn('Image placeholder generation skipped:', error);
+    console.warn("Image placeholder generation skipped:", error);
   }
 
   // Standardize category values
   try {
-    await db.execute(sql.raw(`
+    await db.execute(
+      sql.raw(`
       UPDATE studies 
       SET category = CASE 
         WHEN LOWER(category) LIKE '%cardio%' THEN 'Cardiovascular'
@@ -158,29 +164,33 @@ async function fixDataQuality(report: OptimizationReport): Promise<void> {
         WHEN category IS NULL OR category = '' THEN 'General'
         ELSE category
       END
-    `));
-    
-    report.dataQualityFixes.push('Standardized category classifications');
+    `),
+    );
+
+    report.dataQualityFixes.push("Standardized category classifications");
   } catch (error) {
-    console.warn('Category standardization skipped:', error);
+    console.warn("Category standardization skipped:", error);
   }
 }
 
 async function updateStatistics(report: OptimizationReport): Promise<void> {
-  console.log('📈 Updating database statistics...');
+  console.log("📈 Updating database statistics...");
 
   try {
-    await db.execute(sql.raw('ANALYZE studies'));
-    report.performanceImprovements.push('Updated table statistics for query optimizer');
+    await db.execute(sql.raw("ANALYZE studies"));
+    report.performanceImprovements.push(
+      "Updated table statistics for query optimizer",
+    );
   } catch (error) {
-    console.warn('Statistics update skipped:', error);
+    console.warn("Statistics update skipped:", error);
   }
 }
 
 // Performance monitoring function
 export async function getDatabasePerformanceMetrics() {
   try {
-    const metrics = await db.execute(sql.raw(`
+    const metrics = await db.execute(
+      sql.raw(`
       SELECT 
         pg_size_pretty(pg_total_relation_size('studies')) as total_size,
         pg_size_pretty(pg_relation_size('studies')) as table_size,
@@ -190,11 +200,12 @@ export async function getDatabasePerformanceMetrics() {
         AVG(LENGTH(abstract)) as avg_abstract_length,
         COUNT(CASE WHEN image_url IS NOT NULL AND image_url != '' THEN 1 END) as records_with_images
       FROM studies
-    `));
+    `),
+    );
 
     return metrics;
   } catch (error) {
-    console.error('Failed to get performance metrics:', error);
+    console.error("Failed to get performance metrics:", error);
     return null;
   }
 }
@@ -204,15 +215,17 @@ export async function analyzeQueryPerformance(sampleQuery: string) {
   try {
     // Validate that the query is a safe SELECT statement
     const trimmedQuery = sampleQuery.trim().toLowerCase();
-    if (!trimmedQuery.startsWith('select')) {
-      throw new Error('Only SELECT queries are allowed for performance analysis');
+    if (!trimmedQuery.startsWith("select")) {
+      throw new Error(
+        "Only SELECT queries are allowed for performance analysis",
+      );
     }
-    
+
     // Use parameterized query to prevent SQL injection
     const plan = await db.execute(sql`EXPLAIN ANALYZE ${sql.raw(sampleQuery)}`);
     return plan;
   } catch (error) {
-    console.error('Query analysis failed:', error);
+    console.error("Query analysis failed:", error);
     return null;
   }
 }

@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
-import { Link, useLocation } from 'wouter';
-import { Helmet } from 'react-helmet';
-import { cn } from '@/lib/utils';
+import { ReactNode } from "react";
+import { Link, useLocation } from "wouter";
+import { Helmet } from "react-helmet";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Database,
@@ -14,8 +14,8 @@ import {
   Home,
   RefreshCw,
   Calendar,
-  Image
-} from 'lucide-react';
+  Image,
+} from "lucide-react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -23,41 +23,71 @@ interface AdminLayoutProps {
   description?: string;
 }
 
-export default function AdminLayout({ children, title, description }: AdminLayoutProps) {
+export default function AdminLayout({
+  children,
+  title,
+  description,
+}: AdminLayoutProps) {
   const [location] = useLocation();
-  
+
   // Organize navigation by content type for better usability
   const navSections = [
     {
       title: "Main",
-      items: [
-        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      ]
+      items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }],
     },
     {
       title: "Studies Management",
       items: [
         { href: "/admin/studies", label: "Manage Studies", icon: Database },
-        { href: "/admin/research-import", label: "Find New Studies", icon: Search },
-        { href: "/admin/keyword-monitor", label: "Monitor Keywords", icon: Calendar },
-        { href: "/admin/content-enrichment", label: "Enrich Content", icon: RefreshCw },
-        { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: RefreshCw },
-        { href: "/admin/image-generation", label: "Generate Images", icon: Image },
-      ]
+        {
+          href: "/admin/research-import",
+          label: "Find New Studies",
+          icon: Search,
+        },
+        {
+          href: "/admin/keyword-monitor",
+          label: "Monitor Keywords",
+          icon: Calendar,
+        },
+        {
+          href: "/admin/content-enrichment",
+          label: "Enrich Content",
+          icon: RefreshCw,
+        },
+        {
+          href: "/admin/batch-enrichment",
+          label: "Batch Enrichment",
+          icon: RefreshCw,
+        },
+        {
+          href: "/admin/image-generation",
+          label: "Generate Images",
+          icon: Image,
+        },
+      ],
     },
     {
       title: "Blog Management",
       items: [
         { href: "/admin/blogs", label: "Manage Blogs", icon: FileText },
-        { href: "/admin/blog-generator", label: "Generate Blogs", icon: FileText },
-        { href: "/admin/blog-categories", label: "Blog Categories", icon: FileText },
-      ]
+        {
+          href: "/admin/blog-generator",
+          label: "Generate Blogs",
+          icon: FileText,
+        },
+        {
+          href: "/admin/blog-categories",
+          label: "Blog Categories",
+          icon: FileText,
+        },
+      ],
     },
     {
       title: "Data & Import",
       items: [
         { href: "/admin/data-import", label: "Data Import", icon: Upload },
-      ]
+      ],
     },
     {
       title: "Administration",
@@ -65,41 +95,50 @@ export default function AdminLayout({ children, title, description }: AdminLayou
         { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
         { href: "/admin/settings", label: "Settings", icon: Settings },
         { href: "/admin/users", label: "Users", icon: UserCog },
-      ]
+      ],
     },
   ];
-  
+
   // Flatten items for mobile navigation (limited space)
-  const mainNavItems = navSections.flatMap(section => section.items);
-  
+  const mainNavItems = navSections.flatMap((section) => section.items);
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
         <title>{title} | HydrogenStudies Admin</title>
       </Helmet>
-      
+
       <div className="flex min-h-screen flex-col">
         {/* Top navigation */}
         <header className="sticky top-0 z-40 border-b bg-background">
           <div className="container flex h-16 items-center justify-between px-4 md:px-6">
             <div className="flex items-center">
               <Link href="/" className="flex items-center mr-8">
-                <span className="font-semibold tracking-tight text-xl">HydrogenStudies</span>
-                <span className="bg-primary text-primary-foreground ml-2 rounded-sm px-1.5 py-0.5 text-xs font-medium">Admin</span>
+                <span className="font-semibold tracking-tight text-xl">
+                  HydrogenStudies
+                </span>
+                <span className="bg-primary text-primary-foreground ml-2 rounded-sm px-1.5 py-0.5 text-xs font-medium">
+                  Admin
+                </span>
               </Link>
-              
+
               <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
-                <Link href="/" className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                <Link
+                  href="/"
+                  className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                >
                   <Home className="mr-2 h-4 w-4" />
                   View Site
                 </Link>
               </nav>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1">
                 <span className="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full">
-                  <span className="flex h-full w-full items-center justify-center bg-muted text-sm">A</span>
+                  <span className="flex h-full w-full items-center justify-center bg-muted text-sm">
+                    A
+                  </span>
                 </span>
                 <div className="hidden md:block">
                   <p className="text-sm font-medium">Admin User</p>
@@ -108,7 +147,7 @@ export default function AdminLayout({ children, title, description }: AdminLayou
             </div>
           </div>
         </header>
-        
+
         <div className="flex-1 flex">
           {/* Sidebar */}
           <aside className="hidden md:flex w-72 flex-col border-r bg-background">
@@ -122,11 +161,13 @@ export default function AdminLayout({ children, title, description }: AdminLayou
                     <ul className="space-y-1">
                       {section.items.map(({ href, label, icon: Icon }) => (
                         <li key={href}>
-                          <Link 
+                          <Link
                             href={href}
                             className={cn(
                               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
-                              location === href ? "bg-accent text-accent-foreground" : "transparent"
+                              location === href
+                                ? "bg-accent text-accent-foreground"
+                                : "transparent",
                             )}
                           >
                             <Icon className="h-4 w-4" />
@@ -140,70 +181,79 @@ export default function AdminLayout({ children, title, description }: AdminLayou
               </div>
             </nav>
           </aside>
-          
+
           {/* Mobile navigation */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-background">
             <nav className="flex h-16 items-center justify-around">
               {/* Main Dashboard */}
-              <Link 
+              <Link
                 href="/admin"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin" ? "text-primary" : "text-muted-foreground"
+                  location === "/admin"
+                    ? "text-primary"
+                    : "text-muted-foreground",
                 )}
               >
                 <LayoutDashboard className="h-5 w-5" />
                 <span>Dashboard</span>
               </Link>
-              
+
               {/* Studies Section */}
-              <Link 
+              <Link
                 href="/admin/studies"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location.includes("/admin/stud") || 
-                  location.includes("/admin/research-import") || 
-                  location.includes("/admin/keyword-monitor") || 
-                  location.includes("/admin/content-enrichment") || 
-                  location.includes("/admin/batch-enrichment") ||
-                  location.includes("/admin/image-generation")
-                    ? "text-primary" : "text-muted-foreground"
+                  location.includes("/admin/stud") ||
+                    location.includes("/admin/research-import") ||
+                    location.includes("/admin/keyword-monitor") ||
+                    location.includes("/admin/content-enrichment") ||
+                    location.includes("/admin/batch-enrichment") ||
+                    location.includes("/admin/image-generation")
+                    ? "text-primary"
+                    : "text-muted-foreground",
                 )}
               >
                 <Database className="h-5 w-5" />
                 <span>Studies</span>
               </Link>
-              
+
               {/* Blogs Section */}
-              <Link 
+              <Link
                 href="/admin/blogs"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location.includes("/admin/blog") ? "text-primary" : "text-muted-foreground"
+                  location.includes("/admin/blog")
+                    ? "text-primary"
+                    : "text-muted-foreground",
                 )}
               >
                 <FileText className="h-5 w-5" />
                 <span>Blogs</span>
               </Link>
-              
+
               {/* Data Import */}
-              <Link 
+              <Link
                 href="/admin/data-import"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/data-import" ? "text-primary" : "text-muted-foreground"
+                  location === "/admin/data-import"
+                    ? "text-primary"
+                    : "text-muted-foreground",
                 )}
               >
                 <Upload className="h-5 w-5" />
                 <span>Import</span>
               </Link>
-              
+
               {/* Settings */}
-              <Link 
+              <Link
                 href="/admin/settings"
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/settings" ? "text-primary" : "text-muted-foreground"
+                  location === "/admin/settings"
+                    ? "text-primary"
+                    : "text-muted-foreground",
                 )}
               >
                 <Settings className="h-5 w-5" />
@@ -211,12 +261,10 @@ export default function AdminLayout({ children, title, description }: AdminLayou
               </Link>
             </nav>
           </div>
-          
+
           {/* Main content */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
-            <div className="container mx-auto max-w-6xl">
-              {children}
-            </div>
+            <div className="container mx-auto max-w-6xl">{children}</div>
           </main>
         </div>
       </div>

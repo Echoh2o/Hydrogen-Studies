@@ -2,20 +2,25 @@
  * Enhanced error handler utility for comprehensive error management
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { AppError, ErrorCode, getUserFriendlyMessage, isRetryableError } from './app-errors';
+import { Request, Response, NextFunction } from "express";
+import { v4 as uuidv4 } from "uuid";
+import {
+  AppError,
+  ErrorCode,
+  getUserFriendlyMessage,
+  isRetryableError,
+} from "./app-errors";
 
 // Standard error types for the application
 export enum ErrorType {
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  NOT_FOUND = 'NOT_FOUND',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-  DATABASE_ERROR = 'DATABASE_ERROR',
-  EXTERNAL_API_ERROR = 'EXTERNAL_API_ERROR',
-  RATE_LIMIT = 'RATE_LIMIT',
-  UNKNOWN = 'UNKNOWN'
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  NOT_FOUND = "NOT_FOUND",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  FORBIDDEN = "FORBIDDEN",
+  DATABASE_ERROR = "DATABASE_ERROR",
+  EXTERNAL_API_ERROR = "EXTERNAL_API_ERROR",
+  RATE_LIMIT = "RATE_LIMIT",
+  UNKNOWN = "UNKNOWN",
 }
 
 // Interface for standard error response
@@ -45,11 +50,11 @@ export function handleApiError(
   error: any,
   errorType: ErrorType = ErrorType.UNKNOWN,
   statusCode: number = 500,
-  message?: string
+  message?: string,
 ): void {
   // Generate request ID if not present
   const requestId = (res.req as any).requestId || uuidv4();
-  
+
   // Enhanced logging with more context
   const logContext = {
     requestId,
@@ -62,13 +67,16 @@ export function handleApiError(
     query: res.req?.query,
     headers: res.req?.headers,
     ip: res.req?.ip,
-    userAgent: res.req?.get('user-agent'),
+    userAgent: res.req?.get("user-agent"),
   };
-  
-  console.error(`API Error [${errorType}] at ${new Date().toISOString()}:`, logContext);
-  
+
+  console.error(
+    `API Error [${errorType}] at ${new Date().toISOString()}:`,
+    logContext,
+  );
+
   // Log to external error tracking service in production
-  if (process.env.NODE_ENV === 'production' && !isOperationalError(error)) {
+  if (process.env.NODE_ENV === "production" && !isOperationalError(error)) {
     // TODO: Send to error tracking service (e.g., Sentry)
   }
 
@@ -87,15 +95,15 @@ export function handleApiError(
     requestId,
     retryable: isRetryableError(error),
   };
-  
+
   // Add retry-after header for rate limit errors
   if (error.retryAfter) {
-    res.setHeader('Retry-After', error.retryAfter);
+    res.setHeader("Retry-After", error.retryAfter);
     errorResponse.retryAfter = error.retryAfter;
   }
 
   // Add comprehensive debugging info in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     errorResponse.details = {
       stack: error.stack,
       url: res.req?.url,
@@ -105,41 +113,89 @@ export function handleApiError(
     };
   }
 
-  res.status(statusCode).setHeader('Content-Type', 'application/json').json(errorResponse);
+  res
+    .status(statusCode)
+    .setHeader("Content-Type", "application/json")
+    .json(errorResponse);
 }
 
 /**
  * Handles validation errors
  */
-export function handleValidationError(res: Response, error: any, message?: string): void {
-  handleApiError(res, error, ErrorType.VALIDATION_ERROR, 400, message || 'Validation error');
+export function handleValidationError(
+  res: Response,
+  error: any,
+  message?: string,
+): void {
+  handleApiError(
+    res,
+    error,
+    ErrorType.VALIDATION_ERROR,
+    400,
+    message || "Validation error",
+  );
 }
 
 /**
  * Handles not found errors
  */
-export function handleNotFoundError(res: Response, error: any, message?: string): void {
-  handleApiError(res, error, ErrorType.NOT_FOUND, 404, message || 'Resource not found');
+export function handleNotFoundError(
+  res: Response,
+  error: any,
+  message?: string,
+): void {
+  handleApiError(
+    res,
+    error,
+    ErrorType.NOT_FOUND,
+    404,
+    message || "Resource not found",
+  );
 }
 
 /**
  * Handles unauthorized errors
  */
-export function handleUnauthorizedError(res: Response, error: any, message?: string): void {
-  handleApiError(res, error, ErrorType.UNAUTHORIZED, 401, message || 'Unauthorized');
+export function handleUnauthorizedError(
+  res: Response,
+  error: any,
+  message?: string,
+): void {
+  handleApiError(
+    res,
+    error,
+    ErrorType.UNAUTHORIZED,
+    401,
+    message || "Unauthorized",
+  );
 }
 
 /**
  * Handles database errors
  */
-export function handleDatabaseError(res: Response, error: any, message?: string): void {
-  handleApiError(res, error, ErrorType.DATABASE_ERROR, 500, message || 'Database error');
+export function handleDatabaseError(
+  res: Response,
+  error: any,
+  message?: string,
+): void {
+  handleApiError(
+    res,
+    error,
+    ErrorType.DATABASE_ERROR,
+    500,
+    message || "Database error",
+  );
 }
 
 /**
  * Enhanced global error handler middleware
  */
-export function globalErrorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
+export function globalErrorHandler(
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   // Don't handle response if already sent
   if (res.headersSent) {
     return next(err);
@@ -151,14 +207,26 @@ export function globalErrorHandler(err: any, req: Request, res: Response, next: 
   // Handle different error types appropriately
   if (err instanceof AppError) {
     handleApiError(res, err, mapErrorCodeToType(err.code), err.statusCode);
-  } else if (err.name === 'ValidationError') {
+  } else if (err.name === "ValidationError") {
     handleValidationError(res, err);
-  } else if (err.name === 'CastError' || err.name === 'TypeError') {
-    handleApiError(res, err, ErrorType.VALIDATION_ERROR, 400, 'Invalid data format');
-  } else if (err.code === 'LIMIT_FILE_SIZE') {
-    handleApiError(res, err, ErrorType.VALIDATION_ERROR, 413, 'File size exceeds limit');
-  } else if (err.code === 'EBADCSRFTOKEN') {
-    handleApiError(res, err, ErrorType.FORBIDDEN, 403, 'Invalid CSRF token');
+  } else if (err.name === "CastError" || err.name === "TypeError") {
+    handleApiError(
+      res,
+      err,
+      ErrorType.VALIDATION_ERROR,
+      400,
+      "Invalid data format",
+    );
+  } else if (err.code === "LIMIT_FILE_SIZE") {
+    handleApiError(
+      res,
+      err,
+      ErrorType.VALIDATION_ERROR,
+      413,
+      "File size exceeds limit",
+    );
+  } else if (err.code === "EBADCSRFTOKEN") {
+    handleApiError(res, err, ErrorType.FORBIDDEN, 403, "Invalid CSRF token");
   } else {
     handleApiError(res, err, ErrorType.UNKNOWN, 500);
   }
@@ -167,9 +235,13 @@ export function globalErrorHandler(err: any, req: Request, res: Response, next: 
 /**
  * Request ID middleware to track requests
  */
-export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function requestIdMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   (req as any).requestId = uuidv4();
-  res.setHeader('X-Request-Id', (req as any).requestId);
+  res.setHeader("X-Request-Id", (req as any).requestId);
   next();
 }
 
@@ -209,19 +281,23 @@ function mapErrorCodeToType(code: ErrorCode): ErrorType {
     [ErrorCode.SEARCH_ERROR]: ErrorType.UNKNOWN,
     [ErrorCode.ENRICHMENT_ERROR]: ErrorType.EXTERNAL_API_ERROR,
   };
-  
+
   return mapping[code] || ErrorType.UNKNOWN;
 }
 
 /**
  * Success response helper
  */
-export function sendSuccessResponse(res: Response, data: any = null, message: string = 'Operation successful'): void {
+export function sendSuccessResponse(
+  res: Response,
+  data: any = null,
+  message: string = "Operation successful",
+): void {
   res.json({
     success: true,
     message,
     data,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -229,10 +305,10 @@ export function handleError(error: Error | unknown, context?: string): void {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;
 
-  console.error(`Error ${context ? `in ${context}` : ''}:`, {
+  console.error(`Error ${context ? `in ${context}` : ""}:`, {
     message: errorMessage,
     stack: errorStack,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -241,37 +317,46 @@ export function isOperationalError(error: any): boolean {
   if (error instanceof AppError) {
     return error.isOperational;
   }
-  
+
   // Common operational errors
-  return error.name === 'ValidationError' || 
-         error.name === 'NotFoundError' || 
-         error.name === 'CastError' ||
-         error.message?.includes('ENOTFOUND') ||
-         error.message?.includes('ECONNREFUSED') ||
-         error.message?.includes('ETIMEDOUT');
+  return (
+    error.name === "ValidationError" ||
+    error.name === "NotFoundError" ||
+    error.name === "CastError" ||
+    error.message?.includes("ENOTFOUND") ||
+    error.message?.includes("ECONNREFUSED") ||
+    error.message?.includes("ETIMEDOUT")
+  );
 }
 
 /**
  * Error recovery middleware for graceful degradation
  */
-export function errorRecoveryMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function errorRecoveryMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   // Store original send method
   const originalSend = res.send;
-  
+
   // Override send to catch errors
-  res.send = function(data: any) {
+  res.send = function (data: any) {
     try {
       return originalSend.call(this, data);
     } catch (error) {
-      console.error('Error in response send:', error);
-      return originalSend.call(this, JSON.stringify({
-        success: false,
-        message: 'An error occurred while processing the response',
-        requestId: (req as any).requestId,
-      }));
+      console.error("Error in response send:", error);
+      return originalSend.call(
+        this,
+        JSON.stringify({
+          success: false,
+          message: "An error occurred while processing the response",
+          requestId: (req as any).requestId,
+        }),
+      );
     }
   };
-  
+
   next();
 }
 
@@ -284,16 +369,16 @@ export function timeoutMiddleware(timeout = 30000) {
       if (!res.headersSent) {
         res.status(504).json({
           success: false,
-          message: 'Request timeout',
+          message: "Request timeout",
           requestId: (req as any).requestId,
         });
       }
     }, timeout);
-    
+
     // Clear timer when response is sent
-    res.on('finish', () => clearTimeout(timer));
-    res.on('close', () => clearTimeout(timer));
-    
+    res.on("finish", () => clearTimeout(timer));
+    res.on("close", () => clearTimeout(timer));
+
     next();
   };
 }

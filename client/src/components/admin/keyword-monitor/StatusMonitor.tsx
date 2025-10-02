@@ -1,10 +1,23 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PlayCircle, CalendarClock, CheckCircle, Clock } from "lucide-react";
+import {
+  Loader2,
+  PlayCircle,
+  CalendarClock,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -12,9 +25,11 @@ interface StatusMonitorProps {
   onConfigureSchedule: () => void;
 }
 
-export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProps) {
+export default function StatusMonitor({
+  onConfigureSchedule,
+}: StatusMonitorProps) {
   const [runningSearch, setRunningSearch] = useState(false);
-  
+
   // Fetch current schedule
   const scheduleQuery = useQuery({
     queryKey: ["/api/keywords/monitor/schedule"],
@@ -28,19 +43,21 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
       const response = await fetch("/api/keywords/monitor/schedule/run", {
         method: "POST",
       });
-      
+
       const data = await response.json();
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/keywords/monitor/schedule"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/keywords/monitor/schedule"],
+      });
       setRunningSearch(false);
     },
     onError: () => {
       setRunningSearch(false);
-    }
+    },
   });
-  
+
   // Handle loading state
   if (scheduleQuery.isLoading) {
     return (
@@ -55,7 +72,7 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
       </Card>
     );
   }
-  
+
   // Get schedule data with default values
   const schedule = {
     enabled: false,
@@ -65,19 +82,19 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
     lastRun: null as string | null,
     nextRun: null as string | null,
     days: [] as string[],
-    ...(scheduleQuery.data || {})
+    ...(scheduleQuery.data || {}),
   };
-  
+
   // Format next run time
   const getNextRunDisplay = () => {
     if (!schedule.enabled) {
       return "Not scheduled";
     }
-    
+
     if (!schedule.nextRun) {
       return "Not yet scheduled";
     }
-    
+
     const nextRunDate = new Date(schedule.nextRun);
     return (
       <>
@@ -90,13 +107,13 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
       </>
     );
   };
-  
+
   // Format last run time
   const getLastRunDisplay = () => {
     if (!schedule.lastRun) {
       return "Never run";
     }
-    
+
     const lastRunDate = new Date(schedule.lastRun);
     return (
       <>
@@ -109,7 +126,7 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
       </>
     );
   };
-  
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -121,14 +138,14 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
         </CardTitle>
         <CardDescription>Current monitoring schedule status</CardDescription>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {scheduleQuery.isError && (
           <Alert variant="destructive">
             Could not load schedule information. Please try again later.
           </Alert>
         )}
-        
+
         {/* Schedule Info */}
         <div className="grid gap-4">
           <div className="flex items-start gap-2">
@@ -138,7 +155,7 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
               <p className="text-sm">{getNextRunDisplay()}</p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-2">
             <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
@@ -146,32 +163,32 @@ export default function StatusMonitor({ onConfigureSchedule }: StatusMonitorProp
               <p className="text-sm">{getLastRunDisplay()}</p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-2">
             <CheckCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
               <h4 className="text-sm font-semibold">Sources</h4>
               <p className="text-sm">
-                {Array.isArray(schedule.sources) && schedule.sources.length > 0 
-                  ? schedule.sources.join(", ") 
+                {Array.isArray(schedule.sources) && schedule.sources.length > 0
+                  ? schedule.sources.join(", ")
                   : "No sources configured"}
               </p>
             </div>
           </div>
         </div>
       </CardContent>
-      
+
       <CardFooter className="flex justify-between">
         <Button variant="outline" onClick={onConfigureSchedule}>
           Configure Schedule
         </Button>
-        
-        <Button 
-          onClick={() => runSearchMutation.mutate()} 
+
+        <Button
+          onClick={() => runSearchMutation.mutate()}
           disabled={
-            runningSearch || 
-            !schedule.enabled || 
-            !Array.isArray(schedule.sources) || 
+            runningSearch ||
+            !schedule.enabled ||
+            !Array.isArray(schedule.sources) ||
             schedule.sources.length === 0
           }
         >

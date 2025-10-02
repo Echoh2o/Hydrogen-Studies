@@ -3,10 +3,10 @@
  * Automatically resumes image generation after app restarts until all studies completed
  */
 
-import { generateStudyImage } from './enhanced-image-generator';
-import { db } from './db';
-import { studies } from '../shared/schema';
-import { isNull, or, eq } from 'drizzle-orm';
+import { generateStudyImage } from "./enhanced-image-generator";
+import { db } from "./db";
+import { studies } from "../shared/schema";
+import { isNull, or, eq } from "drizzle-orm";
 
 interface ImageGenerationState {
   isRunning: boolean;
@@ -27,7 +27,7 @@ let generationState: ImageGenerationState = {
   startTime: new Date(),
   lastRunTime: new Date(),
   forceRegeneration: true,
-  processedStudyIds: new Set()
+  processedStudyIds: new Set(),
 };
 
 /**
@@ -35,25 +35,26 @@ let generationState: ImageGenerationState = {
  */
 export async function initializePersistentImageGeneration(): Promise<void> {
   try {
-    console.log('Initializing persistent image generation system...');
-    
+    console.log("Initializing persistent image generation system...");
+
     // Check if there are studies that need enhanced images
     const studiesNeedingImages = await getStudiesNeedingImages();
-    
+
     if (studiesNeedingImages.length === 0) {
-      console.log('All studies have enhanced images - no generation needed');
+      console.log("All studies have enhanced images - no generation needed");
       return;
     }
-    
-    console.log(`Found ${studiesNeedingImages.length} studies needing enhanced images`);
-    
+
+    console.log(
+      `Found ${studiesNeedingImages.length} studies needing enhanced images`,
+    );
+
     // Start image generation in background after app startup
     setTimeout(() => {
       startPersistentImageGeneration();
     }, 30000); // Wait 30 seconds after startup
-    
   } catch (error) {
-    console.error('Error initializing persistent image generation:', error);
+    console.error("Error initializing persistent image generation:", error);
   }
 }
 
@@ -64,23 +65,25 @@ export async function initializePersistentImageGeneration(): Promise<void> {
 async function getStudiesNeedingImages(): Promise<any[]> {
   try {
     // Get all studies that need images, but filter out ones we've already processed
-    const allStudies = await db.select()
+    const allStudies = await db
+      .select()
       .from(studies)
       .where(isNull(studies.imageUrl)) // Only studies that truly need images
       .orderBy(studies.id)
       .limit(100);
-    
+
     // Filter out studies we've already processed in this session
-    const unprocessedStudies = allStudies.filter(study => 
-      !generationState.processedStudyIds.has(study.id)
+    const unprocessedStudies = allStudies.filter(
+      (study) => !generationState.processedStudyIds.has(study.id),
     );
-    
-    console.log(`Found ${unprocessedStudies.length} unprocessed studies needing images (${generationState.processedStudyIds.size} already processed)`);
-    
+
+    console.log(
+      `Found ${unprocessedStudies.length} unprocessed studies needing images (${generationState.processedStudyIds.size} already processed)`,
+    );
+
     return unprocessedStudies.slice(0, 7); // Process only 7 at a time for rate limiting
-    
   } catch (error) {
-    console.error('Error getting studies needing images:', error);
+    console.error("Error getting studies needing images:", error);
     return [];
   }
 }
@@ -90,24 +93,24 @@ async function getStudiesNeedingImages(): Promise<any[]> {
  */
 async function startPersistentImageGeneration(): Promise<void> {
   if (generationState.isRunning) {
-    console.log('Image generation already running');
+    console.log("Image generation already running");
     return;
   }
-  
+
   generationState.isRunning = true;
   generationState.startTime = new Date();
-  
-  console.log('Starting persistent image generation...');
-  
+
+  console.log("Starting persistent image generation...");
+
   try {
     await processImageGeneration();
   } catch (error) {
-    console.error('Error in persistent image generation:', error);
+    console.error("Error in persistent image generation:", error);
     generationState.isRunning = false;
-    
+
     // Retry in 5 minutes on error
     setTimeout(() => {
-      console.log('Retrying image generation after error...');
+      console.log("Retrying image generation after error...");
       startPersistentImageGeneration();
     }, 300000);
   }
@@ -121,44 +124,49 @@ async function processImageGeneration(): Promise<void> {
     try {
       // Get next batch of studies needing images
       const studiesNeedingImages = await getStudiesNeedingImages();
-      
+
       if (studiesNeedingImages.length === 0) {
-        console.log('✅ All studies have enhanced images - generation complete!');
+        console.log(
+          "✅ All studies have enhanced images - generation complete!",
+        );
         generationState.isRunning = false;
         break;
       }
-      
+
       // Process 7 studies (rate limit: 7 images per minute)
       const batch = studiesNeedingImages.slice(0, 7);
-      console.log(`Processing batch: studies ${batch.map(s => s.id).join(', ')}`);
-      
-      // Generate images for batch
-      const batchPromises = batch.map(study => 
-        generateEnhancedStudyImage(study.id)
+      console.log(
+        `Processing batch: studies ${batch.map((s) => s.id).join(", ")}`,
       );
-      
+
+      // Generate images for batch
+      const batchPromises = batch.map((study) =>
+        generateEnhancedStudyImage(study.id),
+      );
+
       const results = await Promise.all(batchPromises);
-      
+
       // Mark all studies in this batch as processed (regardless of success)
-      batch.forEach(study => {
+      batch.forEach((study) => {
         generationState.processedStudyIds.add(study.id);
       });
-      
+
       // Count successful generations
-      const successful = results.filter(r => r.success).length;
+      const successful = results.filter((r) => r.success).length;
       generationState.totalProcessed += batch.length;
       generationState.lastRunTime = new Date();
-      
-      console.log(`Batch complete: ${successful}/${batch.length} successful. Total processed: ${generationState.totalProcessed}`);
-      
+
+      console.log(
+        `Batch complete: ${successful}/${batch.length} successful. Total processed: ${generationState.totalProcessed}`,
+      );
+
       // Wait 60 seconds for rate limit (7 images per minute)
-      console.log('Waiting 60 seconds for rate limit...');
-      await new Promise(resolve => setTimeout(resolve, 60000));
-      
+      console.log("Waiting 60 seconds for rate limit...");
+      await new Promise((resolve) => setTimeout(resolve, 60000));
     } catch (error) {
-      console.error('Error in image generation batch:', error);
+      console.error("Error in image generation batch:", error);
       // Continue with next batch after short delay
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise((resolve) => setTimeout(resolve, 10000));
     }
   }
 }
@@ -166,10 +174,12 @@ async function processImageGeneration(): Promise<void> {
 /**
  * Generate enhanced image for a single study
  */
-async function generateEnhancedStudyImage(studyId: number): Promise<{ success: boolean; studyId: number; error?: string }> {
+async function generateEnhancedStudyImage(
+  studyId: number,
+): Promise<{ success: boolean; studyId: number; error?: string }> {
   try {
     const result = await generateStudyImage(studyId);
-    
+
     if (result.success) {
       console.log(`✓ Study ${studyId}: Enhanced image generated`);
       return { success: true, studyId };
@@ -178,7 +188,8 @@ async function generateEnhancedStudyImage(studyId: number): Promise<{ success: b
       return { success: false, studyId, error: result.error };
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     console.log(`✗ Study ${studyId}: ${errorMessage}`);
     return { success: false, studyId, error: errorMessage };
   }
@@ -197,13 +208,13 @@ export function getImageGenerationStatus(): {
   const now = new Date();
   const uptimeMs = now.getTime() - generationState.startTime.getTime();
   const uptimeMinutes = Math.floor(uptimeMs / 60000);
-  
+
   return {
     isRunning: generationState.isRunning,
     totalProcessed: generationState.totalProcessed,
     startTime: generationState.startTime,
     lastRunTime: generationState.lastRunTime,
-    uptime: `${uptimeMinutes} minutes`
+    uptime: `${uptimeMinutes} minutes`,
   };
 }
 
@@ -212,23 +223,26 @@ export function getImageGenerationStatus(): {
  */
 export function stopImageGeneration(): { stopped: boolean; message: string } {
   if (!generationState.isRunning) {
-    return { stopped: false, message: 'Image generation is not running' };
+    return { stopped: false, message: "Image generation is not running" };
   }
-  
+
   generationState.isRunning = false;
-  return { stopped: true, message: 'Image generation stopped successfully' };
+  return { stopped: true, message: "Image generation stopped successfully" };
 }
 
 /**
  * Manually trigger image generation
  */
-export async function triggerImageGeneration(): Promise<{ started: boolean; message: string }> {
+export async function triggerImageGeneration(): Promise<{
+  started: boolean;
+  message: string;
+}> {
   if (generationState.isRunning) {
-    return { started: false, message: 'Image generation is already running' };
+    return { started: false, message: "Image generation is already running" };
   }
-  
+
   // Start generation immediately
   startPersistentImageGeneration();
-  
-  return { started: true, message: 'Image generation started successfully' };
+
+  return { started: true, message: "Image generation started successfully" };
 }

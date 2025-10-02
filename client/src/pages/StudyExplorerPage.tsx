@@ -1,35 +1,62 @@
-import { useState } from 'react';
-import { useLocation } from 'wouter';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { motion } from "framer-motion";
 import {
-  Search, Filter, Share2, Download, Eye, GitBranch,
-  Calendar, Activity, ArrowRight, Info
-} from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useToast } from '@/hooks/use-toast';
-import HeadMetaTags from '@/components/seo/HeadMetaTags';
-import InteractiveBodyMap from '@/components/explorer/InteractiveBodyMap';
-import ResearchTimeline from '@/components/explorer/ResearchTimeline';
-import StudyComparison from '@/components/explorer/StudyComparison';
-import ResearchEvolution from '@/components/explorer/ResearchEvolution';
-import SiteHeader from '@/components/layout/SiteHeader';
+  Search,
+  Filter,
+  Share2,
+  Download,
+  Eye,
+  GitBranch,
+  Calendar,
+  Activity,
+  ArrowRight,
+  Info,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
+import HeadMetaTags from "@/components/seo/HeadMetaTags";
+import InteractiveBodyMap from "@/components/explorer/InteractiveBodyMap";
+import ResearchTimeline from "@/components/explorer/ResearchTimeline";
+import StudyComparison from "@/components/explorer/StudyComparison";
+import ResearchEvolution from "@/components/explorer/ResearchEvolution";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function StudyExplorerPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('timeline');
+  const [activeTab, setActiveTab] = useState("timeline");
   const [globalFilter, setGlobalFilter] = useState({
-    dateRange: 'all',
-    condition: 'all',
-    deliveryMethod: 'all'
+    dateRange: "all",
+    condition: "all",
+    deliveryMethod: "all",
   });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedStudyIds, setSelectedStudyIds] = useState<number[]>([]);
 
   const handleStudyClick = (studyId: number) => {
@@ -55,7 +82,7 @@ export default function StudyExplorerPage() {
   const handleYearClick = (year: number) => {
     toast({
       title: `Year ${year} Selected`,
-      description: 'View all studies from this year.',
+      description: "View all studies from this year.",
       action: (
         <Button
           variant="outline"
@@ -80,15 +107,15 @@ export default function StudyExplorerPage() {
     const url = window.location.href;
     navigator.clipboard.writeText(url);
     toast({
-      title: 'Link Copied!',
-      description: 'Explorer link has been copied to clipboard.',
+      title: "Link Copied!",
+      description: "Explorer link has been copied to clipboard.",
     });
   };
 
   const handleExport = () => {
     toast({
-      title: 'Export Started',
-      description: 'Your visualization data is being prepared for download.',
+      title: "Export Started",
+      description: "Your visualization data is being prepared for download.",
     });
     // Export logic would go here
   };
@@ -111,11 +138,13 @@ export default function StudyExplorerPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-4xl font-bold mb-4">Interactive Study Explorer</h1>
+              <h1 className="text-4xl font-bold mb-4">
+                Interactive Study Explorer
+              </h1>
               <p className="text-xl opacity-90 mb-6">
                 Visualize the evolution and impact of hydrogen therapy research
               </p>
-              
+
               {/* Quick Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <Card className="bg-white/10 border-white/20 text-white">
@@ -180,7 +209,9 @@ export default function StudyExplorerPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Search</label>
+                  <label className="text-sm font-medium mb-1 block">
+                    Search
+                  </label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
@@ -192,12 +223,16 @@ export default function StudyExplorerPage() {
                     />
                   </div>
                 </div>
-                
+
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Date Range</label>
+                  <label className="text-sm font-medium mb-1 block">
+                    Date Range
+                  </label>
                   <Select
                     value={globalFilter.dateRange}
-                    onValueChange={(v) => setGlobalFilter(prev => ({ ...prev, dateRange: v }))}
+                    onValueChange={(v) =>
+                      setGlobalFilter((prev) => ({ ...prev, dateRange: v }))
+                    }
                   >
                     <SelectTrigger data-testid="explorer-date-filter">
                       <SelectValue />
@@ -210,31 +245,44 @@ export default function StudyExplorerPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Condition</label>
+                  <label className="text-sm font-medium mb-1 block">
+                    Condition
+                  </label>
                   <Select
                     value={globalFilter.condition}
-                    onValueChange={(v) => setGlobalFilter(prev => ({ ...prev, condition: v }))}
+                    onValueChange={(v) =>
+                      setGlobalFilter((prev) => ({ ...prev, condition: v }))
+                    }
                   >
                     <SelectTrigger data-testid="explorer-condition-filter">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Conditions</SelectItem>
-                      <SelectItem value="cardiovascular">Cardiovascular</SelectItem>
+                      <SelectItem value="cardiovascular">
+                        Cardiovascular
+                      </SelectItem>
                       <SelectItem value="neurological">Neurological</SelectItem>
                       <SelectItem value="metabolic">Metabolic</SelectItem>
                       <SelectItem value="inflammatory">Inflammatory</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Delivery Method</label>
+                  <label className="text-sm font-medium mb-1 block">
+                    Delivery Method
+                  </label>
                   <Select
                     value={globalFilter.deliveryMethod}
-                    onValueChange={(v) => setGlobalFilter(prev => ({ ...prev, deliveryMethod: v }))}
+                    onValueChange={(v) =>
+                      setGlobalFilter((prev) => ({
+                        ...prev,
+                        deliveryMethod: v,
+                      }))
+                    }
                   >
                     <SelectTrigger data-testid="explorer-delivery-filter">
                       <SelectValue />
@@ -253,7 +301,11 @@ export default function StudyExplorerPage() {
           </Card>
 
           {/* Main Explorer Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
             <TabsList className="grid grid-cols-2 lg:grid-cols-4 w-full">
               <TabsTrigger value="timeline" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -263,11 +315,17 @@ export default function StudyExplorerPage() {
                 <Activity className="w-4 h-4" />
                 <span className="hidden sm:inline">Body Map</span>
               </TabsTrigger>
-              <TabsTrigger value="comparison" className="flex items-center gap-2">
+              <TabsTrigger
+                value="comparison"
+                className="flex items-center gap-2"
+              >
                 <Eye className="w-4 h-4" />
                 <span className="hidden sm:inline">Comparison</span>
               </TabsTrigger>
-              <TabsTrigger value="evolution" className="flex items-center gap-2">
+              <TabsTrigger
+                value="evolution"
+                className="flex items-center gap-2"
+              >
                 <GitBranch className="w-4 h-4" />
                 <span className="hidden sm:inline">Evolution</span>
               </TabsTrigger>
@@ -292,9 +350,7 @@ export default function StudyExplorerPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <InteractiveBodyMap
-                  onSystemClick={handleSystemClick}
-                />
+                <InteractiveBodyMap onSystemClick={handleSystemClick} />
               </motion.div>
             </TabsContent>
 
@@ -341,7 +397,8 @@ export default function StudyExplorerPage() {
                     Timeline View
                   </h4>
                   <p className="text-sm text-gray-600">
-                    Explore research progress over time. Zoom in/out to focus on specific periods.
+                    Explore research progress over time. Zoom in/out to focus on
+                    specific periods.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -350,7 +407,8 @@ export default function StudyExplorerPage() {
                     Body Map
                   </h4>
                   <p className="text-sm text-gray-600">
-                    Click body systems to discover related studies and health impacts.
+                    Click body systems to discover related studies and health
+                    impacts.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -359,7 +417,8 @@ export default function StudyExplorerPage() {
                     Comparison Tool
                   </h4>
                   <p className="text-sm text-gray-600">
-                    Compare up to 3 studies side-by-side to understand differences.
+                    Compare up to 3 studies side-by-side to understand
+                    differences.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -378,16 +437,21 @@ export default function StudyExplorerPage() {
           {/* Call to Action */}
           <Card className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50">
             <CardContent className="p-8 text-center">
-              <h3 className="text-2xl font-bold mb-4">Discover More Research</h3>
+              <h3 className="text-2xl font-bold mb-4">
+                Discover More Research
+              </h3>
               <p className="text-gray-600 mb-6">
                 Explore our complete database of hydrogen therapy studies
               </p>
               <div className="flex justify-center gap-4">
-                <Button onClick={() => navigate('/studies')} data-testid="explorer-view-studies">
+                <Button
+                  onClick={() => navigate("/studies")}
+                  data-testid="explorer-view-studies"
+                >
                   View All Studies
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/search')}>
+                <Button variant="outline" onClick={() => navigate("/search")}>
                   Advanced Search
                 </Button>
               </div>

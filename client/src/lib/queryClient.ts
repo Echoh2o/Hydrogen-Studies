@@ -11,11 +11,11 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-  throwOnError: boolean = true
+  throwOnError: boolean = true,
 ): Promise<Response> {
   // Make sure method is a valid HTTP method
   const validMethod = method.toUpperCase();
-  
+
   const res = await fetch(url, {
     method: validMethod,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -27,7 +27,7 @@ export async function apiRequest(
   if (throwOnError) {
     await throwIfResNotOk(res);
   }
-  
+
   // Return the response regardless
   return res;
 }
@@ -39,26 +39,30 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     let url = queryKey[0] as string;
-    
+
     // Handle query parameters from queryKey
     if (queryKey.length > 1 && queryKey[1]) {
       const params = new URLSearchParams();
       const filters = queryKey[1] as any;
-      
+
       // Add all non-empty filter values as query parameters
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '' && 
-            (Array.isArray(value) ? value.length > 0 : true)) {
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== "" &&
+          (Array.isArray(value) ? value.length > 0 : true)
+        ) {
           if (Array.isArray(value)) {
-            value.forEach(v => params.append(key, String(v)));
+            value.forEach((v) => params.append(key, String(v)));
           } else {
             params.set(key, String(value));
           }
         }
       });
-      
+
       if (params.toString()) {
-        url += (url.includes('?') ? '&' : '?') + params.toString();
+        url += (url.includes("?") ? "&" : "?") + params.toString();
       }
     }
 

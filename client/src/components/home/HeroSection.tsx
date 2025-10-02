@@ -12,7 +12,8 @@ const HeroSection = () => {
               Discover Hydrogen Research for Health
             </h1>
             <p className="text-lg md:text-xl mb-6 text-white/90">
-              The comprehensive database for scientific studies on hydrogen gas and its health benefits.
+              The comprehensive database for scientific studies on hydrogen gas
+              and its health benefits.
             </p>
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
               <Link href="#search-section">
@@ -21,16 +22,19 @@ const HeroSection = () => {
                 </Button>
               </Link>
               <Link href="/categories">
-                <Button variant="outline" className="bg-transparent text-white border border-white hover:bg-white/10 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  className="bg-transparent text-white border border-white hover:bg-white/10 w-full sm:w-auto"
+                >
                   <HiViewGrid className="mr-2" size={18} /> Browse Categories
                 </Button>
               </Link>
             </div>
           </div>
           <div className="md:w-1/2 md:pl-8">
-            <img 
-              src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&h=800" 
-              alt="Hydrogen molecule visualization" 
+            <img
+              src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&h=800"
+              alt="Hydrogen molecule visualization"
               className="w-full h-auto rounded-lg shadow-lg"
             />
           </div>

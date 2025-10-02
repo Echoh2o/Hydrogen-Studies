@@ -19,9 +19,11 @@ export function CardSkeleton() {
 export function StudyListSkeleton() {
   return (
     <div className="space-y-6">
-      {Array(5).fill(0).map((_, i) => (
-        <CardSkeleton key={i} />
-      ))}
+      {Array(5)
+        .fill(0)
+        .map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
     </div>
   );
 }
@@ -64,7 +66,7 @@ export function ChatSkeleton() {
           <Skeleton className="h-4 w-3/4" />
         </div>
       </div>
-      
+
       <div className="flex items-start space-x-3 self-end">
         <div className="space-y-2 flex-1">
           <Skeleton className="h-4 w-full" />
@@ -76,11 +78,11 @@ export function ChatSkeleton() {
   );
 }
 
-export function EmptyState({ 
-  title = "No data available", 
+export function EmptyState({
+  title = "No data available",
   description = "We couldn't find any data to display.",
   icon,
-  action
+  action,
 }: {
   title?: string;
   description?: string;
@@ -90,7 +92,11 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <div className="text-gray-400 mb-4">
-        {icon || <div className="w-16 h-16 border-2 border-dashed rounded-full flex items-center justify-center">?</div>}
+        {icon || (
+          <div className="w-16 h-16 border-2 border-dashed rounded-full flex items-center justify-center">
+            ?
+          </div>
+        )}
       </div>
       <h3 className="text-lg font-medium text-gray-900 mb-1">{title}</h3>
       <p className="text-sm text-gray-500 max-w-md mb-4">{description}</p>
@@ -99,10 +105,10 @@ export function EmptyState({
   );
 }
 
-export function ErrorDisplay({ 
-  title = "An error occurred", 
+export function ErrorDisplay({
+  title = "An error occurred",
   message = "We're unable to load this content right now. Please try again later.",
-  onRetry
+  onRetry,
 }: {
   title?: string;
   message?: string;
@@ -113,7 +119,7 @@ export function ErrorDisplay({
       <h3 className="text-lg font-medium text-red-800 mb-2">{title}</h3>
       <p className="text-sm text-gray-600 mb-4">{message}</p>
       {onRetry && (
-        <button 
+        <button
           onClick={onRetry}
           className="px-4 py-2 bg-white border border-red-300 rounded-md text-red-700 text-sm hover:bg-red-50"
         >

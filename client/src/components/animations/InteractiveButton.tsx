@@ -12,23 +12,33 @@ interface InteractiveButtonProps extends ButtonProps {
 /**
  * An enhanced button component with hover and press animations
  */
-export const InteractiveButton = forwardRef<HTMLButtonElement, InteractiveButtonProps>(
-  ({ 
-    children, 
-    className, 
-    pressEffect = true, 
-    hoverScale = 1.03, 
-    hoverGlow = false,
-    disabled = false,
-    ...props 
-  }, ref) => {
+export const InteractiveButton = forwardRef<
+  HTMLButtonElement,
+  InteractiveButtonProps
+>(
+  (
+    {
+      children,
+      className,
+      pressEffect = true,
+      hoverScale = 1.03,
+      hoverGlow = false,
+      disabled = false,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <motion.div
         whileHover={
-          !disabled ? { 
-            scale: hoverScale, 
-            boxShadow: hoverGlow ? "0 0 8px rgba(var(--primary-rgb), 0.5)" : undefined
-          } : undefined
+          !disabled
+            ? {
+                scale: hoverScale,
+                boxShadow: hoverGlow
+                  ? "0 0 8px rgba(var(--primary-rgb), 0.5)"
+                  : undefined,
+              }
+            : undefined
         }
         whileTap={!disabled && pressEffect ? { scale: 0.98 } : undefined}
         transition={{ duration: 0.2 }}
@@ -38,7 +48,7 @@ export const InteractiveButton = forwardRef<HTMLButtonElement, InteractiveButton
           className={cn(
             "relative overflow-hidden transition-all duration-300",
             className,
-            hoverGlow && "hover:shadow-glow"
+            hoverGlow && "hover:shadow-glow",
           )}
           disabled={disabled}
           {...props}
@@ -47,7 +57,7 @@ export const InteractiveButton = forwardRef<HTMLButtonElement, InteractiveButton
         </Button>
       </motion.div>
     );
-  }
+  },
 );
 
 InteractiveButton.displayName = "InteractiveButton";
@@ -66,7 +76,7 @@ export const RippleButton = forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </Button>
     );
-  }
+  },
 );
 
 RippleButton.displayName = "RippleButton";

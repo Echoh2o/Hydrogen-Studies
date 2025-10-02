@@ -1,15 +1,15 @@
 /**
  * Targeted Research Enrichment
- * 
+ *
  * Enriches studies with authentic data from research APIs:
  * - CrossRef for DOI metadata and links
  * - PubMed for medical research data
  * - Europe PMC for open access content
  */
 
-import { db } from './db';
-import { studies } from '@shared/schema';
-import { eq, and, isNull, or } from 'drizzle-orm';
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { eq, and, isNull, or } from "drizzle-orm";
 
 interface EnrichmentStats {
   totalProcessed: number;
@@ -33,75 +33,81 @@ export async function runTargetedEnrichment(): Promise<EnrichmentStats> {
     enrichmentSources: {
       crossref: 0,
       pubmed: 0,
-      europepmc: 0
-    }
+      europepmc: 0,
+    },
   };
 
-  console.log('Starting targeted research enrichment...');
+  console.log("Starting targeted research enrichment...");
 
   try {
     // Get studies that need enrichment
-    const studiesNeedingEnrichment = await db.select({
-      id: studies.id,
-      title: studies.title,
-      doi: studies.doi,
-      pdfUrl: studies.pdfUrl,
-      citationUrl: studies.citationUrl,
-      sourceUrl: studies.sourceUrl
-    })
-    .from(studies)
-    .where(
-      and(
-        isNull(studies.doi) === false,
-        or(
-          isNull(studies.pdfUrl),
-          eq(studies.pdfUrl, ''),
-          isNull(studies.citationUrl),
-          eq(studies.citationUrl, ''),
-          isNull(studies.sourceUrl),
-          eq(studies.sourceUrl, '')
-        )
+    const studiesNeedingEnrichment = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        doi: studies.doi,
+        pdfUrl: studies.pdfUrl,
+        citationUrl: studies.citationUrl,
+        sourceUrl: studies.sourceUrl,
+      })
+      .from(studies)
+      .where(
+        and(
+          isNull(studies.doi) === false,
+          or(
+            isNull(studies.pdfUrl),
+            eq(studies.pdfUrl, ""),
+            isNull(studies.citationUrl),
+            eq(studies.citationUrl, ""),
+            isNull(studies.sourceUrl),
+            eq(studies.sourceUrl, ""),
+          ),
+        ),
       )
-    )
-    .limit(50); // Process in manageable batches
+      .limit(50); // Process in manageable batches
 
-    console.log(`Found ${studiesNeedingEnrichment.length} studies needing enrichment`);
+    console.log(
+      `Found ${studiesNeedingEnrichment.length} studies needing enrichment`,
+    );
 
     for (const study of studiesNeedingEnrichment) {
       stats.totalProcessed++;
-      
+
       try {
         const enrichmentData = await enrichStudyFromResearchAPIs(study);
-        
+
         if (enrichmentData && Object.keys(enrichmentData).length > 0) {
-          await db.update(studies)
+          await db
+            .update(studies)
             .set(enrichmentData)
             .where(eq(studies.id, study.id));
-          
+
           stats.successfulEnrichments++;
           console.log(`✓ Enriched study ${study.id}: ${study.title}`);
-          
+
           // Track which sources provided data
-          if (enrichmentData.crossrefEnriched) stats.enrichmentSources.crossref++;
+          if (enrichmentData.crossrefEnriched)
+            stats.enrichmentSources.crossref++;
           if (enrichmentData.pubmedEnriched) stats.enrichmentSources.pubmed++;
-          if (enrichmentData.europePmcEnriched) stats.enrichmentSources.europepmc++;
+          if (enrichmentData.europePmcEnriched)
+            stats.enrichmentSources.europepmc++;
         }
-        
       } catch (error) {
-        const errorMsg = `Study ${study.id}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        const errorMsg = `Study ${study.id}: ${error instanceof Error ? error.message : "Unknown error"}`;
         stats.errors.push(errorMsg);
         console.warn(`! ${errorMsg}`);
       }
 
       // Rate limiting to respect API limits
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
-    console.log(`Enrichment completed: ${stats.successfulEnrichments}/${stats.totalProcessed} studies enriched`);
+    console.log(
+      `Enrichment completed: ${stats.successfulEnrichments}/${stats.totalProcessed} studies enriched`,
+    );
     return stats;
-
   } catch (error) {
-    console.error('Targeted enrichment failed:', error);
+    console.error("Targeted enrichment failed:", error);
     throw error;
   }
 }
@@ -169,8 +175,9 @@ async function fetchFromCrossRef(doi: string): Promise<any | null> {
   try {
     const response = await fetch(`https://api.crossref.org/works/${doi}`, {
       headers: {
-        'User-Agent': 'HydrogenStudies/1.0 (mailto:contact@hydrogenstudies.com)'
-      }
+        "User-Agent":
+          "HydrogenStudies/1.0 (mailto:contact@hydrogenstudies.com)",
+      },
     });
 
     if (!response.ok) {
@@ -184,9 +191,10 @@ async function fetchFromCrossRef(doi: string): Promise<any | null> {
 
     // Extract PDF and citation URLs
     if (work.link) {
-      const pdfLink = work.link.find((link: any) => 
-        link['content-type'] === 'application/pdf' || 
-        link['content-type'] === 'unspecified'
+      const pdfLink = work.link.find(
+        (link: any) =>
+          link["content-type"] === "application/pdf" ||
+          link["content-type"] === "unspecified",
       );
       if (pdfLink?.URL) {
         enrichment.pdfUrl = pdfLink.URL;
@@ -204,7 +212,6 @@ async function fetchFromCrossRef(doi: string): Promise<any | null> {
     }
 
     return Object.keys(enrichment).length > 0 ? enrichment : null;
-
   } catch (error) {
     throw new Error(`CrossRef API error: ${error}`);
   }
@@ -216,7 +223,7 @@ async function fetchFromCrossRef(doi: string): Promise<any | null> {
 async function fetchFromEuropePMC(doi: string): Promise<any | null> {
   try {
     const response = await fetch(
-      `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:${encodeURIComponent(doi)}&format=json`
+      `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:${encodeURIComponent(doi)}&format=json`,
     );
 
     if (!response.ok) {
@@ -234,8 +241,9 @@ async function fetchFromEuropePMC(doi: string): Promise<any | null> {
 
     // PDF from full text links
     if (result.fullTextUrlList?.fullTextUrl) {
-      const pdfUrl = result.fullTextUrlList.fullTextUrl.find((url: any) => 
-        url.documentStyle === 'pdf' && url.availabilityCode === 'OA'
+      const pdfUrl = result.fullTextUrlList.fullTextUrl.find(
+        (url: any) =>
+          url.documentStyle === "pdf" && url.availabilityCode === "OA",
       );
       if (pdfUrl?.url) {
         enrichment.pdfUrl = pdfUrl.url;
@@ -253,7 +261,6 @@ async function fetchFromEuropePMC(doi: string): Promise<any | null> {
     }
 
     return Object.keys(enrichment).length > 0 ? enrichment : null;
-
   } catch (error) {
     throw new Error(`Europe PMC API error: ${error}`);
   }
@@ -266,7 +273,7 @@ async function fetchFromPubMed(doi: string): Promise<any | null> {
   try {
     // First, search for the DOI in PubMed
     const searchResponse = await fetch(
-      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(doi)}&retmode=json`
+      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(doi)}&retmode=json`,
     );
 
     if (!searchResponse.ok) {
@@ -282,7 +289,7 @@ async function fetchFromPubMed(doi: string): Promise<any | null> {
 
     // Get summary data
     const summaryResponse = await fetch(
-      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmid}&retmode=json`
+      `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmid}&retmode=json`,
     );
 
     if (!summaryResponse.ok) {
@@ -305,7 +312,6 @@ async function fetchFromPubMed(doi: string): Promise<any | null> {
     enrichment.sourceUrl = `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
 
     return enrichment;
-
   } catch (error) {
     throw new Error(`PubMed API error: ${error}`);
   }

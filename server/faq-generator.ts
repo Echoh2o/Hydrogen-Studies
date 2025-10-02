@@ -1,12 +1,13 @@
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { eq, sql, ilike, desc } from "drizzle-orm";
+import OpenAI from "openai";
 
-import { db } from './db';
-import { studies } from '@shared/schema';
-import { eq, sql, ilike, desc } from 'drizzle-orm';
-import OpenAI from 'openai';
-
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-}) : null;
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 interface FAQ {
   question: string;
@@ -19,22 +20,23 @@ export async function generateCategoryFAQs(category: string): Promise<FAQ[]> {
   if (!openai) return [];
 
   // Get studies in this category
-  const categoryStudies = await db.select({
-    id: studies.id,
-    title: studies.title,
-    abstract: studies.abstract,
-    keywords: studies.keywords
-  })
-  .from(studies)
-  .where(ilike(studies.category, `%${category}%`))
-  .orderBy(desc(studies.viewCount))
-  .limit(10);
+  const categoryStudies = await db
+    .select({
+      id: studies.id,
+      title: studies.title,
+      abstract: studies.abstract,
+      keywords: studies.keywords,
+    })
+    .from(studies)
+    .where(ilike(studies.category, `%${category}%`))
+    .orderBy(desc(studies.viewCount))
+    .limit(10);
 
   if (categoryStudies.length === 0) return [];
 
-  const studySummary = categoryStudies.map(s => 
-    `Study ${s.id}: ${s.title} - Key findings from abstract`
-  ).join('\n');
+  const studySummary = categoryStudies
+    .map((s) => `Study ${s.id}: ${s.title} - Key findings from abstract`)
+    .join("\n");
 
   const prompt = `
   Based on these hydrogen therapy research studies about ${category}, generate 8-12 FAQ pairs that would:
@@ -64,37 +66,41 @@ export async function generateCategoryFAQs(category: string): Promise<FAQ[]> {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.2
+      temperature: 0.2,
     });
 
     // Parse the response into structured FAQ format
-    const content = response.choices[0].message.content || '';
+    const content = response.choices[0].message.content || "";
     const faqs: FAQ[] = [];
-    
+
     const sections = content.split(/Q:/g).filter(Boolean);
-    
-    sections.forEach(section => {
-      const lines = section.trim().split('\n');
+
+    sections.forEach((section) => {
+      const lines = section.trim().split("\n");
       const question = lines[0]?.trim();
-      const answerLine = lines.find(l => l.startsWith('A:'));
-      const keywordLine = lines.find(l => l.startsWith('Keywords:'));
-      const studiesLine = lines.find(l => l.startsWith('Studies:'));
-      
+      const answerLine = lines.find((l) => l.startsWith("A:"));
+      const keywordLine = lines.find((l) => l.startsWith("Keywords:"));
+      const studiesLine = lines.find((l) => l.startsWith("Studies:"));
+
       if (question && answerLine) {
         faqs.push({
-          question: question.replace(/^Q:\s*/, ''),
-          answer: answerLine.replace(/^A:\s*/, ''),
-          targetKeyword: keywordLine?.replace(/^Keywords:\s*/, '') || '',
-          relatedStudies: studiesLine ? 
-            studiesLine.replace(/^Studies:\s*/, '').split(',').map(id => parseInt(id.trim())).filter(Boolean) : 
-            []
+          question: question.replace(/^Q:\s*/, ""),
+          answer: answerLine.replace(/^A:\s*/, ""),
+          targetKeyword: keywordLine?.replace(/^Keywords:\s*/, "") || "",
+          relatedStudies: studiesLine
+            ? studiesLine
+                .replace(/^Studies:\s*/, "")
+                .split(",")
+                .map((id) => parseInt(id.trim()))
+                .filter(Boolean)
+            : [],
         });
       }
     });
 
     return faqs;
   } catch (error) {
-    console.error('FAQ generation failed:', error);
+    console.error("FAQ generation failed:", error);
     return [];
   }
 }
@@ -126,13 +132,13 @@ export async function generateHomepageFAQs(): Promise<FAQ[]> {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: generalPrompt }],
-      temperature: 0.2
+      temperature: 0.2,
     });
 
     // Parse similar to above
     return []; // Implementation similar to generateCategoryFAQs
   } catch (error) {
-    console.error('Homepage FAQ generation failed:', error);
+    console.error("Homepage FAQ generation failed:", error);
     return [];
   }
 }

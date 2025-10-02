@@ -1,11 +1,11 @@
 /**
  * Image Refresh System
- * 
+ *
  * Handles expired OpenAI DALL-E image URLs by regenerating them when needed
  */
 
-import { sql } from 'drizzle-orm';
-import { db } from './minimal-performance-core';
+import { sql } from "drizzle-orm";
+import { db } from "./minimal-performance-core";
 
 interface ImageRefreshResult {
   studyId: number;
@@ -18,24 +18,24 @@ interface ImageRefreshResult {
  * Check if an OpenAI DALL-E URL has expired
  */
 export function isOpenAIImageExpired(imageUrl: string): boolean {
-  if (!imageUrl?.includes('oaidalleapiprodscus.blob.core.windows.net')) {
+  if (!imageUrl?.includes("oaidalleapiprodscus.blob.core.windows.net")) {
     return false; // Not an OpenAI image
   }
-  
+
   try {
     const url = new URL(imageUrl);
-    const seParam = url.searchParams.get('se'); // Expiration time
-    
+    const seParam = url.searchParams.get("se"); // Expiration time
+
     if (!seParam) {
       return false;
     }
-    
+
     const expirationTime = new Date(seParam);
     const now = new Date();
-    
+
     return now > expirationTime;
   } catch (error) {
-    console.error('Error checking image expiration:', error);
+    console.error("Error checking image expiration:", error);
     return true; // Assume expired if we can't parse
   }
 }
@@ -47,83 +47,88 @@ async function generateNewStudyImage(study: any): Promise<string> {
   // Check for OpenAI API key
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (!openaiApiKey) {
-    console.warn('OpenAI API key not available for image generation');
-    return '';
+    console.warn("OpenAI API key not available for image generation");
+    return "";
   }
 
   try {
     const prompt = `Scientific illustration showing hydrogen therapy mechanisms for ${study.title}. Show molecular hydrogen (H2) interacting with cells, reducing oxidative stress, and providing therapeutic benefits. Medical research style, clean background, professional appearance.`;
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      "https://api.openai.com/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt: prompt.substring(0, 1000), // DALL-E has prompt length limits
+          n: 1,
+          size: "1024x1024",
+          quality: "standard",
+          style: "natural",
+        }),
       },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: prompt.substring(0, 1000), // DALL-E has prompt length limits
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
-        style: 'natural'
-      }),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     if (data.data && data.data[0] && data.data[0].url) {
       return data.data[0].url;
     } else {
-      throw new Error('No image URL in OpenAI response');
+      throw new Error("No image URL in OpenAI response");
     }
   } catch (error) {
-    console.error('Error generating new study image:', error);
-    return '';
+    console.error("Error generating new study image:", error);
+    return "";
   }
 }
 
 /**
  * Refresh expired image for a single study
  */
-export async function refreshStudyImage(studyId: number): Promise<ImageRefreshResult> {
+export async function refreshStudyImage(
+  studyId: number,
+): Promise<ImageRefreshResult> {
   try {
     // Get current study data
     const result = await db.execute(sql`
       SELECT id, title, image_url, imageUrl FROM studies WHERE id = ${studyId}
     `);
-    
+
     const study = (result as any).rows[0];
     if (!study) {
       return {
         studyId,
         success: false,
-        error: 'Study not found'
+        error: "Study not found",
       };
     }
 
     const currentImageUrl = study.image_url || study.imageUrl;
-    
+
     if (!currentImageUrl || !isOpenAIImageExpired(currentImageUrl)) {
       return {
         studyId,
         success: true,
-        newImageUrl: currentImageUrl
+        newImageUrl: currentImageUrl,
       };
     }
 
     // Generate new image
     const newImageUrl = await generateNewStudyImage(study);
-    
+
     if (!newImageUrl) {
       return {
         studyId,
         success: false,
-        error: 'Failed to generate new image'
+        error: "Failed to generate new image",
       };
     }
 
@@ -139,15 +144,14 @@ export async function refreshStudyImage(studyId: number): Promise<ImageRefreshRe
     return {
       studyId,
       success: true,
-      newImageUrl
+      newImageUrl,
     };
-
   } catch (error) {
     console.error(`Error refreshing image for study ${studyId}:`, error);
     return {
       studyId,
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -174,20 +178,22 @@ export async function refreshAllExpiredImages(): Promise<ImageRefreshResult[]> {
 
     for (const study of studies) {
       const imageUrl = study.image_url || study.imageUrl;
-      
+
       if (isOpenAIImageExpired(imageUrl)) {
-        console.log(`Refreshing expired image for study ${study.id}: ${study.title}`);
+        console.log(
+          `Refreshing expired image for study ${study.id}: ${study.title}`,
+        );
         const refreshResult = await refreshStudyImage(study.id);
         results.push(refreshResult);
-        
+
         // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
     return results;
   } catch (error) {
-    console.error('Error refreshing expired images:', error);
+    console.error("Error refreshing expired images:", error);
     return [];
   }
 }
@@ -234,18 +240,18 @@ export async function getImageRefreshStats(): Promise<{
     }
 
     return {
-      totalImages: parseInt((totalResult as any).rows[0]?.count || '0'),
-      openaiImages: parseInt((openaiResult as any).rows[0]?.count || '0'),
+      totalImages: parseInt((totalResult as any).rows[0]?.count || "0"),
+      openaiImages: parseInt((openaiResult as any).rows[0]?.count || "0"),
       expiredImages: expiredCount,
-      needsRefresh: expiredCount
+      needsRefresh: expiredCount,
     };
   } catch (error) {
-    console.error('Error getting image refresh stats:', error);
+    console.error("Error getting image refresh stats:", error);
     return {
       totalImages: 0,
       openaiImages: 0,
       expiredImages: 0,
-      needsRefresh: 0
+      needsRefresh: 0,
     };
   }
 }

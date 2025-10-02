@@ -1,20 +1,19 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
-  Legend
-} from 'recharts';
-import { Calendar, TrendingUp, BarChart3 } from 'lucide-react';
+  Legend,
+} from "recharts";
+import { Calendar, TrendingUp, BarChart3 } from "lucide-react";
 
 interface TimelineData {
   year: number;
@@ -29,15 +28,14 @@ interface PublicationTimelineChartProps {
   className?: string;
 }
 
-export default function PublicationTimelineChart({ 
-  data: propData, 
-  isLoading: propLoading, 
-  className = "" 
+export default function PublicationTimelineChart({
+  data: propData,
+  isLoading: propLoading,
+  className = "",
 }: PublicationTimelineChartProps) {
-  
   // Fetch timeline data if not provided
   const { data: fetchedData, isLoading: fetchLoading } = useQuery({
-    queryKey: ['/api/studies/timeline'],
+    queryKey: ["/api/studies/timeline"],
     enabled: !propData,
     staleTime: 5 * 60 * 1000,
   });
@@ -114,24 +112,22 @@ export default function PublicationTimelineChart({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={displayData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="year" 
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }}
-                />
-                <Tooltip 
-                  formatter={(value: any, name: string) => [value, name === 'annual' ? 'Studies Published' : name]}
+                <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: any, name: string) => [
+                    value,
+                    name === "annual" ? "Studies Published" : name,
+                  ]}
                   labelFormatter={(year) => `Year: ${year}`}
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
                   }}
                 />
-                <Bar 
-                  dataKey="annual" 
+                <Bar
+                  dataKey="annual"
                   fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
                 />
@@ -157,49 +153,48 @@ export default function PublicationTimelineChart({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={displayData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="year" 
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis 
-                  yAxisId="left"
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis 
-                  yAxisId="right" 
+                <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                <YAxis
+                  yAxisId="right"
                   orientation="right"
                   tick={{ fontSize: 12 }}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: any, name: string) => {
-                    if (name === 'cumulative') return [value, 'Total Studies'];
-                    if (name === 'growthRate') return [`${value}%`, 'Growth Rate'];
+                    if (name === "cumulative") return [value, "Total Studies"];
+                    if (name === "growthRate")
+                      return [`${value}%`, "Growth Rate"];
                     return [value, name];
                   }}
                   labelFormatter={(year) => `Year: ${year}`}
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
                   }}
                 />
                 <Legend />
-                <Line 
+                <Line
                   yAxisId="left"
-                  type="monotone" 
-                  dataKey="cumulative" 
+                  type="monotone"
+                  dataKey="cumulative"
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
                   name="Total Studies"
                 />
-                <Line 
+                <Line
                   yAxisId="right"
-                  type="monotone" 
-                  dataKey="growthRate" 
+                  type="monotone"
+                  dataKey="growthRate"
                   stroke="hsl(var(--destructive))"
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--destructive))', strokeWidth: 2, r: 3 }}
+                  dot={{
+                    fill: "hsl(var(--destructive))",
+                    strokeWidth: 2,
+                    r: 3,
+                  }}
                   name="Growth Rate (%)"
                 />
               </LineChart>
@@ -215,7 +210,9 @@ export default function PublicationTimelineChart({
             <div className="text-2xl font-bold text-primary mb-2">
               {displayData[displayData.length - 1]?.annual || 450}
             </div>
-            <div className="text-sm text-muted-foreground mb-2">Studies in 2023</div>
+            <div className="text-sm text-muted-foreground mb-2">
+              Studies in 2023
+            </div>
             <Badge variant="secondary" className="text-xs">
               Peak Year
             </Badge>
@@ -225,9 +222,15 @@ export default function PublicationTimelineChart({
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-2xl font-bold text-green-600 mb-2">
-              {Math.round(displayData.reduce((sum, d) => sum + d.growthRate, 0) / displayData.length)}%
+              {Math.round(
+                displayData.reduce((sum, d) => sum + d.growthRate, 0) /
+                  displayData.length,
+              )}
+              %
             </div>
-            <div className="text-sm text-muted-foreground mb-2">Average Growth</div>
+            <div className="text-sm text-muted-foreground mb-2">
+              Average Growth
+            </div>
             <Badge variant="secondary" className="text-xs">
               Per Year
             </Badge>
@@ -239,7 +242,9 @@ export default function PublicationTimelineChart({
             <div className="text-2xl font-bold text-purple-600 mb-2">
               {displayData[displayData.length - 1]?.cumulative || 3394}
             </div>
-            <div className="text-sm text-muted-foreground mb-2">Total Studies</div>
+            <div className="text-sm text-muted-foreground mb-2">
+              Total Studies
+            </div>
             <Badge variant="secondary" className="text-xs">
               All Time
             </Badge>

@@ -1,7 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, Users, BookOpen, Sparkles, Heart, Brain, Shield } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Users,
+  BookOpen,
+  Sparkles,
+  Heart,
+  Brain,
+  Shield,
+} from "lucide-react";
 import { Link } from "wouter";
 
 interface Study {
@@ -35,39 +44,48 @@ interface Study {
 
 interface EnhancedStudyCardProps {
   study: Study;
-  variant?: 'default' | 'compact' | 'featured';
+  variant?: "default" | "compact" | "featured";
 }
 
-export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyCardProps) {
+export function EnhancedStudyCard({
+  study,
+  variant = "default",
+}: EnhancedStudyCardProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getReadingLevelColor = (level?: string) => {
     const colors: Record<string, string> = {
-      'beginner': 'bg-green-100 text-green-800',
-      'intermediate': 'bg-blue-100 text-blue-800',
-      'advanced': 'bg-orange-100 text-orange-800',
-      'expert': 'bg-red-100 text-red-800'
+      beginner: "bg-green-100 text-green-800",
+      intermediate: "bg-blue-100 text-blue-800",
+      advanced: "bg-orange-100 text-orange-800",
+      expert: "bg-red-100 text-red-800",
     };
-    return colors[level || ''] || 'bg-gray-100 text-gray-800';
+    return colors[level || ""] || "bg-gray-100 text-gray-800";
   };
 
   const getHealthBenefitIcon = (benefit: string) => {
-    if (benefit.toLowerCase().includes('heart') || benefit.toLowerCase().includes('cardio')) {
+    if (
+      benefit.toLowerCase().includes("heart") ||
+      benefit.toLowerCase().includes("cardio")
+    ) {
       return <Heart className="h-3 w-3" />;
     }
-    if (benefit.toLowerCase().includes('brain') || benefit.toLowerCase().includes('neuro')) {
+    if (
+      benefit.toLowerCase().includes("brain") ||
+      benefit.toLowerCase().includes("neuro")
+    ) {
       return <Brain className="h-3 w-3" />;
     }
     return <Shield className="h-3 w-3" />;
   };
 
-  if (variant === 'compact') {
+  if (variant === "compact") {
     return (
       <Card className="hover:shadow-md transition-shadow duration-200">
         <CardContent className="p-4">
@@ -81,7 +99,10 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
             )}
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2">
-                <Link href={`/study/${study.id}`} className="hover:text-blue-600">
+                <Link
+                  href={`/study/${study.id}`}
+                  className="hover:text-blue-600"
+                >
                   {study.title}
                 </Link>
               </h3>
@@ -111,7 +132,7 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
     );
   }
 
-  if (variant === 'featured') {
+  if (variant === "featured") {
     return (
       <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white">
         <CardHeader className="pb-4">
@@ -130,13 +151,16 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
                   </Badge>
                 )}
               </div>
-              
+
               <CardTitle className="text-xl font-bold text-gray-900 leading-tight mb-3">
-                <Link href={`/study/${study.slug || study.id}`} className="hover:text-blue-600 transition-colors">
+                <Link
+                  href={`/study/${study.slug || study.id}`}
+                  className="hover:text-blue-600 transition-colors"
+                >
                   {study.seoTitle || study.title}
                 </Link>
               </CardTitle>
-              
+
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
@@ -154,7 +178,7 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
                 )}
               </div>
             </div>
-            
+
             {study.imageUrl && (
               <div className="relative">
                 <img
@@ -171,7 +195,7 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
             )}
           </div>
         </CardHeader>
-        
+
         <CardContent>
           {/* Simplified Explanation */}
           {study.simplifiedExplanation && (
@@ -189,10 +213,15 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
           {/* Health Benefits */}
           {study.healthBenefits && study.healthBenefits.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Health Benefits</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                Health Benefits
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {study.healthBenefits.map((benefit) => (
-                  <Badge key={benefit} className="bg-green-100 text-green-800 flex items-center gap-1">
+                  <Badge
+                    key={benefit}
+                    className="bg-green-100 text-green-800 flex items-center gap-1"
+                  >
                     {getHealthBenefitIcon(benefit)}
                     {benefit}
                   </Badge>
@@ -205,23 +234,35 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {study.healthConditions && study.healthConditions.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Health Conditions</h4>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                  Health Conditions
+                </h4>
                 <div className="flex flex-wrap gap-1">
                   {study.healthConditions.map((condition) => (
-                    <Badge key={condition} variant="secondary" className="bg-amber-100 text-amber-800">
+                    <Badge
+                      key={condition}
+                      variant="secondary"
+                      className="bg-amber-100 text-amber-800"
+                    >
                       {condition}
                     </Badge>
                   ))}
                 </div>
               </div>
             )}
-            
+
             {study.bodySystems && study.bodySystems.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Body Systems</h4>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                  Body Systems
+                </h4>
                 <div className="flex flex-wrap gap-1">
                   {study.bodySystems.map((system) => (
-                    <Badge key={system} variant="outline" className="border-purple-200 text-purple-700">
+                    <Badge
+                      key={system}
+                      variant="outline"
+                      className="border-purple-200 text-purple-700"
+                    >
                       {system}
                     </Badge>
                   ))}
@@ -232,9 +273,19 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
 
           {/* Study Details */}
           <div className="text-xs text-gray-600 mb-4 space-y-1">
-            <div><strong>Authors:</strong> {study.authors}</div>
-            {study.population && <div><strong>Population:</strong> {study.population}</div>}
-            {study.intervention && <div><strong>Intervention:</strong> {study.intervention}</div>}
+            <div>
+              <strong>Authors:</strong> {study.authors}
+            </div>
+            {study.population && (
+              <div>
+                <strong>Population:</strong> {study.population}
+              </div>
+            )}
+            {study.intervention && (
+              <div>
+                <strong>Intervention:</strong> {study.intervention}
+              </div>
+            )}
           </div>
 
           {/* Action Button */}
@@ -244,7 +295,7 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
                 Read Full Study
               </Button>
             </Link>
-            
+
             <div className="text-xs text-gray-500">
               Category: {study.category}
             </div>
@@ -262,7 +313,10 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               {study.enhancedWithAI && (
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                <Badge
+                  variant="secondary"
+                  className="bg-purple-100 text-purple-800"
+                >
                   <Sparkles className="h-4 w-4 mr-1" />
                   AI Enhanced
                 </Badge>
@@ -273,13 +327,16 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
                 </Badge>
               )}
             </div>
-            
+
             <CardTitle className="text-lg font-semibold text-gray-900 leading-tight mb-2">
-              <Link href={`/study/${study.slug || study.id}`} className="hover:text-blue-600 transition-colors">
+              <Link
+                href={`/study/${study.slug || study.id}`}
+                className="hover:text-blue-600 transition-colors"
+              >
                 {study.title}
               </Link>
             </CardTitle>
-            
+
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -297,7 +354,7 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
               )}
             </div>
           </div>
-          
+
           {study.imageUrl && (
             <img
               src={study.imageUrl}
@@ -307,27 +364,27 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
         {/* Simplified Explanation */}
         {study.simplifiedExplanation && (
           <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-200">
-            <h4 className="text-sm font-semibold text-blue-900 mb-1">Plain Language Summary</h4>
+            <h4 className="text-sm font-semibold text-blue-900 mb-1">
+              Plain Language Summary
+            </h4>
             <p className="text-sm text-blue-800 leading-relaxed">
-              {study.simplifiedExplanation.length > 200 
+              {study.simplifiedExplanation.length > 200
                 ? `${study.simplifiedExplanation.substring(0, 200)}...`
-                : study.simplifiedExplanation
-              }
+                : study.simplifiedExplanation}
             </p>
           </div>
         )}
 
         {/* Abstract */}
         <p className="text-gray-700 text-sm leading-relaxed mb-4">
-          {study.abstract.length > 300 
+          {study.abstract.length > 300
             ? `${study.abstract.substring(0, 300)}...`
-            : study.abstract
-          }
+            : study.abstract}
         </p>
 
         {/* Tags */}
@@ -335,13 +392,20 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
           <div className="mb-4">
             <div className="flex flex-wrap gap-2">
               {study.healthBenefits?.slice(0, 3).map((benefit) => (
-                <Badge key={benefit} className="bg-green-100 text-green-800 flex items-center gap-1">
+                <Badge
+                  key={benefit}
+                  className="bg-green-100 text-green-800 flex items-center gap-1"
+                >
                   {getHealthBenefitIcon(benefit)}
                   {benefit}
                 </Badge>
               ))}
               {study.healthConditions?.slice(0, 2).map((condition) => (
-                <Badge key={condition} variant="secondary" className="bg-amber-100 text-amber-800">
+                <Badge
+                  key={condition}
+                  variant="secondary"
+                  className="bg-amber-100 text-amber-800"
+                >
                   {condition}
                 </Badge>
               ))}
@@ -356,10 +420,8 @@ export function EnhancedStudyCard({ study, variant = 'default' }: EnhancedStudyC
               View Study
             </Button>
           </Link>
-          
-          <div className="text-xs text-gray-500">
-            {study.category}
-          </div>
+
+          <div className="text-xs text-gray-500">{study.category}</div>
         </div>
       </CardContent>
     </Card>

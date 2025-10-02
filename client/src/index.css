@@ -24,7 +24,7 @@
     --destructive-foreground: 60 9.1% 97.8%;
     --ring: 20 14.3% 4.1%;
     --radius: 0.5rem;
-    
+
     /* Neutral shades */
     --neutral-100: 0 0% 98%;
     --neutral-200: 0 0% 93.3%;
@@ -74,24 +74,29 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading;
   }
 }
 
 @layer utilities {
   .font-heading {
-    font-family: 'Roboto', sans-serif;
+    font-family: "Roboto", sans-serif;
   }
-  
+
   .font-sans {
-    font-family: 'Open Sans', sans-serif;
+    font-family: "Open Sans", sans-serif;
   }
-  
+
   .bg-primary-gradient {
     @apply bg-gradient-to-r from-primary to-accent;
   }
-  
+
   .text-balance {
     text-wrap: balance;
   }

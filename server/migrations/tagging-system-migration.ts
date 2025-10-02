@@ -6,7 +6,7 @@
 import { db } from "../db";
 
 export async function runTaggingSystemMigration(): Promise<void> {
-  console.log('Running tagging system migration...');
+  console.log("Running tagging system migration...");
 
   try {
     // Create tag_categories table
@@ -22,7 +22,7 @@ export async function runTaggingSystemMigration(): Promise<void> {
         created_at TIMESTAMP DEFAULT NOW() NOT NULL
       );
     `);
-    console.log('✓ Created tag_categories table');
+    console.log("✓ Created tag_categories table");
 
     // Create tags table
     await db.execute(`
@@ -39,7 +39,7 @@ export async function runTaggingSystemMigration(): Promise<void> {
         updated_at TIMESTAMP DEFAULT NOW() NOT NULL
       );
     `);
-    console.log('✓ Created tags table');
+    console.log("✓ Created tags table");
 
     // Create study_tags junction table
     await db.execute(`
@@ -53,7 +53,7 @@ export async function runTaggingSystemMigration(): Promise<void> {
         UNIQUE(study_id, tag_id)
       );
     `);
-    console.log('✓ Created study_tags table');
+    console.log("✓ Created study_tags table");
 
     // Create indexes for performance
     await db.execute(`
@@ -62,7 +62,7 @@ export async function runTaggingSystemMigration(): Promise<void> {
     await db.execute(`
       CREATE INDEX IF NOT EXISTS study_tags_tag_idx ON study_tags(tag_id);
     `);
-    console.log('✓ Created indexes for study_tags');
+    console.log("✓ Created indexes for study_tags");
 
     // Create tag_synonyms table
     await db.execute(`
@@ -74,12 +74,11 @@ export async function runTaggingSystemMigration(): Promise<void> {
         UNIQUE(tag_id, synonym)
       );
     `);
-    console.log('✓ Created tag_synonyms table');
+    console.log("✓ Created tag_synonyms table");
 
-    console.log('Tagging system migration completed successfully');
-
+    console.log("Tagging system migration completed successfully");
   } catch (error) {
-    console.error('Error running tagging system migration:', error);
+    console.error("Error running tagging system migration:", error);
     throw error;
   }
 }

@@ -1,6 +1,6 @@
 /**
  * Automated Tagging System for Hydrogen Studies
- * 
+ *
  * Analyzes study content to generate relevant tags for:
  * - Improved search functionality
  * - Better content sorting and filtering
@@ -9,14 +9,22 @@
  */
 
 import { db } from "./db";
-import { studies, tags, studyTags, tagCategories, tagSynonyms } from "@shared/schema";
+import {
+  studies,
+  tags,
+  studyTags,
+  tagCategories,
+  tagSynonyms,
+} from "@shared/schema";
 import { eq, sql, ilike, and, or, inArray } from "drizzle-orm";
 import OpenAI from "openai";
 
 // Initialize OpenAI if API key is available
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-}) : null;
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 interface TaggingResult {
   studyId: number;
@@ -45,52 +53,105 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
   {
     name: "Diabetes",
     category: "health_condition",
-    description: "Studies related to diabetes mellitus and blood glucose management",
-    synonyms: ["diabetes mellitus", "diabetic", "hyperglycemia", "blood glucose"],
-    keywords: ["diabetes", "diabetic", "glucose", "insulin", "hyperglycemia", "blood sugar"],
-    color: "#FF6B6B"
+    description:
+      "Studies related to diabetes mellitus and blood glucose management",
+    synonyms: [
+      "diabetes mellitus",
+      "diabetic",
+      "hyperglycemia",
+      "blood glucose",
+    ],
+    keywords: [
+      "diabetes",
+      "diabetic",
+      "glucose",
+      "insulin",
+      "hyperglycemia",
+      "blood sugar",
+    ],
+    color: "#FF6B6B",
   },
   {
     name: "Cardiovascular Disease",
-    category: "health_condition", 
+    category: "health_condition",
     description: "Heart and blood vessel related conditions",
     synonyms: ["heart disease", "cardiac", "cardiovascular", "coronary"],
-    keywords: ["heart", "cardiac", "cardiovascular", "coronary", "myocardial", "arterial"],
-    color: "#FF4757"
+    keywords: [
+      "heart",
+      "cardiac",
+      "cardiovascular",
+      "coronary",
+      "myocardial",
+      "arterial",
+    ],
+    color: "#FF4757",
   },
   {
     name: "Inflammation",
     category: "health_condition",
     description: "Inflammatory conditions and responses",
     synonyms: ["inflammatory", "inflammation", "anti-inflammatory"],
-    keywords: ["inflammation", "inflammatory", "cytokine", "interleukin", "TNF", "NF-kB"],
-    color: "#FFA502"
+    keywords: [
+      "inflammation",
+      "inflammatory",
+      "cytokine",
+      "interleukin",
+      "TNF",
+      "NF-kB",
+    ],
+    color: "#FFA502",
   },
   {
     name: "Oxidative Stress",
     category: "mechanism",
-    description: "Studies investigating oxidative stress and antioxidant effects",
-    synonyms: ["reactive oxygen species", "ROS", "free radicals", "antioxidant"],
-    keywords: ["oxidative", "antioxidant", "ROS", "reactive oxygen", "free radical", "oxidation"],
-    color: "#2ED573"
+    description:
+      "Studies investigating oxidative stress and antioxidant effects",
+    synonyms: [
+      "reactive oxygen species",
+      "ROS",
+      "free radicals",
+      "antioxidant",
+    ],
+    keywords: [
+      "oxidative",
+      "antioxidant",
+      "ROS",
+      "reactive oxygen",
+      "free radical",
+      "oxidation",
+    ],
+    color: "#2ED573",
   },
   {
     name: "Neuroprotection",
     category: "mechanism",
     description: "Protective effects on nervous system",
     synonyms: ["neuroprotective", "brain protection", "neuronal"],
-    keywords: ["neuroprotection", "neuroprotective", "neuronal", "brain", "cognitive"],
-    color: "#5352ED"
+    keywords: [
+      "neuroprotection",
+      "neuroprotective",
+      "neuronal",
+      "brain",
+      "cognitive",
+    ],
+    color: "#5352ED",
   },
-  
+
   // Body Systems
   {
     name: "Brain",
     category: "body_system",
     description: "Central nervous system and brain studies",
     synonyms: ["cerebral", "neural", "neurological", "cognitive"],
-    keywords: ["brain", "cerebral", "neural", "cognitive", "neurological", "CNS"],
-    color: "#A4B0BE"
+    keywords: [
+      "brain",
+      "cerebral",
+      "neural",
+      "cognitive",
+      "neurological",
+      "CNS",
+    ],
+    color: "#A4B0BE",
   },
   {
     name: "Liver",
@@ -98,17 +159,17 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
     description: "Hepatic system and liver function",
     synonyms: ["hepatic", "liver function"],
     keywords: ["liver", "hepatic", "hepatocyte", "bile", "hepatitis"],
-    color: "#8B4513"
+    color: "#8B4513",
   },
   {
     name: "Kidney",
-    category: "body_system", 
+    category: "body_system",
     description: "Renal system and kidney function",
     synonyms: ["renal", "kidney function", "nephron"],
     keywords: ["kidney", "renal", "nephron", "glomerular", "creatinine"],
-    color: "#6C5CE7"
+    color: "#6C5CE7",
   },
-  
+
   // Study Types
   {
     name: "Human Study",
@@ -116,7 +177,7 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
     description: "Clinical trials and human research",
     synonyms: ["clinical trial", "human trial", "patient study"],
     keywords: ["human", "patient", "clinical", "participant", "volunteer"],
-    color: "#00CEC9"
+    color: "#00CEC9",
   },
   {
     name: "Animal Study",
@@ -124,7 +185,7 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
     description: "Preclinical animal research",
     synonyms: ["animal model", "in vivo", "rodent"],
     keywords: ["animal", "mouse", "rat", "rodent", "in vivo", "model"],
-    color: "#FDCB6E"
+    color: "#FDCB6E",
   },
   {
     name: "Cell Study",
@@ -132,9 +193,9 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
     description: "In vitro cellular research",
     synonyms: ["in vitro", "cell culture", "cellular"],
     keywords: ["cell", "vitro", "culture", "cellular", "cultured"],
-    color: "#E17055"
+    color: "#E17055",
   },
-  
+
   // Delivery Methods
   {
     name: "Hydrogen Water",
@@ -142,7 +203,7 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
     description: "Hydrogen-rich water administration",
     synonyms: ["hydrogen-rich water", "HRW", "molecular hydrogen water"],
     keywords: ["hydrogen water", "hydrogen-rich", "HRW", "drinking water"],
-    color: "#00B894"
+    color: "#00B894",
   },
   {
     name: "Hydrogen Gas Inhalation",
@@ -150,70 +211,117 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
     description: "Inhalation of hydrogen gas",
     synonyms: ["hydrogen inhalation", "H2 gas", "inhalation therapy"],
     keywords: ["inhalation", "inhaled", "gas", "breathing", "respiratory"],
-    color: "#74B9FF"
+    color: "#74B9FF",
   },
   {
     name: "Hydrogen Injection",
     category: "delivery_method",
     description: "Injectable hydrogen solutions",
     synonyms: ["hydrogen injection", "H2 injection", "saline injection"],
-    keywords: ["injection", "injected", "saline", "intravenous", "subcutaneous"],
-    color: "#FD79A8"
+    keywords: [
+      "injection",
+      "injected",
+      "saline",
+      "intravenous",
+      "subcutaneous",
+    ],
+    color: "#FD79A8",
   },
-  
+
   // Outcomes
   {
     name: "Positive Effect",
     category: "outcome",
     description: "Studies showing beneficial effects",
     synonyms: ["beneficial", "improvement", "therapeutic"],
-    keywords: ["improved", "beneficial", "therapeutic", "positive", "effective"],
-    color: "#00B894"
+    keywords: [
+      "improved",
+      "beneficial",
+      "therapeutic",
+      "positive",
+      "effective",
+    ],
+    color: "#00B894",
   },
   {
     name: "No Effect",
-    category: "outcome", 
+    category: "outcome",
     description: "Studies showing no significant effect",
     synonyms: ["neutral", "no change", "non-significant"],
     keywords: ["no effect", "neutral", "non-significant", "unchanged"],
-    color: "#DDD"
-  }
+    color: "#DDD",
+  },
 ];
 
 /**
  * Initialize the tagging system database tables
  */
 export async function initializeTaggingSystem(): Promise<void> {
-  console.log('Initializing automated tagging system...');
-  
+  console.log("Initializing automated tagging system...");
+
   try {
     // Create tag categories
     const categories = [
-      { name: "Health Conditions", slug: "health_condition", description: "Medical conditions and diseases", color: "#FF6B6B", sortOrder: 1 },
-      { name: "Body Systems", slug: "body_system", description: "Organ systems and anatomical regions", color: "#A4B0BE", sortOrder: 2 },
-      { name: "Mechanisms", slug: "mechanism", description: "Biological mechanisms and pathways", color: "#2ED573", sortOrder: 3 },
-      { name: "Study Types", slug: "study_type", description: "Types of research studies", color: "#00CEC9", sortOrder: 4 },
-      { name: "Delivery Methods", slug: "delivery_method", description: "Methods of hydrogen administration", color: "#74B9FF", sortOrder: 5 },
-      { name: "Outcomes", slug: "outcome", description: "Study results and effects", color: "#00B894", sortOrder: 6 }
+      {
+        name: "Health Conditions",
+        slug: "health_condition",
+        description: "Medical conditions and diseases",
+        color: "#FF6B6B",
+        sortOrder: 1,
+      },
+      {
+        name: "Body Systems",
+        slug: "body_system",
+        description: "Organ systems and anatomical regions",
+        color: "#A4B0BE",
+        sortOrder: 2,
+      },
+      {
+        name: "Mechanisms",
+        slug: "mechanism",
+        description: "Biological mechanisms and pathways",
+        color: "#2ED573",
+        sortOrder: 3,
+      },
+      {
+        name: "Study Types",
+        slug: "study_type",
+        description: "Types of research studies",
+        color: "#00CEC9",
+        sortOrder: 4,
+      },
+      {
+        name: "Delivery Methods",
+        slug: "delivery_method",
+        description: "Methods of hydrogen administration",
+        color: "#74B9FF",
+        sortOrder: 5,
+      },
+      {
+        name: "Outcomes",
+        slug: "outcome",
+        description: "Study results and effects",
+        color: "#00B894",
+        sortOrder: 6,
+      },
     ];
 
     for (const category of categories) {
-      await db.insert(tagCategories)
-        .values(category)
-        .onConflictDoNothing();
+      await db.insert(tagCategories).values(category).onConflictDoNothing();
     }
 
     // Create predefined tags
     for (const tagDef of HYDROGEN_TAG_DEFINITIONS) {
       // Insert tag
-      const [tag] = await db.insert(tags)
+      const [tag] = await db
+        .insert(tags)
         .values({
           name: tagDef.name,
-          slug: tagDef.name.toLowerCase().replace(/\s+/g, '-'),
+          slug: tagDef.name.toLowerCase().replace(/\s+/g, "-"),
           category: tagDef.category,
           description: tagDef.description,
           color: tagDef.color,
-          isSystemGenerated: true
+          isSystemGenerated: true,
         })
         .onConflictDoNothing()
         .returning();
@@ -221,19 +329,20 @@ export async function initializeTaggingSystem(): Promise<void> {
       // Add synonyms if tag was created
       if (tag && tagDef.synonyms) {
         for (const synonym of tagDef.synonyms) {
-          await db.insert(tagSynonyms)
+          await db
+            .insert(tagSynonyms)
             .values({
               tagId: tag.id,
-              synonym: synonym.toLowerCase()
+              synonym: synonym.toLowerCase(),
             })
             .onConflictDoNothing();
         }
       }
     }
 
-    console.log('Tagging system initialized successfully');
+    console.log("Tagging system initialized successfully");
   } catch (error) {
-    console.error('Error initializing tagging system:', error);
+    console.error("Error initializing tagging system:", error);
     throw error;
   }
 }
@@ -250,8 +359,8 @@ async function extractTagsFromContent(study: any): Promise<{
   const abstractTags: string[] = [];
   const keywordTags: string[] = [];
 
-  const title = (study.title || '').toLowerCase();
-  const abstract = (study.abstract || '').toLowerCase();
+  const title = (study.title || "").toLowerCase();
+  const abstract = (study.abstract || "").toLowerCase();
   const keywords = study.keywords || [];
 
   // Get all tags with their synonyms
@@ -259,20 +368,20 @@ async function extractTagsFromContent(study: any): Promise<{
     .select({
       id: tags.id,
       name: tags.name,
-      category: tags.category
+      category: tags.category,
     })
     .from(tags);
 
   const tagSynonymsData = await db
     .select({
       tagId: tagSynonyms.tagId,
-      synonym: tagSynonyms.synonym
+      synonym: tagSynonyms.synonym,
     })
     .from(tagSynonyms);
 
   // Create synonym mapping
   const synonymMap = new Map<number, string[]>();
-  tagSynonymsData.forEach(syn => {
+  tagSynonymsData.forEach((syn) => {
     if (!synonymMap.has(syn.tagId)) {
       synonymMap.set(syn.tagId, []);
     }
@@ -286,40 +395,48 @@ async function extractTagsFromContent(study: any): Promise<{
     tagKeywords.push(...synonyms);
 
     // Find matching tag definition for additional keywords
-    const tagDef = HYDROGEN_TAG_DEFINITIONS.find(def => 
-      def.name.toLowerCase() === tag.name.toLowerCase()
+    const tagDef = HYDROGEN_TAG_DEFINITIONS.find(
+      (def) => def.name.toLowerCase() === tag.name.toLowerCase(),
     );
     if (tagDef) {
-      tagKeywords.push(...tagDef.keywords.map(k => k.toLowerCase()));
+      tagKeywords.push(...tagDef.keywords.map((k) => k.toLowerCase()));
     }
 
     // Check title
-    if (tagKeywords.some(keyword => title.includes(keyword))) {
+    if (tagKeywords.some((keyword) => title.includes(keyword))) {
       titleTags.push(tag.name);
     }
 
     // Check abstract
-    if (tagKeywords.some(keyword => abstract.includes(keyword))) {
+    if (tagKeywords.some((keyword) => abstract.includes(keyword))) {
       abstractTags.push(tag.name);
     }
 
     // Check existing keywords
-    if (keywords.some((kw: string) => 
-      tagKeywords.some(keyword => kw.toLowerCase().includes(keyword))
-    )) {
+    if (
+      keywords.some((kw: string) =>
+        tagKeywords.some((keyword) => kw.toLowerCase().includes(keyword)),
+      )
+    ) {
       keywordTags.push(tag.name);
     }
   }
 
   // Remove duplicates using filter
-  const uniqueTitleTags = titleTags.filter((tag, index) => titleTags.indexOf(tag) === index);
-  const uniqueAbstractTags = abstractTags.filter((tag, index) => abstractTags.indexOf(tag) === index);
-  const uniqueKeywordTags = keywordTags.filter((tag, index) => keywordTags.indexOf(tag) === index);
+  const uniqueTitleTags = titleTags.filter(
+    (tag, index) => titleTags.indexOf(tag) === index,
+  );
+  const uniqueAbstractTags = abstractTags.filter(
+    (tag, index) => abstractTags.indexOf(tag) === index,
+  );
+  const uniqueKeywordTags = keywordTags.filter(
+    (tag, index) => keywordTags.indexOf(tag) === index,
+  );
 
   return {
     titleTags: uniqueTitleTags,
     abstractTags: uniqueAbstractTags,
-    keywordTags: uniqueKeywordTags
+    keywordTags: uniqueKeywordTags,
   };
 }
 
@@ -335,7 +452,7 @@ async function extractTagsWithAI(study: any): Promise<string[]> {
     const prompt = `Analyze this hydrogen research study and extract relevant medical and scientific tags.
 
 Title: ${study.title}
-Abstract: ${study.abstract || 'No abstract available'}
+Abstract: ${study.abstract || "No abstract available"}
 
 Based on the content, identify relevant tags from these categories:
 - Health conditions (diseases, disorders, symptoms)
@@ -351,13 +468,15 @@ Return only a JSON array of tag names, maximum 8 tags:`;
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
       max_tokens: 200,
-      temperature: 0.3
+      temperature: 0.3,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || '{"tags": []}');
+    const result = JSON.parse(
+      response.choices[0].message.content || '{"tags": []}',
+    );
     return Array.isArray(result.tags) ? result.tags.slice(0, 8) : [];
   } catch (error) {
-    console.error('Error extracting tags with AI:', error);
+    console.error("Error extracting tags with AI:", error);
     return [];
   }
 }
@@ -367,7 +486,7 @@ Return only a JSON array of tag names, maximum 8 tags:`;
  */
 export async function tagSingleStudy(studyId: number): Promise<TaggingResult> {
   const startTime = Date.now();
-  
+
   try {
     // Get study data - only select fields that exist
     const [study] = await db
@@ -380,7 +499,7 @@ export async function tagSingleStudy(studyId: number): Promise<TaggingResult> {
         results: studies.results,
         conclusion: studies.conclusion,
         category: studies.category,
-        studyType: studies.studyType
+        studyType: studies.studyType,
       })
       .from(studies)
       .where(eq(studies.id, studyId));
@@ -390,27 +509,50 @@ export async function tagSingleStudy(studyId: number): Promise<TaggingResult> {
     }
 
     // Extract tags from content
-    const { titleTags, abstractTags, keywordTags } = await extractTagsFromContent(study);
-    
+    const { titleTags, abstractTags, keywordTags } =
+      await extractTagsFromContent(study);
+
     // Extract additional tags with AI
     const aiTags = await extractTagsWithAI(study);
 
     // Combine all tags
     const allExtractedTags = [
-      ...titleTags.map(tag => ({ name: tag, source: 'title', confidence: 95 })),
-      ...abstractTags.map(tag => ({ name: tag, source: 'abstract', confidence: 90 })),
-      ...keywordTags.map(tag => ({ name: tag, source: 'keywords', confidence: 100 })),
-      ...aiTags.map(tag => ({ name: tag, source: 'ai', confidence: 85 }))
+      ...titleTags.map((tag) => ({
+        name: tag,
+        source: "title",
+        confidence: 95,
+      })),
+      ...abstractTags.map((tag) => ({
+        name: tag,
+        source: "abstract",
+        confidence: 90,
+      })),
+      ...keywordTags.map((tag) => ({
+        name: tag,
+        source: "keywords",
+        confidence: 100,
+      })),
+      ...aiTags.map((tag) => ({ name: tag, source: "ai", confidence: 85 })),
     ];
 
     // Remove duplicates, keeping highest confidence
-    const uniqueTags = allExtractedTags.reduce((acc, current) => {
-      const existing = acc.find(tag => tag.name.toLowerCase() === current.name.toLowerCase());
-      if (!existing || current.confidence > existing.confidence) {
-        return [...acc.filter(tag => tag.name.toLowerCase() !== current.name.toLowerCase()), current];
-      }
-      return acc;
-    }, [] as typeof allExtractedTags);
+    const uniqueTags = allExtractedTags.reduce(
+      (acc, current) => {
+        const existing = acc.find(
+          (tag) => tag.name.toLowerCase() === current.name.toLowerCase(),
+        );
+        if (!existing || current.confidence > existing.confidence) {
+          return [
+            ...acc.filter(
+              (tag) => tag.name.toLowerCase() !== current.name.toLowerCase(),
+            ),
+            current,
+          ];
+        }
+        return acc;
+      },
+      [] as typeof allExtractedTags,
+    );
 
     // Clear existing tags for this study
     await db.delete(studyTags).where(eq(studyTags.studyId, studyId));
@@ -427,24 +569,26 @@ export async function tagSingleStudy(studyId: number): Promise<TaggingResult> {
 
       if (!tag) {
         // Create new tag if it doesn't exist
-        [tag] = await db.insert(tags)
+        [tag] = await db
+          .insert(tags)
           .values({
             name: tagData.name,
-            slug: tagData.name.toLowerCase().replace(/\s+/g, '-'),
-            category: 'uncategorized',
-            isSystemGenerated: true
+            slug: tagData.name.toLowerCase().replace(/\s+/g, "-"),
+            category: "uncategorized",
+            isSystemGenerated: true,
           })
           .returning();
       }
 
       if (tag) {
         // Add study-tag relationship
-        await db.insert(studyTags)
+        await db
+          .insert(studyTags)
           .values({
             studyId: studyId,
             tagId: tag.id,
             confidence: tagData.confidence,
-            source: tagData.source
+            source: tagData.source,
           })
           .onConflictDoNothing();
 
@@ -464,12 +608,11 @@ export async function tagSingleStudy(studyId: number): Promise<TaggingResult> {
       studyId,
       tagsAdded,
       tagsFromTitle: titleTags,
-      tagsFromAbstract: abstractTags, 
+      tagsFromAbstract: abstractTags,
       tagsFromKeywords: keywordTags,
       tagsFromAI: aiTags,
-      processingTime
+      processingTime,
     };
-
   } catch (error) {
     console.error(`Error tagging study ${studyId}:`, error);
     throw error;
@@ -486,11 +629,9 @@ export async function processAllStudiesForTagging(): Promise<{
   totalTagsAdded: number;
   avgProcessingTime: number;
 }> {
-  console.log('Starting automated tagging for all studies...');
-  
-  const allStudies = await db
-    .select({ id: studies.id })
-    .from(studies);
+  console.log("Starting automated tagging for all studies...");
+
+  const allStudies = await db.select({ id: studies.id }).from(studies);
 
   let successfullyTagged = 0;
   let errors = 0;
@@ -499,22 +640,23 @@ export async function processAllStudiesForTagging(): Promise<{
 
   for (let i = 0; i < allStudies.length; i++) {
     const study = allStudies[i];
-    
+
     try {
-      console.log(`[${i + 1}/${allStudies.length}] Tagging study ${study.id}...`);
-      
+      console.log(
+        `[${i + 1}/${allStudies.length}] Tagging study ${study.id}...`,
+      );
+
       const result = await tagSingleStudy(study.id);
-      
+
       successfullyTagged++;
       totalTagsAdded += result.tagsAdded;
       totalProcessingTime += result.processingTime;
-      
+
       if (result.tagsAdded > 0) {
         console.log(`  ✓ Added ${result.tagsAdded} tags`);
       } else {
         console.log(`  ○ No new tags added`);
       }
-      
     } catch (error) {
       console.error(`  ✗ Error tagging study ${study.id}:`, error);
       errors++;
@@ -522,25 +664,28 @@ export async function processAllStudiesForTagging(): Promise<{
 
     // Brief delay to avoid overwhelming APIs
     if (i < allStudies.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
-  const avgProcessingTime = totalProcessingTime / Math.max(successfullyTagged, 1);
+  const avgProcessingTime =
+    totalProcessingTime / Math.max(successfullyTagged, 1);
 
-  console.log('\n=== AUTOMATED TAGGING COMPLETE ===');
+  console.log("\n=== AUTOMATED TAGGING COMPLETE ===");
   console.log(`Total studies: ${allStudies.length}`);
   console.log(`Successfully tagged: ${successfullyTagged}`);
   console.log(`Errors: ${errors}`);
   console.log(`Total tags added: ${totalTagsAdded}`);
-  console.log(`Average processing time: ${avgProcessingTime.toFixed(0)}ms per study`);
+  console.log(
+    `Average processing time: ${avgProcessingTime.toFixed(0)}ms per study`,
+  );
 
   return {
     totalStudies: allStudies.length,
     successfullyTagged,
     errors,
     totalTagsAdded,
-    avgProcessingTime
+    avgProcessingTime,
   };
 }
 
@@ -560,23 +705,23 @@ export async function getTaggingStats(): Promise<{
     .select({
       name: tags.name,
       category: tags.category,
-      count: tags.usageCount
+      count: tags.usageCount,
     })
     .from(tags)
     .orderBy(sql`${tags.usageCount} DESC`)
     .limit(20);
 
   // Ensure count is never null
-  const topTags = topTagsResult.map(tag => ({
+  const topTags = topTagsResult.map((tag) => ({
     name: tag.name,
     category: tag.category,
-    count: tag.count || 0
+    count: tag.count || 0,
   }));
 
   const categoryStatsResult = await db
     .select({
       category: tags.category,
-      count: sql<number>`COUNT(*)::int`
+      count: sql<number>`COUNT(*)::int`,
     })
     .from(tags)
     .groupBy(tags.category)
@@ -586,9 +731,9 @@ export async function getTaggingStats(): Promise<{
     totalTags,
     totalStudyTags,
     topTags,
-    tagsByCategory: categoryStatsResult.map(stat => ({
+    tagsByCategory: categoryStatsResult.map((stat) => ({
       category: stat.category,
-      count: stat.count || 0
-    }))
+      count: stat.count || 0,
+    })),
   };
 }

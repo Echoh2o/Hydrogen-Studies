@@ -1,12 +1,12 @@
 /**
  * Database Performance Optimizer
- * 
+ *
  * Implements intelligent caching, query optimization, and connection management
  * to maximize database speed, quality, and reliability.
  */
 
-import { db, pool } from './db';
-import memoize from 'memoizee';
+import { db, pool } from "./db";
+import memoize from "memoizee";
 
 // In-memory cache for frequently accessed data
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
@@ -28,7 +28,7 @@ export class PerformanceCache {
     cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl,
     });
   }
 
@@ -61,7 +61,7 @@ export class PerformanceCache {
     return {
       size: cache.size,
       maxSize: this.maxSize,
-      hitRate: 0 // Could implement hit tracking
+      hitRate: 0, // Could implement hit tracking
     };
   }
 }
@@ -75,7 +75,7 @@ export const memoizedQueries = {
   // Cache category counts for 10 minutes
   getCategoryCounts: memoize(
     async () => {
-      const cacheKey = 'category_counts';
+      const cacheKey = "category_counts";
       const cached = performanceCache.get(cacheKey);
       if (cached) return cached;
 
@@ -92,13 +92,13 @@ export const memoizedQueries = {
       performanceCache.set(cacheKey, result.rows, 600000); // 10 minutes
       return result.rows;
     },
-    { maxAge: 600000, primitive: true }
+    { maxAge: 600000, primitive: true },
   ),
 
   // Cache consumer category counts for 15 minutes
   getConsumerCategoryCounts: memoize(
     async () => {
-      const cacheKey = 'consumer_category_counts';
+      const cacheKey = "consumer_category_counts";
       const cached = performanceCache.get(cacheKey);
       if (cached) return cached;
 
@@ -115,13 +115,13 @@ export const memoizedQueries = {
       performanceCache.set(cacheKey, result.rows, 900000); // 15 minutes
       return result.rows;
     },
-    { maxAge: 900000, primitive: true }
+    { maxAge: 900000, primitive: true },
   ),
 
   // Cache database statistics for 30 minutes
   getDatabaseStats: memoize(
     async () => {
-      const cacheKey = 'database_stats';
+      const cacheKey = "database_stats";
       const cached = performanceCache.get(cacheKey);
       if (cached) return cached;
 
@@ -139,20 +139,25 @@ export const memoizedQueries = {
       performanceCache.set(cacheKey, result.rows[0], 1800000); // 30 minutes
       return result.rows[0];
     },
-    { maxAge: 1800000, primitive: true }
-  )
+    { maxAge: 1800000, primitive: true },
+  ),
 };
 
 /**
  * Optimized search with intelligent caching
  */
-export async function optimizedSearch(query: string, limit: number = 20, offset: number = 0) {
+export async function optimizedSearch(
+  query: string,
+  limit: number = 20,
+  offset: number = 0,
+) {
   const cacheKey = `search_${query}_${limit}_${offset}`;
   const cached = performanceCache.get(cacheKey);
   if (cached) return cached;
 
   // Use the new GIN indexes for fast text search
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     SELECT 
       id, title, abstract, authors, journal, publish_date, category,
       consumer_categories, doi, image_url, citation_count,
@@ -164,7 +169,9 @@ export async function optimizedSearch(query: string, limit: number = 20, offset:
       to_tsvector('english', abstract) @@ plainto_tsquery('english', $1)
     ORDER BY relevance DESC, citation_count DESC
     LIMIT $2 OFFSET $3
-  `, [query, limit, offset]);
+  `,
+    [query, limit, offset],
+  );
 
   performanceCache.set(cacheKey, result.rows, 300000); // 5 minutes
   return result.rows;
@@ -179,19 +186,19 @@ export class ConnectionHealthMonitor {
     totalQueries: 0,
     avgResponseTime: 0,
     errorRate: 0,
-    connectionErrors: 0
+    connectionErrors: 0,
   };
 
   start(): void {
     this.healthCheckInterval = setInterval(async () => {
       try {
         const start = Date.now();
-        await pool.query('SELECT 1');
+        await pool.query("SELECT 1");
         const responseTime = Date.now() - start;
-        
+
         this.updateMetrics({ responseTime, success: true });
       } catch (error) {
-        console.error('Database health check failed:', error);
+        console.error("Database health check failed:", error);
         this.updateMetrics({ responseTime: 0, success: false });
       }
     }, 30000); // Check every 30 seconds
@@ -204,17 +211,24 @@ export class ConnectionHealthMonitor {
     }
   }
 
-  private updateMetrics({ responseTime, success }: { responseTime: number; success: boolean }): void {
+  private updateMetrics({
+    responseTime,
+    success,
+  }: {
+    responseTime: number;
+    success: boolean;
+  }): void {
     this.metrics.totalQueries++;
-    
+
     if (success) {
-      this.metrics.avgResponseTime = 
+      this.metrics.avgResponseTime =
         (this.metrics.avgResponseTime + responseTime) / 2;
     } else {
       this.metrics.connectionErrors++;
     }
-    
-    this.metrics.errorRate = this.metrics.connectionErrors / this.metrics.totalQueries;
+
+    this.metrics.errorRate =
+      this.metrics.connectionErrors / this.metrics.totalQueries;
   }
 
   getMetrics() {
@@ -230,9 +244,12 @@ export class DatabaseMaintenance {
 
   start(): void {
     // Run maintenance every 6 hours
-    this.maintenanceInterval = setInterval(async () => {
-      await this.performMaintenance();
-    }, 6 * 60 * 60 * 1000);
+    this.maintenanceInterval = setInterval(
+      async () => {
+        await this.performMaintenance();
+      },
+      6 * 60 * 60 * 1000,
+    );
   }
 
   stop(): void {
@@ -244,24 +261,24 @@ export class DatabaseMaintenance {
 
   async performMaintenance(): Promise<void> {
     try {
-      console.log('Starting database maintenance...');
-      
+      console.log("Starting database maintenance...");
+
       // Update table statistics
-      await pool.query('ANALYZE studies');
-      await pool.query('ANALYZE study_categories');
-      await pool.query('ANALYZE study_tags');
-      
+      await pool.query("ANALYZE studies");
+      await pool.query("ANALYZE study_categories");
+      await pool.query("ANALYZE study_tags");
+
       // Clear old cache entries
       performanceCache.clear();
-      
+
       // Force refresh of memoized queries
       memoizedQueries.getCategoryCounts.clear();
       memoizedQueries.getConsumerCategoryCounts.clear();
       memoizedQueries.getDatabaseStats.clear();
-      
-      console.log('Database maintenance completed successfully');
+
+      console.log("Database maintenance completed successfully");
     } catch (error) {
-      console.error('Database maintenance failed:', error);
+      console.error("Database maintenance failed:", error);
     }
   }
 }
@@ -271,7 +288,7 @@ export const connectionMonitor = new ConnectionHealthMonitor();
 export const databaseMaintenance = new DatabaseMaintenance();
 
 // Start monitoring in production
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === "production") {
   connectionMonitor.start();
   databaseMaintenance.start();
 }
@@ -280,19 +297,19 @@ if (process.env.NODE_ENV === 'production') {
  * Graceful shutdown handler
  */
 export async function gracefulShutdown(): Promise<void> {
-  console.log('Shutting down database connections...');
-  
+  console.log("Shutting down database connections...");
+
   connectionMonitor.stop();
   databaseMaintenance.stop();
-  
+
   try {
     await pool.end();
-    console.log('Database connections closed successfully');
+    console.log("Database connections closed successfully");
   } catch (error) {
-    console.error('Error closing database connections:', error);
+    console.error("Error closing database connections:", error);
   }
 }
 
 // Handle process shutdown
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);

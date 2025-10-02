@@ -5,24 +5,42 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { 
-  FileText, 
-  Mic, 
-  BarChart3, 
-  Share2, 
-  Video, 
-  Mail, 
+import {
+  FileText,
+  Mic,
+  BarChart3,
+  Share2,
+  Video,
+  Mail,
   Download,
   Eye,
   Edit,
@@ -37,21 +55,21 @@ import {
   Linkedin,
   Instagram,
   Facebook,
-  Hash
+  Hash,
 } from "lucide-react";
 
 // Content format types
 const ContentFormats = {
-  PODCAST: 'podcast',
-  INFOGRAPHIC: 'infographic',
-  SOCIAL_TWITTER: 'social_twitter',
-  SOCIAL_LINKEDIN: 'social_linkedin',
-  SOCIAL_INSTAGRAM: 'social_instagram',
-  SOCIAL_FACEBOOK: 'social_facebook',
-  SOCIAL_TIKTOK: 'social_tiktok',
-  VIDEO_YOUTUBE: 'video_youtube',
-  VIDEO_SHORT: 'video_short',
-  NEWSLETTER: 'newsletter'
+  PODCAST: "podcast",
+  INFOGRAPHIC: "infographic",
+  SOCIAL_TWITTER: "social_twitter",
+  SOCIAL_LINKEDIN: "social_linkedin",
+  SOCIAL_INSTAGRAM: "social_instagram",
+  SOCIAL_FACEBOOK: "social_facebook",
+  SOCIAL_TIKTOK: "social_tiktok",
+  VIDEO_YOUTUBE: "video_youtube",
+  VIDEO_SHORT: "video_short",
+  NEWSLETTER: "newsletter",
 };
 
 // Format icons mapping
@@ -65,21 +83,21 @@ const formatIcons = {
   [ContentFormats.SOCIAL_TIKTOK]: <Hash className="h-4 w-4" />,
   [ContentFormats.VIDEO_YOUTUBE]: <Video className="h-4 w-4" />,
   [ContentFormats.VIDEO_SHORT]: <Video className="h-4 w-4" />,
-  [ContentFormats.NEWSLETTER]: <Mail className="h-4 w-4" />
+  [ContentFormats.NEWSLETTER]: <Mail className="h-4 w-4" />,
 };
 
 // Format display names
 const formatNames = {
-  [ContentFormats.PODCAST]: 'Podcast Script',
-  [ContentFormats.INFOGRAPHIC]: 'Infographic Data',
-  [ContentFormats.SOCIAL_TWITTER]: 'Twitter/X Thread',
-  [ContentFormats.SOCIAL_LINKEDIN]: 'LinkedIn Post',
-  [ContentFormats.SOCIAL_INSTAGRAM]: 'Instagram Post',
-  [ContentFormats.SOCIAL_FACEBOOK]: 'Facebook Post',
-  [ContentFormats.SOCIAL_TIKTOK]: 'TikTok Caption',
-  [ContentFormats.VIDEO_YOUTUBE]: 'YouTube Script',
-  [ContentFormats.VIDEO_SHORT]: 'Short Video Script',
-  [ContentFormats.NEWSLETTER]: 'Email Newsletter'
+  [ContentFormats.PODCAST]: "Podcast Script",
+  [ContentFormats.INFOGRAPHIC]: "Infographic Data",
+  [ContentFormats.SOCIAL_TWITTER]: "Twitter/X Thread",
+  [ContentFormats.SOCIAL_LINKEDIN]: "LinkedIn Post",
+  [ContentFormats.SOCIAL_INSTAGRAM]: "Instagram Post",
+  [ContentFormats.SOCIAL_FACEBOOK]: "Facebook Post",
+  [ContentFormats.SOCIAL_TIKTOK]: "TikTok Caption",
+  [ContentFormats.VIDEO_YOUTUBE]: "YouTube Script",
+  [ContentFormats.VIDEO_SHORT]: "Short Video Script",
+  [ContentFormats.NEWSLETTER]: "Email Newsletter",
 };
 
 export default function MultiFormatGeneratorPage() {
@@ -92,39 +110,48 @@ export default function MultiFormatGeneratorPage() {
 
   // Fetch studies
   const { data: studiesData, isLoading: studiesLoading } = useQuery({
-    queryKey: ['/api/studies'],
+    queryKey: ["/api/studies"],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/studies?limit=100');
+      const response = await apiRequest("GET", "/api/studies?limit=100");
       return response.json();
-    }
+    },
   });
 
   // Fetch generated content for selected study
   const { data: generatedContent, refetch: refetchContent } = useQuery({
-    queryKey: ['/api/multi-format/study', selectedStudy],
+    queryKey: ["/api/multi-format/study", selectedStudy],
     enabled: !!selectedStudy,
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/multi-format/study/${selectedStudy}`);
+      const response = await apiRequest(
+        "GET",
+        `/api/multi-format/study/${selectedStudy}`,
+      );
       return response.json();
-    }
+    },
   });
 
   // Fetch statistics
   const { data: statsData } = useQuery({
-    queryKey: ['/api/multi-format/stats'],
+    queryKey: ["/api/multi-format/stats"],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/multi-format/stats');
+      const response = await apiRequest("GET", "/api/multi-format/stats");
       return response.json();
-    }
+    },
   });
 
   // Generate content mutation
   const generateContent = useMutation({
-    mutationFn: async ({ studyId, formats }: { studyId: number; formats: string[] }) => {
-      const response = await apiRequest('POST', '/api/multi-format/generate', {
+    mutationFn: async ({
+      studyId,
+      formats,
+    }: {
+      studyId: number;
+      formats: string[];
+    }) => {
+      const response = await apiRequest("POST", "/api/multi-format/generate", {
         studyId,
         formats,
-        options: { fallbackToBasic: true }
+        options: { fallbackToBasic: true },
       });
       return response.json();
     },
@@ -134,7 +161,7 @@ export default function MultiFormatGeneratorPage() {
         description: `Successfully generated ${data.data.generated.length} format(s)`,
       });
       refetchContent();
-      queryClient.invalidateQueries({ queryKey: ['/api/multi-format/stats'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-format/stats"] });
     },
     onError: (error) => {
       toast({
@@ -142,13 +169,17 @@ export default function MultiFormatGeneratorPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Batch generate all formats
   const batchGenerate = useMutation({
     mutationFn: async (studyId: number) => {
-      const response = await apiRequest('POST', '/api/multi-format/batch-generate', { studyId });
+      const response = await apiRequest(
+        "POST",
+        "/api/multi-format/batch-generate",
+        { studyId },
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -157,7 +188,7 @@ export default function MultiFormatGeneratorPage() {
         description: `Generated ${data.data.generated} formats`,
       });
       refetchContent();
-      queryClient.invalidateQueries({ queryKey: ['/api/multi-format/stats'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-format/stats"] });
     },
     onError: (error) => {
       toast({
@@ -165,13 +196,17 @@ export default function MultiFormatGeneratorPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Update content mutation
   const updateContent = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
-      const response = await apiRequest('PUT', `/api/multi-format/${id}`, updates);
+      const response = await apiRequest(
+        "PUT",
+        `/api/multi-format/${id}`,
+        updates,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -188,13 +223,13 @@ export default function MultiFormatGeneratorPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete content mutation
   const deleteContent = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest('DELETE', `/api/multi-format/${id}`);
+      const response = await apiRequest("DELETE", `/api/multi-format/${id}`);
       return response.json();
     },
     onSuccess: () => {
@@ -210,13 +245,23 @@ export default function MultiFormatGeneratorPage() {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Publish/unpublish content
   const togglePublish = useMutation({
-    mutationFn: async ({ id, isPublished }: { id: number; isPublished: boolean }) => {
-      const response = await apiRequest('POST', `/api/multi-format/${id}/publish`, { isPublished });
+    mutationFn: async ({
+      id,
+      isPublished,
+    }: {
+      id: number;
+      isPublished: boolean;
+    }) => {
+      const response = await apiRequest(
+        "POST",
+        `/api/multi-format/${id}/publish`,
+        { isPublished },
+      );
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -225,23 +270,25 @@ export default function MultiFormatGeneratorPage() {
         description: data.message,
       });
       refetchContent();
-    }
+    },
   });
 
   // Export content
-  const exportContent = async (id: number, format: 'json' | 'txt' | 'html') => {
+  const exportContent = async (id: number, format: "json" | "txt" | "html") => {
     try {
-      const response = await fetch(`/api/multi-format/${id}/export?format=${format}`);
+      const response = await fetch(
+        `/api/multi-format/${id}/export?format=${format}`,
+      );
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `content_${id}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast({
         title: "Export Successful",
         description: `Content exported as ${format.toUpperCase()}`,
@@ -257,17 +304,20 @@ export default function MultiFormatGeneratorPage() {
 
   // Handle format selection
   const handleFormatToggle = (format: string) => {
-    setSelectedFormats(prev => 
-      prev.includes(format) 
-        ? prev.filter(f => f !== format)
-        : [...prev, format]
+    setSelectedFormats((prev) =>
+      prev.includes(format)
+        ? prev.filter((f) => f !== format)
+        : [...prev, format],
     );
   };
 
   // Handle generate button click
   const handleGenerate = () => {
     if (selectedStudy && selectedFormats.length > 0) {
-      generateContent.mutate({ studyId: selectedStudy, formats: selectedFormats });
+      generateContent.mutate({
+        studyId: selectedStudy,
+        formats: selectedFormats,
+      });
     }
   };
 
@@ -281,7 +331,9 @@ export default function MultiFormatGeneratorPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Multi-Format Content Generator</h1>
+        <h1 className="text-3xl font-bold mb-2">
+          Multi-Format Content Generator
+        </h1>
         <p className="text-gray-600">
           Transform research studies into multiple engaging content formats
         </p>
@@ -292,10 +344,14 @@ export default function MultiFormatGeneratorPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Total Content</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Content
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{statsData.data.totalContent}</div>
+              <div className="text-2xl font-bold">
+                {statsData.data.totalContent}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -351,8 +407,13 @@ export default function MultiFormatGeneratorPage() {
             <CardContent className="space-y-6">
               {/* Study Selection */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Select Study</label>
-                <Select value={selectedStudy?.toString()} onValueChange={(v) => setSelectedStudy(parseInt(v))}>
+                <label className="text-sm font-medium mb-2 block">
+                  Select Study
+                </label>
+                <Select
+                  value={selectedStudy?.toString()}
+                  onValueChange={(v) => setSelectedStudy(parseInt(v))}
+                >
                   <SelectTrigger className="w-full" data-testid="select-study">
                     <SelectValue placeholder="Choose a study..." />
                   </SelectTrigger>
@@ -372,21 +433,29 @@ export default function MultiFormatGeneratorPage() {
 
               {/* Format Selection */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Select Formats</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Select Formats
+                </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {Object.entries(ContentFormats).map(([key, value]) => (
                     <div
                       key={key}
                       className={`border rounded-lg p-3 cursor-pointer transition-colors ${
                         selectedFormats.includes(value)
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
                       }`}
                       onClick={() => handleFormatToggle(value)}
                       data-testid={`format-${value}`}
                     >
                       <div className="flex items-center space-x-2">
-                        <div className={selectedFormats.includes(value) ? 'text-blue-600' : 'text-gray-500'}>
+                        <div
+                          className={
+                            selectedFormats.includes(value)
+                              ? "text-blue-600"
+                              : "text-gray-500"
+                          }
+                        >
                           {formatIcons[value]}
                         </div>
                         <span className="text-sm font-medium">
@@ -402,7 +471,11 @@ export default function MultiFormatGeneratorPage() {
               <div className="flex space-x-3">
                 <Button
                   onClick={handleGenerate}
-                  disabled={!selectedStudy || selectedFormats.length === 0 || generateContent.isPending}
+                  disabled={
+                    !selectedStudy ||
+                    selectedFormats.length === 0 ||
+                    generateContent.isPending
+                  }
                   data-testid="button-generate"
                 >
                   {generateContent.isPending ? (
@@ -417,7 +490,7 @@ export default function MultiFormatGeneratorPage() {
                     </>
                   )}
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   onClick={handleBatchGenerate}
@@ -468,7 +541,10 @@ export default function MultiFormatGeneratorPage() {
               ) : (
                 <div className="space-y-4">
                   {generatedContent?.data?.map((content: any) => (
-                    <Card key={content.id} className="border-l-4 border-l-blue-500">
+                    <Card
+                      key={content.id}
+                      className="border-l-4 border-l-blue-500"
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
@@ -476,15 +552,24 @@ export default function MultiFormatGeneratorPage() {
                               {formatIcons[content.formatType]}
                             </div>
                             <div>
-                              <h4 className="font-medium">{formatNames[content.formatType]}</h4>
+                              <h4 className="font-medium">
+                                {formatNames[content.formatType]}
+                              </h4>
                               <p className="text-sm text-gray-500">
-                                Created: {new Date(content.createdAt).toLocaleDateString()}
+                                Created:{" "}
+                                {new Date(
+                                  content.createdAt,
+                                ).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Badge variant={content.isPublished ? "default" : "outline"}>
-                              {content.isPublished ? 'Published' : 'Draft'}
+                            <Badge
+                              variant={
+                                content.isPublished ? "default" : "outline"
+                              }
+                            >
+                              {content.isPublished ? "Published" : "Draft"}
                             </Badge>
                             <Button
                               variant="ghost"
@@ -505,10 +590,12 @@ export default function MultiFormatGeneratorPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => togglePublish.mutate({
-                                id: content.id,
-                                isPublished: !content.isPublished
-                              })}
+                              onClick={() =>
+                                togglePublish.mutate({
+                                  id: content.id,
+                                  isPublished: !content.isPublished,
+                                })
+                              }
                               data-testid={`publish-${content.id}`}
                             >
                               {content.isPublished ? (
@@ -520,7 +607,7 @@ export default function MultiFormatGeneratorPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => exportContent(content.id, 'txt')}
+                              onClick={() => exportContent(content.id, "txt")}
                               data-testid={`export-${content.id}`}
                             >
                               <Download className="h-4 w-4" />
@@ -575,7 +662,9 @@ export default function MultiFormatGeneratorPage() {
         <ContentEditDialog
           content={editingContent}
           onClose={() => setEditingContent(null)}
-          onSave={(updates) => updateContent.mutate({ id: editingContent.id, updates })}
+          onSave={(updates) =>
+            updateContent.mutate({ id: editingContent.id, updates })
+          }
         />
       )}
     </div>
@@ -591,11 +680,15 @@ function ContentPreview({ content }: { content: any }) {
           <div className="space-y-4">
             <div>
               <h3 className="font-medium mb-2">Introduction</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{content.podcastIntro}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {content.podcastIntro}
+              </p>
             </div>
             <div>
               <h3 className="font-medium mb-2">Script</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{content.podcastScript}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {content.podcastScript}
+              </p>
             </div>
             {content.podcastQA && (
               <div>
@@ -610,15 +703,19 @@ function ContentPreview({ content }: { content: any }) {
             )}
             <div>
               <h3 className="font-medium mb-2">Outro</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{content.podcastOutro}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {content.podcastOutro}
+              </p>
             </div>
             <div>
               <h3 className="font-medium mb-2">Show Notes</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{content.podcastShowNotes}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {content.podcastShowNotes}
+              </p>
             </div>
           </div>
         );
-        
+
       case ContentFormats.INFOGRAPHIC:
         return (
           <div className="space-y-4">
@@ -630,31 +727,39 @@ function ContentPreview({ content }: { content: any }) {
               <div>
                 <h3 className="font-medium mb-2">Key Statistics</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {JSON.parse(content.keyStatistics).map((stat: any, index: number) => (
-                    <div key={index} className="p-3 bg-blue-50 rounded">
-                      <p className="text-2xl font-bold text-blue-600">{stat.value}</p>
-                      <p className="text-sm font-medium">{stat.label}</p>
-                      <p className="text-xs text-gray-500">{stat.context}</p>
-                    </div>
-                  ))}
+                  {JSON.parse(content.keyStatistics).map(
+                    (stat: any, index: number) => (
+                      <div key={index} className="p-3 bg-blue-50 rounded">
+                        <p className="text-2xl font-bold text-blue-600">
+                          {stat.value}
+                        </p>
+                        <p className="text-sm font-medium">{stat.label}</p>
+                        <p className="text-xs text-gray-500">{stat.context}</p>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             )}
           </div>
         );
-        
+
       case ContentFormats.SOCIAL_TWITTER:
         return (
           <div className="space-y-4">
             {content.threadContent ? (
               <div>
                 <h3 className="font-medium mb-2">Thread</h3>
-                {JSON.parse(content.threadContent).map((tweet: string, index: number) => (
-                  <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500 mb-1">Tweet {index + 1}</p>
-                    <p>{tweet}</p>
-                  </div>
-                ))}
+                {JSON.parse(content.threadContent).map(
+                  (tweet: string, index: number) => (
+                    <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-500 mb-1">
+                        Tweet {index + 1}
+                      </p>
+                      <p>{tweet}</p>
+                    </div>
+                  ),
+                )}
               </div>
             ) : (
               <div>
@@ -665,36 +770,44 @@ function ContentPreview({ content }: { content: any }) {
             {content.hashtags && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {content.hashtags.map((tag: string, index: number) => (
-                  <Badge key={index} variant="secondary">#{tag}</Badge>
+                  <Badge key={index} variant="secondary">
+                    #{tag}
+                  </Badge>
                 ))}
               </div>
             )}
           </div>
         );
-        
+
       case ContentFormats.VIDEO_YOUTUBE:
       case ContentFormats.VIDEO_SHORT:
         return (
           <div className="space-y-4">
             <div>
               <h3 className="font-medium mb-2">Script</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{content.videoScript}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {content.videoScript}
+              </p>
             </div>
             {content.videoStoryboard && (
               <div>
                 <h3 className="font-medium mb-2">Storyboard</h3>
-                {JSON.parse(content.videoStoryboard).map((scene: any, index: number) => (
-                  <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
-                    <p className="font-medium">{scene.time} - {scene.scene}</p>
-                    <p className="text-sm mt-1">Visuals: {scene.visuals}</p>
-                    <p className="text-sm">Narration: {scene.narration}</p>
-                  </div>
-                ))}
+                {JSON.parse(content.videoStoryboard).map(
+                  (scene: any, index: number) => (
+                    <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
+                      <p className="font-medium">
+                        {scene.time} - {scene.scene}
+                      </p>
+                      <p className="text-sm mt-1">Visuals: {scene.visuals}</p>
+                      <p className="text-sm">Narration: {scene.narration}</p>
+                    </div>
+                  ),
+                )}
               </div>
             )}
           </div>
         );
-        
+
       case ContentFormats.NEWSLETTER:
         return (
           <div className="space-y-4">
@@ -709,7 +822,7 @@ function ContentPreview({ content }: { content: any }) {
             {content.newsletterHtml && (
               <div>
                 <h3 className="font-medium mb-2">HTML Preview</h3>
-                <div 
+                <div
                   className="border p-4 rounded bg-white"
                   dangerouslySetInnerHTML={{ __html: content.newsletterHtml }}
                 />
@@ -717,27 +830,33 @@ function ContentPreview({ content }: { content: any }) {
             )}
             <div>
               <h3 className="font-medium mb-2">Plain Text</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{content.newsletterPlainText}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {content.newsletterPlainText}
+              </p>
             </div>
           </div>
         );
-        
+
       default:
         return (
           <div>
-            <p className="text-gray-700">{content.socialContent || 'No preview available'}</p>
+            <p className="text-gray-700">
+              {content.socialContent || "No preview available"}
+            </p>
           </div>
         );
     }
   };
-  
+
   return (
     <div className="max-h-[600px] overflow-y-auto">
       <div className="mb-4 flex items-center space-x-2">
         <div className="text-blue-600">{formatIcons[content.formatType]}</div>
-        <h2 className="text-lg font-medium">{formatNames[content.formatType]}</h2>
+        <h2 className="text-lg font-medium">
+          {formatNames[content.formatType]}
+        </h2>
         <Badge variant={content.isPublished ? "default" : "outline"}>
-          {content.isPublished ? 'Published' : 'Draft'}
+          {content.isPublished ? "Published" : "Draft"}
         </Badge>
       </div>
       {renderContent()}
@@ -746,21 +865,21 @@ function ContentPreview({ content }: { content: any }) {
 }
 
 // Content Edit Dialog Component
-function ContentEditDialog({ 
-  content, 
-  onClose, 
-  onSave 
-}: { 
-  content: any; 
-  onClose: () => void; 
+function ContentEditDialog({
+  content,
+  onClose,
+  onSave,
+}: {
+  content: any;
+  onClose: () => void;
   onSave: (updates: any) => void;
 }) {
   const [edits, setEdits] = useState<any>({});
-  
+
   const handleSave = () => {
     onSave(edits);
   };
-  
+
   const renderEditForm = () => {
     switch (content.formatType) {
       case ContentFormats.PODCAST:
@@ -772,7 +891,9 @@ function ContentEditDialog({
                 className="w-full mt-1 p-2 border rounded"
                 rows={3}
                 defaultValue={content.podcastIntro}
-                onChange={(e) => setEdits({ ...edits, podcastIntro: e.target.value })}
+                onChange={(e) =>
+                  setEdits({ ...edits, podcastIntro: e.target.value })
+                }
               />
             </div>
             <div>
@@ -781,7 +902,9 @@ function ContentEditDialog({
                 className="w-full mt-1 p-2 border rounded"
                 rows={10}
                 defaultValue={content.podcastScript}
-                onChange={(e) => setEdits({ ...edits, podcastScript: e.target.value })}
+                onChange={(e) =>
+                  setEdits({ ...edits, podcastScript: e.target.value })
+                }
               />
             </div>
             <div>
@@ -790,12 +913,14 @@ function ContentEditDialog({
                 className="w-full mt-1 p-2 border rounded"
                 rows={3}
                 defaultValue={content.podcastOutro}
-                onChange={(e) => setEdits({ ...edits, podcastOutro: e.target.value })}
+                onChange={(e) =>
+                  setEdits({ ...edits, podcastOutro: e.target.value })
+                }
               />
             </div>
           </div>
         );
-        
+
       case ContentFormats.SOCIAL_TWITTER:
       case ContentFormats.SOCIAL_LINKEDIN:
       case ContentFormats.SOCIAL_INSTAGRAM:
@@ -809,17 +934,19 @@ function ContentEditDialog({
                 className="w-full mt-1 p-2 border rounded"
                 rows={5}
                 defaultValue={content.socialContent}
-                onChange={(e) => setEdits({ ...edits, socialContent: e.target.value })}
+                onChange={(e) =>
+                  setEdits({ ...edits, socialContent: e.target.value })
+                }
               />
             </div>
           </div>
         );
-        
+
       default:
         return <p>Edit form not available for this content type</p>;
     }
   };
-  
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -829,16 +956,12 @@ function ContentEditDialog({
             Make changes to your generated content
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          {renderEditForm()}
-        </div>
+        <div className="py-4">{renderEditForm()}</div>
         <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            Save Changes
-          </Button>
+          <Button onClick={handleSave}>Save Changes</Button>
         </div>
       </DialogContent>
     </Dialog>

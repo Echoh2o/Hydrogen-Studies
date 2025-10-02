@@ -1,6 +1,6 @@
 /**
  * ChatGPT-Powered Study Enhancement System
- * 
+ *
  * Enhances hydrogen research studies with:
  * - Simplified explanations for consumers
  * - AI-generated study images
@@ -9,7 +9,7 @@
  */
 
 import OpenAI from "openai";
-import { storage } from './storage';
+import { storage } from "./storage";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -40,24 +40,27 @@ export async function enhanceStudyWithChatGPT(studyId: number): Promise<{
 }> {
   try {
     console.log(`🤖 Enhancing study ${studyId} with ChatGPT...`);
-    
+
     // Get the study data
     const studies = await storage.getStudies();
     const studiesArray = Array.isArray(studies) ? studies : studies.data || [];
-    const study = studiesArray.find(s => s.id === studyId);
-    
+    const study = studiesArray.find((s) => s.id === studyId);
+
     if (!study) {
       return {
         success: false,
-        message: `Study ${studyId} not found`
+        message: `Study ${studyId} not found`,
       };
     }
 
     // Generate comprehensive enhancement
     const enhancement = await generateStudyEnhancement(study);
-    
+
     // Generate and create the study image
-    const imageResult = await generateStudyImage(enhancement.imagePrompt, study.title);
+    const imageResult = await generateStudyImage(
+      enhancement.imagePrompt,
+      study.title,
+    );
     if (imageResult.success) {
       enhancement.imageUrl = imageResult.imageUrl;
     }
@@ -68,14 +71,13 @@ export async function enhanceStudyWithChatGPT(studyId: number): Promise<{
     return {
       success: true,
       enhancement,
-      message: `✅ Study successfully enhanced with AI-powered improvements!`
+      message: `✅ Study successfully enhanced with AI-powered improvements!`,
     };
-
   } catch (error) {
-    console.error('ChatGPT enhancement error:', error);
+    console.error("ChatGPT enhancement error:", error);
     return {
       success: false,
-      message: `❌ Enhancement failed: ${error.message}`
+      message: `❌ Enhancement failed: ${error.message}`,
     };
   }
 }
@@ -92,9 +94,9 @@ Title: ${study.title}
 Abstract: ${study.abstract}
 Authors: ${study.authors}
 Journal: ${study.journal}
-Methods: ${study.methods || 'Not specified'}
-Results: ${study.results || 'Not specified'}
-Conclusion: ${study.conclusion || 'Not specified'}
+Methods: ${study.methods || "Not specified"}
+Results: ${study.results || "Not specified"}
+Conclusion: ${study.conclusion || "Not specified"}
 
 Please provide a JSON response with these enhancements:
 
@@ -140,37 +142,41 @@ Respond ONLY with valid JSON in this exact format:
     messages: [
       {
         role: "system",
-        content: "You are a scientific communication expert specializing in making hydrogen health research accessible to consumers while maintaining scientific accuracy. Always respond with valid JSON only."
+        content:
+          "You are a scientific communication expert specializing in making hydrogen health research accessible to consumers while maintaining scientific accuracy. Always respond with valid JSON only.",
       },
       {
         role: "user",
-        content: prompt
-      }
+        content: prompt,
+      },
     ],
     response_format: { type: "json_object" },
     temperature: 0.7,
-    max_tokens: 2000
+    max_tokens: 2000,
   });
 
   const enhancementData = JSON.parse(response.choices[0].message.content);
-  
+
   return {
     studyId: study.id,
-    ...enhancementData
+    ...enhancementData,
   };
 }
 
 /**
  * Generate an AI image for the study
  */
-async function generateStudyImage(imagePrompt: string, studyTitle: string): Promise<{
+async function generateStudyImage(
+  imagePrompt: string,
+  studyTitle: string,
+): Promise<{
   success: boolean;
   imageUrl?: string;
   message: string;
 }> {
   try {
     console.log(`🎨 Generating AI image for study: ${studyTitle}`);
-    
+
     const enhancedPrompt = `${imagePrompt}. Professional scientific illustration style, clean and educational, suitable for a medical research website, high quality, detailed but not cluttered.`;
 
     const response = await openai.images.generate({
@@ -184,14 +190,13 @@ async function generateStudyImage(imagePrompt: string, studyTitle: string): Prom
     return {
       success: true,
       imageUrl: response.data[0].url,
-      message: "✅ AI image generated successfully"
+      message: "✅ AI image generated successfully",
     };
-
   } catch (error) {
-    console.error('Image generation error:', error);
+    console.error("Image generation error:", error);
     return {
       success: false,
-      message: `❌ Image generation failed: ${error.message}`
+      message: `❌ Image generation failed: ${error.message}`,
     };
   }
 }
@@ -199,7 +204,10 @@ async function generateStudyImage(imagePrompt: string, studyTitle: string): Prom
 /**
  * Update study with ChatGPT enhancements
  */
-async function updateStudyWithEnhancements(studyId: number, enhancement: StudyEnhancement): Promise<void> {
+async function updateStudyWithEnhancements(
+  studyId: number,
+  enhancement: StudyEnhancement,
+): Promise<void> {
   try {
     // Prepare update data with current available fields
     const updateData: any = {
@@ -210,8 +218,8 @@ async function updateStudyWithEnhancements(studyId: number, enhancement: StudyEn
         ...enhancement.bodySystems,
         ...enhancement.lifeStages,
         ...enhancement.studyTypes,
-        ...enhancement.mechanisms
-      ]
+        ...enhancement.mechanisms,
+      ],
     };
 
     // Add new AI enhancement fields if they exist in schema
@@ -247,12 +255,14 @@ async function updateStudyWithEnhancements(studyId: number, enhancement: StudyEn
 
     // Update the study
     await storage.updateStudy(studyId, updateData);
-    
+
     console.log(`✅ Study ${studyId} updated with ChatGPT enhancements`);
   } catch (error) {
-    console.error('Error updating study with enhancements:', error);
+    console.error("Error updating study with enhancements:", error);
     // Continue with reduced functionality if some fields aren't available yet
-    console.log('📝 Some enhancement fields may not be available yet - continuing with basic updates');
+    console.log(
+      "📝 Some enhancement fields may not be available yet - continuing with basic updates",
+    );
   }
 }
 
@@ -261,47 +271,52 @@ async function updateStudyWithEnhancements(studyId: number, enhancement: StudyEn
  */
 export async function batchEnhanceStudiesWithChatGPT(
   studyIds: number[],
-  batchSize: number = 5
+  batchSize: number = 5,
 ): Promise<{
   totalProcessed: number;
   successful: number;
   failed: number;
-  results: Array<{studyId: number, success: boolean, message: string}>;
+  results: Array<{ studyId: number; success: boolean; message: string }>;
 }> {
-  const results: Array<{studyId: number, success: boolean, message: string}> = [];
+  const results: Array<{ studyId: number; success: boolean; message: string }> =
+    [];
   let successful = 0;
   let failed = 0;
 
-  console.log(`🚀 Starting batch ChatGPT enhancement for ${studyIds.length} studies...`);
+  console.log(
+    `🚀 Starting batch ChatGPT enhancement for ${studyIds.length} studies...`,
+  );
 
   // Process in batches to avoid API rate limits
   for (let i = 0; i < studyIds.length; i += batchSize) {
     const batch = studyIds.slice(i, i + batchSize);
-    
-    console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(studyIds.length / batchSize)}`);
-    
+
+    console.log(
+      `📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(studyIds.length / batchSize)}`,
+    );
+
     const batchPromises = batch.map(async (studyId) => {
       const result = await enhanceStudyWithChatGPT(studyId);
       results.push({
         studyId,
         success: result.success,
-        message: result.message
+        message: result.message,
       });
-      
+
       if (result.success) {
         successful++;
       } else {
         failed++;
       }
-      
+
       return result;
     });
 
     await Promise.all(batchPromises);
-    
+
     // Add delay between batches to respect API limits
     if (i + batchSize < studyIds.length) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
@@ -309,7 +324,7 @@ export async function batchEnhanceStudiesWithChatGPT(
     totalProcessed: studyIds.length,
     successful,
     failed,
-    results
+    results,
   };
 }
 
@@ -320,8 +335,8 @@ export async function getEnhancedStudyData(studyId: number): Promise<any> {
   try {
     const studies = await storage.getStudies();
     const studiesArray = Array.isArray(studies) ? studies : studies.data || [];
-    const study = studiesArray.find(s => s.id === studyId);
-    
+    const study = studiesArray.find((s) => s.id === studyId);
+
     if (!study) {
       throw new Error(`Study ${studyId} not found`);
     }
@@ -329,10 +344,10 @@ export async function getEnhancedStudyData(studyId: number): Promise<any> {
     return {
       ...study,
       hasAIEnhancements: !!study.enhancedWithAI,
-      enhancementDate: study.lastEnhanced
+      enhancementDate: study.lastEnhanced,
     };
   } catch (error) {
-    console.error('Error getting enhanced study data:', error);
+    console.error("Error getting enhanced study data:", error);
     throw error;
   }
 }

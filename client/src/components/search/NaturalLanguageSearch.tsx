@@ -3,17 +3,23 @@
  * Provides an intelligent search interface with OpenAI-powered query understanding
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import {
   Search,
   Sparkles,
@@ -27,9 +33,9 @@ import {
   TrendingUp,
   AlertCircle,
   BookmarkPlus,
-  Filter
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+  Filter,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NaturalLanguageSearchProps {
   onResultsUpdate?: (results: any[]) => void;
@@ -45,8 +51,8 @@ interface QueryExample {
 
 export function NaturalLanguageSearch({
   onResultsUpdate,
-  initialQuery = '',
-  embedded = false
+  initialQuery = "",
+  embedded = false,
 }: NaturalLanguageSearchProps) {
   const [query, setQuery] = useState(initialQuery);
   const [isListening, setIsListening] = useState(false);
@@ -63,8 +69,8 @@ export function NaturalLanguageSearch({
       queries: [
         "Studies for arthritis in elderly patients",
         "Hydrogen therapy for diabetes management",
-        "Heart disease treatment with molecular hydrogen"
-      ]
+        "Heart disease treatment with molecular hydrogen",
+      ],
     },
     {
       category: "Comparisons",
@@ -72,8 +78,8 @@ export function NaturalLanguageSearch({
       queries: [
         "Compare hydrogen water vs inhalation for heart health",
         "Which is better: H2 tablets or hydrogen water?",
-        "Hydrogen therapy vs traditional antioxidants"
-      ]
+        "Hydrogen therapy vs traditional antioxidants",
+      ],
     },
     {
       category: "Effectiveness",
@@ -81,8 +87,8 @@ export function NaturalLanguageSearch({
       queries: [
         "Most effective hydrogen therapy for inflammation",
         "Success rates of hydrogen for post-surgery recovery",
-        "Best hydrogen treatment for oxidative stress"
-      ]
+        "Best hydrogen treatment for oxidative stress",
+      ],
     },
     {
       category: "Recent Research",
@@ -90,69 +96,73 @@ export function NaturalLanguageSearch({
       queries: [
         "Latest hydrogen therapy breakthroughs 2024",
         "Recent studies on hydrogen and longevity",
-        "New discoveries in hydrogen medicine"
-      ]
-    }
+        "New discoveries in hydrogen medicine",
+      ],
+    },
   ];
 
   // Natural language search mutation
   const searchMutation = useMutation({
     mutationFn: async (searchQuery: string) => {
-      const response = await apiRequest('/api/search/natural-language', {
-        method: 'POST',
+      const response = await apiRequest("/api/search/natural-language", {
+        method: "POST",
         body: JSON.stringify({
           query: searchQuery,
           page: 1,
-          pageSize: 20
-        })
+          pageSize: 20,
+        }),
       });
       return response;
     },
     onSuccess: (data) => {
-      console.log('Search successful:', data);
+      console.log("Search successful:", data);
       if (onResultsUpdate) {
         onResultsUpdate(data.results);
       }
       setShowExamples(false);
-      
+
       // Show interpretation toast if confidence is low
       if (data.query?.confidence < 0.7) {
         toast({
           title: "Query Interpretation",
-          description: data.interpretation?.understood || "I'm doing my best to understand your query",
-          variant: "default"
+          description:
+            data.interpretation?.understood ||
+            "I'm doing my best to understand your query",
+          variant: "default",
         });
       }
     },
     onError: (error: any) => {
-      console.error('Search error:', error);
+      console.error("Search error:", error);
       toast({
         title: "Search Error",
         description: error.message || "Failed to perform search",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Get search suggestions
   const { data: suggestions } = useQuery({
-    queryKey: ['/api/search/nl-suggestions', query],
+    queryKey: ["/api/search/nl-suggestions", query],
     enabled: query.length >= 2,
     queryFn: async () => {
-      const response = await fetch(`/api/search/nl-suggestions?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error('Failed to fetch suggestions');
+      const response = await fetch(
+        `/api/search/nl-suggestions?q=${encodeURIComponent(query)}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch suggestions");
       return response.json();
-    }
+    },
   });
 
   // Get popular queries
   const { data: popularQueries } = useQuery({
-    queryKey: ['/api/search/popular-queries'],
+    queryKey: ["/api/search/popular-queries"],
     queryFn: async () => {
-      const response = await fetch('/api/search/popular-queries');
-      if (!response.ok) throw new Error('Failed to fetch popular queries');
+      const response = await fetch("/api/search/popular-queries");
+      if (!response.ok) throw new Error("Failed to fetch popular queries");
       return response.json();
-    }
+    },
   });
 
   // Handle search submission
@@ -170,17 +180,19 @@ export function NaturalLanguageSearch({
 
   // Voice search support (simplified for now)
   const toggleVoiceSearch = () => {
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    if (
+      !("webkitSpeechRecognition" in window || "SpeechRecognition" in window)
+    ) {
       toast({
         title: "Not Supported",
         description: "Voice search is not supported in your browser",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsListening(!isListening);
-    
+
     if (!isListening) {
       // Start listening (simplified implementation)
       toast({
@@ -198,13 +210,13 @@ export function NaturalLanguageSearch({
 
   // Clear search
   const clearSearch = () => {
-    setQuery('');
+    setQuery("");
     setShowExamples(true);
     searchInputRef.current?.focus();
   };
 
   return (
-    <div className={`w-full ${embedded ? '' : 'max-w-4xl mx-auto'}`}>
+    <div className={`w-full ${embedded ? "" : "max-w-4xl mx-auto"}`}>
       {/* Search Header */}
       {!embedded && (
         <div className="text-center mb-8">
@@ -213,7 +225,8 @@ export function NaturalLanguageSearch({
             Natural Language Search
           </h2>
           <p className="text-muted-foreground">
-            Ask questions in plain English and I'll find relevant research for you
+            Ask questions in plain English and I'll find relevant research for
+            you
           </p>
         </div>
       )}
@@ -230,7 +243,7 @@ export function NaturalLanguageSearch({
                 placeholder="Ask me anything about hydrogen therapy research..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-10 pr-10"
                 data-testid="input-natural-language-search"
               />
@@ -256,34 +269,34 @@ export function NaturalLanguageSearch({
                 <Mic className="h-4 w-4" />
               )}
             </Button>
-            <Button 
+            <Button
               onClick={handleSearch}
               disabled={!query.trim() || searchMutation.isPending}
               data-testid="button-search"
             >
-              {searchMutation.isPending ? (
-                <>Searching...</>
-              ) : (
-                <>Search</>
-              )}
+              {searchMutation.isPending ? <>Searching...</> : <>Search</>}
             </Button>
           </div>
 
           {/* Suggestions */}
           {suggestions?.suggestions && suggestions.suggestions.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-sm text-muted-foreground">Suggestions:</span>
-              {suggestions.suggestions.map((suggestion: string, idx: number) => (
-                <Button
-                  key={idx}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setQuery(suggestion)}
-                  data-testid={`button-suggestion-${idx}`}
-                >
-                  {suggestion}
-                </Button>
-              ))}
+              <span className="text-sm text-muted-foreground">
+                Suggestions:
+              </span>
+              {suggestions.suggestions.map(
+                (suggestion: string, idx: number) => (
+                  <Button
+                    key={idx}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuery(suggestion)}
+                    data-testid={`button-suggestion-${idx}`}
+                  >
+                    {suggestion}
+                  </Button>
+                ),
+              )}
             </div>
           )}
         </CardContent>
@@ -301,30 +314,51 @@ export function NaturalLanguageSearch({
           <CardContent className="pt-0">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Badge variant={searchMutation.data.query.confidence > 0.7 ? "default" : "secondary"}>
-                  {(searchMutation.data.query.confidence * 100).toFixed(0)}% Confident
+                <Badge
+                  variant={
+                    searchMutation.data.query.confidence > 0.7
+                      ? "default"
+                      : "secondary"
+                  }
+                >
+                  {(searchMutation.data.query.confidence * 100).toFixed(0)}%
+                  Confident
                 </Badge>
                 <Badge variant="outline">
-                  {searchMutation.data.query.intent?.replace(/_/g, ' ').toLowerCase()}
+                  {searchMutation.data.query.intent
+                    ?.replace(/_/g, " ")
+                    .toLowerCase()}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 {searchMutation.data.interpretation.understood}
               </p>
-              
+
               {/* Extracted entities */}
               {searchMutation.data.interpretation.entities && (
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {searchMutation.data.interpretation.entities.conditions?.map((condition: string) => (
-                    <Badge key={condition} variant="secondary" className="text-xs">
-                      {condition}
-                    </Badge>
-                  ))}
-                  {searchMutation.data.interpretation.entities.deliveryMethods?.map((method: string) => (
-                    <Badge key={method} variant="secondary" className="text-xs">
-                      {method}
-                    </Badge>
-                  ))}
+                  {searchMutation.data.interpretation.entities.conditions?.map(
+                    (condition: string) => (
+                      <Badge
+                        key={condition}
+                        variant="secondary"
+                        className="text-xs"
+                      >
+                        {condition}
+                      </Badge>
+                    ),
+                  )}
+                  {searchMutation.data.interpretation.entities.deliveryMethods?.map(
+                    (method: string) => (
+                      <Badge
+                        key={method}
+                        variant="secondary"
+                        className="text-xs"
+                      >
+                        {method}
+                      </Badge>
+                    ),
+                  )}
                 </div>
               )}
             </div>
@@ -345,7 +379,7 @@ export function NaturalLanguageSearch({
                 <TabsTrigger value="examples">Example Queries</TabsTrigger>
                 <TabsTrigger value="popular">Popular Searches</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="examples" className="mt-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   {queryExamples.map((category) => (
@@ -363,9 +397,11 @@ export function NaturalLanguageSearch({
                               key={exampleQuery}
                               onClick={() => handleExampleClick(exampleQuery)}
                               className={`w-full text-left p-2 rounded-md hover:bg-muted transition-colors text-sm ${
-                                selectedExample === exampleQuery ? 'bg-muted' : ''
+                                selectedExample === exampleQuery
+                                  ? "bg-muted"
+                                  : ""
                               }`}
-                              data-testid={`button-example-${exampleQuery.replace(/\s+/g, '-').toLowerCase()}`}
+                              data-testid={`button-example-${exampleQuery.replace(/\s+/g, "-").toLowerCase()}`}
                             >
                               <ChevronRight className="inline h-3 w-3 mr-1" />
                               {exampleQuery}
@@ -377,7 +413,7 @@ export function NaturalLanguageSearch({
                   ))}
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="popular" className="mt-4">
                 <Card>
                   <CardHeader>
@@ -385,17 +421,19 @@ export function NaturalLanguageSearch({
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {popularQueries?.queries?.map((popQuery: string, idx: number) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleExampleClick(popQuery)}
-                          className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors text-sm"
-                          data-testid={`button-popular-${idx}`}
-                        >
-                          <TrendingUp className="inline h-3 w-3 mr-2 text-muted-foreground" />
-                          {popQuery}
-                        </button>
-                      ))}
+                      {popularQueries?.queries?.map(
+                        (popQuery: string, idx: number) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleExampleClick(popQuery)}
+                            className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors text-sm"
+                            data-testid={`button-popular-${idx}`}
+                          >
+                            <TrendingUp className="inline h-3 w-3 mr-2 text-muted-foreground" />
+                            {popQuery}
+                          </button>
+                        ),
+                      )}
                     </div>
                   </CardContent>
                 </Card>

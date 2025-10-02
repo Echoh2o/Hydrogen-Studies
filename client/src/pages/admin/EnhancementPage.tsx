@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  AlertCircle, 
-  CheckCircle, 
-  Loader2, 
-  RefreshCw, 
-  XCircle, 
-  Clock, 
-  FilterX, 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  RefreshCw,
+  XCircle,
+  Clock,
+  FilterX,
   Info,
-  Search
+  Search,
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +36,11 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 // Types for our enrichment system
@@ -39,7 +57,7 @@ interface Study {
   conclusion?: string;
   imageUrl?: string;
   enhancedFields?: string[];
-  status?: 'pending' | 'processing' | 'success' | 'failed';
+  status?: "pending" | "processing" | "success" | "failed";
   errorMessage?: string;
 }
 
@@ -62,8 +80,8 @@ interface BatchResult {
   processed: number;
   success: number;
   failed: number;
-  errors?: Array<{studyId: number; error: string}>;
-  enhancedStudies?: Array<{id: number; title: string}>;
+  errors?: Array<{ studyId: number; error: string }>;
+  enhancedStudies?: Array<{ id: number; title: string }>;
 }
 
 export default function EnhancementPage() {
@@ -87,7 +105,7 @@ export default function EnhancementPage() {
     completed: 0,
     total: 0,
     successCount: 0,
-    failureCount: 0
+    failureCount: 0,
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [failedOnlyFilter, setFailedOnlyFilter] = useState(false);
@@ -96,7 +114,7 @@ export default function EnhancementPage() {
     pending: 0,
     processing: 0,
     success: 0,
-    failed: 0
+    failed: 0,
   });
 
   // Fetch candidates for content enrichment
@@ -119,10 +137,11 @@ export default function EnhancementPage() {
       const studies = candidatesQuery.data as Study[];
       const counts = {
         total: studies.length,
-        pending: studies.filter(s => !s.status || s.status === 'pending').length,
-        processing: studies.filter(s => s.status === 'processing').length,
-        success: studies.filter(s => s.status === 'success').length,
-        failed: studies.filter(s => s.status === 'failed').length
+        pending: studies.filter((s) => !s.status || s.status === "pending")
+          .length,
+        processing: studies.filter((s) => s.status === "processing").length,
+        success: studies.filter((s) => s.status === "success").length,
+        failed: studies.filter((s) => s.status === "failed").length,
       };
       setStatusCounts(counts);
     }
@@ -132,7 +151,7 @@ export default function EnhancementPage() {
   useEffect(() => {
     if (candidatesQuery.data && selectAll) {
       const filteredStudies = getFilteredCandidates();
-      setSelectedStudies(filteredStudies.map(study => study.id));
+      setSelectedStudies(filteredStudies.map((study) => study.id));
     } else if (!selectAll) {
       setSelectedStudies([]);
     }
@@ -142,28 +161,28 @@ export default function EnhancementPage() {
   const enhanceStudyMutation = useMutation({
     mutationFn: async (studyId: number): Promise<EnrichmentResult> => {
       // Mark the study as processing in UI
-      updateStudyStatus(studyId, 'processing');
-      
+      updateStudyStatus(studyId, "processing");
+
       const response = await fetch(`/api/content-enrichment/study/${studyId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      
+
       if (!response.ok) {
         // Mark the study as failed in UI
-        updateStudyStatus(studyId, 'failed', 'API request failed');
+        updateStudyStatus(studyId, "failed", "API request failed");
         throw new Error("Failed to enhance study");
       }
-      
+
       const result = await response.json();
-      
+
       // Mark the study as success/failed based on result
       updateStudyStatus(
-        studyId, 
-        result.success ? 'success' : 'failed', 
-        result.success ? undefined : result.message
+        studyId,
+        result.success ? "success" : "failed",
+        result.success ? undefined : result.message,
       );
-      
+
       return result;
     },
     onSuccess: (data) => {
@@ -180,8 +199,12 @@ export default function EnhancementPage() {
       });
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/candidates"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/recent"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/content-enrichment/candidates"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/content-enrichment/recent"],
+      });
     },
     onError: (error: Error, studyId: number) => {
       // Show error message and mark study as failed
@@ -190,9 +213,9 @@ export default function EnhancementPage() {
         type: "error",
         visible: true,
       });
-      
+
       // Mark the study as failed in UI
-      updateStudyStatus(studyId, 'failed', error.message);
+      updateStudyStatus(studyId, "failed", error.message);
     },
   });
 
@@ -205,81 +228,92 @@ export default function EnhancementPage() {
         completed: 0,
         total: studyIds.length,
         successCount: 0,
-        failureCount: 0
+        failureCount: 0,
       });
-      
+
       // Mark all studies as processing
-      studyIds.forEach(id => updateStudyStatus(id, 'processing'));
-      
+      studyIds.forEach((id) => updateStudyStatus(id, "processing"));
+
       // Process studies in smaller batches to avoid overwhelming the server
       const batchSize = 5;
       const results: EnrichmentResult[] = [];
       let successCount = 0;
       let failureCount = 0;
-      
+
       for (let i = 0; i < studyIds.length; i += batchSize) {
         const batch = studyIds.slice(i, i + batchSize);
         const batchPromises = batch.map(async (studyId) => {
           try {
             // For each study in the batch, process the study
-            const response = await fetch(`/api/content-enrichment/study/${studyId}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            });
-            
+            const response = await fetch(
+              `/api/content-enrichment/study/${studyId}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+
             if (!response.ok) {
-              updateStudyStatus(studyId, 'failed', 'API request failed');
+              updateStudyStatus(studyId, "failed", "API request failed");
               failureCount++;
-              return { success: false, studyId, message: 'API request failed' };
+              return { success: false, studyId, message: "API request failed" };
             }
-            
+
             const result = await response.json();
             if (result.success) {
-              updateStudyStatus(studyId, 'success');
+              updateStudyStatus(studyId, "success");
               successCount++;
             } else {
-              updateStudyStatus(studyId, 'failed', result.message);
+              updateStudyStatus(studyId, "failed", result.message);
               failureCount++;
             }
-            
+
             return result;
           } catch (error) {
-            updateStudyStatus(studyId, 'failed', error instanceof Error ? error.message : 'Unknown error');
+            updateStudyStatus(
+              studyId,
+              "failed",
+              error instanceof Error ? error.message : "Unknown error",
+            );
             failureCount++;
-            return { success: false, studyId, message: error instanceof Error ? error.message : 'Unknown error' };
+            return {
+              success: false,
+              studyId,
+              message: error instanceof Error ? error.message : "Unknown error",
+            };
           } finally {
             // Update batch progress
-            setBatchProgress(prev => ({
+            setBatchProgress((prev) => ({
               ...prev,
               completed: prev.completed + 1,
               successCount,
-              failureCount
+              failureCount,
             }));
           }
         });
-        
+
         // Process current batch and wait for completion
         const batchResults = await Promise.all(batchPromises);
         results.push(...batchResults);
-        
+
         // Add a small delay between batches to avoid rate limiting
         if (i + batchSize < studyIds.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
-      
+
       // Compile final results
       return {
         message: `Batch process complete: ${results.length} studies processed`,
         processed: results.length,
-        success: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length,
+        success: results.filter((r) => r.success).length,
+        failed: results.filter((r) => !r.success).length,
         errors: results
-          .filter(r => !r.success)
-          .map(r => ({ studyId: r.studyId, error: r.message })),
+          .filter((r) => !r.success)
+          .map((r) => ({ studyId: r.studyId, error: r.message })),
         enhancedStudies: results
-          .filter(r => r.success)
-          .map(r => ({ id: r.studyId, title: '' })), // Title will be populated by refetching
+          .filter((r) => r.success)
+          .map((r) => ({ id: r.studyId, title: "" })), // Title will be populated by refetching
       };
     },
     onSuccess: (data) => {
@@ -292,18 +326,22 @@ export default function EnhancementPage() {
       });
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/candidates"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/content-enrichment/recent"] });
-      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/content-enrichment/candidates"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/content-enrichment/recent"],
+      });
+
       // Reset batch progress
       setBatchProgress({
         inProgress: false,
         completed: 0,
         total: 0,
         successCount: 0,
-        failureCount: 0
+        failureCount: 0,
       });
-      
+
       // Clear selection
       setSelectedStudies([]);
       setSelectAll(false);
@@ -315,14 +353,14 @@ export default function EnhancementPage() {
         type: "error",
         visible: true,
       });
-      
+
       // Reset batch progress
       setBatchProgress({
         inProgress: false,
         completed: 0,
         total: 0,
         successCount: 0,
-        failureCount: 0
+        failureCount: 0,
       });
     },
   });
@@ -331,13 +369,14 @@ export default function EnhancementPage() {
   const processSelectedStudies = () => {
     if (selectedStudies.length === 0) {
       setProcessingStatus({
-        message: "No studies selected. Please select at least one study to process.",
+        message:
+          "No studies selected. Please select at least one study to process.",
         type: "info",
         visible: true,
       });
       return;
     }
-    
+
     batchEnrichMutation.mutate(selectedStudies);
   };
 
@@ -349,11 +388,11 @@ export default function EnhancementPage() {
   // Retry failed studies
   const retryFailedStudies = () => {
     if (!candidatesQuery.data) return;
-    
+
     const failedStudies = (candidatesQuery.data as Study[])
-      .filter(study => study.status === 'failed')
-      .map(study => study.id);
-    
+      .filter((study) => study.status === "failed")
+      .map((study) => study.id);
+
     if (failedStudies.length === 0) {
       setProcessingStatus({
         message: "No failed studies to retry.",
@@ -362,7 +401,7 @@ export default function EnhancementPage() {
       });
       return;
     }
-    
+
     batchEnrichMutation.mutate(failedStudies);
   };
 
@@ -382,27 +421,28 @@ export default function EnhancementPage() {
 
   // Helper to update a study's status in the UI
   const updateStudyStatus = (
-    studyId: number, 
-    status: 'pending' | 'processing' | 'success' | 'failed',
-    errorMessage?: string
+    studyId: number,
+    status: "pending" | "processing" | "success" | "failed",
+    errorMessage?: string,
   ) => {
     if (!candidatesQuery.data) return;
-    
-    const updatedData = (candidatesQuery.data as Study[]).map(study => 
-      study.id === studyId 
-        ? { ...study, status, errorMessage } 
-        : study
+
+    const updatedData = (candidatesQuery.data as Study[]).map((study) =>
+      study.id === studyId ? { ...study, status, errorMessage } : study,
     );
-    
-    queryClient.setQueryData(["/api/content-enrichment/candidates"], updatedData);
+
+    queryClient.setQueryData(
+      ["/api/content-enrichment/candidates"],
+      updatedData,
+    );
   };
 
   // Toggle selection of a study
   const toggleStudySelection = (studyId: number) => {
-    setSelectedStudies(prev => 
-      prev.includes(studyId) 
-        ? prev.filter(id => id !== studyId) 
-        : [...prev, studyId]
+    setSelectedStudies((prev) =>
+      prev.includes(studyId)
+        ? prev.filter((id) => id !== studyId)
+        : [...prev, studyId],
     );
   };
 
@@ -414,77 +454,99 @@ export default function EnhancementPage() {
   // Filter candidates based on search term and failed only filter
   const getFilteredCandidates = (): Study[] => {
     if (!candidatesQuery.data) return [];
-    
+
     const studies = candidatesQuery.data as Study[];
-    
-    return studies.filter(study => {
+
+    return studies.filter((study) => {
       // Apply search filter
-      const matchesSearch = searchTerm === "" || 
+      const matchesSearch =
+        searchTerm === "" ||
         study.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         study.journal.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (study.doi && study.doi.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+        (study.doi &&
+          study.doi.toLowerCase().includes(searchTerm.toLowerCase()));
+
       // Apply failed only filter
-      const matchesFailedFilter = !failedOnlyFilter || study.status === 'failed';
-      
+      const matchesFailedFilter =
+        !failedOnlyFilter || study.status === "failed";
+
       return matchesSearch && matchesFailedFilter;
     });
   };
 
   // Get the filtered candidates
   const filteredCandidates = getFilteredCandidates();
-  
+
   // Get recently enriched studies from the query
-  const recentlyEnriched = Array.isArray(recentlyEnrichedQuery.data) ? recentlyEnrichedQuery.data : [];
+  const recentlyEnriched = Array.isArray(recentlyEnrichedQuery.data)
+    ? recentlyEnrichedQuery.data
+    : [];
 
   // Compute status counts for display
-  const totalCandidates = candidatesQuery.data ? (candidatesQuery.data as Study[]).length : 0;
+  const totalCandidates = candidatesQuery.data
+    ? (candidatesQuery.data as Study[]).length
+    : 0;
   const selectedCount = selectedStudies.length;
 
   // Status badge for each study
   const getStatusBadge = (status?: string) => {
     switch (status) {
-      case 'processing':
-        return <Badge variant="outline" className="bg-yellow-50 border-yellow-200">
-          <Clock className="h-3 w-3 mr-1 text-yellow-500" />
-          Processing
-        </Badge>;
-      case 'success':
-        return <Badge variant="outline" className="bg-green-50 border-green-200">
-          <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-          Enhanced
-        </Badge>;
-      case 'failed':
-        return <Badge variant="outline" className="bg-red-50 border-red-200">
-          <XCircle className="h-3 w-3 mr-1 text-red-500" />
-          Failed
-        </Badge>;
+      case "processing":
+        return (
+          <Badge variant="outline" className="bg-yellow-50 border-yellow-200">
+            <Clock className="h-3 w-3 mr-1 text-yellow-500" />
+            Processing
+          </Badge>
+        );
+      case "success":
+        return (
+          <Badge variant="outline" className="bg-green-50 border-green-200">
+            <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+            Enhanced
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge variant="outline" className="bg-red-50 border-red-200">
+            <XCircle className="h-3 w-3 mr-1 text-red-500" />
+            Failed
+          </Badge>
+        );
       default:
-        return <Badge variant="outline">
-          <Info className="h-3 w-3 mr-1 text-blue-500" />
-          Pending
-        </Badge>;
+        return (
+          <Badge variant="outline">
+            <Info className="h-3 w-3 mr-1 text-blue-500" />
+            Pending
+          </Badge>
+        );
     }
   };
 
   return (
-    <AdminLayout title="Content Enrichment" description="Select and enrich studies with full abstracts, methods, results, and images from external sources.">
+    <AdminLayout
+      title="Content Enrichment"
+      description="Select and enrich studies with full abstracts, methods, results, and images from external sources."
+    >
       <div className="flex flex-col space-y-4">
         {/* Status Alert */}
         {processingStatus.visible && (
-          <Alert variant={processingStatus.type === "error" ? "destructive" : "default"}>
+          <Alert
+            variant={
+              processingStatus.type === "error" ? "destructive" : "default"
+            }
+          >
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>
-              {processingStatus.type === "success" 
-                ? "Success" 
-                : processingStatus.type === "error" 
-                  ? "Error" 
+              {processingStatus.type === "success"
+                ? "Success"
+                : processingStatus.type === "error"
+                  ? "Error"
                   : "Information"}
             </AlertTitle>
             <AlertDescription>{processingStatus.message}</AlertDescription>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="absolute top-2 right-2"
               onClick={closeStatusAlert}
             >
@@ -500,26 +562,41 @@ export default function EnhancementPage() {
               <div className="flex flex-col space-y-2">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium">Batch Processing Progress</span>
-                  <span className="text-sm">{batchProgress.completed} of {batchProgress.total} completed</span>
+                  <span className="text-sm">
+                    {batchProgress.completed} of {batchProgress.total} completed
+                  </span>
                 </div>
-                <Progress value={(batchProgress.completed / batchProgress.total) * 100} />
+                <Progress
+                  value={(batchProgress.completed / batchProgress.total) * 100}
+                />
                 <div className="flex justify-between text-sm mt-1">
-                  <span className="text-green-600">Success: {batchProgress.successCount}</span>
-                  <span className="text-red-600">Failed: {batchProgress.failureCount}</span>
-                  <span>Remaining: {batchProgress.total - batchProgress.completed}</span>
+                  <span className="text-green-600">
+                    Success: {batchProgress.successCount}
+                  </span>
+                  <span className="text-red-600">
+                    Failed: {batchProgress.failureCount}
+                  </span>
+                  <span>
+                    Remaining: {batchProgress.total - batchProgress.completed}
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        <Tabs defaultValue="candidates" value={activeTab} onValueChange={setActiveTab}>
+        <Tabs
+          defaultValue="candidates"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
           <TabsList>
             <TabsTrigger value="candidates">
               Enrichment Candidates ({totalCandidates})
             </TabsTrigger>
             <TabsTrigger value="recent">
-              Recently Enriched ({recentlyEnriched ? recentlyEnriched.length : 0})
+              Recently Enriched (
+              {recentlyEnriched ? recentlyEnriched.length : 0})
             </TabsTrigger>
           </TabsList>
 
@@ -528,7 +605,8 @@ export default function EnhancementPage() {
               <CardHeader>
                 <CardTitle>Select Studies to Enrich</CardTitle>
                 <CardDescription>
-                  Choose studies with incomplete content that can be enhanced with AI and external data.
+                  Choose studies with incomplete content that can be enhanced
+                  with AI and external data.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -540,19 +618,27 @@ export default function EnhancementPage() {
                   </Card>
                   <Card className="p-2 text-center">
                     <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-xl font-bold text-blue-600">{statusCounts.pending}</p>
+                    <p className="text-xl font-bold text-blue-600">
+                      {statusCounts.pending}
+                    </p>
                   </Card>
                   <Card className="p-2 text-center">
                     <p className="text-sm text-muted-foreground">Processing</p>
-                    <p className="text-xl font-bold text-yellow-600">{statusCounts.processing}</p>
+                    <p className="text-xl font-bold text-yellow-600">
+                      {statusCounts.processing}
+                    </p>
                   </Card>
                   <Card className="p-2 text-center">
                     <p className="text-sm text-muted-foreground">Successful</p>
-                    <p className="text-xl font-bold text-green-600">{statusCounts.success}</p>
+                    <p className="text-xl font-bold text-green-600">
+                      {statusCounts.success}
+                    </p>
                   </Card>
                   <Card className="p-2 text-center">
                     <p className="text-sm text-muted-foreground">Failed</p>
-                    <p className="text-xl font-bold text-red-600">{statusCounts.failed}</p>
+                    <p className="text-xl font-bold text-red-600">
+                      {statusCounts.failed}
+                    </p>
                   </Card>
                 </div>
 
@@ -572,7 +658,9 @@ export default function EnhancementPage() {
                       <Checkbox
                         id="failed-only"
                         checked={failedOnlyFilter}
-                        onCheckedChange={() => setFailedOnlyFilter(!failedOnlyFilter)}
+                        onCheckedChange={() =>
+                          setFailedOnlyFilter(!failedOnlyFilter)
+                        }
                       />
                       <label
                         htmlFor="failed-only"
@@ -581,11 +669,7 @@ export default function EnhancementPage() {
                         Show Failed Only
                       </label>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={refreshData}
-                    >
+                    <Button variant="outline" size="sm" onClick={refreshData}>
                       <RefreshCw className="h-4 w-4 mr-1" />
                       Refresh
                     </Button>
@@ -644,8 +728,9 @@ export default function EnhancementPage() {
                           <TableHead className="w-[50px]">
                             <Checkbox
                               checked={
-                                filteredCandidates.length > 0 && 
-                                selectedStudies.length === filteredCandidates.length
+                                filteredCandidates.length > 0 &&
+                                selectedStudies.length ===
+                                  filteredCandidates.length
                               }
                               onCheckedChange={toggleSelectAll}
                               aria-label="Select all"
@@ -661,23 +746,28 @@ export default function EnhancementPage() {
                       </TableHeader>
                       <TableBody>
                         {filteredCandidates.map((study: Study) => (
-                          <TableRow 
+                          <TableRow
                             key={study.id}
                             className={
-                              study.status === 'processing' 
-                                ? 'bg-yellow-50' 
-                                : study.status === 'success' 
-                                  ? 'bg-green-50' 
-                                  : study.status === 'failed' 
-                                    ? 'bg-red-50' 
-                                    : ''
+                              study.status === "processing"
+                                ? "bg-yellow-50"
+                                : study.status === "success"
+                                  ? "bg-green-50"
+                                  : study.status === "failed"
+                                    ? "bg-red-50"
+                                    : ""
                             }
                           >
                             <TableCell>
                               <Checkbox
                                 checked={selectedStudies.includes(study.id)}
-                                onCheckedChange={() => toggleStudySelection(study.id)}
-                                disabled={study.status === 'processing' || study.status === 'success'}
+                                onCheckedChange={() =>
+                                  toggleStudySelection(study.id)
+                                }
+                                disabled={
+                                  study.status === "processing" ||
+                                  study.status === "success"
+                                }
                                 aria-label={`Select study ${study.id}`}
                               />
                             </TableCell>
@@ -685,12 +775,22 @@ export default function EnhancementPage() {
                             <TableCell className="max-w-md truncate">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="cursor-help">{study.title}</span>
+                                  <span className="cursor-help">
+                                    {study.title}
+                                  </span>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p className="max-w-md">{study.title}</p>
-                                  {study.doi && <p className="text-xs mt-1">DOI: {study.doi}</p>}
-                                  {study.authors && <p className="text-xs mt-1">Authors: {study.authors}</p>}
+                                  {study.doi && (
+                                    <p className="text-xs mt-1">
+                                      DOI: {study.doi}
+                                    </p>
+                                  )}
+                                  {study.authors && (
+                                    <p className="text-xs mt-1">
+                                      Authors: {study.authors}
+                                    </p>
+                                  )}
                                 </TooltipContent>
                               </Tooltip>
                             </TableCell>
@@ -698,30 +798,39 @@ export default function EnhancementPage() {
                             <TableCell>{study.publishDate}</TableCell>
                             <TableCell>
                               {getStatusBadge(study.status)}
-                              {study.status === 'failed' && study.errorMessage && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-4 w-4 ml-1 inline cursor-help text-red-500" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-xs">{study.errorMessage}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
+                              {study.status === "failed" &&
+                                study.errorMessage && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Info className="h-4 w-4 ml-1 inline cursor-help text-red-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="max-w-xs">
+                                        {study.errorMessage}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                             </TableCell>
                             <TableCell>
-                              <Button 
-                                variant={study.status === 'failed' ? "destructive" : "outline"}
+                              <Button
+                                variant={
+                                  study.status === "failed"
+                                    ? "destructive"
+                                    : "outline"
+                                }
                                 size="sm"
                                 onClick={() => processSingleStudy(study.id)}
                                 disabled={
                                   enhanceStudyMutation.isPending ||
                                   batchProgress.inProgress ||
-                                  study.status === 'processing' ||
-                                  study.status === 'success'
+                                  study.status === "processing" ||
+                                  study.status === "success"
                                 }
                               >
-                                {study.status === 'failed' ? 'Retry' : 'Process'}
+                                {study.status === "failed"
+                                  ? "Retry"
+                                  : "Process"}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -734,7 +843,8 @@ export default function EnhancementPage() {
               <CardFooter className="flex justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    Processing can take time depending on the availability of external data sources.
+                    Processing can take time depending on the availability of
+                    external data sources.
                   </p>
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -749,7 +859,8 @@ export default function EnhancementPage() {
               <CardHeader>
                 <CardTitle>Recently Enriched Studies</CardTitle>
                 <CardDescription>
-                  Studies that have been successfully enriched with additional content.
+                  Studies that have been successfully enriched with additional
+                  content.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -785,24 +896,40 @@ export default function EnhancementPage() {
                             <TableCell className="max-w-md truncate">
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="cursor-help">{study.title}</span>
+                                  <span className="cursor-help">
+                                    {study.title}
+                                  </span>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p className="max-w-md">{study.title}</p>
-                                  {study.doi && <p className="text-xs mt-1">DOI: {study.doi}</p>}
-                                  {study.authors && <p className="text-xs mt-1">Authors: {study.authors}</p>}
+                                  {study.doi && (
+                                    <p className="text-xs mt-1">
+                                      DOI: {study.doi}
+                                    </p>
+                                  )}
+                                  {study.authors && (
+                                    <p className="text-xs mt-1">
+                                      Authors: {study.authors}
+                                    </p>
+                                  )}
                                 </TooltipContent>
                               </Tooltip>
                             </TableCell>
                             <TableCell>{study.journal}</TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
-                                {study.enhancedFields && Array.isArray(study.enhancedFields) && study.enhancedFields.map((field: string) => (
-                                  <Badge key={field} variant="outline" className="mr-1 bg-green-50 border-green-200">
-                                    <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                                    {field}
-                                  </Badge>
-                                ))}
+                                {study.enhancedFields &&
+                                  Array.isArray(study.enhancedFields) &&
+                                  study.enhancedFields.map((field: string) => (
+                                    <Badge
+                                      key={field}
+                                      variant="outline"
+                                      className="mr-1 bg-green-50 border-green-200"
+                                    >
+                                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                                      {field}
+                                    </Badge>
+                                  ))}
                               </div>
                             </TableCell>
                             <TableCell>{study.publishDate}</TableCell>

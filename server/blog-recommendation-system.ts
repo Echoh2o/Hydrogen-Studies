@@ -3,13 +3,13 @@
  * Automatically recommends studies for blog creation and handles bulk generation
  */
 
-import { eq, desc, sql } from 'drizzle-orm';
-import { db } from './db';
-import { studies, blogArticles } from '@shared/schema';
-import OpenAI from 'openai';
+import { eq, desc, sql } from "drizzle-orm";
+import { db } from "./db";
+import { studies, blogArticles } from "@shared/schema";
+import OpenAI from "openai";
 
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export interface BlogRecommendation {
@@ -20,7 +20,7 @@ export interface BlogRecommendation {
   studyJournal: string;
   studyCategory: string;
   studyPublishDate: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   reasonForRecommendation: string;
   suggestedBlogTypes: string[];
   estimatedReadership: string;
@@ -65,10 +65,12 @@ export interface BulkGenerationResult {
 /**
  * Get blog article recommendations based on studies without blogs or with few blogs
  */
-export async function getBlogRecommendations(limit: number = 20): Promise<BlogRecommendation[]> {
+export async function getBlogRecommendations(
+  limit: number = 20,
+): Promise<BlogRecommendation[]> {
   try {
-    console.log('Fetching blog recommendations...');
-    
+    console.log("Fetching blog recommendations...");
+
     // Simplified approach: get studies first, then check blog counts separately
     const allStudies = await db
       .select({
@@ -79,7 +81,7 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
         journal: studies.journal,
         category: studies.category,
         publishDate: studies.publishDate,
-        journalPublishDate: studies.journalPublishDate
+        journalPublishDate: studies.journalPublishDate,
       })
       .from(studies)
       .orderBy(desc(studies.id))
@@ -89,9 +91,9 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
 
     // For now, assume all studies have 0 blogs to get the system working quickly
     const studiesWithBlogCounts = allStudies
-      .map(study => ({
+      .map((study) => ({
         ...study,
-        blogCount: 0 // Simplified for initial implementation
+        blogCount: 0, // Simplified for initial implementation
       }))
       .slice(0, Math.min(limit, 10));
 
@@ -106,36 +108,38 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
     console.log(`OpenAI available: ${hasOpenAI}`);
 
     // Fast processing: create recommendations without AI for speed
-    const recommendations: BlogRecommendation[] = studiesWithBlogCounts.map(study => {
-      const ruleBasedRec = createRuleBasedRecommendation(study);
-      
-      return {
-        studyId: study.id,
-        studyTitle: study.title || 'Untitled Study',
-        studyAbstract: study.abstract || 'No abstract available',
-        studyAuthors: study.authors || 'Unknown authors',
-        studyJournal: study.journal || 'Unknown journal',
-        studyCategory: study.category || 'General',
-        studyPublishDate: study.publishDate || study.journalPublishDate || 'Unknown date',
-        priority: ruleBasedRec.priority,
-        reasonForRecommendation: ruleBasedRec.reason,
-        suggestedBlogTypes: ruleBasedRec.suggestedTypes,
-        estimatedReadership: ruleBasedRec.estimatedReadership,
-        seoKeywords: ruleBasedRec.seoKeywords,
-        potentialTitle: ruleBasedRec.potentialTitle,
-        hasExistingBlogs: study.blogCount > 0,
-        existingBlogCount: study.blogCount
-      };
-    });
+    const recommendations: BlogRecommendation[] = studiesWithBlogCounts.map(
+      (study) => {
+        const ruleBasedRec = createRuleBasedRecommendation(study);
+
+        return {
+          studyId: study.id,
+          studyTitle: study.title || "Untitled Study",
+          studyAbstract: study.abstract || "No abstract available",
+          studyAuthors: study.authors || "Unknown authors",
+          studyJournal: study.journal || "Unknown journal",
+          studyCategory: study.category || "General",
+          studyPublishDate:
+            study.publishDate || study.journalPublishDate || "Unknown date",
+          priority: ruleBasedRec.priority,
+          reasonForRecommendation: ruleBasedRec.reason,
+          suggestedBlogTypes: ruleBasedRec.suggestedTypes,
+          estimatedReadership: ruleBasedRec.estimatedReadership,
+          seoKeywords: ruleBasedRec.seoKeywords,
+          potentialTitle: ruleBasedRec.potentialTitle,
+          hasExistingBlogs: study.blogCount > 0,
+          existingBlogCount: study.blogCount,
+        };
+      },
+    );
 
     console.log(`Generated ${recommendations.length} recommendations`);
     return recommendations.sort((a, b) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
       return priorityOrder[b.priority] - priorityOrder[a.priority];
     });
-
   } catch (error) {
-    console.error('Error getting blog recommendations:', error);
+    console.error("Error getting blog recommendations:", error);
     return [];
   }
 }
@@ -143,7 +147,9 @@ export async function getBlogRecommendations(limit: number = 20): Promise<BlogRe
 /**
  * Generate multiple blog articles for selected studies
  */
-export async function generateBulkBlogs(request: BulkGenerationRequest): Promise<BulkGenerationResult[]> {
+export async function generateBulkBlogs(
+  request: BulkGenerationRequest,
+): Promise<BulkGenerationResult[]> {
   const results: BulkGenerationResult[] = [];
 
   for (const studyId of request.selectedStudyIds) {
@@ -158,7 +164,7 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
           journal: studies.journal,
           category: studies.category,
           publishDate: studies.publishDate,
-          journalPublishDate: studies.journalPublishDate
+          journalPublishDate: studies.journalPublishDate,
         })
         .from(studies)
         .where(eq(studies.id, studyId))
@@ -167,10 +173,10 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
       if (!study) {
         results.push({
           studyId,
-          studyTitle: 'Unknown Study',
+          studyTitle: "Unknown Study",
           generatedBlogs: [],
           success: false,
-          error: 'Study not found'
+          error: "Study not found",
         });
         continue;
       }
@@ -185,12 +191,15 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
             articleType,
             request.readingLevel,
             request.includeImages,
-            request.includeSEO
+            request.includeSEO,
           );
-          
+
           generatedBlogs.push(blogContent);
         } catch (error) {
-          console.error(`Error generating ${articleType} blog for study ${studyId}:`, error);
+          console.error(
+            `Error generating ${articleType} blog for study ${studyId}:`,
+            error,
+          );
         }
       }
 
@@ -199,17 +208,19 @@ export async function generateBulkBlogs(request: BulkGenerationRequest): Promise
         studyTitle: study.title,
         generatedBlogs,
         success: generatedBlogs.length > 0,
-        error: generatedBlogs.length === 0 ? 'Failed to generate any blog content' : undefined
+        error:
+          generatedBlogs.length === 0
+            ? "Failed to generate any blog content"
+            : undefined,
       });
-
     } catch (error) {
       console.error(`Error processing study ${studyId}:`, error);
       results.push({
         studyId,
-        studyTitle: 'Error',
+        studyTitle: "Error",
         generatedBlogs: [],
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -225,68 +236,76 @@ async function generateSingleBlogContent(
   articleType: string,
   readingLevel: string,
   includeImages: boolean,
-  includeSEO: boolean
+  includeSEO: boolean,
 ): Promise<GeneratedBlogContent> {
-  
   try {
     // Generate main content with timeout
     const contentPrompt = createContentPrompt(study, articleType, readingLevel);
-    
+
     const contentResponse = await Promise.race([
       openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `You are an expert medical content writer. Write concise, engaging content about hydrogen therapy research.`
+            content: `You are an expert medical content writer. Write concise, engaging content about hydrogen therapy research.`,
           },
           {
             role: "user",
-            content: contentPrompt
-          }
+            content: contentPrompt,
+          },
         ],
         temperature: 0.7,
-        max_tokens: 1200
+        max_tokens: 1200,
       }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('OpenAI timeout')), 10000))
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("OpenAI timeout")), 10000),
+      ),
     ]);
 
-    const content = (contentResponse as any).choices[0]?.message?.content || 
-      `This is a ${articleType} article about ${study.title}. ${study.abstract || 'Research findings on hydrogen therapy applications.'}`;
+    const content =
+      (contentResponse as any).choices[0]?.message?.content ||
+      `This is a ${articleType} article about ${study.title}. ${study.abstract || "Research findings on hydrogen therapy applications."}`;
 
     // Generate optimized metadata quickly
-    const baseTitle = `${study.title.split(' ').slice(0, 8).join(' ')}`;
-    const slug = baseTitle.toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
+    const baseTitle = `${study.title.split(" ").slice(0, 8).join(" ")}`;
+    const slug = baseTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
       .substring(0, 60);
 
-    const summary = study.abstract 
+    const summary = study.abstract
       ? `${study.abstract.substring(0, 150)}...`
       : `New research explores hydrogen therapy applications in ${study.category.toLowerCase()}.`;
 
     const result: GeneratedBlogContent = {
-      title: baseTitle.length > 60 ? baseTitle.substring(0, 60) + '...' : baseTitle,
+      title:
+        baseTitle.length > 60 ? baseTitle.substring(0, 60) + "..." : baseTitle,
       slug: slug,
       summary: summary,
       content: content,
       articleType: articleType,
-      readingLevel: readingLevel
+      readingLevel: readingLevel,
     };
 
     return result;
-    
   } catch (error) {
-    console.error('Error generating blog content:', error);
+    console.error("Error generating blog content:", error);
     // Return simple fallback content
-    const baseTitle = study.title.split(' ').slice(0, 8).join(' ');
+    const baseTitle = study.title.split(" ").slice(0, 8).join(" ");
     return {
-      title: baseTitle.length > 60 ? baseTitle.substring(0, 60) + '...' : baseTitle,
-      slug: baseTitle.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 60),
+      title:
+        baseTitle.length > 60 ? baseTitle.substring(0, 60) + "..." : baseTitle,
+      slug: baseTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .substring(0, 60),
       summary: `Research findings on ${study.title.toLowerCase().substring(0, 100)}...`,
-      content: `This study titled "${study.title}" presents important findings in ${study.category}. ${study.abstract || 'The research contributes to our understanding of hydrogen therapy applications.'}`,
+      content: `This study titled "${study.title}" presents important findings in ${study.category}. ${study.abstract || "The research contributes to our understanding of hydrogen therapy applications."}`,
       articleType: articleType,
-      readingLevel: readingLevel
+      readingLevel: readingLevel,
     };
   }
 }
@@ -295,7 +314,7 @@ async function generateSingleBlogContent(
  * Create rule-based recommendation without AI
  */
 function createRuleBasedRecommendation(study: any): {
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   reason: string;
   suggestedTypes: string[];
   estimatedReadership: string;
@@ -303,62 +322,85 @@ function createRuleBasedRecommendation(study: any): {
   potentialTitle: string;
 } {
   const title = study.title.toLowerCase();
-  const abstract = (study.abstract || '').toLowerCase();
-  const category = (study.category || '').toLowerCase();
-  
+  const abstract = (study.abstract || "").toLowerCase();
+  const category = (study.category || "").toLowerCase();
+
   // Determine priority based on keywords and category
-  let priority: 'high' | 'medium' | 'low' = 'medium';
-  let reason = 'Study has limited blog coverage and could benefit from consumer-friendly articles';
-  
-  const highPriorityKeywords = ['clinical trial', 'human study', 'therapeutic', 'treatment', 'therapy', 'health benefits'];
-  const mediumPriorityKeywords = ['research', 'study', 'analysis', 'investigation'];
-  
-  if (highPriorityKeywords.some(keyword => title.includes(keyword) || abstract.includes(keyword))) {
-    priority = 'high';
-    reason = 'High-impact clinical research with direct therapeutic applications - excellent for consumer education';
+  let priority: "high" | "medium" | "low" = "medium";
+  let reason =
+    "Study has limited blog coverage and could benefit from consumer-friendly articles";
+
+  const highPriorityKeywords = [
+    "clinical trial",
+    "human study",
+    "therapeutic",
+    "treatment",
+    "therapy",
+    "health benefits",
+  ];
+  const mediumPriorityKeywords = [
+    "research",
+    "study",
+    "analysis",
+    "investigation",
+  ];
+
+  if (
+    highPriorityKeywords.some(
+      (keyword) => title.includes(keyword) || abstract.includes(keyword),
+    )
+  ) {
+    priority = "high";
+    reason =
+      "High-impact clinical research with direct therapeutic applications - excellent for consumer education";
   } else if (study.blogCount === 0) {
-    priority = 'high';
-    reason = 'No existing blog coverage - high opportunity for new content creation';
+    priority = "high";
+    reason =
+      "No existing blog coverage - high opportunity for new content creation";
   }
-  
+
   // Suggest article types based on content
-  const suggestedTypes = ['explainer'];
-  if (title.includes('clinical') || abstract.includes('patient')) {
-    suggestedTypes.push('implications');
+  const suggestedTypes = ["explainer"];
+  if (title.includes("clinical") || abstract.includes("patient")) {
+    suggestedTypes.push("implications");
   }
-  if (title.includes('benefit') || abstract.includes('therapeutic')) {
-    suggestedTypes.push('benefits');
+  if (title.includes("benefit") || abstract.includes("therapeutic")) {
+    suggestedTypes.push("benefits");
   }
-  
+
   // Estimate readership
-  const estimatedReadership = priority === 'high' ? 'High' : 'Medium';
-  
+  const estimatedReadership = priority === "high" ? "High" : "Medium";
+
   // Generate SEO keywords
   const seoKeywords = [
-    'hydrogen therapy',
+    "hydrogen therapy",
     category,
-    'research study',
-    'health benefits',
-    'therapeutic applications'
+    "research study",
+    "health benefits",
+    "therapeutic applications",
   ].filter(Boolean);
-  
+
   // Create potential title
-  const potentialTitle = `Understanding ${study.title.split(' ').slice(0, 6).join(' ')}: New Research Insights`;
-  
+  const potentialTitle = `Understanding ${study.title.split(" ").slice(0, 6).join(" ")}: New Research Insights`;
+
   return {
     priority,
     reason,
     suggestedTypes,
     estimatedReadership,
     seoKeywords,
-    potentialTitle
+    potentialTitle,
   };
 }
 
 /**
  * Create content generation prompt based on article type
  */
-function createContentPrompt(study: any, articleType: string, readingLevel: string): string {
+function createContentPrompt(
+  study: any,
+  articleType: string,
+  readingLevel: string,
+): string {
   const baseInfo = `
 Study Title: ${study.title}
 Abstract: ${study.abstract}
@@ -367,14 +409,15 @@ Journal: ${study.journal}
 Category: ${study.category}
 `;
 
-  const readingLevelInstruction = readingLevel === '6th' 
-    ? 'Write at a 6th grade reading level (ages 11-12) using simple words and short sentences.'
-    : readingLevel === 'high-school'
-    ? 'Write at a high school level (ages 14-18) with moderate complexity.'
-    : 'Write for a general adult audience with accessible but comprehensive language.';
+  const readingLevelInstruction =
+    readingLevel === "6th"
+      ? "Write at a 6th grade reading level (ages 11-12) using simple words and short sentences."
+      : readingLevel === "high-school"
+        ? "Write at a high school level (ages 14-18) with moderate complexity."
+        : "Write for a general adult audience with accessible but comprehensive language.";
 
   switch (articleType) {
-    case 'explainer':
+    case "explainer":
       return `${baseInfo}
 
 Write a comprehensive explainer article (800-1200 words) that breaks down this hydrogen therapy research study. ${readingLevelInstruction}
@@ -389,7 +432,7 @@ Structure:
 
 Focus on making complex science accessible while maintaining accuracy.`;
 
-    case 'implications':
+    case "implications":
       return `${baseInfo}
 
 Write an implications article (600-800 words) exploring what this research means for the future. ${readingLevelInstruction}
@@ -401,7 +444,7 @@ Focus on:
 - Potential benefits for patients
 - Timeline for practical applications`;
 
-    case 'benefits':
+    case "benefits":
       return `${baseInfo}
 
 Write a benefits-focused article (500-700 words) highlighting the potential health advantages discovered in this study. ${readingLevelInstruction}

@@ -9,8 +9,8 @@ import { searchRateLimiter, generalApiRateLimiter } from "../rate-limiting";
 const router = Router();
 
 // Import analytics routes
-import analyticsRoutes from './content-analytics-routes';
-router.use('/', analyticsRoutes);
+import analyticsRoutes from "./content-analytics-routes";
+router.use("/", analyticsRoutes);
 
 // Get research trends data for visualizations
 router.get("/trends", async (req, res) => {
@@ -28,9 +28,9 @@ router.get("/trends", async (req, res) => {
     `;
 
     const yearlyResult = await pool.query(yearlyTrendsQuery);
-    const yearlyTrends = yearlyResult.rows.map(row => ({
+    const yearlyTrends = yearlyResult.rows.map((row) => ({
       year: parseInt(row.year),
-      count: parseInt(row.count)
+      count: parseInt(row.count),
     }));
 
     // Get category distribution - using actual data from your enriched studies
@@ -55,19 +55,18 @@ router.get("/trends", async (req, res) => {
     `;
 
     const categoryResult = await pool.query(categoryTrendsQuery);
-    const categoryTrends = categoryResult.rows.map(row => ({
-      category: row.category_name || 'General Health',
-      count: parseInt(row.count)
+    const categoryTrends = categoryResult.rows.map((row) => ({
+      category: row.category_name || "General Health",
+      count: parseInt(row.count),
     }));
 
     res.json({
       yearlyTrends,
-      categoryTrends
+      categoryTrends,
     });
-
   } catch (error) {
-    console.error('Error fetching research trends:', error);
-    res.status(500).json({ message: 'Failed to fetch research trends' });
+    console.error("Error fetching research trends:", error);
+    res.status(500).json({ message: "Failed to fetch research trends" });
   }
 });
 
@@ -130,12 +129,13 @@ router.get("/health-outcomes", async (req, res) => {
          OR abstract ILIKE '%anti-inflammatory%'
     `;
 
-    const [cardioResult, nervousResult, metabolicResult, immuneResult] = await Promise.all([
-      pool.query(cardiovascularQuery),
-      pool.query(nervousQuery), 
-      pool.query(metabolicQuery),
-      pool.query(immuneQuery)
-    ]);
+    const [cardioResult, nervousResult, metabolicResult, immuneResult] =
+      await Promise.all([
+        pool.query(cardiovascularQuery),
+        pool.query(nervousQuery),
+        pool.query(metabolicQuery),
+        pool.query(immuneQuery),
+      ]);
 
     // Build outcomes using real data from your hydrogen research database
     const outcomes = {
@@ -145,12 +145,18 @@ router.get("/health-outcomes", async (req, res) => {
           {
             condition: "Cardiovascular Health",
             studyCount: parseInt(cardioResult.rows[0]?.studies || 0),
-            positiveOutcomes: Math.floor(parseInt(cardioResult.rows[0]?.studies || 0) * 0.8),
+            positiveOutcomes: Math.floor(
+              parseInt(cardioResult.rows[0]?.studies || 0) * 0.8,
+            ),
             bodySystem: "Cardiovascular",
             effectSize: "medium" as const,
-            commonBenefits: ["Reduced oxidative stress", "Improved circulation", "Cardioprotective effects"]
-          }
-        ]
+            commonBenefits: [
+              "Reduced oxidative stress",
+              "Improved circulation",
+              "Cardioprotective effects",
+            ],
+          },
+        ],
       },
       nervous: {
         studies: parseInt(nervousResult.rows[0]?.studies || 0),
@@ -158,12 +164,18 @@ router.get("/health-outcomes", async (req, res) => {
           {
             condition: "Neurological Health",
             studyCount: parseInt(nervousResult.rows[0]?.studies || 0),
-            positiveOutcomes: Math.floor(parseInt(nervousResult.rows[0]?.studies || 0) * 0.75),
+            positiveOutcomes: Math.floor(
+              parseInt(nervousResult.rows[0]?.studies || 0) * 0.75,
+            ),
             bodySystem: "Nervous",
             effectSize: "large" as const,
-            commonBenefits: ["Neuroprotection", "Improved cognition", "Reduced brain inflammation"]
-          }
-        ]
+            commonBenefits: [
+              "Neuroprotection",
+              "Improved cognition",
+              "Reduced brain inflammation",
+            ],
+          },
+        ],
       },
       metabolic: {
         studies: parseInt(metabolicResult.rows[0]?.studies || 0),
@@ -171,12 +183,18 @@ router.get("/health-outcomes", async (req, res) => {
           {
             condition: "Metabolic Health",
             studyCount: parseInt(metabolicResult.rows[0]?.studies || 0),
-            positiveOutcomes: Math.floor(parseInt(metabolicResult.rows[0]?.studies || 0) * 0.7),
-            bodySystem: "Metabolic", 
+            positiveOutcomes: Math.floor(
+              parseInt(metabolicResult.rows[0]?.studies || 0) * 0.7,
+            ),
+            bodySystem: "Metabolic",
             effectSize: "medium" as const,
-            commonBenefits: ["Better glucose control", "Metabolic protection", "Enhanced energy metabolism"]
-          }
-        ]
+            commonBenefits: [
+              "Better glucose control",
+              "Metabolic protection",
+              "Enhanced energy metabolism",
+            ],
+          },
+        ],
       },
       immune: {
         studies: parseInt(immuneResult.rows[0]?.studies || 0),
@@ -184,20 +202,25 @@ router.get("/health-outcomes", async (req, res) => {
           {
             condition: "Immune Function",
             studyCount: parseInt(immuneResult.rows[0]?.studies || 0),
-            positiveOutcomes: Math.floor(parseInt(immuneResult.rows[0]?.studies || 0) * 0.85),
+            positiveOutcomes: Math.floor(
+              parseInt(immuneResult.rows[0]?.studies || 0) * 0.85,
+            ),
             bodySystem: "Immune",
             effectSize: "large" as const,
-            commonBenefits: ["Reduced inflammation", "Enhanced antioxidant activity", "Immune system support"]
-          }
-        ]
-      }
+            commonBenefits: [
+              "Reduced inflammation",
+              "Enhanced antioxidant activity",
+              "Immune system support",
+            ],
+          },
+        ],
+      },
     };
 
     res.json(outcomes);
-
   } catch (error) {
-    console.error('Error fetching health outcomes:', error);
-    res.status(500).json({ message: 'Failed to fetch health outcomes' });
+    console.error("Error fetching health outcomes:", error);
+    res.status(500).json({ message: "Failed to fetch health outcomes" });
   }
 });
 
@@ -208,13 +231,13 @@ router.get("/by-consumer-category", async (req, res) => {
     return res.json({
       success: true,
       data: [],
-      message: "Please specify a model and category to get studies"
+      message: "Please specify a model and category to get studies",
     });
   } catch (error) {
     console.error("Error fetching studies by consumer category:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch studies by consumer category"
+      message: "Failed to fetch studies by consumer category",
     });
   }
 });
@@ -223,16 +246,16 @@ router.get("/by-consumer-category", async (req, res) => {
 router.get("/by-consumer-category/:model/:category", async (req, res) => {
   try {
     const { model, category } = req.params;
-    
+
     if (!model || !category) {
       return res.status(400).json({
         success: false,
-        message: "Model and category parameters are required"
+        message: "Model and category parameters are required",
       });
     }
-    
+
     console.log(`Fetching studies for ${model} category: ${category}`);
-    
+
     // Generate appropriate mock data based on the selected category
     const generateMockStudies = (categoryName) => {
       // Create a list of studies tailored to this category
@@ -241,62 +264,61 @@ router.get("/by-consumer-category/:model/:category", async (req, res) => {
           title: `Effects of hydrogen-rich water on ${categoryName}`,
           abstract: `This study investigates the effects of hydrogen-rich water consumption on markers of ${categoryName.toLowerCase()}.`,
           journal: "Journal of Hydrogen Medicine",
-          authors: "Smith J, Johnson A"
+          authors: "Smith J, Johnson A",
         },
         {
           title: `Hydrogen inhalation therapy for ${categoryName}`,
           abstract: `A clinical trial evaluating hydrogen gas inhalation therapy for ${categoryName.toLowerCase()} conditions.`,
           journal: "Molecular Hydrogen Research",
-          authors: "Chen L, Wang H"
+          authors: "Chen L, Wang H",
         },
         {
           title: `Comparative study of hydrogen applications in ${categoryName}`,
           abstract: `This comparative analysis examines various hydrogen delivery methods for addressing ${categoryName.toLowerCase()}-related health challenges.`,
           journal: "International Journal of Hydrogen Medicine",
-          authors: "Yamamoto K, Suzuki T"
+          authors: "Yamamoto K, Suzuki T",
         },
         {
           title: `Long-term hydrogen supplementation effects on ${categoryName}`,
           abstract: `A longitudinal investigation into how sustained hydrogen therapy affects ${categoryName.toLowerCase()} over a 2-year period.`,
           journal: "Clinical Hydrogen Applications",
-          authors: "Brown R, Miller J"
+          authors: "Brown R, Miller J",
         },
         {
           title: `Molecular mechanisms of hydrogen in ${categoryName}`,
           abstract: `This research explores the cellular and molecular pathways through which hydrogen gas provides benefits for ${categoryName.toLowerCase()}.`,
           journal: "Biochemical Research International",
-          authors: "Garcia M, Thompson L"
-        }
+          authors: "Garcia M, Thompson L",
+        },
       ];
-      
+
       // Generate 5 studies for this category with unique IDs
       return studyTemplates.map((template, index) => ({
         id: 1000 + index,
         title: template.title,
         abstract: template.abstract,
         category: categoryName,
-        publishDate: `2023-${(index + 1).toString().padStart(2, '0')}-15`,
+        publishDate: `2023-${(index + 1).toString().padStart(2, "0")}-15`,
         journal: template.journal,
         authors: template.authors,
-        doi: `10.1234/hydro.2023.${(index + 10).toString().padStart(3, '0')}`,
+        doi: `10.1234/hydro.2023.${(index + 10).toString().padStart(3, "0")}`,
         // Use placeholder image URLs that will actually load
-        imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+${categoryName.toLowerCase().replace(/\s+/g, '+').replace(/&/g, 'and')}`
+        imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+${categoryName.toLowerCase().replace(/\s+/g, "+").replace(/&/g, "and")}`,
       }));
     };
-    
+
     // Generate mock studies specific to the requested category
     const mockStudies = generateMockStudies(category);
-    
+
     return res.json({
       success: true,
-      data: mockStudies
+      data: mockStudies,
     });
-    
   } catch (error) {
     console.error("Error fetching studies by consumer category:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch studies by consumer category"
+      message: "Failed to fetch studies by consumer category",
     });
   }
 });
@@ -305,12 +327,12 @@ router.get("/by-consumer-category/:model/:category", async (req, res) => {
 // Rate limited to prevent abuse
 router.get("/", searchRateLimiter, async (req, res) => {
   try {
-    const { 
-      query, 
-      keyword, 
-      author, 
-      yearFrom, 
-      yearTo, 
+    const {
+      query,
+      keyword,
+      author,
+      yearFrom,
+      yearTo,
       category,
       isPeerReviewed,
       hasHealthImplications,
@@ -318,26 +340,26 @@ router.get("/", searchRateLimiter, async (req, res) => {
       dateFrom,
       dateTo,
       page = "1",
-      limit = "50",  // Default 50 items per page for admin interface
+      limit = "50", // Default 50 items per page for admin interface
       sortField,
       sortOrder,
       sortBy,
-      search  // Add simple search param for admin UI
+      search, // Add simple search param for admin UI
     } = req.query;
-    
-    console.log("Search query parameters:", { 
-      query, 
-      keyword, 
-      author, 
-      yearFrom, 
-      yearTo, 
-      category, 
-      sortBy
+
+    console.log("Search query parameters:", {
+      query,
+      keyword,
+      author,
+      yearFrom,
+      yearTo,
+      category,
+      sortBy,
     });
-    
+
     // Connect directly to your authentic hydrogen research database
     let result;
-    
+
     try {
       // Build search query for your real 1,326 hydrogen studies using existing columns
       let searchQuery = `
@@ -348,7 +370,7 @@ router.get("/", searchRateLimiter, async (req, res) => {
       `;
       const queryParams = [];
       let paramCount = 0;
-      
+
       // Add search filters for your authentic research data
       // Support both 'query' and 'search' parameters for compatibility
       const searchTerm = query || search;
@@ -357,118 +379,117 @@ router.get("/", searchRateLimiter, async (req, res) => {
         searchQuery += ` AND (title ILIKE $${paramCount} OR abstract ILIKE $${paramCount} OR authors ILIKE $${paramCount})`;
         queryParams.push(`%${searchTerm}%`);
       }
-      
+
       if (keyword) {
         paramCount++;
         searchQuery += ` AND (title ILIKE $${paramCount} OR abstract ILIKE $${paramCount})`;
         queryParams.push(`%${keyword}%`);
       }
-      
+
       if (author) {
         paramCount++;
         searchQuery += ` AND authors ILIKE $${paramCount}`;
         queryParams.push(`%${author}%`);
       }
-      
+
       if (category) {
         paramCount++;
         searchQuery += ` AND category ILIKE $${paramCount}`;
         queryParams.push(`%${category}%`);
       }
-      
+
       if (yearFrom) {
         paramCount++;
         searchQuery += ` AND EXTRACT(YEAR FROM publish_date::date) >= $${paramCount}`;
         queryParams.push(parseInt(yearFrom));
       }
-      
+
       if (yearTo) {
         paramCount++;
         searchQuery += ` AND EXTRACT(YEAR FROM publish_date::date) <= $${paramCount}`;
         queryParams.push(parseInt(yearTo));
       }
-      
+
       // Add sorting
-      if (sortBy === 'date') {
+      if (sortBy === "date") {
         searchQuery += ` ORDER BY publish_date DESC NULLS LAST`;
-      } else if (sortBy === 'title') {
+      } else if (sortBy === "title") {
         searchQuery += ` ORDER BY title ASC`;
-      } else if (sortBy === 'author') {
+      } else if (sortBy === "author") {
         searchQuery += ` ORDER BY authors ASC`;
       } else {
         searchQuery += ` ORDER BY id DESC`;
       }
-      
+
       // Add pagination - use 'limit' parameter for consistency
       const pageNum = Math.max(1, Number(page) || 1);
       const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
       const offset = (pageNum - 1) * limitNum;
-      
+
       paramCount++;
       searchQuery += ` LIMIT $${paramCount}`;
       queryParams.push(limitNum);
-      
+
       paramCount++;
       searchQuery += ` OFFSET $${paramCount}`;
       queryParams.push(offset);
-      
+
       // Execute search on your authentic hydrogen research database
-      const { pool } = await import('../db');
+      const { pool } = await import("../db");
       const searchResult = await pool.query(searchQuery, queryParams);
-      
+
       // Get total count for pagination
       let countQuery = `SELECT COUNT(*) as total FROM studies WHERE 1=1`;
       const countParams = [];
       let countParamCount = 0;
-      
+
       const countSearchTerm = query || search;
       if (countSearchTerm) {
         countParamCount++;
         countQuery += ` AND (title ILIKE $${countParamCount} OR abstract ILIKE $${countParamCount} OR authors ILIKE $${countParamCount})`;
         countParams.push(`%${countSearchTerm}%`);
       }
-      
+
       if (keyword) {
         countParamCount++;
         countQuery += ` AND (title ILIKE $${countParamCount} OR abstract ILIKE $${countParamCount})`;
         countParams.push(`%${keyword}%`);
       }
-      
+
       if (author) {
         countParamCount++;
         countQuery += ` AND authors ILIKE $${countParamCount}`;
         countParams.push(`%${author}%`);
       }
-      
+
       if (category) {
         countParamCount++;
         countQuery += ` AND category ILIKE $${countParamCount}`;
         countParams.push(`%${category}%`);
       }
-      
+
       if (yearFrom) {
         countParamCount++;
         countQuery += ` AND EXTRACT(YEAR FROM publish_date::date) >= $${countParamCount}`;
         countParams.push(parseInt(yearFrom));
       }
-      
+
       if (yearTo) {
         countParamCount++;
         countQuery += ` AND EXTRACT(YEAR FROM publish_date::date) <= $${countParamCount}`;
         countParams.push(parseInt(yearTo));
       }
-      
+
       const countResult = await pool.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || 0);
-      
+
       result = {
         data: searchResult.rows,
         total,
         page: pageNum,
         limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
+        totalPages: Math.ceil(total / limitNum),
       };
-      
     } catch (dbError) {
       console.error("Database search failed, using storage fallback:", dbError);
       // Only fallback to storage if database completely fails
@@ -479,21 +500,32 @@ router.get("/", searchRateLimiter, async (req, res) => {
         yearFrom: yearFrom as string,
         yearTo: yearTo as string,
         category: category as string,
-        isPeerReviewed: isPeerReviewed === "true" ? true : isPeerReviewed === "false" ? false : undefined,
-        hasHealthImplications: hasHealthImplications === "true" ? true : hasHealthImplications === "false" ? false : undefined,
-        hasMedia: hasMedia === "true" ? true : hasMedia === "false" ? false : undefined,
+        isPeerReviewed:
+          isPeerReviewed === "true"
+            ? true
+            : isPeerReviewed === "false"
+              ? false
+              : undefined,
+        hasHealthImplications:
+          hasHealthImplications === "true"
+            ? true
+            : hasHealthImplications === "false"
+              ? false
+              : undefined,
+        hasMedia:
+          hasMedia === "true" ? true : hasMedia === "false" ? false : undefined,
         dateFrom: dateFrom as string,
         dateTo: dateTo as string,
         page: Number(page),
         pageSize: Number(pageSize),
         sortField: sortField as string,
-        sortOrder: sortOrder as 'asc' | 'desc',
-        sortBy: sortBy as string
+        sortOrder: sortOrder as "asc" | "desc",
+        sortBy: sortBy as string,
       });
     }
-    
+
     // If storage returns paginated results (likely from database implementation)
-    if (result && 'data' in result) {
+    if (result && "data" in result) {
       res.json(result);
     } else {
       // Otherwise, it's returning an array directly (likely from in-memory implementation)
@@ -504,13 +536,13 @@ router.get("/", searchRateLimiter, async (req, res) => {
       const startIndex = (pageNum - 1) * limitNum;
       const endIndex = startIndex + limitNum;
       const paginatedData = studies.slice(startIndex, endIndex);
-      
+
       res.json({
         data: paginatedData,
         total: studies.length,
         page: pageNum,
         limit: limitNum,
-        totalPages: Math.ceil(studies.length / limitNum)
+        totalPages: Math.ceil(studies.length / limitNum),
       });
     }
   } catch (error) {
@@ -523,11 +555,11 @@ router.get("/", searchRateLimiter, async (req, res) => {
 router.get("/latest", async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-    
+
     // Direct database access using your authentic hydrogen research data
     try {
-      const { pool } = await import('../db');
-      
+      const { pool } = await import("../db");
+
       // Query your actual 1,326 hydrogen studies using existing columns only
       const latestStudiesQuery = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
@@ -536,16 +568,19 @@ router.get("/latest", async (req, res) => {
         ORDER BY id DESC 
         LIMIT $1
       `;
-      
+
       const result = await pool.query(latestStudiesQuery, [limit]);
-      
+
       if (result.rows && result.rows.length > 0) {
         return res.json(result.rows);
       }
     } catch (err) {
-      console.log("Error fetching latest studies from database, falling back to storage:", err);
+      console.log(
+        "Error fetching latest studies from database, falling back to storage:",
+        err,
+      );
     }
-    
+
     // Otherwise use the storage interface
     const latestStudies = await storage.getLatestStudies(limit);
     res.json(latestStudies);
@@ -559,18 +594,18 @@ router.get("/latest", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    
+
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid study ID format" });
     }
-    
+
     // Log DOI information for debugging
     console.log(`Study ${id} DOI data:`, await storage.getStudyDoi(id));
-    
+
     // Get study directly from your authentic hydrogen research database
     try {
-      const { pool } = await import('../db');
-      
+      const { pool } = await import("../db");
+
       // Query your real hydrogen study using existing columns only
       const studyQuery = `
         SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
@@ -578,41 +613,47 @@ router.get("/:id", async (req, res) => {
         FROM studies 
         WHERE id = $1
       `;
-      
+
       const result = await pool.query(studyQuery, [id]);
-      
+
       if (result.rows && result.rows.length > 0) {
         const study = result.rows[0];
-        
+
         // Ensure study has an image URL for display
         if (!study.imageUrl) {
-          const topic = study.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
+          const topic =
+            study.title?.split(" ").slice(0, 3).join("+") ||
+            "hydrogen+research";
           study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${topic}`;
         }
-        
+
         return res.json(study);
       }
     } catch (dbError) {
-      console.log("Database error fetching study, falling back to storage:", dbError);
+      console.log(
+        "Database error fetching study, falling back to storage:",
+        dbError,
+      );
     }
-    
+
     // If no result from database, try with the storage interface
     const study = await storage.getStudyById(id);
-    
+
     // Ensure study has an image URL if found
     if (study && !study.imageUrl) {
       // Generate a dynamic image related to the study topic
-      const topic = study.title?.split(' ').slice(0, 3).join('+') || 'hydrogen+research';
+      const topic =
+        study.title?.split(" ").slice(0, 3).join("+") || "hydrogen+research";
       // Make sure we properly encode the text to avoid URL issues
       const encodedTopic = encodeURIComponent(topic);
       study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${encodedTopic}`;
       console.log(`Generated image URL for study ${id}: ${study.imageUrl}`);
     }
-    
+
     if (!study) {
       return res.status(404).json({ message: "Study not found" });
     }
-    
+
     res.json(study);
   } catch (error) {
     console.error("Error fetching study:", error);
@@ -624,13 +665,14 @@ router.get("/:id", async (req, res) => {
 router.get("/slug/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
-    
+
     if (!slug) {
-      return res.status(400).json({ error: 'Slug is required' });
+      return res.status(400).json({ error: "Slug is required" });
     }
 
-    const { pool } = await import('../db');
-    const studies = await pool.query(`
+    const { pool } = await import("../db");
+    const studies = await pool.query(
+      `
       SELECT 
         id, title, abstract, authors, journal, 
         publish_date as "publishDate", category, doi, 
@@ -638,17 +680,19 @@ router.get("/slug/:slug", async (req, res) => {
       FROM studies 
       WHERE slug = $1
       LIMIT 1
-    `, [slug]);
+    `,
+      [slug],
+    );
 
     if (studies.rows.length === 0) {
-      return res.status(404).json({ error: 'Study not found' });
+      return res.status(404).json({ error: "Study not found" });
     }
 
     const study = studies.rows[0];
     res.json(study);
   } catch (error) {
-    console.error('Error fetching study by slug:', error);
-    res.status(500).json({ error: 'Failed to fetch study' });
+    console.error("Error fetching study by slug:", error);
+    res.status(500).json({ error: "Failed to fetch study" });
   }
 });
 

@@ -2,30 +2,34 @@
  * API routes for managing targeted studies enrichment
  */
 
-import { Router } from 'express';
-import { startTargetedEnrichment, getEnrichmentStatus, getEnrichmentSummary } from '../targeted-enrichment';
+import { Router } from "express";
+import {
+  startTargetedEnrichment,
+  getEnrichmentStatus,
+  getEnrichmentSummary,
+} from "../targeted-enrichment";
 
 const router = Router();
 
 /**
  * Start the targeted enrichment process
  */
-router.post('/start', async (req, res) => {
+router.post("/start", async (req, res) => {
   try {
     const { batchSize = 10 } = req.body;
-    
+
     const stats = await startTargetedEnrichment(batchSize);
-    
+
     res.json({
       success: true,
-      message: 'Targeted enrichment started successfully',
-      stats
+      message: "Targeted enrichment started successfully",
+      stats,
     });
   } catch (error) {
-    console.error('Error starting enrichment:', error);
+    console.error("Error starting enrichment:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -33,19 +37,19 @@ router.post('/start', async (req, res) => {
 /**
  * Get current enrichment status
  */
-router.get('/status', async (req, res) => {
+router.get("/status", async (req, res) => {
   try {
     const status = getEnrichmentStatus();
-    
+
     res.json({
       success: true,
-      status
+      status,
     });
   } catch (error) {
-    console.error('Error getting enrichment status:', error);
+    console.error("Error getting enrichment status:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -53,10 +57,10 @@ router.get('/status', async (req, res) => {
 /**
  * Get enrichment summary and progress
  */
-router.get('/summary', async (req, res) => {
+router.get("/summary", async (req, res) => {
   try {
     const summary = await getEnrichmentSummary();
-    
+
     res.json({
       success: true,
       summary: {
@@ -65,17 +69,25 @@ router.get('/summary', async (req, res) => {
         with_health_conditions: parseInt(summary.with_health_conditions),
         with_body_systems: parseInt(summary.with_body_systems),
         with_conclusions: parseInt(summary.with_conclusions),
-        keywords_percentage: Math.round((summary.with_keywords / summary.total_studies) * 100),
-        health_conditions_percentage: Math.round((summary.with_health_conditions / summary.total_studies) * 100),
-        body_systems_percentage: Math.round((summary.with_body_systems / summary.total_studies) * 100),
-        conclusions_percentage: Math.round((summary.with_conclusions / summary.total_studies) * 100)
-      }
+        keywords_percentage: Math.round(
+          (summary.with_keywords / summary.total_studies) * 100,
+        ),
+        health_conditions_percentage: Math.round(
+          (summary.with_health_conditions / summary.total_studies) * 100,
+        ),
+        body_systems_percentage: Math.round(
+          (summary.with_body_systems / summary.total_studies) * 100,
+        ),
+        conclusions_percentage: Math.round(
+          (summary.with_conclusions / summary.total_studies) * 100,
+        ),
+      },
     });
   } catch (error) {
-    console.error('Error getting enrichment summary:', error);
+    console.error("Error getting enrichment summary:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -83,10 +95,10 @@ router.get('/summary', async (req, res) => {
 /**
  * Batch enrichment endpoints
  */
-router.get('/batch/status', async (req, res) => {
+router.get("/batch/status", async (req, res) => {
   try {
     const status = getEnrichmentStatus();
-    
+
     res.json({
       success: true,
       status: {
@@ -95,57 +107,57 @@ router.get('/batch/status', async (req, res) => {
         processed: status.totalProcessed,
         failed: status.errors,
         startTime: status.startTime,
-        estimatedCompletion: null
-      }
+        estimatedCompletion: null,
+      },
     });
   } catch (error) {
-    console.error('Error getting batch status:', error);
+    console.error("Error getting batch status:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
-router.post('/batch/start', async (req, res) => {
+router.post("/batch/start", async (req, res) => {
   try {
     const { batchSize = 10 } = req.body;
-    
+
     const stats = await startTargetedEnrichment(batchSize);
-    
+
     res.json({
       success: true,
-      message: 'Batch enrichment started successfully',
+      message: "Batch enrichment started successfully",
       status: {
         inProgress: true,
         totalToProcess: batchSize,
         processed: 0,
         failed: 0,
         startTime: new Date(),
-        estimatedCompletion: null
-      }
+        estimatedCompletion: null,
+      },
     });
   } catch (error) {
-    console.error('Error starting batch enrichment:', error);
+    console.error("Error starting batch enrichment:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
-router.post('/batch/stop', async (req, res) => {
+router.post("/batch/stop", async (req, res) => {
   try {
     // Stop the enrichment process (implementation depends on your enrichment system)
     res.json({
       success: true,
-      message: 'Batch enrichment stopped successfully'
+      message: "Batch enrichment stopped successfully",
     });
   } catch (error) {
-    console.error('Error stopping batch enrichment:', error);
+    console.error("Error stopping batch enrichment:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });

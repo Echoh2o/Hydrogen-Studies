@@ -2,14 +2,14 @@
  * Authentication and authorization middleware utilities
  * Supports role-based access control and permissions
  */
-import { compare, hash } from 'bcrypt';
-import { Request, Response, NextFunction } from 'express';
-import { db } from './db';
-import { users, UserRole } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { compare, hash } from "bcrypt";
+import { Request, Response, NextFunction } from "express";
+import { db } from "./db";
+import { users, UserRole } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 // Extend Express Request type to include session properties
-declare module 'express-session' {
+declare module "express-session" {
   interface SessionData {
     userId: string;
     username: string | null;
@@ -30,18 +30,25 @@ export async function hashPassword(password: string): Promise<string> {
 /**
  * Compare a password with a hash
  */
-export async function comparePasswords(password: string, hashedPassword: string): Promise<boolean> {
+export async function comparePasswords(
+  password: string,
+  hashedPassword: string,
+): Promise<boolean> {
   return await compare(password, hashedPassword);
 }
 
 /**
  * Middleware to check if user is authenticated
  */
-export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+export function isAuthenticated(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   if (req.session && req.session.userId) {
     return next();
   }
-  res.status(401).json({ error: 'Unauthorized - Please login' });
+  res.status(401).json({ error: "Unauthorized - Please login" });
 }
 
 /**
@@ -52,37 +59,38 @@ export function requireRole(roles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Check authentication first
     if (!req.session || !req.session.userId) {
-      return res.status(401).json({ error: 'Unauthorized - Please login' });
+      return res.status(401).json({ error: "Unauthorized - Please login" });
     }
 
     // Get user from database to check role
     try {
-      const [user] = await db.select()
+      const [user] = await db
+        .select()
         .from(users)
         .where(eq(users.id, req.session.userId))
         .limit(1);
 
       if (!user) {
-        return res.status(401).json({ error: 'User not found' });
+        return res.status(401).json({ error: "User not found" });
       }
 
       if (!user.isActive) {
-        return res.status(403).json({ error: 'Account is deactivated' });
+        return res.status(403).json({ error: "Account is deactivated" });
       }
 
       // Check if user has one of the required roles
-      if (roles.includes(user.role || '')) {
+      if (roles.includes(user.role || "")) {
         return next();
       }
 
-      return res.status(403).json({ 
-        error: 'Forbidden - Insufficient permissions',
+      return res.status(403).json({
+        error: "Forbidden - Insufficient permissions",
         requiredRoles: roles,
-        userRole: user.role
+        userRole: user.role,
       });
     } catch (error) {
-      console.error('Role check error:', error);
-      return res.status(500).json({ error: 'Failed to verify permissions' });
+      console.error("Role check error:", error);
+      return res.status(500).json({ error: "Failed to verify permissions" });
     }
   };
 }
@@ -95,22 +103,23 @@ export function hasPermission(permission: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Check authentication first
     if (!req.session || !req.session.userId) {
-      return res.status(401).json({ error: 'Unauthorized - Please login' });
+      return res.status(401).json({ error: "Unauthorized - Please login" });
     }
 
     // Get user from database to check permissions
     try {
-      const [user] = await db.select()
+      const [user] = await db
+        .select()
         .from(users)
         .where(eq(users.id, req.session.userId))
         .limit(1);
 
       if (!user) {
-        return res.status(401).json({ error: 'User not found' });
+        return res.status(401).json({ error: "User not found" });
       }
 
       if (!user.isActive) {
-        return res.status(403).json({ error: 'Account is deactivated' });
+        return res.status(403).json({ error: "Account is deactivated" });
       }
 
       // Admins have all permissions
@@ -123,13 +132,13 @@ export function hasPermission(permission: string) {
         return next();
       }
 
-      return res.status(403).json({ 
-        error: 'Forbidden - Missing required permission',
-        requiredPermission: permission
+      return res.status(403).json({
+        error: "Forbidden - Missing required permission",
+        requiredPermission: permission,
       });
     } catch (error) {
-      console.error('Permission check error:', error);
-      return res.status(500).json({ error: 'Failed to verify permissions' });
+      console.error("Permission check error:", error);
+      return res.status(500).json({ error: "Failed to verify permissions" });
     }
   };
 }
@@ -152,7 +161,11 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 /**
  * Middleware to check if user is an admin or editor
  */
-export function isAdminOrEditor(req: Request, res: Response, next: NextFunction) {
+export function isAdminOrEditor(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   return requireRole([UserRole.ADMIN, UserRole.EDITOR])(req, res, next);
 }
 
@@ -165,14 +178,15 @@ export async function getCurrentUser(req: Request) {
   }
 
   try {
-    const [user] = await db.select()
+    const [user] = await db
+      .select()
       .from(users)
       .where(eq(users.id, req.session.userId))
       .limit(1);
 
     return user || null;
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error("Get current user error:", error);
     return null;
   }
 }
@@ -180,16 +194,20 @@ export async function getCurrentUser(req: Request) {
 /**
  * Check if a user has a specific role
  */
-export async function userHasRole(userId: string, role: string): Promise<boolean> {
+export async function userHasRole(
+  userId: string,
+  role: string,
+): Promise<boolean> {
   try {
-    const [user] = await db.select()
+    const [user] = await db
+      .select()
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
     return user ? user.role === role : false;
   } catch (error) {
-    console.error('User role check error:', error);
+    console.error("User role check error:", error);
     return false;
   }
 }
@@ -197,33 +215,41 @@ export async function userHasRole(userId: string, role: string): Promise<boolean
 /**
  * Check if a user has a specific permission
  */
-export async function userHasPermission(userId: string, permission: string): Promise<boolean> {
+export async function userHasPermission(
+  userId: string,
+  permission: string,
+): Promise<boolean> {
   try {
-    const [user] = await db.select()
+    const [user] = await db
+      .select()
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
     if (!user) return false;
-    
+
     // Admins have all permissions
     if (user.role === UserRole.ADMIN) return true;
-    
+
     // Check specific permissions
     return user.permissions ? user.permissions.includes(permission) : false;
   } catch (error) {
-    console.error('User permission check error:', error);
+    console.error("User permission check error:", error);
     return false;
   }
 }
 
 // Export legacy functions for compatibility (these will be deprecated)
 export async function registerUser(userData: any) {
-  console.warn('registerUser is deprecated. Use /api/auth/register endpoint instead.');
-  throw new Error('Method deprecated');
+  console.warn(
+    "registerUser is deprecated. Use /api/auth/register endpoint instead.",
+  );
+  throw new Error("Method deprecated");
 }
 
 export async function authenticateUser(email: string, password: string) {
-  console.warn('authenticateUser is deprecated. Use /api/auth/login endpoint instead.');
-  throw new Error('Method deprecated');
+  console.warn(
+    "authenticateUser is deprecated. Use /api/auth/login endpoint instead.",
+  );
+  throw new Error("Method deprecated");
 }

@@ -1,16 +1,15 @@
-
 /**
  * Comprehensive Image System
  * Ensures all studies have AI-generated images with SEO and performance optimization
  */
 
-import { db } from './db';
-import { studies } from '../shared/schema';
-import { sql, isNull, or, eq } from 'drizzle-orm';
-import OpenAI from 'openai';
-import fs from 'fs/promises';
-import path from 'path';
-import sharp from 'sharp';
+import { db } from "./db";
+import { studies } from "../shared/schema";
+import { sql, isNull, or, eq } from "drizzle-orm";
+import OpenAI from "openai";
+import fs from "fs/promises";
+import path from "path";
+import sharp from "sharp";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -39,7 +38,7 @@ let processingStatus = {
   isRunning: false,
   processed: 0,
   failed: 0,
-  startTime: new Date()
+  startTime: new Date(),
 };
 
 /**
@@ -52,20 +51,20 @@ export async function ensureAllStudiesHaveOptimizedImages(): Promise<{
 }> {
   try {
     const status = await getSystemStatus();
-    
+
     if (status.studiesNeedingImages === 0) {
       return {
         success: true,
-        message: 'All studies already have images',
-        status
+        message: "All studies already have images",
+        status,
       };
     }
 
     if (processingStatus.isRunning) {
       return {
         success: false,
-        message: 'Image processing already in progress',
-        status
+        message: "Image processing already in progress",
+        status,
       };
     }
 
@@ -77,14 +76,14 @@ export async function ensureAllStudiesHaveOptimizedImages(): Promise<{
     return {
       success: true,
       message: `Started processing ${status.studiesNeedingImages} studies`,
-      status
+      status,
     };
   } catch (error) {
-    console.error('Error in ensureAllStudiesHaveOptimizedImages:', error);
+    console.error("Error in ensureAllStudiesHaveOptimizedImages:", error);
     return {
       success: false,
-      message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      status: await getSystemStatus()
+      message: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      status: await getSystemStatus(),
     };
   }
 }
@@ -94,31 +93,33 @@ export async function ensureAllStudiesHaveOptimizedImages(): Promise<{
  */
 async function processAllMissingImages(): Promise<void> {
   if (processingStatus.isRunning) return;
-  
+
   processingStatus.isRunning = true;
   processingStatus.processed = 0;
   processingStatus.failed = 0;
   processingStatus.startTime = new Date();
 
   try {
-    console.log('🚀 Starting comprehensive image processing...');
+    console.log("🚀 Starting comprehensive image processing...");
 
     while (true) {
       // Get next batch of studies without images
       const studiesNeedingImages = await getStudiesNeedingImages(10);
-      
+
       if (studiesNeedingImages.length === 0) {
-        console.log('✅ All studies now have optimized images!');
+        console.log("✅ All studies now have optimized images!");
         break;
       }
 
-      console.log(`Processing batch of ${studiesNeedingImages.length} studies...`);
+      console.log(
+        `Processing batch of ${studiesNeedingImages.length} studies...`,
+      );
 
       // Process each study in the batch
       for (const study of studiesNeedingImages) {
         try {
           const result = await generateAndOptimizeStudyImage(study);
-          
+
           if (result.success) {
             processingStatus.processed++;
             console.log(`✓ Study ${study.id}: Image generated and optimized`);
@@ -128,7 +129,7 @@ async function processAllMissingImages(): Promise<void> {
           }
 
           // Rate limiting between requests (6 seconds for OpenAI)
-          await new Promise(resolve => setTimeout(resolve, 6000));
+          await new Promise((resolve) => setTimeout(resolve, 6000));
         } catch (error) {
           processingStatus.failed++;
           console.error(`Error processing study ${study.id}:`, error);
@@ -136,65 +137,70 @@ async function processAllMissingImages(): Promise<void> {
       }
 
       // Longer break between batches
-      console.log('Batch complete, waiting 30 seconds before next batch...');
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      console.log("Batch complete, waiting 30 seconds before next batch...");
+      await new Promise((resolve) => setTimeout(resolve, 30000));
     }
   } catch (error) {
-    console.error('Error in processAllMissingImages:', error);
+    console.error("Error in processAllMissingImages:", error);
   } finally {
     processingStatus.isRunning = false;
-    console.log(`Processing complete: ${processingStatus.processed} successful, ${processingStatus.failed} failed`);
+    console.log(
+      `Processing complete: ${processingStatus.processed} successful, ${processingStatus.failed} failed`,
+    );
   }
 }
 
 /**
  * Generate and optimize image for a single study
  */
-async function generateAndOptimizeStudyImage(study: any): Promise<ImageOptimizationResult> {
+async function generateAndOptimizeStudyImage(
+  study: any,
+): Promise<ImageOptimizationResult> {
   if (!process.env.OPENAI_API_KEY) {
     return {
       studyId: study.id,
       success: false,
-      error: 'OpenAI API key not available'
+      error: "OpenAI API key not available",
     };
   }
 
   try {
     // Generate SEO-optimized prompt
     const prompt = await createSEOOptimizedPrompt(study);
-    
+
     // Generate image with DALL-E
     const response = await openai.images.generate({
-      model: 'dall-e-3',
+      model: "dall-e-3",
       prompt: prompt.substring(0, 1000),
       n: 1,
-      size: '1024x1024',
-      quality: 'standard',
-      style: 'natural'
+      size: "1024x1024",
+      quality: "standard",
+      style: "natural",
     });
 
     const imageUrl = response.data[0]?.url;
     if (!imageUrl) {
-      throw new Error('No image URL returned from OpenAI');
+      throw new Error("No image URL returned from OpenAI");
     }
 
     // Download and optimize the image
     const optimizationResult = await downloadAndOptimizeImage(imageUrl, study);
-    
+
     if (!optimizationResult.success) {
-      throw new Error(optimizationResult.error || 'Image optimization failed');
+      throw new Error(optimizationResult.error || "Image optimization failed");
     }
 
     // Generate SEO-optimized alt text
     const altText = generateSEOAltText(study);
 
     // Update database with optimized image data
-    await db.update(studies)
+    await db
+      .update(studies)
       .set({
         imageUrl: optimizationResult.webpUrl,
         imageAlt: altText,
         autoGeneratedImage: true,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(studies.id, study.id));
 
@@ -205,15 +211,14 @@ async function generateAndOptimizeStudyImage(study: any): Promise<ImageOptimizat
       webpUrl: optimizationResult.webpUrl,
       altText: altText,
       fileSize: optimizationResult.originalSize,
-      optimizedSize: optimizationResult.optimizedSize
+      optimizedSize: optimizationResult.optimizedSize,
     };
-
   } catch (error) {
     console.error(`Error generating image for study ${study.id}:`, error);
     return {
       studyId: study.id,
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -222,21 +227,21 @@ async function generateAndOptimizeStudyImage(study: any): Promise<ImageOptimizat
  * Create SEO-optimized prompt for image generation
  */
 async function createSEOOptimizedPrompt(study: any): Promise<string> {
-  const title = study.title || '';
-  const abstract = study.abstract || '';
-  const category = study.category || '';
-  
+  const title = study.title || "";
+  const abstract = study.abstract || "";
+  const category = study.category || "";
+
   // Determine hydrogen delivery method for accurate visualization
-  const deliveryMethod = determineDeliveryMethod(title + ' ' + abstract);
-  
+  const deliveryMethod = determineDeliveryMethod(title + " " + abstract);
+
   // Create contextual prompt based on study content
-  let basePrompt = '';
-  
-  if (deliveryMethod === 'water') {
+  let basePrompt = "";
+
+  if (deliveryMethod === "water") {
     basePrompt = `Professional medical illustration: hydrogen-rich water therapy research. Clean glass of water with visible H2 molecules, cellular interaction diagram, therapeutic benefits visualization. Medical research style.`;
-  } else if (deliveryMethod === 'inhalation') {
+  } else if (deliveryMethod === "inhalation") {
     basePrompt = `Professional medical illustration: hydrogen gas inhalation therapy research. Medical-grade breathing apparatus, H2 gas molecules, respiratory system benefits. Clinical research style.`;
-  } else if (deliveryMethod === 'injection') {
+  } else if (deliveryMethod === "injection") {
     basePrompt = `Professional medical illustration: hydrogen-rich saline injection therapy research. Medical syringe with H2-enriched solution, cellular uptake visualization. Clinical research style.`;
   } else {
     basePrompt = `Professional medical illustration: molecular hydrogen therapy research for ${category}. H2 molecules reducing oxidative stress in cells, therapeutic mechanisms. Medical research style.`;
@@ -248,7 +253,10 @@ async function createSEOOptimizedPrompt(study: any): Promise<string> {
 /**
  * Download and optimize image for web performance
  */
-async function downloadAndOptimizeImage(imageUrl: string, study: any): Promise<{
+async function downloadAndOptimizeImage(
+  imageUrl: string,
+  study: any,
+): Promise<{
   success: boolean;
   originalUrl?: string;
   webpUrl?: string;
@@ -258,9 +266,14 @@ async function downloadAndOptimizeImage(imageUrl: string, study: any): Promise<{
 }> {
   try {
     // Ensure directories exist
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'study-images');
-    const optimizedDir = path.join(process.cwd(), 'uploads', 'study-images', 'optimized');
-    
+    const uploadsDir = path.join(process.cwd(), "uploads", "study-images");
+    const optimizedDir = path.join(
+      process.cwd(),
+      "uploads",
+      "study-images",
+      "optimized",
+    );
+
     await fs.mkdir(uploadsDir, { recursive: true });
     await fs.mkdir(optimizedDir, { recursive: true });
 
@@ -272,25 +285,25 @@ async function downloadAndOptimizeImage(imageUrl: string, study: any): Promise<{
 
     const buffer = await response.arrayBuffer();
     const originalBuffer = Buffer.from(buffer);
-    
+
     // Generate filenames
     const timestamp = Date.now();
     const originalFilename = `study-${study.id}-${timestamp}.png`;
     const webpFilename = `study-${study.id}-${timestamp}.webp`;
-    
+
     // Save original image
     const originalPath = path.join(uploadsDir, originalFilename);
     await fs.writeFile(originalPath, originalBuffer);
-    
+
     // Optimize and convert to WebP using Sharp
     const optimizedBuffer = await sharp(originalBuffer)
       .resize(800, 600, {
-        fit: 'cover',
-        position: 'center'
+        fit: "cover",
+        position: "center",
       })
       .webp({
         quality: 85,
-        effort: 6
+        effort: 6,
       })
       .toBuffer();
 
@@ -307,13 +320,12 @@ async function downloadAndOptimizeImage(imageUrl: string, study: any): Promise<{
       originalUrl,
       webpUrl,
       originalSize: originalBuffer.length,
-      optimizedSize: optimizedBuffer.length
+      optimizedSize: optimizedBuffer.length,
     };
-
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -322,14 +334,14 @@ async function downloadAndOptimizeImage(imageUrl: string, study: any): Promise<{
  * Generate SEO-optimized alt text
  */
 function generateSEOAltText(study: any): string {
-  const title = study.title || '';
-  const category = study.category || '';
-  
+  const title = study.title || "";
+  const category = study.category || "";
+
   // Create descriptive alt text for SEO
   const baseAlt = `Scientific illustration of hydrogen therapy research`;
-  const categoryText = category ? ` for ${category.toLowerCase()}` : '';
-  const studyContext = title ? ` - ${title.substring(0, 60)}` : '';
-  
+  const categoryText = category ? ` for ${category.toLowerCase()}` : "";
+  const studyContext = title ? ` - ${title.substring(0, 60)}` : "";
+
   return `${baseAlt}${categoryText}${studyContext}`.substring(0, 125);
 }
 
@@ -338,15 +350,27 @@ function generateSEOAltText(study: any): string {
  */
 function determineDeliveryMethod(content: string): string {
   const lowerContent = content.toLowerCase();
-  
-  if (lowerContent.includes('water') || lowerContent.includes('drinking') || lowerContent.includes('hydrogen-rich water')) {
-    return 'water';
-  } else if (lowerContent.includes('inhal') || lowerContent.includes('gas') || lowerContent.includes('breathing')) {
-    return 'inhalation';
-  } else if (lowerContent.includes('inject') || lowerContent.includes('saline') || lowerContent.includes('intravenous')) {
-    return 'injection';
+
+  if (
+    lowerContent.includes("water") ||
+    lowerContent.includes("drinking") ||
+    lowerContent.includes("hydrogen-rich water")
+  ) {
+    return "water";
+  } else if (
+    lowerContent.includes("inhal") ||
+    lowerContent.includes("gas") ||
+    lowerContent.includes("breathing")
+  ) {
+    return "inhalation";
+  } else if (
+    lowerContent.includes("inject") ||
+    lowerContent.includes("saline") ||
+    lowerContent.includes("intravenous")
+  ) {
+    return "injection";
   } else {
-    return 'general';
+    return "general";
   }
 }
 
@@ -355,22 +379,20 @@ function determineDeliveryMethod(content: string): string {
  */
 async function getStudiesNeedingImages(limit: number = 20): Promise<any[]> {
   try {
-    const result = await db.select({
-      id: studies.id,
-      title: studies.title,
-      abstract: studies.abstract,
-      category: studies.category
-    })
-    .from(studies)
-    .where(or(
-      isNull(studies.imageUrl),
-      eq(studies.imageUrl, '')
-    ))
-    .limit(limit);
+    const result = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        category: studies.category,
+      })
+      .from(studies)
+      .where(or(isNull(studies.imageUrl), eq(studies.imageUrl, "")))
+      .limit(limit);
 
     return result;
   } catch (error) {
-    console.error('Error getting studies needing images:', error);
+    console.error("Error getting studies needing images:", error);
     return [];
   }
 }
@@ -380,14 +402,18 @@ async function getStudiesNeedingImages(limit: number = 20): Promise<any[]> {
  */
 export async function getSystemStatus(): Promise<SystemStatus> {
   try {
-    const totalResult = await db.execute(sql`SELECT COUNT(*) as count FROM studies`);
+    const totalResult = await db.execute(
+      sql`SELECT COUNT(*) as count FROM studies`,
+    );
     const withImagesResult = await db.execute(sql`
       SELECT COUNT(*) as count FROM studies 
       WHERE image_url IS NOT NULL AND image_url != ''
     `);
 
-    const totalStudies = parseInt((totalResult as any).rows[0]?.count || '0');
-    const studiesWithImages = parseInt((withImagesResult as any).rows[0]?.count || '0');
+    const totalStudies = parseInt((totalResult as any).rows[0]?.count || "0");
+    const studiesWithImages = parseInt(
+      (withImagesResult as any).rows[0]?.count || "0",
+    );
     const studiesNeedingImages = totalStudies - studiesWithImages;
 
     return {
@@ -395,16 +421,16 @@ export async function getSystemStatus(): Promise<SystemStatus> {
       studiesWithImages,
       studiesNeedingImages,
       isProcessing: processingStatus.isRunning,
-      lastProcessed: processingStatus.startTime
+      lastProcessed: processingStatus.startTime,
     };
   } catch (error) {
-    console.error('Error getting system status:', error);
+    console.error("Error getting system status:", error);
     return {
       totalStudies: 0,
       studiesWithImages: 0,
       studiesNeedingImages: 0,
       isProcessing: false,
-      lastProcessed: new Date()
+      lastProcessed: new Date(),
     };
   }
 }
@@ -418,25 +444,30 @@ export function getProcessingStats() {
     processed: processingStatus.processed,
     failed: processingStatus.failed,
     startTime: processingStatus.startTime,
-    estimatedTimeRemaining: processingStatus.isRunning ? 
-      Math.ceil((Date.now() - processingStatus.startTime.getTime()) / processingStatus.processed * 10) : 0
+    estimatedTimeRemaining: processingStatus.isRunning
+      ? Math.ceil(
+          ((Date.now() - processingStatus.startTime.getTime()) /
+            processingStatus.processed) *
+            10,
+        )
+      : 0,
   };
 }
 
 /**
  * Stop processing
  */
-export function stopProcessing(): {success: boolean, message: string} {
+export function stopProcessing(): { success: boolean; message: string } {
   if (!processingStatus.isRunning) {
     return {
       success: false,
-      message: 'No processing currently running'
+      message: "No processing currently running",
     };
   }
 
   processingStatus.isRunning = false;
   return {
     success: true,
-    message: 'Processing stopped successfully'
+    message: "Processing stopped successfully",
   };
 }

@@ -21,7 +21,7 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
     timeFrames: string[];
   }>({
     deliveryMethods: [],
-    timeFrames: []
+    timeFrames: [],
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,19 +29,22 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
     const fetchOptions = async () => {
       try {
         setIsLoading(true);
-        const response = await apiRequest("GET", "/api/research-suggestions/options");
-        
+        const response = await apiRequest(
+          "GET",
+          "/api/research-suggestions/options",
+        );
+
         const data = await response.json();
         if (data.success && data.data) {
           setOptions({
             deliveryMethods: data.data.deliveryMethods || [],
-            timeFrames: data.data.timeFrames || []
+            timeFrames: data.data.timeFrames || [],
           });
         } else {
           toast({
             title: "Failed to load options",
             description: "Using default options instead",
-            variant: "destructive"
+            variant: "destructive",
           });
           // Set default options
           setOptions({
@@ -52,14 +55,9 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
               "Hydrogen bathing",
               "Hydrogen tablets",
               "Topical hydrogen application",
-              "Hydrogen-producing intestinal bacteria"
+              "Hydrogen-producing intestinal bacteria",
             ],
-            timeFrames: [
-              "short-term",
-              "medium-term",
-              "long-term",
-              "any"
-            ]
+            timeFrames: ["short-term", "medium-term", "long-term", "any"],
           });
         }
       } catch (error) {
@@ -67,7 +65,7 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
         toast({
           title: "Failed to load options",
           description: "Please try refreshing the page",
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
@@ -84,11 +82,14 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
         <p className="text-sm text-muted-foreground mb-4">
           Select one or more hydrogen delivery methods you're interested in
         </p>
-        
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="flex items-center space-x-2 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="flex items-center space-x-2 animate-pulse"
+              >
                 <div className="h-4 w-4 bg-muted rounded" />
                 <div className="h-4 w-32 bg-muted rounded" />
               </div>
@@ -98,12 +99,14 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {options.deliveryMethods.map((method) => (
               <div key={method} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`method-${method}`} 
+                <Checkbox
+                  id={`method-${method}`}
                   checked={selections.deliveryMethod.includes(method)}
-                  onCheckedChange={() => onSelectionChange("deliveryMethod", method)}
+                  onCheckedChange={() =>
+                    onSelectionChange("deliveryMethod", method)
+                  }
                 />
-                <Label 
+                <Label
                   htmlFor={`method-${method}`}
                   className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
@@ -120,10 +123,10 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
         <p className="text-sm text-muted-foreground mb-4">
           Select the time frame for the research effects you're interested in
         </p>
-        
+
         {isLoading ? (
           <div className="space-y-4 animate-pulse">
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex items-start space-x-2">
                 <div className="h-4 w-4 rounded-full bg-muted mt-0.5" />
                 <div className="space-y-2">
@@ -134,19 +137,24 @@ const WizardStep3 = ({ selections, onSelectionChange }: WizardStep3Props) => {
             ))}
           </div>
         ) : (
-          <RadioGroup 
-            value={selections.timeFrame} 
+          <RadioGroup
+            value={selections.timeFrame}
             onValueChange={(value) => onSelectionChange("timeFrame", value)}
             className="space-y-3"
           >
             {options.timeFrames.map((timeFrame) => (
               <div key={timeFrame} className="flex items-center space-x-2">
-                <RadioGroupItem value={timeFrame} id={`timeframe-${timeFrame}`} />
+                <RadioGroupItem
+                  value={timeFrame}
+                  id={`timeframe-${timeFrame}`}
+                />
                 <Label htmlFor={`timeframe-${timeFrame}`}>
-                  {timeFrame === 'short-term' && 'Short-term (immediate effects)'}
-                  {timeFrame === 'medium-term' && 'Medium-term (weeks to months)'}
-                  {timeFrame === 'long-term' && 'Long-term (months to years)'}
-                  {timeFrame === 'any' && 'Any time frame'}
+                  {timeFrame === "short-term" &&
+                    "Short-term (immediate effects)"}
+                  {timeFrame === "medium-term" &&
+                    "Medium-term (weeks to months)"}
+                  {timeFrame === "long-term" && "Long-term (months to years)"}
+                  {timeFrame === "any" && "Any time frame"}
                 </Label>
               </div>
             ))}

@@ -1,6 +1,6 @@
 /**
  * Simplified Consumer Content Generation
- * 
+ *
  * Direct approach to complete Phase 2 faster without SQL parameter issues
  */
 
@@ -26,7 +26,7 @@ let stats: SimplifiedStats = {
   methodsGenerated: 0,
   resultsGenerated: 0,
   conclusionsGenerated: 0,
-  startTime: new Date()
+  startTime: new Date(),
 };
 
 /**
@@ -35,9 +35,12 @@ let stats: SimplifiedStats = {
 async function generateSingleStudyContent(study: any): Promise<void> {
   try {
     // Check what's missing
-    const needsMethods = !study.methods_short || study.methods_short.trim() === '';
-    const needsResults = !study.results_short || study.results_short.trim() === '';
-    const needsConclusion = !study.conclusion_short || study.conclusion_short.trim() === '';
+    const needsMethods =
+      !study.methods_short || study.methods_short.trim() === "";
+    const needsResults =
+      !study.results_short || study.results_short.trim() === "";
+    const needsConclusion =
+      !study.conclusion_short || study.conclusion_short.trim() === "";
 
     if (!needsMethods && !needsResults && !needsConclusion) {
       return; // Nothing to generate
@@ -51,7 +54,7 @@ async function generateSingleStudyContent(study: any): Promise<void> {
     Abstract: ${study.abstract}
     Authors: ${study.authors}
     Journal: ${study.journal}
-    Category: ${study.category || 'General Health'}
+    Category: ${study.category || "General Health"}
 
     Please provide a structured response with:
 
@@ -86,7 +89,7 @@ async function generateSingleStudyContent(study: any): Promise<void> {
       messages: [{ role: "user", content: prompt }],
       max_tokens: 300,
       temperature: 0.3,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
     const content = response.choices[0].message.content;
@@ -124,7 +127,6 @@ async function generateSingleStudyContent(study: any): Promise<void> {
 
     console.log(`✓ Study ${study.id}: Generated content`);
     stats.totalProcessed++;
-
   } catch (error) {
     console.error(`✗ Study ${study.id}:`, error);
     stats.totalProcessed++;
@@ -142,7 +144,7 @@ export async function completePhase2Fast(): Promise<SimplifiedStats> {
     methodsGenerated: 0,
     resultsGenerated: 0,
     conclusionsGenerated: 0,
-    startTime: new Date()
+    startTime: new Date(),
   };
 
   try {
@@ -170,18 +172,22 @@ export async function completePhase2Fast(): Promise<SimplifiedStats> {
     // Process sequentially to avoid rate limits and parameter issues
     for (let i = 0; i < studies.length; i++) {
       const study = studies[i];
-      console.log(`📝 Processing study ${i + 1}/${studies.length}: ${study.title?.substring(0, 50)}...`);
+      console.log(
+        `📝 Processing study ${i + 1}/${studies.length}: ${study.title?.substring(0, 50)}...`,
+      );
 
       await generateSingleStudyContent(study);
 
       // Small delay to avoid rate limits
       if (i < studies.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       }
     }
 
     stats.endTime = new Date();
-    const duration = Math.round((stats.endTime.getTime() - stats.startTime.getTime()) / 1000);
+    const duration = Math.round(
+      (stats.endTime.getTime() - stats.startTime.getTime()) / 1000,
+    );
 
     console.log("\n🎉 Phase 2 completion finished!");
     console.log(`📊 Results:`);
@@ -192,7 +198,6 @@ export async function completePhase2Fast(): Promise<SimplifiedStats> {
     console.log(`   - Duration: ${duration} seconds`);
 
     return stats;
-
   } catch (error) {
     console.error("❌ Error in Phase 2 completion:", error);
     stats.endTime = new Date();

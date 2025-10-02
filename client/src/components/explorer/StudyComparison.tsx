@@ -1,23 +1,44 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, Cell
-} from 'recharts';
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import {
-  Loader2, Plus, X, Download, FileText, Users, Clock,
-  Beaker, TrendingUp, CheckCircle, XCircle, AlertCircle
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+  Loader2,
+  Plus,
+  X,
+  Download,
+  FileText,
+  Users,
+  Clock,
+  Beaker,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 interface StudyData {
   id: number;
@@ -45,77 +66,92 @@ interface StudyComparisonProps {
 export default function StudyComparison({
   initialStudyIds = [],
   onStudySelect,
-  className
+  className,
 }: StudyComparisonProps) {
-  const [selectedStudyIds, setSelectedStudyIds] = useState<number[]>(initialStudyIds);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStudyIds, setSelectedStudyIds] =
+    useState<number[]>(initialStudyIds);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [comparisonView, setComparisonView] = useState<'table' | 'chart'>('table');
+  const [comparisonView, setComparisonView] = useState<"table" | "chart">(
+    "table",
+  );
 
   // Fetch comparison data
-  const { data: comparisonData, isLoading, refetch } = useQuery<StudyData[]>({
-    queryKey: ['/api/explorer/comparison', selectedStudyIds],
+  const {
+    data: comparisonData,
+    isLoading,
+    refetch,
+  } = useQuery<StudyData[]>({
+    queryKey: ["/api/explorer/comparison", selectedStudyIds],
     queryFn: async () => {
       if (selectedStudyIds.length === 0) return [];
-      const response = await fetch(`/api/explorer/comparison/${selectedStudyIds.join(',')}`);
-      if (!response.ok) throw new Error('Failed to fetch comparison data');
+      const response = await fetch(
+        `/api/explorer/comparison/${selectedStudyIds.join(",")}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch comparison data");
       return response.json();
     },
-    enabled: selectedStudyIds.length > 0
+    enabled: selectedStudyIds.length > 0,
   });
 
   // Search for studies to add
   const { data: searchResults } = useQuery({
-    queryKey: ['/api/search', searchQuery],
+    queryKey: ["/api/search", searchQuery],
     queryFn: async () => {
       const response = await fetch(`/api/search?q=${searchQuery}&limit=10`);
-      if (!response.ok) throw new Error('Search failed');
+      if (!response.ok) throw new Error("Search failed");
       const data = await response.json();
       return data.studies;
     },
-    enabled: searchQuery.length > 2
+    enabled: searchQuery.length > 2,
   });
 
   const addStudyToComparison = (studyId: number) => {
     if (selectedStudyIds.length >= 3) {
-      alert('You can compare up to 3 studies at a time');
+      alert("You can compare up to 3 studies at a time");
       return;
     }
     if (!selectedStudyIds.includes(studyId)) {
       setSelectedStudyIds([...selectedStudyIds, studyId]);
       setShowSearch(false);
-      setSearchQuery('');
+      setSearchQuery("");
     }
   };
 
   const removeStudyFromComparison = (studyId: number) => {
-    setSelectedStudyIds(selectedStudyIds.filter(id => id !== studyId));
+    setSelectedStudyIds(selectedStudyIds.filter((id) => id !== studyId));
   };
 
   const exportComparison = () => {
     if (!comparisonData) return;
 
     // Create CSV content
-    const headers = ['Field', ...comparisonData.map(s => s.title.substring(0, 30) + '...')];
+    const headers = [
+      "Field",
+      ...comparisonData.map((s) => s.title.substring(0, 30) + "..."),
+    ];
     const rows = [
-      ['Year', ...comparisonData.map(s => s.year)],
-      ['Category', ...comparisonData.map(s => s.category)],
-      ['Delivery Method', ...comparisonData.map(s => s.deliveryMethod)],
-      ['Dosage', ...comparisonData.map(s => s.dosage)],
-      ['Duration (days)', ...comparisonData.map(s => s.duration)],
-      ['Sample Size', ...comparisonData.map(s => s.sampleSize)],
-      ['Outcome', ...comparisonData.map(s => s.outcome)],
-      ['Citations', ...comparisonData.map(s => s.citationCount)],
-      ['Peer Reviewed', ...comparisonData.map(s => s.peerReviewed ? 'Yes' : 'No')],
+      ["Year", ...comparisonData.map((s) => s.year)],
+      ["Category", ...comparisonData.map((s) => s.category)],
+      ["Delivery Method", ...comparisonData.map((s) => s.deliveryMethod)],
+      ["Dosage", ...comparisonData.map((s) => s.dosage)],
+      ["Duration (days)", ...comparisonData.map((s) => s.duration)],
+      ["Sample Size", ...comparisonData.map((s) => s.sampleSize)],
+      ["Outcome", ...comparisonData.map((s) => s.outcome)],
+      ["Citations", ...comparisonData.map((s) => s.citationCount)],
+      [
+        "Peer Reviewed",
+        ...comparisonData.map((s) => (s.peerReviewed ? "Yes" : "No")),
+      ],
     ];
 
     const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `study-comparison-${Date.now()}.csv`;
     a.click();
@@ -123,60 +159,89 @@ export default function StudyComparison({
   };
 
   // Prepare radar chart data
-  const radarData = comparisonData ? [
-    {
-      subject: 'Sample Size',
-      ...comparisonData.reduce((acc, study, idx) => ({
-        ...acc,
-        [`Study ${idx + 1}`]: Math.min(100, (study.sampleSize / 500) * 100)
-      }), {})
-    },
-    {
-      subject: 'Duration',
-      ...comparisonData.reduce((acc, study, idx) => ({
-        ...acc,
-        [`Study ${idx + 1}`]: Math.min(100, (study.duration / 365) * 100)
-      }), {})
-    },
-    {
-      subject: 'Citations',
-      ...comparisonData.reduce((acc, study, idx) => ({
-        ...acc,
-        [`Study ${idx + 1}`]: Math.min(100, (study.citationCount / 100) * 100)
-      }), {})
-    },
-    {
-      subject: 'Quality',
-      ...comparisonData.reduce((acc, study, idx) => ({
-        ...acc,
-        [`Study ${idx + 1}`]: study.peerReviewed ? 100 : 50
-      }), {})
-    },
-  ] : [];
+  const radarData = comparisonData
+    ? [
+        {
+          subject: "Sample Size",
+          ...comparisonData.reduce(
+            (acc, study, idx) => ({
+              ...acc,
+              [`Study ${idx + 1}`]: Math.min(
+                100,
+                (study.sampleSize / 500) * 100,
+              ),
+            }),
+            {},
+          ),
+        },
+        {
+          subject: "Duration",
+          ...comparisonData.reduce(
+            (acc, study, idx) => ({
+              ...acc,
+              [`Study ${idx + 1}`]: Math.min(100, (study.duration / 365) * 100),
+            }),
+            {},
+          ),
+        },
+        {
+          subject: "Citations",
+          ...comparisonData.reduce(
+            (acc, study, idx) => ({
+              ...acc,
+              [`Study ${idx + 1}`]: Math.min(
+                100,
+                (study.citationCount / 100) * 100,
+              ),
+            }),
+            {},
+          ),
+        },
+        {
+          subject: "Quality",
+          ...comparisonData.reduce(
+            (acc, study, idx) => ({
+              ...acc,
+              [`Study ${idx + 1}`]: study.peerReviewed ? 100 : 50,
+            }),
+            {},
+          ),
+        },
+      ]
+    : [];
 
   // Prepare bar chart data
-  const barData = comparisonData?.map((study, idx) => ({
-    name: `Study ${idx + 1}`,
-    sampleSize: study.sampleSize,
-    duration: study.duration,
-    citations: study.citationCount
-  })) || [];
+  const barData =
+    comparisonData?.map((study, idx) => ({
+      name: `Study ${idx + 1}`,
+      sampleSize: study.sampleSize,
+      duration: study.duration,
+      citations: study.citationCount,
+    })) || [];
 
   const getOutcomeColor = (outcome: string) => {
     switch (outcome?.toLowerCase()) {
-      case 'positive': return 'text-green-600';
-      case 'negative': return 'text-red-600';
-      case 'neutral': return 'text-yellow-600';
-      default: return 'text-gray-600';
+      case "positive":
+        return "text-green-600";
+      case "negative":
+        return "text-red-600";
+      case "neutral":
+        return "text-yellow-600";
+      default:
+        return "text-gray-600";
     }
   };
 
   const getOutcomeIcon = (outcome: string) => {
     switch (outcome?.toLowerCase()) {
-      case 'positive': return <CheckCircle className="w-4 h-4" />;
-      case 'negative': return <XCircle className="w-4 h-4" />;
-      case 'neutral': return <AlertCircle className="w-4 h-4" />;
-      default: return null;
+      case "positive":
+        return <CheckCircle className="w-4 h-4" />;
+      case "negative":
+        return <XCircle className="w-4 h-4" />;
+      case "neutral":
+        return <AlertCircle className="w-4 h-4" />;
+      default:
+        return null;
     }
   };
 
@@ -187,7 +252,10 @@ export default function StudyComparison({
           <FileText className="w-12 h-12 mx-auto text-gray-400" />
           <h3 className="text-lg font-semibold">No Studies Selected</h3>
           <p className="text-gray-600">Add studies to begin comparison</p>
-          <Button onClick={() => setShowSearch(true)} data-testid="add-study-button">
+          <Button
+            onClick={() => setShowSearch(true)}
+            data-testid="add-study-button"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Study to Compare
           </Button>
@@ -241,7 +309,9 @@ export default function StudyComparison({
                 className="px-3 py-1"
                 data-testid={`comparison-study-${study.id}`}
               >
-                <span className="mr-2">Study {idx + 1}: {study.title.substring(0, 30)}...</span>
+                <span className="mr-2">
+                  Study {idx + 1}: {study.title.substring(0, 30)}...
+                </span>
                 <button
                   onClick={() => removeStudyFromComparison(study.id)}
                   className="ml-2 hover:text-red-600"
@@ -291,7 +361,9 @@ export default function StudyComparison({
                       onClick={() => addStudyToComparison(study.id)}
                     >
                       <p className="font-semibold text-sm">{study.title}</p>
-                      <p className="text-xs text-gray-500">{study.journal} • {study.publish_date}</p>
+                      <p className="text-xs text-gray-500">
+                        {study.journal} • {study.publish_date}
+                      </p>
                     </div>
                   ))}
                 </ScrollArea>
@@ -302,7 +374,10 @@ export default function StudyComparison({
       </AnimatePresence>
 
       {/* Comparison Views */}
-      <Tabs value={comparisonView} onValueChange={(v: any) => setComparisonView(v)}>
+      <Tabs
+        value={comparisonView}
+        onValueChange={(v: any) => setComparisonView(v)}
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="table">Table View</TabsTrigger>
           <TabsTrigger value="chart">Chart View</TabsTrigger>
@@ -315,9 +390,14 @@ export default function StudyComparison({
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Field</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">
+                        Field
+                      </th>
                       {comparisonData?.map((_, idx) => (
-                        <th key={idx} className="px-4 py-3 text-left text-sm font-semibold">
+                        <th
+                          key={idx}
+                          className="px-4 py-3 text-left text-sm font-semibold"
+                        >
                           Study {idx + 1}
                         </th>
                       ))}
@@ -326,7 +406,7 @@ export default function StudyComparison({
                   <tbody>
                     <tr className="border-b">
                       <td className="px-4 py-3 font-medium">Title</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3 text-sm">
                           {study.title}
                         </td>
@@ -334,7 +414,7 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b bg-gray-50">
                       <td className="px-4 py-3 font-medium">Year</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3">
                           {study.year}
                         </td>
@@ -342,7 +422,7 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b">
                       <td className="px-4 py-3 font-medium">Category</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3">
                           <Badge variant="outline">{study.category}</Badge>
                         </td>
@@ -350,7 +430,7 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b bg-gray-50">
                       <td className="px-4 py-3 font-medium">Delivery Method</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3">
                           <Badge>{study.deliveryMethod}</Badge>
                         </td>
@@ -358,7 +438,7 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b">
                       <td className="px-4 py-3 font-medium">Sample Size</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Users className="w-4 h-4 text-gray-400" />
@@ -369,7 +449,7 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b bg-gray-50">
                       <td className="px-4 py-3 font-medium">Duration</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-gray-400" />
@@ -380,8 +460,14 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b">
                       <td className="px-4 py-3 font-medium">Outcome</td>
-                      {comparisonData?.map(study => (
-                        <td key={study.id} className={cn("px-4 py-3", getOutcomeColor(study.outcome))}>
+                      {comparisonData?.map((study) => (
+                        <td
+                          key={study.id}
+                          className={cn(
+                            "px-4 py-3",
+                            getOutcomeColor(study.outcome),
+                          )}
+                        >
                           <div className="flex items-center gap-2">
                             {getOutcomeIcon(study.outcome)}
                             {study.outcome}
@@ -391,7 +477,7 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b bg-gray-50">
                       <td className="px-4 py-3 font-medium">Citations</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-gray-400" />
@@ -402,7 +488,7 @@ export default function StudyComparison({
                     </tr>
                     <tr className="border-b">
                       <td className="px-4 py-3 font-medium">Peer Reviewed</td>
-                      {comparisonData?.map(study => (
+                      {comparisonData?.map((study) => (
                         <td key={study.id} className="px-4 py-3">
                           {study.peerReviewed ? (
                             <CheckCircle className="w-4 h-4 text-green-600" />
@@ -461,7 +547,11 @@ export default function StudyComparison({
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="sampleSize" fill="#3b82f6" name="Sample Size" />
-                  <Bar dataKey="duration" fill="#10b981" name="Duration (days)" />
+                  <Bar
+                    dataKey="duration"
+                    fill="#10b981"
+                    name="Duration (days)"
+                  />
                   <Bar dataKey="citations" fill="#8b5cf6" name="Citations" />
                 </BarChart>
               </ResponsiveContainer>
@@ -480,27 +570,49 @@ export default function StudyComparison({
             {comparisonData && comparisonData.length > 1 && (
               <>
                 <div className="p-3 bg-blue-50 rounded">
-                  <p className="font-semibold text-sm mb-1">Largest Sample Size</p>
+                  <p className="font-semibold text-sm mb-1">
+                    Largest Sample Size
+                  </p>
                   <p className="text-sm">
-                    Study {comparisonData.reduce((maxIdx, study, idx, arr) => 
-                      study.sampleSize > arr[maxIdx].sampleSize ? idx : maxIdx, 0) + 1} 
-                    with {Math.max(...comparisonData.map(s => s.sampleSize))} participants
+                    Study{" "}
+                    {comparisonData.reduce(
+                      (maxIdx, study, idx, arr) =>
+                        study.sampleSize > arr[maxIdx].sampleSize
+                          ? idx
+                          : maxIdx,
+                      0,
+                    ) + 1}
+                    with {Math.max(...comparisonData.map((s) => s.sampleSize))}{" "}
+                    participants
                   </p>
                 </div>
                 <div className="p-3 bg-green-50 rounded">
                   <p className="font-semibold text-sm mb-1">Most Cited</p>
                   <p className="text-sm">
-                    Study {comparisonData.reduce((maxIdx, study, idx, arr) => 
-                      study.citationCount > arr[maxIdx].citationCount ? idx : maxIdx, 0) + 1} 
-                    with {Math.max(...comparisonData.map(s => s.citationCount))} citations
+                    Study{" "}
+                    {comparisonData.reduce(
+                      (maxIdx, study, idx, arr) =>
+                        study.citationCount > arr[maxIdx].citationCount
+                          ? idx
+                          : maxIdx,
+                      0,
+                    ) + 1}
+                    with{" "}
+                    {Math.max(...comparisonData.map((s) => s.citationCount))}{" "}
+                    citations
                   </p>
                 </div>
                 <div className="p-3 bg-purple-50 rounded">
                   <p className="font-semibold text-sm mb-1">Longest Duration</p>
                   <p className="text-sm">
-                    Study {comparisonData.reduce((maxIdx, study, idx, arr) => 
-                      study.duration > arr[maxIdx].duration ? idx : maxIdx, 0) + 1} 
-                    with {Math.max(...comparisonData.map(s => s.duration))} days
+                    Study{" "}
+                    {comparisonData.reduce(
+                      (maxIdx, study, idx, arr) =>
+                        study.duration > arr[maxIdx].duration ? idx : maxIdx,
+                      0,
+                    ) + 1}
+                    with {Math.max(...comparisonData.map((s) => s.duration))}{" "}
+                    days
                   </p>
                 </div>
               </>

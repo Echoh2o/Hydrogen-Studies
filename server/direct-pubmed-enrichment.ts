@@ -3,16 +3,19 @@
  * Populates studies with authentic research data from free APIs
  */
 
-import { db } from './db';
-import { studies } from '../shared/schema';
-import { eq, sql } from 'drizzle-orm';
+import { db } from "./db";
+import { studies } from "../shared/schema";
+import { eq, sql } from "drizzle-orm";
 
 export async function enrichStudyDirect(studyId: number): Promise<boolean> {
   try {
     console.log(`Direct enrichment for study ${studyId}`);
-    
+
     // Get study details
-    const [study] = await db.select().from(studies).where(eq(studies.id, studyId));
+    const [study] = await db
+      .select()
+      .from(studies)
+      .where(eq(studies.id, studyId));
     if (!study) {
       console.log(`Study ${studyId} not found`);
       return false;
@@ -29,7 +32,7 @@ export async function enrichStudyDirect(studyId: number): Promise<boolean> {
         const pmcData = await fetchFromEuropePMC(study.doi);
         enrichmentData = { ...enrichmentData, ...pmcData };
       } catch (error) {
-        console.log('Europe PMC error:', error);
+        console.log("Europe PMC error:", error);
       }
     }
 
@@ -39,7 +42,7 @@ export async function enrichStudyDirect(studyId: number): Promise<boolean> {
         const crossrefData = await fetchFromCrossRef(study.doi);
         enrichmentData = { ...enrichmentData, ...crossrefData };
       } catch (error) {
-        console.log('CrossRef error:', error);
+        console.log("CrossRef error:", error);
       }
     }
 
@@ -48,61 +51,61 @@ export async function enrichStudyDirect(studyId: number): Promise<boolean> {
       const semanticData = await fetchFromSemanticScholar(study.title);
       enrichmentData = { ...enrichmentData, ...semanticData };
     } catch (error) {
-      console.log('Semantic Scholar error:', error);
+      console.log("Semantic Scholar error:", error);
     }
 
     // Update database with SQL to ensure data persists
     if (Object.keys(enrichmentData).length > 0) {
-      console.log('Updating database with:', Object.keys(enrichmentData));
-      
+      console.log("Updating database with:", Object.keys(enrichmentData));
+
       // Use raw SQL to ensure the update works
       const updateFields = [];
       const values = [];
-      
+
       if (enrichmentData.authorAffiliations) {
-        updateFields.push('author_affiliations = $' + (values.length + 1));
+        updateFields.push("author_affiliations = $" + (values.length + 1));
         values.push(enrichmentData.authorAffiliations);
       }
-      
+
       if (enrichmentData.fundingSources) {
-        updateFields.push('funding_sources = $' + (values.length + 1));
+        updateFields.push("funding_sources = $" + (values.length + 1));
         values.push(enrichmentData.fundingSources);
       }
-      
+
       if (enrichmentData.citationCount) {
-        updateFields.push('citation_count = $' + (values.length + 1));
+        updateFields.push("citation_count = $" + (values.length + 1));
         values.push(enrichmentData.citationCount);
       }
-      
+
       if (enrichmentData.keywords) {
-        updateFields.push('keywords = $' + (values.length + 1));
+        updateFields.push("keywords = $" + (values.length + 1));
         values.push(enrichmentData.keywords);
       }
-      
+
       if (enrichmentData.fullText) {
-        updateFields.push('full_text = $' + (values.length + 1));
+        updateFields.push("full_text = $" + (values.length + 1));
         values.push(enrichmentData.fullText);
       }
-      
+
       if (enrichmentData.statisticalMethods) {
-        updateFields.push('statistical_methods = $' + (values.length + 1));
+        updateFields.push("statistical_methods = $" + (values.length + 1));
         values.push(enrichmentData.statisticalMethods);
       }
-      
+
       if (enrichmentData.ethicalApproval) {
-        updateFields.push('ethical_approval = $' + (values.length + 1));
+        updateFields.push("ethical_approval = $" + (values.length + 1));
         values.push(enrichmentData.ethicalApproval);
       }
 
       if (updateFields.length > 0) {
         values.push(studyId);
-        const query = `UPDATE studies SET ${updateFields.join(', ')} WHERE id = $${values.length}`;
-        
-        console.log('Executing SQL:', query);
-        console.log('With values:', values);
-        
+        const query = `UPDATE studies SET ${updateFields.join(", ")} WHERE id = $${values.length}`;
+
+        console.log("Executing SQL:", query);
+        console.log("With values:", values);
+
         await db.execute(sql.raw(query, values));
-        
+
         console.log(`Successfully updated study ${studyId}`);
         return true;
       }
@@ -110,7 +113,6 @@ export async function enrichStudyDirect(studyId: number): Promise<boolean> {
 
     console.log(`No data to update for study ${studyId}`);
     return false;
-
   } catch (error) {
     console.error(`Error enriching study ${studyId}:`, error);
     return false;
@@ -126,23 +128,26 @@ async function fetchFromEuropePMC(doi: string) {
 
   if (data.resultList?.result?.[0]) {
     const article = data.resultList.result[0];
-    
+
     // Author affiliations
     if (article.authorList?.author) {
       const affiliations = article.authorList.author
-        .map((a: any) => `${a.fullName}${a.affiliation ? ` (${a.affiliation})` : ''}`)
-        .join('; ');
+        .map(
+          (a: any) =>
+            `${a.fullName}${a.affiliation ? ` (${a.affiliation})` : ""}`,
+        )
+        .join("; ");
       enrichment.authorAffiliations = affiliations;
-      console.log('Found author affiliations:', affiliations);
+      console.log("Found author affiliations:", affiliations);
     }
 
     // Funding sources
     if (article.grantsList?.grant) {
       const funding = article.grantsList.grant
-        .map((g: any) => `${g.agency}${g.grantId ? ` (${g.grantId})` : ''}`)
-        .join('; ');
+        .map((g: any) => `${g.agency}${g.grantId ? ` (${g.grantId})` : ""}`)
+        .join("; ");
       enrichment.fundingSources = funding;
-      console.log('Found funding sources:', funding);
+      console.log("Found funding sources:", funding);
     }
 
     // Keywords
@@ -157,23 +162,36 @@ async function fetchFromEuropePMC(doi: string) {
         const fullTextResponse = await fetch(fullTextUrl);
         if (fullTextResponse.ok) {
           const fullTextXml = await fullTextResponse.text();
-          
+
           // Extract methods and statistical information
-          const methodsMatch = fullTextXml.match(/<sec[^>]*>[\s\S]*?<title[^>]*>.*?methods?.*?<\/title>[\s\S]*?<\/sec>/i);
+          const methodsMatch = fullTextXml.match(
+            /<sec[^>]*>[\s\S]*?<title[^>]*>.*?methods?.*?<\/title>[\s\S]*?<\/sec>/i,
+          );
           if (methodsMatch) {
-            const methodsText = methodsMatch[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            const methodsText = methodsMatch[0]
+              .replace(/<[^>]*>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
             enrichment.statisticalMethods = methodsText.substring(0, 1000);
           }
-          
+
           // Extract ethics information
-          const ethicsMatch = fullTextXml.match(/<sec[^>]*>[\s\S]*?<title[^>]*>.*?ethics?.*?<\/title>[\s\S]*?<\/sec>/i);
+          const ethicsMatch = fullTextXml.match(
+            /<sec[^>]*>[\s\S]*?<title[^>]*>.*?ethics?.*?<\/title>[\s\S]*?<\/sec>/i,
+          );
           if (ethicsMatch) {
-            const ethicsText = ethicsMatch[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            const ethicsText = ethicsMatch[0]
+              .replace(/<[^>]*>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
             enrichment.ethicalApproval = ethicsText.substring(0, 500);
           }
-          
+
           // Store first 5000 characters of full text
-          const cleanText = fullTextXml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          const cleanText = fullTextXml
+            .replace(/<[^>]*>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
           enrichment.fullText = cleanText.substring(0, 5000);
         }
       } catch (error) {
@@ -194,18 +212,18 @@ async function fetchFromCrossRef(doi: string) {
 
   if (data.message) {
     const work = data.message;
-    
+
     // Citation count
-    if (work['is-referenced-by-count']) {
-      enrichment.citationCount = work['is-referenced-by-count'];
-      console.log('Found citation count:', enrichment.citationCount);
+    if (work["is-referenced-by-count"]) {
+      enrichment.citationCount = work["is-referenced-by-count"];
+      console.log("Found citation count:", enrichment.citationCount);
     }
 
     // Additional funding sources if not already populated
     if (work.funder && !enrichment.fundingSources) {
-      const funding = work.funder.map((f: any) => f.name).join('; ');
+      const funding = work.funder.map((f: any) => f.name).join("; ");
       enrichment.fundingSources = funding;
-      console.log('Found CrossRef funding:', funding);
+      console.log("Found CrossRef funding:", funding);
     }
   }
 
@@ -221,11 +239,14 @@ async function fetchFromSemanticScholar(title: string) {
 
   if (data.data?.[0]) {
     const paper = data.data[0];
-    
+
     // Citation count if not already set
     if (paper.citationCount && !enrichment.citationCount) {
       enrichment.citationCount = paper.citationCount;
-      console.log('Found Semantic Scholar citations:', enrichment.citationCount);
+      console.log(
+        "Found Semantic Scholar citations:",
+        enrichment.citationCount,
+      );
     }
 
     // Keywords/fields of study
@@ -236,10 +257,13 @@ async function fetchFromSemanticScholar(title: string) {
     // Author affiliations if not already populated
     if (paper.authors && !enrichment.authorAffiliations) {
       const affiliations = paper.authors
-        .map((a: any) => `${a.name}${a.affiliations?.length ? ` (${a.affiliations.join(', ')})` : ''}`)
-        .join('; ');
+        .map(
+          (a: any) =>
+            `${a.name}${a.affiliations?.length ? ` (${a.affiliations.join(", ")})` : ""}`,
+        )
+        .join("; ");
       enrichment.authorAffiliations = affiliations;
-      console.log('Found Semantic Scholar affiliations:', affiliations);
+      console.log("Found Semantic Scholar affiliations:", affiliations);
     }
   }
 

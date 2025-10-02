@@ -2,9 +2,9 @@
  * Study Enrichment Service
  * Enriches studies with data from external research APIs (CrossRef, PubMed, EuropePMC)
  */
-import { db } from './db';
-import { studies } from '../shared/schema';
-import { eq, sql } from 'drizzle-orm';
+import { db } from "./db";
+import { studies } from "../shared/schema";
+import { eq, sql } from "drizzle-orm";
 
 interface EnrichmentResult {
   success: boolean;
@@ -33,25 +33,28 @@ const processedStudies = new Set<number>(); // Track processed studies to preven
 /**
  * Enrich a study using multiple external research APIs
  */
-export async function enrichStudyFromAPIs(studyId: number, doi: string): Promise<EnrichmentResult> {
+export async function enrichStudyFromAPIs(
+  studyId: number,
+  doi: string,
+): Promise<EnrichmentResult> {
   try {
     // Check if we've already processed this study in this session
     if (processedStudies.has(studyId)) {
       return {
         success: false,
-        error: 'Study already processed in this session'
+        error: "Study already processed in this session",
       };
     }
 
     // Mark as processed to prevent loops
     processedStudies.add(studyId);
 
-    const cleanDoi = doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '').trim();
-    
+    const cleanDoi = doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, "").trim();
+
     if (!cleanDoi) {
       return {
         success: false,
-        error: 'Invalid or empty DOI'
+        error: "Invalid or empty DOI",
       };
     }
 
@@ -64,8 +67,11 @@ export async function enrichStudyFromAPIs(studyId: number, doi: string): Promise
     try {
       const crossRefData = await fetchFromCrossRef(cleanDoi);
       if (crossRefData) {
-        enrichmentData = { ...enrichmentData, ...extractCrossRefData(crossRefData) };
-        sources.push('CrossRef');
+        enrichmentData = {
+          ...enrichmentData,
+          ...extractCrossRefData(crossRefData),
+        };
+        sources.push("CrossRef");
         console.log(`✓ CrossRef data retrieved for study ${studyId}`);
       }
     } catch (error) {
@@ -79,7 +85,7 @@ export async function enrichStudyFromAPIs(studyId: number, doi: string): Promise
         if (europePmcData) {
           const pmcData = extractEuropePMCData(europePmcData);
           enrichmentData = { ...enrichmentData, ...pmcData };
-          sources.push('EuropePMC');
+          sources.push("EuropePMC");
           console.log(`✓ EuropePMC data retrieved for study ${studyId}`);
         }
       } catch (error) {
@@ -90,24 +96,24 @@ export async function enrichStudyFromAPIs(studyId: number, doi: string): Promise
     // If we have enrichment data, update the study
     if (Object.keys(enrichmentData).length > 0) {
       await updateStudyWithEnrichmentData(studyId, enrichmentData);
-      
+
       return {
         success: true,
         enrichmentData,
-        sources
+        sources,
       };
     } else {
       return {
         success: false,
-        error: 'No enrichment data found from any source'
+        error: "No enrichment data found from any source",
       };
     }
-
   } catch (error) {
     console.error(`Error enriching study ${studyId}:`, error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown enrichment error'
+      error:
+        error instanceof Error ? error.message : "Unknown enrichment error",
     };
   }
 }
@@ -117,12 +123,12 @@ export async function enrichStudyFromAPIs(studyId: number, doi: string): Promise
  */
 async function fetchFromCrossRef(doi: string): Promise<any> {
   const url = `https://api.crossref.org/works/${doi}`;
-  
+
   const response = await fetch(url, {
     headers: {
-      'Accept': 'application/json',
-      'User-Agent': 'HydrogenStudies/1.0 (mailto:research@hydrogenstudies.com)'
-    }
+      Accept: "application/json",
+      "User-Agent": "HydrogenStudies/1.0 (mailto:research@hydrogenstudies.com)",
+    },
   });
 
   if (!response.ok) {
@@ -138,11 +144,11 @@ async function fetchFromCrossRef(doi: string): Promise<any> {
  */
 async function fetchFromEuropePMC(doi: string): Promise<any> {
   const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:${encodeURIComponent(doi)}&format=json&resultType=core`;
-  
+
   const response = await fetch(url, {
     headers: {
-      'Accept': 'application/json'
-    }
+      Accept: "application/json",
+    },
   });
 
   if (!response.ok) {
@@ -150,11 +156,15 @@ async function fetchFromEuropePMC(doi: string): Promise<any> {
   }
 
   const data = await response.json();
-  
-  if (data.resultList && data.resultList.result && data.resultList.result.length > 0) {
+
+  if (
+    data.resultList &&
+    data.resultList.result &&
+    data.resultList.result.length > 0
+  ) {
     return data.resultList.result[0];
   }
-  
+
   return null;
 }
 
@@ -171,10 +181,11 @@ function extractCrossRefData(crossRefData: any): EnrichmentData {
 
   // Extract PDF URL from links
   if (crossRefData.link) {
-    const pdfLink = crossRefData.link.find((link: any) => 
-      link['content-type'] === 'application/pdf' || 
-      link['content-type'] === 'unspecified' ||
-      link.URL?.includes('.pdf')
+    const pdfLink = crossRefData.link.find(
+      (link: any) =>
+        link["content-type"] === "application/pdf" ||
+        link["content-type"] === "unspecified" ||
+        link.URL?.includes(".pdf"),
     );
     if (pdfLink) {
       enrichmentData.pdfUrl = pdfLink.URL;
@@ -210,7 +221,9 @@ function extractCrossRefData(crossRefData: any): EnrichmentData {
 
   // Extract funding information
   if (crossRefData.funder) {
-    const funders = crossRefData.funder.map((funder: any) => funder.name).filter(Boolean);
+    const funders = crossRefData.funder
+      .map((funder: any) => funder.name)
+      .filter(Boolean);
     if (funders.length > 0) {
       enrichmentData.fundingSources = funders;
     }
@@ -232,8 +245,8 @@ function extractEuropePMCData(pmcData: any): EnrichmentData {
 
   // Extract full text URL
   if (pmcData.fullTextUrlList?.fullTextUrl) {
-    const pdfUrl = pmcData.fullTextUrlList.fullTextUrl.find((url: any) => 
-      url.documentStyle === 'pdf' || url.site === 'PubMedCentral'
+    const pdfUrl = pmcData.fullTextUrlList.fullTextUrl.find(
+      (url: any) => url.documentStyle === "pdf" || url.site === "PubMedCentral",
     );
     if (pdfUrl) {
       enrichmentData.pdfUrl = pdfUrl.url;
@@ -256,11 +269,15 @@ function extractEuropePMCData(pmcData: any): EnrichmentData {
 /**
  * Update study with enrichment data
  */
-async function updateStudyWithEnrichmentData(studyId: number, enrichmentData: EnrichmentData): Promise<void> {
+async function updateStudyWithEnrichmentData(
+  studyId: number,
+  enrichmentData: EnrichmentData,
+): Promise<void> {
   const updateData: any = {};
 
   // Only update fields that have new data and aren't already populated
-  const existingStudy = await db.select()
+  const existingStudy = await db
+    .select()
     .from(studies)
     .where(eq(studies.id, studyId))
     .limit(1);
@@ -272,36 +289,56 @@ async function updateStudyWithEnrichmentData(studyId: number, enrichmentData: En
   const study = existingStudy[0];
 
   // Update fields only if they're empty and we have new data
-  if (enrichmentData.abstract && (!study.abstract || study.abstract.trim() === '')) {
+  if (
+    enrichmentData.abstract &&
+    (!study.abstract || study.abstract.trim() === "")
+  ) {
     updateData.abstract = enrichmentData.abstract;
   }
 
-  if (enrichmentData.methods && (!study.methods || study.methods.trim() === '')) {
+  if (
+    enrichmentData.methods &&
+    (!study.methods || study.methods.trim() === "")
+  ) {
     updateData.methods = enrichmentData.methods;
   }
 
-  if (enrichmentData.results && (!study.results || study.results.trim() === '')) {
+  if (
+    enrichmentData.results &&
+    (!study.results || study.results.trim() === "")
+  ) {
     updateData.results = enrichmentData.results;
   }
 
-  if (enrichmentData.conclusion && (!study.conclusion || study.conclusion.trim() === '')) {
+  if (
+    enrichmentData.conclusion &&
+    (!study.conclusion || study.conclusion.trim() === "")
+  ) {
     updateData.conclusion = enrichmentData.conclusion;
   }
 
-  if (enrichmentData.pdfUrl && (!study.pdfUrl || study.pdfUrl.trim() === '')) {
+  if (enrichmentData.pdfUrl && (!study.pdfUrl || study.pdfUrl.trim() === "")) {
     updateData.pdfUrl = enrichmentData.pdfUrl;
   }
 
-  if (enrichmentData.citationUrl && (!study.citationUrl || study.citationUrl.trim() === '')) {
+  if (
+    enrichmentData.citationUrl &&
+    (!study.citationUrl || study.citationUrl.trim() === "")
+  ) {
     updateData.citationUrl = enrichmentData.citationUrl;
   }
 
-  if (enrichmentData.sourceUrl && (!study.sourceUrl || study.sourceUrl.trim() === '')) {
+  if (
+    enrichmentData.sourceUrl &&
+    (!study.sourceUrl || study.sourceUrl.trim() === "")
+  ) {
     updateData.sourceUrl = enrichmentData.sourceUrl;
   }
 
   if (enrichmentData.authorAffiliations) {
-    updateData.authorAffiliations = JSON.stringify(enrichmentData.authorAffiliations);
+    updateData.authorAffiliations = JSON.stringify(
+      enrichmentData.authorAffiliations,
+    );
   }
 
   if (enrichmentData.fundingSources) {
@@ -322,11 +359,11 @@ async function updateStudyWithEnrichmentData(studyId: number, enrichmentData: En
 
   // Only update if we have data to update
   if (Object.keys(updateData).length > 0) {
-    await db.update(studies)
-      .set(updateData)
-      .where(eq(studies.id, studyId));
-      
-    console.log(`✓ Updated study ${studyId} with ${Object.keys(updateData).length} enriched fields`);
+    await db.update(studies).set(updateData).where(eq(studies.id, studyId));
+
+    console.log(
+      `✓ Updated study ${studyId} with ${Object.keys(updateData).length} enriched fields`,
+    );
   }
 }
 
@@ -335,7 +372,7 @@ async function updateStudyWithEnrichmentData(studyId: number, enrichmentData: En
  */
 export function clearProcessedStudiesCache(): void {
   processedStudies.clear();
-  console.log('Cleared processed studies cache');
+  console.log("Cleared processed studies cache");
 }
 
 /**

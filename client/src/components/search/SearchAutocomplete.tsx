@@ -3,7 +3,7 @@
  * Provides real-time search suggestions and query completion
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ interface SearchAutocompleteProps {
 interface SearchSuggestion {
   id: string;
   text: string;
-  type: 'query' | 'study' | 'category' | 'author' | 'journal';
+  type: "query" | "study" | "category" | "author" | "journal";
   studyCount?: number;
   category?: string;
   relevanceScore?: number;
@@ -34,7 +34,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   onChange,
   onSearch,
   placeholder = "Search hydrogen research studies...",
-  className = ""
+  className = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -44,7 +44,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('hydrogenstudies_recent_searches');
+    const saved = localStorage.getItem("hydrogenstudies_recent_searches");
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
@@ -57,12 +57,12 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
         setIsOpen(true);
       }
     }, 300),
-    []
+    [],
   );
 
   // Fetch search suggestions
   const { data: suggestions = [], isLoading } = useQuery({
-    queryKey: ['/api/search/suggestions', value],
+    queryKey: ["/api/search/suggestions", value],
     enabled: value.length >= 2,
     staleTime: 30000, // Cache for 30 seconds
   });
@@ -76,7 +76,8 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
 
   // Handle suggestion selection
   const handleSuggestionSelect = (suggestion: SearchSuggestion | string) => {
-    const searchQuery = typeof suggestion === 'string' ? suggestion : suggestion.text;
+    const searchQuery =
+      typeof suggestion === "string" ? suggestion : suggestion.text;
     onChange(searchQuery);
     onSearch(searchQuery);
     setIsOpen(false);
@@ -85,15 +86,21 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
 
   // Save recent search
   const saveRecentSearch = (query: string) => {
-    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
+    const updated = [query, ...recentSearches.filter((s) => s !== query)].slice(
+      0,
+      5,
+    );
     setRecentSearches(updated);
-    localStorage.setItem('hydrogenstudies_recent_searches', JSON.stringify(updated));
+    localStorage.setItem(
+      "hydrogenstudies_recent_searches",
+      JSON.stringify(updated),
+    );
   };
 
   // Clear recent searches
   const clearRecentSearches = () => {
     setRecentSearches([]);
-    localStorage.removeItem('hydrogenstudies_recent_searches');
+    localStorage.removeItem("hydrogenstudies_recent_searches");
   };
 
   // Handle keyboard navigation
@@ -103,18 +110,23 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     const totalSuggestions = suggestions.length + recentSearches.length;
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex(prev => (prev + 1) % totalSuggestions);
+        setSelectedIndex((prev) => (prev + 1) % totalSuggestions);
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex(prev => prev <= 0 ? totalSuggestions - 1 : prev - 1);
+        setSelectedIndex((prev) =>
+          prev <= 0 ? totalSuggestions - 1 : prev - 1,
+        );
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (selectedIndex >= 0) {
-          const allSuggestions = [...suggestions, ...recentSearches.map(text => ({ text, type: 'query' as const }))];
+          const allSuggestions = [
+            ...suggestions,
+            ...recentSearches.map((text) => ({ text, type: "query" as const })),
+          ];
           handleSuggestionSelect(allSuggestions[selectedIndex]);
         } else if (value.trim()) {
           onSearch(value.trim());
@@ -122,7 +134,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           saveRecentSearch(value.trim());
         }
         break;
-      case 'Escape':
+      case "Escape":
         setIsOpen(false);
         setSelectedIndex(-1);
         break;
@@ -132,23 +144,32 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   // Get icon for suggestion type
   const getSuggestionIcon = (type: string) => {
     switch (type) {
-      case 'study': return <HiBookmark className="h-4 w-4 text-blue-500" />;
-      case 'category': return <HiFire className="h-4 w-4 text-orange-500" />;
-      case 'author': return <HiSearch className="h-4 w-4 text-purple-500" />;
-      case 'journal': return <HiBookmark className="h-4 w-4 text-green-500" />;
-      default: return <HiSearch className="h-4 w-4 text-gray-500" />;
+      case "study":
+        return <HiBookmark className="h-4 w-4 text-blue-500" />;
+      case "category":
+        return <HiFire className="h-4 w-4 text-orange-500" />;
+      case "author":
+        return <HiSearch className="h-4 w-4 text-purple-500" />;
+      case "journal":
+        return <HiBookmark className="h-4 w-4 text-green-500" />;
+      default:
+        return <HiSearch className="h-4 w-4 text-gray-500" />;
     }
   };
 
   // Highlight matching text
   const highlightText = (text: string, query: string) => {
     if (!query) return text;
-    
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, index) => 
+
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return parts.map((part, index) =>
       part.toLowerCase() === query.toLowerCase() ? (
-        <span key={index} className="bg-yellow-200 font-medium">{part}</span>
-      ) : part
+        <span key={index} className="bg-yellow-200 font-medium">
+          {part}
+        </span>
+      ) : (
+        part
+      ),
     );
   };
 
@@ -186,7 +207,9 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             {recentSearches.length > 0 && value.length < 2 && (
               <div className="p-3 border-b">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-600">Recent Searches</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Recent Searches
+                  </span>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -202,7 +225,9 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
                     <button
                       key={search}
                       className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 flex items-center gap-2 ${
-                        selectedIndex === suggestions.length + index ? 'bg-gray-100' : ''
+                        selectedIndex === suggestions.length + index
+                          ? "bg-gray-100"
+                          : ""
                       }`}
                       onClick={() => handleSuggestionSelect(search)}
                     >
@@ -221,7 +246,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
                   <button
                     key={suggestion.id}
                     className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 flex items-center gap-3 ${
-                      selectedIndex === index ? 'bg-gray-100' : ''
+                      selectedIndex === index ? "bg-gray-100" : ""
                     }`}
                     onClick={() => handleSuggestionSelect(suggestion)}
                   >
@@ -236,7 +261,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
                         </div>
                       )}
                     </div>
-                    {suggestion.type !== 'query' && (
+                    {suggestion.type !== "query" && (
                       <Badge variant="secondary" className="text-xs">
                         {suggestion.type}
                       </Badge>
@@ -259,7 +284,9 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
               <div className="p-4 text-center text-gray-500">
                 <HiSearch className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <span className="text-sm">No suggestions found</span>
-                <div className="text-xs mt-1">Try different keywords or check spelling</div>
+                <div className="text-xs mt-1">
+                  Try different keywords or check spelling
+                </div>
               </div>
             )}
           </CardContent>

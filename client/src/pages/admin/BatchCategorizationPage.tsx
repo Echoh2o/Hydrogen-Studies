@@ -2,7 +2,14 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,16 +51,19 @@ const BatchCategorizationPage = () => {
   // Mutation for batch categorization
   const batchMutation = useMutation({
     mutationFn: async (limit: number) => {
-      const response = await fetch("/api/consumer-categories/batch-categorize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit }),
-      });
-      
+      const response = await fetch(
+        "/api/consumer-categories/batch-categorize",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ limit }),
+        },
+      );
+
       if (!response.ok) {
         throw new Error("Failed to start batch categorization");
       }
-      
+
       return response.json();
     },
     onSuccess: (data: BatchResult) => {
@@ -78,14 +88,17 @@ const BatchCategorizationPage = () => {
   // Mutation for single study categorization
   const singleStudyMutation = useMutation({
     mutationFn: async (studyId: number) => {
-      const response = await fetch(`/api/consumer-categories/categorize/${studyId}`, {
-        method: "POST",
-      });
-      
+      const response = await fetch(
+        `/api/consumer-categories/categorize/${studyId}`,
+        {
+          method: "POST",
+        },
+      );
+
       if (!response.ok) {
         throw new Error("Failed to categorize study");
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
@@ -115,18 +128,22 @@ const BatchCategorizationPage = () => {
   };
 
   // Get uncategorized studies
-  const uncategorizedStudies = studies?.data?.filter((study: Study) => 
-    !study.consumer_categories || 
-    !study.consumer_categories.condition || 
-    study.consumer_categories.condition.length === 0
-  ) || [];
+  const uncategorizedStudies =
+    studies?.data?.filter(
+      (study: Study) =>
+        !study.consumer_categories ||
+        !study.consumer_categories.condition ||
+        study.consumer_categories.condition.length === 0,
+    ) || [];
 
   // Get categorized studies
-  const categorizedStudies = studies?.data?.filter((study: Study) => 
-    study.consumer_categories && 
-    study.consumer_categories.condition && 
-    study.consumer_categories.condition.length > 0
-  ) || [];
+  const categorizedStudies =
+    studies?.data?.filter(
+      (study: Study) =>
+        study.consumer_categories &&
+        study.consumer_categories.condition &&
+        study.consumer_categories.condition.length > 0,
+    ) || [];
 
   return (
     <AdminLayout>
@@ -134,7 +151,7 @@ const BatchCategorizationPage = () => {
         <h1 className="text-2xl font-bold text-neutral-800 mb-6">
           Consumer-Friendly Categorization
         </h1>
-        
+
         <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-2">
@@ -151,7 +168,7 @@ const BatchCategorizationPage = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Uncategorized</CardTitle>
@@ -167,11 +184,13 @@ const BatchCategorizationPage = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Categorized</CardTitle>
-              <CardDescription>Studies with condition categories</CardDescription>
+              <CardDescription>
+                Studies with condition categories
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
@@ -184,24 +203,30 @@ const BatchCategorizationPage = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         {!studiesLoading && studies?.data && (
           <div className="mb-6">
             <Progress
-              value={(categorizedStudies.length / (studies.data.length || 1)) * 100}
+              value={
+                (categorizedStudies.length / (studies.data.length || 1)) * 100
+              }
               className="h-2 w-full"
             />
             <div className="text-xs text-neutral-500 mt-1">
-              {Math.round((categorizedStudies.length / (studies.data.length || 1)) * 100)}% of studies categorized
+              {Math.round(
+                (categorizedStudies.length / (studies.data.length || 1)) * 100,
+              )}
+              % of studies categorized
             </div>
           </div>
         )}
-        
+
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Batch Categorization</CardTitle>
             <CardDescription>
-              Process multiple studies at once using AI to detect and categorize by health conditions
+              Process multiple studies at once using AI to detect and categorize
+              by health conditions
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -213,16 +238,22 @@ const BatchCategorizationPage = () => {
                 <Input
                   type="number"
                   value={processingLimit}
-                  onChange={(e) => setProcessingLimit(parseInt(e.target.value) || 10)}
+                  onChange={(e) =>
+                    setProcessingLimit(parseInt(e.target.value) || 10)
+                  }
                   min={1}
                   max={100}
                   className="w-full"
                 />
               </div>
-              <Button 
+              <Button
                 className="mt-5"
-                onClick={handleBatchProcess} 
-                disabled={isProcessing || batchMutation.isPending || uncategorizedStudies.length === 0}
+                onClick={handleBatchProcess}
+                disabled={
+                  isProcessing ||
+                  batchMutation.isPending ||
+                  uncategorizedStudies.length === 0
+                }
               >
                 {isProcessing || batchMutation.isPending ? (
                   <>
@@ -234,36 +265,45 @@ const BatchCategorizationPage = () => {
                 )}
               </Button>
             </div>
-            
+
             {batchMutation.data && (
               <div className="mt-4 p-4 bg-neutral-50 rounded-md">
                 <h4 className="font-medium mb-2">Last Batch Results:</h4>
                 <div className="text-sm text-neutral-600">
                   <div>Total Processed: {batchMutation.data.total}</div>
-                  <div className="text-green-600">Successful: {batchMutation.data.successful}</div>
-                  <div className="text-red-600">Failed: {batchMutation.data.failed}</div>
-                </div>
-                
-                {batchMutation.data.errors && batchMutation.data.errors.length > 0 && (
-                  <div className="mt-2">
-                    <h5 className="text-sm font-medium mb-1">Errors:</h5>
-                    <ul className="text-xs text-red-600">
-                      {batchMutation.data.errors.slice(0, 5).map((error, index) => (
-                        <li key={index}>
-                          Study #{error.studyId}: {error.error}
-                        </li>
-                      ))}
-                      {batchMutation.data.errors.length > 5 && (
-                        <li>... and {batchMutation.data.errors.length - 5} more</li>
-                      )}
-                    </ul>
+                  <div className="text-green-600">
+                    Successful: {batchMutation.data.successful}
                   </div>
-                )}
+                  <div className="text-red-600">
+                    Failed: {batchMutation.data.failed}
+                  </div>
+                </div>
+
+                {batchMutation.data.errors &&
+                  batchMutation.data.errors.length > 0 && (
+                    <div className="mt-2">
+                      <h5 className="text-sm font-medium mb-1">Errors:</h5>
+                      <ul className="text-xs text-red-600">
+                        {batchMutation.data.errors
+                          .slice(0, 5)
+                          .map((error, index) => (
+                            <li key={index}>
+                              Study #{error.studyId}: {error.error}
+                            </li>
+                          ))}
+                        {batchMutation.data.errors.length > 5 && (
+                          <li>
+                            ... and {batchMutation.data.errors.length - 5} more
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
               </div>
             )}
           </CardContent>
         </Card>
-        
+
         <Tabs defaultValue="uncategorized" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="uncategorized">
@@ -273,7 +313,7 @@ const BatchCategorizationPage = () => {
               Categorized Studies ({categorizedStudies.length})
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="uncategorized">
             {studiesLoading ? (
               <div className="flex justify-center py-8">
@@ -302,9 +342,13 @@ const BatchCategorizationPage = () => {
                       <Button
                         size="sm"
                         onClick={() => handleSingleProcess(study.id)}
-                        disabled={singleStudyMutation.isPending && selectedStudyId === study.id}
+                        disabled={
+                          singleStudyMutation.isPending &&
+                          selectedStudyId === study.id
+                        }
                       >
-                        {singleStudyMutation.isPending && selectedStudyId === study.id ? (
+                        {singleStudyMutation.isPending &&
+                        selectedStudyId === study.id ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-1" />
                         ) : (
                           "Categorize"
@@ -313,7 +357,7 @@ const BatchCategorizationPage = () => {
                     </CardFooter>
                   </Card>
                 ))}
-                
+
                 {uncategorizedStudies.length > 10 && (
                   <div className="text-center py-4 text-neutral-500 text-sm">
                     Showing 10 of {uncategorizedStudies.length} studies
@@ -322,7 +366,7 @@ const BatchCategorizationPage = () => {
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="categorized">
             {studiesLoading ? (
               <div className="flex justify-center py-8">
@@ -341,14 +385,16 @@ const BatchCategorizationPage = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {study.consumer_categories?.condition?.map((category, i) => (
-                          <span 
-                            key={i} 
-                            className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                          >
-                            {category}
-                          </span>
-                        ))}
+                        {study.consumer_categories?.condition?.map(
+                          (category, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                            >
+                              {category}
+                            </span>
+                          ),
+                        )}
                       </div>
                       <p className="text-sm text-neutral-600 line-clamp-2">
                         {study.abstract || "No abstract available"}
@@ -363,9 +409,13 @@ const BatchCategorizationPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleSingleProcess(study.id)}
-                        disabled={singleStudyMutation.isPending && selectedStudyId === study.id}
+                        disabled={
+                          singleStudyMutation.isPending &&
+                          selectedStudyId === study.id
+                        }
                       >
-                        {singleStudyMutation.isPending && selectedStudyId === study.id ? (
+                        {singleStudyMutation.isPending &&
+                        selectedStudyId === study.id ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-1" />
                         ) : (
                           "Re-categorize"
@@ -374,7 +424,7 @@ const BatchCategorizationPage = () => {
                     </CardFooter>
                   </Card>
                 ))}
-                
+
                 {categorizedStudies.length > 10 && (
                   <div className="text-center py-4 text-neutral-500 text-sm">
                     Showing 10 of {categorizedStudies.length} studies

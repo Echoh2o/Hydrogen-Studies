@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,7 +27,7 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
     researchTypes: string[];
   }>({
     demographicGroups: [],
-    researchTypes: []
+    researchTypes: [],
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,19 +35,22 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
     const fetchOptions = async () => {
       try {
         setIsLoading(true);
-        const response = await apiRequest("GET", "/api/research-suggestions/options");
-        
+        const response = await apiRequest(
+          "GET",
+          "/api/research-suggestions/options",
+        );
+
         const data = await response.json();
         if (data.success && data.data) {
           setOptions({
             demographicGroups: data.data.demographicGroups || [],
-            researchTypes: data.data.researchTypes || []
+            researchTypes: data.data.researchTypes || [],
           });
         } else {
           toast({
             title: "Failed to load options",
             description: "Using default options instead",
-            variant: "destructive"
+            variant: "destructive",
           });
           // Set default options
           setOptions({
@@ -52,15 +61,15 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
               "Elderly",
               "Athletes",
               "Pregnant women",
-              "People with chronic conditions"
+              "People with chronic conditions",
             ],
             researchTypes: [
               "clinical",
               "experimental",
               "review",
               "case-study",
-              "any"
-            ]
+              "any",
+            ],
           });
         }
       } catch (error) {
@@ -68,7 +77,7 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
         toast({
           title: "Failed to load options",
           description: "Please try refreshing the page",
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
@@ -85,10 +94,10 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
         <p className="text-sm text-muted-foreground mb-4">
           Select the demographic group you're interested in studying
         </p>
-        
+
         {isLoading ? (
           <div className="space-y-4 animate-pulse">
-            {[1, 2, 3, 4, 5].map(i => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-start space-x-2">
                 <div className="h-4 w-4 rounded-full bg-muted mt-0.5" />
                 <div className="space-y-2">
@@ -99,9 +108,11 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
             ))}
           </div>
         ) : (
-          <RadioGroup 
-            value={selections.demographicGroup} 
-            onValueChange={(value) => onSelectionChange("demographicGroup", value)}
+          <RadioGroup
+            value={selections.demographicGroup}
+            onValueChange={(value) =>
+              onSelectionChange("demographicGroup", value)
+            }
             className="space-y-3"
           >
             {options.demographicGroups.map((group) => (
@@ -123,11 +134,11 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
         <p className="text-sm text-muted-foreground mb-4">
           Select the type of research you're interested in
         </p>
-        
+
         {isLoading ? (
           <div className="h-10 w-full bg-muted rounded animate-pulse" />
         ) : (
-          <Select 
+          <Select
             value={selections.researchType}
             onValueChange={(value) => onSelectionChange("researchType", value)}
           >
@@ -137,12 +148,17 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
             <SelectContent>
               {options.researchTypes.map((type) => (
                 <SelectItem key={type} value={type || "empty"}>
-                  {type === 'clinical' ? 'Clinical Trials' : 
-                   type === 'experimental' ? 'Experimental Studies' : 
-                   type === 'review' ? 'Literature Reviews' : 
-                   type === 'case-study' ? 'Case Studies' : 
-                   type === 'any' ? 'Any Research Type' : 
-                   type || 'Unknown Type'}
+                  {type === "clinical"
+                    ? "Clinical Trials"
+                    : type === "experimental"
+                      ? "Experimental Studies"
+                      : type === "review"
+                        ? "Literature Reviews"
+                        : type === "case-study"
+                          ? "Case Studies"
+                          : type === "any"
+                            ? "Any Research Type"
+                            : type || "Unknown Type"}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -155,9 +171,9 @@ const WizardStep2 = ({ selections, onSelectionChange }: WizardStep2Props) => {
         <p className="text-sm text-muted-foreground mb-4">
           Select the primary focus of your research interest
         </p>
-        
-        <RadioGroup 
-          value={selections.focusArea} 
+
+        <RadioGroup
+          value={selections.focusArea}
           onValueChange={(value) => onSelectionChange("focusArea", value)}
           className="space-y-3"
         >

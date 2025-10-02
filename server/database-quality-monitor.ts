@@ -1,18 +1,18 @@
 /**
  * Database Quality Monitor
- * 
+ *
  * Monitors data integrity, performance metrics, and automatically
  * maintains database health for optimal speed and reliability
  */
 
-import { db as pool } from './db';
-import { sql } from 'drizzle-orm';
+import { db as pool } from "./db";
+import { sql } from "drizzle-orm";
 
 // Simple cache fallback if the performance optimizer doesn't exist
 const performanceCache = {
   clear: () => {
-    console.log('Performance cache cleared');
-  }
+    console.log("Performance cache cleared");
+  },
 };
 
 interface QualityMetrics {
@@ -35,18 +35,22 @@ interface QualityMetrics {
 
 export class DatabaseQualityMonitor {
   private metrics: QualityMetrics = {
-    dataIntegrity: { duplicateStudies: 0, brokenReferences: 0, inconsistentData: 0 },
+    dataIntegrity: {
+      duplicateStudies: 0,
+      brokenReferences: 0,
+      inconsistentData: 0,
+    },
     performance: { avgQueryTime: 0, slowQueries: 0, cacheHitRate: 0 },
-    reliability: { connectionSuccess: 100, errorRate: 0, uptime: 100 }
+    reliability: { connectionSuccess: 100, errorRate: 0, uptime: 100 },
   };
 
   async runQualityChecks(): Promise<QualityMetrics> {
-    console.log('Running database quality checks...');
-    
+    console.log("Running database quality checks...");
+
     await Promise.all([
       this.checkDataIntegrity(),
       this.checkPerformance(),
-      this.checkReliability()
+      this.checkReliability(),
     ]);
 
     return this.metrics;
@@ -65,7 +69,9 @@ export class DatabaseQualityMonitor {
           HAVING COUNT(*) > 1
         ) duplicates
       `);
-      this.metrics.dataIntegrity.duplicateStudies = parseInt(duplicateCheck[0]?.duplicate_count || '0');
+      this.metrics.dataIntegrity.duplicateStudies = parseInt(
+        duplicateCheck[0]?.duplicate_count || "0",
+      );
 
       // Check for broken image references
       const brokenRefs = await pool.execute(sql`
@@ -79,7 +85,9 @@ export class DatabaseQualityMonitor {
           image_url LIKE 'https://via.placeholder%'
         )
       `);
-      this.metrics.dataIntegrity.brokenReferences = parseInt(brokenRefs[0]?.broken_count || '0');
+      this.metrics.dataIntegrity.brokenReferences = parseInt(
+        brokenRefs[0]?.broken_count || "0",
+      );
 
       // Check for data consistency issues
       const inconsistentData = await pool.execute(sql`
@@ -93,10 +101,11 @@ export class DatabaseQualityMonitor {
           (view_count < 0)
         )
       `);
-      this.metrics.dataIntegrity.inconsistentData = parseInt(inconsistentData[0]?.inconsistent_count || '0');
-
+      this.metrics.dataIntegrity.inconsistentData = parseInt(
+        inconsistentData[0]?.inconsistent_count || "0",
+      );
     } catch (error) {
-      console.error('Data integrity check failed:', error);
+      console.error("Data integrity check failed:", error);
     }
   }
 
@@ -104,9 +113,18 @@ export class DatabaseQualityMonitor {
     try {
       // Test query performance
       const testQueries = [
-        { name: 'category_search', query: `SELECT COUNT(*) FROM studies WHERE category = 'Neurological'` },
-        { name: 'text_search', query: `SELECT COUNT(*) FROM studies WHERE title ILIKE '%hydrogen%' LIMIT 10` },
-        { name: 'date_range', query: `SELECT COUNT(*) FROM studies WHERE publish_year BETWEEN 2020 AND 2023` }
+        {
+          name: "category_search",
+          query: `SELECT COUNT(*) FROM studies WHERE category = 'Neurological'`,
+        },
+        {
+          name: "text_search",
+          query: `SELECT COUNT(*) FROM studies WHERE title ILIKE '%hydrogen%' LIMIT 10`,
+        },
+        {
+          name: "date_range",
+          query: `SELECT COUNT(*) FROM studies WHERE publish_year BETWEEN 2020 AND 2023`,
+        },
       ];
 
       let totalTime = 0;
@@ -116,7 +134,7 @@ export class DatabaseQualityMonitor {
         const start = Date.now();
         await pool.execute(sql.raw(test.query));
         const queryTime = Date.now() - start;
-        
+
         totalTime += queryTime;
         if (queryTime > 100) slowQueries++; // Queries over 100ms considered slow
       }
@@ -124,9 +142,8 @@ export class DatabaseQualityMonitor {
       this.metrics.performance.avgQueryTime = totalTime / testQueries.length;
       this.metrics.performance.slowQueries = slowQueries;
       this.metrics.performance.cacheHitRate = 85; // Placeholder - could implement actual tracking
-
     } catch (error) {
-      console.error('Performance check failed:', error);
+      console.error("Performance check failed:", error);
     }
   }
 
@@ -137,20 +154,20 @@ export class DatabaseQualityMonitor {
       await pool.execute(sql`SELECT version()`);
       const connectionTime = Date.now() - start;
 
-      this.metrics.reliability.connectionSuccess = connectionTime < 1000 ? 100 : 75;
+      this.metrics.reliability.connectionSuccess =
+        connectionTime < 1000 ? 100 : 75;
       this.metrics.reliability.errorRate = 0; // Could track actual error rates
       this.metrics.reliability.uptime = 100; // Could track actual uptime
-
     } catch (error) {
-      console.error('Reliability check failed:', error);
+      console.error("Reliability check failed:", error);
       this.metrics.reliability.connectionSuccess = 0;
       this.metrics.reliability.errorRate = 100;
     }
   }
 
   async autoRepairIssues(): Promise<{ fixed: number; errors: string[] }> {
-    console.log('Starting automatic database repair...');
-    
+    console.log("Starting automatic database repair...");
+
     let fixed = 0;
     const errors: string[] = [];
 
@@ -166,7 +183,7 @@ export class DatabaseQualityMonitor {
           image_url LIKE 'https://via.placeholder%'
         )
       `);
-      
+
       if (result && result.length > 0) {
         fixed += result.length;
         console.log(`Fixed ${result.length} broken image references`);
@@ -181,7 +198,7 @@ export class DatabaseQualityMonitor {
           pdf_url = CASE WHEN pdf_url = '' THEN NULL ELSE pdf_url END
         WHERE image_url = '' OR doi = '' OR pdf_url = ''
       `);
-      
+
       if (nullifyResult && nullifyResult.length > 0) {
         fixed += nullifyResult.length;
         console.log(`Normalized ${nullifyResult.length} empty string values`);
@@ -189,12 +206,11 @@ export class DatabaseQualityMonitor {
 
       // Update table statistics after repairs
       await pool.execute(sql`ANALYZE studies`);
-      
+
       // Clear cache to ensure fresh data
       performanceCache.clear();
-
     } catch (error) {
-      const errorMsg = `Database repair failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMsg = `Database repair failed: ${error instanceof Error ? error.message : "Unknown error"}`;
       errors.push(errorMsg);
       console.error(errorMsg);
     }
@@ -208,7 +224,7 @@ export class DatabaseQualityMonitor {
 
   async generateQualityReport(): Promise<string> {
     const metrics = await this.runQualityChecks();
-    
+
     return `
 DATABASE QUALITY REPORT
 Generated: ${new Date().toISOString()}
@@ -237,26 +253,28 @@ ${this.generateRecommendations(metrics)}
     const recommendations: string[] = [];
 
     if (metrics.dataIntegrity.duplicateStudies > 0) {
-      recommendations.push('• Review and merge duplicate studies');
+      recommendations.push("• Review and merge duplicate studies");
     }
-    
+
     if (metrics.dataIntegrity.brokenReferences > 0) {
-      recommendations.push('• Run auto-repair to fix broken references');
+      recommendations.push("• Run auto-repair to fix broken references");
     }
-    
+
     if (metrics.performance.avgQueryTime > 50) {
-      recommendations.push('• Consider adding more targeted indexes');
+      recommendations.push("• Consider adding more targeted indexes");
     }
-    
+
     if (metrics.performance.slowQueries > 2) {
-      recommendations.push('• Optimize slow queries or increase hardware resources');
+      recommendations.push(
+        "• Optimize slow queries or increase hardware resources",
+      );
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('• Database is in excellent condition');
+      recommendations.push("• Database is in excellent condition");
     }
 
-    return recommendations.join('\n');
+    return recommendations.join("\n");
   }
 }
 

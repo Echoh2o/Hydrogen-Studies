@@ -3,13 +3,13 @@
  * Displays search results with relevance explanations and smart filters
  */
 
-import { useState } from 'react';
-import { Link } from 'wouter';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
+import { useState } from "react";
+import { Link } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import {
   Sparkles,
   ChevronRight,
@@ -21,9 +21,9 @@ import {
   AlertCircle,
   Bookmark,
   Share2,
-  ExternalLink
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+  ExternalLink,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 interface SearchResult {
   id: number;
@@ -79,10 +79,12 @@ export function NaturalLanguageSearchResults({
   totalCount = 0,
   isLoading = false,
   onFilterApply,
-  onSaveSearch
+  onSaveSearch,
 }: NaturalLanguageSearchResultsProps) {
   const [selectedFilters, setSelectedFilters] = useState<any>({});
-  const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set());
+  const [expandedResults, setExpandedResults] = useState<Set<number>>(
+    new Set(),
+  );
 
   // Toggle result expansion
   const toggleExpanded = (id: number) => {
@@ -101,14 +103,14 @@ export function NaturalLanguageSearchResults({
     if (!newFilters[filterType]) {
       newFilters[filterType] = [];
     }
-    
+
     const index = newFilters[filterType].indexOf(value);
     if (index > -1) {
       newFilters[filterType].splice(index, 1);
     } else {
       newFilters[filterType].push(value);
     }
-    
+
     setSelectedFilters(newFilters);
     if (onFilterApply) {
       onFilterApply(newFilters);
@@ -117,11 +119,11 @@ export function NaturalLanguageSearchResults({
 
   // Format date
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Date unknown';
+    if (!dateString) return "Date unknown";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short' 
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
     });
   };
 
@@ -145,14 +147,20 @@ export function NaturalLanguageSearchResults({
               {/* Conditions */}
               {facets.conditions?.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold mb-2">Health Conditions</h4>
+                  <h4 className="text-xs font-semibold mb-2">
+                    Health Conditions
+                  </h4>
                   <div className="space-y-1">
                     {facets.conditions.slice(0, 5).map((condition) => (
                       <button
                         key={condition.name}
-                        onClick={() => applyFilter('conditions', condition.name)}
+                        onClick={() =>
+                          applyFilter("conditions", condition.name)
+                        }
                         className={`w-full text-left text-xs p-1 rounded hover:bg-muted transition-colors ${
-                          selectedFilters.conditions?.includes(condition.name) ? 'bg-muted' : ''
+                          selectedFilters.conditions?.includes(condition.name)
+                            ? "bg-muted"
+                            : ""
                         }`}
                         data-testid={`filter-condition-${condition.name}`}
                       >
@@ -171,14 +179,18 @@ export function NaturalLanguageSearchResults({
               {/* Delivery Methods */}
               {facets.deliveryMethods?.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold mb-2">Delivery Methods</h4>
+                  <h4 className="text-xs font-semibold mb-2">
+                    Delivery Methods
+                  </h4>
                   <div className="space-y-1">
                     {facets.deliveryMethods.map((method) => (
                       <button
                         key={method.name}
-                        onClick={() => applyFilter('methods', method.name)}
+                        onClick={() => applyFilter("methods", method.name)}
                         className={`w-full text-left text-xs p-1 rounded hover:bg-muted transition-colors ${
-                          selectedFilters.methods?.includes(method.name) ? 'bg-muted' : ''
+                          selectedFilters.methods?.includes(method.name)
+                            ? "bg-muted"
+                            : ""
                         }`}
                         data-testid={`filter-method-${method.name}`}
                       >
@@ -197,14 +209,22 @@ export function NaturalLanguageSearchResults({
               {/* Years */}
               {facets.years?.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold mb-2">Publication Year</h4>
+                  <h4 className="text-xs font-semibold mb-2">
+                    Publication Year
+                  </h4>
                   <div className="space-y-1">
                     {facets.years.slice(0, 5).map((yearItem) => (
                       <button
                         key={yearItem.year}
-                        onClick={() => applyFilter('years', yearItem.year.toString())}
+                        onClick={() =>
+                          applyFilter("years", yearItem.year.toString())
+                        }
                         className={`w-full text-left text-xs p-1 rounded hover:bg-muted transition-colors ${
-                          selectedFilters.years?.includes(yearItem.year.toString()) ? 'bg-muted' : ''
+                          selectedFilters.years?.includes(
+                            yearItem.year.toString(),
+                          )
+                            ? "bg-muted"
+                            : ""
                         }`}
                         data-testid={`filter-year-${yearItem.year}`}
                       >
@@ -225,7 +245,7 @@ export function NaturalLanguageSearchResults({
       )}
 
       {/* Search Results */}
-      <div className={facets ? 'lg:col-span-3' : 'lg:col-span-4'}>
+      <div className={facets ? "lg:col-span-3" : "lg:col-span-4"}>
         {/* Results Header */}
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -253,9 +273,9 @@ export function NaturalLanguageSearchResults({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-muted-foreground">Related:</span>
                 {suggestions.related.map((related: string, idx: number) => (
-                  <Badge 
-                    key={idx} 
-                    variant="secondary" 
+                  <Badge
+                    key={idx}
+                    variant="secondary"
                     className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
                     data-testid={`related-search-${idx}`}
                   >
@@ -271,7 +291,7 @@ export function NaturalLanguageSearchResults({
         <div className="space-y-4">
           {results.map((result, index) => {
             const isExpanded = expandedResults.has(result.id);
-            
+
             return (
               <motion.div
                 key={result.id}
@@ -288,11 +308,11 @@ export function NaturalLanguageSearchResults({
                             {result.plainLanguageTitle || result.title}
                           </CardTitle>
                         </Link>
-                        
+
                         {/* Relevance Score */}
                         <div className="flex items-center gap-2 mt-2">
-                          <Progress 
-                            value={result.relevanceScore * 100} 
+                          <Progress
+                            value={result.relevanceScore * 100}
                             className="w-24 h-2"
                           />
                           <span className="text-xs text-muted-foreground">
@@ -306,7 +326,7 @@ export function NaturalLanguageSearchResults({
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <Button variant="ghost" size="icon">
                           <Bookmark className="h-4 w-4" />
@@ -317,13 +337,17 @@ export function NaturalLanguageSearchResults({
                       </div>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent>
                     {/* Match Reasons */}
                     {result.matchReasons && result.matchReasons.length > 0 && (
                       <div className="mb-3 flex flex-wrap gap-2">
                         {result.matchReasons.map((reason, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             <Target className="h-3 w-3 mr-1" />
                             {reason}
                           </Badge>
@@ -344,28 +368,34 @@ export function NaturalLanguageSearchResults({
                     {isExpanded && (
                       <div className="space-y-3 mt-3">
                         <Separator />
-                        
+
                         {result.highlights?.methods && (
                           <div>
-                            <h4 className="text-xs font-semibold mb-1">Methods</h4>
+                            <h4 className="text-xs font-semibold mb-1">
+                              Methods
+                            </h4>
                             <p className="text-sm text-muted-foreground">
                               {highlightText(result.highlights.methods)}
                             </p>
                           </div>
                         )}
-                        
+
                         {result.highlights?.results && (
                           <div>
-                            <h4 className="text-xs font-semibold mb-1">Results</h4>
+                            <h4 className="text-xs font-semibold mb-1">
+                              Results
+                            </h4>
                             <p className="text-sm text-muted-foreground">
                               {highlightText(result.highlights.results)}
                             </p>
                           </div>
                         )}
-                        
+
                         {result.highlights?.conclusion && (
                           <div>
-                            <h4 className="text-xs font-semibold mb-1">Conclusion</h4>
+                            <h4 className="text-xs font-semibold mb-1">
+                              Conclusion
+                            </h4>
                             <p className="text-sm text-muted-foreground">
                               {highlightText(result.highlights.conclusion)}
                             </p>
@@ -378,7 +408,7 @@ export function NaturalLanguageSearchResults({
                     <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {result.authors?.split(',')[0]} et al.
+                        {result.authors?.split(",")[0]} et al.
                       </span>
                       <span className="flex items-center gap-1">
                         <BookOpen className="h-3 w-3" />
@@ -386,10 +416,12 @@ export function NaturalLanguageSearchResults({
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {formatDate(result.journalPublishDate || result.publishDate)}
+                        {formatDate(
+                          result.journalPublishDate || result.publishDate,
+                        )}
                       </span>
                       {result.doi && (
-                        <a 
+                        <a
                           href={`https://doi.org/${result.doi}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -405,7 +437,11 @@ export function NaturalLanguageSearchResults({
                     {result.keywords && result.keywords.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-3">
                         {result.keywords.slice(0, 5).map((keyword, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
+                          <Badge
+                            key={idx}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {keyword}
                           </Badge>
                         ))}
@@ -420,10 +456,12 @@ export function NaturalLanguageSearchResults({
                       className="mt-3"
                       data-testid={`button-expand-${result.id}`}
                     >
-                      {isExpanded ? 'Show Less' : 'Show More'}
-                      <ChevronRight className={`h-4 w-4 ml-1 transition-transform ${
-                        isExpanded ? 'rotate-90' : ''
-                      }`} />
+                      {isExpanded ? "Show Less" : "Show More"}
+                      <ChevronRight
+                        className={`h-4 w-4 ml-1 transition-transform ${
+                          isExpanded ? "rotate-90" : ""
+                        }`}
+                      />
                     </Button>
                   </CardContent>
                 </Card>
@@ -441,18 +479,25 @@ export function NaturalLanguageSearchResults({
               <p className="text-muted-foreground mb-4">
                 Try adjusting your search query or filters
               </p>
-              {suggestions?.alternatives && suggestions.alternatives.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-2">Try these alternative searches:</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {suggestions.alternatives.map((alt: any, idx: number) => (
-                      <Badge key={idx} variant="outline" className="cursor-pointer">
-                        {alt.text}
-                      </Badge>
-                    ))}
+              {suggestions?.alternatives &&
+                suggestions.alternatives.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Try these alternative searches:
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {suggestions.alternatives.map((alt: any, idx: number) => (
+                        <Badge
+                          key={idx}
+                          variant="outline"
+                          className="cursor-pointer"
+                        >
+                          {alt.text}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </CardContent>
           </Card>
         )}

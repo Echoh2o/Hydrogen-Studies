@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,10 +59,11 @@ export default function RecommendationsPage() {
   const [activeTab, setActiveTab] = useState("for-you");
 
   // Get personalized recommendations based on user behavior and tagging
-  const { data: recommendations, isLoading: recommendationsLoading } = useQuery<PersonalizedRecommendations>({
-    queryKey: ["/api/recommendations/personalized"],
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
+  const { data: recommendations, isLoading: recommendationsLoading } =
+    useQuery<PersonalizedRecommendations>({
+      queryKey: ["/api/recommendations/personalized"],
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    });
 
   // Get user interests profile
   const { data: userInterests } = useQuery<UserInterests>({
@@ -70,11 +77,16 @@ export default function RecommendationsPage() {
 
   const getRecommendationReasonColor = (reason: string) => {
     switch (reason.toLowerCase()) {
-      case 'trending': return "bg-orange-100 text-orange-800";
-      case 'similar tags': return "bg-blue-100 text-blue-800";
-      case 'high rated': return "bg-green-100 text-green-800";
-      case 'recent research': return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "trending":
+        return "bg-orange-100 text-orange-800";
+      case "similar tags":
+        return "bg-blue-100 text-blue-800";
+      case "high rated":
+        return "bg-green-100 text-green-800";
+      case "recent research":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -87,15 +99,15 @@ export default function RecommendationsPage() {
               {study.title}
             </h3>
             {showReason && (
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={`ml-2 text-xs ${getRecommendationReasonColor(study.recommendationReason)}`}
               >
                 {study.recommendationReason}
               </Badge>
             )}
           </div>
-          
+
           <div className="text-sm text-muted-foreground">
             <span className="font-medium">{study.authors}</span>
             {" • "}
@@ -148,7 +160,8 @@ export default function RecommendationsPage() {
           Recommended for You
         </h1>
         <p className="text-muted-foreground">
-          Personalized study recommendations based on your interests and research patterns
+          Personalized study recommendations based on your interests and
+          research patterns
         </p>
       </div>
 
@@ -169,24 +182,28 @@ export default function RecommendationsPage() {
               <div>
                 <h4 className="font-medium mb-3">Top Interest Categories</h4>
                 <div className="space-y-2">
-                  {userInterests.categories.slice(0, 5).map((category, index) => (
-                    <div key={category.name} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="capitalize">{category.name.replace(/_/g, ' ')}</span>
-                        <span>{category.percentage}%</span>
+                  {userInterests.categories
+                    .slice(0, 5)
+                    .map((category, index) => (
+                      <div key={category.name} className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="capitalize">
+                            {category.name.replace(/_/g, " ")}
+                          </span>
+                          <span>{category.percentage}%</span>
+                        </div>
+                        <Progress value={category.percentage} className="h-2" />
                       </div>
-                      <Progress value={category.percentage} className="h-2" />
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-medium mb-3">Frequently Viewed Tags</h4>
                 <div className="flex flex-wrap gap-2">
                   {userInterests.tags.slice(0, 10).map((tag, index) => (
-                    <Badge 
-                      key={tag.name} 
+                    <Badge
+                      key={tag.name}
                       variant="secondary"
                       className="text-xs"
                       style={{ opacity: Math.max(0.5, tag.weight) }}
@@ -202,7 +219,11 @@ export default function RecommendationsPage() {
       )}
 
       {/* Recommendation Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="for-you" className="flex items-center space-x-1">
             <Target className="h-4 w-4" />
@@ -216,11 +237,17 @@ export default function RecommendationsPage() {
             <Clock className="h-4 w-4" />
             <span>Recent</span>
           </TabsTrigger>
-          <TabsTrigger value="top-rated" className="flex items-center space-x-1">
+          <TabsTrigger
+            value="top-rated"
+            className="flex items-center space-x-1"
+          >
             <Star className="h-4 w-4" />
             <span>Top Rated</span>
           </TabsTrigger>
-          <TabsTrigger value="collections" className="flex items-center space-x-1">
+          <TabsTrigger
+            value="collections"
+            className="flex items-center space-x-1"
+          >
             <BookOpen className="h-4 w-4" />
             <span>Collections</span>
           </TabsTrigger>
@@ -228,10 +255,12 @@ export default function RecommendationsPage() {
 
         <TabsContent value="for-you" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Personalized Recommendations</h2>
+            <h2 className="text-xl font-semibold">
+              Personalized Recommendations
+            </h2>
             <Badge variant="outline">AI-Powered</Badge>
           </div>
-          
+
           {recommendationsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[...Array(6)].map((_, i) => (
@@ -254,7 +283,9 @@ export default function RecommendationsPage() {
             <Card>
               <CardContent className="p-12 text-center">
                 <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Building your profile</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  Building your profile
+                </h3>
                 <p className="text-muted-foreground">
                   Browse some studies to get personalized recommendations
                 </p>
@@ -268,20 +299,22 @@ export default function RecommendationsPage() {
             <h2 className="text-xl font-semibold">Trending Research</h2>
             <Badge variant="outline">Popular This Week</Badge>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendations?.trending?.map((study) => renderStudyCard(study)) || 
-             [...Array(6)].map((_, i) => (
-               <Card key={i}>
-                 <CardContent className="p-6">
-                   <div className="space-y-2">
-                     <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                     <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
-                     <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                   </div>
-                 </CardContent>
-               </Card>
-             ))}
+            {recommendations?.trending?.map((study) =>
+              renderStudyCard(study),
+            ) ||
+              [...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         </TabsContent>
 
@@ -290,20 +323,22 @@ export default function RecommendationsPage() {
             <h2 className="text-xl font-semibold">Recently Published</h2>
             <Badge variant="outline">Latest Research</Badge>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendations?.recentlyViewed?.map((study) => renderStudyCard(study)) || 
-             [...Array(6)].map((_, i) => (
-               <Card key={i}>
-                 <CardContent className="p-6">
-                   <div className="space-y-2">
-                     <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                     <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
-                     <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                   </div>
-                 </CardContent>
-               </Card>
-             ))}
+            {recommendations?.recentlyViewed?.map((study) =>
+              renderStudyCard(study),
+            ) ||
+              [...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         </TabsContent>
 
@@ -312,20 +347,22 @@ export default function RecommendationsPage() {
             <h2 className="text-xl font-semibold">Highly Rated Studies</h2>
             <Badge variant="outline">Community Favorites</Badge>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendations?.topRated?.map((study) => renderStudyCard(study)) || 
-             [...Array(6)].map((_, i) => (
-               <Card key={i}>
-                 <CardContent className="p-6">
-                   <div className="space-y-2">
-                     <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                     <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
-                     <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                   </div>
-                 </CardContent>
-               </Card>
-             ))}
+            {recommendations?.topRated?.map((study) =>
+              renderStudyCard(study),
+            ) ||
+              [...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         </TabsContent>
 
@@ -334,47 +371,55 @@ export default function RecommendationsPage() {
             <h2 className="text-xl font-semibold">Curated Collections</h2>
             <Badge variant="outline">Expert Selected</Badge>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               {
                 title: "Cardiovascular Health",
                 description: "Studies on heart health and circulation benefits",
                 studyCount: 18,
-                tags: ["Cardiovascular Disease", "Heart Health", "Blood Pressure"]
+                tags: [
+                  "Cardiovascular Disease",
+                  "Heart Health",
+                  "Blood Pressure",
+                ],
               },
               {
                 title: "Brain & Cognitive Function",
-                description: "Neuroprotection and cognitive enhancement research",
+                description:
+                  "Neuroprotection and cognitive enhancement research",
                 studyCount: 24,
-                tags: ["Neuroprotection", "Cognitive Function", "Brain Health"]
+                tags: ["Neuroprotection", "Cognitive Function", "Brain Health"],
               },
               {
                 title: "Athletic Performance",
                 description: "Sports medicine and performance optimization",
                 studyCount: 12,
-                tags: ["Athletic Performance", "Recovery", "Exercise"]
+                tags: ["Athletic Performance", "Recovery", "Exercise"],
               },
               {
                 title: "Anti-Aging Research",
                 description: "Longevity and cellular health studies",
                 studyCount: 16,
-                tags: ["Anti-Aging", "Oxidative Stress", "Cellular Health"]
+                tags: ["Anti-Aging", "Oxidative Stress", "Cellular Health"],
               },
               {
                 title: "Metabolic Health",
                 description: "Diabetes, metabolism, and weight management",
                 studyCount: 21,
-                tags: ["Diabetes", "Metabolism", "Weight Management"]
+                tags: ["Diabetes", "Metabolism", "Weight Management"],
               },
               {
                 title: "Inflammatory Conditions",
                 description: "Anti-inflammatory effects and immune support",
                 studyCount: 19,
-                tags: ["Anti-inflammatory", "Immune System", "Inflammation"]
-              }
+                tags: ["Anti-inflammatory", "Immune System", "Inflammation"],
+              },
             ].map((collection, index) => (
-              <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+              <Card
+                key={index}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+              >
                 <CardHeader>
                   <CardTitle className="text-lg">{collection.title}</CardTitle>
                   <CardDescription>{collection.description}</CardDescription>
@@ -382,14 +427,20 @@ export default function RecommendationsPage() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{collection.studyCount} studies</span>
+                      <span className="text-sm font-medium">
+                        {collection.studyCount} studies
+                      </span>
                       <Button variant="outline" size="sm">
                         Explore
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {collection.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="text-xs"
+                        >
                           {tag}
                         </Badge>
                       ))}
