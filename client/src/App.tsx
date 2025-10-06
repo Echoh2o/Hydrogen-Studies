@@ -32,6 +32,13 @@ const HealthBenefitsPage = lazy(() => import("@/pages/HealthBenefitsPage"));
 const PublicBlogListPage = lazy(() => import("@/pages/BlogListPage"));
 const BlogArticlePage = lazy(() => import("@/pages/BlogArticlePage"));
 const ContactUsPage = lazy(() => import("@/pages/ContactUsPage"));
+
+// Legal and Policy Pages
+const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
+const TermsOfServicePage = lazy(() => import("@/pages/TermsOfServicePage"));
+const CookiePolicyPage = lazy(() => import("@/pages/CookiePolicyPage"));
+const MedicalDisclaimerPage = lazy(() => import("@/pages/MedicalDisclaimerPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const Studies = lazy(() => import("@/pages/studies"));
 const EnhancedStudyPage = lazy(() => import("@/pages/EnhancedStudyPage"));
 const EnhancedSearchPage = lazy(() => import("@/pages/EnhancedSearchPage"));
@@ -223,7 +230,13 @@ function Router() {
         <Route path="/benefits" component={BenefitsPage} />
         <Route path="/products" component={ProductsPage} />
         <Route path="/about" component={About} />
-        <Route path="/contact" component={ContactUsPage} />
+        <Route path="/contact" component={ContactPage} />
+        
+        {/* Legal and Policy Pages */}
+        <Route path="/privacy" component={PrivacyPolicyPage} />
+        <Route path="/terms" component={TermsOfServicePage} />
+        <Route path="/cookies" component={CookiePolicyPage} />
+        <Route path="/disclaimer" component={MedicalDisclaimerPage} />
         <Route path="/learn/basics" component={HydrogenBasicsPage} />
         <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
         <Route path="/blog" component={PublicBlogListPage} />
