@@ -463,9 +463,9 @@ export default function RegisterPage() {
                 </AlertDescription>
               </Alert>
 
-              <Button
+              <button
                 type="submit"
-                className="w-full"
+                className="btn-primary btn-full btn-icon-left"
                 disabled={registerMutation.isPending}
                 data-testid="button-register"
               >
@@ -480,7 +480,7 @@ export default function RegisterPage() {
                     Create Account
                   </>
                 )}
-              </Button>
+              </button>
             </form>
           </Form>
         </CardContent>

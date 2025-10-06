@@ -106,4 +106,69 @@
   .container {
     @apply mx-auto px-4;
   }
+
+  /* Button Design System */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-600;
+    @apply px-6 py-2.5 min-h-[42px];
+    @apply shadow-md hover:shadow-lg active:shadow-sm;
+    @apply border border-transparent;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply bg-transparent text-blue-600 hover:bg-blue-50 focus-visible:ring-blue-600;
+    @apply px-6 py-2.5 min-h-[42px];
+    @apply border-2 border-blue-600 hover:border-blue-700;
+  }
+
+  .btn-tertiary {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus-visible:ring-gray-500;
+    @apply px-4 py-2 min-h-[38px];
+    @apply border border-transparent;
+    @apply underline-offset-4 hover:underline;
+  }
+
+  /* Size variants */
+  .btn-lg {
+    @apply px-8 py-3 text-base min-h-[48px];
+  }
+
+  .btn-sm {
+    @apply px-4 py-1.5 text-xs min-h-[32px];
+  }
+
+  /* Icon buttons */
+  .btn-icon-left > svg {
+    @apply mr-2 h-4 w-4;
+  }
+
+  .btn-icon-right > svg {
+    @apply ml-2 h-4 w-4;
+  }
+
+  /* Full width variant */
+  .btn-full {
+    @apply w-full;
+  }
+
+  /* Rounded variants */
+  .btn-rounded-full {
+    @apply rounded-full;
+  }
+
+  /* Dark mode support */
+  .dark .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-600 focus-visible:ring-blue-500;
+  }
+
+  .dark .btn-secondary {
+    @apply text-blue-400 border-blue-400 hover:bg-blue-950 hover:border-blue-300;
+  }
+
+  .dark .btn-tertiary {
+    @apply text-gray-400 hover:text-gray-100 hover:bg-gray-800 focus-visible:ring-gray-600;
+  }
 }

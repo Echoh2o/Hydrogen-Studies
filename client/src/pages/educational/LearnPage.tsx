@@ -98,9 +98,9 @@ export default function LearnPage() {
                     Learn how to navigate scientific papers, understand key
                     sections, and evaluate the quality of research.
                   </p>
-                  <Button asChild className="w-full">
-                    <Link to="/learn/how-to-read-research">Read Guide</Link>
-                  </Button>
+                  <Link to="/learn/how-to-read-research" className="block">
+                    <button className="btn-secondary btn-full">Read Guide</button>
+                  </Link>
                 </CardContent>
               </Card>
 
@@ -119,9 +119,9 @@ export default function LearnPage() {
                     From "oxidative stress" to "molecular hydrogen" — understand
                     the key terminology used in studies.
                   </p>
-                  <Button asChild className="w-full">
-                    <Link to="/learn/glossary">Browse Glossary</Link>
-                  </Button>
+                  <Link to="/learn/glossary" className="block">
+                    <button className="btn-secondary btn-full">Browse Glossary</button>
+                  </Link>
                 </CardContent>
               </Card>
 
@@ -139,9 +139,9 @@ export default function LearnPage() {
                     Get answers to common questions about hydrogen therapy, its
                     effects, and the current state of research.
                   </p>
-                  <Button asChild className="w-full">
-                    <Link to="/learn/faq">View FAQ</Link>
-                  </Button>
+                  <Link to="/learn/faq" className="block">
+                    <button className="btn-secondary btn-full">View FAQ</button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>
@@ -180,11 +180,11 @@ export default function LearnPage() {
                           <p className="line-clamp-3 mb-4">
                             {tutorial.content.substring(0, 100)}...
                           </p>
-                          <Button asChild variant="outline" className="w-full">
-                            <Link to={`/learn/tutorials/${tutorial.slug}`}>
+                          <Link to={`/learn/tutorials/${tutorial.slug}`} className="block">
+                            <button className="btn-secondary btn-full">
                               Read Tutorial
-                            </Link>
-                          </Button>
+                            </button>
+                          </Link>
                         </CardContent>
                       </Card>
                     ))
@@ -192,9 +192,9 @@ export default function LearnPage() {
               </ResponsiveGrid>
 
               <div className="flex justify-center mt-8">
-                <Button asChild>
-                  <Link to="/learn/tutorials">View All Tutorials</Link>
-                </Button>
+                <Link to="/learn/tutorials">
+                  <button className="btn-primary">View All Tutorials</button>
+                </Link>
               </div>
             </div>
           </TabsContent>
