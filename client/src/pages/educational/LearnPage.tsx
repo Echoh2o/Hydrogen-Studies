@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
 import { Helmet } from "react-helmet";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -47,7 +48,9 @@ export default function LearnPage() {
   }, []);
 
   return (
-    <ResponsiveContainer>
+    <>
+      <SiteHeader />
+      <ResponsiveContainer>
       <Helmet>
         <title>Learn About Hydrogen Research | HydrogenStudies.com</title>
         <meta
@@ -347,5 +350,6 @@ export default function LearnPage() {
         </Tabs>
       </div>
     </ResponsiveContainer>
+    </>
   );
 }

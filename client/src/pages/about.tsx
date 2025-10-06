@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet";
 import { Separator } from "@/components/ui/separator";
 import { HiMail, HiPhone, HiLocationMarker } from "react-icons/hi";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function About() {
   return (
@@ -75,6 +76,8 @@ export default function About() {
           })}
         </script>
       </Helmet>
+
+      <SiteHeader />
 
       <div className="bg-neutral-100 py-12">
         <div className="container mx-auto px-4">
