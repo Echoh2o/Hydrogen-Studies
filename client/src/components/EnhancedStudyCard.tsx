@@ -291,9 +291,9 @@ export function EnhancedStudyCard({
           {/* Action Button */}
           <div className="flex justify-between items-center">
             <Link href={`/study/${study.id}`}>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <button className="btn-primary">
                 Read Full Study
-              </Button>
+              </button>
             </Link>
 
             <div className="text-xs text-gray-500">

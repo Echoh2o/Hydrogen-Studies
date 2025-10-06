@@ -201,15 +201,12 @@ const WizardResults = ({
             <CardFooter className="border-t py-3">
               <Link
                 href={`/studies?query=${encodeURIComponent(suggestion.title)}`}
+                className="ml-auto"
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto flex items-center gap-1"
-                >
+                <button className="btn-secondary btn-sm btn-icon-right">
                   Find related research
                   <ArrowRight size={14} />
-                </Button>
+                </button>
               </Link>
             </CardFooter>
           </Card>

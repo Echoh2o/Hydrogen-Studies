@@ -197,9 +197,9 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              <Button
+              <button
                 type="submit"
-                className="w-full"
+                className="btn-primary btn-full btn-icon-left"
                 disabled={loginMutation.isPending}
                 data-testid="button-login"
               >
@@ -214,7 +214,7 @@ export default function LoginPage() {
                     Log In
                   </>
                 )}
-              </Button>
+              </button>
             </form>
           </Form>
         </CardContent>

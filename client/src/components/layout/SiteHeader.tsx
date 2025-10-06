@@ -272,41 +272,38 @@ export default function SiteHeader() {
               </DropdownMenu>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  className="btn-secondary btn-sm btn-icon-left"
                   onClick={() => navigate("/login")}
                   data-testid="button-login"
                 >
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
-                </Button>
-                <Button
-                  size="sm"
+                </button>
+                <button
+                  className="btn-primary btn-sm btn-icon-left"
                   onClick={() => navigate("/register")}
                   data-testid="button-register"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
                   Sign Up
-                </Button>
+                </button>
               </div>
             )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
+              className="btn-tertiary btn-sm p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2"
             >
               {isMobileMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
                 <Menu className="h-6 w-6" />
               )}
-            </Button>
+            </button>
           </div>
         </div>
 

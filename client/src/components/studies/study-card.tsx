@@ -101,7 +101,7 @@ export default function StudyCard({ study }: StudyCardProps) {
       <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
         <Link
           href={`/study/${study.id}`}
-          className="text-primary text-sm font-medium hover:underline inline-flex items-center"
+          className="btn-tertiary btn-sm inline-flex items-center"
         >
           Read full study →
         </Link>
