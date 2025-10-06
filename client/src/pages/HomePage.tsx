@@ -374,10 +374,6 @@ export default function HomePage() {
             </form>
 
             <div className="flex flex-wrap justify-center gap-4 mb-12">
-              <Badge variant="secondary" className="px-4 py-2">
-                <Play className="h-4 w-4 mr-2" />
-                Watch: How It Works
-              </Badge>
               <Badge variant="outline" className="px-4 py-2">
                 <Users className="h-4 w-4 mr-2" />
                 Join 50K+ Health Enthusiasts
@@ -584,7 +580,7 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <Link href="/research">
+          <Link href="/studies">
             <Button variant="secondary" size="lg" className="rounded-full px-8">
               Browse Research Database
               <ChevronRight className="ml-2 h-4 w-4" />
@@ -593,8 +589,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* CTA Section - Hidden for v1, will be added back in v2/v3 */}
+      {/* <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
             Ready to Experience the Science?
@@ -617,7 +613,7 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
