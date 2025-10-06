@@ -1,6 +1,7 @@
 import React from "react";
 import { Helmet } from "react-helmet";
 import { useQuery } from "@tanstack/react-query";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -87,6 +88,7 @@ export default function LearnPage() {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>
           Hydrogen Therapy Education | Tutorials, Glossary & Expert Resources
