@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Helmet } from "react-helmet";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 const RecentStudiesPage = () => {
   const [limit, setLimit] = useState(10);
@@ -60,6 +61,7 @@ const RecentStudiesPage = () => {
 
   return (
     <>
+      <SiteHeader />
       <Helmet>
         <title>Recent Studies - Hydrogen Research Database</title>
         <meta

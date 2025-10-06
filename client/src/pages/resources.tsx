@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SiteHeader from "@/components/layout/SiteHeader";
 import {
   Card,
   CardContent,
@@ -130,6 +131,8 @@ export default function Resources() {
           })}
         </script>
       </Helmet>
+
+      <SiteHeader />
 
       <div className="bg-neutral-100 py-12">
         <div className="container mx-auto px-4">
