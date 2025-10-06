@@ -109,12 +109,12 @@ export default function HomePage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-4 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-blue-500 shadow-lg"
                 />
-                <Button
+                <button
                   type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full px-8"
+                  className="btn-primary btn-rounded-full absolute right-2 top-1/2 transform -translate-y-1/2"
                 >
                   Search
-                </Button>
+                </button>
               </div>
             </form>
 
@@ -274,10 +274,10 @@ export default function HomePage() {
 
           <div className="text-center">
             <Link href="/benefits">
-              <Button size="lg" className="rounded-full px-8">
+              <button className="btn-primary btn-lg btn-rounded-full btn-icon-right">
                 Explore All Benefits
                 <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+              </button>
             </Link>
           </div>
         </div>
@@ -326,10 +326,10 @@ export default function HomePage() {
           </div>
 
           <Link href="/studies">
-            <Button variant="secondary" size="lg" className="rounded-full px-8">
+            <button className="btn-secondary btn-lg btn-rounded-full btn-icon-right bg-white/20 hover:bg-white/30 border-white text-white hover:text-white">
               Browse Research Database
               <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            </button>
           </Link>
         </div>
       </section>
