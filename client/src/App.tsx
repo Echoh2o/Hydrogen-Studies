@@ -690,7 +690,7 @@ function App() {
                 </Suspense>
               </AsyncErrorBoundary>
             </main>
-            {!isAdminRoute && !isHomePage && <Footer />}
+            <Footer />
           </div>
           <Toaster />
         </TooltipProvider>

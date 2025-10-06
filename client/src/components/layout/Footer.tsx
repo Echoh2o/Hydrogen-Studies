@@ -1,11 +1,21 @@
 import React from "react";
 import { Link } from "wouter";
-import { Mail, Twitter, Linkedin, Github } from "lucide-react";
+import { 
+  Mail, 
+  Twitter, 
+  Linkedin, 
+  Github, 
+  Droplets,
+  Shield,
+  HelpCircle,
+  Building2
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function Footer() {
   const [email, setEmail] = React.useState("");
+  const currentYear = new Date().getFullYear();
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,16 +25,14 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-gray-900 text-white border-t-4 border-blue-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
-          <div className="space-y-4">
+          <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H₂</span>
-              </div>
-              <span className="font-bold text-xl">HydrogenStudies</span>
+              <Droplets className="h-8 w-8 text-blue-500" />
+              <span className="font-bold text-xl">Hydrogen Studies</span>
             </div>
             <p className="text-gray-300 text-sm">
               The world's most comprehensive database of peer-reviewed hydrogen
@@ -35,116 +43,184 @@ export default function Footer() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-gray-300 hover:text-white p-2"
+                className="text-gray-300 hover:text-white hover:bg-gray-800 p-2"
+                aria-label="Twitter"
               >
                 <Twitter className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-gray-300 hover:text-white p-2"
+                className="text-gray-300 hover:text-white hover:bg-gray-800 p-2"
+                aria-label="LinkedIn"
               >
                 <Linkedin className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-gray-300 hover:text-white p-2"
+                className="text-gray-300 hover:text-white hover:bg-gray-800 p-2"
+                aria-label="GitHub"
               >
                 <Github className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-300 hover:text-white hover:bg-gray-800 p-2"
+                aria-label="Email"
+              >
+                <Mail className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Legal Section */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Explore</h3>
+            <h3 className="font-semibold text-base flex items-center gap-2">
+              <Shield className="h-4 w-4 text-blue-500" />
+              Legal
+            </h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/search"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  href="/privacy"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
                 >
-                  Browse Studies
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/insights"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Research Insights
+                  Privacy Policy
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/chat"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  href="/terms"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
                 >
-                  AI Assistant
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/cookies"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                >
+                  Cookie Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/disclaimer"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                >
+                  Medical Disclaimer
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Learn */}
+          {/* Support Section */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Learn</h3>
+            <h3 className="font-semibold text-base flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-blue-500" />
+              Support
+            </h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/learn"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  href="/contact"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
                 >
-                  Hydrogen Basics
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/chat"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                >
+                  AI Assistant
                 </Link>
               </li>
               <li>
                 <Link
                   href="/blog"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
                 >
                   Research Blog
                 </Link>
               </li>
               <li>
                 <Link
+                  href="/learn/basics"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                >
+                  Learn About H₂
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Company Section */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-blue-500" />
+              Company
+            </h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link
                   href="/about"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
                 >
                   About Us
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/contact"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  href="/studies"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
                 >
-                  Contact
+                  Browse Studies
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/insights"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                >
+                  Research Insights
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/products"
+                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                >
+                  Products
                 </Link>
               </li>
             </ul>
           </div>
+        </div>
 
-          {/* Newsletter */}
-          <div className="space-y-4">
+        {/* Newsletter Section */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="max-w-md mx-auto text-center space-y-4">
             <h3 className="font-semibold text-lg">Stay Updated</h3>
             <p className="text-gray-300 text-sm">
               Get the latest hydrogen research updates delivered to your inbox.
             </p>
-            <form onSubmit={handleNewsletterSubmit} className="space-y-2">
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-2">
               <Input
                 type="email"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 flex-1"
                 required
               />
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
               >
                 Subscribe
               </Button>
@@ -153,38 +229,37 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="text-sm text-gray-400">
-            © 2024 HydrogenStudies. All rights reserved.
-            <span className="ml-2">
-              Powered by{" "}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-400 text-center md:text-left">
+              © {currentYear} Hydrogen Studies. All rights reserved.
+            </div>
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
               <Link
-                href="https://echowater.com"
-                className="text-blue-400 hover:text-blue-300"
+                href="/sitemap"
+                className="text-gray-400 hover:text-blue-400 transition-colors"
               >
-                EchoWater
+                Sitemap
               </Link>
-            </span>
-          </div>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link
-              href="/privacy"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              href="/terms"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Terms of Service
-            </Link>
-            <Link
-              href="/sitemap"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Sitemap
-            </Link>
+              <Link
+                href="/privacy"
+                className="text-gray-400 hover:text-blue-400 transition-colors"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/terms"
+                className="text-gray-400 hover:text-blue-400 transition-colors"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/contact"
+                className="text-gray-400 hover:text-blue-400 transition-colors"
+              >
+                Contact
+              </Link>
+            </div>
           </div>
         </div>
       </div>
