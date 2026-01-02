@@ -135,8 +135,10 @@ export default function RegisterPage() {
 
   // Registration mutation
   const registerMutation = useMutation({
-    mutationFn: (data: RegisterFormData) =>
-      apiRequest("POST", "/api/auth/register", data),
+    mutationFn: async (data: RegisterFormData) => {
+      const response = await apiRequest("POST", "/api/auth/register", data);
+      return response.json() as Promise<{ isFirstAdmin?: boolean; message?: string }>;
+    },
     onSuccess: (response) => {
       // Clear any cached auth data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
