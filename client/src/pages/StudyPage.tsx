@@ -146,6 +146,7 @@ const StudyPage = () => {
     title: string;
     plainLanguageTitle?: string;
     plain_language_title?: string; // Added to handle snake_case from API
+    slug?: string;
     abstract: string;
     authors: string;
     journal: string;

@@ -299,8 +299,12 @@ router.post("/logout", isAuthenticated, async (req: Request, res: Response) => {
         });
       }
 
-      // Clear session cookie
-      res.clearCookie("connect.sid");
+      // Clear session cookie (must match the cookie name in session config: "hydrogen.sid")
+      res.clearCookie("hydrogen.sid", {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+      });
       res.json({
         message: "Logout successful",
       });
@@ -540,17 +544,21 @@ router.get(
       const userId = req.query.userId as string;
       const limit = parseInt(req.query.limit as string) || 100;
 
-      let query = db
-        .select()
-        .from(auditLogs)
-        .orderBy(auditLogs.createdAt)
-        .limit(limit);
-
+      let logs;
       if (userId) {
-        query = query.where(eq(auditLogs.userId, userId));
+        logs = await db
+          .select()
+          .from(auditLogs)
+          .where(eq(auditLogs.userId, userId))
+          .orderBy(auditLogs.createdAt)
+          .limit(limit);
+      } else {
+        logs = await db
+          .select()
+          .from(auditLogs)
+          .orderBy(auditLogs.createdAt)
+          .limit(limit);
       }
-
-      const logs = await query;
 
       res.json({ logs });
     } catch (error) {

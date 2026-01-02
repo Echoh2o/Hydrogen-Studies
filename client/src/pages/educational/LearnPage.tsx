@@ -20,25 +20,46 @@ import {
   HelpCircle,
   Lightbulb,
 } from "lucide-react";
-import {
-  ResponsiveContainer,
-  ResponsiveGrid,
-} from "@/components/layout/ResponsiveContainer";
+import ResponsiveContainer from "@/components/layout/ResponsiveContainer";
 import { getResponsiveFontSize } from "@/lib/responsive";
+
+interface EducationalResource {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  resourceType: string;
+  isPublished: boolean;
+}
+
+interface GlossaryTerm {
+  id: number;
+  term: string;
+  definition: string;
+  relatedTerms?: string[];
+}
+
+interface FaqItem {
+  id: number;
+  question: string;
+  answer: string;
+  category: string;
+  displayOrder: number;
+}
 
 export default function LearnPage() {
   // Fetch all educational resources
-  const { data: resources, isLoading } = useQuery({
+  const { data: resources, isLoading } = useQuery<EducationalResource[]>({
     queryKey: ["/api/educational-resources"],
   });
 
   // Fetch glossary terms
-  const { data: glossaryTerms } = useQuery({
+  const { data: glossaryTerms } = useQuery<GlossaryTerm[]>({
     queryKey: ["/api/glossary"],
   });
 
   // Fetch FAQs
-  const { data: faqItems } = useQuery({
+  const { data: faqItems } = useQuery<FaqItem[]>({
     queryKey: ["/api/faqs"],
   });
 
@@ -151,23 +172,18 @@ export default function LearnPage() {
               <h2 className={`${getResponsiveFontSize("heading2")} mb-6`}>
                 Featured Tutorials
               </h2>
-              <ResponsiveGrid
-                mobileColumns={1}
-                tabletColumns={2}
-                desktopColumns={3}
-                gap="medium"
-              >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading ? (
                   <p>Loading tutorials...</p>
                 ) : (
                   resources
                     ?.filter(
-                      (resource) =>
+                      (resource: EducationalResource) =>
                         resource.resourceType === "tutorial" &&
                         resource.isPublished,
                     )
                     .slice(0, 3)
-                    .map((tutorial) => (
+                    .map((tutorial: EducationalResource) => (
                       <Card
                         key={tutorial.id}
                         className="hover:shadow-lg transition-shadow"
@@ -189,7 +205,7 @@ export default function LearnPage() {
                       </Card>
                     ))
                 )}
-              </ResponsiveGrid>
+              </div>
 
               <div className="flex justify-center mt-8">
                 <Link to="/learn/tutorials">
@@ -240,12 +256,12 @@ export default function LearnPage() {
                     {/* Group terms by first letter */}
                     {glossaryTerms.length > 0 ? (
                       Object.entries(
-                        glossaryTerms.reduce((acc, term) => {
+                        glossaryTerms.reduce((acc: Record<string, GlossaryTerm[]>, term: GlossaryTerm) => {
                           const firstLetter = term.term.charAt(0).toUpperCase();
                           if (!acc[firstLetter]) acc[firstLetter] = [];
                           acc[firstLetter].push(term);
                           return acc;
-                        }, {}),
+                        }, {} as Record<string, GlossaryTerm[]>),
                       )
                         .sort(([a], [b]) => a.localeCompare(b))
                         .map(([letter, terms]) => (
@@ -254,7 +270,7 @@ export default function LearnPage() {
                               {letter}
                             </h3>
                             <div className="space-y-4 mb-8">
-                              {terms.map((term) => (
+                              {(terms as GlossaryTerm[]).map((term: GlossaryTerm) => (
                                 <div key={term.id} className="pb-3 border-b">
                                   <h4 className="font-semibold text-lg">
                                     {term.term}
@@ -267,11 +283,11 @@ export default function LearnPage() {
                                           Related:{" "}
                                         </span>
                                         {term.relatedTerms.map(
-                                          (related, index) => (
+                                          (related: string, index: number) => (
                                             <span key={related}>
                                               {related}
                                               {index <
-                                              term.relatedTerms.length - 1
+                                              (term.relatedTerms?.length || 0) - 1
                                                 ? ", "
                                                 : ""}
                                             </span>
@@ -313,20 +329,20 @@ export default function LearnPage() {
                     {/* Group FAQs by category */}
                     {faqItems.length > 0 ? (
                       Object.entries(
-                        faqItems.reduce((acc, faq) => {
+                        faqItems.reduce((acc: Record<string, FaqItem[]>, faq: FaqItem) => {
                           if (!acc[faq.category]) acc[faq.category] = [];
                           acc[faq.category].push(faq);
                           return acc;
-                        }, {}),
+                        }, {} as Record<string, FaqItem[]>),
                       ).map(([category, items]) => (
                         <div key={category} className="mb-8">
                           <h3 className="text-xl font-bold mb-4 capitalize">
                             {category} Questions
                           </h3>
                           <div className="space-y-4">
-                            {items
-                              .sort((a, b) => a.displayOrder - b.displayOrder)
-                              .map((faq) => (
+                            {(items as FaqItem[])
+                              .sort((a: FaqItem, b: FaqItem) => a.displayOrder - b.displayOrder)
+                              .map((faq: FaqItem) => (
                                 <div key={faq.id} className="pb-4 border-b">
                                   <h4 className="font-semibold text-lg mb-2">
                                     {faq.question}
