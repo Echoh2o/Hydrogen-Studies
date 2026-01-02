@@ -71,6 +71,10 @@ externalPort = 8080
 localPort = 39859
 externalPort = 8099
 
+[[ports]]
+localPort = 46153
+externalPort = 9000
+
 [workflows]
 runButton = "Start application"
 
@@ -191,4 +195,4 @@ task = "shell.exec"
 args = "tsx server/index.ts"
 
 [agent]
-integrations = ["javascript_openai==1.0.0"]
+integrations = ["javascript_openai:1.0.0"]
