@@ -67,10 +67,12 @@ export default function LoginPage() {
       const response = await apiRequest("POST", "/api/auth/login", data);
       return await response.json();
     },
-    onSuccess: (response) => {
-      // Clear any cached auth data
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/check-session"] });
+    onSuccess: async (response) => {
+      // Force refetch auth queries to update header immediately
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["/api/auth/me"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/auth/check-session"] }),
+      ]);
 
       toast({
         title: "Login successful",

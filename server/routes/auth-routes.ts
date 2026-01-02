@@ -45,8 +45,8 @@ const changePasswordSchema = z
     path: ["confirmPassword"],
   });
 
-// Helper function to create audit log
-async function createAuditLog(
+// Helper function to create audit log - fails silently to never block authentication
+function createAuditLog(
   userId: string | null,
   action: string,
   entityType: string | null = null,
@@ -55,21 +55,21 @@ async function createAuditLog(
   userAgent: string | null = null,
   sessionId: string | null = null,
   changes: any = null,
-) {
-  try {
-    await db.insert(auditLogs).values({
-      userId,
-      action,
-      entityType,
-      entityId,
-      ipAddress,
-      userAgent,
-      sessionId,
-      changes: changes ? JSON.stringify(changes) : null,
-    });
-  } catch (error) {
-    console.error("Failed to create audit log:", error);
-  }
+): void {
+  // Fire and forget - don't await, don't block the main flow
+  db.insert(auditLogs).values({
+    userId,
+    action,
+    entityType,
+    entityId,
+    ipAddress,
+    userAgent,
+    sessionId,
+    changes: changes ? JSON.stringify(changes) : null,
+  }).catch((error: any) => {
+    // Silently log - audit logging should never block authentication
+    console.warn("Audit log skipped (table may not exist):", error?.message || String(error));
+  });
 }
 
 // POST /api/auth/register - User registration
@@ -274,46 +274,55 @@ router.post("/login", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/auth/logout - User logout
-router.post("/logout", isAuthenticated, async (req: Request, res: Response) => {
+// POST /api/auth/logout - User logout (no auth middleware to ensure logout always works)
+router.post("/logout", async (req: Request, res: Response) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session?.userId;
 
-    // Create audit log before destroying session
-    await createAuditLog(
-      userId || null,
-      "user_logout",
-      "user",
-      userId || null,
-      req.ip,
-      req.headers["user-agent"] as string,
-      req.sessionID,
-    );
+    // Create audit log (fire and forget)
+    if (userId) {
+      createAuditLog(
+        userId,
+        "user_logout",
+        "user",
+        userId,
+        req.ip,
+        req.headers["user-agent"] as string,
+        req.sessionID,
+      );
+    }
 
-    // Destroy session
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("Session destruction error:", err);
-        return res.status(500).json({
-          error: "Failed to logout",
-        });
-      }
-
-      // Clear session cookie (must match the cookie name in session config: "hydrogen.sid")
-      res.clearCookie("hydrogen.sid", {
-        path: "/",
-        httpOnly: true,
-        sameSite: "lax",
-      });
-      res.json({
-        message: "Logout successful",
-      });
+    // Always clear the cookie first
+    res.clearCookie("hydrogen.sid", {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
+
+    // Destroy session if it exists
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destruction error:", err);
+        }
+        // Always return success - we cleared the cookie
+        res.json({ message: "Logout successful" });
+      });
+    } else {
+      // No session to destroy
+      res.json({ message: "Logout successful" });
+    }
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).json({
-      error: "Failed to logout",
+    // Still clear cookie and return success
+    res.clearCookie("hydrogen.sid", {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
+    res.json({ message: "Logout successful" });
   }
 });
 
