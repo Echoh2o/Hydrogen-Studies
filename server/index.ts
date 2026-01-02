@@ -143,6 +143,7 @@ const csrf = csrfProtection({
     "/api/chat/feedback", // Feedback endpoint
     "/api/auth/register", // Registration doesn't require CSRF (no session yet)
     "/api/auth/login", // Login doesn't require CSRF (no session yet)
+    "/api/auth/logout", // Logout doesn't require CSRF (session being destroyed)
   ],
 });
 

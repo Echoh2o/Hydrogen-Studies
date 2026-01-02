@@ -41,19 +41,18 @@ export default function SiteHeader() {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
     onSuccess: () => {
-      // Clear cached auth data completely - use removeQueries to ensure data is cleared
       queryClient.removeQueries({ queryKey: ["/api/auth/me"] });
       queryClient.removeQueries({ queryKey: ["/api/auth/check-session"] });
-      
-      // Also invalidate any other auth-related queries
-      queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
+      queryClient.removeQueries({ queryKey: ["/api/auth"] });
+      queryClient.setQueryData(["/api/auth/check-session"], { authenticated: false });
+      queryClient.setQueryData(["/api/auth/me"], null);
 
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
 
-      navigate("/");
+      window.location.href = "/";
     },
     onError: () => {
       toast({
@@ -263,7 +262,10 @@ export default function SiteHeader() {
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={handleLogout}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      handleLogout();
+                    }}
                     disabled={logoutMutation.isPending}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
