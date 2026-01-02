@@ -41,9 +41,12 @@ export default function SiteHeader() {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
     onSuccess: () => {
-      // Clear cached auth data
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/check-session"] });
+      // Clear cached auth data completely - use removeQueries to ensure data is cleared
+      queryClient.removeQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.removeQueries({ queryKey: ["/api/auth/check-session"] });
+      
+      // Also invalidate any other auth-related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
 
       toast({
         title: "Logged out",

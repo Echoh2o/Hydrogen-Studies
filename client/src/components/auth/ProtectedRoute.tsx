@@ -17,6 +17,26 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Shield, LogIn, AlertCircle } from "lucide-react";
 
+interface SessionData {
+  authenticated: boolean;
+  userId?: string;
+  userRole?: string;
+  username?: string;
+}
+
+interface UserDetails {
+  user: {
+    id: string;
+    role: string;
+    permissions: string[];
+    username: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    profileImageUrl?: string;
+  };
+}
+
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredRoles?: string[];
@@ -39,14 +59,14 @@ export default function ProtectedRoute({
     data: session,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<SessionData>({
     queryKey: ["/api/auth/check-session"],
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
     staleTime: 1 * 60 * 1000, // Consider stale after 1 minute
   });
 
   // Fetch user details if authenticated
-  const { data: userDetails, isLoading: userLoading } = useQuery({
+  const { data: userDetails, isLoading: userLoading } = useQuery<UserDetails>({
     queryKey: ["/api/auth/me"],
     enabled: !!session?.authenticated,
     staleTime: 5 * 60 * 1000,
@@ -256,12 +276,12 @@ export default function ProtectedRoute({
 
 // Export a hook for programmatic use
 export function useAuth() {
-  const { data: session, isLoading } = useQuery({
+  const { data: session, isLoading } = useQuery<SessionData>({
     queryKey: ["/api/auth/check-session"],
     staleTime: 1 * 60 * 1000,
   });
 
-  const { data: userDetails } = useQuery({
+  const { data: userDetails } = useQuery<UserDetails>({
     queryKey: ["/api/auth/me"],
     enabled: !!session?.authenticated,
     staleTime: 5 * 60 * 1000,
