@@ -106,9 +106,9 @@ async function processEnrichmentBatches(batchSize: number): Promise<void> {
             isNull(studies.keywords),
             sql`array_length(${studies.keywords}, 1) = 0`,
             isNull(studies.healthConditions),
-            eq(studies.healthConditions, ''),
+            sql`array_length(${studies.healthConditions}, 1) = 0`,
             isNull(studies.bodySystems),
-            eq(studies.bodySystems, ''),
+            sql`array_length(${studies.bodySystems}, 1) = 0`,
             isNull(studies.conclusion),
             eq(studies.conclusion, '')
         )
@@ -171,8 +171,8 @@ async function enrichSingleStudy(study: any): Promise<void> {
 
     {
       "keywords": ["keyword1", "keyword2", ...], // 5-10 relevant keywords
-      "health_conditions": "primary health condition or disease studied",
-      "body_systems": "primary body system affected (e.g., cardiovascular, neurological, respiratory)",
+      "health_conditions": ["condition1", "condition2"], // Specific health conditions or diseases studied
+      "body_systems": ["system1", "system2"], // Body systems affected (e.g., cardiovascular, neurological, respiratory)
       "conclusion": "concise 2-3 sentence conclusion based on the study results"
     }
 
@@ -247,11 +247,17 @@ async function updateStudyWithEnrichment(
   }
   
   if (enrichmentData.health_conditions) {
-      updates.healthConditions = enrichmentData.health_conditions;
+      // Ensure it's an array
+      updates.healthConditions = Array.isArray(enrichmentData.health_conditions) 
+        ? enrichmentData.health_conditions 
+        : [enrichmentData.health_conditions];
   }
   
   if (enrichmentData.body_systems) {
-      updates.bodySystems = enrichmentData.body_systems;
+      // Ensure it's an array
+      updates.bodySystems = Array.isArray(enrichmentData.body_systems)
+        ? enrichmentData.body_systems
+        : [enrichmentData.body_systems];
   }
   
   if (enrichmentData.conclusion) {

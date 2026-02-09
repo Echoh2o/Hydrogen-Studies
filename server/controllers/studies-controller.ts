@@ -27,6 +27,7 @@ export class StudiesController {
     this.router.get("/metadata/related/:studyId", this.getRelatedStudies);
     this.router.get("/:id/detailed", this.getDetailedStudy);
     this.router.get("/:id/recommendations", this.getStudyRecommendations);
+    this.router.get("/:id/insights", this.getStudyInsights);
     this.router.post("/:id/view", this.recordView);
     this.router.get("/:id", this.getStudyById);
     this.router.get("/", searchRateLimiter, this.getAllStudies);
@@ -295,6 +296,18 @@ export class StudiesController {
       } catch (error) {
           console.error("Error recording view:", error);
           res.status(500).json({ error: "Failed to record view" });
+      }
+  }
+  private getStudyInsights = async (req: Request, res: Response) => {
+      try {
+          const studyId = parseInt(req.params.id);
+          if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
+
+          const insights = await studyService.getStudyInsights(studyId);
+          res.json(insights || {});
+      } catch (error) {
+          console.error("Error fetching study insights:", error);
+          res.status(500).json({ error: "Failed to fetch study insights" });
       }
   }
 }

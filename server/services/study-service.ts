@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { studies, type Study, type InsertStudy } from "@shared/schema";
+import { studies, seoMetadata, type Study, type InsertStudy } from "@shared/schema";
 import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray } from "drizzle-orm";
 
 export interface StudyFilters {
@@ -522,6 +522,16 @@ export class StudyService {
       yearRange: yearRange.rows[0],
       lastUpdated: new Date().toISOString(),
     };
+  }
+  async getStudyInsights(studyId: number) {
+      if (!db.query.seoMetadata) return null;
+      const result = await db.query.seoMetadata.findFirst({
+        where: (seo, { eq, and }) => and(
+            eq(seo.entityType, 'study'),
+            eq(seo.entityId, studyId)
+        )
+      });
+      return result;
   }
 }
 

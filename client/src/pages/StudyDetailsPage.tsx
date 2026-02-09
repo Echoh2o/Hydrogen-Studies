@@ -16,6 +16,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { StudyCard } from "@/components/studies/StudyCard";
+import { PlainLanguageView } from "@/components/studies/PlainLanguageView";
+import { ScientificView } from "@/components/studies/ScientificView";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { motion } from "framer-motion";
 
 interface Study {
   id: number;
@@ -132,16 +144,29 @@ export default function StudyDetailsPage() {
 
   return (
     <>
-      <SiteHeader />
+      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300">
+         <SiteHeader />
+      </div>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Back Button */}
+        {/* Breadcrumbs */}
         <div className="mb-6">
-          <Link href="/search">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Search
-            </Button>
-          </Link>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/search">Search</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="font-semibold text-gray-900 truncate max-w-[200px] md:max-w-md">
+                  {study.plainLanguageTitle || study.title}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
 
         {/* Study Header */}
@@ -215,115 +240,31 @@ export default function StudyDetailsPage() {
 
         {/* Study Content */}
         <div className="space-y-6">
-          {/* Plain Language Summary */}
-          {study.plainLanguageSummary && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Study Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed">
-                  {study.plainLanguageSummary}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Key Findings */}
-          {study.keyFindings && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Findings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed">
-                  {study.keyFindings}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Study Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Study Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {study.participantCount && (
-                <div>
-                  <h4 className="font-semibold text-gray-900">Participants</h4>
-                  <p className="text-gray-700">
-                    {study.participantCount} participants
-                  </p>
-                </div>
-              )}
-
-              {study.duration && (
-                <div>
-                  <h4 className="font-semibold text-gray-900">Duration</h4>
-                  <p className="text-gray-700">{study.duration}</p>
-                </div>
-              )}
-
-              {study.dosage && (
-                <div>
-                  <h4 className="font-semibold text-gray-900">Dosage</h4>
-                  <p className="text-gray-700">{study.dosage}</p>
-                </div>
-              )}
-
-              {study.deliveryMethod && (
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Delivery Method
-                  </h4>
-                  <p className="text-gray-700">{study.deliveryMethod}</p>
-                </div>
-              )}
-
-              {study.healthBenefits && (
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Health Benefits
-                  </h4>
-                  <p className="text-gray-700">{study.healthBenefits}</p>
-                </div>
-              )}
-
-              {study.targetDemographic && (
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Target Population
-                  </h4>
-                  <p className="text-gray-700">{study.targetDemographic}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Abstract */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Abstract</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 leading-relaxed">{study.abstract}</p>
-            </CardContent>
-          </Card>
-
-          {/* Safety Information */}
-          {study.safetyNotes && (
-            <Card className="bg-yellow-50 border-yellow-200">
-              <CardHeader>
-                <CardTitle className="text-yellow-800">
-                  Safety Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-yellow-700">{study.safetyNotes}</p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Tabbed Interface */}
+          <Tabs defaultValue="plain" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8 p-1 bg-gray-100/80 rounded-xl h-auto">
+              <TabsTrigger 
+                value="plain" 
+                className="rounded-lg py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all"
+              >
+                Plain Language
+              </TabsTrigger>
+              <TabsTrigger 
+                value="scientific"
+                className="rounded-lg py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all"
+              >
+                Scientific Details
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="plain" className="animate-in fade-in-50 duration-500">
+                <PlainLanguageView study={study} />
+            </TabsContent>
+            
+            <TabsContent value="scientific" className="animate-in fade-in-50 duration-500">
+                <ScientificView study={study} />
+            </TabsContent>
+          </Tabs>
 
           {/* Recommendations Section */}
           <RecommendationsSection studyId={study.id} />
@@ -363,20 +304,110 @@ function RecommendationsSection({ studyId }: { studyId: number }) {
   return (
     <div className="mt-12 pt-8 border-t border-gray-200">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Similar Research</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {recommendations.map((rec) => (
-          <StudyCard 
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, staggerChildren: 0.1 }}
+      >
+        {recommendations.map((rec, index) => (
+          <motion.div
             key={rec.id}
-            id={rec.id}
-            title={rec.title}
-            category={rec.category}
-            authors={rec.authors}
-            publishDate={rec.publishDate}
-            imageUrl={rec.imageUrl}
-            reason={rec.reason || rec.recommendationReason}
-          />
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <StudyCard 
+                id={rec.id}
+                title={rec.title}
+                category={rec.category}
+                authors={rec.authors}
+                publishDate={rec.publishDate}
+                imageUrl={rec.imageUrl}
+                reason={rec.reason || rec.recommendationReason}
+                relevanceScore={rec.score || rec.relevanceScore}
+            />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function InsightsSection({ studyId }: { studyId: number }) {
+  const [insights, setInsights] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      try {
+        const response = await fetch(`/api/studies/${studyId}/insights`);
+        if (response.ok) {
+          const data = await response.json();
+          // Only set if we actually have data
+          if (Object.keys(data).length > 0) {
+             setInsights(data);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load insights", error);
+      }
+    };
+
+    if (studyId) fetchInsights();
+  }, [studyId]);
+
+  if (!insights) return null;
+
+  return (
+    <div className="mt-8 mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+       <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+         <span className="mr-2">✨</span> AI Study Insights
+       </h3>
+       
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {insights.aiOptimizationScore && (
+             <div className="bg-white p-4 rounded-lg shadow-sm">
+                <div className="text-sm text-gray-500 mb-1">Quality Score</div>
+                <div className="text-2xl font-bold text-blue-600">
+                   {insights.aiOptimizationScore}/100
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                   <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${insights.aiOptimizationScore}%` }}
+                   ></div>
+                </div>
+             </div>
+          )}
+          
+          {insights.topicalRelevance && (
+             <div className="bg-white p-4 rounded-lg shadow-sm">
+                <div className="text-sm text-gray-500 mb-1">Topical Authority</div>
+                <div className="text-2xl font-bold text-purple-600">
+                   {insights.topicalRelevance}/100
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                   <div 
+                      className="bg-purple-600 h-2 rounded-full" 
+                      style={{ width: `${insights.topicalRelevance}%` }}
+                   ></div>
+                </div>
+             </div>
+          )}
+
+          {insights.sentimentAnalysis && (
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                 <div className="text-sm text-gray-500 mb-1">Sentiment</div>
+                 <div className="text-lg font-medium text-gray-800 capitalize">
+                    {/* Parse JSON if needed, or just display if simple string */}
+                    {typeof insights.sentimentAnalysis === 'string' 
+                        ? insights.sentimentAnalysis 
+                        : JSON.stringify(insights.sentimentAnalysis).slice(0, 20) + "..."
+                    }
+                 </div>
+              </div>
+          )}
+       </div>
     </div>
   );
 }

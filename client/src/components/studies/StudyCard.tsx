@@ -40,13 +40,18 @@ export function StudyCard({
                     alt={title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                {reason && (
-                    <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                    {reason && (
                         <Badge variant="secondary" className="bg-white/90 text-xs backdrop-blur-sm shadow-sm">
                             {reason}
                         </Badge>
-                    </div>
-                )}
+                    )}
+                    {relevanceScore && relevanceScore > 0 && (
+                        <Badge className="bg-blue-600/90 text-white text-xs backdrop-blur-sm shadow-sm">
+                            {Math.round(relevanceScore * 100)}% Match
+                        </Badge>
+                    )}
+                </div>
             </div>
         )}
         <CardHeader className="p-4 pb-2">

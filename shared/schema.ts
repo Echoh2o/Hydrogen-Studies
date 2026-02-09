@@ -112,6 +112,14 @@ export const userPreferences = pgTable("user_preferences", {
   categories: text("categories").array(),
   keywords: text("keywords").array(),
   authors: text("authors").array(),
+  // Intelligent Preferences
+  preferredHealthBenefits: text("preferred_health_benefits").array(),
+  preferredHealthConditions: text("preferred_health_conditions").array(),
+  preferredBodySystems: text("preferred_body_systems").array(),
+  preferredLifeStages: text("preferred_life_stages").array(),
+  preferredStudyTypes: text("preferred_study_types").array(),
+  preferredReadingLevel: text("preferred_reading_level"),
+  excludedTopics: text("excluded_topics").array(),
   emailNotifications: boolean("email_notifications").default(true),
   notificationFrequency: text("notification_frequency").default("weekly"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -149,6 +157,15 @@ export const userStudyInteractions = pgTable(
     };
   },
 );
+
+// User reading history (Append-only log for recommendations)
+export const userReadingHistory = pgTable("user_reading_history", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  studyId: integer("study_id").notNull().references(() => studies.id),
+  interactionType: text("interaction_type").notNull().default("view"), // view, like, share
+  viewedAt: timestamp("viewed_at").notNull().defaultNow(),
+});
 
 // Notifications table schema
 export const notifications = pgTable("notifications", {
@@ -241,6 +258,19 @@ export const studies = pgTable(
 
     // Only include fields that exist in the database
     keywords: text("keywords").array(), // Author-provided keywords
+    
+    // Intelligent Features (Denormalized for performance)
+    healthBenefits: text("health_benefits").array(), 
+    healthConditions: text("health_conditions").array(),
+    bodySystems: text("body_systems").array(), 
+    lifeStages: text("life_stages").array(),
+    studyTypes: text("study_types").array(),
+    mechanisms: text("mechanisms").array(),
+    readingLevel: text("reading_level"),
+    tags: text("tags").array(),
+    enhancedWithAI: boolean("enhanced_with_ai").default(false),
+    popularityScore: integer("popularity_score").default(0),
+
     plainLanguageTitle: text("plain_language_title"), // SEO-optimized consumer-friendly title
     slug: text("slug"), // URL-friendly slug generated from plain language title
 
