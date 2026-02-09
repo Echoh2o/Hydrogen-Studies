@@ -240,44 +240,9 @@ function Router() {
         <Route path="/learn/basics" component={HydrogenBasicsPage} />
         <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
         <Route path="/blog" component={PublicBlogListPage} />
-        <Route path="/blog/:id" component={BlogArticlePage} />
-        <Route path="/categories/:category" component={ConditionCategoryPage} />
-        <Route
-          path="/categories/health-conditions"
-          component={ExploreByCondition}
-        />
-        <Route path="/research-analytics" component={ResearchAnalyticsPage} />
-        <Route path="/insights" component={ResearchInsightsPage} />
-        <Route path="/research-insights" component={ResearchInsightsPage} />
-        <Route path="/study-explorer" component={StudyExplorerPage} />
-
-        {/* Research Exploration */}
-        <Route path="/explore-by-condition" component={ExploreByCondition} />
-        <Route path="/condition/:name" component={ConditionCategoryPage} />
-        <Route path="/explore-by-body-system" component={ExploreByBodySystem} />
-        <Route path="/body-system/:name" component={BodySystemCategoryPage} />
-        <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />
-        <Route path="/life-stage/:name" component={LifeStageCategoryPage} />
-        <Route path="/explore-by-benefit" component={ExploreByBenefit} />
-        <Route
-          path="/explore-by-delivery-method"
-          component={ExploreByDeliveryMethodPage}
-        />
-        <Route
-          path="/delivery-methods/:slug"
-          component={DeliveryMethodDetailPage}
-        />
-
-        {/* Recent Studies Redirect */}
-        <Route path="/recent-studies">
-          {() => {
-            window.location.href = "/studies";
-            return null;
-          }}
-        </Route>
-
-        {/* Content & Resources */}
-        <Route path="/blog/:id/:slug?" component={BlogPage} />
+        {/* Consolidated Blog Page - handles both /blog/id and /blog/slug via param detection */}
+        <Route path="/blog/:id" component={BlogPage} />
+        <Route path="/blog/:id/:slug" component={BlogPage} />
         <Route path="/recommendations" component={RecommendationsPage} />
         <Route path="/chat" component={ChatPage} />
 

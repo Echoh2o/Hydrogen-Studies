@@ -710,6 +710,7 @@ export const blogArticles = pgTable(
     quickInsights: text("quick_insights"),
     imageUrl: text("image_url"),
     imageAlt: text("image_alt"),
+    images: text("images").array(), // Support for multiple generated images
     readingLevel: text("reading_level").default("general"),
     articleType: text("article_type"),
     isPublished: boolean("is_published").default(false),

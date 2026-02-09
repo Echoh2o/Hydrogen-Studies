@@ -3,8 +3,8 @@
  */
 import { Router } from "express";
 import { registerSchema, loginSchema, isAuthenticated } from "./auth";
-import * as userService from "./user-service";
-import * as recommendationService from "./recommendation";
+import * as userService from "./services/user-service";
+import * as recommendationService from "./services/recommendation";
 
 const router = Router();
 

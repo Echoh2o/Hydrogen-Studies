@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import SiteHeader from "@/components/layout/SiteHeader";
+import { StudyCard } from "@/components/studies/StudyCard";
 
 interface Study {
   id: number;
@@ -323,8 +324,59 @@ export default function StudyDetailsPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Recommendations Section */}
+          <RecommendationsSection studyId={study.id} />
         </div>
       </div>
     </>
+  );
+}
+
+function RecommendationsSection({ studyId }: { studyId: number }) {
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const response = await fetch(`/api/studies/${studyId}/recommendations`);
+        if (response.ok) {
+          const data = await response.json();
+          setRecommendations(data || []);
+        }
+      } catch (error) {
+        console.error("Failed to load recommendations", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (studyId) {
+      fetchRecommendations();
+    }
+  }, [studyId]);
+
+  if (loading) return null;
+  if (recommendations.length === 0) return null;
+
+  return (
+    <div className="mt-12 pt-8 border-t border-gray-200">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Similar Research</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {recommendations.map((rec) => (
+          <StudyCard 
+            key={rec.id}
+            id={rec.id}
+            title={rec.title}
+            category={rec.category}
+            authors={rec.authors}
+            publishDate={rec.publishDate}
+            imageUrl={rec.imageUrl}
+            reason={rec.reason || rec.recommendationReason}
+          />
+        ))}
+      </div>
+    </div>
   );
 }

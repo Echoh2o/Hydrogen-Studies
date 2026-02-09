@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { checkScheduledSearches } from "../keyword-monitor-service";
+import { checkScheduledSearches } from "../services/keyword-monitor-service";
 
 const router = Router();
 

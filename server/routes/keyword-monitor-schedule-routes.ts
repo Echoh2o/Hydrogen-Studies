@@ -6,7 +6,7 @@ import { monitorSchedule, keywords } from "@shared/schema";
 import {
   checkScheduledSearches,
   runKeywordMonitorNow,
-} from "../keyword-monitor-service";
+} from "../services/keyword-monitor-service";
 
 const router = Router();
 

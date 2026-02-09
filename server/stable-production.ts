@@ -16,7 +16,7 @@ import studiesRouter from "./routes/studies-router";
 import {
   initializeHealthMonitoring,
   performHealthCheck,
-} from "./health-monitoring";
+} from "./utils/health-monitoring";
 import { handleError } from "./utils/error-handler";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

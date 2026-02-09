@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import multer from "multer";
 import * as XLSX from "xlsx";
-import { storage } from "../storage";
+import { studyService } from "../services/study-service";
 import { InsertStudy } from "@shared/schema";
 import path from "path";
 import fs from "fs";
@@ -275,7 +275,7 @@ async function importStudiesToDatabase(studies: InsertStudy[]) {
       }
 
       // Insert study to database
-      await storage.createStudy(study);
+      await studyService.createStudy(study);
       success++;
     } catch (error) {
       failures++;

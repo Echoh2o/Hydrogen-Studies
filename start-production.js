@@ -32,37 +32,61 @@ console.log(
   `🔑 Database: ${process.env.DATABASE_URL ? "Connected" : "Not configured"}`,
 );
 
-// Start the production server
-const server = spawn("node", [distPath], {
-  stdio: "inherit",
-  env: {
-    ...process.env,
-    NODE_ENV: "production",
-  },
-});
+// Run database migrations
+console.log("🔄 Checking for database migrations...");
+try {
+  // Use spawnSync to run migrations synchronously before server starts
+  const migration = spawn("npm", ["run", "push"], {
+    stdio: "inherit",
+    env: { ...process.env },
+  });
 
-// Handle process termination
-server.on("error", (error) => {
-  console.error("❌ Failed to start server:", error);
+  migration.on("close", (code) => {
+    if (code !== 0) {
+      console.error("❌ Database migration failed!");
+      process.exit(1);
+    }
+    console.log("✅ Database migrations applied successfully.");
+    startServer();
+  });
+} catch (error) {
+  console.error("❌ Failed to run migrations:", error);
   process.exit(1);
-});
+}
 
-server.on("exit", (code) => {
-  if (code !== 0) {
-    console.error(`❌ Server exited with code ${code}`);
-    process.exit(code);
-  }
-});
+function startServer() {
+  // Start the production server
+  const server = spawn("node", [distPath], {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+    },
+  });
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  console.log("\n🛑 Shutting down gracefully...");
-  server.kill("SIGTERM");
-  process.exit(0);
-});
+  // Handle process termination
+  server.on("error", (error) => {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  });
 
-process.on("SIGTERM", () => {
-  console.log("\n🛑 Received termination signal...");
-  server.kill("SIGTERM");
-  process.exit(0);
-});
+  server.on("exit", (code) => {
+    if (code !== 0) {
+      console.error(`❌ Server exited with code ${code}`);
+      process.exit(code);
+    }
+  });
+
+  // Graceful shutdown
+  process.on("SIGINT", () => {
+    console.log("\n🛑 Shutting down gracefully...");
+    server.kill("SIGTERM");
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", () => {
+    console.log("\n🛑 Received termination signal...");
+    server.kill("SIGTERM");
+    process.exit(0);
+  });
+}

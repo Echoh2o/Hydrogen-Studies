@@ -3,7 +3,7 @@ import {
   generateImageForStudy,
   findStudiesNeedingImages,
   batchGenerateImagesForStudies,
-} from "../image-generator";
+} from "../services/image-generator";
 import { db } from "../db";
 import { studies as studiesTable } from "../../shared/schema";
 import { isNull, or, eq } from "drizzle-orm";

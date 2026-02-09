@@ -10,7 +10,7 @@ import { studies } from "@shared/schema";
 import {
   enhanceStudyContent,
   batchEnhanceStudies,
-} from "../content-enrichment";
+} from "../services/content-enrichment";
 import { eq, desc, and, or, isNull, lt, gt, sql } from "drizzle-orm";
 
 const router = Router();

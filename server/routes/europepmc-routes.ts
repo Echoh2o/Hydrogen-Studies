@@ -5,8 +5,8 @@ import {
   getArticleByPMCID,
   getArticleByDOI,
   extractStudyFromEuropePMC,
-} from "../europepmc-api";
-import { storage } from "../storage";
+} from "../services/europepmc-api";
+import { studyService } from "../services/study-service";
 
 const router = express.Router();
 
@@ -166,7 +166,7 @@ router.post("/api/europepmc/import/doi/:doi", async (req, res) => {
     }
 
     // Check if study with this DOI already exists
-    const existingStudy = await storage.getStudyByIdentifier(doi);
+    const existingStudy = await studyService.getStudyByIdentifier(doi);
 
     if (existingStudy) {
       return res.status(409).json({
@@ -190,7 +190,7 @@ router.post("/api/europepmc/import/doi/:doi", async (req, res) => {
     const studyData = extractStudyFromEuropePMC(articleData);
 
     // Create study in database
-    const createdStudy = await storage.createStudy(studyData);
+    const createdStudy = await studyService.createStudy(studyData);
 
     res.status(201).json({
       success: true,
@@ -221,7 +221,7 @@ router.put("/api/europepmc/update-journal-date/:doi", async (req, res) => {
     }
 
     // Check if study with this DOI exists
-    const existingStudy = await storage.getStudyByIdentifier(doi);
+    const existingStudy = await studyService.getStudyByIdentifier(doi);
 
     if (!existingStudy) {
       return res.status(404).json({
@@ -308,7 +308,7 @@ router.put("/api/europepmc/update-journal-date/:doi", async (req, res) => {
     }
 
     // Update study in database
-    const updatedStudy = await storage.updateStudy(existingStudy.id, {
+    const updatedStudy = await studyService.updateStudy(existingStudy.id, {
       journalPublishDate,
     });
 

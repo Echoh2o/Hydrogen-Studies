@@ -8,7 +8,7 @@ import {
   getSystemStatus,
   getProcessingStats,
   stopProcessing,
-} from "../comprehensive-image-system";
+} from "../services/comprehensive-image-system";
 
 const router = Router();
 

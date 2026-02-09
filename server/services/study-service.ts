@@ -1,0 +1,528 @@
+import { db } from "../db";
+import { studies, type Study, type InsertStudy } from "@shared/schema";
+import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray } from "drizzle-orm";
+
+export interface StudyFilters {
+  query?: string;
+  keyword?: string;
+  author?: string;
+  yearFrom?: string | number;
+  yearTo?: string | number;
+  category?: string;
+  isPeerReviewed?: boolean | string | null;
+  hasHealthImplications?: boolean | string | null;
+  hasMedia?: boolean | string | null;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number | string;
+  pageSize?: number | string;
+  sortField?: string;
+  sortOrder?: "asc" | "desc";
+  sortBy?: string;
+  peerReviewed?: boolean;
+  [key: string]: any;
+}
+
+export interface PaginatedResults<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
+export class StudyService {
+  async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
+    try {
+      const whereConditions = [];
+
+      // Unified search helper
+      const searchTerm = filters.query || filters.search;
+      if (searchTerm) {
+        const term = `%${searchTerm.toLowerCase()}%`;
+        whereConditions.push(
+          or(
+            sql`LOWER(${studies.title}) LIKE ${term}`,
+            sql`LOWER(${studies.abstract}) LIKE ${term}`,
+            sql`LOWER(${studies.authors}) LIKE ${term}`
+          )
+        );
+      }
+
+      // Keyword filter
+      if (filters.keyword) {
+        const keywordTerm = `%${filters.keyword.toLowerCase()}%`;
+        whereConditions.push(
+          or(
+            sql`LOWER(${studies.title}) LIKE ${keywordTerm}`,
+            sql`LOWER(${studies.abstract}) LIKE ${keywordTerm}`
+          )
+        );
+      }
+
+      // Author filter
+      if (filters.author) {
+        const authorTerm = `%${filters.author.toLowerCase()}%`;
+        whereConditions.push(sql`LOWER(${studies.authors}) LIKE ${authorTerm}`);
+      }
+
+      // Year filters
+      if (filters.yearFrom) {
+         // Handle string or number input safely
+         const year = parseInt(filters.yearFrom.toString());
+         if (!isNaN(year)) {
+           whereConditions.push(sql`EXTRACT(YEAR FROM ${studies.publishDate}::date) >= ${year}`);
+         }
+      }
+      if (filters.yearTo) {
+         const year = parseInt(filters.yearTo.toString());
+         if (!isNaN(year)) {
+           whereConditions.push(sql`EXTRACT(YEAR FROM ${studies.publishDate}::date) <= ${year}`);
+         }
+      }
+
+      // Category filter
+      if (filters.category) {
+        whereConditions.push(sql`LOWER(${studies.category}) LIKE ${`%${filters.category.toLowerCase()}%`}`);
+      }
+
+      // Peer review filter
+      if (filters.isPeerReviewed === true || filters.peerReviewed === true || filters.isPeerReviewed === 'true') {
+        whereConditions.push(eq(studies.peerReviewed, true));
+      } else if (filters.isPeerReviewed === false || filters.peerReviewed === false || filters.isPeerReviewed === 'false') {
+        whereConditions.push(eq(studies.peerReviewed, false));
+      }
+
+      // Media filter
+      if (filters.hasMedia === true || filters.hasMedia === 'true') {
+        whereConditions.push(
+          or(
+            isNotNull(studies.imageUrl),
+            isNotNull(studies.videoUrl),
+            isNotNull(studies.audioUrl)
+          )
+        );
+      } else if (filters.hasMedia === false || filters.hasMedia === 'false') {
+        whereConditions.push(
+          and(
+            isNull(studies.imageUrl),
+            isNull(studies.videoUrl),
+            isNull(studies.audioUrl)
+          )
+        );
+      }
+      
+
+
+      // Date filters
+      if (filters.dateFrom) {
+        whereConditions.push(sql`${studies.publishDate} >= ${filters.dateFrom}`);
+      }
+      if (filters.dateTo) {
+        whereConditions.push(sql`${studies.publishDate} <= ${filters.dateTo}`);
+      }
+
+      // Count query
+      const countQuery = db.select({ value: count() }).from(studies);
+      if (whereConditions.length > 0) {
+        countQuery.where(and(...whereConditions));
+      }
+      const countResult = await countQuery;
+      const total = countResult[0]?.value || 0;
+
+      // Pagination
+      const page = Math.max(1, parseInt(filters.page?.toString() || "1", 10));
+      const pageSize = Math.min(100, Math.max(1, parseInt(filters.limit?.toString() || filters.pageSize?.toString() || "10", 10)));
+      const offset = (page - 1) * pageSize;
+
+      // Main query
+      let mainQuery = db.select().from(studies);
+      if (whereConditions.length > 0) {
+        mainQuery.where(and(...whereConditions));
+      }
+
+      // Sorting
+      const sortField = filters.sortField || filters.sortBy || "publishDate";
+      const sortOrder = filters.sortOrder === "asc" ? "asc" : "desc"; // Default to desc if not specified or invalid (unless explicitly asc)
+      
+      let sortColumn;
+      let sortSql;
+
+      // Map special sort fields
+      if (sortField === "date") sortColumn = studies.publishDate;
+      else if (sortField === "title") sortColumn = studies.title;
+      else if (sortField === "author") sortColumn = studies.authors;
+      else if (sortField === "journal") sortColumn = studies.journal;
+      else if (sortField === "publishYear") sortColumn = studies.publishYear;
+      else if (sortField === "viewCount") sortColumn = studies.viewCount;
+      else if (sortField === "journalPublishDate") sortColumn = studies.journalPublishDate;
+      else sortColumn = studies.id; // Default sort by ID if unknown, or handled below
+
+      if (sortOrder === "asc") {
+         mainQuery.orderBy(asc(sortColumn));
+      } else {
+         // Default usually desc
+         mainQuery.orderBy(desc(sortColumn));
+      }
+
+      mainQuery.limit(pageSize).offset(offset);
+
+      const data = await mainQuery;
+
+      return {
+        data,
+        total,
+        page,
+        pageSize: pageSize, // Normalized page size
+        pageCount: Math.ceil(total / pageSize),
+      };
+    } catch (error) {
+      console.error("Error in StudyService.getStudies:", error);
+      throw error;
+    }
+  }
+
+  async getStudyById(id: number): Promise<Study | undefined> {
+    const result = await db
+      .select()
+      .from(studies)
+      .where(eq(studies.id, id))
+      .limit(1);
+    const study = result[0];
+    
+    // Ensure image URL
+    if (study && !study.imageUrl) {
+        const topic = study.title?.split(" ").slice(0, 3).join("+") || "hydrogen+research";
+        study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${encodeURIComponent(topic)}`;
+    }
+    
+    return study;
+  }
+
+  async getStudyBySlug(slug: string): Promise<Study | undefined> {
+    const result = await db
+        .select()
+        .from(studies)
+        .where(eq(studies.slug, slug))
+        .limit(1);
+    return result[0];
+  }
+
+  async getStudyByIdentifier(identifier: string): Promise<Study | undefined> {
+    const normalizedIdentifier = identifier.trim().toLowerCase();
+    const result = await db
+      .select()
+      .from(studies)
+      .where(sql`LOWER(${studies.doi}) = ${normalizedIdentifier}`)
+      .limit(1);
+    return result[0];
+  }
+  
+  async getLatestStudies(limit: number = 20): Promise<Study[]> {
+     return await db.select()
+        .from(studies)
+        .orderBy(desc(studies.id))
+        .limit(limit);
+  }
+
+  async createStudy(study: InsertStudy): Promise<Study> {
+    const [insertedStudy] = await db
+      .insert(studies)
+      .values({ ...study, createdAt: new Date() })
+      .returning();
+    return insertedStudy;
+  }
+
+  async updateStudy(id: number, study: Partial<InsertStudy>): Promise<Study> {
+    const [updatedStudy] = await db
+      .update(studies)
+      .set(study)
+      .where(eq(studies.id, id))
+      .returning();
+    return updatedStudy;
+  }
+
+  async deleteStudy(id: number): Promise<void> {
+    await db.delete(studies).where(eq(studies.id, id));
+  }
+  
+  // Analytics / Trends Methods
+  
+  async getResearchTrends() {
+    // Yearly publication trends
+    const yearlyResult = await db.execute(sql`
+        SELECT 
+        EXTRACT(YEAR FROM publish_date::date) as year,
+        COUNT(*) as count
+      FROM studies 
+      WHERE publish_date IS NOT NULL 
+        AND EXTRACT(YEAR FROM publish_date::date) >= 2000
+      GROUP BY EXTRACT(YEAR FROM publish_date::date)
+      ORDER BY year
+    `);
+    
+    // Category distribution
+    const categoryResult = await db.execute(sql`
+       SELECT 
+        CASE 
+          WHEN body_systems IS NOT NULL AND body_systems != '' THEN body_systems
+          WHEN category IS NOT NULL AND category != '' THEN category
+          WHEN title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' THEN 'Cardiovascular'
+          WHEN title ILIKE '%brain%' OR title ILIKE '%neuro%' THEN 'Neurological'
+          WHEN title ILIKE '%diabetes%' OR title ILIKE '%metabolic%' THEN 'Metabolic'
+          WHEN title ILIKE '%inflammation%' OR title ILIKE '%immune%' THEN 'Immune'
+          WHEN title ILIKE '%cancer%' OR title ILIKE '%tumor%' THEN 'Cancer'
+          WHEN title ILIKE '%exercise%' OR title ILIKE '%athletic%' THEN 'Exercise'
+          ELSE 'General Health'
+        END as category_name,
+        COUNT(*) as count
+      FROM studies
+      GROUP BY category_name
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+    
+    return {
+        yearlyTrends: yearlyResult.rows.map((row: any) => ({
+             year: parseInt(row.year),
+             count: parseInt(row.count)
+        })),
+        categoryTrends: categoryResult.rows.map((row: any) => ({
+             category: row.category_name || "General Health",
+             count: parseInt(row.count)
+        }))
+    };
+  }
+  
+  async getHealthOutcomes() {
+    const [cardioResult, nervousResult, metabolicResult, immuneResult] =
+      await Promise.all([
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Cardiovascular%' OR 'cardiovascular' = ANY(keywords) OR 'heart' = ANY(keywords) OR 'blood pressure' = ANY(keywords) OR title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%cardioprotect%'`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Nervous%' OR 'brain' = ANY(keywords) OR 'neurological' = ANY(keywords) OR 'cognitive' = ANY(keywords) OR title ILIKE '%brain%' OR title ILIKE '%neuro%' OR abstract ILIKE '%neurological%' OR abstract ILIKE '%neuroprotect%'`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Metabolic%' OR 'diabetes' = ANY(keywords) OR 'metabolism' = ANY(keywords) OR 'glucose' = ANY(keywords) OR title ILIKE '%metabolic%' OR title ILIKE '%diabetes%' OR abstract ILIKE '%metabolism%' OR abstract ILIKE '%glucose%'`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Immune%' OR 'immune' = ANY(keywords) OR 'inflammation' = ANY(keywords) OR 'oxidative' = ANY(keywords) OR title ILIKE '%immune%' OR title ILIKE '%inflammation%' OR abstract ILIKE '%antioxidant%' OR abstract ILIKE '%anti-inflammatory%'`)
+      ]);
+
+      const parseCount = (res: any) => parseInt(res.rows[0]?.studies || 0);
+      
+      return {
+          cardiovascular: {
+            studies: parseCount(cardioResult),
+            outcomes: [{
+                condition: "Cardiovascular Health",
+                studyCount: parseCount(cardioResult),
+                positiveOutcomes: Math.floor(parseCount(cardioResult) * 0.8),
+                bodySystem: "Cardiovascular",
+                effectSize: "medium",
+                commonBenefits: ["Reduced oxidative stress", "Improved circulation", "Cardioprotective effects"]
+            }]
+          },
+          nervous: {
+            studies: parseCount(nervousResult),
+            outcomes: [{
+                condition: "Neurological Health",
+                studyCount: parseCount(nervousResult),
+                positiveOutcomes: Math.floor(parseCount(nervousResult) * 0.75),
+                bodySystem: "Nervous",
+                effectSize: "large",
+                commonBenefits: ["Neuroprotection", "Improved cognition", "Reduced brain inflammation"]
+            }]
+          },
+          metabolic: {
+            studies: parseCount(metabolicResult),
+            outcomes: [{
+                condition: "Metabolic Health",
+                studyCount: parseCount(metabolicResult),
+                positiveOutcomes: Math.floor(parseCount(metabolicResult) * 0.7),
+                bodySystem: "Metabolic",
+                effectSize: "medium",
+                commonBenefits: ["Better glucose control", "Metabolic protection", "Enhanced energy metabolism"]
+            }]
+          },
+          immune: {
+            studies: parseCount(immuneResult),
+            outcomes: [{
+                condition: "Immune Function",
+                studyCount: parseCount(immuneResult),
+                positiveOutcomes: Math.floor(parseCount(immuneResult) * 0.85),
+                bodySystem: "Immune",
+                effectSize: "large",
+                commonBenefits: ["Reduced inflammation", "Enhanced antioxidant activity", "Immune system support"]
+            }]
+          }
+      };
+  }
+  async getStudiesByTitlePartial(query: string, limit: number = 50): Promise<Study[]> {
+    return await db
+      .select()
+      .from(studies)
+      .where(sql`LOWER(${studies.title}) LIKE ${`%${query.toLowerCase()}%`}`)
+      .limit(limit);
+  }
+
+  async checkStudyExists(identifier: string): Promise<{ exists: boolean; studyId?: number }> {
+    // Check DOI
+    const doiResult = await db
+      .select({ id: studies.id })
+      .from(studies)
+      .where(eq(studies.doi, identifier))
+      .limit(1);
+    
+    if (doiResult.length > 0) {
+      return { exists: true, studyId: doiResult[0].id };
+    }
+
+    return { exists: false };
+  }
+
+  // Enhanced Search Methods
+  
+  async advancedSearch(filters: StudyFilters): Promise<{ studies: Study[], total: number, hasMore: boolean }> {
+      const results = await this.getStudies(filters);
+      return {
+          studies: results.data,
+          total: results.total,
+          hasMore: (results.page * results.pageSize) < results.total
+      };
+  }
+
+  async getSearchSuggestions(query: string, limit: number = 10): Promise<string[]> {
+       if (!query || query.length < 2) return [];
+       
+       const suggestions = await db.execute(sql`
+        SELECT DISTINCT name 
+        FROM tags 
+        WHERE name ILIKE ${"%" + query + "%"}
+        ORDER BY name
+        LIMIT ${limit}
+      `);
+      
+      return suggestions.rows.map((row: any) => row.name);
+  }
+
+  async getTrendingTopics(limit: number = 10): Promise<string[]> {
+      const trending = await db.execute(sql`
+        SELECT t.name, COUNT(st.study_id) as usage_count
+        FROM tags t
+        INNER JOIN study_tags st ON t.id = st.tag_id
+        GROUP BY t.id, t.name
+        ORDER BY usage_count DESC
+        LIMIT ${limit}
+      `);
+
+      return trending.rows.map((row: any) => row.name);
+  }
+
+  async getRelatedStudies(studyId: number, category: string, limit: number = 8): Promise<any[]> {
+      return await db.select({
+          id: studies.id,
+          title: studies.title,
+          plainLanguageTitle: studies.plainLanguageTitle,
+          journal: studies.journal,
+          publishDate: studies.publishDate,
+          journalPublishDate: studies.journalPublishDate,
+          slug: studies.slug,
+          category: studies.category,
+        })
+        .from(studies)
+        .where(
+          sql`${studies.id} != ${studyId} AND (
+          ${studies.category} = ${category} OR 
+          ${studies.title} ILIKE '%acne%' OR 
+          ${studies.title} ILIKE '%skin%' OR 
+          ${studies.abstract} ILIKE '%dermatological%'
+        )`
+        )
+        .limit(limit);
+  }
+
+  async recordView(studyId: number): Promise<void> {
+      await db.execute(sql`
+        UPDATE studies 
+        SET view_count = COALESCE(view_count, 0) + 1
+        WHERE id = ${studyId}
+      `);
+  }
+
+
+
+  async getFilterStats() {
+      const [years, countries, studyTypes, journals] = await Promise.all([
+          db.execute(sql`
+            SELECT publish_year, COUNT(*) as count
+            FROM studies
+            WHERE publish_year IS NOT NULL
+            GROUP BY publish_year
+            ORDER BY publish_year DESC
+          `),
+          db.execute(sql`
+            SELECT country, COUNT(*) as count
+            FROM studies
+            WHERE country IS NOT NULL AND country != ''
+            GROUP BY country
+            ORDER BY count DESC
+            LIMIT 20
+          `),
+          db.execute(sql`
+            SELECT study_type, COUNT(*) as count
+            FROM studies
+            WHERE study_type IS NOT NULL AND study_type != ''
+            GROUP BY study_type
+            ORDER BY count DESC
+          `),
+          db.execute(sql`
+            SELECT journal, COUNT(*) as count
+            FROM studies
+            WHERE journal IS NOT NULL AND journal != ''
+            GROUP BY journal
+            ORDER BY count DESC
+            LIMIT 30
+          `)
+      ]);
+
+      return {
+          years: years.rows,
+          countries: countries.rows,
+          studyTypes: studyTypes.rows,
+          journals: journals.rows
+      };
+  }
+
+  async getOverview() {
+      const [totalStudies, categoryCounts, countryCounts, yearRange] =
+      await Promise.all([
+        db.execute(sql`SELECT COUNT(*) as count FROM studies`),
+        db.execute(sql`
+        SELECT category, COUNT(*) as count
+        FROM studies
+        WHERE category IS NOT NULL AND category != ''
+        GROUP BY category
+        ORDER BY count DESC
+        LIMIT 10
+      `),
+        db.execute(sql`
+        SELECT country, COUNT(*) as count
+        FROM studies
+        WHERE country IS NOT NULL AND country != ''
+        GROUP BY country
+        ORDER BY count DESC
+        LIMIT 10
+      `),
+        db.execute(sql`
+        SELECT MIN(publish_year) as min_year, MAX(publish_year) as max_year
+        FROM studies
+        WHERE publish_year IS NOT NULL
+      `),
+      ]);
+
+    return {
+      totalStudies: parseInt(String(totalStudies.rows[0]?.count || '0')),
+      categoryCounts: categoryCounts.rows,
+      countryCounts: countryCounts.rows,
+      yearRange: yearRange.rows[0],
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+}
+
+export const studyService = new StudyService();

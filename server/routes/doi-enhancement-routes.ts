@@ -11,13 +11,13 @@ import {
   findStudiesNeedingEnhancement,
   calculateDataQualityScore,
   ENHANCEABLE_FIELDS,
-} from "../doi-enhancer";
+} from "../services/doi-enhancer";
 import { db } from "../db";
 import { studies } from "@shared/schema";
 import { eq, ne, isNull, or, and, like, asc } from "drizzle-orm";
-import { storage } from "../storage";
-import { getCrossRefArticleByDOI } from "../crossref-api";
-import { getSemanticScholarPaper } from "../semantic-scholar-api";
+import { studyService } from "../services/study-service";
+import { getCrossRefArticleByDOI } from "../services/crossref-api";
+import { getSemanticScholarPaper } from "../services/semantic-scholar-api";
 
 const router = Router();
 
@@ -59,7 +59,7 @@ router.post("/enhance", async (req: Request, res: Response) => {
       const { studyId, fields } = enhanceStudySchema.parse(req.body);
 
       // Get the study directly from storage
-      const study = await storage.getStudyById(studyId);
+      const study = await studyService.getStudyById(studyId);
 
       if (!study) {
         return res.status(404).json({
@@ -215,7 +215,7 @@ router.post("/enhance", async (req: Request, res: Response) => {
       }
 
       // Apply the updates
-      await storage.updateStudy(studyId, updates);
+      await studyService.updateStudy(studyId, updates);
 
       return res.status(200).json({
         success: true,
@@ -263,7 +263,7 @@ router.post("/enhance/batch", async (req: Request, res: Response) => {
       // First find studies needing enhancement
       try {
         // Get studies that need enhancement
-        const allStudies = await storage.getStudies({ limit: limit });
+        const allStudies = await studyService.getStudies({ limit: limit });
 
         // Filter studies with quality issues manually
         const studiesNeedingEnhancement = allStudies.data.filter((study) => {
@@ -411,7 +411,7 @@ router.post(
 
         try {
           // Direct approach using storage interface to get studies
-          const allStudies = await storage.getStudies({ limit: limit });
+          const allStudies = await studyService.getStudies({ limit: limit });
 
           // Filter studies with quality issues manually
           const studiesNeedingEnhancement = allStudies.data.filter((study) => {

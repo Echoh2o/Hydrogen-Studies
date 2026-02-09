@@ -354,14 +354,14 @@ export function ContentAnalyticsDashboard() {
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Engaged (>30s)</span>
+                    <span className="text-sm font-medium">Engaged (&gt;30s)</span>
                     <span className="text-sm text-muted-foreground">65%</span>
                   </div>
                   <Progress value={65} className="h-2" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Scrolled >50%</span>
+                    <span className="text-sm font-medium">Scrolled &gt;50%</span>
                     <span className="text-sm text-muted-foreground">45%</span>
                   </div>
                   <Progress value={45} className="h-2" />
