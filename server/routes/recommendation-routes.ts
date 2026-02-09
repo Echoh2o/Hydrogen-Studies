@@ -7,7 +7,7 @@ import {
   getPersonalizedRecommendations,
   recordStudyInteraction,
   updateUserPreferencesFromBehavior,
-} from "../recommendation-engine";
+} from "../services/recommendation-engine";
 import { z } from "zod";
 
 const router = Router();

@@ -1,5 +1,5 @@
 import express from "express";
-import { updateJournalPublicationDates } from "../journal-date-updater";
+import { updateJournalPublicationDates } from "../services/journal-date-updater";
 
 const router = express.Router();
 

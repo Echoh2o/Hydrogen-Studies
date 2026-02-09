@@ -7,7 +7,7 @@ import { isAuthenticated, requireAdmin } from "../auth";
 import {
   aiGenerationRateLimiter,
   generalApiRateLimiter,
-} from "../rate-limiting";
+} from "../utils/rate-limiting";
 
 const router = Router();
 

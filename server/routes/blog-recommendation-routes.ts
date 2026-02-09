@@ -4,7 +4,7 @@ import {
   getBlogRecommendations,
   generateBulkBlogs,
   type BulkGenerationRequest,
-} from "../blog-recommendation-system";
+} from "../services/blog-recommendation-system";
 
 const router = Router();
 

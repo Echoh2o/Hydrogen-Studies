@@ -7,7 +7,7 @@ import {
   startTargetedEnrichment,
   getEnrichmentStatus,
   getEnrichmentSummary,
-} from "../targeted-enrichment";
+} from "../services/targeted-enrichment";
 
 const router = Router();
 

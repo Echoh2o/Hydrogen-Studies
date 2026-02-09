@@ -1,14 +1,15 @@
 import { Router, Request, Response } from "express";
 import { searchPubMedWithPagination } from "./research-routes";
-import { searchEuropePMC } from "../europepmc-api-fixed";
-import { extractStudyFromEuropePMC } from "../europepmc-api";
+import { searchEuropePMC } from "../services/europepmc-api-fixed";
+import { extractStudyFromEuropePMC } from "../services/europepmc-api";
 import {
   searchSemanticScholar,
   extractStudyFromSemanticScholar,
-} from "../semantic-scholar-api";
-import { searchCrossRef, extractStudyFromCrossRef } from "../crossref-api";
-import { storage } from "../storage";
-import { enrichStudyFromPubMed as extractStudyFromPubMed } from "../pubmed-enricher";
+} from "../services/semantic-scholar-api";
+import { searchCrossRef, extractStudyFromCrossRef } from "../services/crossref-api";
+import { studyService } from "../services/study-service";
+import { reviewService } from "../services/review-service";
+import { enrichStudyFromPubMed as extractStudyFromPubMed } from "../services/pubmed-enricher";
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
     try {
       console.log("Getting matching studies from database...");
       try {
-        existingStudies = await storage.getStudiesByTitlePartial(query, 50);
+        existingStudies = await studyService.getStudiesByTitlePartial(query, 50);
       } catch (storageError) {
         console.warn(
           "Storage method not available, skipping database check:",
@@ -585,7 +586,7 @@ router.post(
 
       // Check for duplicate DOI in existing studies
       if (doi) {
-        const duplicateCheck = await storage.checkStudyExists(doi);
+        const duplicateCheck = await studyService.checkStudyExists(doi);
         if (duplicateCheck.exists) {
           return res.status(409).json({
             success: false,
@@ -644,7 +645,7 @@ router.post(
       };
 
       // Save to review queue
-      const savedReviewItem = await storage.saveStudyForReview(reviewItem);
+      const savedReviewItem = await reviewService.addToQueue(reviewItem);
 
       res.json({
         success: true,
@@ -679,7 +680,7 @@ router.get(
         filters.userId = userId;
       }
 
-      const reviewItems = await storage.getStudyReviewQueue(filters);
+      const reviewItems = await reviewService.getQueue(filters);
 
       res.json({
         success: true,
@@ -718,13 +719,13 @@ router.put(
       }
 
       // Get the review item
-      const reviewItem = await storage.getStudyReviewQueueById(parseInt(id));
+      const reviewItem = await reviewService.getQueueItemById(parseInt(id));
       if (!reviewItem) {
         return res.status(404).json({ error: "Review item not found" });
       }
 
       // Update the review status
-      const updatedItem = await storage.updateStudyReviewStatus(
+      const updatedItem = await reviewService.updateStatus(
         parseInt(id),
         status,
         userId,
@@ -745,7 +746,7 @@ router.put(
           }
 
           // Save the study to the database
-          const savedStudy = await storage.createStudy(studyData);
+          const savedStudy = await studyService.createStudy(studyData);
 
           res.json({
             success: true,
@@ -790,7 +791,7 @@ router.delete(
         return res.status(400).json({ error: "ID is required" });
       }
 
-      await storage.deleteStudyFromReviewQueue(parseInt(id));
+      await reviewService.deleteFromQueue(parseInt(id));
 
       res.json({
         success: true,
@@ -823,7 +824,7 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
     else if (paperData.paperId) identifier = paperData.paperId;
 
     if (identifier) {
-      const existingStudy = await storage.getStudyByIdentifier(identifier);
+      const existingStudy = await studyService.getStudyByIdentifier(identifier);
       if (existingStudy) {
         return res.status(409).json({
           message: "This study already exists in the database",
@@ -858,7 +859,7 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
     }
 
     // Save study to database
-    const savedStudy = await storage.createStudy(study);
+    const savedStudy = await studyService.createStudy(study);
 
     res.json({
       success: true,
@@ -1076,14 +1077,14 @@ router.put(
       }
 
       // Get the review queue item
-      const reviewItem = await storage.getStudyReviewQueueById(parseInt(id));
+      const reviewItem = await reviewService.getQueueItemById(parseInt(id));
 
       if (!reviewItem) {
         return res.status(404).json({ error: "Review queue item not found" });
       }
 
       // Update the review status
-      const updatedItem = await storage.updateStudyReviewStatus(
+      const updatedItem = await reviewService.updateStatus(
         parseInt(id),
         status,
         userId,
@@ -1110,7 +1111,7 @@ router.put(
             peerReviewed: true,
           };
 
-          const createdStudy = await storage.createStudy(study);
+          const createdStudy = await studyService.createStudy(study);
           console.log(`Study created with ID: ${createdStudy.id}`);
 
           // Import enrichment modules dynamically to avoid circular dependencies
@@ -1121,11 +1122,11 @@ router.put(
             { generateStudyImage },
             { autoTagStudy },
           ] = await Promise.all([
-            import("../content-enrichment"),
-            import("../blog-generator-enhanced"),
-            import("../scientific-article-generator"),
-            import("../image-generator"),
-            import("../automated-tagging-system"),
+            import("../services/content-enrichment").then(m => ({ enrichStudyContent: m.enhanceStudyContent })),
+            import("../services/blog-generator-enhanced"),
+            import("../services/scientific-article-generator"),
+            import("../services/image-generator").then(m => ({ generateStudyImage: m.generateImageForStudy })),
+            import("../automated-tagging-system").then(m => ({ autoTagStudy: m.tagSingleStudy })),
           ]);
 
           // 2. Enrich the study content (6th grade reading level)
@@ -1158,7 +1159,7 @@ router.put(
           // 4. Generate 2 scientific articles
           console.log("Generating scientific articles...");
           const scientificGenerationPromise =
-            generateScientificArticlesForStudy.generateScientificArticlesForStudy(
+            generateScientificArticlesForStudy(
               createdStudy,
               {
                 fallbackToBasic: true,

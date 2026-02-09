@@ -10,7 +10,7 @@ import { generateStudyImage } from "../enhanced-image-generator";
 import {
   imageGenerationRateLimiter,
   generalApiRateLimiter,
-} from "../rate-limiting";
+} from "../utils/rate-limiting";
 
 const router = Router();
 

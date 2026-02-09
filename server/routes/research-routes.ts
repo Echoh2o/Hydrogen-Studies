@@ -4,7 +4,7 @@ import axios from "axios";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { sql } from "drizzle-orm";
-import { enrichStudyFromPubMed } from "../pubmed-enricher";
+import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
 // Note: Direct scraper functionality removed during cleanup
 
 // Check if PubMed API key is available

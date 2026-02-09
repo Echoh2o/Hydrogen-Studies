@@ -33,9 +33,18 @@ export default function BlogListPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState("all");
 
-  // Fetch blog articles from your database
-  const { data: articles, isLoading } = useQuery({
-    queryKey: ["/api/blog/articles"],
+  // Fetch blog articles from database
+  const { data: response, isLoading } = useQuery({
+    queryKey: ["/api/blogs", { search: searchTerm, filterType: selectedCategory }],
+    queryFn: async () => {
+        const params = new URLSearchParams();
+        if (searchTerm) params.append("search", searchTerm);
+        if (selectedCategory && selectedCategory !== "all") params.append("filterType", selectedCategory);
+        
+        const res = await fetch(`/api/blogs?${params.toString()}`);
+        if (!res.ok) throw new Error("Failed to fetch blogs");
+        return res.json();
+    }
   });
 
   const categories = [
@@ -48,61 +57,8 @@ export default function BlogListPage() {
     { value: "case-studies", label: "Case Studies" },
   ];
 
-  const featuredArticles = [
-    {
-      id: 1,
-      title: "Top 5 Hydrogen Studies on Gut Health: What the Research Shows",
-      summary:
-        "A comprehensive analysis of the latest research on hydrogen therapy for digestive health and gut microbiome support.",
-      author: "Dr. Sarah Chen",
-      publishDate: "2024-01-15",
-      readTime: "8 min read",
-      category: "Research Insights",
-      imageUrl:
-        "https://placehold.co/600x300/e2f3ff/003366?text=Gut+Health+Research",
-      featured: true,
-      tags: ["gut health", "microbiome", "research analysis"],
-    },
-    {
-      id: 2,
-      title:
-        "How Athletes Are Using Hydrogen Water for Performance Enhancement",
-      summary:
-        "Exploring the growing trend of hydrogen water in professional sports and what the science says about its benefits.",
-      author: "Mike Rodriguez",
-      publishDate: "2024-01-12",
-      readTime: "6 min read",
-      category: "Product Applications",
-      imageUrl:
-        "https://placehold.co/600x300/e2f3ff/003366?text=Athletic+Performance",
-      featured: true,
-      tags: ["athletics", "performance", "hydrogen water"],
-    },
-    {
-      id: 3,
-      title: "Understanding Hydrogen Inhalation Therapy: A Beginner's Guide",
-      summary:
-        "Everything you need to know about hydrogen inhalation therapy, from mechanisms to practical applications.",
-      author: "Dr. James Wilson",
-      publishDate: "2024-01-10",
-      readTime: "10 min read",
-      category: "Health Benefits",
-      imageUrl:
-        "https://placehold.co/600x300/e2f3ff/003366?text=Inhalation+Therapy",
-      featured: false,
-      tags: ["inhalation therapy", "beginners guide", "health benefits"],
-    },
-  ];
-
-  const filteredArticles = featuredArticles.filter((article) => {
-    const matchesSearch =
-      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" ||
-      article.category.toLowerCase().replace(" ", "-") === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const articles: any[] = response?.data || [];
+  const filteredArticles = articles;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -262,11 +218,12 @@ export default function BlogListPage() {
                 {filteredArticles
                   .filter((article) => !article.featured)
                   .map((article) => (
-                    <Link key={article.id} href={`/blog/${article.id}`}>
+                  .map((article: any) => (
+                    <Link key={article.id} href={`/blog/${article.slug || article.id}`}>
                       <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <div className="aspect-video">
                           <img
-                            src={article.imageUrl}
+                            src={article.imageUrl || "https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+Studies"}
                             alt={article.title}
                             className="w-full h-full object-cover rounded-t-lg"
                           />
@@ -274,10 +231,10 @@ export default function BlogListPage() {
                         <CardHeader>
                           <div className="flex items-center justify-between mb-2">
                             <Badge variant="secondary">
-                              {article.category}
+                              {article.articleType || article.category || "Article"}
                             </Badge>
                             <span className="text-sm text-gray-500">
-                              {article.readTime}
+                              {article.readingLevel || "General"}
                             </span>
                           </div>
                           <CardTitle className="text-lg line-clamp-2">
@@ -291,15 +248,15 @@ export default function BlogListPage() {
                           <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                             <div className="flex items-center">
                               <User className="h-3 w-3 mr-1" />
-                              {article.author}
+                              {article.authorBio ? "AI Researcher" : "Editor"}
                             </div>
                             <div className="flex items-center">
                               <Calendar className="h-3 w-3 mr-1" />
-                              {formatDate(article.publishDate)}
+                              {formatDate(article.createdAt || article.publishDate)}
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-1">
-                            {article.tags.slice(0, 2).map((tag, index) => (
+                            {(article.semanticKeywords || article.tags || []).slice(0, 2).map((tag: string, index: number) => (
                               <Badge
                                 key={index}
                                 variant="outline"
@@ -308,11 +265,6 @@ export default function BlogListPage() {
                                 {tag}
                               </Badge>
                             ))}
-                            {article.tags.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{article.tags.length - 2}
-                              </Badge>
-                            )}
                           </div>
                         </CardContent>
                       </Card>

@@ -9,22 +9,46 @@ import { Helmet } from "react-helmet";
 import ReactMarkdown from "react-markdown";
 import SiteHeader from "@/components/layout/SiteHeader";
 
+interface BlogArticle {
+    id: number;
+    title: string;
+    slug: string;
+    summary: string;
+    content: string;
+    imageUrl?: string;
+    imageAlt?: string;
+    createdAt: string;
+    viewCount?: number;
+    studyId?: number;
+}
+
 export default function BlogPage() {
-  const { id } = useParams();
-  const blogId = parseInt(id);
+  const params = useParams();
+  // Support both /blog/:id and /blog/:slug (via conditional logic or unifying route).
+  // Wouter params might be { id: "slug-val" } if route is /blog/:id
+  // But App.tsx has /blog/:id/:slug? and /blog/:id
+  // Use a more robust check.
+  
+  const idOrSlug = params.id || params.slug;
+  const isId = /^\d+$/.test(idOrSlug || "");
 
   // Fetch blog article
-  const {
-    data: blog,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: [`/api/blogs/${blogId}`],
-    enabled: !!blogId,
+  const { data: blog, isLoading, error } = useQuery<BlogArticle>({
+    queryKey: [`/api/blogs/${idOrSlug}`],
+    queryFn: async () => {
+        const endpoint = isId 
+            ? `/api/blogs/${idOrSlug}` 
+            : `/api/blogs/slug/${idOrSlug}`;
+            
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error("Failed to fetch blog");
+        return (await res.json()).data;
+    },
+    enabled: !!idOrSlug,
   });
 
   // Fetch related study
-  const { data: study } = useQuery({
+  const { data: study } = useQuery<any>({
     queryKey: [`/api/studies/${blog?.studyId}`],
     enabled: !!blog?.studyId,
   });

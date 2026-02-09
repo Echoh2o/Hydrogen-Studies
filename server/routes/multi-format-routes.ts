@@ -10,7 +10,7 @@ import {
   deleteMultiFormatContent,
   batchGenerateAllFormats,
   ContentFormat,
-} from "../multi-format-generator";
+} from "../services/multi-format-generator";
 import { db } from "../db";
 import { multiFormatContent, studies } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";

@@ -5,7 +5,7 @@
 
 import express from "express";
 import OpenAI from "openai";
-import { storage } from "../storage";
+import { studyService } from "../services/study-service";
 
 const router = express.Router();
 
@@ -114,7 +114,7 @@ router.post("/chat", async (req, res) => {
 // Search for relevant studies based on query
 async function searchRelevantStudies(query: string): Promise<any[]> {
   try {
-    const studiesResult = await storage.getStudies();
+    const studiesResult = await studyService.getStudies();
     const studies = studiesResult.data || [];
     const searchTerms = query.toLowerCase().split(/\s+/);
 
