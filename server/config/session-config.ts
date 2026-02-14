@@ -79,48 +79,26 @@ async function ensureSessionTable(): Promise<void> {
 }
 
 /**
- * Checks if running on Replit
- */
-function isReplitEnvironment(): boolean {
-  return (
-    !!process.env.REPL_ID ||
-    !!process.env.REPL_SLUG ||
-    !!process.env.REPLIT_DEPLOYMENT_ID ||
-    !!process.env.REPLIT_DEV_DOMAIN ||
-    !!process.env.REPLIT_CLUSTER
-  );
-}
-
-/**
  * Validates and returns session configuration
  * Ensures secure settings for production environment
  */
 export async function getSessionConfig() {
   const isProduction = process.env.NODE_ENV === "production";
-  const isReplit = isReplitEnvironment();
 
-  // SESSION_SECRET is required in production (non-Replit)
-  if (isProduction && !isReplit && !process.env.SESSION_SECRET) {
+  if (isProduction && !process.env.SESSION_SECRET) {
     throw new Error(
       "SESSION_SECRET is required in production. " +
         "Generate a secure secret using: openssl rand -hex 32",
     );
   }
 
-  // Generate a session secret for Replit if not set
   let sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
-    if (isReplit) {
-      // Use a Replit-specific secret based on environment
-      sessionSecret = `replit-dev-${process.env.REPL_ID || "default"}-secret`;
-      console.log("⚠️  Using Replit development session secret");
-    } else {
-      sessionSecret = "dev-secret-change-me-before-production";
-      console.warn("⚠️  Using default SESSION_SECRET for development only");
-      console.warn(
-        "⚠️  Set SESSION_SECRET environment variable for production",
-      );
-    }
+    sessionSecret = "dev-secret-change-me-before-production";
+    console.warn("Using default SESSION_SECRET for development only.");
+    console.warn(
+      "Set SESSION_SECRET environment variable for production.",
+    );
   }
 
   // Ensure session table exists before creating the store
@@ -143,16 +121,15 @@ export async function getSessionConfig() {
 
   // Cookie configuration based on environment
   const cookieConfig = {
-    secure: isProduction && !isReplit, // HTTPS only in production (non-Replit)
+    secure: isProduction, // HTTPS only in production
     httpOnly: true, // Prevent XSS
-    sameSite:
-      isProduction && !isReplit ? ("strict" as const) : ("lax" as const), // CSRF protection
+    sameSite: isProduction ? ("strict" as const) : ("lax" as const), // CSRF protection
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     domain: undefined as string | undefined, // Let browser handle domain automatically
   };
 
   // In production, set domain if provided
-  if (isProduction && !isReplit && process.env.COOKIE_DOMAIN) {
+  if (isProduction && process.env.COOKIE_DOMAIN) {
     cookieConfig.domain = process.env.COOKIE_DOMAIN;
   }
 

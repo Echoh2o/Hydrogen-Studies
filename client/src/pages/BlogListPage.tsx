@@ -216,8 +216,7 @@ export default function BlogListPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredArticles
-                  .filter((article) => !article.featured)
-                  .map((article) => (
+                  .filter((article: any) => !article.featured)
                   .map((article: any) => (
                     <Link key={article.id} href={`/blog/${article.slug || article.id}`}>
                       <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">

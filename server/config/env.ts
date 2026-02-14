@@ -10,11 +10,8 @@ export function validateEnvironment() {
   const missingRequired = [];
   const missingOptional = [];
 
-  // SECURITY: Required variables in production (non-Replit)
-  const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
-  if (process.env.NODE_ENV === "production" && !isReplit) {
-    // ADMIN_USER_IDS is now optional - admin features will be disabled if not set
-    // requiredEnvVars.push('ADMIN_USER_IDS');  // Made optional to prevent crash
+  // SECURITY: Required variables in production
+  if (process.env.NODE_ENV === "production") {
     requiredEnvVars.push("SESSION_SECRET");
     requiredEnvVars.push("ALLOWED_ORIGINS");
   }

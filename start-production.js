@@ -36,7 +36,7 @@ console.log(
 console.log("🔄 Checking for database migrations...");
 try {
   // Use spawnSync to run migrations synchronously before server starts
-  const migration = spawn("npm", ["run", "push"], {
+  const migration = spawn("npm", ["run", "db:push"], {
     stdio: "inherit",
     env: { ...process.env },
   });

@@ -21,24 +21,24 @@ async function setupServer() {
 
   if (process.env.NODE_ENV === "development") {
     // Development mode - use Vite dev server
-    const { setupVite } = await import("./vite"); // Removed .js extension for TS resolution
+    const { setupVite } = await import("./vite");
     const { createServer } = await import("http");
     const server = createServer(app);
     await setupVite(app, server);
 
     server.listen(PORT, "0.0.0.0", () => {
       log(`Server running on port ${PORT}`);
-      console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
     });
   } else {
-    // Production mode - serve static files
-    app.use(express.static(path.join(__dirname, "..", "client", "dist")));
+    // Production mode - serve static files from dist/public (Vite output)
+    const staticPath = path.join(__dirname, "public");
+    app.use(express.static(staticPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "..", "client", "dist", "index.html"));
+      res.sendFile(path.join(staticPath, "index.html"));
     });
 
-    app.listen(PORT, "0.0.0.0", () => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       const formattedTime = new Date().toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
@@ -46,10 +46,29 @@ async function setupServer() {
         hour12: true,
       });
       console.log(`${formattedTime} [express] Server running on port ${PORT}`);
-      console.log(`Marketing homepage: http://localhost:${PORT}/`);
       console.log(`Health check: http://localhost:${PORT}/health`);
     });
+
+    // Graceful shutdown for container deployments (Railway, Docker, etc.)
+    const shutdown = (signal: string) => {
+      console.log(`Received ${signal}. Shutting down gracefully...`);
+      server.close(() => {
+        console.log("Server closed.");
+        process.exit(0);
+      });
+      // Force exit after 10 seconds if graceful shutdown hangs
+      setTimeout(() => {
+        console.error("Forced shutdown after timeout.");
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   }
 }
 
-setupServer().catch(console.error);
+setupServer().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});

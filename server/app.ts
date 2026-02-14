@@ -1,15 +1,8 @@
-import { validateEnvironment } from "./config/env";
-// Validate environment before loading other modules that might use env vars
-validateEnvironment();
-
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-
 // Security and session imports
 import { getSessionMiddleware } from "./config/session-config";
 import { getCorsConfig, validateCorsConfig } from "./config/cors-config";
@@ -86,12 +79,6 @@ export const app = express();
 
 // Initialize database circuit breaker
 export const dbCircuitBreaker = new DatabaseCircuitBreaker();
-
-// Data access
-export const sql = neon(process.env.DATABASE_URL!, {
-  arrayMode: false,
-});
-export const db = drizzle(sql);
 
 // Request tracking and error recovery middleware
 app.use(requestIdMiddleware);
