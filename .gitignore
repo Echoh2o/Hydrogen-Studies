@@ -4,3 +4,26 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build artifacts
+*.tgz
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+
+# Uploads (user-generated content)
+uploads/
+
+# State files
+.auto-image-state.json
+.migration-status.json
