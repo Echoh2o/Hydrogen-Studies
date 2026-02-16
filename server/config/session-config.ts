@@ -5,7 +5,7 @@
 
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { neon } from "@neondatabase/serverless";
+import { pool } from "../db";
 
 const PgSession = connectPgSimple(session);
 
@@ -14,54 +14,51 @@ const PgSession = connectPgSimple(session);
  * Returns a promise that resolves when the table is ready
  */
 async function ensureSessionTable(): Promise<void> {
-  const sql = neon(process.env.DATABASE_URL!);
-
   try {
     // Create session table if it doesn't exist
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS session (
         sid varchar NOT NULL COLLATE "default",
         sess json NOT NULL,
         expire timestamp(6) NOT NULL,
         PRIMARY KEY (sid)
-      ) WITH (OIDS=FALSE);
-    `;
+      );
+    `);
     console.log("✅ Session table created or already exists");
 
     // Add index for expired session cleanup
-    await sql`
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS IDX_session_expire ON session(expire);
-    `;
+    `);
     console.log("✅ Session expire index created or already exists");
   } catch (err) {
     console.error("❌ Error setting up session table:", err);
 
     // Try alternative approach - check if table exists first
     try {
-      const result = await sql`
+      const result = await pool.query(`
         SELECT EXISTS (
-          SELECT FROM information_schema.tables 
+          SELECT FROM information_schema.tables
           WHERE table_name = 'session'
         );
-      `;
+      `);
 
-      if (!result[0].exists) {
+      if (!result.rows[0].exists) {
         console.log(
           "🔄 Attempting to create session table with alternative method...",
         );
 
-        // Try without COLLATE if that's causing issues
-        await sql`
+        await pool.query(`
           CREATE TABLE session (
             sid varchar PRIMARY KEY,
             sess json NOT NULL,
             expire timestamp(6) NOT NULL
           );
-        `;
+        `);
 
-        await sql`
+        await pool.query(`
           CREATE INDEX IDX_session_expire ON session(expire);
-        `;
+        `);
 
         console.log("✅ Session table created with alternative method");
       } else {
@@ -104,9 +101,9 @@ export async function getSessionConfig() {
   // Ensure session table exists before creating the store
   await ensureSessionTable();
 
-  // Create session store configuration
+  // Create session store configuration (reuse pool from db.ts)
   const storeConfig = {
-    conString: process.env.DATABASE_URL!,
+    pool: pool,
     tableName: "session",
     createTableIfMissing: true, // Let the store also try to create the table
     pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes

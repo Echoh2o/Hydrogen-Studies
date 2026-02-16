@@ -1,8 +1,6 @@
-import { neon } from "@neondatabase/serverless";
+import { sqlQuery as sql } from "../db";
 import fs from "fs";
 import path from "path";
-
-const sql = neon(process.env.DATABASE_URL!);
 
 interface QualityIssue {
   category: string;
