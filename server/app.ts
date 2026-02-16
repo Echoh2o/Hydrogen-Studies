@@ -258,6 +258,13 @@ app.use(
   express.static(path.join(process.cwd(), "uploads")),
 );
 
+// Health check endpoint for load balancers (before error handlers)
+app.get("/health", async (req, res) => {
+  const health = await performHealthCheck();
+  const statusCode = health.status === "healthy" ? 200 : 503;
+  res.status(statusCode).json(health);
+});
+
 // 404 handler for API routes
 app.use("/api/*", (req, res, next) => {
   next(new NotFoundError("API endpoint"));
@@ -265,13 +272,6 @@ app.use("/api/*", (req, res, next) => {
 
 // Global error handler - MUST be last middleware
 app.use(globalErrorHandler);
-
-// Health check endpoint for load balancers
-app.get("/health", async (req, res) => {
-  const health = await performHealthCheck();
-  const statusCode = health.status === "healthy" ? 200 : 503;
-  res.status(statusCode).json(health);
-});
 
 // Initialize health monitoring
 initializeHealthMonitoring();
