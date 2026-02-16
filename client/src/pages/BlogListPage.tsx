@@ -147,6 +147,7 @@ export default function BlogListPage() {
                             src={article.imageUrl}
                             alt={article.title}
                             className="w-full h-64 md:h-full object-cover"
+                            loading="lazy"
                           />
                         </div>
                         <div className="md:w-1/2 p-8">
@@ -225,6 +226,7 @@ export default function BlogListPage() {
                             src={article.imageUrl || "https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+Studies"}
                             alt={article.title}
                             className="w-full h-full object-cover rounded-t-lg"
+                            loading="lazy"
                           />
                         </div>
                         <CardHeader>

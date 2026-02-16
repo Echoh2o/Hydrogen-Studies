@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -36,6 +36,16 @@ export default function SiteHeader() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, user, userRole, isLoading } = useAuth();
+
+  // Close mobile menu on Escape key
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMobileMenuOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isMobileMenuOpen]);
 
   // Logout mutation
   const logoutMutation = useMutation({

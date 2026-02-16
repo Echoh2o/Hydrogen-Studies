@@ -9,6 +9,9 @@ validateEnvironment();
 
 import { app } from "./app";
 import { log } from "./vite";
+import { pool } from "./db";
+import { jobScheduler } from "./services/job-scheduler";
+import { stopHealthMonitoring } from "./utils/health-monitoring";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -67,7 +70,10 @@ async function setupServer() {
     // Graceful shutdown for container deployments (Railway, Docker, etc.)
     const shutdown = (signal: string) => {
       console.log(`Received ${signal}. Shutting down gracefully...`);
-      server.close(() => {
+      jobScheduler.stop();
+      stopHealthMonitoring();
+      server.close(async () => {
+        try { await pool.end(); } catch {}
         console.log("Server closed.");
         process.exit(0);
       });
@@ -82,6 +88,11 @@ async function setupServer() {
     process.on("SIGINT", () => shutdown("SIGINT"));
   }
 }
+
+// Catch unhandled rejections so they don't silently kill the process
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection:", reason);
+});
 
 setupServer().catch((err) => {
   console.error("Failed to start server:", err);
