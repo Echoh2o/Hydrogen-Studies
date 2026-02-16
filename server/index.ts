@@ -10,6 +10,7 @@ validateEnvironment();
 import { app } from "./app";
 import { log } from "./vite";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import express from "express";
 
@@ -33,9 +34,23 @@ async function setupServer() {
   } else {
     // Production mode - serve static files from dist/public (Vite output)
     const staticPath = path.join(__dirname, "public");
+
+    console.log(`Static files path: ${staticPath}`);
+    console.log(`Static path exists: ${fs.existsSync(staticPath)}`);
+    if (fs.existsSync(staticPath)) {
+      console.log(`index.html exists: ${fs.existsSync(path.join(staticPath, "index.html"))}`);
+    }
+
     app.use(express.static(staticPath));
+
+    // SPA fallback — serve index.html for all non-API GET requests
     app.get("*", (req, res) => {
-      res.sendFile(path.join(staticPath, "index.html"));
+      const indexPath = path.join(staticPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(500).send("index.html not found. Build may have failed.");
+      }
     });
 
     const server = app.listen(PORT, "0.0.0.0", () => {
