@@ -45,7 +45,7 @@ interface EnhancementResult {
   studyId?: number;
 }
 
-export default function BatchEnrichmentPage() {
+export default function BatchEnrichmentPage({ embedded }: { embedded?: boolean } = {}) {
   const [batchSize, setBatchSize] = useState(10);
   const [maxStudies, setMaxStudies] = useState(100);
   const [singleStudyId, setSingleStudyId] = useState("");
@@ -162,11 +162,8 @@ export default function BatchEnrichmentPage() {
     return new Date(dateString).toLocaleString();
   };
 
-  return (
-    <AdminLayout
-      title="Batch Content Enrichment"
-      description="Enrich study content with external data from research databases"
-    >
+  const content = (
+    <>
       <Helmet>
         <title>Batch Content Enrichment | Admin Dashboard</title>
       </Helmet>
@@ -483,6 +480,17 @@ export default function BatchEnrichmentPage() {
           </Card>
         </TabsContent>
       </Tabs>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <AdminLayout
+      title="Batch Content Enrichment"
+      description="Enrich study content with external data from research databases"
+    >
+      {content}
     </AdminLayout>
   );
 }

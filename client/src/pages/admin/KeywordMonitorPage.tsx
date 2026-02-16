@@ -107,7 +107,7 @@ interface MonitorResult {
   notes?: string;
 }
 
-export default function KeywordMonitorPage() {
+export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState("keywords");
   const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
   const [selectedResults, setSelectedResults] = useState<number[]>([]);
@@ -516,11 +516,8 @@ export default function KeywordMonitorPage() {
       )
     : [];
 
-  return (
-    <AdminLayout
-      title="Keyword Monitor"
-      description="Manage keywords and monitor scientific databases for new studies"
-    >
+  const content = (
+    <>
       {/* Status Alert */}
       {processingStatus.visible && (
         <Alert
@@ -1482,6 +1479,17 @@ export default function KeywordMonitorPage() {
           } | null
         }
       />
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <AdminLayout
+      title="Keyword Monitor"
+      description="Manage keywords and monitor scientific databases for new studies"
+    >
+      {content}
     </AdminLayout>
   );
 }

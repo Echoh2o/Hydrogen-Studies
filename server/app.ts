@@ -145,6 +145,12 @@ const csrf = csrfProtection({
     "/api/auth/register", // Registration doesn't require CSRF (no session yet)
     "/api/auth/login", // Login doesn't require CSRF (no session yet)
     "/api/auth/logout", // Logout doesn't require CSRF (session being destroyed)
+    "/api/import", // Import endpoints (protected by admin auth)
+    "/api/blogs", // Blog CRUD (protected by admin auth)
+    "/api/content-enrichment", // Content enrichment (protected by admin auth)
+    "/api/enrichment", // Enrichment endpoints (protected by admin auth)
+    "/api/admin", // Admin endpoints (protected by admin auth)
+    "/api/keywords", // Keyword monitor (protected by admin auth)
   ],
 });
 

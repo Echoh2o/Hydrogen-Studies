@@ -116,28 +116,23 @@ export default function StudiesManagementPage() {
         </TabsContent>
 
         <TabsContent value="import">
-          {/* Research import component */}
-          <ResearchImportPage />
+          <ResearchImportPage embedded />
         </TabsContent>
 
         <TabsContent value="monitor">
-          {/* Keyword monitoring component */}
-          <KeywordMonitorPage />
+          <KeywordMonitorPage embedded />
         </TabsContent>
 
         <TabsContent value="enrichment">
-          {/* Content enrichment component */}
-          <ContentEnrichmentPage />
+          <ContentEnrichmentPage embedded />
         </TabsContent>
 
         <TabsContent value="batch">
-          {/* Batch enrichment component */}
-          <BatchEnrichmentPage />
+          <BatchEnrichmentPage embedded />
         </TabsContent>
 
         <TabsContent value="images">
-          {/* Image generation component */}
-          <ImageGenerationPage />
+          <ImageGenerationPage embedded />
         </TabsContent>
       </Tabs>
     </AdminLayout>
