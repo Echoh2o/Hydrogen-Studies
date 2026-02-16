@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 
 // Comprehensive environment validation
 export function validateEnvironment() {
@@ -22,8 +23,7 @@ export function validateEnvironment() {
 
   // Generate SESSION_SECRET if not provided (with warning)
   if (!process.env.SESSION_SECRET) {
-    const crypto = require("crypto");
-    process.env.SESSION_SECRET = crypto.randomBytes(32).toString("hex");
+    process.env.SESSION_SECRET = randomBytes(32).toString("hex");
     console.warn(
       "⚠️  SESSION_SECRET not set — generated a random secret for this instance.",
     );

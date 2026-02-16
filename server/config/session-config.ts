@@ -5,6 +5,7 @@
 
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import { randomBytes } from "crypto";
 import { pool } from "../db";
 
 const PgSession = connectPgSimple(session);
@@ -167,6 +168,5 @@ export function getSessionMiddleware() {
  * Generates a cryptographically secure session secret
  */
 export function generateSessionSecret(): string {
-  const crypto = require("crypto");
-  return crypto.randomBytes(32).toString("hex");
+  return randomBytes(32).toString("hex");
 }
