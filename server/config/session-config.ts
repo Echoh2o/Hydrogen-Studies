@@ -143,11 +143,12 @@ export function getSessionMiddleware() {
         initPromise = getSessionConfig()
           .then((config) => {
             sessionMiddleware = session(config);
-            console.log("✅ Session middleware initialized");
+            console.log("Session middleware initialized");
           })
           .catch((err) => {
-            console.error("❌ Failed to initialize session middleware:", err);
-            throw err;
+            // Reset so next request retries initialization
+            initPromise = null;
+            console.error("Failed to initialize session middleware:", err);
           });
       }
       await initPromise;
@@ -156,7 +157,8 @@ export function getSessionMiddleware() {
     if (sessionMiddleware) {
       sessionMiddleware(req, res, next);
     } else {
-      next(new Error("Session middleware not initialized"));
+      // Session store failed — continue without session instead of crashing
+      next();
     }
   };
 }

@@ -149,18 +149,22 @@ export function csrfProtection(options: CsrfOptions = {}) {
 }
 
 /**
- * Ensures a CSRF token exists for the session
+ * Ensures a CSRF token exists for the session.
+ * Reuses the same token+secret pair for the session lifetime
+ * so the cookie hash stays consistent across GET/POST requests.
  */
 function ensureCsrfToken(req: Request, res: Response, cookieOptions: any) {
   const session = req.session as any;
 
-  // Generate secret if it doesn't exist
+  // Generate secret and token once per session
   if (!session.csrfSecret) {
     session.csrfSecret = generateToken();
   }
+  if (!session.csrfToken) {
+    session.csrfToken = generateToken();
+  }
 
-  // Generate token and set cookie
-  const token = generateToken();
+  const token = session.csrfToken;
   const hashedToken = hashToken(token, session.csrfSecret);
 
   res.cookie(CSRF_COOKIE, hashedToken, {

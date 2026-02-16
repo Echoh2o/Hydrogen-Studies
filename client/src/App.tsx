@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -218,8 +218,8 @@ function Router() {
         {/* Core Public Routes */}
         <Route path="/" component={HomePage} />
         <Route path="/studies" component={Studies} />
-        <Route path="/study/:id" component={StudyPage} />
-        <Route path="/study/:slug" component={StudyDetailsPage} />
+        <Route path="/study/id/:id" component={StudyPage} />
+        <Route path="/study/:slug" component={SEOStudyPage} />
         <Route path="/studies/:slug" component={SEOStudyPage} />
         <Route path="/search" component={SearchPage} />
         <Route
@@ -523,48 +523,11 @@ function Router() {
         <Route path="/browse-by-tags" component={TaggedStudiesPage} />
 
         {/* Legacy route redirects */}
-        <Route
-          path="/categories"
-          component={() => {
-            window.location.replace("/explore-by-condition");
-            return null;
-          }}
-        />
-        <Route
-          path="/category/:id"
-          component={() => {
-            window.location.replace("/explore-by-condition");
-            return null;
-          }}
-        />
-        <Route
-          path="/resources"
-          component={() => {
-            window.location.replace("/recommendations");
-            return null;
-          }}
-        />
-        <Route
-          path="/learn"
-          component={() => {
-            window.location.replace("/about");
-            return null;
-          }}
-        />
-        <Route
-          path="/improved-search"
-          component={() => {
-            window.location.replace("/search");
-            return null;
-          }}
-        />
-
-        {/* SEO-optimized study routes */}
-        <Route path="/study/:slug" component={SEOStudyPage} />
-        <Route path="/study/id/:id" component={SEOStudyPage} />
-
-        {/* Legacy studies route - redirect to study */}
-        <Route path="/studies/:id/:slug?" component={EnhancedStudyPage} />
+        <Route path="/categories">{() => <Redirect to="/explore-by-condition" />}</Route>
+        <Route path="/category/:id">{() => <Redirect to="/explore-by-condition" />}</Route>
+        <Route path="/resources">{() => <Redirect to="/recommendations" />}</Route>
+        <Route path="/learn">{() => <Redirect to="/about" />}</Route>
+        <Route path="/improved-search">{() => <Redirect to="/search" />}</Route>
 
         {/* 404 - Must be last */}
         <Route component={NotFound} />

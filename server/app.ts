@@ -36,6 +36,7 @@ import {
 
 // Route imports
 import authRoutes from "./routes/auth-routes";
+import { requireAdmin } from "./auth";
 import studiesRouter from "./routes/studies-router";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
@@ -203,10 +204,10 @@ app.use("/api/consumer-categories", consumerCategoriesRoutes);
 app.use("/api/keywords", keywordMonitorRoutes);
 app.use("/api/keywords/monitor", keywordMonitorScheduleRoutes);
 
-// Quality Monitoring (Keep existing imports for now)
-app.get("/api/admin/quality/monitor", async (req, res) => {
+// Quality Monitoring — protected with admin auth
+app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
   try {
-    const { qualityMonitor } = await import("./quality-assurance-monitor.js");
+    const { qualityMonitor } = await import("./utils/quality-assurance-monitor");
     const report = qualityMonitor.getQualityReport();
     res.json(report);
   } catch (error) {
@@ -215,9 +216,9 @@ app.get("/api/admin/quality/monitor", async (req, res) => {
   }
 });
 
-app.get("/api/admin/quality/integrity", async (req, res) => {
+app.get("/api/admin/quality/integrity", requireAdmin, async (req, res) => {
   try {
-    const { dataIntegrityValidator } = await import("./data-integrity-validator.js");
+    const { dataIntegrityValidator } = await import("./data-integrity-validator");
     const validation = await dataIntegrityValidator.validateDataIntegrity();
     res.json(validation);
   } catch (error) {
@@ -226,9 +227,9 @@ app.get("/api/admin/quality/integrity", async (req, res) => {
   }
 });
 
-app.post("/api/admin/quality/fix-issues", async (req, res) => {
+app.post("/api/admin/quality/fix-issues", requireAdmin, async (req, res) => {
   try {
-    const { dataIntegrityValidator } = await import("./data-integrity-validator.js");
+    const { dataIntegrityValidator } = await import("./data-integrity-validator");
     const result = await dataIntegrityValidator.fixCommonIssues();
     res.json(result);
   } catch (error) {
@@ -237,9 +238,9 @@ app.post("/api/admin/quality/fix-issues", async (req, res) => {
   }
 });
 
-app.get("/api/admin/quality/tests", async (req, res) => {
+app.get("/api/admin/quality/tests", requireAdmin, async (req, res) => {
   try {
-    const { qualityTests } = await import("./automated-quality-tests.js");
+    const { qualityTests } = await import("./automated-quality-tests");
     const results = await qualityTests.runAllTests();
     res.json(results);
   } catch (error) {
