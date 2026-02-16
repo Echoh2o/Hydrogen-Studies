@@ -36,7 +36,7 @@ interface BatchImageResponse {
   studyIds?: number[];
 }
 
-const ImageGenerationPage: React.FC = () => {
+const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}) => {
   const { toast } = useToast();
   const [batchSize, setBatchSize] = useState<number>(5);
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
@@ -248,11 +248,8 @@ const ImageGenerationPage: React.FC = () => {
     fetchStudiesNeedingImages();
   }, []);
 
-  return (
-    <AdminLayout
-      title="Image Generation"
-      description="Generate scientific images for studies without media"
-    >
+  const content = (
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -425,6 +422,17 @@ const ImageGenerationPage: React.FC = () => {
           ))}
         </div>
       )}
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <AdminLayout
+      title="Image Generation"
+      description="Generate scientific images for studies without media"
+    >
+      {content}
     </AdminLayout>
   );
 };

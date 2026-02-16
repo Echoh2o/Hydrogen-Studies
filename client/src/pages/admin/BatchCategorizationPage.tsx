@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import AdminLayout from "@/components/layout/AdminLayout";
+import AdminLayout from "@/components/admin/AdminLayout";
 
 interface Study {
   id: number;
@@ -146,7 +146,7 @@ const BatchCategorizationPage = () => {
     ) || [];
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Batch Categorization">
       <div className="container mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold text-neutral-800 mb-6">
           Consumer-Friendly Categorization

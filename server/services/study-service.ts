@@ -122,31 +122,25 @@ export class StudyService {
         whereConditions.push(sql`${studies.publishDate} <= ${filters.dateTo}`);
       }
 
+      // Build WHERE clause
+      const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
       // Count query
-      const countQuery = db.select({ value: count() }).from(studies);
-      if (whereConditions.length > 0) {
-        countQuery.where(and(...whereConditions));
-      }
-      const countResult = await countQuery;
+      const countResult = whereClause
+        ? await db.select({ value: count() }).from(studies).where(whereClause)
+        : await db.select({ value: count() }).from(studies);
       const total = countResult[0]?.value || 0;
 
       // Pagination
       const page = Math.max(1, parseInt(filters.page?.toString() || "1", 10));
-      const pageSize = Math.min(100, Math.max(1, parseInt(filters.limit?.toString() || filters.pageSize?.toString() || "10", 10)));
+      const pageSize = Math.min(100, Math.max(1, parseInt(filters.limit?.toString() || filters.pageSize?.toString() || "20", 10)));
       const offset = (page - 1) * pageSize;
-
-      // Main query
-      let mainQuery = db.select().from(studies);
-      if (whereConditions.length > 0) {
-        mainQuery.where(and(...whereConditions));
-      }
 
       // Sorting
       const sortField = filters.sortField || filters.sortBy || "publishDate";
-      const sortOrder = filters.sortOrder === "asc" ? "asc" : "desc"; // Default to desc if not specified or invalid (unless explicitly asc)
-      
+      const sortOrder = filters.sortOrder === "asc" ? "asc" : "desc";
+
       let sortColumn;
-      let sortSql;
 
       // Map special sort fields
       if (sortField === "date") sortColumn = studies.publishDate;
@@ -156,18 +150,14 @@ export class StudyService {
       else if (sortField === "publishYear") sortColumn = studies.publishYear;
       else if (sortField === "viewCount") sortColumn = studies.viewCount;
       else if (sortField === "journalPublishDate") sortColumn = studies.journalPublishDate;
-      else sortColumn = studies.id; // Default sort by ID if unknown, or handled below
+      else sortColumn = studies.id;
 
-      if (sortOrder === "asc") {
-         mainQuery.orderBy(asc(sortColumn));
-      } else {
-         // Default usually desc
-         mainQuery.orderBy(desc(sortColumn));
-      }
+      const orderByClause = sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
 
-      mainQuery.limit(pageSize).offset(offset);
-
-      const data = await mainQuery;
+      // Main query - build complete chain
+      const data = whereClause
+        ? await db.select().from(studies).where(whereClause).orderBy(orderByClause).limit(pageSize).offset(offset)
+        : await db.select().from(studies).orderBy(orderByClause).limit(pageSize).offset(offset);
 
       return {
         data,

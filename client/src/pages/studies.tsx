@@ -21,13 +21,18 @@ import {
   EmptyState,
 } from "@/components/ui/loading-states";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { FileSearch } from "lucide-react";
+import { FileSearch, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Study } from "@/types";
 import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function Studies() {
   const [location] = useLocation();
   const urlParams = new URLSearchParams(location.split("?")[1] || "");
+
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(urlParams.get("page") || "1")
+  );
+  const pageSize = 20;
 
   const [filters, setFilters] = useState({
     query: urlParams.get("query") || "",
@@ -54,39 +59,30 @@ export default function Studies() {
   });
 
   // Create query parameters for API request
-  const queryParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => {
-    // Only add parameters that have actual values
-    if (value !== undefined && value !== null && value !== "") {
-      // For arrays, join with commas
-      if (Array.isArray(value) && value.length > 0) {
-        queryParams.append(key, value.join(","));
-      } else if (typeof value === "boolean") {
-        queryParams.append(key, value.toString());
-      } else if (value) {
-        // Convert empty strings to undefined
-        const stringValue = value.toString().trim();
-        if (stringValue) {
-          queryParams.append(key, stringValue);
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    // Always include pagination
+    params.append("page", currentPage.toString());
+    params.append("limit", pageSize.toString());
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        if (Array.isArray(value) && value.length > 0) {
+          params.append(key, value.join(","));
+        } else if (typeof value === "boolean") {
+          if (value) params.append(key, value.toString());
+        } else if (value) {
+          const stringValue = value.toString().trim();
+          if (stringValue && stringValue !== "all" && stringValue !== "any") {
+            params.append(key, stringValue);
+          }
         }
       }
-    }
-  });
-
-  // Update query when filters change
-  useEffect(() => {
-    // Update the URL with new filters without navigating
-    const newParams = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value && key !== "sortBy") newParams.append(key, value.toString());
     });
+    return params;
+  };
 
-    // Only update URL if we have parameters and they're different
-    const newSearch = newParams.toString();
-    if (newSearch && window.location.search !== `?${newSearch}`) {
-      window.history.replaceState(null, "", `?${newSearch}`);
-    }
-  }, [filters]);
+  const queryParams = buildQueryParams();
 
   const {
     data: studiesResponse,
@@ -113,9 +109,12 @@ export default function Studies() {
 
   // Extract the studies array from the paginated response
   const studies = studiesResponse?.data || [];
+  const totalStudies = studiesResponse?.total || 0;
+  const totalPages = studiesResponse?.pageCount || Math.ceil(totalStudies / pageSize);
 
   const handleFilterChange = (key: string, value: string | boolean) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Reset to page 1 on filter change
   };
 
   const handleResetFilters = () => {
@@ -128,8 +127,7 @@ export default function Studies() {
       category: "",
       peerReviewed: false,
       sortBy: "date",
-      // Reset advanced options
-      useFuzzyMatch: true,
+      useFuzzyMatch: false,
       searchInMethods: true,
       searchInResults: true,
       searchInConclusion: true,
@@ -137,33 +135,18 @@ export default function Studies() {
       enrichmentStatus: "",
       tags: [],
     });
+    setCurrentPage(1);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Search submitted with filters:", filters);
-
-    // Update URL with search parameters
-    const searchParams = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        if (Array.isArray(value) && value.length > 0) {
-          searchParams.append(key, value.join(","));
-        } else if (value) {
-          searchParams.append(key, value.toString());
-        }
-      }
-    });
-
-    const newSearch = searchParams.toString();
-    window.history.pushState(
-      null,
-      "",
-      newSearch ? `?${newSearch}` : window.location.pathname,
-    );
-
-    // Explicitly force a refetch
+    setCurrentPage(1);
     refetch();
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Categories for filter dropdown
@@ -174,7 +157,28 @@ export default function Studies() {
     { id: "inflammation", name: "Inflammation" },
     { id: "cancer", name: "Cancer Research" },
     { id: "aging", name: "Anti-Aging" },
+    { id: "neurological", name: "Neurological" },
+    { id: "respiratory", name: "Respiratory" },
+    { id: "renal", name: "Renal / Kidney" },
+    { id: "hepatic", name: "Hepatic / Liver" },
+    { id: "dermatological", name: "Dermatological / Skin" },
+    { id: "gastrointestinal", name: "Gastrointestinal" },
+    { id: "exercise", name: "Exercise & Performance" },
+    { id: "oncology", name: "Oncology" },
   ];
+
+  // Generate page numbers to show
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    const end = Math.min(totalPages, start + maxVisible - 1);
+    start = Math.max(1, end - maxVisible + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
 
   return (
     <>
@@ -191,7 +195,12 @@ export default function Studies() {
       <div className="bg-neutral-100 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-screen-xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6">Studies</h1>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold">All Studies</h1>
+              <span className="text-sm text-neutral-600">
+                {totalStudies.toLocaleString()} studies found
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Filters sidebar */}
@@ -294,128 +303,6 @@ export default function Studies() {
 
                     <Separator />
 
-                    <div className="space-y-4">
-                      <details className="text-sm">
-                        <summary className="font-medium cursor-pointer">
-                          Advanced Search Options
-                        </summary>
-                        <div className="pl-2 pt-3 space-y-3">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="fuzzy-match"
-                              checked={filters.useFuzzyMatch}
-                              onCheckedChange={(checked) =>
-                                handleFilterChange(
-                                  "useFuzzyMatch",
-                                  Boolean(checked),
-                                )
-                              }
-                            />
-                            <Label htmlFor="fuzzy-match">
-                              Enable fuzzy matching for typos
-                            </Label>
-                          </div>
-
-                          <div>
-                            <p className="text-sm font-medium mb-2">
-                              Search within sections:
-                            </p>
-                            <div className="grid grid-cols-2 gap-2 pl-2">
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="search-methods"
-                                  checked={filters.searchInMethods}
-                                  onCheckedChange={(checked) =>
-                                    handleFilterChange(
-                                      "searchInMethods",
-                                      Boolean(checked),
-                                    )
-                                  }
-                                />
-                                <Label htmlFor="search-methods">Methods</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="search-results"
-                                  checked={filters.searchInResults}
-                                  onCheckedChange={(checked) =>
-                                    handleFilterChange(
-                                      "searchInResults",
-                                      Boolean(checked),
-                                    )
-                                  }
-                                />
-                                <Label htmlFor="search-results">Results</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="search-conclusion"
-                                  checked={filters.searchInConclusion}
-                                  onCheckedChange={(checked) =>
-                                    handleFilterChange(
-                                      "searchInConclusion",
-                                      Boolean(checked),
-                                    )
-                                  }
-                                />
-                                <Label htmlFor="search-conclusion">
-                                  Conclusion
-                                </Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="search-simplified"
-                                  checked={filters.searchInSimplified}
-                                  onCheckedChange={(checked) =>
-                                    handleFilterChange(
-                                      "searchInSimplified",
-                                      Boolean(checked),
-                                    )
-                                  }
-                                />
-                                <Label htmlFor="search-simplified">
-                                  Simplified text
-                                </Label>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label htmlFor="enrichment-status">
-                              Content Enrichment Level
-                            </Label>
-                            <Select
-                              value={filters.enrichmentStatus}
-                              onValueChange={(value) =>
-                                handleFilterChange("enrichmentStatus", value)
-                              }
-                            >
-                              <SelectTrigger
-                                id="enrichment-status"
-                                className="mt-1"
-                              >
-                                <SelectValue placeholder="Any enrichment level" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="any">
-                                  Any enrichment level
-                                </SelectItem>
-                                <SelectItem value="complete">
-                                  Complete (all sections)
-                                </SelectItem>
-                                <SelectItem value="partial">
-                                  Partial (some sections)
-                                </SelectItem>
-                                <SelectItem value="basic">
-                                  Basic (title/abstract only)
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-
                     <div>
                       <Label htmlFor="sort-by">Sort By</Label>
                       <Select
@@ -429,7 +316,6 @@ export default function Studies() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="date">Most Recent</SelectItem>
-                          <SelectItem value="relevance">Relevance</SelectItem>
                           <SelectItem value="title">Title (A-Z)</SelectItem>
                         </SelectContent>
                       </Select>
@@ -463,11 +349,69 @@ export default function Studies() {
                       onRetry={() => refetch()}
                     />
                   ) : studies && studies.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {studies.map((study) => (
-                        <StudyCard key={study.id} study={study} />
-                      ))}
-                    </div>
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {studies.map((study) => (
+                          <StudyCard key={study.id} study={study} />
+                        ))}
+                      </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="mt-8 flex flex-col items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => goToPage(1)}
+                              disabled={currentPage === 1}
+                            >
+                              <ChevronsLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => goToPage(currentPage - 1)}
+                              disabled={currentPage === 1}
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+
+                            {getPageNumbers().map((page) => (
+                              <Button
+                                key={page}
+                                variant={page === currentPage ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => goToPage(page)}
+                                className="min-w-[36px]"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => goToPage(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => goToPage(totalPages)}
+                              disabled={currentPage === totalPages}
+                            >
+                              <ChevronsRight className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-sm text-neutral-600">
+                            Page {currentPage} of {totalPages} ({totalStudies.toLocaleString()} total studies)
+                          </p>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <EmptyState
                       title="No studies found"

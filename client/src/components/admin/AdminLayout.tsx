@@ -37,7 +37,7 @@ export default function AdminLayout({
       items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }],
     },
     {
-      title: "Studies Management",
+      title: "Studies",
       items: [
         { href: "/admin/studies", label: "Manage Studies", icon: Database },
         {
@@ -46,46 +46,21 @@ export default function AdminLayout({
           icon: Search,
         },
         {
+          href: "/admin/content-enrichment",
+          label: "Content Enrichment",
+          icon: RefreshCw,
+        },
+        {
           href: "/admin/keyword-monitor",
-          label: "Monitor Keywords",
+          label: "Keyword Monitor",
           icon: Calendar,
         },
-        {
-          href: "/admin/content-enrichment",
-          label: "Enrich Content",
-          icon: RefreshCw,
-        },
-        {
-          href: "/admin/batch-enrichment",
-          label: "Batch Enrichment",
-          icon: RefreshCw,
-        },
-        {
-          href: "/admin/image-generation",
-          label: "Generate Images",
-          icon: Image,
-        },
       ],
     },
     {
-      title: "Blog Management",
+      title: "Content",
       items: [
-        { href: "/admin/blogs", label: "Manage Blogs", icon: FileText },
-        {
-          href: "/admin/blog-generator",
-          label: "Generate Blogs",
-          icon: FileText,
-        },
-        {
-          href: "/admin/blog-categories",
-          label: "Blog Categories",
-          icon: FileText,
-        },
-      ],
-    },
-    {
-      title: "Data & Import",
-      items: [
+        { href: "/admin/blogs", label: "Blog Articles", icon: FileText },
         { href: "/admin/data-import", label: "Data Import", icon: Upload },
       ],
     },
@@ -93,8 +68,8 @@ export default function AdminLayout({
       title: "Administration",
       items: [
         { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
-        { href: "/admin/settings", label: "Settings", icon: Settings },
         { href: "/admin/users", label: "Users", icon: UserCog },
+        { href: "/admin/settings", label: "Settings", icon: Settings },
       ],
     },
   ];

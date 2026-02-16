@@ -27,7 +27,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { Study } from "@/types/study";
 import { formatDate } from "@/lib/utils";
 
-export default function ContentEnrichmentPage() {
+export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState("candidates");
   const [processingStatus, setProcessingStatus] = useState<{
     message: string;
@@ -429,11 +429,8 @@ export default function ContentEnrichmentPage() {
     );
   };
 
-  return (
-    <AdminLayout
-      title="Content Enrichment"
-      description="Enhance study content by fetching full abstracts, methods, results, and more from DOI sources."
-    >
+  const content = (
+    <>
       {processingStatus.visible && (
         <Alert
           variant={
@@ -503,6 +500,17 @@ export default function ContentEnrichmentPage() {
           {renderRecentlyEnrichedList()}
         </TabsContent>
       </Tabs>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <AdminLayout
+      title="Content Enrichment"
+      description="Enhance study content by fetching full abstracts, methods, results, and more from DOI sources."
+    >
+      {content}
     </AdminLayout>
   );
 }

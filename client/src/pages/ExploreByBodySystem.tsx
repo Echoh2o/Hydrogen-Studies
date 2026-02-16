@@ -176,7 +176,7 @@ const ExploreByBodySystem = () => {
                 </CardContent>
                 <CardFooter className="flex justify-center pb-6">
                   <Link
-                    href={`/body-system/${encodeURIComponent(category.name)}`}
+                    href={`/search?q=${encodeURIComponent(category.name)}`}
                   >
                     <Button className="mt-2">
                       Browse Studies <ArrowRight className="h-4 w-4 ml-2" />

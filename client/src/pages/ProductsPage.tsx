@@ -253,13 +253,17 @@ export default function ProductsPage() {
                     </div>
                   </div>
 
-                  <Button className="w-full mb-2">
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    View Product Details
-                  </Button>
-                  <Button variant="outline" className="w-full text-sm">
-                    Read Scientific Studies
-                  </Button>
+                  <a href={product.url} target="_blank" rel="noopener noreferrer">
+                    <Button className="w-full mb-2">
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      View Product Details
+                    </Button>
+                  </a>
+                  <Link href={`/search?q=${encodeURIComponent(product.name.split(" ").slice(0, 2).join(" "))}`}>
+                    <Button variant="outline" className="w-full text-sm">
+                      Read Scientific Studies
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}

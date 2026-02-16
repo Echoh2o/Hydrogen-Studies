@@ -18,14 +18,11 @@ import SemanticScholarSearch from "@/components/admin/SemanticScholarSearch";
 import { AlertCircle, Link as LinkIcon, FileSearch } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default function ResearchImportPage() {
+export default function ResearchImportPage({ embedded }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState("url");
 
-  return (
-    <AdminLayout
-      title="Research Import"
-      description="Import research from various sources"
-    >
+  const content = (
+    <>
       <Helmet>
         <title>Research Import | HydrogenStudies Admin</title>
       </Helmet>
@@ -173,6 +170,17 @@ export default function ResearchImportPage() {
           </div>
         </div>
       </div>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <AdminLayout
+      title="Research Import"
+      description="Import research from various sources"
+    >
+      {content}
     </AdminLayout>
   );
 }
