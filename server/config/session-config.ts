@@ -82,21 +82,8 @@ async function ensureSessionTable(): Promise<void> {
 export async function getSessionConfig() {
   const isProduction = process.env.NODE_ENV === "production";
 
-  if (isProduction && !process.env.SESSION_SECRET) {
-    throw new Error(
-      "SESSION_SECRET is required in production. " +
-        "Generate a secure secret using: openssl rand -hex 32",
-    );
-  }
-
-  let sessionSecret = process.env.SESSION_SECRET;
-  if (!sessionSecret) {
-    sessionSecret = "dev-secret-change-me-before-production";
-    console.warn("Using default SESSION_SECRET for development only.");
-    console.warn(
-      "Set SESSION_SECRET environment variable for production.",
-    );
-  }
+  // SESSION_SECRET is set by validateEnvironment() (auto-generated if missing)
+  const sessionSecret = process.env.SESSION_SECRET || "dev-secret-change-me";
 
   // Ensure session table exists before creating the store
   await ensureSessionTable();
