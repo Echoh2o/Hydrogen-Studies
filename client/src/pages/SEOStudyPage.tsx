@@ -13,6 +13,19 @@ import {
   HiDocumentText,
 } from "react-icons/hi";
 import { Helmet } from "react-helmet";
+import DOMPurify from "dompurify";
+
+/** Convert simple markdown to sanitized HTML */
+function markdownToSafeHtml(text: string): string {
+  const html = text
+    .replace(/###\s/g, '<h4 class="text-lg font-semibold mt-6 mb-3 text-neutral-800">')
+    .replace(/####\s/g, '<h5 class="text-base font-medium mt-4 mb-2 text-neutral-800">')
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n\n/g, '</p><p class="mb-4">')
+    .replace(/^/, '<p class="mb-4">')
+    .replace(/$/, "</p>");
+  return DOMPurify.sanitize(html);
+}
 import { useEffect } from "react";
 import { StudyInfoPanel } from "@/components/StudyInfoPanel";
 import SiteHeader from "@/components/layout/SiteHeader";
@@ -382,22 +395,7 @@ export default function SEOStudyPage() {
                         <div className="text-neutral-700 leading-relaxed prose prose-neutral max-w-none">
                           <div
                             dangerouslySetInnerHTML={{
-                              __html: study.methods
-                                .replace(
-                                  /###\s/g,
-                                  '<h4 class="text-lg font-semibold mt-6 mb-3 text-neutral-800">',
-                                )
-                                .replace(
-                                  /####\s/g,
-                                  '<h5 class="text-base font-medium mt-4 mb-2 text-neutral-800">',
-                                )
-                                .replace(
-                                  /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>",
-                                )
-                                .replace(/\n\n/g, '</p><p class="mb-4">')
-                                .replace(/^/, '<p class="mb-4">')
-                                .replace(/$/, "</p>"),
+                              __html: markdownToSafeHtml(study.methods),
                             }}
                           />
                         </div>
@@ -412,15 +410,7 @@ export default function SEOStudyPage() {
                         <div className="text-neutral-700 leading-relaxed prose prose-neutral max-w-none">
                           <div
                             dangerouslySetInnerHTML={{
-                              __html: study.results
-                                .replace(
-                                  /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>",
-                                )
-                                .replace(/\*\s/g, "<li>")
-                                .replace(/\n\n/g, '</p><p class="mb-4">')
-                                .replace(/^/, '<p class="mb-4">')
-                                .replace(/$/, "</p>"),
+                              __html: markdownToSafeHtml(study.results),
                             }}
                           />
                         </div>

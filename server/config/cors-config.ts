@@ -83,14 +83,10 @@ export function getCorsConfig(): cors.CorsOptions {
         return callback(null, true);
       }
 
+      // If no ALLOWED_ORIGINS configured, allow all origins
+      // (common for single-service deployments where API and UI are same origin)
       if (allowedOrigins.length === 0) {
-        console.warn(
-          `CORS blocked origin: ${origin} (no ALLOWED_ORIGINS configured)`,
-        );
-        return callback(
-          new Error("CORS not allowed - no allowed origins configured"),
-          false,
-        );
+        return callback(null, true);
       }
 
       if (allowedOrigins.includes(origin)) {

@@ -79,6 +79,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <Helmet>
+        <title>Hydrogen Studies - Science-Backed Hydrogen Health Research</title>
+        <meta name="description" content="Explore peer-reviewed research on hydrogen therapy, hydrogen water, and molecular hydrogen health benefits. Browse hundreds of scientific studies." />
+      </Helmet>
       <SiteHeader />
 
       {/* Hero Section */}

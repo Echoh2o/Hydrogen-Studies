@@ -251,18 +251,14 @@ const StudyPage = () => {
     },
   });
 
-  // Get all studies for related studies section
-  const { data: allStudies } = useQuery<any[]>({
-    queryKey: ["/api/studies"],
+  // Get related studies (same category, exclude current) — limited query
+  const { data: relatedData } = useQuery<any>({
+    queryKey: ["/api/studies", { category: study?.category, limit: "4" }],
+    enabled: !!study?.category,
   });
-
-  // Get related studies (same category, exclude current)
-  const relatedStudies =
-    allStudies && study && Array.isArray(allStudies)
-      ? allStudies
-          .filter((s: any) => s.category === study.category && s.id !== studyId)
-          .slice(0, 3)
-      : [];
+  const relatedStudies = (relatedData?.data || relatedData || [])
+    .filter((s: any) => s.id !== studyId)
+    .slice(0, 3);
 
   if (isLoading) {
     return (

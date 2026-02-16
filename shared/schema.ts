@@ -108,18 +108,18 @@ export const userPreferences = pgTable("user_preferences", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
-  categories: text("categories").array(),
-  keywords: text("keywords").array(),
-  authors: text("authors").array(),
+    .references(() => users.id, { onDelete: "cascade" }),
+  categories: text("categories").array().default([]),
+  keywords: text("keywords").array().default([]),
+  authors: text("authors").array().default([]),
   // Intelligent Preferences
-  preferredHealthBenefits: text("preferred_health_benefits").array(),
-  preferredHealthConditions: text("preferred_health_conditions").array(),
-  preferredBodySystems: text("preferred_body_systems").array(),
-  preferredLifeStages: text("preferred_life_stages").array(),
-  preferredStudyTypes: text("preferred_study_types").array(),
+  preferredHealthBenefits: text("preferred_health_benefits").array().default([]),
+  preferredHealthConditions: text("preferred_health_conditions").array().default([]),
+  preferredBodySystems: text("preferred_body_systems").array().default([]),
+  preferredLifeStages: text("preferred_life_stages").array().default([]),
+  preferredStudyTypes: text("preferred_study_types").array().default([]),
   preferredReadingLevel: text("preferred_reading_level"),
-  excludedTopics: text("excluded_topics").array(),
+  excludedTopics: text("excluded_topics").array().default([]),
   emailNotifications: boolean("email_notifications").default(true),
   notificationFrequency: text("notification_frequency").default("weekly"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -131,7 +131,7 @@ export const searchHistory = pgTable("search_history", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   searchQuery: text("search_query").notNull(),
   searchDate: timestamp("search_date").notNull().defaultNow(),
 });
@@ -142,10 +142,10 @@ export const userStudyInteractions = pgTable(
   {
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     isSaved: boolean("is_saved").default(false),
     viewCount: integer("view_count").default(0),
     lastViewed: timestamp("last_viewed").notNull().defaultNow(),
@@ -161,8 +161,8 @@ export const userStudyInteractions = pgTable(
 // User reading history (Append-only log for recommendations)
 export const userReadingHistory = pgTable("user_reading_history", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => users.id),
-  studyId: integer("study_id").notNull().references(() => studies.id),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  studyId: integer("study_id").notNull().references(() => studies.id, { onDelete: "cascade" }),
   interactionType: text("interaction_type").notNull().default("view"), // view, like, share
   viewedAt: timestamp("viewed_at").notNull().defaultNow(),
 });
@@ -172,7 +172,7 @@ export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   message: text("message").notNull(),
   type: text("type").notNull(), // "study", "blog", "system"

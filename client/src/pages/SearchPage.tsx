@@ -60,6 +60,7 @@ export default function SearchPage() {
   const [location] = useLocation();
   const [studies, setStudies] = useState<Study[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -96,12 +97,19 @@ export default function SearchPage() {
       }
 
       const response = await fetch(`/api/advanced-search?${params}`);
+      if (!response.ok) {
+        throw new Error(`Search failed (${response.status})`);
+      }
       const data = await response.json();
 
       setStudies(data.studies || []);
       setTotal(data.total || 0);
-    } catch (error) {
-      console.error("Search error:", error);
+      setError(null);
+    } catch (err) {
+      console.error("Search error:", err);
+      setError("Failed to load search results. Please try again.");
+      setStudies([]);
+      setTotal(0);
     }
     setLoading(false);
   };
@@ -275,7 +283,14 @@ export default function SearchPage() {
           </Collapsible>
 
           {/* Results */}
-          {loading ? (
+          {error ? (
+            <div className="text-center py-12">
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button variant="outline" onClick={() => performSearch(searchQuery, { category, country })}>
+                Try Again
+              </Button>
+            </div>
+          ) : loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Searching studies...</p>
@@ -300,6 +315,7 @@ export default function SearchPage() {
                             src={study.image_url}
                             alt="Study illustration"
                             className="w-24 h-24 object-cover rounded-lg ml-4 flex-shrink-0"
+                            loading="lazy"
                           />
                         )}
                       </div>

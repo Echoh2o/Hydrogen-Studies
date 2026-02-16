@@ -151,12 +151,13 @@ export function resetErrorCount(): void {
 /**
  * Initialize health monitoring with periodic checks
  */
+let healthInterval: NodeJS.Timeout | null = null;
+
 export function initializeHealthMonitoring(): void {
-  // Perform health check every 30 seconds
-  setInterval(async () => {
+  if (healthInterval) return;
+  healthInterval = setInterval(async () => {
     try {
       await performHealthCheck();
-
       if (healthStatus.status === "unhealthy") {
         console.warn("Application health degraded:", healthStatus.errors);
       }
@@ -164,6 +165,12 @@ export function initializeHealthMonitoring(): void {
       logError(error as Error);
     }
   }, 30000);
-
   console.log("Health monitoring initialized");
+}
+
+export function stopHealthMonitoring(): void {
+  if (healthInterval) {
+    clearInterval(healthInterval);
+    healthInterval = null;
+  }
 }

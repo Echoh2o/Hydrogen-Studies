@@ -20,6 +20,11 @@ export const pool = new Pool({
   application_name: "hydrogen-studies-app",
 });
 
+// Prevent unhandled pool errors from crashing the process
+pool.on("error", (err) => {
+  console.error("Unexpected error on idle database connection:", err);
+});
+
 export const db = drizzle(pool, {
   schema,
   logger: process.env.NODE_ENV === "development" ? false : undefined,

@@ -49,10 +49,10 @@ router.post("/chat", async (req, res) => {
   try {
     const { query, conversationId } = req.body;
 
-    if (!query || typeof query !== "string") {
+    if (!query || typeof query !== "string" || query.length > 1000) {
       return res.status(400).json({
         success: false,
-        error: "Query is required and must be a string",
+        error: "Query is required, must be a string, and at most 1000 characters",
       });
     }
 
@@ -114,7 +114,7 @@ router.post("/chat", async (req, res) => {
 // Search for relevant studies based on query
 async function searchRelevantStudies(query: string): Promise<any[]> {
   try {
-    const studiesResult = await studyService.getStudies();
+    const studiesResult = await studyService.getStudies({ limit: 200 });
     const studies = studiesResult.data || [];
     const searchTerms = query.toLowerCase().split(/\s+/);
 
@@ -342,10 +342,10 @@ router.post("/advanced-chat", async (req, res) => {
   try {
     const { query, conversationId, context } = req.body;
 
-    if (!query || typeof query !== "string") {
+    if (!query || typeof query !== "string" || query.length > 1000) {
       return res.status(400).json({
         success: false,
-        error: "Query is required and must be a string",
+        error: "Query is required, must be a string, and at most 1000 characters",
       });
     }
 

@@ -78,6 +78,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const app = express();
 
+// Trust proxy for Railway/Docker deployments (needed for secure cookies behind reverse proxy)
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 // Initialize database circuit breaker
 export const dbCircuitBreaker = new DatabaseCircuitBreaker();
 
