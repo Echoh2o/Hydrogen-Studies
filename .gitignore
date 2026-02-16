@@ -27,3 +27,8 @@ uploads/
 # State files
 .auto-image-state.json
 .migration-status.json
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
