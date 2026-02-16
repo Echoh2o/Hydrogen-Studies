@@ -4,7 +4,7 @@ import { Study } from "@shared/schema";
 import {
   HiUser,
   HiBookOpen,
-  HiQuote,
+  HiAnnotation,
   HiDocument,
   HiFilter,
   HiChevronRight,
@@ -181,7 +181,7 @@ const RecentStudiesPage = () => {
                       </div>
                       <div className="flex items-center">
                         <span className="flex items-center text-neutral-500 text-sm mr-4">
-                          <HiQuote className="mr-1" /> {study.citations}{" "}
+                          <HiAnnotation className="mr-1" /> {study.citations}{" "}
                           citations
                         </span>
                         <Link href={`/study/${study.id}`}>

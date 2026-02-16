@@ -55,6 +55,9 @@ import multiFormatRoutes from "./routes/multi-format-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
 import consumerCategoriesRoutes from "./routes/consumer-categories-routes";
 import naturalLanguageSearchRoutes from "./routes/natural-language-search-routes";
+import importRoutes from "./routes/import-routes";
+import europePmcRoutes from "./routes/europepmc-routes";
+import crossRefRoutes from "./routes/crossref-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -208,6 +211,9 @@ app.use(hydrogenRoutes);
 app.use("/api/consumer-categories", consumerCategoriesRoutes);
 app.use("/api/keywords", keywordMonitorRoutes);
 app.use("/api/keywords/monitor", keywordMonitorScheduleRoutes);
+app.use("/api/import", requireAdmin, importRoutes);
+app.use(europePmcRoutes);
+app.use("/api/crossref", crossRefRoutes);
 
 // Quality Monitoring — protected with admin auth
 app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
