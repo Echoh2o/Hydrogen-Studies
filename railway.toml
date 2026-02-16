@@ -1,6 +1,7 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm ci --include=dev && npm run build"
+installCommand = "npm ci --include=dev"
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm run db:push && npm start"
