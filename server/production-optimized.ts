@@ -9,8 +9,8 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { pool } from "./db";
 import { studies } from "../shared/schema.js";
 import { eq, and, ilike, or, sql, desc, asc } from "drizzle-orm";
 

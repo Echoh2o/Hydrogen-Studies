@@ -1,6 +1,4 @@
-import { neon } from "@neondatabase/serverless";
-
-const sql = neon(process.env.DATABASE_URL!);
+import { sqlQuery as sql } from "./db";
 
 interface IntegrityIssue {
   type: string;

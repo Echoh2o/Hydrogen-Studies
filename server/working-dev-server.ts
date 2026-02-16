@@ -6,7 +6,7 @@
 import express from "express";
 import cors from "cors";
 import { createServer } from "http";
-import { neon } from "@neondatabase/serverless";
+import { sqlQuery as neon } from "./db";
 import { setupVite } from "./vite.js";
 
 const app = express();
