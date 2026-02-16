@@ -135,25 +135,57 @@ router.get("/counts", async (req, res) => {
       "Athletes & Fitness",
     ];
 
-    // Single optimized query to get all category counts at once
-    const allCounts = await pool.query(`
-      SELECT c.name, COUNT(DISTINCT s.id) as count
-      FROM studies s
-      INNER JOIN study_categories sc ON s.id = sc.study_id
-      INNER JOIN categories c ON sc.category_id = c.id
-      WHERE c.name IN (
-        'Cardiovascular', 'Neurological', 'Metabolic', 'Inflammation', 
-        'Respiratory', 'Gastrointestinal', 'Cancer Research', 'Kidney', 
-        'Dermatology', 'Aging', 'Fitness'
-      )
-      GROUP BY c.name
-    `);
+    // Try join table first, then fall back to consumer_categories JSON + keyword search
+    let countMap: Record<string, number> = {};
 
-    // Create lookup map for fast access
-    const countMap: Record<string, number> = {};
-    allCounts.rows.forEach((row: any) => {
-      countMap[row.name] = parseInt(row.count);
-    });
+    try {
+      const allCounts = await pool.query(`
+        SELECT c.name, COUNT(DISTINCT s.id) as count
+        FROM studies s
+        INNER JOIN study_categories sc ON s.id = sc.study_id
+        INNER JOIN categories c ON sc.category_id = c.id
+        WHERE c.name IN (
+          'Cardiovascular', 'Neurological', 'Metabolic', 'Inflammation',
+          'Respiratory', 'Gastrointestinal', 'Cancer Research', 'Kidney',
+          'Dermatology', 'Aging', 'Fitness'
+        )
+        GROUP BY c.name
+      `);
+
+      allCounts.rows.forEach((row: any) => {
+        countMap[row.name] = parseInt(row.count);
+      });
+    } catch (e) {
+      // Join table may not exist yet
+    }
+
+    // If join table gave no results, fall back to consumer_categories JSON field + category column
+    const totalFromJoin = Object.values(countMap).reduce((a, b) => a + b, 0);
+    if (totalFromJoin === 0) {
+      // Fallback: count by study category column matching
+      const fallbackMapping: Record<string, string[]> = {
+        "Cardiovascular": ["cardiovascular"],
+        "Neurological": ["neurological"],
+        "Metabolic": ["diabetes"],
+        "Inflammation": ["inflammation"],
+        "Respiratory": ["respiratory"],
+        "Gastrointestinal": ["digestive", "hepatic"],
+        "Cancer Research": ["cancer"],
+        "Kidney": ["kidney"],
+        "Dermatology": ["dermatology"],
+        "Aging": ["review", "antioxidant"],
+        "Fitness": ["exercise"],
+      };
+
+      for (const [consumerName, dbCategories] of Object.entries(fallbackMapping)) {
+        const placeholders = dbCategories.map((_, i) => `$${i + 1}`).join(', ');
+        const result = await pool.query(
+          `SELECT COUNT(*) as count FROM studies WHERE category IN (${placeholders})`,
+          dbCategories
+        );
+        countMap[consumerName] = parseInt(result.rows[0]?.count || '0');
+      }
+    }
 
     // Map to consumer-friendly names with authentic counts
     const healthConditionCounts = conditionCategories.map((name) => ({

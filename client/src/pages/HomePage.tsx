@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
 import {
   Search,
@@ -11,10 +11,6 @@ import {
   Users,
   Award,
   ChevronRight,
-  Play,
-  Menu,
-  X,
-  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +27,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
 
   const benefits = [
     {
@@ -73,7 +70,7 @@ export default function HomePage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/search?search=${encodeURIComponent(searchQuery)}`;
+      navigate(`/search?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
@@ -337,134 +334,95 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section - Hidden for v1, will be added back in v2/v3 */}
-      {/* <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* Browse by Topic Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Browse Research by Topic
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Explore hydrogen therapy research organized by health condition, body system, or delivery method.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <Link href="/explore-by-condition" className="block">
+              <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 h-full">
+                <CardContent className="p-8 text-center">
+                  <Heart className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <CardTitle className="text-xl mb-2">By Health Condition</CardTitle>
+                  <CardDescription>
+                    Heart disease, diabetes, neurological conditions, cancer support, and more
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/explore-by-body-system" className="block">
+              <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 h-full">
+                <CardContent className="p-8 text-center">
+                  <Brain className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                  <CardTitle className="text-xl mb-2">By Body System</CardTitle>
+                  <CardDescription>
+                    Cardiovascular, nervous, respiratory, digestive, immune, and more
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/explore-by-delivery-method" className="block">
+              <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 h-full">
+                <CardContent className="p-8 text-center">
+                  <Droplets className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
+                  <CardTitle className="text-xl mb-2">By Delivery Method</CardTitle>
+                  <CardDescription>
+                    Hydrogen water, inhalation therapy, bathing, tablets, and more
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/explore-by-life-stage">
+              <Button variant="outline" className="rounded-full px-6">By Life Stage</Button>
+            </Link>
+            <Link href="/explore-by-benefit">
+              <Button variant="outline" className="rounded-full px-6">By Health Benefit</Button>
+            </Link>
+            <Link href="/explore-by-mechanism">
+              <Button variant="outline" className="rounded-full px-6">By Mechanism</Button>
+            </Link>
+            <Link href="/chat">
+              <Button variant="outline" className="rounded-full px-6">Ask AI Assistant</Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Ready to Experience the Science?
+            Have Questions About Hydrogen Therapy?
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join thousands who are already discovering the potential of hydrogen
-            water. Start with our research-backed product recommendations.
+            Our AI research assistant can answer your questions based on published scientific studies. Try it for free.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/products">
+            <Link href="/chat">
               <Button size="lg" className="rounded-full px-8">
-                View Products
+                Talk to AI Assistant
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link href="/blog">
               <Button variant="outline" size="lg" className="rounded-full px-8">
-                Read Success Stories
+                Read Our Blog
               </Button>
             </Link>
           </div>
         </div>
-      </section> */}
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Droplets className="h-6 w-6 text-blue-400" />
-                <span className="text-lg font-bold">HydrogenHealth</span>
-              </div>
-              <p className="text-gray-400 text-sm">
-                Your trusted source for hydrogen water research and education.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Research</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <Link
-                    href="/research"
-                    className="hover:text-white transition-colors"
-                  >
-                    Browse Studies
-                  </Link>
-                </li>
-
-                <li>
-                  <Link
-                    href="/categories"
-                    className="hover:text-white transition-colors"
-                  >
-                    By Category
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Learn</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <Link
-                    href="/blog"
-                    className="hover:text-white transition-colors"
-                  >
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/benefits"
-                    className="hover:text-white transition-colors"
-                  >
-                    Health Benefits
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/how-it-works"
-                    className="hover:text-white transition-colors"
-                  >
-                    How It Works
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Products</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <Link
-                    href="/products"
-                    className="hover:text-white transition-colors"
-                  >
-                    Recommendations
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/reviews"
-                    className="hover:text-white transition-colors"
-                  >
-                    Reviews
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/buying-guide"
-                    className="hover:text-white transition-colors"
-                  >
-                    Buying Guide
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>
-              &copy; 2024 HydrogenHealth. All rights reserved. | Based on{" "}
-              {stats[0].number} peer-reviewed studies
-            </p>
-          </div>
-        </div>
-      </footer>
+      </section>
     </div>
   );
 }

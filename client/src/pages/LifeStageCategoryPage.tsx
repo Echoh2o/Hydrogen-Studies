@@ -36,8 +36,9 @@ interface Study {
 }
 
 const LifeStageCategoryPage = () => {
-  const { name } = useParams();
-  const decodedName = name ? decodeURIComponent(name) : "";
+  const params = useParams();
+  const paramValue = (params as any).category || (params as any).name || "";
+  const decodedName = paramValue ? decodeURIComponent(paramValue) : "";
 
   // Map URL slugs to exact database category names
   const categoryMap: Record<string, string> = {

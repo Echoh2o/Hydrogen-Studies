@@ -114,38 +114,22 @@ router.post("/chat", async (req, res) => {
 // Search for relevant studies based on query
 async function searchRelevantStudies(query: string): Promise<any[]> {
   try {
-    const studiesResult = await studyService.getStudies({ limit: 200 });
-    const studies = studiesResult.data || [];
-    const searchTerms = query.toLowerCase().split(/\s+/);
-
-    const scoredStudies = studies.map((study: any) => {
-      let score = 0;
-      const searchableText = [
-        study.title,
-        study.abstract,
-        study.keywords,
-        study.methods,
-        study.results,
-        study.conclusions,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      // Score based on term matches
-      searchTerms.forEach((term) => {
-        const matches = (searchableText.match(new RegExp(term, "g")) || [])
-          .length;
-        score += matches;
-      });
-
-      return { ...study, relevanceScore: score };
+    // Use the study service search with the query for database-level filtering
+    const studiesResult = await studyService.getStudies({
+      query: query,
+      limit: 10,
+      sortBy: "relevance",
     });
+    const studies = studiesResult.data || [];
 
-    // Return top 10 most relevant studies
-    return scoredStudies
-      .filter((study: any) => study.relevanceScore > 0)
-      .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-      .slice(0, 10);
+    // If query-based search returned results, use them
+    if (studies.length > 0) {
+      return studies;
+    }
+
+    // Fallback: get recent studies if no search matches
+    const fallbackResult = await studyService.getStudies({ limit: 10, sortBy: "date" });
+    return fallbackResult.data || [];
   } catch (error) {
     console.error("Error searching studies:", error);
     return [];

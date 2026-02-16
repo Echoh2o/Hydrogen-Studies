@@ -193,6 +193,7 @@ const MultiFormatGeneratorPage = lazy(
 const NaturalLanguageSearchPage = lazy(
   () => import("./pages/NaturalLanguageSearchPage"),
 );
+const RecentStudiesPage = lazy(() => import("./pages/RecentStudiesPage"));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -516,6 +517,29 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
+
+        {/* Explore Pages - Browse by category */}
+        <Route path="/explore-by-benefit" component={ExploreByBenefit} />
+        <Route path="/explore-by-condition" component={ExploreByCondition} />
+        <Route path="/explore-by-condition/:category" component={ConditionCategoryPage} />
+        <Route path="/explore-by-body-system" component={ExploreByBodySystem} />
+        <Route path="/explore-by-body-system/:category" component={BodySystemCategoryPage} />
+        <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />
+        <Route path="/explore-by-life-stage/:category" component={LifeStageCategoryPage} />
+        <Route path="/explore-by-demographic" component={ExploreByDemographicPage} />
+        <Route path="/explore-by-demographic/:demographic" component={DemographicDetailPage} />
+        <Route path="/explore-by-mechanism" component={ExploreByMechanismPage} />
+        <Route path="/explore-by-mechanism/:mechanism" component={MechanismDetailPage} />
+        <Route path="/explore-by-delivery-method" component={ExploreByDeliveryMethodPage} />
+        <Route path="/explore-by-delivery-method/:method" component={DeliveryMethodDetailPage} />
+
+        {/* Additional Public Pages */}
+        <Route path="/insights" component={ResearchInsightsPage} />
+        <Route path="/research-analytics" component={ResearchAnalyticsPage} />
+        <Route path="/recent-studies" component={RecentStudiesPage} />
+        <Route path="/study-explorer" component={StudyExplorerPage} />
+        <Route path="/learn/therapy-guide" component={HydrogenTherapyGuide} />
+        <Route path="/contact-us" component={ContactUsPage} />
 
         {/* Tag-based Navigation */}
         <Route path="/studies/tags" component={TaggedStudiesPage} />

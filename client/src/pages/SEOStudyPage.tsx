@@ -85,9 +85,10 @@ export default function SEOStudyPage() {
   const [location, navigate] = useLocation();
 
   // Determine if we're accessing by slug or ID
-  const isSlugRoute =
-    location.includes("/study/") && !location.includes("/study/id/");
   const identifier = params.slug || params.id;
+  // Check if identifier looks like a numeric ID
+  const isNumericId = identifier && /^\d+$/.test(identifier);
+  const isSlugRoute = !isNumericId;
 
   // Fetch study data based on route type
   const {
@@ -95,9 +96,9 @@ export default function SEOStudyPage() {
     isLoading,
     error,
   } = useQuery<Study>({
-    queryKey: isSlugRoute
-      ? [`/api/study-by-slug/${identifier}`]
-      : [`/api/studies/${identifier}`],
+    queryKey: isNumericId
+      ? [`/api/studies/${identifier}`]
+      : [`/api/studies/slug/${identifier}`],
     enabled: !!identifier,
   });
 
