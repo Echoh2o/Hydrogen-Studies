@@ -322,12 +322,12 @@ export default function BenefitsPage() {
                       </div>
                     </div>
                     <div className="mt-8 pt-6 border-t">
-                      <Link href={`/search?q=${category.title}`}>
+                      <Link href={`/search?q=${encodeURIComponent(category.title)}`}>
                         <Button className="mr-4">
                           Search {category.title} Studies
                         </Button>
                       </Link>
-                      <Link href="/research">
+                      <Link href="/studies">
                         <Button variant="outline">
                           Browse Research Database
                         </Button>
@@ -502,7 +502,7 @@ export default function BenefitsPage() {
                     View Products
                   </Button>
                 </Link>
-                <Link href="/research">
+                <Link href="/studies">
                   <Button
                     variant="outline"
                     size="lg"

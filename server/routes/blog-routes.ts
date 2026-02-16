@@ -137,6 +137,45 @@ router.get("/", async (req, res) => {
 });
 
 /**
+ * Get a single blog article by slug
+ */
+router.get("/slug/:slug", async (req, res) => {
+  try {
+    const slug = req.params.slug;
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid blog slug",
+      });
+    }
+
+    const [blog] = await db
+      .select()
+      .from(blogArticles)
+      .where(eq(blogArticles.slug, slug));
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        error: "Blog article not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: blog,
+    });
+  } catch (error) {
+    console.error("Error fetching blog by slug:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch blog article",
+    });
+  }
+});
+
+/**
  * Get a single blog article by ID
  */
 router.get("/:id(\\d+)", async (req, res) => {

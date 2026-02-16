@@ -62,28 +62,32 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [country, setCountry] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const pageSize = 20;
 
   // Parse URL parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialQuery = params.get("search") || params.get("q") || "";
     setSearchQuery(initialQuery);
-    if (initialQuery) {
-      performSearch(initialQuery);
-    }
+    setCurrentPage(1);
+    // Always perform search (empty query returns all studies)
+    performSearch(initialQuery, {}, 1);
   }, [location]); // Still depend on location for route changes
 
-  const performSearch = async (query: string, filters: any = {}) => {
+  const performSearch = async (query: string, filters: any = {}, page: number = 1) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        search: query,
-        limit: "20",
-      });
+      const params = new URLSearchParams();
+      if (query) {
+        params.set("search", query);
+      }
+      params.set("limit", pageSize.toString());
+      params.set("offset", ((page - 1) * pageSize).toString());
 
       const categoryValue = filters.category || category;
       const countryValue = filters.country || country;
@@ -102,7 +106,7 @@ export default function SearchPage() {
       }
       const data = await response.json();
 
-      setStudies(data.studies || []);
+      setStudies(data.studies || data.data || []);
       setTotal(data.total || 0);
       setError(null);
     } catch (err) {
@@ -116,12 +120,24 @@ export default function SearchPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    performSearch(searchQuery, { category, country });
+    setCurrentPage(1);
+    performSearch(searchQuery, { category, country }, 1);
   };
 
   const handleFilterChange = () => {
-    performSearch(searchQuery, { category, country });
+    setCurrentPage(1);
+    performSearch(searchQuery, { category, country }, 1);
   };
+
+  const goToPage = (page: number) => {
+    const totalPages = Math.ceil(total / pageSize);
+    const newPage = Math.max(1, Math.min(page, totalPages));
+    setCurrentPage(newPage);
+    performSearch(searchQuery, { category, country }, newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <>
@@ -380,14 +396,37 @@ export default function SearchPage() {
                 </Link>
               ))}
 
-              {/* Load More Button */}
-              <div className="text-center py-8">
-                <Button variant="outline" size="lg">
-                  Load More Studies
-                </Button>
-              </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-gray-600 px-4">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Showing {studies.length} of {total.toLocaleString()} results
+                  </p>
+                </div>
+              )}
             </div>
-          ) : searchQuery ? (
+          ) : (
             <div className="text-center py-12">
               <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -402,22 +441,12 @@ export default function SearchPage() {
                   setSearchQuery("");
                   setCategory("all");
                   setCountry("all");
-                  performSearch("");
+                  setCurrentPage(1);
+                  performSearch("", {}, 1);
                 }}
               >
                 Browse All Studies
               </Button>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Start Your Search
-              </h3>
-              <p className="text-gray-600">
-                Enter keywords above to explore our database of 1,304+ hydrogen
-                research studies.
-              </p>
             </div>
           )}
         </div>
