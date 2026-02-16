@@ -15,10 +15,10 @@ export class JobScheduler {
   private static instance: JobScheduler;
   private checkInterval: NodeJS.Timeout | null = null;
   private isJobRunning: boolean = false;
-  
+
   // Configuration
   private readonly CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute
-  
+
   private constructor() {}
 
   public static getInstance(): JobScheduler {
@@ -33,12 +33,12 @@ export class JobScheduler {
    */
   public start(): void {
     if (this.checkInterval) {
-      console.log("⚠️ Job Scheduler is already running");
+      console.log("[JobScheduler] Already running");
       return;
     }
 
-    console.log("🚀 Starting Job Scheduler...");
-    
+    console.log("[JobScheduler] Starting...");
+
     // Run immediately on startup
     this.runJobs();
 
@@ -46,8 +46,8 @@ export class JobScheduler {
     this.checkInterval = setInterval(() => {
       this.runJobs();
     }, this.CHECK_INTERVAL_MS);
-    
-    console.log(`✅ Job Scheduler active (Interval: ${this.CHECK_INTERVAL_MS}ms)`);
+
+    console.log(`[JobScheduler] Active (interval: ${this.CHECK_INTERVAL_MS}ms)`);
   }
 
   /**
@@ -57,7 +57,7 @@ export class JobScheduler {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
-      console.log("🛑 Job Scheduler stopped");
+      console.log("[JobScheduler] Stopped");
     }
   }
 
@@ -67,7 +67,6 @@ export class JobScheduler {
   private async runJobs(): Promise<void> {
     // Prevent overlapping job executions
     if (this.isJobRunning) {
-      console.log("⏳ Previous job cycle still running, skipping this tick");
       return;
     }
 
@@ -77,22 +76,21 @@ export class JobScheduler {
       // Job 1: Automated Study Discovery
       const discoveryResult = await checkScheduledSearches();
       if (discoveryResult.ran) {
-        console.log("🔍 Automated Discovery Job completed:", discoveryResult);
+        console.log("[JobScheduler] Discovery job completed:", discoveryResult);
       }
-      
+
       // Job 2: Intelligent Content Enrichment
       const enrichmentStats = await checkAndEnrichStudies();
       if (enrichmentStats.totalProcessed > 0) {
-          console.log(`✨ Automated Enrichment: Processed ${enrichmentStats.totalProcessed} studies`);
+        console.log(`[JobScheduler] Enrichment: processed ${enrichmentStats.totalProcessed} studies`);
       }
 
       // Job 3: Automated Content Generation
       // Pick ONE study that is enriched but has no blog post, and generate one.
-      // Limit to 1 per run to save costs/time.
       await this.runContentGenerationJob();
-      
+
     } catch (error) {
-      console.error("💥 Critical error in Job Scheduler:", error);
+      console.error("[JobScheduler] Critical error:", error);
     } finally {
       this.isJobRunning = false;
     }
@@ -102,43 +100,35 @@ export class JobScheduler {
    * Job 3: Generate Content for Studies
    */
   private async runContentGenerationJob() {
-      try {
-        // Find a candidate study: Enriched (has conclusion) AND not yet covered in a blog
-        // Use a LEFT JOIN strategy (not natively perfect in Drizzle simple query builder, using separate check)
-        
-        // 1. Get enriched studies
-        const candidates = await db.select().from(studies)
-            .where(
-                sql`${studies.conclusion} IS NOT NULL`
-            )
-            .limit(10); // Check recent 10 enriched studies
-        
-        for (const study of candidates) {
-            // Check if blog exists
-            const existingBlog = await db.query.blogArticles.findFirst({
-                where: eq(blogArticles.studyId, study.id)
-            });
+    try {
+      // Find a candidate study: Enriched (has conclusion) AND not yet covered in a blog
+      const candidates = await db.select().from(studies)
+        .where(sql`${studies.conclusion} IS NOT NULL`)
+        .limit(10);
 
-            if (!existingBlog) {
-                console.log(`🎨 Creating automatic blog post for Study #${study.id}...`);
-                
-                // 1. Generate Text
-                const result = await contentGenerator.generateBlogPost(study.id);
-                
-                if (result) {
-                    // 2. Generate Image
-                    await mediaGenerator.generateBlogHeroImage(result.articleId);
-                    console.log("✨ Content Generation Cycle Complete for " + result.title);
-                }
-                
-                // Stop after 1 successful generation to prevent spamming/cost
-                break;
-            }
+      for (const study of candidates) {
+        // Check if blog exists
+        const existingBlog = await db.query.blogArticles.findFirst({
+          where: eq(blogArticles.studyId, study.id)
+        });
+
+        if (!existingBlog) {
+          console.log(`[JobScheduler] Creating blog post for Study #${study.id}...`);
+
+          const result = await contentGenerator.generateBlogPost(study.id);
+
+          if (result) {
+            await mediaGenerator.generateBlogHeroImage(result.articleId);
+            console.log(`[JobScheduler] Content generation complete: ${result.title}`);
+          }
+
+          // Stop after 1 successful generation to prevent spamming/cost
+          break;
         }
-
-      } catch (error) {
-          console.error("Error in Content Generation Job:", error);
       }
+    } catch (error) {
+      console.error("[JobScheduler] Content generation error:", error);
+    }
   }
 }
 

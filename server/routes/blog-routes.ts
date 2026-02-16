@@ -179,7 +179,7 @@ router.get("/:id(\\d+)", async (req, res) => {
  * Create a new blog article
  * Rate limited to prevent abuse of blog generation
  */
-router.post("/", aiGenerationRateLimiter, async (req, res) => {
+router.post("/", requireAdmin, aiGenerationRateLimiter, async (req, res) => {
   try {
     // Validate request body with Zod schema
     const blogValidationSchema = z.object({
@@ -257,7 +257,7 @@ router.post("/", aiGenerationRateLimiter, async (req, res) => {
 /**
  * Update an existing blog article
  */
-router.put("/:id(\\d+)", async (req, res) => {
+router.put("/:id(\\d+)", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
 

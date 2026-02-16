@@ -16,12 +16,18 @@ export async function apiRequest(
   // Make sure method is a valid HTTP method
   const validMethod = method.toUpperCase();
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
   const res = await fetch(url, {
     method: validMethod,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
+    signal: controller.signal,
   });
+
+  clearTimeout(timeoutId);
 
   // Only throw if we explicitly want to (default behavior)
   if (throwOnError) {

@@ -126,7 +126,6 @@ router.post("/register", async (req: Request, res: Response) => {
         id: userId,
         username: validatedData.username,
         email: validatedData.email,
-        password: passwordHash, // Set password column to hashed password
         passwordHash,
         role,
         permissions: [],
