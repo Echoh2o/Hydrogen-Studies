@@ -20,7 +20,7 @@ const ResearchSuggestionsPage: React.FC = () => {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="relative">
-                <div className="absolute -inset-1 rounded-full blur-md bg-gradient-to-r from-blue-400 to-cyan-300 opacity-70"></div>
+                <div className="absolute -inset-1 rounded-full blur-md bg-gradient-to-r from-teal-400 to-cyan-300 opacity-70"></div>
                 <div className="relative bg-white rounded-full p-3">
                   <Lightbulb size={36} className="text-primary" />
                 </div>
@@ -37,7 +37,7 @@ const ResearchSuggestionsPage: React.FC = () => {
           </div>
 
           <div className="bg-muted/30 rounded-lg p-4 mb-8 border flex items-start gap-3">
-            <Sparkles className="text-blue-500 mt-1 flex-shrink-0" size={20} />
+            <Sparkles className="text-teal-500 mt-1 flex-shrink-0" size={20} />
             <div>
               <h3 className="font-medium mb-1">How it works</h3>
               <p className="text-sm text-muted-foreground">

@@ -35,7 +35,7 @@ export default function BenefitsPage() {
       title: "Hydrogen Therapy Basics",
       description:
         "Understanding the fundamentals of molecular hydrogen and its health applications",
-      icon: <FlaskConical className="h-8 w-8 text-blue-600" />,
+      icon: <FlaskConical className="h-8 w-8 text-teal-600" />,
       topics: [
         "What is molecular hydrogen?",
         "How does it work in the body?",
@@ -97,8 +97,8 @@ export default function BenefitsPage() {
     {
       id: "cardiovascular",
       title: "Heart Health",
+      searchQuery: "cardiovascular hydrogen",
       icon: <Heart className="h-8 w-8 text-red-500" />,
-      studyCount: 127,
       description:
         "Research shows hydrogen water may support cardiovascular function and reduce oxidative stress.",
       benefits: [
@@ -116,8 +116,8 @@ export default function BenefitsPage() {
     {
       id: "neurological",
       title: "Brain Function",
-      icon: <Brain className="h-8 w-8 text-blue-500" />,
-      studyCount: 89,
+      searchQuery: "neurological hydrogen brain",
+      icon: <Brain className="h-8 w-8 text-teal-500" />,
       description:
         "Studies indicate potential cognitive benefits and neuroprotective effects.",
       benefits: [
@@ -135,8 +135,8 @@ export default function BenefitsPage() {
     {
       id: "antioxidant",
       title: "Antioxidant Power",
+      searchQuery: "antioxidant oxidative stress hydrogen",
       icon: <Shield className="h-8 w-8 text-green-500" />,
-      studyCount: 203,
       description:
         "Hydrogen acts as a selective antioxidant, targeting harmful free radicals.",
       benefits: [
@@ -154,8 +154,8 @@ export default function BenefitsPage() {
     {
       id: "exercise",
       title: "Athletic Performance",
+      searchQuery: "exercise athletic hydrogen performance",
       icon: <Zap className="h-8 w-8 text-yellow-500" />,
-      studyCount: 64,
       description:
         "Athletes report improved performance and faster recovery times.",
       benefits: [
@@ -215,7 +215,7 @@ export default function BenefitsPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Link
               href="/"
-              className="flex items-center text-blue-600 hover:text-blue-700 mb-6"
+              className="flex items-center text-teal-600 hover:text-teal-700 mb-6"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
@@ -238,7 +238,7 @@ export default function BenefitsPage() {
                     className="text-center border-none shadow-lg"
                   >
                     <CardContent className="p-4">
-                      <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">
+                      <div className="text-2xl md:text-3xl font-bold text-teal-600 mb-1">
                         {stat.stat}
                       </div>
                       <div className="text-sm font-medium text-gray-900 mb-1">
@@ -282,7 +282,7 @@ export default function BenefitsPage() {
                           {category.title}
                         </CardTitle>
                         <Badge variant="secondary" className="mt-2">
-                          {category.studyCount} studies
+                          Research-backed
                         </Badge>
                       </div>
                     </div>
@@ -294,13 +294,13 @@ export default function BenefitsPage() {
                     <div className="grid md:grid-cols-2 gap-8">
                       <div>
                         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <Sparkles className="h-5 w-5 text-blue-500" />
+                          <Sparkles className="h-5 w-5 text-teal-500" />
                           Potential Benefits
                         </h3>
                         <ul className="space-y-3">
                           {category.benefits.map((benefit, index) => (
                             <li key={index} className="flex items-start gap-3">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                              <div className="w-2 h-2 bg-teal-500 rounded-full mt-2 flex-shrink-0"></div>
                               <span className="text-gray-700">{benefit}</span>
                             </li>
                           ))}
@@ -322,7 +322,7 @@ export default function BenefitsPage() {
                       </div>
                     </div>
                     <div className="mt-8 pt-6 border-t">
-                      <Link href={`/search?q=${encodeURIComponent(category.title)}`}>
+                      <Link href={`/search?q=${encodeURIComponent(category.searchQuery)}`}>
                         <Button className="mr-4">
                           Search {category.title} Studies
                         </Button>
@@ -355,9 +355,9 @@ export default function BenefitsPage() {
                 {quickFacts.map((fact, index) => (
                   <div
                     key={index}
-                    className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg"
+                    className="flex items-start space-x-3 p-4 bg-teal-50 rounded-lg"
                   >
-                    <CheckCircle className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-teal-600 mt-1 flex-shrink-0" />
                     <p className="text-gray-700">{fact}</p>
                   </div>
                 ))}
@@ -379,7 +379,7 @@ export default function BenefitsPage() {
                 {learningTopics.map((topic) => (
                   <Card
                     key={topic.id}
-                    className="hover:shadow-lg transition-shadow border-2 hover:border-blue-200 h-full"
+                    className="hover:shadow-lg transition-shadow border-2 hover:border-teal-200 h-full"
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between mb-4">
@@ -421,7 +421,7 @@ export default function BenefitsPage() {
                           <span className="text-sm text-gray-500">
                             {topic.studyCount} supporting studies
                           </span>
-                          <div className="flex items-center text-blue-600 font-medium">
+                          <div className="flex items-center text-teal-600 font-medium">
                             Learn more <ChevronRight className="h-4 w-4 ml-1" />
                           </div>
                         </div>
@@ -447,8 +447,8 @@ export default function BenefitsPage() {
             <CardContent>
               <div className="grid md:grid-cols-3 gap-8">
                 <div className="text-center">
-                  <div className="mx-auto mb-4 p-4 rounded-full bg-blue-100 w-fit">
-                    <Activity className="h-8 w-8 text-blue-600" />
+                  <div className="mx-auto mb-4 p-4 rounded-full bg-teal-100 w-fit">
+                    <Activity className="h-8 w-8 text-teal-600" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
                     Selective Antioxidant
@@ -487,7 +487,7 @@ export default function BenefitsPage() {
           </Card>
 
           {/* CTA Section */}
-          <Card className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+          <Card className="bg-gradient-to-r from-teal-600 to-teal-500 text-white">
             <CardContent className="p-12 text-center">
               <h2 className="text-3xl font-bold mb-4">
                 Ready to Experience These Benefits?
@@ -506,7 +506,7 @@ export default function BenefitsPage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="text-white border-white hover:bg-white hover:text-blue-600"
+                    className="text-white border-white hover:bg-white hover:text-teal-600"
                   >
                     Browse All Studies
                   </Button>

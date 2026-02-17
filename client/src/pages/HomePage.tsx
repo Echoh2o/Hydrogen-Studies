@@ -38,7 +38,7 @@ export default function HomePage() {
       studyCount: "47 studies",
     },
     {
-      icon: <Brain className="h-8 w-8 text-blue-500" />,
+      icon: <Brain className="h-8 w-8 text-teal-500" />,
       title: "Brain Function",
       description:
         "Research indicates potential cognitive benefits and neuroprotective effects from molecular hydrogen.",
@@ -88,7 +88,7 @@ export default function HomePage() {
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               Discover the Science Behind
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600 block">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 block">
                 Hydrogen Water
               </span>
             </h1>
@@ -107,7 +107,7 @@ export default function HomePage() {
                   placeholder="Search studies by condition, benefit, or keyword..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-4 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-blue-500 shadow-lg"
+                  className="pl-12 pr-4 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-teal-500 shadow-lg"
                 />
                 <button
                   type="submit"
@@ -138,7 +138,7 @@ export default function HomePage() {
                 className="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm"
               >
                 <CardContent className="p-6">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                  <div className="text-3xl font-bold text-teal-600 mb-2">
                     {stat.number}
                   </div>
                   <div className="text-sm text-gray-600">{stat.label}</div>
@@ -221,12 +221,12 @@ export default function HomePage() {
                       <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
                         {benefit.icon}
                       </div>
-                      <CardTitle className="text-xl mb-2 group-hover:text-blue-600 transition-colors">
+                      <CardTitle className="text-xl mb-2 group-hover:text-teal-600 transition-colors">
                         {benefit.title}
                       </CardTitle>
                       <Badge
                         variant="secondary"
-                        className="mx-auto group-hover:bg-blue-100 group-hover:text-blue-700"
+                        className="mx-auto group-hover:bg-teal-100 group-hover:text-teal-700"
                       >
                         {benefit.studyCount}
                       </Badge>
@@ -248,7 +248,7 @@ export default function HomePage() {
                                 key={benefitIndex}
                                 className="flex items-start gap-2 text-sm text-gray-600"
                               >
-                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <div className="w-1.5 h-1.5 bg-teal-500 rounded-full mt-2 flex-shrink-0"></div>
                                 <span>{benefitItem}</span>
                               </li>
                             ),
@@ -260,7 +260,7 @@ export default function HomePage() {
                       <div className="text-center pt-2">
                         <Badge
                           variant="outline"
-                          className="group-hover:bg-blue-600 group-hover:text-white transition-colors"
+                          className="group-hover:bg-teal-600 group-hover:text-white transition-colors"
                         >
                           Click to explore studies
                         </Badge>
@@ -284,7 +284,7 @@ export default function HomePage() {
       </section>
 
       {/* Research Credibility */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-teal-600 to-cyan-600 text-white">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Trusted by Leading Research Institutions
@@ -361,7 +361,7 @@ export default function HomePage() {
             <Link href="/explore-by-body-system" className="block">
               <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 h-full">
                 <CardContent className="p-8 text-center">
-                  <Brain className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                  <Brain className="h-12 w-12 text-teal-500 mx-auto mb-4" />
                   <CardTitle className="text-xl mb-2">By Body System</CardTitle>
                   <CardDescription>
                     Cardiovascular, nervous, respiratory, digestive, immune, and more

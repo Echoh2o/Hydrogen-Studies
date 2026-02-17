@@ -457,9 +457,9 @@ export default function RegisterPage() {
                 )}
               />
 
-              <Alert className="bg-blue-50 border-blue-200">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
+              <Alert className="bg-teal-50 border-teal-200">
+                <AlertCircle className="h-4 w-4 text-teal-600" />
+                <AlertDescription className="text-teal-800">
                   Email verification will be available in a future update. You
                   can use your account immediately after registration.
                 </AlertDescription>

@@ -150,15 +150,15 @@ const SimpleStudyPage = () => {
                     </div>
                   ) : (
                     /* Simple fallback - no complex components */
-                    <div className="bg-blue-50 border-2 border-dashed border-blue-200 rounded-lg p-8 text-center">
-                      <div className="text-blue-800 mb-2">
+                    <div className="bg-teal-50 border-2 border-dashed border-teal-200 rounded-lg p-8 text-center">
+                      <div className="text-teal-800 mb-2">
                         <div className="text-lg font-semibold">
                           Study #{studyId}
                         </div>
-                        <div className="text-sm text-blue-600 mt-2">
+                        <div className="text-sm text-teal-600 mt-2">
                           {study.title}
                         </div>
-                        <div className="text-xs text-blue-500 mt-2">
+                        <div className="text-xs text-teal-500 mt-2">
                           Hydrogen Research Study
                         </div>
                       </div>
@@ -217,7 +217,7 @@ const SimpleStudyPage = () => {
                         href={`https://doi.org/${study.doi}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                        className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-800"
                       >
                         <HiExternalLink className="w-4 h-4" />
                         View DOI

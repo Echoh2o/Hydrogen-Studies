@@ -102,7 +102,7 @@ export default function SiteHeader() {
           <div className="flex items-center space-x-2">
             <Link href="/">
               <div className="flex items-center space-x-2 cursor-pointer">
-                <Droplets className="h-8 w-8 text-blue-600" />
+                <Droplets className="h-8 w-8 text-teal-600" />
                 <span className="text-xl font-bold text-gray-900">
                   Hydrogen Studies
                 </span>
@@ -114,7 +114,7 @@ export default function SiteHeader() {
           <div className="hidden md:flex items-center space-x-8">
             {/* Studies Dropdown */}
             <div className="relative group">
-              <button className="text-gray-700 hover:text-blue-600 transition-colors flex items-center space-x-1">
+              <button className="text-gray-700 hover:text-teal-600 transition-colors flex items-center space-x-1">
                 <span>Studies</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -122,49 +122,49 @@ export default function SiteHeader() {
                 <div className="p-2 space-y-1">
                   <Link
                     href="/studies"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     All Studies
                   </Link>
                   <Link
                     href="/recent-studies"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     Recent Studies
                   </Link>
                   <Link
                     href="/explore-by-condition"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     By Health Condition
                   </Link>
                   <Link
                     href="/explore-by-body-system"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     By Body System
                   </Link>
                   <Link
                     href="/explore-by-life-stage"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     By Life Stage
                   </Link>
                   <Link
                     href="/explore-by-delivery-method"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     By Delivery Method
                   </Link>
                   <Link
                     href="/explore-by-benefit"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     By Health Benefit
                   </Link>
                   <Link
                     href="/insights"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-md transition-colors"
                   >
                     Research Insights
                   </Link>
@@ -174,31 +174,31 @@ export default function SiteHeader() {
 
             <Link
               href="/blog"
-              className="text-gray-700 hover:text-blue-600 transition-colors"
+              className="text-gray-700 hover:text-teal-600 transition-colors"
             >
               Blog
             </Link>
             <Link
               href="/benefits"
-              className="text-gray-700 hover:text-blue-600 transition-colors"
+              className="text-gray-700 hover:text-teal-600 transition-colors"
             >
               Benefits
             </Link>
             <Link
               href="/research-analytics"
-              className="text-gray-700 hover:text-blue-600 transition-colors"
+              className="text-gray-700 hover:text-teal-600 transition-colors"
             >
               Analytics
             </Link>
             <Link
               href="/products"
-              className="text-gray-700 hover:text-blue-600 transition-colors"
+              className="text-gray-700 hover:text-teal-600 transition-colors"
             >
               Products
             </Link>
             <Link
               href="/chat"
-              className="text-gray-700 hover:text-blue-600 transition-colors"
+              className="text-gray-700 hover:text-teal-600 transition-colors"
             >
               AI Assistant
             </Link>
@@ -356,7 +356,7 @@ export default function SiteHeader() {
 
                       <Link href="/profile">
                         <div
-                          className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                          className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           <User className="inline mr-2 h-4 w-4" />
@@ -366,7 +366,7 @@ export default function SiteHeader() {
 
                       <Link href="/settings">
                         <div
-                          className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                          className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           <Settings className="inline mr-2 h-4 w-4" />
@@ -378,7 +378,7 @@ export default function SiteHeader() {
                         <>
                           <Link href="/admin">
                             <div
-                              className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                              className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               <Shield className="inline mr-2 h-4 w-4" />
@@ -388,7 +388,7 @@ export default function SiteHeader() {
                           {userRole === "admin" && (
                             <Link href="/admin/users">
                               <div
-                                className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                                className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                                 onClick={() => setIsMobileMenuOpen(false)}
                               >
                                 <Users className="inline mr-2 h-4 w-4" />
@@ -417,7 +417,7 @@ export default function SiteHeader() {
                     <div className="space-y-2">
                       <Link href="/login">
                         <div
-                          className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm font-medium"
+                          className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm font-medium"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           <LogIn className="inline mr-2 h-4 w-4" />
@@ -426,7 +426,7 @@ export default function SiteHeader() {
                       </Link>
                       <Link href="/register">
                         <div
-                          className="block px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors text-sm font-medium text-center"
+                          className="block px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded-lg transition-colors text-sm font-medium text-center"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           <UserPlus className="inline mr-2 h-4 w-4" />
@@ -445,7 +445,7 @@ export default function SiteHeader() {
                 </div>
                 <Link href="/studies">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     All Studies
@@ -453,7 +453,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link href="/recent-studies">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Recent Studies
@@ -461,7 +461,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link href="/explore-by-condition">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     By Health Condition
@@ -469,7 +469,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link href="/explore-by-body-system">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     By Body System
@@ -477,7 +477,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link href="/explore-by-life-stage">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     By Life Stage
@@ -485,7 +485,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link href="/explore-by-delivery-method">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     By Delivery Method
@@ -493,7 +493,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link href="/explore-by-benefit">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     By Health Benefit
@@ -501,7 +501,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link href="/insights">
                   <div
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-sm"
+                    className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Research Insights
@@ -511,7 +511,7 @@ export default function SiteHeader() {
 
               <Link href="/blog">
                 <div
-                  className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                  className="block px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Blog
@@ -519,7 +519,7 @@ export default function SiteHeader() {
               </Link>
               <Link href="/benefits">
                 <div
-                  className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                  className="block px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Benefits
@@ -527,7 +527,7 @@ export default function SiteHeader() {
               </Link>
               <Link href="/research-analytics">
                 <div
-                  className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                  className="block px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Analytics
@@ -535,7 +535,7 @@ export default function SiteHeader() {
               </Link>
               <Link href="/products">
                 <div
-                  className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                  className="block px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Products
@@ -543,7 +543,7 @@ export default function SiteHeader() {
               </Link>
               <Link href="/chat">
                 <div
-                  className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                  className="block px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   AI Assistant

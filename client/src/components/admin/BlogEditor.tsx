@@ -108,8 +108,8 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   const saveMutation = useMutation({
     mutationFn: async (data: BlogFormData) => {
       const endpoint = blogId
-        ? `/api/blog-articles/${blogId}`
-        : "/api/blog-articles";
+        ? `/api/blogs/${blogId}`
+        : "/api/blogs";
       const method = blogId ? "PUT" : "POST";
       return apiRequest(method, endpoint, data);
     },
@@ -118,7 +118,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
         title: `Blog ${mode === "create" ? "created" : "updated"} successfully`,
         description: `The blog post has been ${mode === "create" ? "created" : "updated"} and saved.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
       onSave?.(data);
     },
     onError: (error: any) => {
@@ -454,7 +454,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                           key={study.id}
                           className={`p-3 rounded-md cursor-pointer transition-colors ${
                             form.watch("studyId") === study.id
-                              ? "bg-blue-50 border-blue-200 border"
+                              ? "bg-teal-50 border-teal-200 border"
                               : "bg-gray-50 hover:bg-gray-100"
                           }`}
                           onClick={() => {
@@ -480,27 +480,27 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
               )}
 
               {selectedStudy && (
-                <Card className="bg-blue-50 border-blue-200">
+                <Card className="bg-teal-50 border-teal-200">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm text-blue-900">
+                      <CardTitle className="text-sm text-teal-900">
                         Selected Study
                       </CardTitle>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => form.setValue("studyId", 0)}
-                        className="text-blue-700 hover:text-blue-900"
+                        className="text-teal-700 hover:text-teal-900"
                       >
                         Remove
                       </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="text-sm font-medium text-blue-900">
+                    <div className="text-sm font-medium text-teal-900">
                       {selectedStudy.title}
                     </div>
-                    <div className="text-xs text-blue-700 mt-1">
+                    <div className="text-xs text-teal-700 mt-1">
                       {selectedStudy.category} • {selectedStudy.authors}
                     </div>
                   </CardContent>

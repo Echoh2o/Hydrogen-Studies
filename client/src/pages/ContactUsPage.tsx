@@ -43,7 +43,7 @@ export default function ContactUsPage() {
 
   const contactMethods = [
     {
-      icon: <Mail className="h-8 w-8 text-blue-600" />,
+      icon: <Mail className="h-8 w-8 text-teal-600" />,
       title: "Email Support",
       description: "Get detailed responses from our expert team",
       contact: "support@hydrogenstudies.com",
@@ -69,7 +69,7 @@ export default function ContactUsPage() {
     {
       value: "research-question",
       label: "Research Question",
-      icon: <HelpCircle className="h-6 w-6 text-blue-600" />,
+      icon: <HelpCircle className="h-6 w-6 text-teal-600" />,
       description: "Questions about specific studies or hydrogen research",
     },
     {
@@ -141,14 +141,14 @@ export default function ContactUsPage() {
   return (
     <>
       <SiteHeader />
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Hero Section */}
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <MessageCircle className="h-16 w-16 text-blue-600 mx-auto mb-6" />
+            <MessageCircle className="h-16 w-16 text-teal-600 mx-auto mb-6" />
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
               Get in
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
                 {" "}
                 Touch
               </span>
@@ -300,7 +300,7 @@ export default function ContactUsPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-teal-600 hover:bg-teal-700"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
@@ -438,10 +438,10 @@ export default function ContactUsPage() {
         </section>
 
         {/* Location & Hours */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-50">
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-teal-50">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <MapPin className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+              <MapPin className="h-12 w-12 text-teal-600 mx-auto mb-4" />
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
                 Our Information
               </h2>

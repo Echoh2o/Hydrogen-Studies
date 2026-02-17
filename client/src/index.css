@@ -5,36 +5,44 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 20 14.3% 4.1%;
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
+    --foreground: 210 11% 15%;
+    --muted: 195 15% 95%;
+    --muted-foreground: 200 5% 44%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
+    --popover-foreground: 210 11% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --primary: 207 90% 54%;
-    --primary-foreground: 211 100% 99%;
-    --secondary: 142 69% 42%;
+    --card-foreground: 210 11% 15%;
+    --border: 195 10% 90%;
+    --input: 195 10% 90%;
+    /* Echo Water Teal: #00A7B5 = hsl(185, 100%, 35.5%) */
+    --primary: 185 100% 35.5%;
+    --primary-foreground: 0 0% 100%;
+    /* Echo Water Dark Teal: #007E89 */
+    --secondary: 185 100% 27%;
     --secondary-foreground: 0 0% 100%;
-    --accent: 217 91% 60%;
+    /* Accent: slightly warmer teal */
+    --accent: 180 70% 40%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 60 9.1% 97.8%;
-    --ring: 20 14.3% 4.1%;
+    --ring: 185 100% 35.5%;
     --radius: 0.5rem;
 
     /* Neutral shades */
-    --neutral-100: 0 0% 98%;
-    --neutral-200: 0 0% 93.3%;
-    --neutral-300: 0 0% 87.8%;
-    --neutral-400: 0 0% 74.1%;
-    --neutral-500: 0 0% 62%;
-    --neutral-600: 0 0% 46.1%;
-    --neutral-700: 0 0% 38%;
-    --neutral-800: 0 0% 26.1%;
-    --neutral-900: 0 0% 13.3%;
+    --neutral-100: 195 15% 98%;
+    --neutral-200: 195 10% 93%;
+    --neutral-300: 195 8% 88%;
+    --neutral-400: 200 5% 74%;
+    --neutral-500: 200 5% 62%;
+    --neutral-600: 200 5% 46%;
+    --neutral-700: 200 8% 38%;
+    --neutral-800: 200 10% 26%;
+    --neutral-900: 200 12% 13%;
+
+    /* Echo Water brand colors for direct use */
+    --echo-teal: 185 100% 35.5%;
+    --echo-dark: 185 100% 27%;
+    --echo-light: 185 30% 95%;
 
     /* Chart colors */
     --chart-1: var(--primary);
@@ -45,25 +53,25 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 210 15% 6%;
     --foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --popover: 240 10% 3.9%;
+    --muted: 210 10% 15%;
+    --muted-foreground: 200 5% 65%;
+    --popover: 210 15% 6%;
     --popover-foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 210 15% 6%;
     --card-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --primary: 207 90% 54%;
-    --primary-foreground: 211 100% 99%;
-    --secondary: 142 69% 42%;
+    --border: 210 10% 15%;
+    --input: 210 10% 15%;
+    --primary: 185 100% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 185 80% 30%;
     --secondary-foreground: 0 0% 100%;
-    --accent: 217 91% 60%;
+    --accent: 180 60% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --ring: 240 4.9% 83.9%;
+    --ring: 185 100% 40%;
   }
 
   * {
@@ -107,10 +115,10 @@
     @apply mx-auto px-4;
   }
 
-  /* Button Design System */
+  /* Button Design System - Echo Water Teal */
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
-    @apply bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-600;
+    @apply bg-teal-600 text-white hover:bg-teal-700 focus-visible:ring-teal-600;
     @apply px-6 py-2.5 min-h-[42px];
     @apply shadow-md hover:shadow-lg active:shadow-sm;
     @apply border border-transparent;
@@ -118,9 +126,9 @@
 
   .btn-secondary {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
-    @apply bg-transparent text-blue-600 hover:bg-blue-50 focus-visible:ring-blue-600;
+    @apply bg-transparent text-teal-600 hover:bg-teal-50 focus-visible:ring-teal-600;
     @apply px-6 py-2.5 min-h-[42px];
-    @apply border-2 border-blue-600 hover:border-blue-700;
+    @apply border-2 border-teal-600 hover:border-teal-700;
   }
 
   .btn-tertiary {
@@ -161,11 +169,11 @@
 
   /* Dark mode support */
   .dark .btn-primary {
-    @apply bg-blue-500 hover:bg-blue-600 focus-visible:ring-blue-500;
+    @apply bg-teal-500 hover:bg-teal-600 focus-visible:ring-teal-500;
   }
 
   .dark .btn-secondary {
-    @apply text-blue-400 border-blue-400 hover:bg-blue-950 hover:border-blue-300;
+    @apply text-teal-400 border-teal-400 hover:bg-teal-950 hover:border-teal-300;
   }
 
   .dark .btn-tertiary {

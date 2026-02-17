@@ -136,7 +136,7 @@ export default function ProductsPage() {
       description: "May improve athletic performance and recovery",
     },
     {
-      icon: <Award className="h-6 w-6 text-blue-500" />,
+      icon: <Award className="h-6 w-6 text-teal-500" />,
       title: "Antioxidant Properties",
       description: "Selective antioxidant targeting harmful free radicals",
     },
@@ -151,7 +151,7 @@ export default function ProductsPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <Link
               href="/"
-              className="flex items-center text-blue-600 hover:text-blue-700 mb-4"
+              className="flex items-center text-teal-600 hover:text-teal-700 mb-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
@@ -202,7 +202,7 @@ export default function ProductsPage() {
                 <CardHeader>
                   <div className="relative">
                     <div className="aspect-video bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg mb-4 flex items-center justify-center">
-                      <Droplets className="h-16 w-16 text-blue-500" />
+                      <Droplets className="h-16 w-16 text-teal-500" />
                     </div>
                     {product.badge && (
                       <Badge className="absolute top-2 right-2">
@@ -234,7 +234,7 @@ export default function ProductsPage() {
                         key={index}
                         className="text-sm text-gray-600 flex items-center"
                       >
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 flex-shrink-0"></div>
+                        <div className="w-1.5 h-1.5 bg-teal-500 rounded-full mr-2 flex-shrink-0"></div>
                         {feature}
                       </li>
                     ))}
@@ -270,7 +270,7 @@ export default function ProductsPage() {
           </div>
 
           {/* CTA Section */}
-          <Card className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+          <Card className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white">
             <CardContent className="p-12 text-center">
               <h2 className="text-3xl font-bold mb-4">Need Help Choosing?</h2>
               <p className="text-xl mb-8 opacity-90">
@@ -284,7 +284,7 @@ export default function ProductsPage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="text-white border-white hover:bg-white hover:text-blue-600"
+                  className="text-white border-white hover:bg-white hover:text-teal-600"
                 >
                   Download Buyer's Guide
                 </Button>

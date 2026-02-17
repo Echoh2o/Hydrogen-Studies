@@ -190,14 +190,14 @@ export default function BlogPage() {
 
           {/* Related study box */}
           {study && (
-            <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 mb-8">
+            <div className="bg-teal-50 p-6 rounded-lg border border-teal-100 mb-8">
               <h3 className="text-xl font-semibold mb-2">
                 Based on Scientific Research
               </h3>
               <p className="text-neutral-700 mb-4">
                 This article is based on peer-reviewed scientific research:
               </p>
-              <div className="bg-white p-4 rounded-md border border-blue-100">
+              <div className="bg-white p-4 rounded-md border border-teal-100">
                 <h4 className="font-bold text-lg mb-1">{study.title}</h4>
                 <p className="text-sm text-neutral-600 mb-2">
                   <strong>Authors:</strong> {study.authors}

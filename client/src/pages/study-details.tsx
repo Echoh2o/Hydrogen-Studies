@@ -483,7 +483,7 @@ ER  - `;
         )}
 
         {/* Key findings highlight card */}
-        <section className="mb-8 print:mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+        <section className="mb-8 print:mb-4 bg-gradient-to-r from-teal-50 to-indigo-50 p-4 rounded-lg border border-teal-100">
           <div className="flex items-center mb-3">
             <Lightbulb className="h-5 w-5 text-primary mr-2" />
             <h2 className="text-lg font-semibold text-primary">Key Findings</h2>
@@ -895,7 +895,7 @@ ER  - `;
                 <Separator className="mb-6" />
                 <section id="simplified" className="scroll-mt-6">
                   <Card>
-                    <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <CardHeader className="bg-gradient-to-r from-teal-50 to-indigo-50">
                       <div className="flex items-center">
                         <Lightbulb className="h-5 w-5 text-primary mr-2" />
                         <CardTitle className="text-primary">

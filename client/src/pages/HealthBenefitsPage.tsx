@@ -89,7 +89,7 @@ export default function HealthBenefitsPage() {
     },
     {
       category: "Metabolic Health",
-      icon: <TrendingUp className="h-8 w-8 text-blue-600" />,
+      icon: <TrendingUp className="h-8 w-8 text-teal-600" />,
       description: "Metabolism, energy production, and cellular health",
       studyCount: 65,
       evidenceLevel: 75,
@@ -136,13 +136,13 @@ export default function HealthBenefitsPage() {
   return (
     <>
       <SiteHeader />
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Navigation */}
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link
               href="/learn"
-              className="flex items-center text-blue-600 hover:text-blue-700"
+              className="flex items-center text-teal-600 hover:text-teal-700"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Learn
@@ -188,7 +188,7 @@ export default function HealthBenefitsPage() {
               {healthCategories.map((category, index) => (
                 <Card
                   key={index}
-                  className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-600"
+                  className="hover:shadow-lg transition-shadow border-l-4 border-l-teal-600"
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between mb-4">
@@ -239,7 +239,7 @@ export default function HealthBenefitsPage() {
                             key={i}
                             className="text-sm text-gray-600 flex items-start"
                           >
-                            <div className="h-1.5 w-1.5 bg-blue-600 rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                            <div className="h-1.5 w-1.5 bg-teal-600 rounded-full mr-2 mt-2 flex-shrink-0"></div>
                             {benefit}
                           </li>
                         ))}
@@ -265,7 +265,7 @@ export default function HealthBenefitsPage() {
                       >
                         <Badge
                           variant="outline"
-                          className="hover:bg-blue-50 cursor-pointer"
+                          className="hover:bg-teal-50 cursor-pointer"
                         >
                           View Studies
                         </Badge>
@@ -320,7 +320,7 @@ export default function HealthBenefitsPage() {
               <Link href="/learn/mechanisms">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
-                    <Shield className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                    <Shield className="h-8 w-8 text-teal-600 mx-auto mb-2" />
                     <CardTitle className="text-center">
                       Scientific Mechanisms
                     </CardTitle>

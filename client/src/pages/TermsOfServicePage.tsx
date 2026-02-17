@@ -16,7 +16,7 @@ export default function TermsOfServicePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
       <SiteHeader />
       
       <main className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
@@ -257,7 +257,7 @@ export default function TermsOfServicePage() {
                 <p className="text-gray-700">
                   <strong>Hydrogen Studies</strong><br />
                   Email: legal@hydrogenstudies.com<br />
-                  Contact Form: <a href="/contact" className="text-blue-600 hover:underline">www.hydrogenstudies.com/contact</a>
+                  Contact Form: <a href="/contact" className="text-teal-600 hover:underline">www.hydrogenstudies.com/contact</a>
                 </p>
               </div>
             </section>

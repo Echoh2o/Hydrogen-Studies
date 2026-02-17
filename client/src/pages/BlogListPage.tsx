@@ -71,14 +71,14 @@ export default function BlogListPage() {
   return (
     <>
       <SiteHeader />
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Hero Section */}
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <TrendingUp className="h-16 w-16 text-blue-600 mx-auto mb-6" />
+            <TrendingUp className="h-16 w-16 text-teal-600 mx-auto mb-6" />
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
               Research
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
                 {" "}
                 Blog
               </span>
@@ -87,7 +87,7 @@ export default function BlogListPage() {
               Insights, analysis, and the latest developments in hydrogen health
               research
             </p>
-            <Badge className="bg-blue-100 text-blue-800 px-4 py-2">
+            <Badge className="bg-teal-100 text-teal-800 px-4 py-2">
               Editorial content by experts and researchers
             </Badge>
           </div>
@@ -152,7 +152,7 @@ export default function BlogListPage() {
                         </div>
                         <div className="md:w-1/2 p-8">
                           <div className="flex items-center space-x-4 mb-4">
-                            <Badge className="bg-blue-100 text-blue-800">
+                            <Badge className="bg-teal-100 text-teal-800">
                               {article.category}
                             </Badge>
                             <Badge variant="outline">Featured</Badge>
@@ -178,7 +178,7 @@ export default function BlogListPage() {
                                 {article.readTime}
                               </div>
                             </div>
-                            <div className="flex items-center text-blue-600 font-medium">
+                            <div className="flex items-center text-teal-600 font-medium">
                               Read more{" "}
                               <ChevronRight className="h-4 w-4 ml-1" />
                             </div>
@@ -277,7 +277,7 @@ export default function BlogListPage() {
         </section>
 
         {/* Newsletter CTA */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-50">
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-teal-50">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Stay Updated
@@ -291,7 +291,7 @@ export default function BlogListPage() {
                 placeholder="Enter your email"
                 className="flex-1"
               />
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-teal-600 hover:bg-teal-700">
                 Subscribe
               </Button>
             </div>

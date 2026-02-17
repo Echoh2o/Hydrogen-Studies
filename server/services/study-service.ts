@@ -86,6 +86,11 @@ export class StudyService {
         whereConditions.push(sql`LOWER(${studies.category}) LIKE ${`%${filters.category.toLowerCase()}%`}`);
       }
 
+      // Country filter
+      if (filters.country) {
+        whereConditions.push(sql`LOWER(${studies.country}) LIKE ${`%${filters.country.toLowerCase()}%`}`);
+      }
+
       // Peer review filter
       if (filters.isPeerReviewed === true || filters.peerReviewed === true || filters.isPeerReviewed === 'true') {
         whereConditions.push(eq(studies.peerReviewed, true));

@@ -131,7 +131,7 @@ export default function StudyExplorerPage() {
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="bg-gradient-to-r from-teal-600 to-purple-600 text-white">
           <div className="container mx-auto px-4 py-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -393,7 +393,7 @@ export default function StudyExplorerPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <h4 className="font-semibold flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-blue-500" />
+                    <Calendar className="w-4 h-4 text-teal-500" />
                     Timeline View
                   </h4>
                   <p className="text-sm text-gray-600">
@@ -435,7 +435,7 @@ export default function StudyExplorerPage() {
           </Card>
 
           {/* Call to Action */}
-          <Card className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50">
+          <Card className="mt-8 bg-gradient-to-r from-teal-50 to-purple-50">
             <CardContent className="p-8 text-center">
               <h3 className="text-2xl font-bold mb-4">
                 Discover More Research

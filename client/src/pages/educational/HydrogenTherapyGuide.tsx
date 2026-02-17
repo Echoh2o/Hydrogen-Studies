@@ -189,13 +189,13 @@ const HydrogenTherapyGuide = () => {
       />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-50 to-indigo-50 py-16">
+      <section className="bg-gradient-to-r from-teal-50 to-indigo-50 py-16">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="flex flex-col md:flex-row items-center gap-10">
             <div className="flex-1">
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-4">
                 Molecular Hydrogen Therapy:{" "}
-                <span className="text-primary bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                <span className="text-primary bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-indigo-600">
                   The Complete Guide
                 </span>
               </h1>
@@ -214,9 +214,9 @@ const HydrogenTherapyGuide = () => {
             </div>
             <div className="flex-1 flex justify-center">
               <div className="relative w-full max-w-md aspect-square rounded-full bg-white p-4 shadow-xl">
-                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-blue-400/30 to-indigo-400/30 flex items-center justify-center">
+                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-teal-400/30 to-indigo-400/30 flex items-center justify-center">
                   <div className="text-center">
-                    <Droplet className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+                    <Droplet className="h-16 w-16 text-teal-500 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold text-gray-800">
                       H<sub>2</sub>
                     </h3>
@@ -331,7 +331,7 @@ const HydrogenTherapyGuide = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Droplet className="h-6 w-6 mr-2 text-blue-500" />
+                    <Droplet className="h-6 w-6 mr-2 text-teal-500" />
                     Hydrogen-Rich Water
                   </CardTitle>
                   <CardDescription>
@@ -534,9 +534,9 @@ const HydrogenTherapyGuide = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border border-blue-100 hover:shadow-md transition-shadow">
-              <CardHeader className="bg-blue-50">
-                <CardTitle className="flex items-center text-blue-700">
+            <Card className="border border-teal-100 hover:shadow-md transition-shadow">
+              <CardHeader className="bg-teal-50">
+                <CardTitle className="flex items-center text-teal-700">
                   <Heart className="h-5 w-5 mr-2" />
                   Cardiovascular Health
                 </CardTitle>
@@ -544,26 +544,26 @@ const HydrogenTherapyGuide = () => {
               <CardContent className="pt-6">
                 <ul className="space-y-2">
                   <li className="flex items-start">
-                    <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center mr-2 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
+                      <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
                     <span>Reduction in oxidative stress markers</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center mr-2 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
+                      <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
                     <span>Improved endothelial function</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center mr-2 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
+                      <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
                     <span>Potential blood pressure regulation</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center mr-2 mt-0.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
+                      <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
                     <span>Protection against ischemia-reperfusion injury</span>
                   </li>
@@ -573,7 +573,7 @@ const HydrogenTherapyGuide = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-blue-600 hover:text-blue-800 p-0"
+                      className="text-teal-600 hover:text-teal-800 p-0"
                     >
                       View cardiovascular studies →
                     </Button>
@@ -720,25 +720,25 @@ const HydrogenTherapyGuide = () => {
               </p>
               <ul className="space-y-2 text-gray-600">
                 <li className="flex items-start">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-2 mt-0.5">
                     ✓
                   </div>
                   Cell studies investigating molecular mechanisms
                 </li>
                 <li className="flex items-start">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-2 mt-0.5">
                     ✓
                   </div>
                   Animal research across various disease models
                 </li>
                 <li className="flex items-start">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-2 mt-0.5">
                     ✓
                   </div>
                   Human clinical trials exploring therapeutic applications
                 </li>
                 <li className="flex items-start">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-2 mt-0.5">
                     ✓
                   </div>
                   Systematic reviews and meta-analyses
@@ -753,7 +753,7 @@ const HydrogenTherapyGuide = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
-                <div className="text-3xl font-bold text-blue-600 mb-2">
+                <div className="text-3xl font-bold text-teal-600 mb-2">
                   600+
                 </div>
                 <div className="text-gray-700">
@@ -820,7 +820,7 @@ const HydrogenTherapyGuide = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+      <section className="py-16 bg-gradient-to-r from-teal-600 to-indigo-700 text-white">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center">
             <h2 className="text-3xl font-bold mb-4">

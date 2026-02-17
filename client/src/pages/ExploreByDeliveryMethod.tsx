@@ -126,7 +126,7 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
           )}
 
           {/* Echo Flask promotion */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg mt-12">
+          <div className="bg-gradient-to-r from-teal-50 to-teal-100 p-6 rounded-lg mt-12">
             <div className="flex flex-col md:flex-row items-center">
               <div className="mb-4 md:mb-0 md:mr-6">
                 <Beaker className="h-16 w-16 text-primary" />
@@ -224,7 +224,7 @@ export const DeliveryMethodDetailPage: React.FC = () => {
           </div>
 
           {isEchoFlask && (
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg mb-8">
+            <div className="bg-gradient-to-r from-teal-50 to-teal-100 p-6 rounded-lg mb-8">
               <div className="flex flex-col md:flex-row items-center">
                 <div className="mb-4 md:mb-0 md:mr-6">
                   <Beaker className="h-16 w-16 text-primary" />

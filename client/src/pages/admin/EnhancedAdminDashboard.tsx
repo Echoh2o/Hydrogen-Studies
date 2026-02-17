@@ -106,7 +106,7 @@ const EnhancedAdminDashboard: React.FC = () => {
   });
 
   const { data: blogArticles = [] } = useQuery<BlogArticle[]>({
-    queryKey: ["/api/blog-articles"],
+    queryKey: ["/api/blogs"],
     select: (data: any[]) =>
       data.map((blog) => ({
         id: blog.id,

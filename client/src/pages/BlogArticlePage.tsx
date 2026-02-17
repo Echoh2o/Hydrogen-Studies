@@ -196,7 +196,7 @@ For those interested in diving deeper into the research, here are key studies re
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link
               href="/blog"
-              className="flex items-center text-blue-600 hover:text-blue-700"
+              className="flex items-center text-teal-600 hover:text-teal-700"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Blog
@@ -208,7 +208,7 @@ For those interested in diving deeper into the research, here are key studies re
         <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <header className="mb-8">
             <div className="flex items-center space-x-4 mb-6">
-              <Badge className="bg-blue-100 text-blue-800">
+              <Badge className="bg-teal-100 text-teal-800">
                 {article.category}
               </Badge>
               <div className="flex items-center text-gray-500 text-sm space-x-4">
@@ -233,7 +233,7 @@ For those interested in diving deeper into the research, here are key studies re
 
             <div className="flex items-center justify-between pb-8 border-b">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="h-12 w-12 bg-teal-600 rounded-full flex items-center justify-center">
                   <User className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -312,7 +312,7 @@ For those interested in diving deeper into the research, here are key studies re
                 return (
                   <p
                     key={index}
-                    className="italic text-gray-700 bg-blue-50 p-4 rounded-lg mb-6 border-l-4 border-blue-600"
+                    className="italic text-gray-700 bg-teal-50 p-4 rounded-lg mb-6 border-l-4 border-teal-600"
                   >
                     {paragraph.slice(1, -1)}
                   </p>
@@ -346,7 +346,7 @@ For those interested in diving deeper into the research, here are key studies re
                 <Badge
                   key={index}
                   variant="outline"
-                  className="hover:bg-blue-50 cursor-pointer"
+                  className="hover:bg-teal-50 cursor-pointer"
                 >
                   {tag}
                 </Badge>
@@ -358,7 +358,7 @@ For those interested in diving deeper into the research, here are key studies re
           <div className="mt-12 pt-8 border-t">
             <div className="bg-gray-50 p-6 rounded-lg">
               <div className="flex items-start space-x-4">
-                <div className="h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="h-16 w-16 bg-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
                   <User className="h-8 w-8 text-white" />
                 </div>
                 <div>
