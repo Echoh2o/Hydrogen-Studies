@@ -67,7 +67,7 @@ import { format } from "date-fns";
 // User role options
 const ROLE_OPTIONS = [
   { value: "admin", label: "Admin", color: "bg-red-100 text-red-800" },
-  { value: "editor", label: "Editor", color: "bg-blue-100 text-blue-800" },
+  { value: "editor", label: "Editor", color: "bg-teal-100 text-teal-800" },
   {
     value: "customer",
     label: "Customer",

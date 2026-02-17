@@ -27,7 +27,7 @@ const CARD_TEMPLATES = [
   {
     id: "modern",
     name: "Modern",
-    background: "bg-gradient-to-br from-blue-500 to-purple-600",
+    background: "bg-gradient-to-br from-teal-500 to-purple-600",
   },
   {
     id: "minimal",
@@ -47,7 +47,7 @@ const CARD_TEMPLATES = [
   {
     id: "hydrogen",
     name: "Hydrogen",
-    background: "bg-gradient-to-r from-blue-400 to-cyan-500",
+    background: "bg-gradient-to-r from-teal-400 to-cyan-500",
   },
 ];
 

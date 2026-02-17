@@ -267,7 +267,7 @@ export default function StudyComparison({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
       </div>
     );
   }
@@ -569,7 +569,7 @@ export default function StudyComparison({
           <div className="space-y-3">
             {comparisonData && comparisonData.length > 1 && (
               <>
-                <div className="p-3 bg-blue-50 rounded">
+                <div className="p-3 bg-teal-50 rounded">
                   <p className="font-semibold text-sm mb-1">
                     Largest Sample Size
                   </p>

@@ -264,7 +264,7 @@ export default function TrendsDashboard() {
       case "medium":
         return "text-yellow-500";
       case "low":
-        return "text-blue-500";
+        return "text-teal-500";
       default:
         return "text-gray-500";
     }
@@ -277,7 +277,7 @@ export default function TrendsDashboard() {
       case "warning":
         return <Zap className="h-4 w-4 text-yellow-500" />;
       default:
-        return <Info className="h-4 w-4 text-blue-500" />;
+        return <Info className="h-4 w-4 text-teal-500" />;
     }
   };
 
@@ -519,7 +519,7 @@ export default function TrendsDashboard() {
                 <ul className="space-y-2">
                   {trendReport?.recommendations.map((rec, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <Target className="h-4 w-4 text-blue-500 mt-0.5" />
+                      <Target className="h-4 w-4 text-teal-500 mt-0.5" />
                       <span className="text-sm">{rec}</span>
                     </li>
                   ))}
@@ -777,7 +777,7 @@ export default function TrendsDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-blue-500" />
+                  <Activity className="h-4 w-4 text-teal-500" />
                   Stable Areas
                 </CardTitle>
               </CardHeader>

@@ -102,10 +102,10 @@ export default function DashboardPage() {
         {/* Quick Action Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Content Management */}
-          <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background border-blue-100 dark:border-blue-900">
+          <Card className="bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/30 dark:to-background border-teal-100 dark:border-teal-900">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Database className="h-5 w-5 mr-2 text-blue-500" />
+                <Database className="h-5 w-5 mr-2 text-teal-500" />
                 Content Management
               </CardTitle>
               <CardDescription>
@@ -117,7 +117,7 @@ export default function DashboardPage() {
                 <Button
                   variant="default"
                   size="sm"
-                  className="w-full justify-start bg-blue-600 hover:bg-blue-700"
+                  className="w-full justify-start bg-teal-600 hover:bg-teal-700"
                   asChild
                 >
                   <Link href="/admin/studies/add">
@@ -239,13 +239,13 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-blue-100 dark:border-blue-900/50">
+          <Card className="border-teal-100 dark:border-teal-900/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Total Studies
               </CardTitle>
-              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Database className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="h-8 w-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                <Database className="h-4 w-4 text-teal-600 dark:text-teal-400" />
               </div>
             </CardHeader>
             <CardContent>
@@ -324,7 +324,7 @@ export default function DashboardPage() {
         {/* Recent Activity and Analytics */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Recent Studies */}
-          <Card className="col-span-1 border-blue-100 dark:border-blue-900/50">
+          <Card className="col-span-1 border-teal-100 dark:border-teal-900/50">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -333,8 +333,8 @@ export default function DashboardPage() {
                     Recently added research entries
                   </CardDescription>
                 </div>
-                <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <Database className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <div className="h-8 w-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                  <Database className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                 </div>
               </div>
             </CardHeader>
@@ -360,10 +360,10 @@ export default function DashboardPage() {
                     .map((study: any) => (
                       <li
                         key={study.id}
-                        className="flex flex-col p-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
+                        className="flex flex-col p-2 rounded-md hover:bg-teal-50 dark:hover:bg-teal-900/10 transition-colors"
                       >
                         <Link href={`/admin/studies/edit/${study.id}`}>
-                          <a className="font-medium text-sm hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1">
+                          <a className="font-medium text-sm hover:text-teal-600 dark:hover:text-teal-400 transition-colors line-clamp-1">
                             {study.title}
                           </a>
                         </Link>
@@ -384,7 +384,7 @@ export default function DashboardPage() {
                 <Button
                   variant="default"
                   size="sm"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className="w-full bg-teal-600 hover:bg-teal-700"
                   asChild
                 >
                   <Link href="/admin/studies">

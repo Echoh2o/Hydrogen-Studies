@@ -139,7 +139,7 @@ export default function ComprehensiveImageManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
       </div>
     );
   }
@@ -224,7 +224,7 @@ export default function ComprehensiveImageManagement() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500">Processed</p>
-                    <p className="font-semibold text-blue-600">
+                    <p className="font-semibold text-teal-600">
                       {stats.processed}
                     </p>
                   </div>

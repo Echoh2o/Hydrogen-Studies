@@ -515,7 +515,7 @@ export default function EnhancementPage() {
       default:
         return (
           <Badge variant="outline">
-            <Info className="h-3 w-3 mr-1 text-blue-500" />
+            <Info className="h-3 w-3 mr-1 text-teal-500" />
             Pending
           </Badge>
         );
@@ -557,7 +557,7 @@ export default function EnhancementPage() {
 
         {/* Batch Progress */}
         {batchProgress.inProgress && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-teal-200 bg-teal-50">
             <CardContent className="pt-4">
               <div className="flex flex-col space-y-2">
                 <div className="flex justify-between items-center mb-2">
@@ -618,7 +618,7 @@ export default function EnhancementPage() {
                   </Card>
                   <Card className="p-2 text-center">
                     <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-xl font-bold text-blue-600">
+                    <p className="text-xl font-bold text-teal-600">
                       {statusCounts.pending}
                     </p>
                   </Card>

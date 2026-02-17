@@ -134,7 +134,7 @@ export default function BlogCategoriesPage() {
       <AdminLayout title="Blog Categories">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
             <p className="mt-2 text-muted-foreground">
               Loading blog categories...
             </p>
@@ -208,7 +208,7 @@ export default function BlogCategoriesPage() {
                         />
                       ) : (
                         <>
-                          <Tag className="h-5 w-5 text-blue-600" />
+                          <Tag className="h-5 w-5 text-teal-600" />
                           <h3 className="text-xl font-semibold capitalize">
                             {category.name}
                           </h3>

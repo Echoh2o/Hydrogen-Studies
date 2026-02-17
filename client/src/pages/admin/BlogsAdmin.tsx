@@ -212,7 +212,7 @@ export default function BlogsAdmin() {
 
   // Get color class for article type
   const getArticleTypeColor = (type: string) => {
-    if (!type) return "bg-blue-100 text-blue-700";
+    if (!type) return "bg-teal-100 text-teal-700";
 
     if (type.startsWith("elon_")) {
       switch (type) {
@@ -231,13 +231,13 @@ export default function BlogsAdmin() {
 
     switch (type) {
       case "overview":
-        return "bg-blue-100 text-blue-700";
+        return "bg-teal-100 text-teal-700";
       case "practical_application":
         return "bg-emerald-100 text-emerald-700";
       case "comparison":
         return "bg-indigo-100 text-indigo-700";
       default:
-        return "bg-blue-100 text-blue-700";
+        return "bg-teal-100 text-teal-700";
     }
   };
 

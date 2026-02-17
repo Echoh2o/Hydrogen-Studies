@@ -504,7 +504,7 @@ export default function BlogsManagementPage() {
                                   {blog.articleType === "timeline" && (
                                     <Badge
                                       variant="outline"
-                                      className="border-blue-500 text-blue-700"
+                                      className="border-teal-500 text-teal-700"
                                     >
                                       Timeline
                                     </Badge>

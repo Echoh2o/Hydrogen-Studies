@@ -479,7 +479,7 @@ export function ContentAnalyticsDashboard() {
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Zap className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <Zap className="h-5 w-5 text-teal-500 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium">High-performing headline pattern detected</p>
                       <p className="text-xs text-muted-foreground">Numbers and "how-to" titles perform 40% better</p>
