@@ -1,7 +1,8 @@
 import { Router, Request, Response } from "express";
 import { studyService } from "../services/study-service";
 import { getPersonalizedRecommendations } from "../services/recommendation-engine";
-import { searchRateLimiter } from "../utils/rate-limiting";
+import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiting";
+import { requireAdmin } from "../auth";
 import analyticsRoutes from "../routes/content-analytics-routes";
 
 export class StudiesController {
@@ -28,6 +29,7 @@ export class StudiesController {
     this.router.get("/:id/detailed", this.getDetailedStudy);
     this.router.get("/:id/recommendations", this.getStudyRecommendations);
     this.router.get("/:id/insights", this.getStudyInsights);
+    this.router.post("/:id/generate-blogs", requireAdmin, aiGenerationRateLimiter, this.generateBlogs);
     this.router.post("/:id/view", this.recordView);
     this.router.get("/:id", this.getStudyById);
     this.router.get("/", searchRateLimiter, this.getAllStudies);
@@ -308,6 +310,71 @@ export class StudiesController {
       } catch (error) {
           console.error("Error fetching study insights:", error);
           res.status(500).json({ error: "Failed to fetch study insights" });
+      }
+  }
+
+  private generateBlogs = async (req: Request, res: Response) => {
+      try {
+          const studyId = parseInt(req.params.id);
+          if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
+
+          const study = await studyService.getStudyById(studyId);
+          if (!study) return res.status(404).json({ error: "Study not found" });
+
+          const options = {
+            count: req.body.count || 3,
+            includeAllTypes: req.body.includeAllTypes || false,
+            fallbackToBasic: true,
+          };
+
+          // Dynamic import to avoid circular dependencies
+          const { generateBlogArticlesForStudy } = await import(
+            "../services/blog-generator-enhanced"
+          );
+
+          const result = await generateBlogArticlesForStudy(study, options);
+
+          // Save generated articles to database
+          const { db } = await import("../db");
+          const { blogArticles } = await import("../../shared/schema");
+
+          const savedArticles = [];
+          for (const article of result.articles) {
+            try {
+              const [saved] = await db
+                .insert(blogArticles)
+                .values(article)
+                .returning();
+              savedArticles.push(saved);
+            } catch (dbError: any) {
+              // Skip duplicates
+              if (dbError.code === "23505") {
+                result.warnings.push(`Skipped duplicate: ${article.title}`);
+              } else {
+                result.errors.push({ type: "db", error: dbError.message });
+              }
+            }
+          }
+
+          res.json({
+            success: true,
+            articles: savedArticles,
+            generated: result.articles.length,
+            saved: savedArticles.length,
+            errors: result.errors,
+            warnings: result.warnings,
+          });
+      } catch (error: any) {
+          console.error("Blog generation error:", error);
+
+          if (error.message?.includes("already exist")) {
+            return res.status(409).json({
+              error: "Blog articles already exist for this study",
+              message: error.message,
+            });
+          }
+
+          res.status(500).json({ error: "Failed to generate blog articles" });
       }
   }
 }
