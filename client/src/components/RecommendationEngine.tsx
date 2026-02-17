@@ -198,13 +198,13 @@ export default function RecommendationEngine({
               {recommendations.recommendations.slice(0, 3).map((study) => (
                 <Link
                   key={study.id}
-                  href={`/enhanced-study/${study.id}`}
+                  href={`/study/id/${study.id}`}
                   onClick={() => recordInteraction(study.id, "view")}
                 >
                   <EnhancedStudyCard study={study} variant="compact" />
                 </Link>
               ))}
-              <Link href="/enhanced-search">
+              <Link href="/advanced-search">
                 <Button variant="outline" className="w-full mt-3">
                   View All Recommendations
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -246,7 +246,7 @@ export default function RecommendationEngine({
                 {recommendations?.recommendations.slice(0, 2).map((study) => (
                   <Link
                     key={study.id}
-                    href={`/enhanced-study/${study.id}`}
+                    href={`/study/id/${study.id}`}
                     onClick={() => recordInteraction(study.id, "view")}
                   >
                     <EnhancedStudyCard study={study} variant="compact" />
@@ -363,7 +363,7 @@ export default function RecommendationEngine({
                       {recommendations.recommendations.map((study, index) => (
                         <Link
                           key={study.id}
-                          href={`/enhanced-study/${study.id}`}
+                          href={`/study/id/${study.id}`}
                           onClick={() => recordInteraction(study.id, "view")}
                         >
                           <EnhancedStudyCard
@@ -384,7 +384,7 @@ export default function RecommendationEngine({
                           Start reading studies to get personalized
                           recommendations
                         </p>
-                        <Link href="/enhanced-search">
+                        <Link href="/advanced-search">
                           <Button>Explore Studies</Button>
                         </Link>
                       </CardContent>
@@ -409,7 +409,7 @@ export default function RecommendationEngine({
                 {recommendations.recommendations.map((study, index) => (
                   <Link
                     key={study.id}
-                    href={`/enhanced-study/${study.id}`}
+                    href={`/study/id/${study.id}`}
                     onClick={() => recordInteraction(study.id, "view")}
                   >
                     <EnhancedStudyCard

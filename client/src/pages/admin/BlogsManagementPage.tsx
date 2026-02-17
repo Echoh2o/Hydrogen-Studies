@@ -317,7 +317,7 @@ export default function BlogsManagementPage() {
                     </Select>
                     <Button variant="outline" size="sm" asChild>
                       <Link
-                        href="/admin/analytics/blogs"
+                        href="/admin/analytics"
                         className="flex items-center space-x-2"
                       >
                         <BarChart2 className="h-4 w-4" />

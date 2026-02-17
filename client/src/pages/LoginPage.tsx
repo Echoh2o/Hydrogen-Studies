@@ -191,12 +191,9 @@ export default function LoginPage() {
                   )}
                 />
 
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
+                <span className="text-sm text-muted-foreground">
+                  Contact admin to reset password
+                </span>
               </div>
 
               <button

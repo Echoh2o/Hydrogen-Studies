@@ -176,7 +176,7 @@ export default function AdminPage() {
               <TabsTrigger value="import">Import Data</TabsTrigger>
               <TabsTrigger value="add">Add Study</TabsTrigger>
               <TabsTrigger asChild>
-                <Link href="/admin/researchdb">Research Database</Link>
+                <Link href="/admin/research-database">Research Database</Link>
               </TabsTrigger>
             </TabsList>
 

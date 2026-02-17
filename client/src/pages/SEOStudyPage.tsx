@@ -154,7 +154,7 @@ export default function SEOStudyPage() {
                     ? error.message
                     : "We couldn't find the study you're looking for. It may have been removed or the link is incorrect."}
                 </p>
-                <Link href="/recent">
+                <Link href="/recent-studies">
                   <Button>
                     <HiArrowLeft className="mr-2" />
                     Browse Recent Studies
@@ -620,7 +620,7 @@ export default function SEOStudyPage() {
 
                 {/* Back to studies */}
                 <div className="text-center">
-                  <Link href="/recent">
+                  <Link href="/recent-studies">
                     <Button variant="outline">
                       <HiArrowLeft className="mr-2" />
                       Back to Recent Studies
