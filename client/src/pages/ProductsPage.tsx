@@ -201,7 +201,7 @@ export default function ProductsPage() {
               >
                 <CardHeader>
                   <div className="relative">
-                    <div className="aspect-video bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg mb-4 flex items-center justify-center">
+                    <div className="aspect-video bg-gradient-to-br from-teal-100 to-cyan-100 rounded-lg mb-4 flex items-center justify-center">
                       <Droplets className="h-16 w-16 text-teal-500" />
                     </div>
                     {product.badge && (

@@ -273,7 +273,7 @@ export function StudyInfoPanel({
               {study.doi && (
                 <div>
                   <span className="text-xs text-neutral-500">DOI:</span>
-                  <p className="text-xs text-blue-600 font-mono">{study.doi}</p>
+                  <p className="text-xs text-teal-600 font-mono">{study.doi}</p>
                 </div>
               )}
 
@@ -283,7 +283,7 @@ export function StudyInfoPanel({
                     href={study.url || `https://doi.org/${study.doi}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                    className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800"
                   >
                     <HiExternalLink className="w-3 h-3" />
                     View Original Study
@@ -540,7 +540,7 @@ export function StudyInfoPanel({
               )}
               {(study as any).has_full_text && (
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                   <span className="text-sm text-neutral-700">
                     Full Text Available
                   </span>

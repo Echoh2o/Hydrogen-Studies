@@ -211,7 +211,7 @@ export default function ResearchTimeline({
           {yearData?.breakthroughs.length > 0 && (
             <div className="mt-2 border-t pt-2">
               <p className="text-sm font-semibold mb-1">Breakthrough Study:</p>
-              <p className="text-xs text-blue-600">
+              <p className="text-xs text-teal-600">
                 {yearData.breakthroughs[0].title.substring(0, 50)}...
               </p>
             </div>
@@ -225,7 +225,7 @@ export default function ResearchTimeline({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
       </div>
     );
   }

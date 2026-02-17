@@ -130,7 +130,7 @@ export default function InteractiveBodyMap({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
       </div>
     );
   }
@@ -377,7 +377,7 @@ export default function InteractiveBodyMap({
                     <p className="text-xs text-gray-600">
                       {systemDataMap[hoveredSystem].count} studies
                     </p>
-                    <p className="text-xs text-blue-600">
+                    <p className="text-xs text-teal-600">
                       Impact Score: {systemDataMap[hoveredSystem].impactScore}%
                     </p>
                   </div>
@@ -414,7 +414,7 @@ export default function InteractiveBodyMap({
                         <span className="text-xs">Very High (80-100)</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-blue-500 rounded" />
+                        <div className="w-4 h-4 bg-teal-500 rounded" />
                         <span className="text-xs">High (60-79)</span>
                       </div>
                       <div className="flex items-center gap-2">
