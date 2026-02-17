@@ -145,7 +145,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   const getSuggestionIcon = (type: string) => {
     switch (type) {
       case "study":
-        return <HiBookmark className="h-4 w-4 text-blue-500" />;
+        return <HiBookmark className="h-4 w-4 text-teal-500" />;
       case "category":
         return <HiFire className="h-4 w-4 text-orange-500" />;
       case "author":
@@ -274,7 +274,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             {/* Loading State */}
             {isLoading && (
               <div className="p-4 text-center text-gray-500">
-                <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                <div className="animate-spin h-4 w-4 border-2 border-teal-500 border-t-transparent rounded-full mx-auto mb-2"></div>
                 <span className="text-sm">Searching...</span>
               </div>
             )}

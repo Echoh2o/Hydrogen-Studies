@@ -417,7 +417,7 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                   <Card className="hover:shadow-md transition-shadow cursor-pointer hover:border-primary/50">
                     <CardContent className="py-6">
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-lg font-semibold text-blue-600 hover:text-blue-800">
+                        <h3 className="text-lg font-semibold text-teal-600 hover:text-teal-800">
                           {study.title}
                         </h3>
                         <div className="flex gap-2 ml-4">

@@ -25,13 +25,13 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-gray-900 text-white border-t-4 border-blue-600">
+    <footer className="bg-gray-900 text-white border-t-4 border-teal-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center space-x-2">
-              <Droplets className="h-8 w-8 text-blue-500" />
+              <Droplets className="h-8 w-8 text-teal-500" />
               <span className="font-bold text-xl">Hydrogen Studies</span>
             </div>
             <p className="text-gray-300 text-sm">
@@ -78,14 +78,14 @@ export default function Footer() {
           {/* Legal Section */}
           <div className="space-y-4">
             <h3 className="font-semibold text-base flex items-center gap-2">
-              <Shield className="h-4 w-4 text-blue-500" />
+              <Shield className="h-4 w-4 text-teal-500" />
               Legal
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
                   href="/privacy"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Privacy Policy
                 </Link>
@@ -93,7 +93,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Terms of Service
                 </Link>
@@ -101,7 +101,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/cookies"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Cookie Policy
                 </Link>
@@ -109,7 +109,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/disclaimer"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Medical Disclaimer
                 </Link>
@@ -120,14 +120,14 @@ export default function Footer() {
           {/* Support Section */}
           <div className="space-y-4">
             <h3 className="font-semibold text-base flex items-center gap-2">
-              <HelpCircle className="h-4 w-4 text-blue-500" />
+              <HelpCircle className="h-4 w-4 text-teal-500" />
               Support
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
                   href="/contact"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Contact Us
                 </Link>
@@ -135,7 +135,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/chat"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   AI Assistant
                 </Link>
@@ -143,7 +143,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/blog"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Research Blog
                 </Link>
@@ -151,7 +151,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/learn/basics"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Learn About H₂
                 </Link>
@@ -162,14 +162,14 @@ export default function Footer() {
           {/* Company Section */}
           <div className="space-y-4">
             <h3 className="font-semibold text-base flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-blue-500" />
+              <Building2 className="h-4 w-4 text-teal-500" />
               Company
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
                   href="/about"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   About Us
                 </Link>
@@ -177,7 +177,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/studies"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Browse Studies
                 </Link>
@@ -185,7 +185,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/insights"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Research Insights
                 </Link>
@@ -193,7 +193,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/products"
-                  className="text-gray-300 hover:text-blue-400 transition-colors inline-block"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
                   Products
                 </Link>
@@ -220,7 +220,7 @@ export default function Footer() {
               />
               <Button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                className="bg-teal-600 hover:bg-teal-700 text-white px-6"
               >
                 Subscribe
               </Button>
@@ -237,25 +237,25 @@ export default function Footer() {
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
               <Link
                 href="/sitemap"
-                className="text-gray-400 hover:text-blue-400 transition-colors"
+                className="text-gray-400 hover:text-teal-400 transition-colors"
               >
                 Sitemap
               </Link>
               <Link
                 href="/privacy"
-                className="text-gray-400 hover:text-blue-400 transition-colors"
+                className="text-gray-400 hover:text-teal-400 transition-colors"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms"
-                className="text-gray-400 hover:text-blue-400 transition-colors"
+                className="text-gray-400 hover:text-teal-400 transition-colors"
               >
                 Terms
               </Link>
               <Link
                 href="/contact"
-                className="text-gray-400 hover:text-blue-400 transition-colors"
+                className="text-gray-400 hover:text-teal-400 transition-colors"
               >
                 Contact
               </Link>

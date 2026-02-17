@@ -12,7 +12,7 @@ export function ChatLauncher() {
       <div className="fixed bottom-6 right-6 z-40">
         <Button
           onClick={() => setIsAdvancedChatOpen(true)}
-          className="h-14 w-14 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg"
+          className="h-14 w-14 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 shadow-lg"
           size="icon"
         >
           <div className="relative">
