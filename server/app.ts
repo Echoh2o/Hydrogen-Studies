@@ -58,6 +58,8 @@ import naturalLanguageSearchRoutes from "./routes/natural-language-search-routes
 import importRoutes from "./routes/import-routes";
 import europePmcRoutes from "./routes/europepmc-routes";
 import crossRefRoutes from "./routes/crossref-routes";
+import consensusRoutes from "./routes/consensus-routes";
+import unifiedSearchRoutes from "./routes/unified-search-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -151,6 +153,9 @@ const csrf = csrfProtection({
     "/api/enrichment", // Enrichment endpoints (protected by admin auth)
     "/api/admin", // Admin endpoints (protected by admin auth)
     "/api/keywords", // Keyword monitor (protected by admin auth)
+    "/api/consensus", // Consensus API (protected by admin auth on write endpoints)
+    "/api/auth/users", // Admin user creation (protected by admin auth)
+    "/api/studies", // Study endpoints including blog generation (protected by admin auth)
   ],
 });
 
@@ -220,6 +225,8 @@ app.use("/api/keywords/monitor", keywordMonitorScheduleRoutes);
 app.use("/api/import", requireAdmin, importRoutes);
 app.use(europePmcRoutes);
 app.use("/api/crossref", crossRefRoutes);
+app.use("/api/consensus", consensusRoutes);
+app.use("/api/unified-search", unifiedSearchRoutes);
 
 // Quality Monitoring — protected with admin auth
 app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {

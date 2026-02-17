@@ -11,6 +11,12 @@ import {
   ChevronDown,
   ArrowLeft,
   Sparkles,
+  Globe,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,9 +62,21 @@ interface Study {
   plain_language_title: string;
 }
 
+interface ExternalPaper {
+  title: string;
+  authors: string;
+  journal: string;
+  year: number;
+  doi: string;
+  abstract: string;
+  detailsUrl: string;
+  source: string;
+}
+
 export default function SearchPage() {
   const [location] = useLocation();
   const [studies, setStudies] = useState<Study[]>([]);
+  const [externalPapers, setExternalPapers] = useState<ExternalPaper[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -67,6 +85,8 @@ export default function SearchPage() {
   const [category, setCategory] = useState("all");
   const [country, setCountry] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [includeExternal, setIncludeExternal] = useState(false);
+  const [showExternalResults, setShowExternalResults] = useState(false);
   const pageSize = 20;
 
   // Parse URL parameters
@@ -75,39 +95,35 @@ export default function SearchPage() {
     const initialQuery = params.get("search") || params.get("q") || "";
     setSearchQuery(initialQuery);
     setCurrentPage(1);
-    // Always perform search (empty query returns all studies)
     performSearch(initialQuery, {}, 1);
-  }, [location]); // Still depend on location for route changes
+  }, [location]);
 
-  const performSearch = async (query: string, filters: any = {}, page: number = 1) => {
+  const performSearch = async (
+    query: string,
+    filters: any = {},
+    page: number = 1,
+  ) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (query) {
-        params.set("search", query);
-      }
+      if (query) params.set("q", query);
+      params.set("page", page.toString());
       params.set("limit", pageSize.toString());
-      params.set("offset", ((page - 1) * pageSize).toString());
 
       const categoryValue = filters.category || category;
       const countryValue = filters.country || country;
 
-      if (categoryValue !== "all") {
-        params.set("category", categoryValue);
-      }
+      if (categoryValue !== "all") params.set("category", categoryValue);
+      if (countryValue !== "all") params.set("country", countryValue);
+      if (includeExternal && query) params.set("includeExternal", "true");
 
-      if (countryValue !== "all") {
-        params.set("country", countryValue);
-      }
-
-      const response = await fetch(`/api/advanced-search?${params}`);
-      if (!response.ok) {
-        throw new Error(`Search failed (${response.status})`);
-      }
+      const response = await fetch(`/api/unified-search?${params}`);
+      if (!response.ok) throw new Error(`Search failed (${response.status})`);
       const data = await response.json();
 
-      setStudies(data.studies || data.data || []);
+      setStudies(data.studies || []);
       setTotal(data.total || 0);
+      setExternalPapers(data.externalPapers || []);
       setError(null);
     } catch (err) {
       console.error("Search error:", err);
@@ -137,6 +153,19 @@ export default function SearchPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const getPageNumbers = () => {
+    const totalPages = Math.ceil(total / pageSize);
+    const pages: number[] = [];
+    const maxVisible = 7;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
+
   const totalPages = Math.ceil(total / pageSize);
 
   return (
@@ -159,34 +188,13 @@ export default function SearchPage() {
               </Badge>
             </div>
 
-            {/* AI Search Banner */}
-            <Link href="/search/natural-language">
-              <Card className="mb-4 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer border-primary/20">
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-                    <div>
-                      <p className="font-semibold text-sm">
-                        Try Natural Language Search
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Ask questions in plain English with AI-powered
-                        understanding
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-primary rotate-[-90deg]" />
-                </CardContent>
-              </Card>
-            </Link>
-
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="flex gap-4 items-center">
+            <form onSubmit={handleSearch} className="flex gap-2 items-center">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   type="text"
-                  placeholder="Search studies..."
+                  placeholder="Search hydrogen research studies... (e.g., 'hydrogen water for diabetes' or 'anti-inflammatory effects')"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -208,6 +216,33 @@ export default function SearchPage() {
                 />
               </Button>
             </form>
+
+            {/* Quick search suggestions */}
+            {!searchQuery && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                <span className="text-xs text-gray-500 py-1">Try:</span>
+                {[
+                  "hydrogen water benefits",
+                  "anti-inflammatory",
+                  "exercise recovery",
+                  "brain health",
+                  "diabetes",
+                  "cardiovascular",
+                ].map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => {
+                      setSearchQuery(term);
+                      setCurrentPage(1);
+                      performSearch(term, { category, country }, 1);
+                    }}
+                    className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition-colors"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -220,7 +255,7 @@ export default function SearchPage() {
                   <CardTitle className="text-lg">Filter Results</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2">
                         Category
@@ -247,6 +282,10 @@ export default function SearchPage() {
                           <SelectItem value="cancer">Cancer</SelectItem>
                           <SelectItem value="kidney">Kidney</SelectItem>
                           <SelectItem value="exercise">Exercise</SelectItem>
+                          <SelectItem value="inflammation">
+                            Inflammation
+                          </SelectItem>
+                          <SelectItem value="general">General</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -279,13 +318,38 @@ export default function SearchPage() {
                       </Select>
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        External Sources
+                      </label>
+                      <Button
+                        type="button"
+                        variant={includeExternal ? "default" : "outline"}
+                        className="w-full flex items-center gap-2"
+                        onClick={() => {
+                          setIncludeExternal(!includeExternal);
+                          setTimeout(handleFilterChange, 100);
+                        }}
+                      >
+                        <Globe className="h-4 w-4" />
+                        {includeExternal
+                          ? "Consensus AI On"
+                          : "Include Consensus AI"}
+                      </Button>
+                    </div>
+
                     <div className="flex items-end">
                       <Button
                         variant="outline"
                         onClick={() => {
                           setCategory("all");
                           setCountry("all");
-                          setTimeout(() => performSearch(searchQuery), 100);
+                          setIncludeExternal(false);
+                          setCurrentPage(1);
+                          setTimeout(
+                            () => performSearch(searchQuery, {}, 1),
+                            100,
+                          );
                         }}
                         className="w-full"
                       >
@@ -302,7 +366,12 @@ export default function SearchPage() {
           {error ? (
             <div className="text-center py-12">
               <p className="text-red-600 mb-4">{error}</p>
-              <Button variant="outline" onClick={() => performSearch(searchQuery, { category, country })}>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  performSearch(searchQuery, { category, country })
+                }
+              >
                 Try Again
               </Button>
             </div>
@@ -311,8 +380,9 @@ export default function SearchPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Searching studies...</p>
             </div>
-          ) : studies.length > 0 ? (
+          ) : studies.length > 0 || externalPapers.length > 0 ? (
             <div className="space-y-6">
+              {/* Local study results */}
               {studies.map((study) => (
                 <Link key={study.id} href={`/study/${study.id}`}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50">
@@ -337,27 +407,33 @@ export default function SearchPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-2 mb-4">
-                        <Badge
-                          variant="secondary"
-                          className="flex items-center gap-1"
-                        >
-                          <Calendar className="h-3 w-3" />
-                          {study.publish_year}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className="flex items-center gap-1"
-                        >
-                          <MapPin className="h-3 w-3" />
-                          {study.country}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className="flex items-center gap-1"
-                        >
-                          <Users className="h-3 w-3" />
-                          {study.sample_size} participants
-                        </Badge>
+                        {study.publish_year && (
+                          <Badge
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            <Calendar className="h-3 w-3" />
+                            {study.publish_year}
+                          </Badge>
+                        )}
+                        {study.country && (
+                          <Badge
+                            variant="outline"
+                            className="flex items-center gap-1"
+                          >
+                            <MapPin className="h-3 w-3" />
+                            {study.country}
+                          </Badge>
+                        )}
+                        {study.sample_size > 0 && (
+                          <Badge
+                            variant="outline"
+                            className="flex items-center gap-1"
+                          >
+                            <Users className="h-3 w-3" />
+                            {study.sample_size} participants
+                          </Badge>
+                        )}
                         {study.peer_reviewed && (
                           <Badge
                             variant="outline"
@@ -383,12 +459,16 @@ export default function SearchPage() {
                           <strong>Journal:</strong> {study.journal}
                         </div>
                         <div className="flex items-center gap-4">
-                          <span>
-                            <strong>Citations:</strong> {study.citation_count}
-                          </span>
-                          <span>
-                            <strong>Category:</strong> {study.category}
-                          </span>
+                          {study.citation_count > 0 && (
+                            <span>
+                              <strong>Citations:</strong> {study.citation_count}
+                            </span>
+                          )}
+                          {study.category && (
+                            <span>
+                              <strong>Category:</strong> {study.category}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -398,31 +478,126 @@ export default function SearchPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex flex-col items-center gap-4 py-8">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col items-center gap-4 py-6">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage === 1}
                     >
-                      Previous
+                      <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm text-gray-600 px-4">
-                      Page {currentPage} of {totalPages}
-                    </span>
+                    {getPageNumbers().map((p) => (
+                      <Button
+                        key={p}
+                        variant={p === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => goToPage(p)}
+                        className="min-w-[36px]"
+                      >
+                        {p}
+                      </Button>
+                    ))}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
                     >
-                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
                     </Button>
                   </div>
                   <p className="text-sm text-gray-500">
-                    Showing {studies.length} of {total.toLocaleString()} results
+                    Page {currentPage} of {totalPages} ({total.toLocaleString()}{" "}
+                    total results)
                   </p>
+                </div>
+              )}
+
+              {/* External papers from Consensus */}
+              {externalPapers.length > 0 && (
+                <div className="mt-8">
+                  <button
+                    onClick={() => setShowExternalResults(!showExternalResults)}
+                    className="flex items-center gap-2 text-lg font-semibold mb-4 hover:text-blue-600 transition-colors"
+                  >
+                    <Globe className="h-5 w-5" />
+                    Additional Papers from Consensus AI (
+                    {externalPapers.length})
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${showExternalResults ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {showExternalResults && (
+                    <div className="space-y-4">
+                      {externalPapers.map((paper, index) => (
+                        <Card
+                          key={index}
+                          className="border-blue-100 bg-blue-50/30"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-gray-900 line-clamp-2 flex-1">
+                                {paper.title}
+                              </h4>
+                              <Badge
+                                variant="secondary"
+                                className="ml-2 flex-shrink-0"
+                              >
+                                <Globe className="h-3 w-3 mr-1" />
+                                Consensus
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                              {paper.abstract}
+                            </p>
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                              <span>{paper.authors}</span>
+                              <span>|</span>
+                              <span>{paper.journal}</span>
+                              <span>|</span>
+                              <span>{paper.year}</span>
+                              {paper.doi && (
+                                <>
+                                  <span>|</span>
+                                  <a
+                                    href={`https://doi.org/${paper.doi}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline flex items-center gap-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    DOI <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      <p className="text-xs text-gray-400 text-center">
+                        External results powered by Consensus AI
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -436,17 +611,35 @@ export default function SearchPage() {
                 Try adjusting your search terms or filters to find relevant
                 studies.
               </p>
-              <Button
-                onClick={() => {
-                  setSearchQuery("");
-                  setCategory("all");
-                  setCountry("all");
-                  setCurrentPage(1);
-                  performSearch("", {}, 1);
-                }}
-              >
-                Browse All Studies
-              </Button>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCategory("all");
+                    setCountry("all");
+                    setCurrentPage(1);
+                    performSearch("", {}, 1);
+                  }}
+                >
+                  Browse All Studies
+                </Button>
+                {!includeExternal && searchQuery && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIncludeExternal(true);
+                      performSearch(
+                        searchQuery,
+                        { category, country },
+                        1,
+                      );
+                    }}
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Search Consensus AI
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>

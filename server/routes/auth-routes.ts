@@ -578,4 +578,88 @@ router.get(
   },
 );
 
+// POST /api/auth/users - Create user (admin only)
+const createUserSchema = z.object({
+  username: z.string().min(3).max(50),
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.enum(["admin", "editor", "customer", "visitor"]).default("customer"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+router.post(
+  "/users",
+  isAuthenticated,
+  requireRole([UserRole.ADMIN]),
+  async (req: Request, res: Response) => {
+    try {
+      const validatedData = createUserSchema.parse(req.body);
+
+      // Check duplicates
+      const existingUsername = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, validatedData.username))
+        .limit(1);
+
+      if (existingUsername.length > 0) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+
+      const existingEmail = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, validatedData.email))
+        .limit(1);
+
+      if (existingEmail.length > 0) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const passwordHash = await bcrypt.hash(validatedData.password, 10);
+      const userId = uuidv4();
+
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          id: userId,
+          username: validatedData.username,
+          email: validatedData.email,
+          passwordHash,
+          role: validatedData.role,
+          permissions: [],
+          isActive: true,
+        })
+        .returning();
+
+      createAuditLog(
+        req.session.userId || null,
+        "admin_created_user",
+        "user",
+        newUser.id,
+        req.ip,
+        req.headers["user-agent"] as string,
+        req.sessionID,
+        { role: validatedData.role },
+      );
+
+      const { passwordHash: _, ...userWithoutPassword } = newUser;
+      res.status(201).json({
+        message: "User created successfully",
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Validation error",
+          details: error.errors,
+        });
+      }
+      console.error("Create user error:", error);
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  },
+);
+
 export default router;
