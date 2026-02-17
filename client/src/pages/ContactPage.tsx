@@ -105,7 +105,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
       <SiteHeader />
       
       <main className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
@@ -125,7 +125,7 @@ export default function ContactPage() {
               
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
-                  <Mail className="h-5 w-5 text-blue-600 mt-1" />
+                  <Mail className="h-5 w-5 text-teal-600 mt-1" />
                   <div>
                     <p className="font-semibold text-gray-900">Email</p>
                     <p className="text-gray-600">info@hydrogenstudies.com</p>
@@ -134,7 +134,7 @@ export default function ContactPage() {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <MessageSquare className="h-5 w-5 text-blue-600 mt-1" />
+                  <MessageSquare className="h-5 w-5 text-teal-600 mt-1" />
                   <div>
                     <p className="font-semibold text-gray-900">Support</p>
                     <p className="text-gray-600">support@hydrogenstudies.com</p>
@@ -143,7 +143,7 @@ export default function ContactPage() {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <HelpCircle className="h-5 w-5 text-blue-600 mt-1" />
+                  <HelpCircle className="h-5 w-5 text-teal-600 mt-1" />
                   <div>
                     <p className="font-semibold text-gray-900">Research Inquiries</p>
                     <p className="text-gray-600">research@hydrogenstudies.com</p>
@@ -152,7 +152,7 @@ export default function ContactPage() {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <Clock className="h-5 w-5 text-blue-600 mt-1" />
+                  <Clock className="h-5 w-5 text-teal-600 mt-1" />
                   <div>
                     <p className="font-semibold text-gray-900">Response Time</p>
                     <p className="text-gray-600">24-48 hours</p>
@@ -162,26 +162,26 @@ export default function ContactPage() {
               </div>
             </Card>
 
-            <Card className="p-6 bg-blue-50 border-blue-200">
+            <Card className="p-6 bg-teal-50 border-teal-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Links</h3>
               <ul className="space-y-2">
                 <li>
-                  <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>
+                  <a href="/privacy" className="text-teal-600 hover:underline">Privacy Policy</a>
                 </li>
                 <li>
-                  <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a>
+                  <a href="/terms" className="text-teal-600 hover:underline">Terms of Service</a>
                 </li>
                 <li>
-                  <a href="/cookies" className="text-blue-600 hover:underline">Cookie Policy</a>
+                  <a href="/cookies" className="text-teal-600 hover:underline">Cookie Policy</a>
                 </li>
                 <li>
-                  <a href="/disclaimer" className="text-blue-600 hover:underline">Medical Disclaimer</a>
+                  <a href="/disclaimer" className="text-teal-600 hover:underline">Medical Disclaimer</a>
                 </li>
                 <li>
-                  <a href="/blog" className="text-blue-600 hover:underline">Blog</a>
+                  <a href="/blog" className="text-teal-600 hover:underline">Blog</a>
                 </li>
                 <li>
-                  <a href="/studies" className="text-blue-600 hover:underline">Research Studies</a>
+                  <a href="/studies" className="text-teal-600 hover:underline">Research Studies</a>
                 </li>
               </ul>
             </Card>
@@ -372,7 +372,7 @@ export default function ContactPage() {
                 </h3>
                 <p className="text-gray-600">
                   Yes, we take data security seriously. Please review our{" "}
-                  <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>{" "}
+                  <a href="/privacy" className="text-teal-600 hover:underline">Privacy Policy</a>{" "}
                   to learn how we protect and use your information.
                 </p>
               </div>

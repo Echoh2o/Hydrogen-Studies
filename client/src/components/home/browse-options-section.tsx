@@ -24,7 +24,7 @@ const browseOptions = [
       "Find studies focused on specific groups such as athletes, elderly, children, those with specific conditions, and more.",
     icon: <Users className="h-8 w-8 text-primary" />,
     href: "/demographics",
-    color: "bg-blue-50",
+    color: "bg-teal-50",
   },
   {
     title: "Mechanisms of Action",

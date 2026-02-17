@@ -436,7 +436,7 @@ export default function SEOStudyPage() {
                         <h3 className="text-xl font-semibold mb-4 text-primary">
                           Author Affiliations
                         </h3>
-                        <div className="text-neutral-700 leading-relaxed bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                        <div className="text-neutral-700 leading-relaxed bg-teal-50 p-4 rounded-lg border-l-4 border-teal-500">
                           <p>
                             {study.authorAffiliations ||
                               study.author_affiliations}

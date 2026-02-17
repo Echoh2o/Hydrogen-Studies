@@ -57,7 +57,7 @@ const ExploreByLifeStage = () => {
 
           switch (cat.name) {
             case "Infants & Newborns":
-              icon = <Baby className="h-12 w-12 text-blue-400" />;
+              icon = <Baby className="h-12 w-12 text-teal-400" />;
               break;
             case "Children & Adolescents":
               icon = <School className="h-12 w-12 text-green-500" />;
@@ -72,10 +72,10 @@ const ExploreByLifeStage = () => {
               icon = <Users className="h-12 w-12 text-pink-500" />;
               break;
             case "Athletes":
-              icon = <Ruler className="h-12 w-12 text-blue-600" />;
+              icon = <Ruler className="h-12 w-12 text-teal-600" />;
               break;
             default:
-              icon = <User className="h-12 w-12 text-blue-500" />;
+              icon = <User className="h-12 w-12 text-teal-500" />;
           }
 
           return {

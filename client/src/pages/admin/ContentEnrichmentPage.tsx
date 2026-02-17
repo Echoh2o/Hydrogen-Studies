@@ -278,7 +278,7 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
                       href={`https://doi.org/${study.doi}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
+                      className="text-teal-500 hover:underline"
                     >
                       {study.doi}
                     </a>
@@ -382,7 +382,7 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
                       href={`https://doi.org/${study.doi}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
+                      className="text-teal-500 hover:underline"
                     >
                       {study.doi}
                     </a>
@@ -400,7 +400,7 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
                     <Badge
                       key={field}
                       variant="outline"
-                      className="bg-blue-50 text-blue-700"
+                      className="bg-teal-50 text-teal-700"
                     >
                       {field}
                     </Badge>

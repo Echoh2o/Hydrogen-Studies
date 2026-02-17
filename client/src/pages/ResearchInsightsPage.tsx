@@ -34,9 +34,9 @@ export default function ResearchInsightsPage() {
         />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-purple-50">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+        <div className="bg-gradient-to-r from-teal-600 to-purple-600 text-white py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
               <div className="flex justify-center mb-6">
@@ -47,7 +47,7 @@ export default function ResearchInsightsPage() {
               <h1 className="text-4xl md:text-5xl font-bold mb-6">
                 Research Insights & Analytics
               </h1>
-              <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+              <p className="text-xl text-teal-100 mb-8 leading-relaxed">
                 Discover patterns, trends, and breakthrough insights from our
                 comprehensive hydrogen health research database
               </p>
@@ -57,22 +57,22 @@ export default function ResearchInsightsPage() {
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Database className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">1,326</div>
-                  <div className="text-sm text-blue-100">Total Studies</div>
+                  <div className="text-sm text-teal-100">Total Studies</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Calendar className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">20+</div>
-                  <div className="text-sm text-blue-100">Years Covered</div>
+                  <div className="text-sm text-teal-100">Years Covered</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Users className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">50K+</div>
-                  <div className="text-sm text-blue-100">Participants</div>
+                  <div className="text-sm text-teal-100">Participants</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <TrendingUp className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">85%</div>
-                  <div className="text-sm text-blue-100">Positive Results</div>
+                  <div className="text-sm text-teal-100">Positive Results</div>
                 </div>
               </div>
             </div>
@@ -216,11 +216,11 @@ export default function ResearchInsightsPage() {
             </section>
 
             {/* Call to Action */}
-            <section className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white text-center">
+            <section className="bg-gradient-to-r from-teal-600 to-purple-600 rounded-2xl p-8 text-white text-center">
               <h2 className="text-2xl font-bold mb-4">
                 Explore the Research Yourself
               </h2>
-              <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+              <p className="text-teal-100 mb-6 max-w-2xl mx-auto">
                 Dive deeper into our comprehensive database of hydrogen health
                 studies. Search by condition, body system, or research area to
                 find the studies most relevant to you.
@@ -228,13 +228,13 @@ export default function ResearchInsightsPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
                   href="/improved-search"
-                  className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                  className="bg-white text-teal-600 px-6 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
                 >
                   Advanced Search
                 </a>
                 <a
                   href="/explore-by-condition"
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition-colors"
+                  className="bg-teal-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-teal-400 transition-colors"
                 >
                   Browse by Condition
                 </a>

@@ -29,7 +29,7 @@ const ChatPage: React.FC = () => {
 
         <div className="max-w-4xl mx-auto">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-teal-600 to-teal-600 bg-clip-text text-transparent">
               Hydrogen Health & Wellness Assistant
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -62,11 +62,11 @@ const ChatPage: React.FC = () => {
                 individuals, wellness practitioners, and medical professionals
                 seeking evidence-based information about hydrogen therapy.
               </p>
-              <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-                <h3 className="font-semibold text-blue-800 mb-2">
+              <div className="bg-teal-50 p-4 rounded-lg border-l-4 border-teal-400">
+                <h3 className="font-semibold text-teal-800 mb-2">
                   How to Use:
                 </h3>
-                <ul className="text-blue-700 space-y-1">
+                <ul className="text-teal-700 space-y-1">
                   <li>
                     Ask specific questions about hydrogen health applications
                   </li>

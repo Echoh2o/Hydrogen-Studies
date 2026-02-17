@@ -312,9 +312,9 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
           </CardContent>
         </Card>
 
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-teal-200 bg-teal-50">
           <CardHeader>
-            <CardTitle className="flex items-center text-blue-700">
+            <CardTitle className="flex items-center text-teal-700">
               <Zap className="w-5 h-5 mr-2" />
               Auto-Generate All Images
             </CardTitle>
@@ -341,7 +341,7 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
                 <Button
                   onClick={autoGenerateAllImages}
                   disabled={isGeneratingAll}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  className="w-full bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700"
                 >
                   {isGeneratingAll ? (
                     <>

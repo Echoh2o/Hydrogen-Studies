@@ -216,7 +216,7 @@ export default function ResearchEvolution({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
       </div>
     );
   }
@@ -421,8 +421,8 @@ export default function ResearchEvolution({
 
               {/* Connection Statistics */}
               <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="text-center p-4 bg-blue-50 rounded">
-                  <p className="text-2xl font-bold text-blue-600">
+                <div className="text-center p-4 bg-teal-50 rounded">
+                  <p className="text-2xl font-bold text-teal-600">
                     {connectionsData?.length || 0}
                   </p>
                   <p className="text-sm text-gray-600">Total Connections</p>
@@ -537,7 +537,7 @@ export default function ResearchEvolution({
             <CardTitle className="text-sm">Topic Diversity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">
+            <div className="text-3xl font-bold text-teal-600">
               {evolutionData
                 ? new Set(evolutionData.flatMap((d) => d.topics)).size
                 : 0}

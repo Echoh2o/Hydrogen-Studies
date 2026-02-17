@@ -62,7 +62,7 @@ export function EnhancedStudyCard({
   const getReadingLevelColor = (level?: string) => {
     const colors: Record<string, string> = {
       beginner: "bg-green-100 text-green-800",
-      intermediate: "bg-blue-100 text-blue-800",
+      intermediate: "bg-teal-100 text-teal-800",
       advanced: "bg-orange-100 text-orange-800",
       expert: "bg-red-100 text-red-800",
     };
@@ -101,7 +101,7 @@ export function EnhancedStudyCard({
               <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2">
                 <Link
                   href={`/study/${study.id}`}
-                  className="hover:text-blue-600"
+                  className="hover:text-teal-600"
                 >
                   {study.title}
                 </Link>
@@ -134,7 +134,7 @@ export function EnhancedStudyCard({
 
   if (variant === "featured") {
     return (
-      <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white">
+      <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-teal-500 bg-gradient-to-r from-teal-50 to-white">
         <CardHeader className="pb-4">
           <div className="flex justify-between items-start gap-4">
             <div className="flex-1">
@@ -155,7 +155,7 @@ export function EnhancedStudyCard({
               <CardTitle className="text-xl font-bold text-gray-900 leading-tight mb-3">
                 <Link
                   href={`/study/${study.slug || study.id}`}
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-teal-600 transition-colors"
                 >
                   {study.seoTitle || study.title}
                 </Link>
@@ -199,12 +199,12 @@ export function EnhancedStudyCard({
         <CardContent>
           {/* Simplified Explanation */}
           {study.simplifiedExplanation && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-200">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+            <div className="mb-6 p-4 bg-teal-50 rounded-lg border-l-4 border-teal-200">
+              <h4 className="text-sm font-semibold text-teal-900 mb-2 flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
                 Plain Language Summary
               </h4>
-              <p className="text-sm text-blue-800 leading-relaxed">
+              <p className="text-sm text-teal-800 leading-relaxed">
                 {study.simplifiedExplanation}
               </p>
             </div>
@@ -307,7 +307,7 @@ export function EnhancedStudyCard({
 
   // Default variant
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-blue-500">
+    <Card className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-teal-500">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
@@ -331,7 +331,7 @@ export function EnhancedStudyCard({
             <CardTitle className="text-lg font-semibold text-gray-900 leading-tight mb-2">
               <Link
                 href={`/study/${study.slug || study.id}`}
-                className="hover:text-blue-600 transition-colors"
+                className="hover:text-teal-600 transition-colors"
               >
                 {study.title}
               </Link>
@@ -368,11 +368,11 @@ export function EnhancedStudyCard({
       <CardContent className="pt-0">
         {/* Simplified Explanation */}
         {study.simplifiedExplanation && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-200">
-            <h4 className="text-sm font-semibold text-blue-900 mb-1">
+          <div className="mb-4 p-3 bg-teal-50 rounded-lg border-l-4 border-teal-200">
+            <h4 className="text-sm font-semibold text-teal-900 mb-1">
               Plain Language Summary
             </h4>
-            <p className="text-sm text-blue-800 leading-relaxed">
+            <p className="text-sm text-teal-800 leading-relaxed">
               {study.simplifiedExplanation.length > 200
                 ? `${study.simplifiedExplanation.substring(0, 200)}...`
                 : study.simplifiedExplanation}

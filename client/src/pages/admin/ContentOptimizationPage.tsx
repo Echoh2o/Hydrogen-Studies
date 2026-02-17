@@ -220,7 +220,7 @@ export default function ContentOptimizationPage() {
       case "medium":
         return "bg-yellow-500";
       case "low":
-        return "bg-blue-500";
+        return "bg-teal-500";
       default:
         return "bg-gray-500";
     }

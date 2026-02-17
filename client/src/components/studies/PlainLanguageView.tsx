@@ -33,10 +33,10 @@ export function PlainLanguageView({ study }: PlainLanguageViewProps) {
     <div className="space-y-6">
       {/* Main Summary */}
       {study.plainLanguageSummary && (
-        <Card className="border-blue-100 shadow-sm overflow-hidden">
-          <div className="bg-blue-50/50 p-4 border-b border-blue-100 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-blue-900">What is this study about?</h3>
+        <Card className="border-teal-100 shadow-sm overflow-hidden">
+          <div className="bg-teal-50/50 p-4 border-b border-teal-100 flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-teal-600" />
+            <h3 className="font-semibold text-teal-900">What is this study about?</h3>
           </div>
           <CardContent className="pt-6">
             <p className="text-gray-700 leading-relaxed text-lg">

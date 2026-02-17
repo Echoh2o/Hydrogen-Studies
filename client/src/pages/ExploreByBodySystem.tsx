@@ -51,7 +51,7 @@ const ExploreByBodySystem = () => {
               icon = <Heart className="h-12 w-12 text-red-500" />;
               break;
             case "Nervous System":
-              icon = <Brain className="h-12 w-12 text-blue-500" />;
+              icon = <Brain className="h-12 w-12 text-teal-500" />;
               break;
             case "Respiratory System":
               icon = <Wind className="h-12 w-12 text-teal-500" />;
@@ -69,7 +69,7 @@ const ExploreByBodySystem = () => {
               icon = <Bone className="h-12 w-12 text-amber-700" />;
               break;
             default:
-              icon = <Microscope className="h-12 w-12 text-blue-500" />;
+              icon = <Microscope className="h-12 w-12 text-teal-500" />;
           }
 
           return {

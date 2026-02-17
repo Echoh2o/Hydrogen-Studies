@@ -60,13 +60,14 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  UserPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 
 // User role options
 const ROLE_OPTIONS = [
   { value: "admin", label: "Admin", color: "bg-red-100 text-red-800" },
-  { value: "editor", label: "Editor", color: "bg-blue-100 text-blue-800" },
+  { value: "editor", label: "Editor", color: "bg-teal-100 text-teal-800" },
   {
     value: "customer",
     label: "Customer",
@@ -105,7 +106,14 @@ export default function UserManagementPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLogsDialog, setShowLogsDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [newUser, setNewUser] = useState({
+    username: "",
+    email: "",
+    password: "",
+    role: "customer",
+  });
 
   // Fetch users
   const {
@@ -148,6 +156,32 @@ export default function UserManagementPage() {
       toast({
         title: "Update failed",
         description: error.response?.data?.error || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: (data: typeof newUser) =>
+      apiRequest("/api/auth/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/users"] });
+      toast({
+        title: "User created",
+        description: "New user account has been created successfully.",
+      });
+      setShowCreateDialog(false);
+      setNewUser({ username: "", email: "", password: "", role: "customer" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Creation failed",
+        description: error.message || "Failed to create user",
         variant: "destructive",
       });
     },
@@ -197,15 +231,24 @@ export default function UserManagementPage() {
                   Manage user accounts, roles, and permissions
                 </CardDescription>
               </div>
-              <Button
-                onClick={() => refetch()}
-                size="sm"
-                variant="outline"
-                data-testid="button-refresh"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowCreateDialog(true)}
+                  size="sm"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Create User
+                </Button>
+                <Button
+                  onClick={() => refetch()}
+                  size="sm"
+                  variant="outline"
+                  data-testid="button-refresh"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -488,6 +531,93 @@ export default function UserManagementPage() {
                 onClick={() => setShowLogsDialog(false)}
               >
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {/* Create User Dialog */}
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New User</DialogTitle>
+              <DialogDescription>
+                Create a new user account with a specified role
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-username">Username</Label>
+                <Input
+                  id="new-username"
+                  placeholder="Enter username"
+                  value={newUser.username}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, username: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-email">Email</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={newUser.email}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, email: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="Enter password (min 6 characters)"
+                  value={newUser.password}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, password: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-role">Role</Label>
+                <Select
+                  value={newUser.role}
+                  onValueChange={(value) =>
+                    setNewUser({ ...newUser, role: value })
+                  }
+                >
+                  <SelectTrigger id="new-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => createUserMutation.mutate(newUser)}
+                disabled={
+                  createUserMutation.isPending ||
+                  !newUser.username ||
+                  !newUser.email ||
+                  newUser.password.length < 6
+                }
+              >
+                {createUserMutation.isPending ? "Creating..." : "Create User"}
               </Button>
             </DialogFooter>
           </DialogContent>

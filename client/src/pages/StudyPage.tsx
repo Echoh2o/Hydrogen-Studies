@@ -75,26 +75,26 @@ const StudyImage = ({
 
               // Add study ID
               const idEl = document.createElement("div");
-              idEl.className = "text-blue-900 text-lg font-semibold mb-2";
+              idEl.className = "text-teal-900 text-lg font-semibold mb-2";
               idEl.textContent = `Study #${studyId}`;
               fallback.appendChild(idEl);
 
               // Add title
               const titleEl = document.createElement("h3");
               titleEl.className =
-                "text-blue-900 text-xl font-bold mb-4 max-w-lg";
+                "text-teal-900 text-xl font-bold mb-4 max-w-lg";
               titleEl.textContent = title;
               fallback.appendChild(titleEl);
 
               // Add authors
               const authorsEl = document.createElement("p");
-              authorsEl.className = "text-blue-800 mb-4";
+              authorsEl.className = "text-teal-800 mb-4";
               authorsEl.textContent = authors;
               fallback.appendChild(authorsEl);
 
               // Add journal info
               const journalEl = document.createElement("p");
-              journalEl.className = "text-blue-700 text-sm mb-8";
+              journalEl.className = "text-teal-700 text-sm mb-8";
               journalEl.textContent = `${journal} (${year || new Date().getFullYear()})`;
               fallback.appendChild(journalEl);
 
@@ -109,25 +109,25 @@ const StudyImage = ({
 
   // Otherwise, render a styled div with study information
   return (
-    <div className="w-full h-96 bg-gradient-to-br from-sky-50 to-blue-50 rounded-md shadow-md flex flex-col items-center justify-center p-6 text-center">
-      <div className="text-blue-900 text-lg font-semibold mb-2">
+    <div className="w-full h-96 bg-gradient-to-br from-sky-50 to-teal-50 rounded-md shadow-md flex flex-col items-center justify-center p-6 text-center">
+      <div className="text-teal-900 text-lg font-semibold mb-2">
         Study #{studyId}
       </div>
 
-      <h3 className="text-blue-900 text-xl font-bold mb-4 max-w-lg">{title}</h3>
+      <h3 className="text-teal-900 text-xl font-bold mb-4 max-w-lg">{title}</h3>
 
-      <p className="text-blue-800 mb-4">{authors}</p>
+      <p className="text-teal-800 mb-4">{authors}</p>
 
-      <p className="text-blue-700 text-sm mb-8">
+      <p className="text-teal-700 text-sm mb-8">
         {journal} ({year || new Date().getFullYear()})
       </p>
 
       {/* Simple hydrogen molecule visualization with CSS */}
       <div className="flex items-center justify-center mt-4 gap-8">
-        <div className="w-16 h-16 rounded-full bg-blue-500 opacity-70 shadow-lg"></div>
+        <div className="w-16 h-16 rounded-full bg-teal-500 opacity-70 shadow-lg"></div>
         <div className="relative">
-          <div className="w-16 h-16 rounded-full bg-blue-800 opacity-70 shadow-lg"></div>
-          <div className="absolute top-1/2 left-[-16px] transform -translate-y-1/2 h-1.5 w-[32px] bg-blue-900"></div>
+          <div className="w-16 h-16 rounded-full bg-teal-800 opacity-70 shadow-lg"></div>
+          <div className="absolute top-1/2 left-[-16px] transform -translate-y-1/2 h-1.5 w-[32px] bg-teal-900"></div>
         </div>
       </div>
     </div>
@@ -632,12 +632,12 @@ const StudyPage = () => {
                   >
                     <h2
                       id="summary-heading"
-                      className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-blue-600"
+                      className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-teal-600"
                     >
                       What This Study Means for You
                     </h2>
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 md:p-6 rounded-r-lg">
-                      <div className="prose prose-sm md:prose max-w-none prose-blue">
+                    <div className="bg-teal-50 border-l-4 border-teal-400 p-4 md:p-6 rounded-r-lg">
+                      <div className="prose prose-sm md:prose max-w-none prose-teal">
                         <div
                           dangerouslySetInnerHTML={{
                             __html: (study as any).summaryMarkdown,
@@ -965,7 +965,7 @@ const StudyPage = () => {
               <div className="flex flex-col gap-3">
                 <Button
                   size="icon"
-                  className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg"
+                  className="w-12 h-12 rounded-full bg-teal-500 hover:bg-teal-600 shadow-lg"
                   onClick={() => {
                     if (navigator.share) {
                       navigator.share({

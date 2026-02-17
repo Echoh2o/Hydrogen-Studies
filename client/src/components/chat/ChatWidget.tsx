@@ -622,7 +622,7 @@ export const ChatWidget: React.FC = () => {
       </div>
 
       <Card className="flex-1 shadow-lg border-muted min-h-[600px] flex flex-col">
-        <CardHeader className="bg-gradient-to-r from-blue-600 to-teal-600 text-white">
+        <CardHeader className="bg-gradient-to-r from-teal-600 to-teal-600 text-white">
           <CardTitle className="flex items-center justify-between">
             <span>Hydrogen Health & Wellness Assistant</span>
             <div className="flex items-center gap-2">
@@ -892,7 +892,7 @@ export const ChatWidget: React.FC = () => {
 
             {/* Product recommendations for hydrogen health-related queries */}
             {productRecommendations.length > 0 && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+              <div className="mt-4 p-3 bg-teal-50 dark:bg-teal-950 rounded-md border border-teal-200 dark:border-teal-800">
                 <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
                   <ShoppingBag className="h-4 w-4" /> Recommended Products for
                   Hydrogen Health
@@ -904,7 +904,7 @@ export const ChatWidget: React.FC = () => {
                       href={product.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex gap-3 p-2 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                      className="flex gap-3 p-2 rounded-md hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors"
                     >
                       {product.imageUrl && (
                         <div className="w-16 h-16 shrink-0 rounded overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -916,7 +916,7 @@ export const ChatWidget: React.FC = () => {
                         </div>
                       )}
                       <div className="flex-1">
-                        <h5 className="font-medium text-blue-600 dark:text-blue-400">
+                        <h5 className="font-medium text-teal-600 dark:text-teal-400">
                           {product.name}
                         </h5>
                         <p className="text-xs text-muted-foreground line-clamp-2">
@@ -933,7 +933,7 @@ export const ChatWidget: React.FC = () => {
             {productRecommendations.length === 0 &&
               messages.length > 0 &&
               messages[messages.length - 1].role === "assistant" && (
-                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+                <div className="mt-4 p-3 bg-teal-50 dark:bg-teal-950 rounded-md border border-teal-200 dark:border-teal-800">
                   <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
                     <ShoppingBag className="h-4 w-4" /> Looking for hydrogen
                     products?
@@ -944,7 +944,7 @@ export const ChatWidget: React.FC = () => {
                       href="https://echowater.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 dark:text-blue-400 font-medium"
+                      className="text-teal-600 dark:text-teal-400 font-medium"
                     >
                       Echo Water
                     </a>{" "}

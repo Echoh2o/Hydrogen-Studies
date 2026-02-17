@@ -247,10 +247,10 @@ export default function AdminDashboard() {
                 </div>
 
                 {activeProcesses.includes("tagging") && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
                     <div className="flex items-center">
-                      <Clock className="h-4 w-4 text-blue-600 mr-2 animate-spin" />
-                      <span className="text-sm text-blue-800">
+                      <Clock className="h-4 w-4 text-teal-600 mr-2 animate-spin" />
+                      <span className="text-sm text-teal-800">
                         Automated tagging is running in background
                       </span>
                     </div>

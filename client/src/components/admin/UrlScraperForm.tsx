@@ -239,7 +239,7 @@ const UrlScraperForm: React.FC = () => {
                       key={platform.name}
                       variant={platform.featured ? "default" : "secondary"}
                       className={
-                        platform.featured ? "bg-blue-600 hover:bg-blue-700" : ""
+                        platform.featured ? "bg-teal-600 hover:bg-teal-700" : ""
                       }
                     >
                       {React.createElement(platform.icon, {

@@ -17,7 +17,7 @@ export default function MedicalDisclaimerPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
       <SiteHeader />
       
       <main className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
@@ -62,7 +62,7 @@ export default function MedicalDisclaimerPage() {
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Stethoscope className="h-6 w-6 mr-2 text-blue-600" />
+                <Stethoscope className="h-6 w-6 mr-2 text-teal-600" />
                 Not a Substitute for Professional Medical Advice
               </h2>
               <p className="text-gray-700 mb-4 font-semibold">
@@ -76,7 +76,7 @@ export default function MedicalDisclaimerPage() {
                 <li>Replace proper medical examination and consultation</li>
               </ul>
               
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 my-6">
+              <div className="bg-teal-50 border-l-4 border-teal-400 p-4 my-6">
                 <p className="text-gray-700 font-semibold">
                   ALWAYS consult with a qualified healthcare professional before making any decisions about your health, including:
                 </p>
@@ -269,7 +269,7 @@ export default function MedicalDisclaimerPage() {
                 <p className="text-gray-700">
                   <strong>Hydrogen Studies</strong><br />
                   Email: legal@hydrogenstudies.com<br />
-                  Contact Form: <a href="/contact" className="text-blue-600 hover:underline">www.hydrogenstudies.com/contact</a><br />
+                  Contact Form: <a href="/contact" className="text-teal-600 hover:underline">www.hydrogenstudies.com/contact</a><br />
                   <br />
                   <strong className="text-red-600">Note:</strong> We cannot provide medical advice or answer health-related questions. Please consult your healthcare provider for medical concerns.
                 </p>

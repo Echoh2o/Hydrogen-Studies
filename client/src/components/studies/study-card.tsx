@@ -34,7 +34,7 @@ export default function StudyCard({ study }: StudyCardProps) {
       case "aging":
         return "bg-purple-500/10 text-purple-500";
       case "sports performance":
-        return "bg-blue-500/10 text-blue-500";
+        return "bg-teal-500/10 text-teal-500";
       default:
         return "bg-gray-500/10 text-gray-500";
     }

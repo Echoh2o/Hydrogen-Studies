@@ -442,7 +442,7 @@ export default function MultiFormatGeneratorPage() {
                       key={key}
                       className={`border rounded-lg p-3 cursor-pointer transition-colors ${
                         selectedFormats.includes(value)
-                          ? "border-blue-500 bg-blue-50"
+                          ? "border-teal-500 bg-teal-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                       onClick={() => handleFormatToggle(value)}
@@ -452,7 +452,7 @@ export default function MultiFormatGeneratorPage() {
                         <div
                           className={
                             selectedFormats.includes(value)
-                              ? "text-blue-600"
+                              ? "text-teal-600"
                               : "text-gray-500"
                           }
                         >
@@ -543,12 +543,12 @@ export default function MultiFormatGeneratorPage() {
                   {generatedContent?.data?.map((content: any) => (
                     <Card
                       key={content.id}
-                      className="border-l-4 border-l-blue-500"
+                      className="border-l-4 border-l-teal-500"
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="text-blue-600">
+                            <div className="text-teal-600">
                               {formatIcons[content.formatType]}
                             </div>
                             <div>
@@ -729,8 +729,8 @@ function ContentPreview({ content }: { content: any }) {
                 <div className="grid grid-cols-2 gap-3">
                   {JSON.parse(content.keyStatistics).map(
                     (stat: any, index: number) => (
-                      <div key={index} className="p-3 bg-blue-50 rounded">
-                        <p className="text-2xl font-bold text-blue-600">
+                      <div key={index} className="p-3 bg-teal-50 rounded">
+                        <p className="text-2xl font-bold text-teal-600">
                           {stat.value}
                         </p>
                         <p className="text-sm font-medium">{stat.label}</p>
@@ -851,7 +851,7 @@ function ContentPreview({ content }: { content: any }) {
   return (
     <div className="max-h-[600px] overflow-y-auto">
       <div className="mb-4 flex items-center space-x-2">
-        <div className="text-blue-600">{formatIcons[content.formatType]}</div>
+        <div className="text-teal-600">{formatIcons[content.formatType]}</div>
         <h2 className="text-lg font-medium">
           {formatNames[content.formatType]}
         </h2>

@@ -121,7 +121,7 @@ const LifeStageCategoryPage = () => {
   const getLifeStageIcon = () => {
     switch (displayName) {
       case "Infants & Newborns":
-        return <Baby className="h-8 w-8 text-blue-400" />;
+        return <Baby className="h-8 w-8 text-teal-400" />;
       case "Children & Adolescents":
         return <School className="h-8 w-8 text-green-500" />;
       case "Adults":

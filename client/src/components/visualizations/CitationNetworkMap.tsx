@@ -340,7 +340,7 @@ export default function CitationNetworkMap({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-teal-600">
               {displayData.stats?.totalNodes || displayData.nodes?.length || 0}
             </div>
             <p className="text-sm text-muted-foreground">Connected studies</p>

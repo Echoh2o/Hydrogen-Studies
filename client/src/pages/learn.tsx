@@ -172,9 +172,9 @@ export default function LearnPage() {
         </script>
       </Helmet>
 
-      <div className="py-8 md:py-12 bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="py-8 md:py-12 bg-gradient-to-br from-teal-50 to-indigo-50">
         <ResponsiveContainer className="text-center">
-          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-indigo-600 mb-4">
             Educational Resources
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto mb-8">
@@ -204,8 +204,8 @@ export default function LearnPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Tutorials Section */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
-                <div className="bg-blue-50 p-4 border-b border-gray-100">
-                  <h3 className="text-xl font-semibold text-blue-700">
+                <div className="bg-teal-50 p-4 border-b border-gray-100">
+                  <h3 className="text-xl font-semibold text-teal-700">
                     Tutorials
                   </h3>
                   <p className="text-gray-600 text-sm mt-1">
@@ -228,9 +228,9 @@ export default function LearnPage() {
                         >
                           <Link
                             to={`/resources/${tutorial.id}`}
-                            className="block hover:bg-blue-50 p-2 rounded-md transition-colors"
+                            className="block hover:bg-teal-50 p-2 rounded-md transition-colors"
                           >
-                            <h4 className="font-medium text-blue-800">
+                            <h4 className="font-medium text-teal-800">
                               {tutorial.title}
                             </h4>
                             <p className="text-sm text-gray-600 mt-1">
@@ -394,7 +394,7 @@ export default function LearnPage() {
                     <a
                       key={letter}
                       href={`#glossary-${letter}`}
-                      className="w-8 h-8 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-800 rounded font-medium transition-colors"
+                      className="w-8 h-8 flex items-center justify-center bg-teal-100 hover:bg-teal-200 text-teal-800 rounded font-medium transition-colors"
                     >
                       {letter}
                     </a>
@@ -408,7 +408,7 @@ export default function LearnPage() {
                     id={`glossary-${letter}`}
                     className="scroll-mt-20"
                   >
-                    <h3 className="text-2xl font-bold text-blue-800 border-b border-gray-200 pb-2 mb-4">
+                    <h3 className="text-2xl font-bold text-teal-800 border-b border-gray-200 pb-2 mb-4">
                       {letter}
                     </h3>
                     <dl className="space-y-6">
@@ -434,7 +434,7 @@ export default function LearnPage() {
                                   .map((related, index) => (
                                     <span
                                       key={index}
-                                      className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
+                                      className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full"
                                     >
                                       {related.trim()}
                                     </span>

@@ -223,7 +223,7 @@ export default function AdminMonitoringPage() {
   const getProcessStatusBadge = (process: ProcessStatus) => {
     if (process.isRunning) {
       return (
-        <Badge variant="default" className="bg-blue-500">
+        <Badge variant="default" className="bg-teal-500">
           <Play className="w-3 h-3 mr-1" />
           Running
         </Badge>

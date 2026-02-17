@@ -178,7 +178,7 @@ export default function SearchPage() {
             <div className="flex items-center justify-between mb-4">
               <Link
                 href="/"
-                className="flex items-center text-blue-600 hover:text-blue-700"
+                className="flex items-center text-teal-600 hover:text-teal-700"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Home
@@ -236,7 +236,7 @@ export default function SearchPage() {
                       setCurrentPage(1);
                       performSearch(term, { category, country }, 1);
                     }}
-                    className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition-colors"
+                    className="text-xs px-2 py-1 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 transition-colors"
                   >
                     {term}
                   </button>
@@ -389,7 +389,7 @@ export default function SearchPage() {
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600">
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-teal-600">
                             {study.plain_language_title || study.title}
                           </h3>
                           <p className="text-gray-600 mb-3 line-clamp-3">
@@ -536,7 +536,7 @@ export default function SearchPage() {
                 <div className="mt-8">
                   <button
                     onClick={() => setShowExternalResults(!showExternalResults)}
-                    className="flex items-center gap-2 text-lg font-semibold mb-4 hover:text-blue-600 transition-colors"
+                    className="flex items-center gap-2 text-lg font-semibold mb-4 hover:text-teal-600 transition-colors"
                   >
                     <Globe className="h-5 w-5" />
                     Additional Papers from Consensus AI (
@@ -551,7 +551,7 @@ export default function SearchPage() {
                       {externalPapers.map((paper, index) => (
                         <Card
                           key={index}
-                          className="border-blue-100 bg-blue-50/30"
+                          className="border-teal-100 bg-teal-50/30"
                         >
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between mb-2">
@@ -582,7 +582,7 @@ export default function SearchPage() {
                                     href={`https://doi.org/${paper.doi}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline flex items-center gap-1"
+                                    className="text-teal-600 hover:underline flex items-center gap-1"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     DOI <ExternalLink className="h-3 w-3" />

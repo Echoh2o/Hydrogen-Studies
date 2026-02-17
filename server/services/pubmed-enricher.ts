@@ -192,7 +192,7 @@ async function fetchPubMedArticle(pmid: string): Promise<any> {
       api_key: apiKey,
     };
 
-    const summaryResponse = await axios.get(PUBMED_SUMMARY, { summaryParams });
+    const summaryResponse = await axios.get(PUBMED_SUMMARY, { params: summaryParams });
     const summaryData = summaryResponse.data;
 
     // Combine XML and JSON data

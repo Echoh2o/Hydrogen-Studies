@@ -27,7 +27,7 @@ export default function HydrogenBasicsPage() {
   const deliveryMethods = [
     {
       method: "Hydrogen Water",
-      icon: <Droplets className="h-6 w-6 text-blue-600" />,
+      icon: <Droplets className="h-6 w-6 text-teal-600" />,
       description: "Drinking water infused with dissolved molecular hydrogen",
       benefits: ["Easy to consume", "Convenient for daily use", "Portable"],
       studies: 450,
@@ -84,13 +84,13 @@ export default function HydrogenBasicsPage() {
   return (
     <>
       <SiteHeader />
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Navigation */}
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Link
               href="/learn"
-              className="flex items-center text-blue-600 hover:text-blue-700"
+              className="flex items-center text-teal-600 hover:text-teal-700"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Learn
@@ -101,10 +101,10 @@ export default function HydrogenBasicsPage() {
         {/* Hero */}
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <Atom className="h-16 w-16 text-blue-600 mx-auto mb-6" />
+            <Atom className="h-16 w-16 text-teal-600 mx-auto mb-6" />
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
               Hydrogen Therapy
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
                 {" "}
                 Basics
               </span>
@@ -113,7 +113,7 @@ export default function HydrogenBasicsPage() {
               Everything you need to know about molecular hydrogen and its
               potential health benefits
             </p>
-            <Badge className="bg-blue-100 text-blue-800 px-4 py-2">
+            <Badge className="bg-teal-100 text-teal-800 px-4 py-2">
               Based on 1,300+ peer-reviewed studies
             </Badge>
           </div>
@@ -127,8 +127,8 @@ export default function HydrogenBasicsPage() {
             </h2>
 
             <div className="prose prose-lg max-w-none text-gray-700">
-              <div className="bg-blue-50 p-6 rounded-lg mb-8">
-                <p className="text-lg font-medium text-blue-900 mb-4">
+              <div className="bg-teal-50 p-6 rounded-lg mb-8">
+                <p className="text-lg font-medium text-teal-900 mb-4">
                   Molecular hydrogen (H₂) is a colorless, odorless gas composed
                   of two hydrogen atoms. It's the smallest and lightest molecule
                   in the universe.
@@ -146,7 +146,7 @@ export default function HydrogenBasicsPage() {
                       Non-toxic and safe
                     </li>
                     <li className="flex items-center">
-                      <Atom className="h-4 w-4 text-blue-600 mr-2" />
+                      <Atom className="h-4 w-4 text-teal-600 mr-2" />
                       Smallest molecular size
                     </li>
                     <li className="flex items-center">
@@ -179,7 +179,7 @@ export default function HydrogenBasicsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {keyMechanisms.map((mechanism, index) => (
-                <Card key={index} className="border-t-4 border-t-blue-600">
+                <Card key={index} className="border-t-4 border-t-teal-600">
                   <CardHeader>
                     <CardTitle className="text-lg">{mechanism.title}</CardTitle>
                     <CardDescription>{mechanism.description}</CardDescription>
@@ -221,7 +221,7 @@ export default function HydrogenBasicsPage() {
                             key={i}
                             className="text-sm text-gray-600 flex items-center"
                           >
-                            <div className="h-1.5 w-1.5 bg-blue-600 rounded-full mr-2"></div>
+                            <div className="h-1.5 w-1.5 bg-teal-600 rounded-full mr-2"></div>
                             {benefit}
                           </li>
                         ))}
@@ -249,7 +249,7 @@ export default function HydrogenBasicsPage() {
         </section>
 
         {/* Safety Information */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-50">
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-teal-50">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
               Safety & Considerations
@@ -337,7 +337,7 @@ export default function HydrogenBasicsPage() {
               <Link href="/studies">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
-                    <Shield className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                    <Shield className="h-8 w-8 text-teal-600 mx-auto mb-2" />
                     <CardTitle className="text-center">View Research</CardTitle>
                     <CardDescription className="text-center">
                       Browse our database of peer-reviewed studies

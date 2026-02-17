@@ -166,7 +166,7 @@ export default function RecommendationEngine({
     if (reason.includes("heart") || reason.includes("cardio"))
       return <Heart className="h-4 w-4 text-red-500" />;
     if (reason.includes("brain") || reason.includes("neuro"))
-      return <Brain className="h-4 w-4 text-blue-500" />;
+      return <Brain className="h-4 w-4 text-teal-500" />;
     return <Shield className="h-4 w-4 text-green-500" />;
   };
 

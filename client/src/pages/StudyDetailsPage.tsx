@@ -245,13 +245,13 @@ export default function StudyDetailsPage() {
             <TabsList className="grid w-full grid-cols-2 mb-8 p-1 bg-gray-100/80 rounded-xl h-auto">
               <TabsTrigger 
                 value="plain" 
-                className="rounded-lg py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all"
+                className="rounded-lg py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm transition-all"
               >
                 Plain Language
               </TabsTrigger>
               <TabsTrigger 
                 value="scientific"
-                className="rounded-lg py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all"
+                className="rounded-lg py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm transition-all"
               >
                 Scientific Details
               </TabsTrigger>
@@ -359,8 +359,8 @@ function InsightsSection({ studyId }: { studyId: number }) {
   if (!insights) return null;
 
   return (
-    <div className="mt-8 mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-       <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+    <div className="mt-8 mb-8 p-6 bg-gradient-to-r from-teal-50 to-indigo-50 rounded-xl border border-teal-100">
+       <h3 className="text-lg font-semibold text-teal-900 mb-4 flex items-center">
          <span className="mr-2">✨</span> AI Study Insights
        </h3>
        
@@ -368,12 +368,12 @@ function InsightsSection({ studyId }: { studyId: number }) {
           {insights.aiOptimizationScore && (
              <div className="bg-white p-4 rounded-lg shadow-sm">
                 <div className="text-sm text-gray-500 mb-1">Quality Score</div>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-teal-600">
                    {insights.aiOptimizationScore}/100
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                    <div 
-                      className="bg-blue-600 h-2 rounded-full" 
+                      className="bg-teal-600 h-2 rounded-full" 
                       style={{ width: `${insights.aiOptimizationScore}%` }}
                    ></div>
                 </div>

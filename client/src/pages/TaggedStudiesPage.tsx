@@ -168,7 +168,7 @@ export default function TaggedStudiesPage() {
       case "health_condition":
         return "bg-red-100 text-red-800";
       case "study_type":
-        return "bg-blue-100 text-blue-800";
+        return "bg-teal-100 text-teal-800";
       case "body_system":
         return "bg-green-100 text-green-800";
       case "mechanism":

@@ -54,9 +54,9 @@ export default function ResearchAnalyticsPage() {
 
       <SiteHeader />
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-slate-900 to-blue-900 text-white py-16">
+        <div className="bg-gradient-to-r from-slate-900 to-teal-900 text-white py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
               <div className="flex justify-center mb-6">
@@ -67,7 +67,7 @@ export default function ResearchAnalyticsPage() {
               <h1 className="text-4xl md:text-5xl font-bold mb-6">
                 Research Analytics & Citation Networks
               </h1>
-              <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+              <p className="text-xl text-teal-100 mb-8 leading-relaxed">
                 Explore the interconnected landscape of hydrogen health research
                 through advanced visualizations, citation networks, and
                 publication trends
@@ -78,26 +78,26 @@ export default function ResearchAnalyticsPage() {
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <BookOpen className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">1,326</div>
-                  <div className="text-sm text-blue-100">Total Studies</div>
+                  <div className="text-sm text-teal-100">Total Studies</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Quote className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">
                     {analyticsData?.totalCitations || "15K+"}
                   </div>
-                  <div className="text-sm text-blue-100">Citations</div>
+                  <div className="text-sm text-teal-100">Citations</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Network className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">
                     {analyticsData?.connectedStudies || "850+"}
                   </div>
-                  <div className="text-sm text-blue-100">Connected Studies</div>
+                  <div className="text-sm text-teal-100">Connected Studies</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Clock className="w-6 h-6 mx-auto mb-2" />
                   <div className="text-2xl font-bold">25+</div>
-                  <div className="text-sm text-blue-100">Years Tracked</div>
+                  <div className="text-sm text-teal-100">Years Tracked</div>
                 </div>
               </div>
             </div>
@@ -156,14 +156,14 @@ export default function ResearchAnalyticsPage() {
                 <div className="grid md:grid-cols-3 gap-6 mt-8">
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-3 text-blue-700">
+                      <CardTitle className="flex items-center gap-3 text-teal-700">
                         <Clock className="w-6 h-6" />
                         Peak Years
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        <div className="text-2xl font-bold text-blue-600">
+                        <div className="text-2xl font-bold text-teal-600">
                           2018-2023
                         </div>
                         <p className="text-gray-600 text-sm">
@@ -285,7 +285,7 @@ export default function ResearchAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        <div className="text-2xl font-bold text-blue-600">
+                        <div className="text-2xl font-bold text-teal-600">
                           340 Links
                         </div>
                         <p className="text-sm text-gray-600">
@@ -380,7 +380,7 @@ export default function ResearchAnalyticsPage() {
                           (study: any, index: number) => (
                             <div
                               key={index}
-                              className="border-l-4 border-blue-500 pl-4"
+                              className="border-l-4 border-teal-500 pl-4"
                             >
                               <div className="font-medium text-sm">
                                 {study.title}
@@ -392,7 +392,7 @@ export default function ResearchAnalyticsPage() {
                           ),
                         ) || (
                           <div className="space-y-4">
-                            <div className="border-l-4 border-blue-500 pl-4">
+                            <div className="border-l-4 border-teal-500 pl-4">
                               <div className="font-medium text-sm">
                                 Molecular hydrogen: a preventive and therapeutic
                                 medical gas
@@ -438,13 +438,13 @@ export default function ResearchAnalyticsPage() {
                         <div>
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-sm font-medium">H-Index</span>
-                            <span className="text-2xl font-bold text-blue-600">
+                            <span className="text-2xl font-bold text-teal-600">
                               47
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className="bg-blue-600 h-2 rounded-full"
+                              className="bg-teal-600 h-2 rounded-full"
                               style={{ width: "78%" }}
                             ></div>
                           </div>
@@ -499,11 +499,11 @@ export default function ResearchAnalyticsPage() {
             </Tabs>
 
             {/* Call to Action */}
-            <section className="bg-gradient-to-r from-slate-900 to-blue-900 rounded-2xl p-8 text-white text-center mt-12">
+            <section className="bg-gradient-to-r from-slate-900 to-teal-900 rounded-2xl p-8 text-white text-center mt-12">
               <h2 className="text-2xl font-bold mb-4">
                 Dive Deeper into the Research
               </h2>
-              <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+              <p className="text-teal-100 mb-6 max-w-2xl mx-auto">
                 Use these insights to guide your exploration of our
                 comprehensive hydrogen health database. Discover the studies
                 behind these analytics.
@@ -511,13 +511,13 @@ export default function ResearchAnalyticsPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
                   href="/improved-search"
-                  className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                  className="bg-white text-teal-600 px-6 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
                 >
                   Advanced Search
                 </a>
                 <a
                   href="/explore-by-condition"
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-400 transition-colors"
+                  className="bg-teal-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-teal-400 transition-colors"
                 >
                   Browse by Condition
                 </a>

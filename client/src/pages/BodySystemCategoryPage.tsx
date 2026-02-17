@@ -117,7 +117,7 @@ const BodySystemCategoryPage = () => {
       case "Cardiovascular System":
         return <Heart className="h-8 w-8 text-red-500" />;
       case "Nervous System":
-        return <Brain className="h-8 w-8 text-blue-500" />;
+        return <Brain className="h-8 w-8 text-teal-500" />;
       // Add more cases for other systems
       default:
         return <Heart className="h-8 w-8 text-primary" />;

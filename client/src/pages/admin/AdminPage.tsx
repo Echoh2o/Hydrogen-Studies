@@ -336,7 +336,7 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      <div className="mt-4 text-sm text-blue-600">
+                      <div className="mt-4 text-sm text-teal-600">
                         <a href="/admin/import" className="hover:underline">
                           Advanced Excel Import →
                         </a>

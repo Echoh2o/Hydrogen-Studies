@@ -23,7 +23,7 @@ export default function CookiePolicyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
       <SiteHeader />
       
       <main className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
@@ -35,7 +35,7 @@ export default function CookiePolicyPage() {
               Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
 
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-8">
+            <div className="bg-teal-50 border-l-4 border-teal-400 p-4 mb-8">
               <p className="text-gray-700">
                 This Cookie Policy explains how Hydrogen Studies ("we," "us," or "our") uses cookies and similar tracking technologies on our website. By using our website, you consent to the use of cookies in accordance with this policy.
               </p>
@@ -210,10 +210,10 @@ export default function CookiePolicyPage() {
                 Here are links to cookie management instructions for popular browsers:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
-                <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Chrome</a></li>
-                <li><a href="https://support.mozilla.org/en-US/kb/enhanced-tracking-protection-firefox-desktop" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Mozilla Firefox</a></li>
-                <li><a href="https://support.apple.com/guide/safari/manage-cookies-sfri11471/mac" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Safari</a></li>
-                <li><a href="https://support.microsoft.com/en-us/windows/manage-cookies-in-microsoft-edge-168dab11-0753-043d-7c16-ede5947fc64d" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Microsoft Edge</a></li>
+                <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Google Chrome</a></li>
+                <li><a href="https://support.mozilla.org/en-US/kb/enhanced-tracking-protection-firefox-desktop" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Mozilla Firefox</a></li>
+                <li><a href="https://support.apple.com/guide/safari/manage-cookies-sfri11471/mac" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Safari</a></li>
+                <li><a href="https://support.microsoft.com/en-us/windows/manage-cookies-in-microsoft-edge-168dab11-0753-043d-7c16-ede5947fc64d" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Microsoft Edge</a></li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">5.4 Opt-Out Options</h3>
@@ -222,10 +222,10 @@ export default function CookiePolicyPage() {
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
                 <li>
-                  <strong>Google Analytics:</strong> Install the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Analytics Opt-out Browser Add-on</a>
+                  <strong>Google Analytics:</strong> Install the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Google Analytics Opt-out Browser Add-on</a>
                 </li>
                 <li>
-                  <strong>General opt-out:</strong> Visit the <a href="http://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digital Advertising Alliance's opt-out page</a>
+                  <strong>General opt-out:</strong> Visit the <a href="http://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Digital Advertising Alliance's opt-out page</a>
                 </li>
               </ul>
             </section>
@@ -240,7 +240,7 @@ export default function CookiePolicyPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Cookies and Personal Data</h2>
               <p className="text-gray-700 mb-4">
-                Some cookies we use may collect personal data about you. For more information about how we handle personal data, please refer to our <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
+                Some cookies we use may collect personal data about you. For more information about how we handle personal data, please refer to our <a href="/privacy" className="text-teal-600 hover:underline">Privacy Policy</a>.
               </p>
               <p className="text-gray-700 mb-4">
                 Where cookies collect personal data, we ensure that:
@@ -293,7 +293,7 @@ export default function CookiePolicyPage() {
                 <p className="text-gray-700">
                   <strong>Hydrogen Studies</strong><br />
                   Email: privacy@hydrogenstudies.com<br />
-                  Contact Form: <a href="/contact" className="text-blue-600 hover:underline">www.hydrogenstudies.com/contact</a><br />
+                  Contact Form: <a href="/contact" className="text-teal-600 hover:underline">www.hydrogenstudies.com/contact</a><br />
                   <br />
                   For cookie-specific inquiries, please include "Cookie Policy" in your subject line.
                 </p>
@@ -306,9 +306,9 @@ export default function CookiePolicyPage() {
                 For more information about cookies and online privacy:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
-                <li><a href="https://www.allaboutcookies.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">All About Cookies</a> - Independent information about cookies</li>
-                <li><a href="https://www.networkadvertising.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Network Advertising Initiative</a> - Information about online advertising</li>
-                <li><a href="https://youronlinechoices.eu/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Your Online Choices</a> - EU guide to online behavioral advertising</li>
+                <li><a href="https://www.allaboutcookies.org/" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">All About Cookies</a> - Independent information about cookies</li>
+                <li><a href="https://www.networkadvertising.org/" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Network Advertising Initiative</a> - Information about online advertising</li>
+                <li><a href="https://youronlinechoices.eu/" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Your Online Choices</a> - EU guide to online behavioral advertising</li>
               </ul>
             </section>
           </div>

@@ -134,7 +134,7 @@ export function AdvancedChatWidget({
       <Card className="w-full max-w-4xl h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -197,8 +197,8 @@ export function AdvancedChatWidget({
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                         message.role === "user"
-                          ? "bg-blue-500"
-                          : "bg-gradient-to-r from-blue-500 to-cyan-500"
+                          ? "bg-teal-500"
+                          : "bg-gradient-to-r from-teal-500 to-cyan-500"
                       }`}
                     >
                       {message.role === "user" ? (
@@ -210,7 +210,7 @@ export function AdvancedChatWidget({
                     <div
                       className={`rounded-lg p-3 ${
                         message.role === "user"
-                          ? "bg-blue-500 text-white"
+                          ? "bg-teal-500 text-white"
                           : "bg-muted"
                       }`}
                     >
@@ -242,19 +242,19 @@ export function AdvancedChatWidget({
               {isLoading && (
                 <div className="mb-4 flex justify-start">
                   <div className="flex gap-3 max-w-[80%]">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
                     <div className="bg-muted rounded-lg p-3">
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" />
                           <div
-                            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-teal-500 rounded-full animate-bounce"
                             style={{ animationDelay: "0.1s" }}
                           />
                           <div
-                            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-teal-500 rounded-full animate-bounce"
                             style={{ animationDelay: "0.2s" }}
                           />
                         </div>

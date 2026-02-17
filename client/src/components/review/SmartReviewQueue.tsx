@@ -152,7 +152,7 @@ const SmartReviewQueue = () => {
   const getPriorityBadgeColor = (priority: string) => {
     switch (priority) {
       case "high":
-        return "bg-blue-500";
+        return "bg-teal-500";
       case "medium":
         return "bg-yellow-500";
       case "low":

@@ -286,7 +286,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                       {fullRecommendations.strengthsIdentified.map(
                         (strength, idx) => (
                           <div key={idx} className="flex items-start gap-2">
-                            <Shield className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                            <Shield className="h-4 w-4 text-teal-600 mt-0.5 shrink-0" />
                             <span className="text-sm">{strength}</span>
                           </div>
                         ),

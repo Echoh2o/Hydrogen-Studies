@@ -47,7 +47,7 @@ export function StudyCard({
                         </Badge>
                     )}
                     {relevanceScore && relevanceScore > 0 && (
-                        <Badge className="bg-blue-600/90 text-white text-xs backdrop-blur-sm shadow-sm">
+                        <Badge className="bg-teal-600/90 text-white text-xs backdrop-blur-sm shadow-sm">
                             {Math.round(relevanceScore * 100)}% Match
                         </Badge>
                     )}
@@ -61,7 +61,7 @@ export function StudyCard({
             </Badge>
             {/* Show score if high enough, maybe? For now hidden to keep it clean */}
           </div>
-          <CardTitle className="text-lg leading-tight group-hover:text-blue-600 transition-colors line-clamp-2">
+          <CardTitle className="text-lg leading-tight group-hover:text-teal-600 transition-colors line-clamp-2">
             {title}
           </CardTitle>
         </CardHeader>
@@ -80,10 +80,10 @@ export function StudyCard({
           </div>
           
           <div className="mt-4 pt-4 border-t border-neutral-100 flex justify-between items-center">
-            <span className="text-xs font-medium text-blue-600 group-hover:underline">
+            <span className="text-xs font-medium text-teal-600 group-hover:underline">
                 Read Study
             </span>
-            <ArrowRight className="w-4 h-4 text-blue-600 transform group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 text-teal-600 transform group-hover:translate-x-1 transition-transform" />
           </div>
         </CardContent>
       </Card>

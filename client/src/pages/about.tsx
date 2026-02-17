@@ -186,7 +186,7 @@ export default function About() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="text-center">
-                      <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center text-blue-600 mx-auto mb-4">
+                      <div className="bg-teal-100 rounded-full w-16 h-16 flex items-center justify-center text-teal-600 mx-auto mb-4">
                         <HiMail size={24} />
                       </div>
                       <h3 className="font-semibold text-lg mb-2">Email</h3>
@@ -199,7 +199,7 @@ export default function About() {
                     </div>
 
                     <div className="text-center">
-                      <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center text-blue-600 mx-auto mb-4">
+                      <div className="bg-teal-100 rounded-full w-16 h-16 flex items-center justify-center text-teal-600 mx-auto mb-4">
                         <HiPhone size={24} />
                       </div>
                       <h3 className="font-semibold text-lg mb-2">Phone</h3>
@@ -210,7 +210,7 @@ export default function About() {
                     </div>
 
                     <div className="text-center">
-                      <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center text-blue-600 mx-auto mb-4">
+                      <div className="bg-teal-100 rounded-full w-16 h-16 flex items-center justify-center text-teal-600 mx-auto mb-4">
                         <HiLocationMarker size={24} />
                       </div>
                       <h3 className="font-semibold text-lg mb-2">Address</h3>
