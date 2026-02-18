@@ -295,7 +295,7 @@ const StudyPage = () => {
                   ? error.message
                   : "We couldn't find the study you're looking for. It may have been removed or the ID is incorrect."}
               </p>
-              <Link href="/recent">
+              <Link href="/recent-studies">
                 <Button>
                   <HiArrowLeft className="mr-2" />
                   Browse Recent Studies

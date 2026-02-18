@@ -77,7 +77,7 @@ const EducationalResourcesSection = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {resources?.slice(0, 3).map((resource: Resource) => (
-            <Link key={resource.id} href={`/resources/${resource.slug}`}>
+            <Link key={resource.id} href="/recommendations">
               <a className="group">
                 <div className="bg-neutral-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
                   <img

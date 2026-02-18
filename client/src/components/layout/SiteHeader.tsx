@@ -242,12 +242,7 @@ export default function SiteHeader() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem onClick={() => navigate("/settings")}>
+                  <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
@@ -354,17 +349,7 @@ export default function SiteHeader() {
                         </div>
                       </div>
 
-                      <Link href="/profile">
-                        <div
-                          className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <User className="inline mr-2 h-4 w-4" />
-                          Profile
-                        </div>
-                      </Link>
-
-                      <Link href="/settings">
+                      <Link href="/admin/settings">
                         <div
                           className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
                           onClick={() => setIsMobileMenuOpen(false)}

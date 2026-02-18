@@ -231,7 +231,7 @@ const ResourcePage = () => {
                   {relatedResources.map((relatedResource: any) => (
                     <Link
                       key={relatedResource.id}
-                      href={`/resources/${relatedResource.slug}`}
+                      href="/recommendations"
                     >
                       <a className="group">
                         <div className="bg-neutral-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition h-full">

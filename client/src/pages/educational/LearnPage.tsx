@@ -119,7 +119,7 @@ export default function LearnPage() {
                     Learn how to navigate scientific papers, understand key
                     sections, and evaluate the quality of research.
                   </p>
-                  <Link to="/learn/how-to-read-research" className="block">
+                  <Link to="/learn/basics" className="block">
                     <button className="btn-secondary btn-full">Read Guide</button>
                   </Link>
                 </CardContent>
@@ -140,7 +140,7 @@ export default function LearnPage() {
                     From "oxidative stress" to "molecular hydrogen" — understand
                     the key terminology used in studies.
                   </p>
-                  <Link to="/learn/glossary" className="block">
+                  <Link to="/learn/basics" className="block">
                     <button className="btn-secondary btn-full">Browse Glossary</button>
                   </Link>
                 </CardContent>
@@ -160,7 +160,7 @@ export default function LearnPage() {
                     Get answers to common questions about hydrogen therapy, its
                     effects, and the current state of research.
                   </p>
-                  <Link to="/learn/faq" className="block">
+                  <Link to="/learn/basics" className="block">
                     <button className="btn-secondary btn-full">View FAQ</button>
                   </Link>
                 </CardContent>
@@ -196,7 +196,7 @@ export default function LearnPage() {
                           <p className="line-clamp-3 mb-4">
                             {tutorial.content.substring(0, 100)}...
                           </p>
-                          <Link to={`/learn/tutorials/${tutorial.slug}`} className="block">
+                          <Link to="/learn/basics" className="block">
                             <button className="btn-secondary btn-full">
                               Read Tutorial
                             </button>
@@ -208,7 +208,7 @@ export default function LearnPage() {
               </div>
 
               <div className="flex justify-center mt-8">
-                <Link to="/learn/tutorials">
+                <Link to="/learn/basics">
                   <button className="btn-primary">View All Tutorials</button>
                 </Link>
               </div>

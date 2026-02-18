@@ -236,7 +236,7 @@ export default function Footer() {
             </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
               <Link
-                href="/sitemap"
+                href="/sitemap.xml"
                 className="text-gray-400 hover:text-teal-400 transition-colors"
               >
                 Sitemap

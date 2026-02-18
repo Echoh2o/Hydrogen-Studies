@@ -38,7 +38,7 @@ const ResearchOverviewSection = () => {
                   Learn More
                 </Button>
               </Link>
-              <Link href="/research-timeline">
+              <Link href="/research-analytics">
                 <Button
                   variant="outline"
                   className="bg-white hover:bg-neutral-50 border border-neutral-300 text-neutral-800"

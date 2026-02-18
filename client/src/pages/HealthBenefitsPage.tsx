@@ -317,7 +317,7 @@ export default function HealthBenefitsPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Link href="/learn/mechanisms">
+              <Link href="/learn/basics">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
                     <Shield className="h-8 w-8 text-teal-600 mx-auto mb-2" />

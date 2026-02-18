@@ -287,13 +287,13 @@ export default function BlogListPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Link href="/admin/blog/add">
+            <Link href="/admin/blogs/add">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 New Article
               </Button>
             </Link>
-            <Link href="/admin/blog/generate">
+            <Link href="/admin/blogs/generate">
               <Button variant="secondary">
                 <BookOpen className="mr-2 h-4 w-4" />
                 Generate Article
@@ -401,7 +401,7 @@ export default function BlogListPage() {
                       Clear Filters
                     </Button>
                   )}
-                  <Link href="/admin/blog/add">
+                  <Link href="/admin/blogs/add">
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
                       Create Article
@@ -456,7 +456,7 @@ export default function BlogListPage() {
                         </Button>
                       </Link>
 
-                      <Link href={`/admin/blog/edit/${blog.id}`}>
+                      <Link href={`/admin/blogs/edit/${blog.id}`}>
                         <Button size="sm" variant="outline">
                           <Edit className="h-4 w-4 mr-1" />
                           Edit

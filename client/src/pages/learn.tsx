@@ -227,7 +227,7 @@ export default function LearnPage() {
                           className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
                         >
                           <Link
-                            to={`/resources/${tutorial.id}`}
+                            to="/recommendations"
                             className="block hover:bg-teal-50 p-2 rounded-md transition-colors"
                           >
                             <h4 className="font-medium text-teal-800">
@@ -273,7 +273,7 @@ export default function LearnPage() {
                       current research.
                     </p>
                     <Link
-                      to="/educational/hydrogen-therapy-guide"
+                      to="/learn/therapy-guide"
                       className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                     >
                       Read the guide
@@ -309,7 +309,7 @@ export default function LearnPage() {
                           className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
                         >
                           <Link
-                            to={`/resources/${guide.id}`}
+                            to="/recommendations"
                             className="block hover:bg-indigo-50 p-2 rounded-md transition-colors"
                           >
                             <h4 className="font-medium text-indigo-800">
@@ -355,7 +355,7 @@ export default function LearnPage() {
                           className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
                         >
                           <Link
-                            to={`/resources/${video.id}`}
+                            to="/recommendations"
                             className="block hover:bg-purple-50 p-2 rounded-md transition-colors"
                           >
                             <h4 className="font-medium text-purple-800">

@@ -104,7 +104,7 @@ const RecentStudiesSection = () => {
             </p>
           </div>
           <Link
-            href="/recent"
+            href="/recent-studies"
             className="hidden md:flex items-center text-primary hover:text-primary-dark font-medium"
           >
             View All <HiArrowRight className="ml-2" />
@@ -174,7 +174,7 @@ const RecentStudiesSection = () => {
         </div>
 
         <div className="text-center mt-8 md:hidden">
-          <Link href="/recent">
+          <Link href="/recent-studies">
             <a className="inline-flex items-center text-primary hover:text-primary-dark font-medium">
               View All Recent Studies <HiArrowRight className="ml-2" />
             </a>
