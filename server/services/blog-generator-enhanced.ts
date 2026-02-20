@@ -224,18 +224,12 @@ async function generateSingleBlogArticle(
       summary: blogContent.summary,
       imageUrl: imageData.imageUrl,
       imageAlt: imageData.imageAlt,
-      category: study.category || "General Health",
-      tags: generateTags(study, articleType),
-      relatedStudyIds: [],
       isPublished: false,
       articleType,
       metaDescription: blogContent.summary.substring(0, 160),
-      keywords: extractKeywords(study, blogContent.summary),
-      readingTime: Math.ceil(blogContent.fullContent.split(" ").length / 200),
+      semanticKeywords: extractKeywords(study, blogContent.summary),
       editorNotes:
         "AI-generated content with error handling. Review before publishing.",
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
     // Save to database with retry logic
@@ -382,7 +376,7 @@ async function generateArticleImageWithFallback(
       quality: "standard",
     });
 
-    const imageUrl = response.data[0]?.url;
+    const imageUrl = response.data?.[0]?.url;
 
     if (!imageUrl) {
       throw new Error("No image URL in response");
@@ -506,17 +500,11 @@ function generateBasicArticle(
     summary: content.summary,
     imageUrl: image.imageUrl,
     imageAlt: image.imageAlt,
-    category: study.category || "General Health",
-    tags: generateTags(study, articleType),
-    relatedStudyIds: [],
     isPublished: false,
     articleType,
     metaDescription: content.summary.substring(0, 160),
-    keywords: extractKeywords(study, content.summary),
-    readingTime: Math.ceil(content.fullContent.split(" ").length / 200),
+    semanticKeywords: extractKeywords(study, content.summary),
     editorNotes: "Fallback content generated due to API unavailability.",
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 }
 

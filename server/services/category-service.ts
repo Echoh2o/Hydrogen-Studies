@@ -26,7 +26,7 @@ export class CategoryService {
 
   async getCategoryById(id: number): Promise<Category | undefined> {
     // Check cache first
-    for (const category of this.categoryCache.values()) {
+    for (const category of Array.from(this.categoryCache.values())) {
       if (category.id === id) {
         return category;
       }

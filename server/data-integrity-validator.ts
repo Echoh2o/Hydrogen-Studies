@@ -35,7 +35,7 @@ export class DataIntegrityValidator {
         severity: "high",
         description: "Studies with duplicate DOI identifiers",
         count: duplicateDois.length,
-        examples: duplicateDois.map((d) => ({ doi: d.doi, count: d.count })),
+        examples: duplicateDois.map((d: any) => ({ doi: d.doi, count: d.count })),
       });
     }
 

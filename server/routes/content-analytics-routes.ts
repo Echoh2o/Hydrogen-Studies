@@ -3,7 +3,7 @@
  * API endpoints for content performance analytics and tracking
  */
 
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { z } from "zod";
 import {
   contentAnalyticsService,
@@ -71,7 +71,7 @@ const abTestSchema = z.object({
  */
 router.post(
   "/track-view",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const validatedData = trackViewSchema.parse(req.body);
 
@@ -128,7 +128,7 @@ router.post(
  */
 router.post(
   "/track-engagement",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const validatedData = trackEngagementSchema.parse(req.body);
 
@@ -175,7 +175,7 @@ router.post(
  */
 router.get(
   "/top-content",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const validatedQuery = getTopContentSchema.parse(req.query);
 
@@ -220,7 +220,7 @@ router.get(
  */
 router.get(
   "/content-insights/:type/:id",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const validatedParams = contentInsightsSchema.parse(req.params);
 
@@ -267,7 +267,7 @@ router.get(
  */
 router.get(
   "/recommendations",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
       const sessionId = req.session?.id || (req.query.sessionId as string);
@@ -305,7 +305,7 @@ router.get(
  */
 router.get(
   "/a-b-test",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const validatedQuery = abTestSchema.parse(req.query);
 
@@ -340,7 +340,7 @@ router.get(
  */
 router.post(
   "/batch-track",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const events = req.body.events;
 
@@ -405,7 +405,7 @@ router.post(
  */
 router.get(
   "/performance/:type/:id",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     try {
       const validatedParams = contentInsightsSchema.parse(req.params);
 

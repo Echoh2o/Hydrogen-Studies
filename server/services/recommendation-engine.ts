@@ -163,7 +163,7 @@ async function getUserProfile(userId: number): Promise<UserProfile | null> {
     const prefs = await db
       .select()
       .from(userPreferences)
-      .where(eq(userPreferences.userId, userId))
+      .where(eq(userPreferences.userId, String(userId)))
       .limit(1);
 
     if (prefs.length === 0) {
@@ -197,7 +197,7 @@ async function getUserViewedStudies(userId?: number): Promise<number[]> {
     const history = await db
       .select({ studyId: userReadingHistory.studyId })
       .from(userReadingHistory)
-      .where(eq(userReadingHistory.userId, userId));
+      .where(eq(userReadingHistory.userId, String(userId)));
 
     return history.map((h) => h.studyId);
   } catch (error) {
@@ -286,7 +286,7 @@ async function getPersonalizedStudies(
       studyTypes: study.studyTypes || [],
       mechanisms: study.mechanisms || [],
       tags: study.tags || [],
-    }))
+    } as StudyRecommendation))
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
 }
 
@@ -371,7 +371,7 @@ async function getSimilarStudies(
       studyTypes: study.studyTypes || [],
       mechanisms: study.mechanisms || [],
       tags: study.tags || [],
-    }))
+    } as StudyRecommendation))
     .sort((a, b) => b.relevanceScore - a.relevanceScore)
     .slice(0, maxResults);
 }
@@ -415,7 +415,7 @@ async function getTrendingStudies(
     studyTypes: study.studyTypes || [],
     mechanisms: study.mechanisms || [],
     tags: study.tags || [],
-  }));
+  } as StudyRecommendation));
 }
 
 /**
@@ -459,7 +459,7 @@ async function getRecentStudies(
     studyTypes: study.studyTypes || [],
     mechanisms: study.mechanisms || [],
     tags: study.tags || [],
-  }));
+  } as StudyRecommendation));
 }
 
 /**
@@ -741,7 +741,7 @@ export async function recordStudyInteraction(
     await db
       .insert(userReadingHistory)
       .values({
-        userId,
+        userId: String(userId),
         studyId,
         viewedAt: new Date(),
         interactionType,
@@ -775,7 +775,7 @@ export async function updateUserPreferencesFromBehavior(
       })
       .from(userReadingHistory)
       .innerJoin(studies, eq(userReadingHistory.studyId, studies.id))
-      .where(eq(userReadingHistory.userId, userId))
+      .where(eq(userReadingHistory.userId, String(userId)))
       .orderBy(desc(userReadingHistory.viewedAt))
       .limit(20);
 
@@ -805,7 +805,7 @@ export async function updateUserPreferencesFromBehavior(
     // Determine most common reading level
     let preferredReadingLevel = "";
     let maxCount = 0;
-    for (const [level, count] of readingLevels.entries()) {
+    for (const [level, count] of Array.from(readingLevels.entries())) {
       if (count > maxCount) {
         maxCount = count;
         preferredReadingLevel = level;
@@ -816,12 +816,11 @@ export async function updateUserPreferencesFromBehavior(
     await db
       .insert(userPreferences)
       .values({
-        userId,
+        userId: String(userId),
         preferredHealthBenefits: Array.from(healthBenefits).slice(0, 10),
         preferredHealthConditions: Array.from(healthConditions).slice(0, 10),
         preferredBodySystems: Array.from(bodySystems).slice(0, 8),
         preferredReadingLevel: preferredReadingLevel || null,
-        updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: userPreferences.userId,

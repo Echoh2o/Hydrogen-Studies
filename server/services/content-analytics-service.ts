@@ -514,12 +514,12 @@ class ContentAnalyticsService {
     let score = 0;
 
     // Weighted scoring
-    score += analytics.viewCount * 0.2;
-    score += analytics.uniqueViewers * 0.3;
-    score += (analytics.avgTimeSpent / 60) * 10; // Convert to minutes
-    score += (100 - analytics.bounceRate) * 0.5;
-    score += analytics.shareCount * 5;
-    score += analytics.conversionRate * 2;
+    score += (analytics.viewCount ?? 0) * 0.2;
+    score += (analytics.uniqueViewers ?? 0) * 0.3;
+    score += ((analytics.avgTimeSpent ?? 0) / 60) * 10; // Convert to minutes
+    score += (100 - (analytics.bounceRate ?? 0)) * 0.5;
+    score += (analytics.shareCount ?? 0) * 5;
+    score += (analytics.conversionRate ?? 0) * 2;
 
     return Math.round(score);
   }
@@ -683,9 +683,9 @@ class ContentAnalyticsService {
     history.forEach((engagement) => {
       preferences.contentTypes[engagement.contentType] =
         (preferences.contentTypes[engagement.contentType] || 0) +
-        engagement.engagementScore;
+        (engagement.engagementScore ?? 0);
 
-      preferences.avgTimeSpent += engagement.timeSpent;
+      preferences.avgTimeSpent += (engagement.timeSpent ?? 0);
     });
 
     if (history.length > 0) {

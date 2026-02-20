@@ -36,7 +36,7 @@ export async function enrichStudyFromPubMed(
     }
 
     // Check for PMID in URL field
-    let pmid = extractPMID(study.url);
+    let pmid = study.url ? extractPMID(study.url) : null;
 
     // If no PMID found, try to search by title
     if (!pmid) {
@@ -233,7 +233,7 @@ function mapPubMedDataToStudy(pubmedData: any, study: any): any {
 
   // Extract abstract if missing
   if (!study.abstract || study.abstract === "") {
-    const abstractMatch = xml.match(/<AbstractText>(.*?)<\/AbstractText>/s);
+    const abstractMatch = xml.match(/<AbstractText>([\s\S]*?)<\/AbstractText>/);
     if (abstractMatch && abstractMatch[1]) {
       enrichedData.abstract = abstractMatch[1];
     }
@@ -241,7 +241,7 @@ function mapPubMedDataToStudy(pubmedData: any, study: any): any {
 
   // Extract journal if missing
   if (!study.journal || study.journal === "") {
-    const journalMatch = xml.match(/<Journal>.*?<Title>(.*?)<\/Title>/s);
+    const journalMatch = xml.match(/<Journal>[\s\S]*?<Title>([\s\S]*?)<\/Title>/);
     if (journalMatch && journalMatch[1]) {
       enrichedData.journal = journalMatch[1];
     }
@@ -249,7 +249,7 @@ function mapPubMedDataToStudy(pubmedData: any, study: any): any {
 
   // Extract publication year if missing
   if (!study.year) {
-    const yearMatch = xml.match(/<PubDate>.*?<Year>(.*?)<\/Year>/s);
+    const yearMatch = xml.match(/<PubDate>[\s\S]*?<Year>([\s\S]*?)<\/Year>/);
     if (yearMatch && yearMatch[1]) {
       enrichedData.year = parseInt(yearMatch[1]);
     }
@@ -258,7 +258,7 @@ function mapPubMedDataToStudy(pubmedData: any, study: any): any {
   // Extract authors if missing
   if (!study.authors || study.authors === "") {
     const authorsMatches = xml.match(
-      /<Author>.*?<LastName>(.*?)<\/LastName>.*?<ForeName>(.*?)<\/ForeName>.*?<\/Author>/gs,
+      /<Author>[\s\S]*?<LastName>([\s\S]*?)<\/LastName>[\s\S]*?<ForeName>([\s\S]*?)<\/ForeName>[\s\S]*?<\/Author>/g,
     );
     if (authorsMatches && authorsMatches.length > 0) {
       const authorNames = authorsMatches

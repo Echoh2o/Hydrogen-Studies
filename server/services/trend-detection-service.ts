@@ -212,7 +212,7 @@ export class TrendDetectionService {
       const impactScore = this.calculateImpactScore({
         citationCount: study.citationCount || 0,
         viewCount: study.viewCount || 0,
-        recency: this.getRecencyScore(study.publishDate || study.publishDate),
+        recency: this.getRecencyScore(study.publishDate || ""),
       });
 
       // Consider it a breakthrough if impact score is high
@@ -339,7 +339,7 @@ export class TrendDetectionService {
       ...Object.keys(previousKeywords),
     ]);
 
-    for (const keyword of allKeywords) {
+    for (const keyword of Array.from(allKeywords)) {
       const current = currentKeywords[keyword] || { count: 0, studyIds: [] };
       const previous = previousKeywords[keyword] || { count: 0, studyIds: [] };
 
@@ -428,8 +428,7 @@ export class TrendDetectionService {
         avgCitationCount: stats.avgCitations,
         topResearchAreas: stats.topAreas,
         status: "completed",
-        processingTime,
-      };
+      } as any;
     } catch (error) {
       console.error("Error generating trend report:", error);
       return {
@@ -461,7 +460,7 @@ export class TrendDetectionService {
 
     // Alert for high-significance emerging topics
     for (const topic of emergingTopics.filter(
-      (t) => t.significance === "high",
+      (t: any) => t.significance === "high",
     )) {
       alerts.push({
         trendAnalysisId: analysisId,
@@ -753,16 +752,16 @@ export class TrendDetectionService {
             
             Emerging Topics (top 3): ${data.emergingTopics
               .slice(0, 3)
-              .map((t) => `${t.topic} (+${t.growthRate.toFixed(0)}%)`)
+              .map((t: any) => `${t.topic} (+${t.growthRate.toFixed(0)}%)`)
               .join(", ")}
             Breakthrough Studies: ${data.breakthroughStudies.length} identified
             Accelerating Areas: ${data.momentumData.accelerating
               .slice(0, 3)
-              .map((a) => a.area)
+              .map((a: any) => a.area)
               .join(", ")}
             Declining Areas: ${data.momentumData.declining
               .slice(0, 3)
-              .map((a) => a.area)
+              .map((a: any) => a.area)
               .join(", ")}
             Total Studies Analyzed: ${data.stats.totalStudies}
             Average Citations: ${data.stats.avgCitations}`,

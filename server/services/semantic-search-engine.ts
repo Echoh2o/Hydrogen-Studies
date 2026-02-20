@@ -202,7 +202,7 @@ export async function performSemanticSearch(
     }
 
     // Get studies from database
-    let query = db.select().from(studies);
+    let query = db.select().from(studies).$dynamic();
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions));

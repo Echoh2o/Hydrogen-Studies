@@ -303,7 +303,7 @@ export class StudyScoringService {
     const aiRedFlags = await this.detectAIRedFlags(study);
     redFlags.push(...aiRedFlags);
 
-    return [...new Set(redFlags)]; // Remove duplicates
+    return Array.from(new Set(redFlags)); // Remove duplicates
   }
 
   /**

@@ -189,6 +189,13 @@ router.post("/api/europepmc/import/doi/:doi", async (req, res) => {
     // Extract study data from article
     const studyData = extractStudyFromEuropePMC(articleData);
 
+    if (!studyData) {
+      return res.status(422).json({
+        success: false,
+        message: "Could not extract study data from the article",
+      });
+    }
+
     // Create study in database
     const createdStudy = await studyService.createStudy(studyData);
 
