@@ -14,7 +14,7 @@ import {
 
 // Helper functions to replace storage module
 async function getUserPreferencesById(userId: number): Promise<UserPreferences | null> {
-  const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
+  const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, String(userId))).limit(1);
   return prefs || null;
 }
 
@@ -26,8 +26,8 @@ async function getRecentlyViewedStudies(userId: number, limit: number = 20): Pro
   const interactions = await db
     .select({ studyId: userStudyInteractions.studyId })
     .from(userStudyInteractions)
-    .where(eq(userStudyInteractions.userId, userId))
-    .orderBy(desc(userStudyInteractions.viewedAt))
+    .where(eq(userStudyInteractions.userId, String(userId)))
+    .orderBy(desc(userStudyInteractions.lastViewed))
     .limit(limit);
 
   if (interactions.length === 0) return [];
@@ -44,8 +44,8 @@ async function getRecentlyViewedBlogs(userId: number, limit: number = 20): Promi
   const interactions = await db
     .select({ blogId: userBlogInteractions.blogId })
     .from(userBlogInteractions)
-    .where(eq(userBlogInteractions.userId, userId))
-    .orderBy(desc(userBlogInteractions.viewedAt))
+    .where(eq(userBlogInteractions.userId, String(userId)))
+    .orderBy(desc(userBlogInteractions.lastViewed))
     .limit(limit);
 
   if (interactions.length === 0) return [];

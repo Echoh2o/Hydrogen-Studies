@@ -69,7 +69,7 @@ const SEARCH_SOURCES = {
       const query = terms.join(" OR ");
       const data = await searchSemanticScholar(query, 0, 20);
       const items = data.data || [];
-       return items.map(item => ({
+       return items.map((item: any) => ({
         title: item.title,
         abstract: item.abstract || "",
         authors: item.authors ? item.authors.map((a: any) => a.name).join(", ") : "",
@@ -116,7 +116,7 @@ export async function checkScheduledSearches() {
     console.log(`🕒 Running scheduled search for ${activeKeywords.length} keywords across ${schedule.sources?.length || 'all'} sources`);
 
     // Run the searches
-    const results = await runScheduledSearch(schedule.sources, activeKeywords);
+    const results = await runScheduledSearch(schedule.sources || [], activeKeywords);
 
     // Update the schedule with the last run time and calculate next run
     const nextRun = calculateNextRun(schedule);
@@ -371,7 +371,7 @@ export async function runKeywordMonitorNow() {
     console.log(`🔁 Manual monitor trigger for ${activeKeywords.length} keywords`);
 
     // Run the searches
-    const results = await runScheduledSearch(schedule.sources, activeKeywords);
+    const results = await runScheduledSearch(schedule.sources || [], activeKeywords);
 
     // Update the last run time
     await db

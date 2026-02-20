@@ -146,10 +146,8 @@ export function extractStudyFromSemanticScholar(
     journalPublishDate: publishDate,
     category: "general", // Default category
     peerReviewed: isPeerReviewed,
-    hasMedia: paperData.figures && paperData.figures.length > 0,
     hasFullText: Boolean(paperData.openAccessPdf),
     doi,
-    pmid,
     imageUrl:
       paperData.figures && paperData.figures.length > 0
         ? paperData.figures[0].url

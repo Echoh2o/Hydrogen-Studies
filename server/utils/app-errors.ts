@@ -38,6 +38,7 @@ export interface ErrorContext {
   method?: string;
   timestamp?: string;
   metadata?: Record<string, any>;
+  [key: string]: any;
 }
 
 export class AppError extends Error {

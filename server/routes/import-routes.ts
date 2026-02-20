@@ -121,9 +121,9 @@ router.post(
       cleanupTempFile(filePath);
 
       return res.json({
-        success: true,
         total: studies.length,
         ...results,
+        success: true,
       });
     } catch (error) {
       console.error("Excel import error:", error);
@@ -166,9 +166,9 @@ router.post(
       cleanupTempFile(filePath);
 
       return res.json({
-        success: true,
         total: studies.length,
         ...results,
+        success: true,
       });
     } catch (error) {
       console.error("CSV import error:", error);
@@ -242,9 +242,9 @@ router.post("/googlesheet", async (req: Request, res: Response) => {
     cleanupTempFile(tempFilePath);
 
     return res.json({
-      success: true,
       total: studies.length,
       ...results,
+      success: true,
     });
   } catch (error) {
     console.error("Google Sheet import error:", error);

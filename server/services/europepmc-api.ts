@@ -203,7 +203,7 @@ export async function getArticleByPMCID(pmcid: string): Promise<any> {
  * @param articleData Article data from Europe PMC API
  * @returns Formatted study data for insertion
  */
-export function extractStudyFromEuropePMC(articleData: any): InsertStudy {
+export function extractStudyFromEuropePMC(articleData: any): InsertStudy | null {
   if (!articleData) return null;
 
   // Determine the publication date
@@ -289,7 +289,6 @@ export function extractStudyFromEuropePMC(articleData: any): InsertStudy {
     journalPublishDate,
     category: "general", // Default category
     peerReviewed: true, // Assuming all Europe PMC articles are peer-reviewed
-    hasMedia: false,
     hasFullText: !!articleData.fullTextUrlList,
     doi: articleData.doi || null,
     imageUrl: null,

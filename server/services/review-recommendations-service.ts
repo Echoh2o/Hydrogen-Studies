@@ -350,7 +350,7 @@ export class ReviewRecommendationsService {
           and(
             ne(studies.id, study.id),
             or(
-              ...keywords.map((keyword) => like(studies.title, `%${keyword}%`)),
+              ...keywords.map((keyword: any) => like(studies.title, `%${keyword}%`)),
             ),
           ),
         )

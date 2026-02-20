@@ -142,8 +142,8 @@ export class AutoUpdateDetector {
       .from(blogArticles)
       .where(
         or(
-          eq(blogArticles.category, study.category),
-          sql`${blogArticles.keywords} && ${study.keywords}`,
+          sql`${blogArticles.articleType} = ${study.category}`,
+          sql`${blogArticles.semanticKeywords} && ${study.keywords}`,
         ),
       )
       .limit(20);
@@ -207,7 +207,7 @@ export class AutoUpdateDetector {
     }
 
     try {
-      const analysis = await handleOpenAIRequest(
+      const analysis = await handleOpenAIRequest<UpdateCheck | null>(
         async () => {
           const completion = await openai.chat.completions.create({
             model: "gpt-4o",
@@ -250,7 +250,7 @@ Published: ${newStudy.journalPublishDate}`,
           }
           return null;
         },
-        () => this.simpleUpdateCheck(content, newStudy, contentType),
+        this.simpleUpdateCheck(content, newStudy, contentType),
       );
 
       return analysis;

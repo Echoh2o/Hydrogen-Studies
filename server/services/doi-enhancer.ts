@@ -10,7 +10,7 @@ import { db } from "../db";
 import { getCrossRefArticleByDOI } from "./crossref-api";
 import { getSemanticScholarPaper } from "./semantic-scholar-api";
 import { studies, type Study } from "@shared/schema";
-import { eq, and, or, isNull, like, asc, desc } from "drizzle-orm";
+import { eq, and, or, isNull, like, asc, desc, sql } from "drizzle-orm";
 
 /**
  * Fields that can be enhanced using DOI-based data normalization
@@ -53,14 +53,14 @@ export async function findStudiesNeedingEnhancement(options: {
   try {
     // Simplified approach - use raw SQL to get data quality issues
     // This removes dependency on problematic Drizzle ORM syntax that isn't working
-    let query = db.select().from(studies);
+    let query = db.select().from(studies).$dynamic();
 
     // Build basic filters
     const whereConditions = [];
 
     // Only include studies with DOI (simpler condition)
     if (requireDoi) {
-      whereConditions.push(studies.doi.notLike(""));
+      whereConditions.push(sql`${studies.doi} IS NOT NULL AND ${studies.doi} != ''`);
     }
 
     // Look for common data quality issues using specific conditions

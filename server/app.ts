@@ -1,4 +1,5 @@
 import express from "express";
+// @ts-ignore - no type declarations available
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";

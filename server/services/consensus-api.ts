@@ -513,7 +513,7 @@ export function clearConsensusCache(prefix?: string): number {
     return size;
   }
   let cleared = 0;
-  for (const key of cache.keys()) {
+  for (const key of Array.from(cache.keys())) {
     if (key.startsWith(prefix)) {
       cache.delete(key);
       cleared++;
@@ -527,7 +527,7 @@ export function clearConsensusCache(prefix?: string): number {
  */
 export function getCacheStats(): { entries: number; oldestMs: number } {
   let oldest = Date.now();
-  for (const entry of cache.values()) {
+  for (const entry of Array.from(cache.values())) {
     if (entry.timestamp < oldest) oldest = entry.timestamp;
   }
   return {

@@ -53,7 +53,7 @@ export class MediaGenerator {
         response_format: "url"
       });
 
-      const imageUrl = response.data[0].url;
+      const imageUrl = response.data?.[0]?.url;
       if (!imageUrl) throw new Error("No image URL returned");
 
       // Download and save the image locally (simulated for now, essentially standard Fetch)

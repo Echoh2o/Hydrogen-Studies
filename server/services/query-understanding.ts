@@ -226,7 +226,7 @@ async function generateContextualExpansions(
     }
   }
 
-  return [...new Set(expansions)]; // Remove duplicates
+  return Array.from(new Set(expansions)); // Remove duplicates
 }
 
 /**
@@ -333,7 +333,7 @@ function generateRelatedQueries(
   }
 
   // Add context-based suggestions
-  if (context?.previousQueries?.length > 0) {
+  if (context?.previousQueries && context.previousQueries.length > 0) {
     const lastQuery =
       context.previousQueries[context.previousQueries.length - 1];
     if (lastQuery !== parsed.originalQuery) {
@@ -435,5 +435,5 @@ export function extractKeyPhrases(query: string): string[] {
     }
   }
 
-  return [...new Set(phrases)];
+  return Array.from(new Set(phrases));
 }

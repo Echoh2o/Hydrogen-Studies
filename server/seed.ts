@@ -1752,7 +1752,7 @@ async function seed() {
   let insertedStudies = 0;
   for (const study of studiesData) {
     try {
-      const studySlug = study.slug || slugify(study.plainLanguageTitle || study.title);
+      const studySlug = (study as any).slug || slugify(study.plainLanguageTitle || study.title);
       await db.insert(schema.studies).values({
         ...study,
         slug: studySlug,

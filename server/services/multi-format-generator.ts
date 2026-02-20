@@ -260,8 +260,7 @@ Format the response as JSON with these fields:
       });
       return completion.choices[0]?.message?.content || "{}";
     },
-    () =>
-      JSON.stringify({
+    JSON.stringify({
         intro: `Welcome to our health science podcast! Today we're exploring fascinating research about ${study.title.substring(0, 100)}...`,
         mainScript: `This study investigates ${study.abstract.substring(0, 500)}...`,
         qaSegment: [
@@ -361,8 +360,7 @@ Format as JSON with:
       });
       return completion.choices[0]?.message?.content || "{}";
     },
-    () =>
-      JSON.stringify({
+    JSON.stringify({
         title: `Key Findings: ${study.title.substring(0, 50)}`,
         subheadings: ["Research Overview", "Key Results", "Impact"],
         keyStatistics: [
@@ -416,7 +414,7 @@ async function generateSocialMediaContent(
   study: Study,
   platform: ContentFormat,
 ): Promise<InsertMultiFormatContent> {
-  const platformConfig = {
+  const platformConfig: Record<string, { maxLength: number; style: string; hashtagCount: number }> = {
     [ContentFormat.SOCIAL_TWITTER]: {
       maxLength: 280,
       style: "concise, punchy, uses threads",
@@ -488,25 +486,21 @@ ${
       });
       return completion.choices[0]?.message?.content || "{}";
     },
-    () => {
-      if (isTwitter) {
-        return JSON.stringify({
+    isTwitter
+      ? JSON.stringify({
           thread: [
-            `New research reveals: ${study.title.substring(0, 200)}... 🧵`,
+            `New research reveals: ${study.title.substring(0, 200)}...`,
             `Key finding: ${study.abstract.substring(0, 250)}...`,
             `What this means for you: Better understanding leads to better health choices!`,
           ],
           hashtags: ["HealthResearch", "Science", "Wellness"],
           callToAction: "Follow for more health insights!",
-        });
-      } else {
-        return JSON.stringify({
+        })
+      : JSON.stringify({
           content: `Exciting research update! ${study.title.substring(0, 200)}... ${study.abstract.substring(0, 300)}`,
           hashtags: ["HealthResearch", "Science", "Wellness", "HealthyLiving"],
           callToAction: "Learn more about this breakthrough research!",
-        });
-      }
-    },
+        }),
     { model: "gpt-4o", prompt: `Generate ${platform} content` },
   );
 
@@ -583,8 +577,7 @@ Format as JSON:
       });
       return completion.choices[0]?.message?.content || "{}";
     },
-    () =>
-      JSON.stringify({
+    JSON.stringify({
         script: `Have you ever wondered about ${study.title}? Today we'll explore groundbreaking research that could change how we think about health...`,
         storyboard: [
           {
@@ -687,8 +680,7 @@ Format as JSON:
       });
       return completion.choices[0]?.message?.content || "{}";
     },
-    () =>
-      JSON.stringify({
+    JSON.stringify({
         subjectLine: `New Research: ${study.title.substring(0, 30)}...`,
         preheader: `Discover the latest findings about ${study.category || "health"}`,
         htmlContent: `
@@ -843,7 +835,7 @@ function extractKeywords(study: Study): string[] {
   keywords.push(...titleWords);
 
   // Remove duplicates and return
-  return [...new Set(keywords)].slice(0, 10);
+  return Array.from(new Set(keywords)).slice(0, 10);
 }
 
 /**

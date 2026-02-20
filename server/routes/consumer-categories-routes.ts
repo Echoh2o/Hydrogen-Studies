@@ -446,7 +446,7 @@ router.get("/studies", async (req, res) => {
       }
 
       // Map consumer-friendly name to database category name
-      const categoryMapping = {
+      const categoryMapping: Record<string, string> = {
         "Heart Disease & Hypertension": "Cardiovascular",
         "Brain & Neurological Disorders": "Neurological",
         "Diabetes & Metabolic Health": "Metabolic",

@@ -220,18 +220,19 @@ export class ContentOptimizationService {
 
       // Determine overall priority
       const maxPriority = notifications.reduce(
-        (max, n) => {
+        (max: string, n: any) => {
           const priorities = ["low", "medium", "high", "critical"];
-          return priorities.indexOf(n.priority) > priorities.indexOf(max)
-            ? n.priority
+          const nPriority = n.priority || "low";
+          return priorities.indexOf(nPriority) > priorities.indexOf(max)
+            ? nPriority
             : max;
         },
-        "low" as "critical" | "high" | "medium" | "low",
+        "low",
       );
 
       return {
         notifications,
-        priority: maxPriority,
+        priority: maxPriority as "high" | "low" | "medium" | "critical",
         summary: `Detected ${notifications.length} content pieces needing updates`,
       };
     } catch (error) {
@@ -415,7 +416,8 @@ export class ContentOptimizationService {
     let query = db
       .select()
       .from(updateNotifications)
-      .where(eq(updateNotifications.status, "pending"));
+      .where(eq(updateNotifications.status, "pending"))
+      .$dynamic();
 
     if (filters?.priority) {
       query = query.where(eq(updateNotifications.priority, filters.priority));
@@ -568,7 +570,7 @@ export class ContentOptimizationService {
       .from(blogArticles)
       .where(
         or(
-          eq(blogArticles.category, content.category),
+          sql`${blogArticles.articleType} = ${content.category}`,
           sql`SIMILARITY(${blogArticles.title}, ${content.title}) > 0.2`,
         ),
       )
@@ -702,8 +704,8 @@ export class ContentOptimizationService {
   private calculateTextSimilarity(text1: string, text2: string): number {
     const words1 = new Set(text1.toLowerCase().split(" "));
     const words2 = new Set(text2.toLowerCase().split(" "));
-    const intersection = new Set([...words1].filter((x) => words2.has(x)));
-    const union = new Set([...words1, ...words2]);
+    const intersection = new Set(Array.from(words1).filter((x) => words2.has(x)));
+    const union = new Set([...Array.from(words1), ...Array.from(words2)]);
     return intersection.size / union.size;
   }
 

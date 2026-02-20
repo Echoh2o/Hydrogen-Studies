@@ -1131,18 +1131,14 @@ router.put(
 
           // 2. Enrich the study content (6th grade reading level)
           console.log("Starting content enrichment...");
-          const enrichmentResult = await enrichStudyContent(createdStudy, {
-            targetReadingLevel: "6th grade",
-            generatePlainSummary: true,
-            generateKeywords: true,
-          });
+          const enrichmentResult = await enrichStudyContent(createdStudy.id);
 
           if (enrichmentResult.success) {
             console.log("Content enrichment completed successfully");
           } else {
             console.warn(
               "Content enrichment had issues:",
-              enrichmentResult.error,
+              enrichmentResult.message,
             );
           }
 
@@ -1172,7 +1168,7 @@ router.put(
 
           // 6. Auto-tag and categorize for SEO
           console.log("Auto-tagging study...");
-          const taggingPromise = autoTagStudy(createdStudy);
+          const taggingPromise = autoTagStudy(createdStudy.id);
 
           // Execute all content generation in parallel
           const [blogResult, scientificResult, imageResult, tagResult] =
@@ -1212,8 +1208,8 @@ router.put(
               generated: scientificResult.articles?.length || 0,
               errors: scientificResult.errors?.length || 0,
             },
-            image: imageResult.success ? "Generated" : "Failed",
-            tags: tagResult.success ? "Applied" : "Failed",
+            image: (imageResult as any).success ? "Generated" : "Failed",
+            tags: (tagResult as any).success !== false ? "Applied" : "Failed",
           };
 
           console.log("Content generation summary:", generationSummary);
