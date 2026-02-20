@@ -7,7 +7,7 @@
  * Usage: DATABASE_URL=... npx tsx scripts/import-wordpress-xml.ts [path-to-xml]
  */
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { db, pool } from "../server/db";
 import { studies, type InsertStudy } from "../shared/schema";
 import { eq } from "drizzle-orm";
@@ -311,6 +311,13 @@ async function main() {
   console.log("WordPress XML → Hydrogen Studies Database Import");
   console.log(`Reading: ${xmlPath}`);
   console.log("=".repeat(60));
+
+  // Skip gracefully if XML file doesn't exist (e.g. after one-time import)
+  if (!existsSync(xmlPath)) {
+    console.log("XML file not found — skipping import (already completed).");
+    await pool.end();
+    return;
+  }
 
   // Read and parse XML
   const xml = readFileSync(xmlPath, "utf-8");
