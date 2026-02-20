@@ -40,10 +40,8 @@ const CookiePolicyPage = lazy(() => import("@/pages/CookiePolicyPage"));
 const MedicalDisclaimerPage = lazy(() => import("@/pages/MedicalDisclaimerPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const Studies = lazy(() => import("@/pages/studies"));
-const EnhancedStudyPage = lazy(() => import("@/pages/EnhancedStudyPage"));
 const EnhancedSearchPage = lazy(() => import("@/pages/EnhancedSearchPage"));
 const StudyPage = lazy(() => import("@/pages/StudyPage"));
-const StudyDetailsPage = lazy(() => import("@/pages/StudyDetailsPage"));
 const SEOStudyPage = lazy(() => import("@/pages/SEOStudyPage"));
 const About = lazy(() => import("@/pages/about"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -111,8 +109,6 @@ const UserManagementPage = lazy(
   () => import("./pages/admin/UserManagementPage"),
 );
 
-// Lazy load admin components for better performance
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
 const ImportPage = lazy(() => import("./pages/admin/ImportPage"));
 
@@ -135,7 +131,6 @@ const StudiesManagementPage = lazy(
 );
 const AddStudyPage = lazy(() => import("./pages/admin/AddStudyPage"));
 const StudyEditPage = lazy(() => import("./pages/admin/StudyEditPage"));
-const BlogsPage = lazy(() => import("./pages/admin/BlogsPage"));
 const AnalyticsPage = lazy(() => import("./pages/admin/AnalyticsPage"));
 const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const UsersPage = lazy(() => import("./pages/admin/UsersPage"));

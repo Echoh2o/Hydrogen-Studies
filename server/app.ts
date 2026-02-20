@@ -12,27 +12,15 @@ import {
   addCsrfToResponse,
 } from "./csrf-protection";
 
-// Enhanced error handling imports
+// Error handling imports
 import {
   globalErrorHandler,
   requestIdMiddleware,
   errorRecoveryMiddleware,
   timeoutMiddleware,
-  asyncHandler,
-  isOperationalError,
 } from "./utils/error-handler";
-import {
-  AppError,
-  ErrorFactory,
-  NotFoundError,
-  DatabaseError,
-  ErrorCode,
-} from "./utils/app-errors";
-import {
-  DatabaseCircuitBreaker,
-  checkDatabaseHealth,
-  withRetry,
-} from "./utils/database-wrapper";
+import { NotFoundError } from "./utils/app-errors";
+import { DatabaseCircuitBreaker } from "./utils/database-wrapper";
 
 // Route imports
 import authRoutes from "./routes/auth-routes";
@@ -78,7 +66,7 @@ import {
   generalApiRateLimiter,
   aiGenerationRateLimiter,
 } from "./utils/rate-limiting";
-import testRateLimitEndpoint from "./test-rate-limit-endpoint";
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -104,23 +92,8 @@ app.use(cookieParser());
 validateCorsConfig();
 app.use(cors(getCorsConfig()));
 
-// Body parsing middleware with error handling
-app.use(
-  express.json({
-    limit: "50mb",
-    verify: (req, res, buf) => {
-      try {
-        JSON.parse(buf.toString());
-      } catch (error) {
-        throw new AppError(
-          "Invalid JSON in request body",
-          400,
-          ErrorCode.BAD_REQUEST,
-        );
-      }
-    },
-  }),
-);
+// Body parsing middleware
+app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Secure session middleware with PostgreSQL store
@@ -172,9 +145,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// Test rate limit endpoint - for verification
-app.use("/api/test", testRateLimitEndpoint);
 
 // --- API Routes ---
 

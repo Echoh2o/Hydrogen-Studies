@@ -83,10 +83,11 @@ export function getCorsConfig(): cors.CorsOptions {
         return callback(null, true);
       }
 
-      // If no ALLOWED_ORIGINS configured, allow all origins
-      // (common for single-service deployments where API and UI are same origin)
+      // If no ALLOWED_ORIGINS configured, only allow same-origin requests
+      // (same-origin requests already pass the !origin check above)
       if (allowedOrigins.length === 0) {
-        return callback(null, true);
+        console.warn(`CORS blocked cross-origin request from: ${origin} (ALLOWED_ORIGINS not configured)`);
+        return callback(new Error("Not allowed by CORS"), false);
       }
 
       if (allowedOrigins.includes(origin)) {
@@ -131,13 +132,9 @@ export function validateCorsConfig(): void {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction && !process.env.ALLOWED_ORIGINS) {
-    console.error("WARNING: ALLOWED_ORIGINS not set in production!");
-    console.error("This will block all cross-origin requests.");
-    console.error(
-      "Set ALLOWED_ORIGINS to a comma-separated list of allowed origins.",
-    );
-    console.error(
-      "Example: ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com",
+    console.warn("ALLOWED_ORIGINS not set in production - only same-origin requests allowed.");
+    console.warn(
+      "Set ALLOWED_ORIGINS if you need cross-origin access (e.g., ALLOWED_ORIGINS=https://yourdomain.com)",
     );
   } else if (!isProduction) {
     console.log(

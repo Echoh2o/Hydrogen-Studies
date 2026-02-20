@@ -18,7 +18,6 @@ import { z } from "zod";
 import {
   Save,
   Eye,
-  Globe,
   FileText,
   Tags,
   Image as ImageIcon,
@@ -84,12 +83,11 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
       imageUrl: "",
       imageAlt: "",
       plainLanguageTitle: "",
-      consumerFriendlyMethods: "",
-      consumerFriendlyResults: "",
-      consumerFriendlyConclusion: "",
-      seoTitle: "",
-      seoDescription: "",
-      seoKeywords: "",
+      methodsShort: "",
+      resultsShort: "",
+      conclusionShort: "",
+      metaTitle: "",
+      metaDescription: "",
       slug: "",
       keywords: [],
       tags: [],
@@ -97,8 +95,6 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
       healthConditions: [],
       bodySystems: [],
       lifeStages: [],
-      isPublished: false,
-      isFeatured: false,
       peerReviewed: true,
       ...initialData,
     },
@@ -146,8 +142,8 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
     if (!form.getValues("slug")) {
       form.setValue("slug", generateSlug(title));
     }
-    if (!form.getValues("seoTitle")) {
-      form.setValue("seoTitle", title);
+    if (!form.getValues("metaTitle")) {
+      form.setValue("metaTitle", title);
     }
   };
 
@@ -212,25 +208,6 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <Globe className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">Status:</span>
-                <Badge
-                  variant={form.watch("isPublished") ? "default" : "secondary"}
-                >
-                  {form.watch("isPublished") ? "Published" : "Draft"}
-                </Badge>
-              </div>
-
-              {form.watch("isFeatured") && (
-                <Badge
-                  variant="outline"
-                  className="border-yellow-200 text-yellow-800"
-                >
-                  Featured
-                </Badge>
-              )}
-
               {form.watch("peerReviewed") && (
                 <Badge
                   variant="outline"
@@ -243,20 +220,12 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
 
             <div className="flex items-center space-x-4">
               <Switch
-                checked={form.watch("isFeatured")}
+                checked={form.watch("peerReviewed") ?? true}
                 onCheckedChange={(checked) =>
-                  form.setValue("isFeatured", checked)
+                  form.setValue("peerReviewed", checked)
                 }
               />
-              <Label className="text-sm">Featured</Label>
-
-              <Switch
-                checked={form.watch("isPublished")}
-                onCheckedChange={(checked) =>
-                  form.setValue("isPublished", checked)
-                }
-              />
-              <Label className="text-sm">Published</Label>
+              <Label className="text-sm">Peer Reviewed</Label>
             </div>
           </div>
         </CardContent>
@@ -445,30 +414,30 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
               </div>
 
               <WYSIWYGEditor
-                label="Consumer-Friendly Methods"
-                value={form.watch("consumerFriendlyMethods") || ""}
+                label="Methods Summary"
+                value={form.watch("methodsShort") || ""}
                 onChange={(value) =>
-                  form.setValue("consumerFriendlyMethods", value)
+                  form.setValue("methodsShort", value)
                 }
                 placeholder="Explain the study methods in simple terms..."
                 height="200px"
               />
 
               <WYSIWYGEditor
-                label="Consumer-Friendly Results"
-                value={form.watch("consumerFriendlyResults") || ""}
+                label="Results Summary"
+                value={form.watch("resultsShort") || ""}
                 onChange={(value) =>
-                  form.setValue("consumerFriendlyResults", value)
+                  form.setValue("resultsShort", value)
                 }
                 placeholder="Explain the study results in simple terms..."
                 height="200px"
               />
 
               <WYSIWYGEditor
-                label="Consumer-Friendly Conclusion"
-                value={form.watch("consumerFriendlyConclusion") || ""}
+                label="Conclusion Summary"
+                value={form.watch("conclusionShort") || ""}
                 onChange={(value) =>
-                  form.setValue("consumerFriendlyConclusion", value)
+                  form.setValue("conclusionShort", value)
                 }
                 placeholder="Explain the study conclusion in simple terms..."
                 height="200px"
@@ -591,35 +560,35 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="seoTitle">SEO Title</Label>
+                <Label htmlFor="metaTitle">SEO Title</Label>
                 <Input
-                  id="seoTitle"
+                  id="metaTitle"
                   placeholder="Optimized title for search engines"
-                  value={form.watch("seoTitle") || ""}
-                  onChange={(e) => form.setValue("seoTitle", e.target.value)}
+                  value={form.watch("metaTitle") || ""}
+                  onChange={(e) => form.setValue("metaTitle", e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="seoDescription">SEO Description</Label>
+                <Label htmlFor="metaDescription">SEO Description</Label>
                 <Textarea
-                  id="seoDescription"
+                  id="metaDescription"
                   placeholder="Brief description for search results (150-160 characters)"
-                  value={form.watch("seoDescription") || ""}
+                  value={form.watch("metaDescription") || ""}
                   onChange={(e) =>
-                    form.setValue("seoDescription", e.target.value)
+                    form.setValue("metaDescription", e.target.value)
                   }
                   rows={3}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="seoKeywords">SEO Keywords</Label>
+                <Label htmlFor="semanticKeywords">SEO Keywords</Label>
                 <Textarea
-                  id="seoKeywords"
+                  id="semanticKeywords"
                   placeholder="Enter SEO keywords separated by commas"
-                  value={form.watch("seoKeywords") || ""}
-                  onChange={(e) => form.setValue("seoKeywords", e.target.value)}
+                  value={form.watch("semanticKeywords")?.join(", ") || ""}
+                  onChange={(e) => form.setValue("semanticKeywords", e.target.value.split(",").map((k: string) => k.trim()).filter(Boolean))}
                   rows={2}
                 />
               </div>
