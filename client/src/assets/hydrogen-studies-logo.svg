@@ -2,40 +2,39 @@
 <svg width="250" height="200" viewBox="0 0 250 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Main Background -->
   <rect width="250" height="200" rx="0" fill="#FFFFFF"/>
-  
-  <!-- Water Wave Background - similar to EchoWater style but more subtle -->
-  <path d="M0 140C41.6667 120 83.3333 110 125 110C166.667 110 208.333 120 250 140V200H0V140Z" fill="#E6F3FF" />
-  <path d="M0 150C41.6667 135 83.3333 127.5 125 127.5C166.667 127.5 208.333 135 250 150V200H0V150Z" fill="#CCE7FF" />
-  <path d="M0 160C41.6667 150 83.3333 145 125 145C166.667 145 208.333 150 250 160V200H0V160Z" fill="#B3DBFF" />
-  
+
+  <!-- Water Wave Background - Echo Water teal palette -->
+  <path d="M0 140C41.6667 120 83.3333 110 125 110C166.667 110 208.333 120 250 140V200H0V140Z" fill="#E6F7F8" />
+  <path d="M0 150C41.6667 135 83.3333 127.5 125 127.5C166.667 127.5 208.333 135 250 150V200H0V150Z" fill="#B3E8EC" />
+  <path d="M0 160C41.6667 150 83.3333 145 125 145C166.667 145 208.333 150 250 160V200H0V160Z" fill="#80D9E0" />
+
   <!-- Circular Background - Science Focus -->
-  <circle cx="125" cy="85" r="65" fill="#F0F7FF"/>
-  <circle cx="125" cy="85" r="55" fill="#FFFFFF" stroke="#3399FF" stroke-width="1" opacity="0.8"/>
-  
+  <circle cx="125" cy="75" r="55" fill="#F2F6F8"/>
+  <circle cx="125" cy="75" r="45" fill="#FFFFFF" stroke="#00A7B5" stroke-width="1.5" opacity="0.8"/>
+
   <!-- Hydrogen Atom Core -->
-  <circle cx="125" cy="85" r="22" fill="#0066CC"/>
-  
+  <circle cx="125" cy="75" r="20" fill="#00A7B5"/>
+
   <!-- Document/Research Elements -->
-  <rect x="110" y="80" width="30" height="40" rx="2" fill="#FFFFFF"/>
-  <line x1="115" y1="88" x2="135" y2="88" stroke="#0066CC" stroke-width="1.5"/>
-  <line x1="115" y1="93" x2="135" y2="93" stroke="#0066CC" stroke-width="1.5"/>
-  <line x1="115" y1="98" x2="130" y2="98" stroke="#0066CC" stroke-width="1.5"/>
-  <line x1="115" y1="103" x2="125" y2="103" stroke="#0066CC" stroke-width="1.5"/>
-  
-  <!-- Electron Orbits - Research Connection -->
-  <ellipse cx="125" cy="85" rx="45" ry="30" stroke="#0066CC" stroke-width="2" stroke-dasharray="3 2" transform="rotate(30 125 85)"/>
-  <ellipse cx="125" cy="85" rx="40" ry="35" stroke="#0066CC" stroke-width="2" stroke-dasharray="3 2" transform="rotate(-25 125 85)"/>
-  
-  <!-- Electrons as search/research points -->
-  <circle cx="170" cy="85" r="5" fill="#0099FF"/>
-  <circle cx="84" cy="65" r="5" fill="#0099FF"/>
-  <circle cx="125" cy="50" r="5" fill="#0099FF"/>
-  <circle cx="110" cy="120" r="5" fill="#0099FF"/>
-  
+  <rect x="112" y="70" width="26" height="35" rx="2" fill="#FFFFFF"/>
+  <line x1="116" y1="77" x2="134" y2="77" stroke="#00A7B5" stroke-width="1.5"/>
+  <line x1="116" y1="82" x2="134" y2="82" stroke="#00A7B5" stroke-width="1.5"/>
+  <line x1="116" y1="87" x2="130" y2="87" stroke="#00A7B5" stroke-width="1.5"/>
+  <line x1="116" y1="92" x2="126" y2="92" stroke="#00A7B5" stroke-width="1.5"/>
+
+  <!-- Electron Orbits -->
+  <ellipse cx="125" cy="75" rx="40" ry="28" stroke="#00A7B5" stroke-width="1.5" stroke-dasharray="3 2" transform="rotate(30 125 75)"/>
+  <ellipse cx="125" cy="75" rx="36" ry="32" stroke="#007E89" stroke-width="1.5" stroke-dasharray="3 2" transform="rotate(-25 125 75)"/>
+
+  <!-- Electrons -->
+  <circle cx="165" cy="75" r="4.5" fill="#00A7B5"/>
+  <circle cx="88" cy="58" r="4.5" fill="#007E89"/>
+  <circle cx="125" cy="43" r="4.5" fill="#00A7B5"/>
+
   <!-- H2 Symbol -->
-  <text x="121" y="90" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="#FFFFFF">H₂</text>
-  
+  <text x="121" y="80" font-family="Montserrat, Arial, sans-serif" font-weight="bold" font-size="14" fill="#FFFFFF">H₂</text>
+
   <!-- Brand Name -->
-  <text x="125" y="165" font-family="Arial, sans-serif" font-weight="bold" font-size="18" fill="#0066CC" text-anchor="middle">HYDROGEN STUDIES</text>
-  <text x="125" y="180" font-family="Arial, sans-serif" font-size="10" fill="#666666" text-anchor="middle">RESEARCH DATABASE</text>
+  <text x="125" y="155" font-family="Montserrat, Arial, sans-serif" font-weight="700" font-size="16" fill="#111827" text-anchor="middle" letter-spacing="3">HYDROGEN STUDIES</text>
+  <text x="125" y="172" font-family="Montserrat, Arial, sans-serif" font-weight="500" font-size="8" fill="#00A7B5" text-anchor="middle" letter-spacing="2.5">POWERED BY ECHO WATER</text>
 </svg>
