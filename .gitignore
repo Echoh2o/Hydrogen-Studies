@@ -35,4 +35,7 @@ cookies.txt
 # Playwright
 test-results/
 playwright-report/
-blob-report/hydrogenstudies.WordPress.2026-02-20.xml
+blob-report/
+
+# WordPress export data files
+hydrogenstudies.WordPress.2026-02-20.xml
