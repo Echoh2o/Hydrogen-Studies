@@ -28,6 +28,10 @@ uploads/
 .auto-image-state.json
 .migration-status.json
 
+# Sensitive files
+cookies.txt
+*.har
+
 # Playwright
 test-results/
 playwright-report/
