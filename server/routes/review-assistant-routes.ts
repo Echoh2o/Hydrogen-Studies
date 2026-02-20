@@ -134,7 +134,8 @@ router.get("/queue", async (req, res) => {
       .leftJoin(
         reviewRecommendations,
         eq(studies.id, reviewRecommendations.studyId),
-      );
+      )
+      .$dynamic();
 
     // Apply status filter
     if (status === "pending") {

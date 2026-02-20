@@ -408,7 +408,8 @@ router.get("/alerts", async (req, res) => {
       .select()
       .from(trendAlerts)
       .orderBy(desc(trendAlerts.createdAt))
-      .limit(parseInt(limit as string));
+      .limit(parseInt(limit as string))
+      .$dynamic();
 
     if (unacknowledged === "true") {
       query = query.where(isNull(trendAlerts.acknowledgedAt));
@@ -644,14 +645,14 @@ router.get("/dashboard", async (req, res) => {
       await trendDetectionService.getPopularSearchQueries(5);
 
     // Parse latest analysis data
-    let dashboardData = {
+    let dashboardData: Record<string, any> = {
       hasAnalysis: false,
       topEmergingTopic: null,
       topBreakthroughStudy: null,
       topAcceleratingArea: null,
       summary: null,
-      insights: [],
-      recommendations: [],
+      insights: [] as string[],
+      recommendations: [] as string[],
       unacknowledgedAlerts: alertCount?.count || 0,
       popularSearches,
     };

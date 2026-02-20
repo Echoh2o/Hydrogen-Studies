@@ -21,7 +21,7 @@ export default function ResearchTrendsChart({
   className,
 }: ResearchTrendsProps) {
   // Fetch research trends data
-  const { data: trendsData, isLoading } = useQuery({
+  const { data: trendsData, isLoading } = useQuery<any>({
     queryKey: ["/api/studies/trends"],
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });

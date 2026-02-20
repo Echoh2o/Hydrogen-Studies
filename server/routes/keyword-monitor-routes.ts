@@ -260,7 +260,7 @@ router.get("/groups", async (req, res) => {
         const keywordIds = mappings.map((mapping) => mapping.keywordId);
 
         // Get keywords if there are any mappings
-        let groupKeywords = [];
+        let groupKeywords: any[] = [];
         if (keywordIds.length > 0) {
           // Handle each ID separately to avoid formatting issues
           groupKeywords = await db
@@ -368,7 +368,7 @@ router.get("/results", async (req, res) => {
   try {
     const { status } = req.query;
 
-    let query = db.select().from(monitorResults);
+    let query = db.select().from(monitorResults).$dynamic();
 
     // Filter by status if provided
     if (status && status !== "all") {

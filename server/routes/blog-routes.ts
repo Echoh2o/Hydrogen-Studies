@@ -85,8 +85,8 @@ router.get("/", async (req, res) => {
     const filterStatus = req.query.filterStatus as string;
 
     // Build query with filters
-    let baseQuery = db.select().from(blogArticles);
-    let countQuery = db.select({ count: count() }).from(blogArticles);
+    let baseQuery = db.select().from(blogArticles).$dynamic();
+    let countQuery = db.select({ count: count() }).from(blogArticles).$dynamic();
 
     // Apply search filter
     if (search) {

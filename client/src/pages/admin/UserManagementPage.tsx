@@ -158,11 +158,7 @@ export default function UserManagementPage() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: (data: typeof newUser) =>
-      apiRequest("/api/auth/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }),
+      apiRequest("POST", "/api/auth/users", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/users"] });
       toast({

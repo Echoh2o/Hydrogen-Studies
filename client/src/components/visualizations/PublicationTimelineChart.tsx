@@ -34,7 +34,7 @@ export default function PublicationTimelineChart({
   className = "",
 }: PublicationTimelineChartProps) {
   // Fetch timeline data if not provided
-  const { data: fetchedData, isLoading: fetchLoading } = useQuery({
+  const { data: fetchedData, isLoading: fetchLoading } = useQuery<any>({
     queryKey: ["/api/studies/timeline"],
     enabled: !propData,
     staleTime: 5 * 60 * 1000,
@@ -223,7 +223,7 @@ export default function PublicationTimelineChart({
           <CardContent className="p-6 text-center">
             <div className="text-2xl font-bold text-green-600 mb-2">
               {Math.round(
-                displayData.reduce((sum, d) => sum + d.growthRate, 0) /
+                displayData.reduce((sum: number, d: any) => sum + d.growthRate, 0) /
                   displayData.length,
               )}
               %

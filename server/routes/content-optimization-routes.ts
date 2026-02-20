@@ -166,7 +166,7 @@ router.get(
       limit = "20",
     } = req.query;
 
-    let query = db.select().from(updateNotifications);
+    let query = db.select().from(updateNotifications).$dynamic();
 
     // Apply filters
     const conditions = [];
