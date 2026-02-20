@@ -217,7 +217,7 @@ export default function TrendsDashboard() {
 
   const prepareMomentumChartData = () => {
     if (!trendReport?.momentum) return [];
-    const data = [];
+    const data: Array<{ area: string; type: string; change: number; activity: number }> = [];
 
     trendReport.momentum.accelerating.slice(0, 5).forEach((area) => {
       data.push({

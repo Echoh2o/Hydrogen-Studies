@@ -71,7 +71,7 @@ export async function enrichStudyFromPubMed(
     console.error("Error enriching study from PubMed:", error);
     return {
       success: false,
-      message: `Error enriching study: ${(error as Error).message}`,
+      message: `Error enriching study: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }

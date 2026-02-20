@@ -46,19 +46,19 @@ export default function BlogEditPage() {
     data: blog,
     isLoading: isBlogLoading,
     error: blogError,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: [`/api/blogs/${blogId}`],
     enabled: !!blogId && !isNaN(blogId),
   });
 
   // Fetch related study data
-  const { data: relatedStudy, isLoading: isStudyLoading } = useQuery({
+  const { data: relatedStudy, isLoading: isStudyLoading } = useQuery<any>({
     queryKey: [`/api/studies/${blog?.studyId}`],
     enabled: !!blog?.studyId,
   });
 
   // Fetch all studies for dropdown
-  const { data: studies = [] } = useQuery({
+  const { data: studies = [] } = useQuery<any>({
     queryKey: ["/api/studies"],
     staleTime: 300000, // 5 minutes
   });

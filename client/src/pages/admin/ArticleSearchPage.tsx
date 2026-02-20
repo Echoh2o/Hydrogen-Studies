@@ -159,7 +159,7 @@ export default function ArticleSearchPage() {
       setApproving(true);
 
       const selectedArticlesToApprove = (searchResults?.articles || []).filter(
-        (article) => selectedArticles[article.id],
+        (article: any) => selectedArticles[article.id],
       );
 
       if (selectedArticlesToApprove.length === 0) {
@@ -172,20 +172,15 @@ export default function ArticleSearchPage() {
         return;
       }
 
-      const response = await apiRequest("/api/research/bulk-approve", {
-        method: "POST",
-        body: JSON.stringify({
+      const response = await apiRequest("POST", "/api/research/bulk-approve", {
           source: selectedSource,
           articles: selectedArticlesToApprove,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
+      const result = await response.json();
 
       toast({
         title: "Batch approval complete",
-        description: `Successfully approved ${response.success} of ${response.total} articles`,
+        description: `Successfully approved ${result.success} of ${result.total} articles`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
@@ -220,7 +215,7 @@ export default function ArticleSearchPage() {
     setSelectAll(newSelectAll);
 
     const newSelection: Record<string, boolean> = {};
-    searchResults.articles.forEach((article) => {
+    searchResults.articles.forEach((article: any) => {
       newSelection[article.id] = newSelectAll;
     });
 
@@ -443,7 +438,7 @@ export default function ArticleSearchPage() {
                   </div>
 
                   <div className="space-y-4">
-                    {searchResults.articles.map((article, index) => (
+                    {searchResults.articles.map((article: any, index: number) => (
                       <Card
                         key={article.id || index}
                         className={

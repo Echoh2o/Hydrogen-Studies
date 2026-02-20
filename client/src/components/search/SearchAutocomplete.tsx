@@ -127,7 +127,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             ...suggestions,
             ...recentSearches.map((text) => ({ text, type: "query" as const })),
           ];
-          handleSuggestionSelect(allSuggestions[selectedIndex]);
+          handleSuggestionSelect(allSuggestions[selectedIndex] as SearchSuggestion);
         } else if (value.trim()) {
           onSearch(value.trim());
           setIsOpen(false);

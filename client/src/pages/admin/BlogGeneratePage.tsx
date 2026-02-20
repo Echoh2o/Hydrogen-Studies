@@ -57,13 +57,13 @@ export default function BlogGeneratePage() {
   });
 
   // Get the 20 most recent studies
-  const { data: recentStudies, isLoading: loadingStudies } = useQuery({
+  const { data: recentStudies, isLoading: loadingStudies } = useQuery<any>({
     queryKey: ["/api/studies/latest", { limit: 20 }],
     retry: false,
   });
 
   // Search studies
-  const { data: searchResults, isLoading: searchLoading } = useQuery({
+  const { data: searchResults, isLoading: searchLoading } = useQuery<any>({
     queryKey: ["/api/studies/search", { query: searchQuery }],
     enabled: !!searchQuery.trim(),
     retry: false,
@@ -74,7 +74,7 @@ export default function BlogGeneratePage() {
     data: selectedStudy,
     isLoading: loadingSelectedStudy,
     error: studyError,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: [`/api/studies/${selectedStudyId}`],
     enabled: !!selectedStudyId && !isNaN(selectedStudyId),
     retry: false,

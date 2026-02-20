@@ -64,7 +64,7 @@ export default function CrossRefPage() {
     data: searchResults,
     isLoading: isSearching,
     error: searchError,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: ["/api/crossref/search", searchQuery, currentPage, pageSize],
     queryFn: async () => {
       if (!searchQuery)
@@ -76,7 +76,6 @@ export default function CrossRefPage() {
       return response.json();
     },
     enabled: !!searchQuery,
-    keepPreviousData: true,
   });
 
   // Get paper details when a paper is selected
@@ -106,7 +105,7 @@ export default function CrossRefPage() {
       toast({
         title: "Success",
         description: "Paper imported successfully",
-        variant: "success",
+        variant: "default",
       });
 
       // Clear selected paper and refresh studies list
@@ -118,7 +117,7 @@ export default function CrossRefPage() {
         toast({
           title: "Paper already exists",
           description: "This paper is already in your database",
-          variant: "warning",
+          variant: "destructive",
         });
       } else {
         toast({
@@ -271,66 +270,11 @@ export default function CrossRefPage() {
 
             {totalPages > 1 && (
               <div className="mt-4 flex justify-center">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      />
-                    </PaginationItem>
-
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      // Show first page, last page, current page and neighbors
-                      let pageNum = i + 1;
-                      if (totalPages > 5) {
-                        if (currentPage <= 3) {
-                          // Near the start
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          // Near the end
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          // In the middle
-                          pageNum = currentPage - 2 + i;
-                        }
-                      }
-
-                      return (
-                        <PaginationItem key={pageNum}>
-                          <PaginationLink
-                            isActive={currentPage === pageNum}
-                            onClick={() => handlePageChange(pageNum)}
-                          >
-                            {pageNum}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-
-                    {totalPages > 5 && currentPage < totalPages - 2 && (
-                      <>
-                        <PaginationItem>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationLink
-                            onClick={() => handlePageChange(totalPages)}
-                          >
-                            {totalPages}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </>
-                    )}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage >= totalPages}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
               </div>
             )}
           </CardContent>

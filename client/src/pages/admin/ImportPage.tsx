@@ -43,7 +43,7 @@ export default function ImportPage() {
   });
 
   // Query to get scraper status
-  const { data: scraperStatus, isLoading: isStatusLoading } = useQuery({
+  const { data: scraperStatus, isLoading: isStatusLoading } = useQuery<any>({
     queryKey: ["/api/scraper/status"],
     refetchInterval: scraperId ? 5000 : false, // Poll every 5 seconds if we have a scraper ID
     enabled: !!scraperId,

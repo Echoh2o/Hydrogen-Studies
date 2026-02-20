@@ -272,7 +272,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 
             <div className="flex items-center space-x-4">
               <Switch
-                checked={form.watch("isPublished")}
+                checked={form.watch("isPublished") ?? false}
                 onCheckedChange={(checked) =>
                   form.setValue("isPublished", checked)
                 }
@@ -348,7 +348,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="readingLevel">Reading Level</Label>
                   <Select
-                    value={form.watch("readingLevel")}
+                    value={form.watch("readingLevel") ?? undefined}
                     onValueChange={(value) =>
                       form.setValue("readingLevel", value)
                     }
@@ -369,7 +369,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="articleType">Article Type</Label>
                   <Select
-                    value={form.watch("articleType")}
+                    value={form.watch("articleType") ?? undefined}
                     onValueChange={(value) =>
                       form.setValue("articleType", value)
                     }

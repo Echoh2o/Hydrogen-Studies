@@ -76,11 +76,11 @@ export const AnimatedInput = React.forwardRef<
           )}
           onFocus={(e) => {
             setFocused(true);
-            props.onFocus?.(e);
+            onFocus?.(e);
           }}
           onBlur={(e) => {
             setFocused(false);
-            props.onBlur?.(e);
+            onBlur?.(e);
           }}
           {...props}
         />
@@ -124,7 +124,8 @@ export const AnimatedInput = React.forwardRef<
 
 AnimatedInput.displayName = "AnimatedInput";
 
-interface AnimatedTextareaProps {
+interface AnimatedTextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   success?: boolean;
@@ -133,7 +134,6 @@ interface AnimatedTextareaProps {
   textareaClassName?: string;
   labelClassName?: string;
   errorClassName?: string;
-  [key: string]: any;
 }
 
 /**
@@ -153,14 +153,17 @@ export const AnimatedTextarea = React.forwardRef<
       textareaClassName,
       labelClassName,
       errorClassName,
+      onFocus,
+      onBlur,
+      value,
       ...props
     },
     ref,
   ) => {
     const [focused, setFocused] = useState(false);
     const hasContent = React.useMemo(() => {
-      return !!props.value && String(props.value).length > 0;
-    }, [props.value]);
+      return !!value && String(value).length > 0;
+    }, [value]);
 
     return (
       <div className={cn("relative mb-4 w-full", containerClassName)}>
@@ -188,13 +191,14 @@ export const AnimatedTextarea = React.forwardRef<
             label && animateLabel ? "pt-6" : "",
             textareaClassName,
           )}
+          value={value}
           onFocus={(e) => {
             setFocused(true);
-            props.onFocus?.(e);
+            onFocus?.(e);
           }}
           onBlur={(e) => {
             setFocused(false);
-            props.onBlur?.(e);
+            onBlur?.(e);
           }}
           {...props}
         />

@@ -42,7 +42,7 @@ export default function DataImportPage() {
   } | null>(null);
 
   // Recent imports query
-  const { data: recentImports, isLoading } = useQuery({
+  const { data: recentImports, isLoading } = useQuery<any>({
     queryKey: ["/api/imports/recent"],
     retry: false,
     refetchInterval: false,

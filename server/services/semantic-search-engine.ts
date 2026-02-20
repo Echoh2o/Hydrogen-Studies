@@ -7,7 +7,7 @@ import { OpenAI } from "openai";
 import { db } from "../db";
 import { studies } from "@shared/schema";
 import { sql, desc, or, and, gte, lte, eq, ilike } from "drizzle-orm";
-import { ParsedQuery, SearchFilters } from "./natural-language-parser";
+import { ParsedQuery } from "./natural-language-parser";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -90,7 +90,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
     // Limit cache size
     if (embeddingCache.size > 1000) {
       const firstKey = embeddingCache.keys().next().value;
-      embeddingCache.delete(firstKey);
+      if (firstKey !== undefined) embeddingCache.delete(firstKey);
     }
 
     return embedding;

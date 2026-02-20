@@ -1,5 +1,5 @@
 import {
-  HiBrain,
+  HiLightBulb,
   HiHeart,
   HiShieldExclamation,
   HiDatabase,
@@ -10,7 +10,7 @@ import {
   HiArrowRight,
   HiUser,
   HiBookOpen,
-  HiQuote,
+  HiAnnotation,
   HiDocument,
   HiViewGrid,
   HiMenu,
@@ -24,7 +24,7 @@ import {
 export const getCategoryIcon = (iconName: string, className?: string) => {
   switch (iconName) {
     case "brain":
-      return <HiBrain className={className || "text-xl"} />;
+      return <HiLightBulb className={className || "text-xl"} />;
     case "heartbeat":
       return <HiHeart className={className || "text-xl"} />;
     case "shield-virus":
@@ -44,7 +44,7 @@ export const getCategoryIcon = (iconName: string, className?: string) => {
 export const StudyIcons = {
   Author: HiUser,
   Journal: HiBookOpen,
-  Citations: HiQuote,
+  Citations: HiAnnotation,
   FullText: HiDocument,
   Download: HiDownload,
   External: HiExternalLink,
