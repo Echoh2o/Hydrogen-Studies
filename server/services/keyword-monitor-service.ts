@@ -5,6 +5,8 @@ import { searchPubMedWithPagination } from "../routes/research-routes";
 import { searchCrossRef } from "./crossref-api";
 import { searchEuropePMC } from "./europepmc-api-fixed";
 import { searchSemanticScholar } from "./semantic-scholar-api";
+import { searchMedRxiv, searchBioRxiv } from "./preprint-api";
+import { searchGoogleScholar } from "./google-scholar-api";
 
 // Sources that we can search - Mapped to real API functions
 const SEARCH_SOURCES = {
@@ -80,7 +82,60 @@ const SEARCH_SOURCES = {
         source: "semanticscholar",
         externalId: item.paperId
       }));
-   }
+   },
+
+  // === NEW SOURCES: Preprints & Google Scholar ===
+
+  // medRxiv preprints (health sciences, not yet peer-reviewed)
+  medrxiv: async (terms: string[]) => {
+    const query = terms.join(" OR ");
+    const data = await searchMedRxiv(query, 1, 20);
+    return data.results.map(item => ({
+      title: item.title,
+      abstract: item.abstract,
+      authors: item.authors,
+      journal: item.journal,
+      publishDate: item.publishDate,
+      doi: item.doi,
+      url: item.url,
+      source: "medrxiv",
+      externalId: item.externalId,
+    }));
+  },
+
+  // bioRxiv preprints (biology, biochemistry)
+  biorxiv: async (terms: string[]) => {
+    const query = terms.join(" OR ");
+    const data = await searchBioRxiv(query, 1, 20);
+    return data.results.map(item => ({
+      title: item.title,
+      abstract: item.abstract,
+      authors: item.authors,
+      journal: item.journal,
+      publishDate: item.publishDate,
+      doi: item.doi,
+      url: item.url,
+      source: "biorxiv",
+      externalId: item.externalId,
+    }));
+  },
+
+  // Google Scholar (uses SerpAPI if SERPAPI_KEY is set, otherwise direct HTTP — rate limited)
+  googlescholar: async (terms: string[]) => {
+    const query = terms.join(" OR ");
+    const data = await searchGoogleScholar(query, 1, 20);
+    return data.results.map(item => ({
+      title: item.title,
+      abstract: item.abstract,
+      authors: item.authors,
+      journal: item.journal,
+      publishDate: item.publishDate,
+      doi: item.doi,
+      url: item.url,
+      source: "google_scholar",
+      externalId: item.externalId,
+    }));
+  },
 };
 
 /**
@@ -151,7 +206,7 @@ async function runScheduledSearch(sources: string[], keywords: any[]) {
   };
 
   if (!sources || sources.length === 0) {
-    sources = ["pubmed", "crossref", "europepmc"]; // Default sources
+    sources = ["pubmed", "crossref", "europepmc", "medrxiv", "biorxiv", "googlescholar"]; // Default sources (all available)
   }
 
   // Create a list of all search terms

@@ -1,27 +1,46 @@
 import React from "react";
 import { Link } from "wouter";
-import { 
-  Mail, 
-  Twitter, 
-  Linkedin, 
-  Github, 
+import {
+  Mail,
+  Twitter,
+  Linkedin,
+  Github,
   Droplets,
   Shield,
   HelpCircle,
-  Building2
+  Building2,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function Footer() {
   const [email, setEmail] = React.useState("");
+  const [subscribeStatus, setSubscribeStatus] = React.useState<"idle" | "loading" | "success" | "error">("idle");
   const currentYear = new Date().getFullYear();
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Newsletter signup logic would go here
-    console.log("Newsletter signup:", email);
-    setEmail("");
+    if (!email || subscribeStatus === "loading") return;
+
+    setSubscribeStatus("loading");
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSubscribeStatus("success");
+        setEmail("");
+      } else {
+        setSubscribeStatus("error");
+      }
+    } catch {
+      setSubscribeStatus("error");
+    }
   };
 
   return (
@@ -209,22 +228,37 @@ export default function Footer() {
             <p className="text-gray-300 text-sm">
               Get the latest hydrogen research updates delivered to your inbox.
             </p>
-            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-2">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 flex-1"
-                required
-              />
-              <Button
-                type="submit"
-                className="bg-teal-600 hover:bg-teal-700 text-white px-6"
-              >
-                Subscribe
-              </Button>
-            </form>
+            {subscribeStatus === "success" ? (
+              <div className="flex items-center justify-center gap-2 text-teal-400 py-2">
+                <CheckCircle2 className="h-5 w-5" />
+                <span>You're subscribed! Check your inbox for a welcome email.</span>
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setSubscribeStatus("idle"); }}
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 flex-1"
+                  required
+                />
+                <Button
+                  type="submit"
+                  className="bg-teal-600 hover:bg-teal-700 text-white px-6"
+                  disabled={subscribeStatus === "loading"}
+                >
+                  {subscribeStatus === "loading" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Subscribe"
+                  )}
+                </Button>
+              </form>
+            )}
+            {subscribeStatus === "error" && (
+              <p className="text-red-400 text-sm">Something went wrong. Please try again.</p>
+            )}
           </div>
         </div>
 
