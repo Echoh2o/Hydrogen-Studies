@@ -52,6 +52,9 @@ import unifiedSearchRoutes from "./routes/unified-search-routes";
 import scraperRoutes from "./routes/scraper-routes";
 import seoRoutes from "./routes/seo-routes";
 import seoContentFactoryRoutes from "./routes/seo-content-factory-routes";
+import shopifyWebhookRoutes from "./routes/shopify-webhook-routes";
+import newsletterRoutes from "./routes/newsletter-routes";
+import userDashboardRoutes from "./routes/user-dashboard-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -138,6 +141,8 @@ const csrf = csrfProtection({
     "/api/scraper", // Scraper endpoints (protected by admin auth)
     "/api/studies", // Study endpoints including blog generation (protected by admin auth)
     "/api/seo", // SEO content factory (protected by admin auth)
+    "/api/webhooks", // Shopify webhooks (verified by HMAC signature)
+    "/api/newsletter", // Public newsletter signup
   ],
 });
 
@@ -268,6 +273,15 @@ app.get("/api/admin/quality/tests", requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Quality tests failed" });
   }
 });
+
+// Shopify webhooks (no auth — verified by HMAC signature)
+app.use("/api/webhooks/shopify", shopifyWebhookRoutes);
+
+// Newsletter signup (public, no auth required)
+app.use("/api/newsletter", newsletterRoutes);
+
+// User dashboard (authenticated customers)
+app.use("/api/me", userDashboardRoutes);
 
 // Serve public assets
 app.use(

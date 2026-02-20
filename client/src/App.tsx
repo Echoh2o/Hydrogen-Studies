@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, lazy, Suspense, startTransition } from "react";
 import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
+import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
 import PageLoader from "@/components/ui/page-loader";
@@ -189,6 +190,7 @@ const NaturalLanguageSearchPage = lazy(
   () => import("./pages/NaturalLanguageSearchPage"),
 );
 const RecentStudiesPage = lazy(() => import("./pages/RecentStudiesPage"));
+const MyDashboardPage = lazy(() => import("./pages/MyDashboardPage"));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -241,6 +243,9 @@ function Router() {
         <Route path="/blog/:id/:slug" component={BlogPage} />
         <Route path="/recommendations" component={RecommendationsPage} />
         <Route path="/chat" component={ChatPage} />
+
+        {/* User Dashboard - Authenticated */}
+        <Route path="/my-dashboard" component={MyDashboardPage} />
 
         {/* Enhanced Admin Dashboard with WYSIWYG - Protected */}
         <Route path="/admin">
@@ -630,6 +635,7 @@ function App() {
           <ScrollToTop />
           <div className="flex min-h-screen flex-col">
             {!isAdminRoute && <CookieConsent />}
+            {!isAdminRoute && <MedicalDisclaimer />}
             <main className={`flex-1 ${isAdminRoute ? "p-0" : ""}`}>
               <AsyncErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
