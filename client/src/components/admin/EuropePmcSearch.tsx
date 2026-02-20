@@ -46,7 +46,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Pagination,
   PaginationContent,
   PaginationEllipsis,
   PaginationItem,
@@ -146,10 +145,11 @@ const EuropePmcSearch: React.FC = () => {
     if (!selectedArticle) return;
 
     try {
-      const response = await apiRequest("POST", "/api/europepmc/save", {
+      const res = await apiRequest("POST", "/api/europepmc/save", {
         id: selectedArticle.id,
         source: selectedArticle.source,
       });
+      const response = await res.json();
 
       if (response.success) {
         toast({
@@ -202,7 +202,7 @@ const EuropePmcSearch: React.FC = () => {
     }
 
     return (
-      <Pagination>
+      <nav className="flex items-center justify-center space-x-2 mt-6">
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
@@ -261,7 +261,7 @@ const EuropePmcSearch: React.FC = () => {
             />
           </PaginationItem>
         </PaginationContent>
-      </Pagination>
+      </nav>
     );
   };
 
@@ -350,7 +350,7 @@ const EuropePmcSearch: React.FC = () => {
                 {article.pubType && (
                   <>
                     <span className="mx-1">•</span>
-                    <Badge variant="outline" size="sm">
+                    <Badge variant="outline" className="text-xs">
                       {article.pubType}
                     </Badge>
                   </>

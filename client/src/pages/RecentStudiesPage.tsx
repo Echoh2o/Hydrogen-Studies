@@ -34,16 +34,16 @@ const RecentStudiesPage = () => {
     data: studies,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: ["/api/studies"],
   });
 
   // Sort studies based on selected order
   const sortedStudies = studies
-    ? [...studies].sort((a, b) => {
-        if (sortOrder === "newest") return b.year - a.year;
-        if (sortOrder === "oldest") return a.year - b.year;
-        if (sortOrder === "citations") return b.citations - a.citations;
+    ? [...(studies as any[])].sort((a: any, b: any) => {
+        if (sortOrder === "newest") return (b.year || 0) - (a.year || 0);
+        if (sortOrder === "oldest") return (a.year || 0) - (b.year || 0);
+        if (sortOrder === "citations") return (b.citations || 0) - (a.citations || 0);
         return 0;
       })
     : [];
@@ -161,7 +161,7 @@ const RecentStudiesPage = () => {
                         {study.category}
                       </span>
                       <span className="text-neutral-500 text-sm">
-                        {study.year}
+                        {(study as any).year}
                       </span>
                     </div>
                     <h2 className="text-xl font-semibold mb-3">
@@ -181,7 +181,7 @@ const RecentStudiesPage = () => {
                       </div>
                       <div className="flex items-center">
                         <span className="flex items-center text-neutral-500 text-sm mr-4">
-                          <HiAnnotation className="mr-1" /> {study.citations}{" "}
+                          <HiAnnotation className="mr-1" /> {(study as any).citations}{" "}
                           citations
                         </span>
                         <Link href={`/study/${study.id}`}>

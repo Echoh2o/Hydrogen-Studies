@@ -23,7 +23,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function ResearchAnalyticsPage() {
   // Get analytics data
-  const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery<any>({
     queryKey: ["/api/studies/analytics"],
     staleTime: 5 * 60 * 1000,
   });

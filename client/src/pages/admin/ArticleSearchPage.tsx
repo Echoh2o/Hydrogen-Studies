@@ -70,7 +70,7 @@ export default function ArticleSearchPage() {
     data: searchResults,
     isLoading,
     refetch,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: [
       "/api/research/search",
       selectedSource,
@@ -88,28 +88,23 @@ export default function ArticleSearchPage() {
     try {
       setRunningDiscovery(true);
 
-      const response = await apiRequest("/api/research/discover", {
-        method: "POST",
-        body: JSON.stringify({
+      const response = await apiRequest("POST", "/api/research/discover", {
           source: selectedSource,
           query: searchQuery,
           maxResults: maxResults,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
+      const result = await response.json();
 
-      if (response.success) {
+      if (result.success) {
         toast({
           title: "Discovery complete",
-          description: `Discovered ${response.discovered} new articles, imported ${response.imported}`,
+          description: `Discovered ${result.discovered} new articles, imported ${result.imported}`,
         });
         queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
       } else {
         toast({
           title: "Discovery failed",
-          description: response.message || "Failed to run discovery job",
+          description: result.message || "Failed to run discovery job",
           variant: "destructive",
         });
       }
@@ -127,18 +122,13 @@ export default function ArticleSearchPage() {
   // Handle article approval
   const handleApproveArticle = async (article: any) => {
     try {
-      const response = await apiRequest("/api/research/approve", {
-        method: "POST",
-        body: JSON.stringify({
+      const response = await apiRequest("POST", "/api/research/approve", {
           source: selectedSource,
           article: article,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
+      const result = await response.json();
 
-      if (response.success) {
+      if (result.success) {
         toast({
           title: "Article approved",
           description: "Article has been added to the database",
@@ -150,7 +140,7 @@ export default function ArticleSearchPage() {
       } else {
         toast({
           title: "Approval failed",
-          description: response.message || "Failed to approve article",
+          description: result.message || "Failed to approve article",
           variant: "destructive",
         });
       }

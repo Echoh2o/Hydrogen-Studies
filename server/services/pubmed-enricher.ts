@@ -8,7 +8,7 @@
 import axios from "axios";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, isNull } from "drizzle-orm";
 
 // PubMed API endpoints
 const PUBMED_API_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
@@ -336,7 +336,7 @@ export async function batchEnrichStudies(limit: number = 10): Promise<number> {
       .from(studies)
       .where(
         // Studies that have a URL or title but are missing other details
-        studies.abstract === "" || studies.abstract === null,
+        or(eq(studies.abstract, ""), isNull(studies.abstract)),
       )
       .limit(limit);
 

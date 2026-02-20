@@ -5,7 +5,7 @@ import {
   HiArrowRight,
   HiUser,
   HiBookOpen,
-  HiQuote,
+  HiAnnotation,
   HiDocument,
 } from "react-icons/hi";
 
@@ -14,7 +14,7 @@ const RecentStudiesSection = () => {
     data: recentStudies,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<Study[]>({
     queryKey: ["/api/recent-studies"],
   });
 
@@ -122,7 +122,7 @@ const RecentStudiesSection = () => {
                   <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
                     {study.category}
                   </span>
-                  <span className="text-neutral-500 text-sm">{study.year}</span>
+                  <span className="text-neutral-500 text-sm">{study.publishYear}</span>
                 </div>
                 <h3 className="text-lg font-semibold mb-2 line-clamp-2">
                   <Link
@@ -150,11 +150,11 @@ const RecentStudiesSection = () => {
               <div className="p-4 bg-neutral-50 flex justify-between items-center">
                 <div className="flex items-center">
                   <span className="mr-4 flex items-center text-neutral-500 text-sm">
-                    <HiQuote className="mr-1" /> {study.citations} citations
+                    <HiAnnotation className="mr-1" /> {study.citationCount} citations
                   </span>
                   <span className="flex items-center text-neutral-500 text-sm">
                     <HiDocument className="mr-1" />{" "}
-                    {study.fullTextAvailable ? "Full text" : "Abstract only"}
+                    {study.hasFullText ? "Full text" : "Abstract only"}
                   </span>
                 </div>
                 <Link

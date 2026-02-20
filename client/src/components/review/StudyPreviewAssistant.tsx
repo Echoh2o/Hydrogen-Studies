@@ -68,19 +68,23 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
   // Fetch detailed recommendations if not already loaded
   const { data: recommendations } = useQuery({
     queryKey: ["/api/review-assistant/recommendations", study.id],
-    queryFn: () =>
-      apiRequest(`/api/review-assistant/recommendations/${study.id}`),
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/review-assistant/recommendations/${study.id}`);
+      return await res.json() as any;
+    },
     enabled: !study.recommendations,
   });
 
   // Fetch similar studies
   const { data: similarStudies } = useQuery({
     queryKey: ["/api/review-assistant/similar-studies", study.id],
-    queryFn: () =>
-      apiRequest(`/api/review-assistant/similar-studies/${study.id}?limit=5`),
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/review-assistant/similar-studies/${study.id}?limit=5`);
+      return await res.json() as any;
+    },
   });
 
-  const fullRecommendations =
+  const fullRecommendations: any =
     study.recommendations || recommendations?.recommendations;
 
   const toggleSection = (section: string) => {
@@ -241,7 +245,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                     Suggested Actions
                   </h3>
                   <div className="space-y-2">
-                    {fullRecommendations.suggestedActions.map((action, idx) => (
+                    {fullRecommendations.suggestedActions.map((action: string, idx: number) => (
                       <div key={idx} className="flex items-start gap-2">
                         <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
                         <span className="text-sm">{action}</span>
@@ -262,7 +266,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                       Key Findings
                     </h3>
                     <div className="space-y-2">
-                      {fullRecommendations.keyFindings.map((finding, idx) => (
+                      {fullRecommendations.keyFindings.map((finding: string, idx: number) => (
                         <div
                           key={idx}
                           className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3"
@@ -284,7 +288,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                     </h3>
                     <div className="space-y-2">
                       {fullRecommendations.strengthsIdentified.map(
-                        (strength, idx) => (
+                        (strength: string, idx: number) => (
                           <div key={idx} className="flex items-start gap-2">
                             <Shield className="h-4 w-4 text-teal-600 mt-0.5 shrink-0" />
                             <span className="text-sm">{strength}</span>
@@ -304,7 +308,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                       Potential Issues
                     </h3>
                     <div className="space-y-2">
-                      {fullRecommendations.potentialIssues.map((issue, idx) => (
+                      {fullRecommendations.potentialIssues.map((issue: string, idx: number) => (
                         <div
                           key={idx}
                           className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-3"
@@ -332,7 +336,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {fullRecommendations.suggestedCategories.map(
-                              (cat, idx) => (
+                              (cat: string, idx: number) => (
                                 <Badge
                                   key={idx}
                                   variant="secondary"
@@ -353,7 +357,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {fullRecommendations.suggestedTags.map(
-                              (tag, idx) => (
+                              (tag: string, idx: number) => (
                                 <Badge
                                   key={idx}
                                   variant="outline"
@@ -374,7 +378,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {fullRecommendations.healthConditions.map(
-                              (condition, idx) => (
+                              (condition: string, idx: number) => (
                                 <Badge
                                   key={idx}
                                   variant="outline"
@@ -395,7 +399,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {fullRecommendations.deliveryMethods.map(
-                              (method, idx) => (
+                              (method: string, idx: number) => (
                                 <Badge
                                   key={idx}
                                   variant="outline"
@@ -422,7 +426,7 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                     </h3>
                     <div className="space-y-2">
                       {fullRecommendations.suggestedBlogTopics.map(
-                        (topic, idx) => (
+                        (topic: string, idx: number) => (
                           <div
                             key={idx}
                             className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-3"

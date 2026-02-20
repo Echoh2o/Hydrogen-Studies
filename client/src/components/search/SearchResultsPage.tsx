@@ -74,13 +74,13 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     data: searchResults,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<{ total: number; data: any[]; pageCount: number }>({
     queryKey: ["/api/search/advanced", filters, page, pageSize],
     enabled: true,
   });
 
   // Fetch filter options for sidebar
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions } = useQuery<{ categories?: Array<{ id: number; name: string; studyCount: number }> }>({
     queryKey: ["/api/search/filter-options"],
   });
 

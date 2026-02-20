@@ -156,7 +156,7 @@ export const ScraperStatus = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Status description */}
-        <div className="font-medium">{data.description}</div>
+        <div className="font-medium">{data!.description}</div>
 
         {/* Progress bar */}
         {status.isRunning && status.total > 0 && (
@@ -210,7 +210,7 @@ export const ScraperStatus = () => {
         {/* Success message */}
         {!status.isRunning && status.successful > 0 && !status.error && (
           <Alert
-            variant="success"
+            variant="default"
             className="bg-green-50 text-green-800 border-green-200"
           >
             <CheckCircle2 className="h-4 w-4 text-green-600" />

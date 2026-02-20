@@ -74,11 +74,11 @@ export async function searchEuropePMC(
       results,
       total: response.data.hitCount || 0,
     };
-  } catch (error) {
-    console.error("Europe PMC search error:", error.message);
+  } catch (error: any) {
+    console.error("Europe PMC search error:", error?.message);
     console.error(
       "Europe PMC error details:",
-      error.response?.data || error.response?.status,
+      error?.response?.data || error?.response?.status,
     );
     return {
       results: [],

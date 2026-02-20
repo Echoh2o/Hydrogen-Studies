@@ -29,7 +29,7 @@ router.post("/start", async (req, res) => {
     console.error("Error starting enrichment:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -49,7 +49,7 @@ router.get("/status", async (req, res) => {
     console.error("Error getting enrichment status:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -87,7 +87,7 @@ router.get("/summary", async (req, res) => {
     console.error("Error getting enrichment summary:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -114,7 +114,7 @@ router.get("/batch/status", async (req, res) => {
     console.error("Error getting batch status:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -141,7 +141,7 @@ router.post("/batch/start", async (req, res) => {
     console.error("Error starting batch enrichment:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -157,7 +157,7 @@ router.post("/batch/stop", async (req, res) => {
     console.error("Error stopping batch enrichment:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });

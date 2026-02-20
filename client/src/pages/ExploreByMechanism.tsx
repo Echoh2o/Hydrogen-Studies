@@ -52,7 +52,7 @@ const getMechanismIcon = (slug: string, className: string = "") => {
 
 const ExploreByMechanismPage: React.FC = () => {
   // Fetch all mechanisms
-  const { data: mechanisms, isLoading: mechanismsLoading } = useQuery({
+  const { data: mechanisms, isLoading: mechanismsLoading } = useQuery<any>({
     queryKey: ["/api/mechanisms"],
   });
 
@@ -141,13 +141,13 @@ export const MechanismDetailPage: React.FC = () => {
   const slug = params?.slug || "";
 
   // Fetch mechanism details
-  const { data: mechanismData, isLoading: mechanismLoading } = useQuery({
+  const { data: mechanismData, isLoading: mechanismLoading } = useQuery<any>({
     queryKey: [`/api/mechanisms/${slug}`],
     enabled: !!slug,
   });
 
   // Fetch studies for this mechanism
-  const { data: studiesData, isLoading: studiesLoading } = useQuery({
+  const { data: studiesData, isLoading: studiesLoading } = useQuery<any>({
     queryKey: [`/api/mechanisms/${slug}/studies`],
     enabled: !!slug,
   });

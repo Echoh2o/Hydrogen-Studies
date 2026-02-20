@@ -49,7 +49,7 @@ const getDemographicIcon = (slug: string, className: string = "") => {
 
 const ExploreByDemographicPage: React.FC = () => {
   // Fetch all demographics
-  const { data: demographics, isLoading: demographicsLoading } = useQuery({
+  const { data: demographics, isLoading: demographicsLoading } = useQuery<any>({
     queryKey: ["/api/demographics"],
   });
 
@@ -141,13 +141,13 @@ export const DemographicDetailPage: React.FC = () => {
   const slug = params?.slug || "";
 
   // Fetch demographic details
-  const { data: demographicData, isLoading: demographicLoading } = useQuery({
+  const { data: demographicData, isLoading: demographicLoading } = useQuery<any>({
     queryKey: [`/api/demographics/${slug}`],
     enabled: !!slug,
   });
 
   // Fetch studies for this demographic
-  const { data: studiesData, isLoading: studiesLoading } = useQuery({
+  const { data: studiesData, isLoading: studiesLoading } = useQuery<any>({
     queryKey: [`/api/demographics/${slug}/studies`],
     enabled: !!slug,
   });

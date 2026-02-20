@@ -144,8 +144,8 @@ router.get("/queue", async (req, res) => {
     }
 
     // Apply priority filter
-    if (priority !== "all" && priority in ["high", "medium", "low"]) {
-      query = query.where(eq(reviewRecommendations.priority, priority));
+    if (priority !== "all" && ["high", "medium", "low"].includes(priority as string)) {
+      query = query.where(eq(reviewRecommendations.priority, priority as string));
     }
 
     // Order by priority and overall score

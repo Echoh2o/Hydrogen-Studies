@@ -176,8 +176,8 @@ export default function CitationNetworkMap({
       ctx.lineWidth = 1;
 
       displayData.links.forEach((link: NetworkLink) => {
-        const sourceNode = nodes.find((n) => n.id === link.source);
-        const targetNode = nodes.find((n) => n.id === link.target);
+        const sourceNode = nodes.find((n: NetworkNode) => n.id === link.source);
+        const targetNode = nodes.find((n: NetworkNode) => n.id === link.target);
 
         if (sourceNode && targetNode) {
           ctx.beginPath();
