@@ -1,0 +1,504 @@
+/**
+ * SEO Bot Middleware — Server-side meta tag injection for crawlers
+ *
+ * Detects search engine bots and social media crawlers, then injects
+ * correct meta tags (title, description, OG, Twitter, JSON-LD) into
+ * the HTML before serving. Human visitors get the normal SPA.
+ */
+
+import { Request, Response, NextFunction } from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { db } from "../db";
+import { studies, blogArticles } from "../../shared/schema";
+import { eq, and } from "drizzle-orm";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
+const SITE_NAME = "Hydrogen Studies";
+
+// Bot user-agent patterns
+const BOT_PATTERNS = [
+  /googlebot/i, /bingbot/i, /slurp/i, /duckduckbot/i, /baiduspider/i,
+  /yandexbot/i, /sogou/i, /exabot/i, /facebot/i, /facebookexternalhit/i,
+  /ia_archiver/i, /twitterbot/i, /linkedinbot/i, /embedly/i, /quora link preview/i,
+  /showyoubot/i, /outbrain/i, /pinterest/i, /slackbot/i, /vkshare/i,
+  /w3c_validator/i, /redditbot/i, /applebot/i, /whatsapp/i, /flipboard/i,
+  /tumblr/i, /bitlybot/i, /skypeuripreview/i, /nuzzel/i, /discordbot/i,
+  /google page speed/i, /chromelighthouse/i, /headlesschrome/i,
+  /petalbot/i, /ahrefsbot/i, /semrushbot/i, /dotbot/i, /rogerbot/i,
+];
+
+function isBot(userAgent: string): boolean {
+  return BOT_PATTERNS.some(pattern => pattern.test(userAgent));
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function truncate(str: string, maxLen: number): string {
+  if (!str) return "";
+  if (str.length <= maxLen) return str;
+  return str.substring(0, maxLen - 3) + "...";
+}
+
+function stripHtml(str: string): string {
+  if (!str) return "";
+  return str.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+}
+
+interface PageMeta {
+  title: string;
+  description: string;
+  canonical: string;
+  ogType: string;
+  ogImage: string;
+  jsonLd?: object;
+  robots?: string;
+}
+
+/** Resolve meta tags for a given URL path */
+async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
+  try {
+    // Study page: /study/:slug
+    const studySlugMatch = pathname.match(/^\/study\/([^/]+)$/);
+    if (studySlugMatch) {
+      const slug = studySlugMatch[1];
+      // Skip if it's a numeric ID (legacy route)
+      if (/^\d+$/.test(slug)) {
+        const [study] = await db.select().from(studies).where(eq(studies.id, parseInt(slug))).limit(1);
+        if (study) return buildStudyMeta(study);
+      } else {
+        const [study] = await db.select().from(studies).where(eq(studies.slug, slug)).limit(1);
+        if (study) return buildStudyMeta(study);
+      }
+      return null;
+    }
+
+    // Alternative study path: /studies/:slug
+    const studiesSlugMatch = pathname.match(/^\/studies\/([^/]+)$/);
+    if (studiesSlugMatch && !/^(tags)$/.test(studiesSlugMatch[1])) {
+      const slug = studiesSlugMatch[1];
+      const [study] = await db.select().from(studies).where(eq(studies.slug, slug)).limit(1);
+      if (study) return buildStudyMeta(study);
+      return null;
+    }
+
+    // Blog page: /blog/:slug or /blog/:id
+    const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
+    if (blogMatch) {
+      const idOrSlug = blogMatch[1];
+      let blog;
+      if (/^\d+$/.test(idOrSlug)) {
+        [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(idOrSlug))).limit(1);
+      } else {
+        [blog] = await db.select().from(blogArticles).where(eq(blogArticles.slug, idOrSlug)).limit(1);
+      }
+      if (blog) return buildBlogMeta(blog);
+      return null;
+    }
+
+    // Static pages
+    return resolveStaticPageMeta(pathname);
+  } catch (err) {
+    console.error("[SEO Bot] Error resolving meta for", pathname, err);
+    return null;
+  }
+}
+
+function buildStudyMeta(study: any): PageMeta {
+  const title = study.metaTitle
+    || study.plainLanguageTitle
+    || study.title;
+  const description = study.metaDescription
+    || study.summary100Words
+    || study.summary50Words
+    || stripHtml(study.abstract);
+  const slug = study.slug || `id/${study.id}`;
+  const canonical = `${SITE_URL}/study/${slug}`;
+  const ogImage = study.ogImage || study.imageUrl || `${SITE_URL}/logo.png`;
+
+  const jsonLd: any = {
+    "@context": "https://schema.org",
+    "@type": "MedicalScholarlyArticle",
+    "headline": truncate(study.title, 110),
+    "description": truncate(stripHtml(description), 300),
+    "url": canonical,
+    "image": ogImage,
+    "datePublished": study.journalPublishDate || study.publishDate,
+    "publisher": {
+      "@type": "Organization",
+      "name": SITE_NAME,
+      "url": SITE_URL,
+      "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` }
+    },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": canonical }
+  };
+
+  if (study.authors) {
+    const authorList = study.authors.split(",").map((a: string) => a.trim()).filter(Boolean);
+    jsonLd.author = authorList.map((name: string) => ({ "@type": "Person", "name": name }));
+  }
+  if (study.journal) jsonLd.isPartOf = { "@type": "Periodical", "name": study.journal };
+  if (study.doi) jsonLd.sameAs = `https://doi.org/${study.doi}`;
+  if (study.keywords?.length) jsonLd.keywords = study.keywords.join(", ");
+
+  // Add FAQ schema if Q&A pairs exist
+  let faqLd: any = null;
+  if (study.questionAnswerPairs) {
+    try {
+      const qaPairs = JSON.parse(study.questionAnswerPairs);
+      if (Array.isArray(qaPairs) && qaPairs.length > 0) {
+        faqLd = {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": qaPairs.slice(0, 5).map((qa: any) => ({
+            "@type": "Question",
+            "name": qa.question || qa.q,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": qa.answer || qa.a
+            }
+          }))
+        };
+      }
+    } catch {}
+  }
+
+  return {
+    title: truncate(title, 60) + ` | ${SITE_NAME}`,
+    description: truncate(stripHtml(description), 160),
+    canonical,
+    ogType: "article",
+    ogImage,
+    jsonLd: faqLd ? [jsonLd, faqLd] : jsonLd,
+  };
+}
+
+function buildBlogMeta(blog: any): PageMeta {
+  const title = blog.metaTitle || blog.title;
+  const description = blog.metaDescription || blog.summary100Words || blog.summary;
+  const canonical = `${SITE_URL}/blog/${blog.slug}`;
+  const ogImage = blog.ogImage || blog.imageUrl || `${SITE_URL}/logo.png`;
+
+  const jsonLd: any = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": truncate(blog.title, 110),
+    "description": truncate(stripHtml(description), 300),
+    "url": canonical,
+    "image": ogImage,
+    "datePublished": blog.createdAt?.toISOString?.() || new Date().toISOString(),
+    "dateModified": blog.updatedAt?.toISOString?.() || blog.createdAt?.toISOString?.(),
+    "author": {
+      "@type": "Organization",
+      "name": SITE_NAME,
+      "url": SITE_URL
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": SITE_NAME,
+      "url": SITE_URL,
+      "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` }
+    },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": canonical }
+  };
+
+  if (blog.semanticKeywords?.length) jsonLd.keywords = blog.semanticKeywords.join(", ");
+
+  // FAQ schema from blog Q&A
+  let faqLd: any = null;
+  if (blog.questionAnswerPairs) {
+    try {
+      const qaPairs = JSON.parse(blog.questionAnswerPairs);
+      if (Array.isArray(qaPairs) && qaPairs.length > 0) {
+        faqLd = {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": qaPairs.slice(0, 5).map((qa: any) => ({
+            "@type": "Question",
+            "name": qa.question || qa.q,
+            "acceptedAnswer": { "@type": "Answer", "text": qa.answer || qa.a }
+          }))
+        };
+      }
+    } catch {}
+  }
+
+  return {
+    title: truncate(title, 60) + ` | ${SITE_NAME}`,
+    description: truncate(stripHtml(description), 160),
+    canonical,
+    ogType: "article",
+    ogImage,
+    jsonLd: faqLd ? [jsonLd, faqLd] : jsonLd,
+  };
+}
+
+function resolveStaticPageMeta(pathname: string): PageMeta | null {
+  const pages: Record<string, { title: string; description: string }> = {
+    "/": {
+      title: `Hydrogen Studies | ${SITE_NAME} Research Database`,
+      description: "Explore 1,300+ peer-reviewed hydrogen therapy research studies. Evidence-based insights on molecular hydrogen for health conditions, organized by body system, condition, and mechanism."
+    },
+    "/studies": {
+      title: `Research Studies Directory | ${SITE_NAME}`,
+      description: "Browse our comprehensive directory of hydrogen therapy research studies. Filter by condition, body system, study type, and outcome."
+    },
+    "/blog": {
+      title: `Hydrogen Health Blog | ${SITE_NAME}`,
+      description: "Plain-language articles explaining hydrogen therapy research. Understand the science behind molecular hydrogen and its health benefits."
+    },
+    "/about": {
+      title: `About | ${SITE_NAME}`,
+      description: "Learn about Hydrogen Studies — the most comprehensive database of molecular hydrogen research, dedicated to making scientific research accessible."
+    },
+    "/search": {
+      title: `Search Research | ${SITE_NAME}`,
+      description: "Search our database of hydrogen therapy research studies by keyword, condition, body system, or mechanism of action."
+    },
+    "/advanced-search": {
+      title: `Advanced Research Search | ${SITE_NAME}`,
+      description: "Advanced search with filters for study type, outcome, date range, body system, and health condition across hydrogen therapy research."
+    },
+    "/benefits": {
+      title: `Health Benefits of Hydrogen | ${SITE_NAME}`,
+      description: "Discover the scientifically-studied health benefits of molecular hydrogen, from anti-inflammatory effects to neuroprotection."
+    },
+    "/explore-by-condition": {
+      title: `Hydrogen Research by Health Condition | ${SITE_NAME}`,
+      description: "Explore hydrogen therapy research organized by health condition. Find studies on diabetes, Alzheimer's, arthritis, cancer support, and more."
+    },
+    "/explore-by-body-system": {
+      title: `Hydrogen Research by Body System | ${SITE_NAME}`,
+      description: "Browse hydrogen therapy studies organized by body system — brain, heart, digestive, immune, musculoskeletal, and more."
+    },
+    "/explore-by-mechanism": {
+      title: `Hydrogen Delivery Mechanisms Research | ${SITE_NAME}`,
+      description: "Explore research on different hydrogen delivery methods — hydrogen water, inhalation therapy, hydrogen-rich saline, and more."
+    },
+    "/explore-by-life-stage": {
+      title: `Hydrogen Research by Life Stage | ${SITE_NAME}`,
+      description: "Find hydrogen therapy research relevant to your life stage — pregnancy, childhood, adults, elderly, and athletes."
+    },
+    "/explore-by-demographic": {
+      title: `Hydrogen Research by Demographics | ${SITE_NAME}`,
+      description: "Explore hydrogen therapy research filtered by demographic groups and population types."
+    },
+    "/explore-by-delivery-method": {
+      title: `Hydrogen Delivery Methods Research | ${SITE_NAME}`,
+      description: "Compare research on hydrogen water, hydrogen gas inhalation, hydrogen-rich saline, hydrogen baths, and other delivery methods."
+    },
+    "/explore-by-benefit": {
+      title: `Hydrogen Research by Health Benefit | ${SITE_NAME}`,
+      description: "Browse hydrogen therapy research organized by health benefit — antioxidant, anti-inflammatory, neuroprotective, and more."
+    },
+    "/learn/basics": {
+      title: `Hydrogen Therapy Basics | ${SITE_NAME}`,
+      description: "Everything you need to know about molecular hydrogen therapy — what it is, how it works, and what the research shows."
+    },
+    "/learn/health-benefits": {
+      title: `Hydrogen Health Benefits Guide | ${SITE_NAME}`,
+      description: "A comprehensive guide to the health benefits of molecular hydrogen, backed by peer-reviewed research studies."
+    },
+    "/learn/therapy-guide": {
+      title: `Hydrogen Therapy Guide | ${SITE_NAME}`,
+      description: "Your complete guide to hydrogen therapy — methods, dosages studied, safety profile, and what to expect from research findings."
+    },
+    "/recommendations": {
+      title: `Research Recommendations | ${SITE_NAME}`,
+      description: "Personalized hydrogen therapy research recommendations based on your interests, health conditions, and reading history."
+    },
+    "/products": {
+      title: `Hydrogen Products | ${SITE_NAME}`,
+      description: "Explore hydrogen water generators, inhalation devices, and other hydrogen therapy products backed by research."
+    },
+    "/contact": {
+      title: `Contact Us | ${SITE_NAME}`,
+      description: "Get in touch with the Hydrogen Studies team. Questions about hydrogen research, partnership inquiries, or feedback welcome."
+    },
+    "/privacy": {
+      title: `Privacy Policy | ${SITE_NAME}`,
+      description: "Hydrogen Studies privacy policy — how we collect, use, and protect your personal information."
+    },
+    "/terms": {
+      title: `Terms of Service | ${SITE_NAME}`,
+      description: "Terms of service for using the Hydrogen Studies research database and website."
+    },
+  };
+
+  // Check explore-by-condition category pages
+  const conditionMatch = pathname.match(/^\/explore-by-condition\/([^/]+)$/);
+  if (conditionMatch) {
+    const category = conditionMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return {
+      title: `Hydrogen Research for ${category} | ${SITE_NAME}`,
+      description: `Explore peer-reviewed research studies on hydrogen therapy for ${category.toLowerCase()}. Evidence-based findings, study summaries, and clinical insights.`,
+      canonical: `${SITE_URL}${pathname}`,
+      ogType: "website",
+      ogImage: `${SITE_URL}/logo.png`,
+    };
+  }
+
+  // Check explore-by-body-system category pages
+  const bodySystemMatch = pathname.match(/^\/explore-by-body-system\/([^/]+)$/);
+  if (bodySystemMatch) {
+    const system = bodySystemMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return {
+      title: `Hydrogen Research: ${system} System | ${SITE_NAME}`,
+      description: `Research studies on molecular hydrogen's effects on the ${system.toLowerCase()} system. Browse clinical trials, reviews, and findings.`,
+      canonical: `${SITE_URL}${pathname}`,
+      ogType: "website",
+      ogImage: `${SITE_URL}/logo.png`,
+    };
+  }
+
+  // Check explore-by-mechanism pages
+  const mechanismMatch = pathname.match(/^\/explore-by-mechanism\/([^/]+)$/);
+  if (mechanismMatch) {
+    const mechanism = mechanismMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return {
+      title: `${mechanism} Hydrogen Therapy Research | ${SITE_NAME}`,
+      description: `Research on ${mechanism.toLowerCase()} as a hydrogen delivery mechanism. Studies, protocols, and clinical outcomes.`,
+      canonical: `${SITE_URL}${pathname}`,
+      ogType: "website",
+      ogImage: `${SITE_URL}/logo.png`,
+    };
+  }
+
+  // Check explore-by-life-stage pages
+  const lifeStageMatch = pathname.match(/^\/explore-by-life-stage\/([^/]+)$/);
+  if (lifeStageMatch) {
+    const stage = lifeStageMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return {
+      title: `Hydrogen Research for ${stage} | ${SITE_NAME}`,
+      description: `Hydrogen therapy research studies relevant to ${stage.toLowerCase()}. Evidence-based findings and clinical applications.`,
+      canonical: `${SITE_URL}${pathname}`,
+      ogType: "website",
+      ogImage: `${SITE_URL}/logo.png`,
+    };
+  }
+
+  const pageMeta = pages[pathname];
+  if (!pageMeta) return null;
+
+  return {
+    title: pageMeta.title,
+    description: pageMeta.description,
+    canonical: `${SITE_URL}${pathname}`,
+    ogType: "website",
+    ogImage: `${SITE_URL}/logo.png`,
+  };
+}
+
+/** Inject meta tags into HTML template */
+function injectMeta(html: string, meta: PageMeta): string {
+  const title = escapeHtml(meta.title);
+  const desc = escapeHtml(meta.description);
+  const canonical = escapeHtml(meta.canonical);
+  const ogImage = escapeHtml(meta.ogImage);
+  const ogType = escapeHtml(meta.ogType);
+
+  // Build JSON-LD script tag(s)
+  let jsonLdScript = "";
+  if (meta.jsonLd) {
+    if (Array.isArray(meta.jsonLd)) {
+      jsonLdScript = meta.jsonLd.map(ld =>
+        `<script type="application/ld+json">${JSON.stringify(ld)}</script>`
+      ).join("\n    ");
+    } else {
+      jsonLdScript = `<script type="application/ld+json">${JSON.stringify(meta.jsonLd)}</script>`;
+    }
+  }
+
+  // Replace the <head> content with proper meta tags
+  const newHead = `<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+
+    <!-- Primary SEO Meta Tags (Server-Injected for Crawlers) -->
+    <title>${title}</title>
+    <meta name="description" content="${desc}" />
+    ${meta.robots ? `<meta name="robots" content="${escapeHtml(meta.robots)}" />` : '<meta name="robots" content="index, follow" />'}
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="${ogType}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${desc}" />
+    <meta property="og:image" content="${ogImage}" />
+    <meta property="og:url" content="${canonical}" />
+    <meta property="og:site_name" content="${SITE_NAME}" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${desc}" />
+    <meta name="twitter:image" content="${ogImage}" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="${canonical}" />
+
+    ${jsonLdScript}`;
+
+  // Replace existing <head> tag content up to the closing </head> — but keep scripts/styles
+  return html.replace(/<head>[\s\S]*?(?=<\/head>)/, newHead);
+}
+
+/**
+ * Express middleware: intercepts requests from bots, injects correct
+ * meta tags, serves enhanced HTML. Human visitors pass through to SPA.
+ */
+export function seoBotMiddleware(staticPath: string) {
+  let htmlTemplate: string | null = null;
+
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // Only intercept GET requests for non-API, non-asset paths
+    if (req.method !== "GET") return next();
+    if (req.path.startsWith("/api/")) return next();
+    if (req.path.startsWith("/assets/")) return next();
+    if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map|webp)$/)) return next();
+
+    const ua = req.headers["user-agent"] || "";
+    if (!isBot(ua)) return next();
+
+    // Load HTML template once
+    if (!htmlTemplate) {
+      const indexPath = path.join(staticPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        htmlTemplate = fs.readFileSync(indexPath, "utf-8");
+      } else {
+        return next();
+      }
+    }
+
+    try {
+      const meta = await resolvePageMeta(req.path);
+      if (!meta) {
+        // Fall back to homepage meta for unknown pages
+        const fallbackMeta = resolveStaticPageMeta("/");
+        if (fallbackMeta) {
+          res.send(injectMeta(htmlTemplate, { ...fallbackMeta, canonical: `${SITE_URL}${req.path}` }));
+        } else {
+          return next();
+        }
+        return;
+      }
+
+      const enhancedHtml = injectMeta(htmlTemplate, meta);
+      res.set("Content-Type", "text/html");
+      res.set("Cache-Control", "public, max-age=3600"); // Cache bot responses for 1 hour
+      res.send(enhancedHtml);
+    } catch (err) {
+      console.error("[SEO Bot] Middleware error:", err);
+      next(); // Fall through to normal SPA on error
+    }
+  };
+}

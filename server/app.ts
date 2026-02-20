@@ -50,6 +50,8 @@ import crossRefRoutes from "./routes/crossref-routes";
 import consensusRoutes from "./routes/consensus-routes";
 import unifiedSearchRoutes from "./routes/unified-search-routes";
 import scraperRoutes from "./routes/scraper-routes";
+import seoRoutes from "./routes/seo-routes";
+import seoContentFactoryRoutes from "./routes/seo-content-factory-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -97,6 +99,9 @@ app.use(cors(getCorsConfig()));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+// Dynamic SEO routes (sitemaps, robots.txt) — must be before CSRF and session
+app.use(seoRoutes);
+
 // Secure session middleware with PostgreSQL store
 app.use(getSessionMiddleware());
 console.log("🔄 Initializing session store with PostgreSQL...");
@@ -132,6 +137,7 @@ const csrf = csrfProtection({
     "/api/auth/users", // Admin user creation (protected by admin auth)
     "/api/scraper", // Scraper endpoints (protected by admin auth)
     "/api/studies", // Study endpoints including blog generation (protected by admin auth)
+    "/api/seo", // SEO content factory (protected by admin auth)
   ],
 });
 
@@ -201,6 +207,22 @@ app.use("/api/crossref", crossRefRoutes);
 app.use("/api/consensus", consensusRoutes);
 app.use("/api/unified-search", unifiedSearchRoutes);
 app.use("/api/scraper", scraperRoutes);
+
+// SEO Content Factory (admin-only)
+app.use("/api/seo", seoContentFactoryRoutes);
+
+// Public internal links endpoint (for "Related Content" sidebar on study/blog pages)
+app.get("/api/internal-links/:type/:id", async (req, res) => {
+  try {
+    const { getLinksFor } = await import("./services/internal-linking-engine");
+    const contentId = parseInt(req.params.id);
+    if (isNaN(contentId)) return res.status(400).json({ error: "Invalid ID" });
+    const links = await getLinksFor(req.params.type, contentId);
+    res.json({ links });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get links" });
+  }
+});
 
 // Quality Monitoring — protected with admin auth
 app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
