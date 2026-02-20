@@ -31,7 +31,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     return location === path || location.startsWith(`${path}/`);
   };
 
-  const menu = [
+  const menu: Array<{ name?: string; path?: string; icon?: React.ReactNode; divider?: boolean }> = [
     {
       name: "Dashboard",
       path: "/admin",
@@ -122,12 +122,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   className="my-4 border-t border-gray-200"
                 ></li>
               ) : (
-                <li key={item.path}>
-                  <Link href={item.path}>
+                <li key={item.path || `item-${i}`}>
+                  <Link href={item.path || ""}>
                     <a
                       className={cn(
                         "flex items-center px-4 py-2.5 text-sm font-medium rounded-lg",
-                        isActive(item.path)
+                        isActive(item.path || "")
                           ? "bg-primary text-primary-foreground"
                           : "text-gray-700 hover:bg-gray-100",
                       )}

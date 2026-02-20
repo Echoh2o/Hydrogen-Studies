@@ -95,12 +95,12 @@ export function StudyInfoPanel({
     : [];
 
   // Fetch real data counts
-  const { data: keywordCounts } = useQuery({
+  const { data: keywordCounts } = useQuery<Array<{ keyword?: string; category?: string; count: number }>>({
     queryKey: ["/api/metadata/keywords/counts"],
     enabled: keywords.length > 0,
   });
 
-  const { data: categoryCounts } = useQuery({
+  const { data: categoryCounts } = useQuery<Array<{ keyword?: string; category?: string; count: number }>>({
     queryKey: ["/api/metadata/consumer-categories/counts"],
     enabled: consumerCategories.length > 0,
   });

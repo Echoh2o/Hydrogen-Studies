@@ -101,7 +101,7 @@ export default function BlogListPage() {
   }
 
   // Fetch blogs with pagination
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<any>({
     queryKey: [
       "/api/blogs",
       currentPage,
@@ -115,7 +115,6 @@ export default function BlogListPage() {
       if (!response.ok) throw new Error("Failed to fetch blogs");
       return response.json();
     },
-    keepPreviousData: true,
   });
 
   // Extract paginated data
@@ -421,7 +420,7 @@ export default function BlogListPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-xl font-semibold">{blog.title}</h3>
                         <Badge
-                          variant={blog.isPublished ? "success" : "secondary"}
+                          variant={blog.isPublished ? "default" : "secondary"}
                         >
                           {blog.isPublished ? "Published" : "Draft"}
                         </Badge>

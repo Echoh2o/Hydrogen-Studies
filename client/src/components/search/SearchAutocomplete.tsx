@@ -61,7 +61,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   );
 
   // Fetch search suggestions
-  const { data: suggestions = [], isLoading } = useQuery({
+  const { data: suggestions = [], isLoading } = useQuery<SearchSuggestion[]>({
     queryKey: ["/api/search/suggestions", value],
     enabled: value.length >= 2,
     staleTime: 30000, // Cache for 30 seconds
@@ -127,7 +127,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             ...suggestions,
             ...recentSearches.map((text) => ({ text, type: "query" as const })),
           ];
-          handleSuggestionSelect(allSuggestions[selectedIndex]);
+          handleSuggestionSelect(allSuggestions[selectedIndex] as SearchSuggestion);
         } else if (value.trim()) {
           onSearch(value.trim());
           setIsOpen(false);
@@ -162,7 +162,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     if (!query) return text;
 
     const parts = text.split(new RegExp(`(${query})`, "gi"));
-    return parts.map((part, index) =>
+    return parts.map((part: string, index: number) =>
       part.toLowerCase() === query.toLowerCase() ? (
         <span key={index} className="bg-yellow-200 font-medium">
           {part}

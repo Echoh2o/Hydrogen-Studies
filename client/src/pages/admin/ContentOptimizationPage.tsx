@@ -107,7 +107,7 @@ export default function ContentOptimizationPage() {
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
 
   // Fetch dashboard stats
-  const { data: stats, refetch: refetchStats } = useQuery({
+  const { data: stats, refetch: refetchStats } = useQuery<any>({
     queryKey: ["/api/content-optimization/dashboard/stats"],
   });
 
@@ -135,10 +135,7 @@ export default function ContentOptimizationPage() {
       notificationId: number;
       reviewedBy: string;
     }) => {
-      return apiRequest("/api/content-optimization/notifications/apply", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("POST", "/api/content-optimization/notifications/apply", data);
     },
     onSuccess: () => {
       toast({
@@ -168,13 +165,11 @@ export default function ContentOptimizationPage() {
       reviewedBy: string;
     }) => {
       return apiRequest(
+        "POST",
         `/api/content-optimization/notifications/${data.id}/reject`,
         {
-          method: "POST",
-          body: JSON.stringify({
             notes: data.notes,
             reviewedBy: data.reviewedBy,
-          }),
         },
       );
     },
@@ -195,10 +190,7 @@ export default function ContentOptimizationPage() {
   const toggleAutoUpdate = useMutation({
     mutationFn: async (enable: boolean) => {
       const endpoint = enable ? "start" : "stop";
-      return apiRequest(`/api/content-optimization/auto-update/${endpoint}`, {
-        method: "POST",
-        body: JSON.stringify({ intervalMinutes: 60 }),
-      });
+      return apiRequest("POST", `/api/content-optimization/auto-update/${endpoint}`, { intervalMinutes: 60 });
     },
     onSuccess: (_, enable) => {
       setAutoUpdateEnabled(enable);

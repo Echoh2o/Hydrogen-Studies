@@ -78,24 +78,31 @@ const SmartReviewQueue = () => {
     refetch,
   } = useQuery({
     queryKey: ["/api/review-assistant/queue", statusFilter, priorityFilter],
-    queryFn: () =>
-      apiRequest(
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
         `/api/review-assistant/queue?status=${statusFilter}&priority=${priorityFilter}&limit=50`,
-      ),
+      );
+      return await res.json() as any;
+    },
     refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 
   // Fetch red-flagged studies
   const { data: redFlaggedStudies } = useQuery({
     queryKey: ["/api/review-assistant/red-flags"],
-    queryFn: () =>
-      apiRequest("/api/review-assistant/red-flags?minRedFlags=1&limit=10"),
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/review-assistant/red-flags?minRedFlags=1&limit=10");
+      return await res.json() as any;
+    },
   });
 
   // Score single study mutation
   const scoreStudyMutation = useMutation({
-    mutationFn: (studyId: number) =>
-      apiRequest(`/api/review-assistant/score/${studyId}`, "POST"),
+    mutationFn: async (studyId: number) => {
+      const res = await apiRequest("POST", `/api/review-assistant/score/${studyId}`);
+      return await res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["/api/review-assistant/queue"],
@@ -105,8 +112,10 @@ const SmartReviewQueue = () => {
 
   // Batch score mutation
   const batchScoreMutation = useMutation({
-    mutationFn: (studyIds: number[]) =>
-      apiRequest("/api/review-assistant/batch-score", "POST", { studyIds }),
+    mutationFn: async (studyIds: number[]) => {
+      const res = await apiRequest("POST", "/api/review-assistant/batch-score", { studyIds });
+      return await res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["/api/review-assistant/queue"],
@@ -119,7 +128,7 @@ const SmartReviewQueue = () => {
   const refreshScores = async (studyId: number) => {
     setRefreshingId(studyId);
     try {
-      await apiRequest(`/api/review-assistant/refresh/${studyId}`, "PUT");
+      await apiRequest("PUT", `/api/review-assistant/refresh/${studyId}`);
       await refetch();
     } finally {
       setRefreshingId(null);

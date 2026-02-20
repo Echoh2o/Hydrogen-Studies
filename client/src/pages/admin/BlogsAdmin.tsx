@@ -52,17 +52,23 @@ export default function BlogsAdmin() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Fetch all blog articles
-  const { data: blogs = [], isLoading } = useQuery({
+  const { data: blogs = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/blogs"],
     staleTime: 30000, // 30 seconds
   });
 
   // Fetch studies for the filter dropdown
-  const { data: studies = [] } = useQuery({
+  const { data: studies = [] } = useQuery<any[]>({
     queryKey: ["/api/studies"],
     staleTime: 60000, // 1 minute
     enabled: activeTab === "byStudy", // Only fetch when byStudy tab is active
   });
+
+  // Helper to truncate text
+  const truncateText = (text: string, maxLength: number) => {
+    if (!text) return "";
+    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+  };
 
   // Filter blogs based on search query and active tab
   const filteredBlogs = blogs.filter((blog: any) => {

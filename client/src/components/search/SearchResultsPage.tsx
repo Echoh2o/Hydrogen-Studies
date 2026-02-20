@@ -74,13 +74,13 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     data: searchResults,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<{ total: number; data: any[]; pageCount: number }>({
     queryKey: ["/api/search/advanced", filters, page, pageSize],
     enabled: true,
   });
 
   // Fetch filter options for sidebar
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions } = useQuery<{ categories?: Array<{ id: number; name: string; studyCount: number }> }>({
     queryKey: ["/api/search/filter-options"],
   });
 
@@ -132,16 +132,14 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   };
 
   // Get active filter count
-  const activeFiltersCount = [
-    filters.query && 1,
+  const activeFiltersCount: number = [
+    filters.query ? 1 : 0,
     filters.categories.length,
-    (filters.yearRange.start || filters.yearRange.end) && 1,
+    (filters.yearRange.start || filters.yearRange.end) ? 1 : 0,
     filters.studyTypes.length,
-    filters.hasFullText && 1,
-    filters.hasDOI && 1,
-  ]
-    .filter(Boolean)
-    .reduce((sum, count) => sum + (count || 0), 0);
+    filters.hasFullText ? 1 : 0,
+    filters.hasDOI ? 1 : 0,
+  ].reduce((sum, count) => sum + count, 0);
 
   return (
     <div className="container mx-auto px-4 py-8">

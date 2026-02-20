@@ -1,7 +1,6 @@
 /**
  * Recommendation system for personalized study and blog recommendations
  */
-import { storage } from "../storage";
 import { Study, BlogArticle, UserPreferences } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { db } from "../db";
@@ -12,6 +11,52 @@ import {
   blogArticles,
   userBlogInteractions,
 } from "@shared/schema";
+
+// Helper functions to replace storage module
+async function getUserPreferencesById(userId: number): Promise<UserPreferences | null> {
+  const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
+  return prefs || null;
+}
+
+async function getLatestStudies(limit: number): Promise<Study[]> {
+  return await db.select().from(studies).orderBy(desc(studies.id)).limit(limit);
+}
+
+async function getRecentlyViewedStudies(userId: number, limit: number = 20): Promise<Study[]> {
+  const interactions = await db
+    .select({ studyId: userStudyInteractions.studyId })
+    .from(userStudyInteractions)
+    .where(eq(userStudyInteractions.userId, userId))
+    .orderBy(desc(userStudyInteractions.viewedAt))
+    .limit(limit);
+
+  if (interactions.length === 0) return [];
+
+  const studyIds = interactions.map((i) => i.studyId);
+  return await db
+    .select()
+    .from(studies)
+    .where(sql`${studies.id} IN (${sql.join(studyIds.map(id => sql`${id}`), sql`,`)})`)
+    .limit(limit);
+}
+
+async function getRecentlyViewedBlogs(userId: number, limit: number = 20): Promise<BlogArticle[]> {
+  const interactions = await db
+    .select({ blogId: userBlogInteractions.blogId })
+    .from(userBlogInteractions)
+    .where(eq(userBlogInteractions.userId, userId))
+    .orderBy(desc(userBlogInteractions.viewedAt))
+    .limit(limit);
+
+  if (interactions.length === 0) return [];
+
+  const blogIds = interactions.map((i) => i.blogId);
+  return await db
+    .select()
+    .from(blogArticles)
+    .where(sql`${blogArticles.id} IN (${sql.join(blogIds.map(id => sql`${id}`), sql`,`)})`)
+    .limit(limit);
+}
 
 /**
  * Get recommended studies for a user based on their preferences and interaction history
@@ -26,14 +71,14 @@ export async function getRecommendedStudies(
 ): Promise<Study[]> {
   try {
     // Get user preferences
-    const preferences = await storage.getUserPreferences(userId);
+    const preferences = await getUserPreferencesById(userId);
     if (!preferences) {
       // If no preferences, return latest studies
-      return await storage.getLatestStudies(limit);
+      return await getLatestStudies(limit);
     }
 
     // Get user's viewed studies to exclude them from recommendations
-    const viewedStudies = await storage.getRecentlyViewedStudies(userId);
+    const viewedStudies = await getRecentlyViewedStudies(userId);
     const viewedStudyIds = viewedStudies.map((study) => study.id);
 
     // Use a scoring system to rank potential studies
@@ -95,7 +140,7 @@ export async function getRecommendedStudies(
 
     // If we don't have enough recommendations, add some recent studies
     if (filteredStudies.length < limit) {
-      const recentStudies = await storage.getLatestStudies(
+      const recentStudies = await getLatestStudies(
         limit - filteredStudies.length,
       );
       const recentStudiesToAdd = recentStudies.filter(
@@ -112,7 +157,7 @@ export async function getRecommendedStudies(
   } catch (error) {
     console.error("Error getting recommended studies:", error);
     // Fallback to latest studies if recommendation system fails
-    return await storage.getLatestStudies(limit);
+    return await getLatestStudies(limit);
   }
 }
 
@@ -129,18 +174,18 @@ export async function getRecommendedBlogs(
 ): Promise<BlogArticle[]> {
   try {
     // Get user preferences
-    const preferences = await storage.getUserPreferences(userId);
+    const preferences = await getUserPreferencesById(userId);
     if (!preferences) {
       // If no preferences, return most popular blogs
       return await getMostPopularBlogs(limit);
     }
 
     // Get user's recently viewed blogs
-    const viewedBlogs = await storage.getRecentlyViewedBlogs(userId);
+    const viewedBlogs = await getRecentlyViewedBlogs(userId);
     const viewedBlogIds = viewedBlogs.map((blog) => blog.id);
 
     // Get user's viewed studies to find related blogs
-    const viewedStudies = await storage.getRecentlyViewedStudies(userId, 10);
+    const viewedStudies = await getRecentlyViewedStudies(userId, 10);
     const viewedStudyIds = viewedStudies.map((study) => study.id);
 
     let recommendedBlogs: BlogArticle[] = [];
@@ -251,25 +296,18 @@ export async function refreshUserRecommendations(
     // trigger notification generation when preferences change
 
     // Get the user's preferences
-    const preferences = await storage.getUserPreferences(userId);
+    const preferences = await getUserPreferencesById(userId);
     if (!preferences) return;
 
     // Get recommended studies based on new preferences
     const recommendedStudies = await getRecommendedStudies(userId, 5);
 
-    // Create notifications for the top recommendations if notifications are enabled
+    // Notification creation would go here if a notifications table exists
+    // For now, just log the recommendations
     if (preferences.emailNotifications) {
-      for (const study of recommendedStudies.slice(0, 3)) {
-        // Create a notification
-        await storage.createNotification({
-          userId,
-          title: "New Study Recommendation",
-          message: `We found a study you might be interested in: "${study.title}"`,
-          type: "study",
-          referenceId: study.id,
-          isRead: false,
-        });
-      }
+      console.log(
+        `User ${userId} has ${recommendedStudies.length} new recommendations`,
+      );
     }
   } catch (error) {
     console.error("Error refreshing user recommendations:", error);

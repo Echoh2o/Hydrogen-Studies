@@ -5,9 +5,9 @@
  */
 import { db } from "../db";
 import { studies } from "@shared/schema";
-import { eq, isNull, not } from "drizzle-orm";
-import { getCrossRefArticleByDOI } from "./services/crossref-api";
-import { getArticleByDOI } from "./services/europepmc-api";
+import { eq, isNull, not, and } from "drizzle-orm";
+import { getCrossRefArticleByDOI } from "./crossref-api";
+import { getArticleByDOI } from "./europepmc-api";
 import axios from "axios";
 
 /**
@@ -28,7 +28,7 @@ export async function updateJournalPublicationDates(
     const studiesToUpdate = await db
       .select()
       .from(studies)
-      .where(not(isNull(studies.doi)), isNull(studies.journalPublishDate))
+      .where(and(not(isNull(studies.doi)), isNull(studies.journalPublishDate)))
       .limit(limit);
 
     if (!studiesToUpdate.length) {
@@ -87,7 +87,7 @@ export async function updateJournalPublicationDates(
       success: false,
       totalUpdated: 0,
       failedDois: [],
-      message: `Error updating journal publication dates: ${error.message}`,
+      message: `Error updating journal publication dates: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -105,7 +105,7 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
       return crossRefDate;
     }
   } catch (error) {
-    console.log(`CrossRef lookup failed for DOI ${doi}:`, error.message);
+    console.log(`CrossRef lookup failed for DOI ${doi}:`, error instanceof Error ? error.message : String(error));
   }
 
   // Try Europe PMC as a backup
@@ -141,7 +141,7 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
       }
     }
   } catch (error) {
-    console.log(`Europe PMC lookup failed for DOI ${doi}:`, error.message);
+    console.log(`Europe PMC lookup failed for DOI ${doi}:`, error instanceof Error ? error.message : String(error));
   }
 
   // Last resort: Try DOI.org API
@@ -159,7 +159,7 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
       }
     }
   } catch (error) {
-    console.log(`DOI.org lookup failed for DOI ${doi}:`, error.message);
+    console.log(`DOI.org lookup failed for DOI ${doi}:`, error instanceof Error ? error.message : String(error));
   }
 
   return null;

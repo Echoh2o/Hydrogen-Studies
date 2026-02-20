@@ -7,7 +7,9 @@ import OpenAI from "openai";
 import {
   Study,
   InsertMultiFormatContent,
+  MultiFormatContent,
   multiFormatContent,
+  studies,
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, and } from "drizzle-orm";

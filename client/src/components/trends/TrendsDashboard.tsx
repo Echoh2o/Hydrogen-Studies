@@ -52,6 +52,7 @@ import {
   Line,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -186,11 +187,7 @@ export default function TrendsDashboard() {
   // Trigger new analysis
   const analysisMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("/api/trends/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ period: selectedPeriod, type: "comprehensive" }),
-      });
+      return apiRequest("POST", "/api/trends/analyze", { period: selectedPeriod, type: "comprehensive" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trends/report"] });
@@ -200,11 +197,7 @@ export default function TrendsDashboard() {
   // Acknowledge alert
   const acknowledgeAlert = useMutation({
     mutationFn: async (alertId: number) => {
-      return apiRequest(`/api/trends/alerts/${alertId}/acknowledge`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "current-user" }),
-      });
+      return apiRequest("PUT", `/api/trends/alerts/${alertId}/acknowledge`, { userId: "current-user" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trends/alerts"] });
@@ -224,7 +217,7 @@ export default function TrendsDashboard() {
 
   const prepareMomentumChartData = () => {
     if (!trendReport?.momentum) return [];
-    const data = [];
+    const data: Array<{ area: string; type: string; change: number; activity: number }> = [];
 
     trendReport.momentum.accelerating.slice(0, 5).forEach((area) => {
       data.push({
@@ -708,11 +701,16 @@ export default function TrendsDashboard() {
                   <Legend />
                   <Bar
                     dataKey="change"
-                    fill={(entry: any) =>
-                      entry.type === "Accelerating" ? "#10b981" : "#ef4444"
-                    }
+                    fill="#3b82f6"
                     name="Change (%)"
-                  />
+                  >
+                    {prepareMomentumChartData().map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.type === "Accelerating" ? "#10b981" : "#ef4444"}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -788,9 +786,9 @@ export default function TrendsDashboard() {
                       key={idx}
                       className="flex items-center justify-between text-sm"
                     >
-                      <span className="truncate">{area.area}</span>
+                      <span className="truncate">{area.name}</span>
                       <span className="text-muted-foreground">
-                        {area.activity} studies
+                        {area.currentActivity} studies
                       </span>
                     </div>
                   ))}

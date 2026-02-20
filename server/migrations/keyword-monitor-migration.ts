@@ -1,13 +1,5 @@
 import { db } from "../db";
 import { sql } from "drizzle-orm";
-import {
-  keywords,
-  excludedKeywords,
-  keywordGroups,
-  keywordGroupMappings,
-  monitorResults,
-  monitorSchedule,
-} from "@shared/schema";
 
 /**
  * Run migrations for keyword monitoring tables
@@ -120,7 +112,7 @@ async function insertSampleKeywordData() {
   // Check if there are already keywords in the table
   try {
     const result = await db.execute(sql`SELECT COUNT(*) FROM keywords`);
-    const count = parseInt(result.rows[0].count);
+    const count = parseInt((result.rows[0] as any).count);
 
     if (count > 0) {
       console.log("Sample keywords already exist, skipping initialization");

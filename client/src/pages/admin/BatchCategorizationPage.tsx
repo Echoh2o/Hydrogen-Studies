@@ -43,7 +43,7 @@ const BatchCategorizationPage = () => {
   const { toast } = useToast();
 
   // Fetch studies that need categorization
-  const { data: studies, isLoading: studiesLoading } = useQuery({
+  const { data: studies, isLoading: studiesLoading } = useQuery<any>({
     queryKey: ["/api/studies", { filter: "uncategorized", limit: 100 }],
     enabled: !isProcessing,
   });

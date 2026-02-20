@@ -78,10 +78,8 @@ const UrlScraperForm: React.FC = () => {
       // Check platform
       detectPlatform(url);
 
-      const response = await apiRequest("/api/scraper/preview-url", {
-        method: "POST",
-        data: { url },
-      });
+      const res = await apiRequest("POST", "/api/scraper/preview-url", { url });
+      const response = await res.json();
 
       if (response.success && response.study) {
         setPreviewData(response.study);
@@ -118,10 +116,8 @@ const UrlScraperForm: React.FC = () => {
     try {
       setIsLoading(true);
 
-      const response = await apiRequest("/api/scraper/save-url", {
-        method: "POST",
-        data: { url },
-      });
+      const res = await apiRequest("POST", "/api/scraper/save-url", { url });
+      const response = await res.json();
 
       if (response.success && response.study) {
         toast({

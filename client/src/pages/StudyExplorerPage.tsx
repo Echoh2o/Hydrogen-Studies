@@ -127,6 +127,7 @@ export default function StudyExplorerPage() {
         title="Interactive Study Explorer - Hydrogen Therapy Research"
         description="Explore hydrogen therapy research with interactive visualizations including timeline, body map, and evolution diagrams. Discover research trends and compare studies."
         keywords="hydrogen research explorer, interactive timeline, body system map, research evolution, study comparison"
+        canonicalUrl="/explorer"
       />
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">

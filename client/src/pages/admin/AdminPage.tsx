@@ -44,7 +44,7 @@ export default function AdminPage() {
     enabled: activeTab === "dashboard",
   });
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<any[]>({
     queryKey: ["/api/categories"],
     staleTime: 60000, // 1 minute
     enabled: activeTab === "dashboard",
@@ -53,11 +53,7 @@ export default function AdminPage() {
   // Import file mutation
   const importFileMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await apiRequest("POST", "/api/admin/import", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await apiRequest("POST", "/api/admin/import", formData);
       return response.json();
     },
     onSuccess: (data) => {
@@ -175,7 +171,7 @@ export default function AdminPage() {
               <TabsTrigger value="blogs">Manage Blogs</TabsTrigger>
               <TabsTrigger value="import">Import Data</TabsTrigger>
               <TabsTrigger value="add">Add Study</TabsTrigger>
-              <TabsTrigger asChild>
+              <TabsTrigger value="research-database" asChild>
                 <Link href="/admin/research-database">Research Database</Link>
               </TabsTrigger>
             </TabsList>

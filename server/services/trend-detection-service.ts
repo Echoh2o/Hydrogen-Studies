@@ -438,7 +438,7 @@ export class TrendDetectionService {
         periodStart,
         periodEnd,
         status: "failed",
-        errorMessage: error.message,
+        errorMessage: error instanceof Error ? error.message : String(error),
       };
     }
   }

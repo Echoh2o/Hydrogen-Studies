@@ -79,7 +79,7 @@ export default function StudiesPage() {
   }
 
   // Fetch studies with pagination
-  const studiesQuery = useQuery({
+  const studiesQuery = useQuery<any>({
     queryKey: [
       "/api/studies",
       currentPage,
@@ -94,7 +94,6 @@ export default function StudiesPage() {
       if (!response.ok) throw new Error("Failed to fetch studies");
       return response.json();
     },
-    keepPreviousData: true,
   });
 
   // Fetch categories for filtering
@@ -358,7 +357,7 @@ export default function StudiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {studies.map((study) => (
+                {studies.map((study: any) => (
                   <TableRow key={study.id}>
                     <TableCell>
                       <div className="max-w-[350px]">

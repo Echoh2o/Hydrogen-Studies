@@ -61,13 +61,17 @@ export function ImportForm() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await apiRequest("/api/import/excel", {
+      const res = await fetch("/api/import/excel", {
         method: "POST",
         body: formData,
-        headers: {
-          // Do not set Content-Type for multipart/form-data
-        },
+        credentials: "include",
       });
+
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${await res.text() || res.statusText}`);
+      }
+
+      const response = await res.json();
 
       setImportResult(response);
 

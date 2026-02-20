@@ -48,7 +48,7 @@ export default function InsightGenerator({
       const data = await response.json();
 
       // Convert the insights array to a Set and back to remove any duplicates
-      const uniqueInsights = [...new Set(data.insights || [])];
+      const uniqueInsights = Array.from(new Set<string>(data.insights || []));
       setInsights(uniqueInsights);
 
       if (uniqueInsights.length > 0) {

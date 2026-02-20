@@ -7,9 +7,8 @@
  */
 
 import { db } from "../db";
-import { getCrossRefArticleByDOI } from "./services/crossref-api";
-import { getSemanticScholarPaper } from "./services/semantic-scholar-api";
-import { storage } from "../storage";
+import { getCrossRefArticleByDOI } from "./crossref-api";
+import { getSemanticScholarPaper } from "./semantic-scholar-api";
 import { studies, type Study } from "@shared/schema";
 import { eq, and, or, isNull, like, asc, desc } from "drizzle-orm";
 
@@ -127,7 +126,7 @@ export async function enhanceStudyWithDoi(studyId: number): Promise<{
 }> {
   try {
     // Get the study
-    const study = await storage.getStudyById(studyId);
+    const [study] = await db.select().from(studies).where(eq(studies.id, studyId)).limit(1);
 
     if (!study) {
       return {
@@ -223,7 +222,7 @@ export async function enhanceStudyWithDoi(studyId: number): Promise<{
       };
 
       // Update the study
-      await storage.updateStudy(studyId, enhancedData);
+      await db.update(studies).set(enhancedData).where(eq(studies.id, studyId));
 
       return {
         success: true,

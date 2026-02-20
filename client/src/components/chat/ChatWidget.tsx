@@ -173,10 +173,8 @@ export const ChatWidget: React.FC = () => {
   const loadConversation = async (id: number) => {
     try {
       setIsLoading(true);
-      const response = await apiRequest<{
-        success: boolean;
-        data: ChatMessage[];
-      }>(`/api/chat/conversation/${id}`);
+      const res = await apiRequest("GET", `/api/chat/conversation/${id}`);
+      const response: { success: boolean; data: ChatMessage[] } = await res.json();
 
       if (response.success && response.data) {
         setMessages(response.data);
@@ -205,17 +203,12 @@ export const ChatWidget: React.FC = () => {
     comment?: string,
   ) => {
     try {
-      const response = await apiRequest<{ success: boolean; message: string }>(
-        "/api/chat/feedback",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            messageId,
-            rating: rating === "helpful" ? 5 : 1, // 5-star rating for helpful, 1-star for unhelpful
-            comment,
-          }),
-        },
-      );
+      const res = await apiRequest("POST", "/api/chat/feedback", {
+        messageId,
+        rating: rating === "helpful" ? 5 : 1, // 5-star rating for helpful, 1-star for unhelpful
+        comment,
+      });
+      const response: { success: boolean; message: string } = await res.json();
 
       if (response.success) {
         setFeedbackSubmitted(true);
@@ -236,7 +229,7 @@ export const ChatWidget: React.FC = () => {
     setFeedbackSubmitted(false);
 
     // Add user message to chat
-    const newMessages = [...messages, { role: "user", content: userMessage }];
+    const newMessages: ChatMessage[] = [...messages, { role: "user" as const, content: userMessage }];
     setMessages(newMessages);
 
     // Clear previous related questions when sending a new message

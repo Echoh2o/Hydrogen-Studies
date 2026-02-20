@@ -1,7 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Resource } from "@shared/schema";
+interface Resource {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl: string;
+}
 import { HiArrowRight } from "react-icons/hi";
 
 const EducationalResourcesSection = () => {
@@ -9,7 +14,7 @@ const EducationalResourcesSection = () => {
     data: resources,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<Resource[]>({
     queryKey: ["/api/resources"],
   });
 

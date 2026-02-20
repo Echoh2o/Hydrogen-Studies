@@ -1,3 +1,5 @@
+import { neon } from "@neondatabase/serverless";
+
 export class AutomatedQualityTests {
   async runAllTests(): Promise<{
     passed: number;

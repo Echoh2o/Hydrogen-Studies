@@ -26,7 +26,7 @@ export default function HealthOutcomesMap() {
   const [selectedSystem, setSelectedSystem] = useState<string | null>(null);
 
   // Fetch health outcomes data from your database
-  const { data: outcomesData, isLoading } = useQuery({
+  const { data: outcomesData, isLoading } = useQuery<any>({
     queryKey: ["/api/studies/health-outcomes"],
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
   });

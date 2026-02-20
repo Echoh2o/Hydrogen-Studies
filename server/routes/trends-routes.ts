@@ -11,7 +11,7 @@ import {
   searchQueries,
   studyMetrics,
 } from "@shared/schema";
-import { desc, eq, and, gte, lte, sql, count } from "drizzle-orm";
+import { desc, eq, and, gte, lte, sql, count, isNull } from "drizzle-orm";
 import { subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 
 const router = express.Router();
@@ -52,7 +52,7 @@ router.get("/emerging-topics", async (req, res) => {
     console.error("Error fetching emerging topics:", error);
     res.status(500).json({
       error: "Failed to fetch emerging topics",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -93,7 +93,7 @@ router.get("/breakthrough-studies", async (req, res) => {
     console.error("Error fetching breakthrough studies:", error);
     res.status(500).json({
       error: "Failed to fetch breakthrough studies",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -143,7 +143,7 @@ router.get("/momentum", async (req, res) => {
     console.error("Error fetching research momentum:", error);
     res.status(500).json({
       error: "Failed to fetch research momentum",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -185,7 +185,7 @@ router.get("/keyword-trends", async (req, res) => {
     console.error("Error fetching keyword trends:", error);
     res.status(500).json({
       error: "Failed to fetch keyword trends",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -301,7 +301,7 @@ router.get("/report", async (req, res) => {
     console.error("Error generating trend report:", error);
     res.status(500).json({
       error: "Failed to generate trend report",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -358,7 +358,7 @@ router.post("/analyze", async (req, res) => {
     console.error("Error triggering analysis:", error);
     res.status(500).json({
       error: "Failed to trigger analysis",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -391,7 +391,7 @@ router.get("/status", async (req, res) => {
     console.error("Error fetching analysis status:", error);
     res.status(500).json({
       error: "Failed to fetch analysis status",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -408,10 +408,11 @@ router.get("/alerts", async (req, res) => {
       .select()
       .from(trendAlerts)
       .orderBy(desc(trendAlerts.createdAt))
-      .limit(parseInt(limit as string));
+      .limit(parseInt(limit as string))
+      .$dynamic();
 
     if (unacknowledged === "true") {
-      query = query.where(eq(trendAlerts.acknowledgedAt, null));
+      query = query.where(isNull(trendAlerts.acknowledgedAt));
     }
 
     const alerts = await query;
@@ -435,7 +436,7 @@ router.get("/alerts", async (req, res) => {
     console.error("Error fetching alerts:", error);
     res.status(500).json({
       error: "Failed to fetch alerts",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -472,7 +473,7 @@ router.put("/alerts/:id/acknowledge", async (req, res) => {
     console.error("Error acknowledging alert:", error);
     res.status(500).json({
       error: "Failed to acknowledge alert",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -498,7 +499,7 @@ router.get("/search-queries", async (req, res) => {
     console.error("Error fetching search queries:", error);
     res.status(500).json({
       error: "Failed to fetch search queries",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -532,7 +533,7 @@ router.post("/track-search", async (req, res) => {
     console.error("Error tracking search query:", error);
     res.status(500).json({
       error: "Failed to track search query",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -561,7 +562,7 @@ router.post("/track-metrics", async (req, res) => {
     console.error("Error tracking metrics:", error);
     res.status(500).json({
       error: "Failed to track metrics",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -614,7 +615,7 @@ router.get("/study-metrics/:id", async (req, res) => {
     console.error("Error fetching study metrics:", error);
     res.status(500).json({
       error: "Failed to fetch study metrics",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -637,21 +638,21 @@ router.get("/dashboard", async (req, res) => {
     const [alertCount] = await db
       .select({ count: count() })
       .from(trendAlerts)
-      .where(eq(trendAlerts.acknowledgedAt, null));
+      .where(isNull(trendAlerts.acknowledgedAt));
 
     // Get popular searches
     const popularSearches =
       await trendDetectionService.getPopularSearchQueries(5);
 
     // Parse latest analysis data
-    let dashboardData = {
+    let dashboardData: Record<string, any> = {
       hasAnalysis: false,
       topEmergingTopic: null,
       topBreakthroughStudy: null,
       topAcceleratingArea: null,
       summary: null,
-      insights: [],
-      recommendations: [],
+      insights: [] as string[],
+      recommendations: [] as string[],
       unacknowledgedAlerts: alertCount?.count || 0,
       popularSearches,
     };
@@ -684,7 +685,7 @@ router.get("/dashboard", async (req, res) => {
     console.error("Error fetching dashboard data:", error);
     res.status(500).json({
       error: "Failed to fetch dashboard data",
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 });

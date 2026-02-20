@@ -208,7 +208,7 @@ export default function ResearchTimeline({
           <p className="text-sm text-gray-600 mb-2">
             Total Studies: {payload[0]?.value || 0}
           </p>
-          {yearData?.breakthroughs.length > 0 && (
+          {yearData?.breakthroughs && yearData.breakthroughs.length > 0 && (
             <div className="mt-2 border-t pt-2">
               <p className="text-sm font-semibold mb-1">Breakthrough Study:</p>
               <p className="text-xs text-teal-600">
@@ -333,7 +333,7 @@ export default function ResearchTimeline({
               <ResponsiveContainer width="100%" height={400}>
                 <AreaChart
                   data={chartData}
-                  onClick={(e) => e && onYearClick?.(e.activeLabel)}
+                  onClick={(e) => e && e.activeLabel && onYearClick?.(Number(e.activeLabel))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
@@ -366,7 +366,7 @@ export default function ResearchTimeline({
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart
                   data={chartData}
-                  onClick={(e) => e && onYearClick?.(e.activeLabel)}
+                  onClick={(e) => e && e.activeLabel && onYearClick?.(Number(e.activeLabel))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />

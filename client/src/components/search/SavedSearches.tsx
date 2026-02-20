@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { HiBookmark, HiTrash, HiEdit, HiSearch, HiPlus } from "react-icons/hi";
+import { HiBookmark, HiTrash, HiPencil, HiSearch, HiPlus } from "react-icons/hi";
 import { useToast } from "@/hooks/use-toast";
 
 interface SavedSearch {
@@ -294,7 +294,7 @@ export const SavedSearches: React.FC<SavedSearchesProps> = ({
                         onClick={() => openEditModal(search)}
                         title="Edit search name"
                       >
-                        <HiEdit className="h-4 w-4" />
+                        <HiPencil className="h-4 w-4" />
                       </Button>
 
                       <Button

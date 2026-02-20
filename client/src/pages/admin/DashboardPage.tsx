@@ -31,7 +31,7 @@ export default function DashboardPage() {
     data: stats,
     isLoading: isLoadingStats,
     error: statsError,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: ["/api/stats/dashboard"],
     retry: false,
     refetchOnMount: true,

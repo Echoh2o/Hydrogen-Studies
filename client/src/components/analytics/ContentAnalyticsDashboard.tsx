@@ -413,7 +413,7 @@ export function ContentAnalyticsDashboard() {
                         </div>
                         <div className="flex-1 space-y-1">
                           <p className="text-sm font-medium leading-none">
-                            {content.content?.title || 'Untitled'}
+                            {content.title || 'Untitled'}
                           </p>
                           <div className="flex gap-2">
                             <Badge variant="outline">

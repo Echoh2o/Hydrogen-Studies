@@ -104,17 +104,14 @@ export function NaturalLanguageSearch({
   // Natural language search mutation
   const searchMutation = useMutation({
     mutationFn: async (searchQuery: string) => {
-      const response = await apiRequest("/api/search/natural-language", {
-        method: "POST",
-        body: JSON.stringify({
-          query: searchQuery,
-          page: 1,
-          pageSize: 20,
-        }),
+      const res = await apiRequest("POST", "/api/search/natural-language", {
+        query: searchQuery,
+        page: 1,
+        pageSize: 20,
       });
-      return response;
+      return await res.json() as any;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       console.log("Search successful:", data);
       if (onResultsUpdate) {
         onResultsUpdate(data.results);

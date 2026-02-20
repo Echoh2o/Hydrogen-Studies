@@ -49,7 +49,7 @@ const getDeliveryMethodIcon = (slug: string, className: string = "") => {
 
 const ExploreByDeliveryMethodPage: React.FC = () => {
   // Fetch all delivery methods
-  const { data: deliveryMethods, isLoading: deliveryMethodsLoading } = useQuery(
+  const { data: deliveryMethods, isLoading: deliveryMethodsLoading } = useQuery<any>(
     {
       queryKey: ["/api/delivery-methods"],
     },
@@ -168,13 +168,13 @@ export const DeliveryMethodDetailPage: React.FC = () => {
   const slug = params?.slug || "";
 
   // Fetch delivery method details
-  const { data: methodData, isLoading: methodLoading } = useQuery({
+  const { data: methodData, isLoading: methodLoading } = useQuery<any>({
     queryKey: [`/api/delivery-methods/${slug}`],
     enabled: !!slug,
   });
 
   // Fetch studies for this delivery method
-  const { data: studiesData, isLoading: studiesLoading } = useQuery({
+  const { data: studiesData, isLoading: studiesLoading } = useQuery<any>({
     queryKey: [`/api/delivery-methods/${slug}/studies`],
     enabled: !!slug,
   });

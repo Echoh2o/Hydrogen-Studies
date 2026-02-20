@@ -82,7 +82,7 @@ const ExploreByBodySystem = () => {
 
       setCategories(mappedCategories);
       setIsLoading(false);
-    } else if (categoriesData?.error) {
+    } else if ((categoriesData as any)?.error) {
       setError("Failed to load body system categories");
       setIsLoading(false);
     }

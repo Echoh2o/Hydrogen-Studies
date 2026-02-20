@@ -69,7 +69,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
   });
 
   // Fetch available filter options
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions } = useQuery<{ categories?: Array<{ id: number; name: string; studyCount: number }> }>({
     queryKey: ["/api/search/filter-options"],
     enabled: isOpen,
   });
@@ -78,12 +78,12 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleArrayFilterToggle = (key: keyof SearchFilters, value: string) => {
+  const handleArrayFilterToggle = (key: "categories" | "authors" | "journals" | "studyTypes", value: string) => {
     setFilters((prev) => ({
       ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter((item) => item !== value)
-        : [...prev[key], value],
+      [key]: (prev[key] as string[]).includes(value)
+        ? (prev[key] as string[]).filter((item: string) => item !== value)
+        : [...(prev[key] as string[]), value],
     }));
   };
 
@@ -111,7 +111,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchProps> = ({
     (count, [key, value]) => {
       if (key === "query" && value) return count + 1;
       if (Array.isArray(value) && value.length > 0) return count + value.length;
-      if (key === "yearRange" && (value.start || value.end)) return count + 1;
+      if (key === "yearRange" && value && typeof value === "object" && ((value as any).start || (value as any).end)) return count + 1;
       if (typeof value === "boolean" && value !== null) return count + 1;
       return count;
     },

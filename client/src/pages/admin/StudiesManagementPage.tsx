@@ -24,7 +24,7 @@ export default function StudiesManagementPage() {
   const [activeTab, setActiveTab] = useState("manage");
 
   // Statistics query
-  const statsQuery = useQuery({
+  const statsQuery = useQuery<any>({
     queryKey: ["/api/stats/dashboard"],
   });
 

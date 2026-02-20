@@ -69,35 +69,35 @@ const yearOptions = Array.from({ length: 30 }, (_, i) =>
   (currentYear - i).toString(),
 );
 
-export function AdvancedSearchForm({ onSearch }) {
+export function AdvancedSearchForm({ onSearch }: { onSearch: (values: SearchFormValues) => void }) {
   const [activeTab, setActiveTab] = useState<string>("basic");
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [, setLocation] = useLocation();
 
   // Fetch filter options from API
-  const { data: benefits, isLoading: isLoadingBenefits } = useQuery({
+  const { data: benefits, isLoading: isLoadingBenefits } = useQuery<Array<{ id: number; name: string; studyCount: number }>>({
     queryKey: ["/api/benefits"],
   });
 
-  const { data: demographics, isLoading: isLoadingDemographics } = useQuery({
+  const { data: demographics, isLoading: isLoadingDemographics } = useQuery<Array<{ id: number; name: string; studyCount: number }>>({
     queryKey: ["/api/demographics"],
   });
 
-  const { data: mechanisms, isLoading: isLoadingMechanisms } = useQuery({
+  const { data: mechanisms, isLoading: isLoadingMechanisms } = useQuery<Array<{ id: number; name: string; studyCount: number }>>({
     queryKey: ["/api/mechanisms"],
   });
 
   const { data: deliveryMethods, isLoading: isLoadingDeliveryMethods } =
-    useQuery({
+    useQuery<Array<{ id: number; name: string; studyCount: number }>>({
       queryKey: ["/api/delivery-methods"],
     });
 
   const { data: healthConditions, isLoading: isLoadingHealthConditions } =
-    useQuery({
+    useQuery<Array<{ id: number; name: string; studyCount: number }>>({
       queryKey: ["/api/health-conditions"],
     });
 
-  const { data: bodySystems, isLoading: isLoadingBodySystems } = useQuery({
+  const { data: bodySystems, isLoading: isLoadingBodySystems } = useQuery<Array<{ id: number; name: string; studyCount: number }>>({
     queryKey: ["/api/body-systems"],
   });
 
@@ -627,8 +627,8 @@ export function AdvancedSearchForm({ onSearch }) {
                                       role="combobox"
                                       className="w-full justify-between"
                                     >
-                                      {field.value?.length > 0
-                                        ? `${field.value.length} selected`
+                                      {(field.value?.length ?? 0) > 0
+                                        ? `${field.value!.length} selected`
                                         : "Select benefits"}
                                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -703,8 +703,8 @@ export function AdvancedSearchForm({ onSearch }) {
                                       role="combobox"
                                       className="w-full justify-between"
                                     >
-                                      {field.value?.length > 0
-                                        ? `${field.value.length} selected`
+                                      {(field.value?.length ?? 0) > 0
+                                        ? `${field.value!.length} selected`
                                         : "Select demographics"}
                                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -779,8 +779,8 @@ export function AdvancedSearchForm({ onSearch }) {
                                       role="combobox"
                                       className="w-full justify-between"
                                     >
-                                      {field.value?.length > 0
-                                        ? `${field.value.length} selected`
+                                      {(field.value?.length ?? 0) > 0
+                                        ? `${field.value!.length} selected`
                                         : "Select mechanisms"}
                                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -855,8 +855,8 @@ export function AdvancedSearchForm({ onSearch }) {
                                       role="combobox"
                                       className="w-full justify-between"
                                     >
-                                      {field.value?.length > 0
-                                        ? `${field.value.length} selected`
+                                      {(field.value?.length ?? 0) > 0
+                                        ? `${field.value!.length} selected`
                                         : "Select delivery methods"}
                                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
