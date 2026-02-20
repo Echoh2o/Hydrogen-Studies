@@ -121,29 +121,23 @@ export default function UserManagementPage() {
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: ["/api/auth/users"],
     staleTime: 30 * 1000,
   });
 
   // Fetch audit logs for selected user
-  const { data: auditLogs, isLoading: logsLoading } = useQuery({
+  const { data: auditLogs, isLoading: logsLoading } = useQuery<any>({
     queryKey: selectedUser
       ? [`/api/auth/audit-logs?userId=${selectedUser.id}`]
-      : null,
+      : ["audit-logs-disabled"],
     enabled: !!selectedUser && showLogsDialog,
   });
 
   // Update user mutation
   const updateUserMutation = useMutation({
     mutationFn: ({ userId, data }: { userId: string; data: any }) =>
-      apiRequest(`/api/auth/users/${userId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      }),
+      apiRequest("PATCH", `/api/auth/users/${userId}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/users"] });
       toast({

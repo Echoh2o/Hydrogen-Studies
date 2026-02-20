@@ -23,7 +23,7 @@ export default function StudyEditPage() {
     data: study,
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<any>({
     queryKey: [`/api/studies/${studyId}`],
     enabled: !!studyId && !isNaN(studyId),
   });
