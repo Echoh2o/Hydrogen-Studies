@@ -49,9 +49,16 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center space-x-2">
-              <Droplets className="h-8 w-8 text-teal-500" />
-              <span className="font-bold text-xl">Hydrogen Studies</span>
+            <div className="flex items-center">
+              <Droplets className="h-7 w-7 text-teal-500 mr-2.5 flex-shrink-0" />
+              <div className="flex flex-col leading-none">
+                <span className="text-lg font-bold tracking-wider uppercase" style={{ fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.12em' }}>
+                  Hydrogen Studies
+                </span>
+                <span className="text-[10px] font-medium tracking-widest text-teal-400 uppercase mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.18em' }}>
+                  powered by echo water
+                </span>
+              </div>
             </div>
             <p className="text-gray-300 text-sm">
               The world's most comprehensive database of peer-reviewed hydrogen
@@ -266,7 +273,9 @@ export default function Footer() {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-400 text-center md:text-left">
-              © {currentYear} Hydrogen Studies. All rights reserved.
+              © {currentYear} Hydrogen Studies. Powered by{" "}
+              <a href="https://echowater.com" target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:text-teal-300 transition-colors">Echo Water</a>.
+              All rights reserved.
             </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
               <Link

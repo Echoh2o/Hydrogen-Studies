@@ -94,11 +94,11 @@
 
 @layer utilities {
   .font-heading {
-    font-family: "Roboto", sans-serif;
+    font-family: "Montserrat", sans-serif;
   }
 
   .font-sans {
-    font-family: "Open Sans", sans-serif;
+    font-family: "Montserrat", sans-serif;
   }
 
   .bg-primary-gradient {

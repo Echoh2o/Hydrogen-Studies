@@ -99,13 +99,18 @@ export default function SiteHeader() {
     <nav className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center">
             <Link href="/">
-              <div className="flex items-center space-x-2 cursor-pointer">
-                <Droplets className="h-8 w-8 text-teal-600" />
-                <span className="text-xl font-bold text-gray-900">
-                  Hydrogen Studies
-                </span>
+              <div className="flex items-center cursor-pointer group">
+                <Droplets className="h-7 w-7 text-teal-600 mr-2.5 flex-shrink-0" />
+                <div className="flex flex-col leading-none">
+                  <span className="text-lg font-bold tracking-wider text-gray-900 uppercase" style={{ fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.12em' }}>
+                    Hydrogen Studies
+                  </span>
+                  <span className="text-[10px] font-medium tracking-widest text-teal-600 uppercase mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.18em' }}>
+                    powered by echo water
+                  </span>
+                </div>
               </div>
             </Link>
           </div>
