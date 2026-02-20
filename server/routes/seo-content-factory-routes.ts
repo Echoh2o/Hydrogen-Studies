@@ -31,6 +31,11 @@ import {
   buildAllBlogLinks,
   getLinksFor,
 } from "../services/internal-linking-engine";
+import {
+  batchRetractionCheck,
+  checkStudyRetraction,
+  getRetractionStatus,
+} from "../services/retraction-monitor";
 
 const router = Router();
 
@@ -362,6 +367,87 @@ router.get("/links/:type/:id", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("[SEO API] Get links error:", error);
     res.status(500).json({ error: "Failed to get links" });
+  }
+});
+
+// ============================================================
+// Retraction & Correction Monitoring Endpoints
+// ============================================================
+
+/**
+ * GET /api/seo/retractions/status
+ * Get retraction monitoring status — how many flagged studies
+ */
+router.get("/retractions/status", async (req: Request, res: Response) => {
+  try {
+    const status = await getRetractionStatus();
+    res.json(status);
+  } catch (error) {
+    console.error("[SEO API] Retraction status error:", error);
+    res.status(500).json({ error: "Failed to get retraction status" });
+  }
+});
+
+/**
+ * POST /api/seo/retractions/check
+ * Run retraction check on a batch of studies
+ * Body: { batchSize?: number, delayMs?: number }
+ */
+router.post("/retractions/check", async (req: Request, res: Response) => {
+  try {
+    const { batchSize = 50, delayMs = 500 } = req.body;
+
+    console.log(`[SEO API] Running retraction check on ${batchSize} studies`);
+
+    const result = await batchRetractionCheck({
+      batchSize: Math.min(batchSize, 200),
+      delayMs,
+      onProgress: (checked, total) => {
+        if (checked % 20 === 0) console.log(`[SEO API] Retraction check: ${checked}/${total}`);
+      },
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error("[SEO API] Retraction check error:", error);
+    res.status(500).json({ error: "Failed to run retraction check" });
+  }
+});
+
+/**
+ * POST /api/seo/retractions/check-study/:id
+ * Check a single study for retraction/correction
+ */
+router.post("/retractions/check-study/:id", async (req: Request, res: Response) => {
+  try {
+    const studyId = parseInt(req.params.id);
+    if (isNaN(studyId)) {
+      return res.status(400).json({ error: "Invalid study ID" });
+    }
+
+    // Fetch the study
+    const { db } = await import("../db");
+    const { studies } = await import("../../shared/schema");
+    const { eq } = await import("drizzle-orm");
+
+    const [study] = await db.select({ id: studies.id, doi: studies.doi, title: studies.title })
+      .from(studies)
+      .where(eq(studies.id, studyId))
+      .limit(1);
+
+    if (!study) {
+      return res.status(404).json({ error: "Study not found" });
+    }
+
+    const result = await checkStudyRetraction(study);
+    res.json({
+      studyId,
+      doi: study.doi,
+      result: result || { status: "none", details: "No retraction or correction detected" },
+    });
+  } catch (error) {
+    console.error("[SEO API] Single retraction check error:", error);
+    res.status(500).json({ error: "Failed to check study retraction" });
   }
 });
 

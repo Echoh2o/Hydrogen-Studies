@@ -2,6 +2,7 @@ import { checkScheduledSearches } from "./keyword-monitor-service";
 import { checkAndEnrichStudies } from "./targeted-enrichment";
 import { contentGenerator } from "./content-generator";
 import { mediaGenerator } from "./media-generator";
+import { batchRetractionCheck } from "./retraction-monitor";
 import { db } from "../db";
 import { studies, blogArticles } from "@shared/schema";
 import { eq, sql, isNull } from "drizzle-orm";
@@ -15,9 +16,11 @@ export class JobScheduler {
   private static instance: JobScheduler;
   private checkInterval: NodeJS.Timeout | null = null;
   private isJobRunning: boolean = false;
+  private lastRetractionCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute
+  private readonly RETRACTION_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // Check retractions once per day
 
   private constructor() {}
 
@@ -89,6 +92,9 @@ export class JobScheduler {
       // Pick ONE study that is enriched but has no blog post, and generate one.
       await this.runContentGenerationJob();
 
+      // Job 4: Retraction & Correction Monitoring (runs once per day)
+      await this.runRetractionCheckJob();
+
     } catch (error) {
       console.error("[JobScheduler] Critical error:", error);
     } finally {
@@ -128,6 +134,49 @@ export class JobScheduler {
       }
     } catch (error) {
       console.error("[JobScheduler] Content generation error:", error);
+    }
+  }
+  /**
+   * Job 4: Check for retracted/corrected studies
+   * Runs once per day — checks a batch of studies against CrossRef and PubMed
+   * for retraction notices, corrections, and expressions of concern.
+   */
+  private async runRetractionCheckJob() {
+    try {
+      // Only run once per day
+      if (this.lastRetractionCheck) {
+        const elapsed = Date.now() - this.lastRetractionCheck.getTime();
+        if (elapsed < this.RETRACTION_CHECK_INTERVAL_MS) {
+          return; // Not time yet
+        }
+      }
+
+      console.log("[JobScheduler] Running daily retraction check...");
+
+      const result = await batchRetractionCheck({
+        batchSize: 50, // Check 50 studies per day (rotates through all over time)
+        delayMs: 1000, // 1 second between API calls to avoid rate limits
+        onProgress: (checked, total) => {
+          if (checked % 10 === 0) {
+            console.log(`[JobScheduler] Retraction check: ${checked}/${total}`);
+          }
+        },
+      });
+
+      this.lastRetractionCheck = new Date();
+
+      if (result.retracted > 0 || result.corrected > 0 || result.expressionOfConcern > 0) {
+        console.warn(
+          `[JobScheduler] Retraction check complete: ` +
+          `${result.retracted} retracted, ${result.corrected} corrected, ` +
+          `${result.expressionOfConcern} expression of concern ` +
+          `(checked ${result.checked} studies)`
+        );
+      } else {
+        console.log(`[JobScheduler] Retraction check: ${result.checked} studies checked, no issues found`);
+      }
+    } catch (error) {
+      console.error("[JobScheduler] Retraction check error:", error);
     }
   }
 }
