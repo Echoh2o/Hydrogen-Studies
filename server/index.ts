@@ -12,6 +12,7 @@ import { log } from "./vite";
 import { pool } from "./db";
 import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
+import { seoBotMiddleware } from "./middleware/seo-bot-middleware";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -43,6 +44,9 @@ async function setupServer() {
     if (fs.existsSync(staticPath)) {
       console.log(`index.html exists: ${fs.existsSync(path.join(staticPath, "index.html"))}`);
     }
+
+    // SEO bot middleware — inject correct meta tags for crawlers BEFORE static files
+    app.use(seoBotMiddleware(staticPath));
 
     app.use(express.static(staticPath));
 
