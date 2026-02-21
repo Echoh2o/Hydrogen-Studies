@@ -49,7 +49,6 @@ export async function startTargetedEnrichment(
     return enrichmentStats;
   }
 
-  console.log("🚀 Starting targeted enrichment process...");
   enrichmentStats.isRunning = true;
   enrichmentStats.startTime = new Date();
   enrichmentStats.totalProcessed = 0;
@@ -115,13 +114,13 @@ async function processEnrichmentBatches(batchSize: number): Promise<void> {
       )
       .limit(50); // Hard limit to avoid long running processes
 
-    console.log(
-      `Found ${studiesNeedingEnrichment.length} studies needing enrichment`,
-    );
-
     if (studiesNeedingEnrichment.length === 0) {
         return;
     }
+
+    console.log(
+      `🚀 Enrichment: found ${studiesNeedingEnrichment.length} studies needing enrichment`,
+    );
 
     // Process in batches
     for (let i = 0; i < studiesNeedingEnrichment.length; i += batchSize) {
