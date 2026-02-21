@@ -55,6 +55,7 @@ import seoContentFactoryRoutes from "./routes/seo-content-factory-routes";
 import shopifyWebhookRoutes from "./routes/shopify-webhook-routes";
 import newsletterRoutes from "./routes/newsletter-routes";
 import userDashboardRoutes from "./routes/user-dashboard-routes";
+import adminSettingsRoutes from "./routes/admin-settings-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -282,6 +283,9 @@ app.use("/api/newsletter", newsletterRoutes);
 
 // User dashboard (authenticated customers)
 app.use("/api/me", userDashboardRoutes);
+
+// Admin settings
+app.use("/api/admin/settings", adminSettingsRoutes);
 
 // Serve public assets
 app.use(

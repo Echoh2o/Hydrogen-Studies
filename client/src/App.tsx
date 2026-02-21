@@ -110,23 +110,13 @@ const UserManagementPage = lazy(
   () => import("./pages/admin/UserManagementPage"),
 );
 
-const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
-const ImportPage = lazy(() => import("./pages/admin/ImportPage"));
-
 // Tag-based navigation
 const TaggedStudiesPage = lazy(() => import("./pages/TaggedStudiesPage"));
 const AdminMonitoringPage = lazy(
   () => import("./pages/admin/AdminMonitoringPage"),
 );
-const ArticleSearchPage = lazy(() => import("./pages/admin/ArticleSearchPage"));
-const EuropePmcPage = lazy(() => import("./pages/admin/EuropePmcPage"));
-const SemanticScholarPage = lazy(
-  () => import("./pages/admin/SemanticScholarPage"),
-);
-const CrossRefPage = lazy(() => import("./pages/admin/CrossRefPage"));
 
-// Admin pages - new layout
-const DashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
+// Admin pages
 const StudiesManagementPage = lazy(
   () => import("./pages/admin/StudiesManagementPage"),
 );
@@ -134,7 +124,6 @@ const AddStudyPage = lazy(() => import("./pages/admin/AddStudyPage"));
 const StudyEditPage = lazy(() => import("./pages/admin/StudyEditPage"));
 const AnalyticsPage = lazy(() => import("./pages/admin/AnalyticsPage"));
 const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
-const UsersPage = lazy(() => import("./pages/admin/UsersPage"));
 const BlogGeneratePage = lazy(() => import("./pages/admin/BlogGeneratePage"));
 const BlogAddPage = lazy(() => import("./pages/admin/BlogAddPage"));
 const BlogEditPage = lazy(() => import("./pages/admin/BlogEditPage"));
@@ -167,7 +156,6 @@ const BatchCategorizationPage = lazy(
 const ImageGenerationPage = lazy(
   () => import("./pages/admin/ImageGenerationPage"),
 );
-const EnhancementPage = lazy(() => import("./pages/admin/EnhancementPage"));
 const KeywordMonitorPage = lazy(
   () => import("./pages/admin/KeywordMonitorPage"),
 );
@@ -247,7 +235,7 @@ function Router() {
         {/* User Dashboard - Authenticated */}
         <Route path="/my-dashboard" component={MyDashboardPage} />
 
-        {/* Enhanced Admin Dashboard with WYSIWYG - Protected */}
+        {/* Admin Dashboard - Protected */}
         <Route path="/admin">
           {() => (
             <ProtectedRoute requiredRoles={["admin", "editor"]}>
@@ -255,34 +243,11 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
-        <Route path="/admin/enhanced">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <EnhancedAdminDashboard />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/dashboard">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <DashboardPage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/legacy">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <AdminPage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/import">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <ImportPage />
-            </ProtectedRoute>
-          )}
-        </Route>
+        {/* Legacy admin route redirects */}
+        <Route path="/admin/enhanced">{() => <Redirect to="/admin" />}</Route>
+        <Route path="/admin/dashboard">{() => <Redirect to="/admin" />}</Route>
+        <Route path="/admin/legacy">{() => <Redirect to="/admin" />}</Route>
+        <Route path="/admin/import">{() => <Redirect to="/admin/data-import" />}</Route>
 
         {/* Admin Management Pages - Protected */}
         <Route path="/admin/users">
@@ -327,13 +292,7 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
-        <Route path="/admin/blog-generator">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <BlogGeneratePage />
-            </ProtectedRoute>
-          )}
-        </Route>
+        <Route path="/admin/blog-generator">{() => <Redirect to="/admin/blogs/generate" />}</Route>
         <Route path="/admin/blogs/add">
           {() => (
             <ProtectedRoute requiredRoles={["admin", "editor"]}>
@@ -422,13 +381,7 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
-        <Route path="/admin/enhancement">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <EnhancementPage />
-            </ProtectedRoute>
-          )}
-        </Route>
+        <Route path="/admin/enhancement">{() => <Redirect to="/admin/batch-enrichment" />}</Route>
         <Route path="/admin/keyword-monitor">
           {() => (
             <ProtectedRoute requiredRoles={["admin", "editor"]}>
@@ -489,34 +442,11 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
-        <Route path="/admin/article-search">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <ArticleSearchPage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/europe-pmc">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <EuropePmcPage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/semantic-scholar">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <SemanticScholarPage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/crossref">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <CrossRefPage />
-            </ProtectedRoute>
-          )}
-        </Route>
+        {/* Research source pages consolidated into /admin/research-import */}
+        <Route path="/admin/article-search">{() => <Redirect to="/admin/research-import" />}</Route>
+        <Route path="/admin/europe-pmc">{() => <Redirect to="/admin/research-import" />}</Route>
+        <Route path="/admin/semantic-scholar">{() => <Redirect to="/admin/research-import" />}</Route>
+        <Route path="/admin/crossref">{() => <Redirect to="/admin/research-import" />}</Route>
 
         {/* Explore Pages - Browse by category */}
         <Route path="/explore-by-benefit" component={ExploreByBenefit} />
