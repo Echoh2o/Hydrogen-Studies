@@ -17,14 +17,7 @@ import {
   tagSynonyms,
 } from "@shared/schema";
 import { eq, sql, ilike, and, or, inArray } from "drizzle-orm";
-import OpenAI from "openai";
-
-// Initialize OpenAI if API key is available
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null;
+import { ai } from "./services/ai-provider";
 
 interface TaggingResult {
   studyId: number;
@@ -444,12 +437,14 @@ async function extractTagsFromContent(study: any): Promise<{
  * Extract additional tags using AI analysis
  */
 async function extractTagsWithAI(study: any): Promise<string[]> {
-  if (!openai) {
+  if (ai.getProviderStatus().primary === "none") {
     return [];
   }
 
   try {
-    const prompt = `Analyze this hydrogen research study and extract relevant medical and scientific tags.
+    const systemPrompt = "You are a medical research tag extractor. Analyze studies and return relevant tags as JSON.";
+
+    const userPrompt = `Analyze this hydrogen research study and extract relevant medical and scientific tags.
 
 Title: ${study.title}
 Abstract: ${study.abstract || "No abstract available"}
@@ -461,19 +456,13 @@ Based on the content, identify relevant tags from these categories:
 - Biological mechanisms (pathways, processes)
 - Treatment outcomes (effects, results)
 
-Return only a JSON array of tag names, maximum 8 tags:`;
+Return a JSON object with a "tags" array of tag names, maximum 8 tags.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-      max_tokens: 200,
+    const result = await ai.generateJSON(systemPrompt, userPrompt, {
+      maxTokens: 200,
       temperature: 0.3,
     });
 
-    const result = JSON.parse(
-      response.choices[0].message.content || '{"tags": []}',
-    );
     return Array.isArray(result.tags) ? result.tags.slice(0, 8) : [];
   } catch (error) {
     console.error("Error extracting tags with AI:", error);

@@ -11,9 +11,7 @@
 import { db } from "../db";
 import { studies } from "@shared/schema";
 import { sql, isNull, or, eq, and } from "drizzle-orm";
-import OpenAI from "openai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { ai } from "./ai-provider";
 
 export interface EnrichmentStats {
   totalProcessed: number;
@@ -186,26 +184,10 @@ async function enrichSingleStudy(study: any): Promise<void> {
   `;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a medical research expert specializing in hydrogen therapy studies. Provide accurate, scientific analysis in the requested JSON format.",
-        },
-        {
-          role: "user",
-          content: enrichmentPrompt,
-        },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 1000,
-      temperature: 0.3,
-    });
-
-    const enrichmentData = JSON.parse(
-      response.choices[0].message.content || "{}",
+    const enrichmentData = await ai.generateJSON(
+      "You are a medical research expert specializing in hydrogen therapy studies. Provide accurate, scientific analysis in the requested JSON format.",
+      enrichmentPrompt,
+      { maxTokens: 1000, temperature: 0.3 },
     );
 
     // Update the study with enriched data

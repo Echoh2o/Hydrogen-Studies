@@ -3,7 +3,7 @@
  * Generates in-depth, longer-form scientific articles about hydrogen therapy studies
  */
 
-import OpenAI from "openai";
+import { ai } from "./ai-provider";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
@@ -27,29 +27,6 @@ import { withRetry } from "../utils/database-wrapper";
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Initialize OpenAI client with error handling
-const initializeOpenAI = (): OpenAI | null => {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn(
-      "OpenAI API key not configured - scientific article generation will use fallback content",
-    );
-    return null;
-  }
-
-  try {
-    return new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60000, // 60 second timeout for longer content
-      maxRetries: 2,
-    });
-  } catch (error) {
-    console.error("Failed to initialize OpenAI client:", error);
-    return null;
-  }
-};
-
-const openai = initializeOpenAI();
 
 // Article types for scientific content
 const ARTICLE_TYPES = ["comprehensive_review", "clinical_applications"];
@@ -85,11 +62,11 @@ export async function generateScientificArticlesForStudy(
 
     const fallbackToBasic = options.fallbackToBasic ?? true;
 
-    // Check OpenAI availability
-    if (!openai) {
+    // Check AI provider availability
+    if (ai.getProviderStatus().primary === "none") {
       if (fallbackToBasic) {
         results.warnings.push(
-          "OpenAI not available, generating basic scientific articles",
+          "AI provider not available, generating basic scientific articles",
         );
         for (const type of ARTICLE_TYPES) {
           const basicArticle = generateBasicScientificArticle(study, type);
@@ -98,7 +75,7 @@ export async function generateScientificArticlesForStudy(
         return results;
       }
       throw new AppError(
-        "OpenAI API not configured",
+        "AI provider not configured",
         503,
         ErrorCode.SERVICE_UNAVAILABLE,
       );
@@ -269,9 +246,9 @@ async function generateArticleSections(
   conclusion: string;
   references: string[];
 }> {
-  if (!openai) {
+  if (ai.getProviderStatus().primary === "none") {
     throw new AppError(
-      "OpenAI not initialized",
+      "AI provider not initialized",
       503,
       ErrorCode.SERVICE_UNAVAILABLE,
     );
@@ -279,24 +256,16 @@ async function generateArticleSections(
 
   const prompt = createScientificPrompt(study, articleType);
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: `You are a scientific writer specializing in hydrogen therapy research. Write detailed, accurate scientific content at an 8th-10th grade reading level. Structure your response with clear sections: ABSTRACT, INTRODUCTION, METHODOLOGY, RESULTS, DISCUSSION, CONCLUSION, and REFERENCES. Each section should be substantial and informative.`,
-      },
-      { role: "user", content: prompt },
-    ],
-    max_tokens: 4000, // Allow for longer content
+  const systemPrompt = `You are a scientific writer specializing in hydrogen therapy research. Write detailed, accurate scientific content at an 8th-10th grade reading level. Structure your response with clear sections: ABSTRACT, INTRODUCTION, METHODOLOGY, RESULTS, DISCUSSION, CONCLUSION, and REFERENCES. Each section should be substantial and informative.`;
+
+  const content = await ai.generateText(systemPrompt, prompt, {
+    maxTokens: 4000,
     temperature: 0.7,
   });
 
-  const content = response.choices[0]?.message?.content || "";
-
   if (!content) {
     throw new AppError(
-      "Empty response from OpenAI",
+      "Empty response from AI provider",
       500,
       ErrorCode.EXTERNAL_API_ERROR,
     );
@@ -306,23 +275,14 @@ async function generateArticleSections(
   const sections = parseScientificSections(content);
 
   // Generate a concise summary separately
-  const summaryResponse = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content:
-          "Write a concise executive summary (150-200 words) of the following scientific article content.",
-      },
-      { role: "user", content: content.substring(0, 2000) },
-    ],
-    max_tokens: 300,
-    temperature: 0.7,
-  });
-
-  const summary =
-    summaryResponse.choices[0]?.message?.content ||
-    sections.abstract.substring(0, 200);
+  const summary = await ai.generateText(
+    "Write a concise executive summary (150-200 words) of the following scientific article content.",
+    content.substring(0, 2000),
+    {
+      maxTokens: 300,
+      temperature: 0.7,
+    },
+  ) || sections.abstract.substring(0, 200);
 
   return {
     summary,
@@ -505,7 +465,7 @@ async function generateScientificTitle(
   study: Study,
   articleType: string,
 ): Promise<string> {
-  if (!openai) {
+  if (ai.getProviderStatus().primary === "none") {
     return generateFallbackScientificTitle(study, articleType);
   }
 
@@ -517,24 +477,15 @@ async function generateScientificTitle(
         "Generate a scientific title for a clinical applications article",
     };
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "Generate concise, professional scientific article titles.",
-        },
-        {
-          role: "user",
-          content: `${typePrompts[articleType] || typePrompts.comprehensive_review} about this hydrogen therapy study: "${study.title}". Keep it under 100 characters.`,
-        },
-      ],
-      max_tokens: 50,
+    const systemPrompt = "Generate concise, professional scientific article titles.";
+    const userPrompt = `${typePrompts[articleType] || typePrompts.comprehensive_review} about this hydrogen therapy study: "${study.title}". Keep it under 100 characters.`;
+
+    const title = await ai.generateText(systemPrompt, userPrompt, {
+      maxTokens: 50,
       temperature: 0.7,
     });
 
-    const title = response.choices[0]?.message?.content?.trim() || "";
-    return title || generateFallbackScientificTitle(study, articleType);
+    return title?.trim() || generateFallbackScientificTitle(study, articleType);
   } catch (error) {
     console.warn("Failed to generate scientific title:", error);
     return generateFallbackScientificTitle(study, articleType);
@@ -564,13 +515,14 @@ async function generateScientificImage(
   articleType: string,
 ): Promise<{ imageUrl: string; imageAlt: string }> {
   try {
-    if (!openai) {
+    const openaiClient = ai.getOpenAIClient();
+    if (!openaiClient) {
       return getDefaultScientificImage(study.category);
     }
 
     const prompt = `Scientific diagram for hydrogen therapy research article: ${title}. Medical illustration with molecular structures, clinical data visualization, professional academic style.`;
 
-    const response = await openai.images.generate({
+    const response = await openaiClient.images.generate({
       model: "dall-e-3",
       prompt: prompt.substring(0, 1000),
       n: 1,

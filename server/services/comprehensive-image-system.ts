@@ -6,14 +6,16 @@
 import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { sql, isNull, or, eq } from "drizzle-orm";
-import OpenAI from "openai";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
+import { ai } from "./ai-provider";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAI() {
+  const client = ai.getOpenAIClient();
+  if (!client) throw new Error("OpenAI API key not configured for image generation");
+  return client;
+}
 
 interface ImageOptimizationResult {
   studyId: number;
@@ -169,7 +171,7 @@ async function generateAndOptimizeStudyImage(
     const prompt = await createSEOOptimizedPrompt(study);
 
     // Generate image with DALL-E
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: "dall-e-3",
       prompt: prompt.substring(0, 1000),
       n: 1,

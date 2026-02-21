@@ -17,12 +17,8 @@ import {
   InsertStudyMetrics,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, asc, sql, count, avg } from "drizzle-orm";
-import OpenAI from "openai";
+import { ai } from "./ai-provider";
 import { subDays, subMonths, subQuarters, format } from "date-fns";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Types for analysis results
 interface EmergingTopic {
@@ -608,34 +604,26 @@ export class TrendDetectionService {
   }
 
   private async analyzeBreakthroughReason(study: any): Promise<string> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (ai.getProviderStatus().primary === "none") {
       return "High impact study based on citation and view metrics.";
     }
 
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert in hydrogen research analysis. Analyze why a study is considered a breakthrough in 1-2 sentences.",
-          },
-          {
-            role: "user",
-            content: `Based on this study's metrics and abstract, explain why it's a breakthrough:
+      const systemPrompt = "You are an expert in hydrogen research analysis. Analyze why a study is considered a breakthrough in 1-2 sentences.";
+
+      const userPrompt = `Based on this study's metrics and abstract, explain why it's a breakthrough:
             Title: ${study.title}
             Citations: ${study.citationCount}
             Views: ${study.viewCount}
-            Abstract: ${study.abstract?.substring(0, 500)}`,
-          },
-        ],
-        max_tokens: 100,
+            Abstract: ${study.abstract?.substring(0, 500)}`;
+
+      const response = await ai.generateText(systemPrompt, userPrompt, {
+        maxTokens: 100,
         temperature: 0.7,
       });
 
       return (
-        response.choices[0]?.message?.content ||
+        response ||
         "High impact study with significant research implications."
       );
     } catch (error) {
@@ -721,7 +709,7 @@ export class TrendDetectionService {
     insights: string[];
     recommendations: string[];
   }> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (ai.getProviderStatus().primary === "none") {
       return {
         summary: `Analysis of ${data.stats.totalStudies} studies revealed ${data.emergingTopics.length} emerging topics and ${data.breakthroughStudies.length} breakthrough studies.`,
         insights: [
@@ -738,18 +726,10 @@ export class TrendDetectionService {
     }
 
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert analyst for hydrogen research trends. Provide concise, actionable insights.",
-          },
-          {
-            role: "user",
-            content: `Analyze this trend data and provide a summary, 3 key insights, and 3 recommendations:
-            
+      const systemPrompt = "You are an expert analyst for hydrogen research trends. Provide concise, actionable insights.";
+
+      const userPrompt = `Analyze this trend data and provide a summary, 3 key insights, and 3 recommendations:
+
             Emerging Topics (top 3): ${data.emergingTopics
               .slice(0, 3)
               .map((t: any) => `${t.topic} (+${t.growthRate.toFixed(0)}%)`)
@@ -764,15 +744,15 @@ export class TrendDetectionService {
               .map((a: any) => a.area)
               .join(", ")}
             Total Studies Analyzed: ${data.stats.totalStudies}
-            Average Citations: ${data.stats.avgCitations}`,
-          },
-        ],
-        max_tokens: 500,
+            Average Citations: ${data.stats.avgCitations}`;
+
+      const aiResponse = await ai.generateText(systemPrompt, userPrompt, {
+        maxTokens: 500,
         temperature: 0.7,
       });
 
-      const aiResponse = response.choices[0]?.message?.content || "";
-      const lines = aiResponse.split("\n").filter((line) => line.trim());
+      const responseText = aiResponse || "";
+      const lines = responseText.split("\n").filter((line) => line.trim());
 
       // Parse AI response into structured format
       const summaryIndex = lines.findIndex((line) =>

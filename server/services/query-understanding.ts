@@ -3,17 +3,12 @@
  * Provides advanced query interpretation and context awareness
  */
 
-import { OpenAI } from "openai";
+import { ai } from "./ai-provider";
 import {
   parseNaturalLanguageQuery,
   ParsedQuery,
   QueryIntent,
 } from "./natural-language-parser";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export interface QueryContext {
   previousQueries: string[];
@@ -120,17 +115,12 @@ async function correctSpellingAndAbbreviations(query: string): Promise<string> {
     
     Return only the corrected query, nothing else.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: query },
-      ],
+    const result = await ai.generateText(systemPrompt, query, {
       temperature: 0.1,
-      max_tokens: 100,
+      maxTokens: 100,
     });
 
-    return completion.choices[0].message.content?.trim() || query;
+    return result?.trim() || query;
   } catch (error) {
     console.error("Error correcting query:", error);
 
@@ -181,23 +171,11 @@ async function generateContextualExpansions(
     ${contextInfo}
     Return as a JSON array of strings.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: `Query: "${query}"\nIntent: ${parsed.intent}`,
-        },
-      ],
+    const result = await ai.generateJSON(systemPrompt, `Query: "${query}"\nIntent: ${parsed.intent}`, {
       temperature: 0.4,
-      max_tokens: 200,
-      response_format: { type: "json_object" },
+      maxTokens: 200,
     });
 
-    const result = JSON.parse(
-      completion.choices[0].message.content || '{"expansions":[]}',
-    );
     expansions.push(...(result.expansions || []));
   } catch (error) {
     console.error("Error generating expansions:", error);
@@ -244,23 +222,11 @@ async function generateQuerySuggestions(
     Suggest corrections, refinements, and alternatives.
     Return as JSON with structure: {"suggestions": [{"text": "...", "type": "correction|expansion|refinement|alternative", "confidence": 0.9}]}`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: `Query: "${query}"\nParsed entities: ${JSON.stringify(parsed.entities)}`,
-        },
-      ],
+    const result = await ai.generateJSON(systemPrompt, `Query: "${query}"\nParsed entities: ${JSON.stringify(parsed.entities)}`, {
       temperature: 0.5,
-      max_tokens: 300,
-      response_format: { type: "json_object" },
+      maxTokens: 300,
     });
 
-    const result = JSON.parse(
-      completion.choices[0].message.content || '{"suggestions":[]}',
-    );
     suggestions.push(...(result.suggestions || []));
   } catch (error) {
     console.error("Error generating suggestions:", error);

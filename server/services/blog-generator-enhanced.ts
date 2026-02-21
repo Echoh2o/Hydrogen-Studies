@@ -3,7 +3,6 @@
  * Demonstrates best practices for OpenAI API error handling
  */
 
-import OpenAI from "openai";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
@@ -19,33 +18,11 @@ import {
 } from "../utils/service-error-handlers";
 import { AppError, ErrorCode } from "../utils/app-errors";
 import { withRetry } from "../utils/database-wrapper";
+import { ai } from "./ai-provider";
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Initialize OpenAI client with error handling
-const initializeOpenAI = (): OpenAI | null => {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn(
-      "OpenAI API key not configured - blog generation will use fallback content",
-    );
-    return null;
-  }
-
-  try {
-    return new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 30000, // 30 second timeout
-      maxRetries: 2,
-    });
-  } catch (error) {
-    console.error("Failed to initialize OpenAI client:", error);
-    return null;
-  }
-};
-
-const openai = initializeOpenAI();
 
 // Blog article types - expanded set for comprehensive coverage
 const BLOG_TYPES = [
@@ -98,18 +75,19 @@ export async function generateBlogArticlesForStudy(
     const count = Math.min(options.count || 7, BLOG_TYPES.length);
     const fallbackToBasic = options.fallbackToBasic ?? true;
 
-    // Check OpenAI availability
-    if (!openai) {
+    // Check AI provider availability
+    const providerStatus = ai.getProviderStatus();
+    if (providerStatus.primary === "none") {
       if (fallbackToBasic) {
         results.warnings.push(
-          "OpenAI not available, generating basic articles",
+          "No AI provider available, generating basic articles",
         );
         const basicArticle = generateBasicArticle(study);
         results.articles.push(basicArticle);
         return results;
       }
       throw new AppError(
-        "OpenAI API not configured",
+        "No AI provider configured",
         503,
         ErrorCode.SERVICE_UNAVAILABLE,
       );
@@ -263,35 +241,17 @@ async function generateArticleContent(
   study: Study,
   articleType: string,
 ): Promise<{ fullContent: string; summary: string }> {
-  if (!openai) {
-    throw new AppError(
-      "OpenAI not initialized",
-      503,
-      ErrorCode.SERVICE_UNAVAILABLE,
-    );
-  }
-
   const prompt = createContentPrompt(study, articleType);
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a scientific writer specializing in hydrogen therapy research. Write engaging, accurate content at a 6th grade reading level (Flesch-Kincaid score 60-70). Use simple words, short sentences, and clear explanations. Avoid medical jargon unless necessary, and always explain complex terms in simple language.",
-      },
-      { role: "user", content: prompt },
-    ],
-    max_tokens: 2000,
-    temperature: 0.7,
-  });
-
-  const content = response.choices[0]?.message?.content || "";
+  const content = await ai.generateText(
+    "You are a scientific writer specializing in hydrogen therapy research. Write engaging, accurate content at a 6th grade reading level (Flesch-Kincaid score 60-70). Use simple words, short sentences, and clear explanations. Avoid medical jargon unless necessary, and always explain complex terms in simple language.",
+    prompt,
+    { maxTokens: 2000, temperature: 0.7 },
+  );
 
   if (!content) {
     throw new AppError(
-      "Empty response from OpenAI",
+      "Empty response from AI provider",
       500,
       ErrorCode.EXTERNAL_API_ERROR,
     );
@@ -315,34 +275,13 @@ async function generateArticleTitle(
   articleType: string,
   summary: string,
 ): Promise<string> {
-  if (!openai) {
-    throw new AppError(
-      "OpenAI not initialized",
-      503,
-      ErrorCode.SERVICE_UNAVAILABLE,
-    );
-  }
+  const title = await ai.generateText(
+    "Create engaging, SEO-friendly titles for health articles. Keep titles under 60 characters. Respond with ONLY the title, nothing else.",
+    `Create a title for a ${articleType} article about: ${summary.substring(0, 200)}`,
+    { maxTokens: 50, temperature: 0.8 },
+  );
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content:
-          "Create engaging, SEO-friendly titles for health articles. Keep titles under 60 characters.",
-      },
-      {
-        role: "user",
-        content: `Create a title for a ${articleType} article about: ${summary.substring(0, 200)}`,
-      },
-    ],
-    max_tokens: 50,
-    temperature: 0.8,
-  });
-
-  const title = response.choices[0]?.message?.content?.trim() || "";
-
-  if (!title) {
+  if (!title?.trim()) {
     throw new AppError(
       "Failed to generate title",
       500,
@@ -350,7 +289,7 @@ async function generateArticleTitle(
     );
   }
 
-  return title;
+  return title.trim();
 }
 
 /**
@@ -362,13 +301,14 @@ async function generateArticleImageWithFallback(
   articleType: string,
 ): Promise<{ imageUrl: string; imageAlt: string }> {
   try {
-    if (!openai) {
+    const openaiClient = ai.getOpenAIClient();
+    if (!openaiClient) {
       return getDefaultImage(study.category);
     }
 
     const prompt = `Scientific illustration for hydrogen therapy article: ${title}. Medical research visualization, clean professional style.`;
 
-    const response = await openai.images.generate({
+    const response = await openaiClient.images.generate({
       model: "dall-e-3",
       prompt: prompt.substring(0, 1000),
       n: 1,

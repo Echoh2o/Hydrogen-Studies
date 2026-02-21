@@ -13,18 +13,9 @@ import {
 } from "@shared/schema";
 import { eq, and, or, desc, gte, sql } from "drizzle-orm";
 import { contentOptimizationService } from "./content-optimization-service";
-import OpenAI from "openai";
+import { ai } from "./ai-provider";
 import { handleOpenAIRequest } from "../utils/service-error-handlers";
 import { AppError, ErrorCode } from "../utils/app-errors";
-
-// Initialize OpenAI
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 30000,
-      maxRetries: 2,
-    })
-  : null;
 
 interface UpdateCheck {
   contentId: number;
@@ -201,59 +192,41 @@ export class AutoUpdateDetector {
     newStudy: any,
     contentType: "blog" | "study",
   ): Promise<UpdateCheck | null> {
-    if (!openai) {
+    if (ai.getProviderStatus().primary === "none") {
       // Fallback logic without AI
       return this.simpleUpdateCheck(content, newStudy, contentType);
     }
 
     try {
-      const analysis = await handleOpenAIRequest<UpdateCheck | null>(
-        async () => {
-          const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content: `Analyze if existing ${contentType} content needs updates based on new research. Consider:
+      const systemPrompt = `Analyze if existing ${contentType} content needs updates based on new research. Consider:
                 - Contradicting findings
-                - New supporting evidence  
+                - New supporting evidence
                 - Outdated statistics or claims
                 - Missing important context
-                Return JSON with: needsUpdate (boolean), reason (string), priority (0-100), suggestedChanges (array of strings)`,
-              },
-              {
-                role: "user",
-                content: `Existing ${contentType}: "${content.title}"
+                Return JSON with: needsUpdate (boolean), reason (string), priority (0-100), suggestedChanges (array of strings)`;
+
+      const userPrompt = `Existing ${contentType}: "${content.title}"
 Content: ${content.content?.substring(0, 1000) || content.abstract?.substring(0, 1000)}
 
 New study: "${newStudy.title}"
 Findings: ${newStudy.conclusion || newStudy.results}
-Published: ${newStudy.journalPublishDate}`,
-              },
-            ],
-            max_tokens: 400,
-            temperature: 0.3,
-          });
+Published: ${newStudy.journalPublishDate}`;
 
-          const result = JSON.parse(
-            completion.choices[0].message.content || "{}",
-          );
+      const result = await ai.generateJSON(systemPrompt, userPrompt, {
+        maxTokens: 400,
+        temperature: 0.3,
+      });
 
-          if (result.needsUpdate) {
-            return {
-              contentId: content.id,
-              contentType,
-              reason: result.reason,
-              priority: result.priority,
-              suggestedChanges: result.suggestedChanges,
-            };
-          }
-          return null;
-        },
-        this.simpleUpdateCheck(content, newStudy, contentType),
-      );
-
-      return analysis;
+      if (result.needsUpdate) {
+        return {
+          contentId: content.id,
+          contentType,
+          reason: result.reason,
+          priority: result.priority,
+          suggestedChanges: result.suggestedChanges,
+        };
+      }
+      return null;
     } catch (error) {
       console.error("Error analyzing content for updates:", error);
       return this.simpleUpdateCheck(content, newStudy, contentType);
@@ -308,38 +281,23 @@ Published: ${newStudy.journalPublishDate}`,
     study1: any,
     study2: any,
   ): Promise<any> {
-    if (!openai) return null;
+    if (ai.getProviderStatus().primary === "none") return null;
 
     try {
-      const analysis = await handleOpenAIRequest(
-        async () => {
-          const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "Analyze the relationship between two studies. Return JSON with: type ('supports', 'contradicts', 'extends', 'unrelated'), confidence (0-100), explanation (string)",
-              },
-              {
-                role: "user",
-                content: `Study 1: "${study1.title}"
+      const systemPrompt = "Analyze the relationship between two studies. Return JSON with: type ('supports', 'contradicts', 'extends', 'unrelated'), confidence (0-100), explanation (string)";
+
+      const userPrompt = `Study 1: "${study1.title}"
 Conclusion: ${study1.conclusion}
 
-Study 2: "${study2.title}"  
-Conclusion: ${study2.conclusion}`,
-              },
-            ],
-            max_tokens: 200,
-            temperature: 0.3,
-          });
+Study 2: "${study2.title}"
+Conclusion: ${study2.conclusion}`;
 
-          return JSON.parse(completion.choices[0].message.content || "{}");
-        },
-        () => null,
-      );
+      const result = await ai.generateJSON(systemPrompt, userPrompt, {
+        maxTokens: 200,
+        temperature: 0.3,
+      });
 
-      return analysis;
+      return result;
     } catch (error) {
       console.error("Error analyzing study relationship:", error);
       return null;
