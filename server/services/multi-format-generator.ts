@@ -3,7 +3,7 @@
  * Generates various content formats from research studies
  */
 
-import OpenAI from "openai";
+import { ai } from "./ai-provider";
 import {
   Study,
   InsertMultiFormatContent,
@@ -20,29 +20,6 @@ import {
 } from "../utils/service-error-handlers";
 import { AppError, ErrorCode } from "../utils/app-errors";
 import { withRetry } from "../utils/database-wrapper";
-
-// Initialize OpenAI client
-const initializeOpenAI = (): OpenAI | null => {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn(
-      "OpenAI API key not configured - content generation will use fallback content",
-    );
-    return null;
-  }
-
-  try {
-    return new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 30000,
-      maxRetries: 2,
-    });
-  } catch (error) {
-    console.error("Failed to initialize OpenAI client:", error);
-    return null;
-  }
-};
-
-const openai = initializeOpenAI();
 
 // Content format types
 export enum ContentFormat {
@@ -91,10 +68,10 @@ export async function generateMultiFormatContent(
 
     const fallbackToBasic = options.fallbackToBasic ?? true;
 
-    // Check OpenAI availability
-    if (!openai) {
+    // Check AI provider availability
+    if (ai.getProviderStatus().primary === "none") {
       if (fallbackToBasic) {
-        results.warnings.push("OpenAI not available, generating basic content");
+        results.warnings.push("AI provider not available, generating basic content");
         for (const format of formats) {
           const basicContent = generateBasicContent(study, format);
           results.contents.push(basicContent);
@@ -102,7 +79,7 @@ export async function generateMultiFormatContent(
         return results;
       }
       throw new AppError(
-        "OpenAI API not configured",
+        "AI provider not configured",
         503,
         ErrorCode.SERVICE_UNAVAILABLE,
       );
@@ -241,56 +218,28 @@ Format the response as JSON with these fields:
 - estimatedDuration: number (in seconds)
 `;
 
-  const response = await handleOpenAIRequest(
-    async () => {
-      if (!openai) throw new Error("OpenAI not initialized");
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a science communicator who creates engaging podcast scripts that make complex research accessible to everyone. Use conversational language, avoid jargon, and maintain a 6th grade reading level.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 3000,
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-      });
-      return completion.choices[0]?.message?.content || "{}";
-    },
-    JSON.stringify({
-        intro: `Welcome to our health science podcast! Today we're exploring fascinating research about ${study.title.substring(0, 100)}...`,
-        mainScript: `This study investigates ${study.abstract.substring(0, 500)}...`,
-        qaSegment: [
-          {
-            question: "What does this mean for everyday health?",
-            answer: "This research suggests practical applications...",
-          },
-          {
-            question: "How was this study conducted?",
-            answer: "Researchers used scientific methods to...",
-          },
-          {
-            question: "What are the next steps?",
-            answer: "Future research will explore...",
-          },
-        ],
-        outro:
-          "Thanks for listening! Remember, science is always evolving. Stay curious!",
-        showNotes: [
-          `Study: ${study.title}`,
-          "Key findings discussed",
-          "Practical applications",
-          "Future research directions",
-        ],
-        estimatedDuration: 720,
-      }),
-    { model: "gpt-4o", prompt: "Generate podcast script" },
-  );
+  let podcastData: any;
+  try {
+    const systemPrompt = "You are a science communicator who creates engaging podcast scripts that make complex research accessible to everyone. Use conversational language, avoid jargon, and maintain a 6th grade reading level.";
 
-  const podcastData = JSON.parse(response);
+    podcastData = await ai.generateJSON(systemPrompt, prompt, {
+      maxTokens: 3000,
+      temperature: 0.7,
+    });
+  } catch (error) {
+    podcastData = {
+      intro: `Welcome to our health science podcast! Today we're exploring fascinating research about ${study.title.substring(0, 100)}...`,
+      mainScript: `This study investigates ${study.abstract.substring(0, 500)}...`,
+      qaSegment: [
+        { question: "What does this mean for everyday health?", answer: "This research suggests practical applications..." },
+        { question: "How was this study conducted?", answer: "Researchers used scientific methods to..." },
+        { question: "What are the next steps?", answer: "Future research will explore..." },
+      ],
+      outro: "Thanks for listening! Remember, science is always evolving. Stay curious!",
+      showNotes: [`Study: ${study.title}`, "Key findings discussed", "Practical applications", "Future research directions"],
+      estimatedDuration: 720,
+    };
+  }
 
   return {
     studyId: study.id!,
@@ -341,53 +290,26 @@ Format as JSON with:
 - visualSuggestions: array of {type: string, data: string, description: string}
 `;
 
-  const response = await handleOpenAIRequest(
-    async () => {
-      if (!openai) throw new Error("OpenAI not initialized");
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a data visualization expert who extracts key statistics and creates compelling visual narratives from research studies.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 2000,
-        temperature: 0.6,
-        response_format: { type: "json_object" },
-      });
-      return completion.choices[0]?.message?.content || "{}";
-    },
-    JSON.stringify({
-        title: `Key Findings: ${study.title.substring(0, 50)}`,
-        subheadings: ["Research Overview", "Key Results", "Impact"],
-        keyStatistics: [
-          {
-            label: "Sample Size",
-            value: study.sampleSize?.toString() || "N/A",
-            context: "participants studied",
-          },
-          {
-            label: "Duration",
-            value: study.duration?.toString() || "N/A",
-            context: "days of research",
-          },
-        ],
-        comparisons: [],
-        visualSuggestions: [
-          {
-            type: "bar_chart",
-            data: "results",
-            description: "Compare key outcomes",
-          },
-        ],
-      }),
-    { model: "gpt-4o", prompt: "Generate infographic data" },
-  );
+  let infographicData: any;
+  try {
+    const systemPrompt = "You are a data visualization expert who extracts key statistics and creates compelling visual narratives from research studies.";
 
-  const infographicData = JSON.parse(response);
+    infographicData = await ai.generateJSON(systemPrompt, prompt, {
+      maxTokens: 2000,
+      temperature: 0.6,
+    });
+  } catch (error) {
+    infographicData = {
+      title: `Key Findings: ${study.title.substring(0, 50)}`,
+      subheadings: ["Research Overview", "Key Results", "Impact"],
+      keyStatistics: [
+        { label: "Sample Size", value: study.sampleSize?.toString() || "N/A", context: "participants studied" },
+        { label: "Duration", value: study.duration?.toString() || "N/A", context: "days of research" },
+      ],
+      comparisons: [],
+      visualSuggestions: [{ type: "bar_chart", data: "results", description: "Compare key outcomes" }],
+    };
+  }
 
   return {
     studyId: study.id!,
@@ -468,26 +390,17 @@ ${
 - callToAction: string
 `;
 
-  const response = await handleOpenAIRequest(
-    async () => {
-      if (!openai) throw new Error("OpenAI not initialized");
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a social media expert who creates engaging, shareable content about health research. Adapt your style for ${platform}.`,
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 1000,
-        temperature: 0.8,
-        response_format: { type: "json_object" },
-      });
-      return completion.choices[0]?.message?.content || "{}";
-    },
-    isTwitter
-      ? JSON.stringify({
+  let socialData: any;
+  try {
+    const systemPrompt = `You are a social media expert who creates engaging, shareable content about health research. Adapt your style for ${platform}.`;
+
+    socialData = await ai.generateJSON(systemPrompt, prompt, {
+      maxTokens: 1000,
+      temperature: 0.8,
+    });
+  } catch (error) {
+    socialData = isTwitter
+      ? {
           thread: [
             `New research reveals: ${study.title.substring(0, 200)}...`,
             `Key finding: ${study.abstract.substring(0, 250)}...`,
@@ -495,16 +408,13 @@ ${
           ],
           hashtags: ["HealthResearch", "Science", "Wellness"],
           callToAction: "Follow for more health insights!",
-        })
-      : JSON.stringify({
+        }
+      : {
           content: `Exciting research update! ${study.title.substring(0, 200)}... ${study.abstract.substring(0, 300)}`,
           hashtags: ["HealthResearch", "Science", "Wellness", "HealthyLiving"],
           callToAction: "Learn more about this breakthrough research!",
-        }),
-    { model: "gpt-4o", prompt: `Generate ${platform} content` },
-  );
-
-  const socialData = JSON.parse(response);
+        };
+  }
 
   return {
     studyId: study.id!,
@@ -558,58 +468,26 @@ Format as JSON:
 - visualCues: array of visual direction notes
 `;
 
-  const response = await handleOpenAIRequest(
-    async () => {
-      if (!openai) throw new Error("OpenAI not initialized");
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a video script writer who creates engaging, educational content that makes research accessible through visual storytelling.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 2500,
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-      });
-      return completion.choices[0]?.message?.content || "{}";
-    },
-    JSON.stringify({
-        script: `Have you ever wondered about ${study.title}? Today we'll explore groundbreaking research that could change how we think about health...`,
-        storyboard: [
-          {
-            time: "0:00-0:10",
-            scene: "Opening",
-            visuals: "Title card with study topic",
-            narration: "Introduction hook",
-          },
-          {
-            time: "0:10-0:40",
-            scene: "Main content",
-            visuals: "Data visualizations",
-            narration: "Key findings explained",
-          },
-          {
-            time: "0:40-0:60",
-            scene: "Conclusion",
-            visuals: "Summary points",
-            narration: "Call to action",
-          },
-        ],
-        duration: duration,
-        visualCues: [
-          "Use animations for data",
-          "Include b-roll footage",
-          "Add text overlays for key points",
-        ],
-      }),
-    { model: "gpt-4o", prompt: `Generate ${videoType} script` },
-  );
+  let videoData: any;
+  try {
+    const systemPrompt = "You are a video script writer who creates engaging, educational content that makes research accessible through visual storytelling.";
 
-  const videoData = JSON.parse(response);
+    videoData = await ai.generateJSON(systemPrompt, prompt, {
+      maxTokens: 2500,
+      temperature: 0.7,
+    });
+  } catch (error) {
+    videoData = {
+      script: `Have you ever wondered about ${study.title}? Today we'll explore groundbreaking research that could change how we think about health...`,
+      storyboard: [
+        { time: "0:00-0:10", scene: "Opening", visuals: "Title card with study topic", narration: "Introduction hook" },
+        { time: "0:10-0:40", scene: "Main content", visuals: "Data visualizations", narration: "Key findings explained" },
+        { time: "0:40-0:60", scene: "Conclusion", visuals: "Summary points", narration: "Call to action" },
+      ],
+      duration: duration,
+      visualCues: ["Use animations for data", "Include b-roll footage", "Add text overlays for key points"],
+    };
+  }
 
   return {
     studyId: study.id!,
@@ -661,29 +539,19 @@ Format as JSON:
 - keyTakeaways: array of strings
 `;
 
-  const response = await handleOpenAIRequest(
-    async () => {
-      if (!openai) throw new Error("OpenAI not initialized");
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an email marketing expert who creates engaging, informative newsletters about health research. Use clear, accessible language.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 3000,
-        temperature: 0.7,
-        response_format: { type: "json_object" },
-      });
-      return completion.choices[0]?.message?.content || "{}";
-    },
-    JSON.stringify({
-        subjectLine: `New Research: ${study.title.substring(0, 30)}...`,
-        preheader: `Discover the latest findings about ${study.category || "health"}`,
-        htmlContent: `
+  let newsletterData: any;
+  try {
+    const systemPrompt = "You are an email marketing expert who creates engaging, informative newsletters about health research. Use clear, accessible language.";
+
+    newsletterData = await ai.generateJSON(systemPrompt, prompt, {
+      maxTokens: 3000,
+      temperature: 0.7,
+    });
+  } catch (error) {
+    newsletterData = {
+      subjectLine: `New Research: ${study.title.substring(0, 30)}...`,
+      preheader: `Discover the latest findings about ${study.category || "health"}`,
+      htmlContent: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
           <h1 style="color: #333; font-size: 24px;">${study.title}</h1>
           <p style="color: #666; line-height: 1.6;">${study.abstract.substring(0, 300)}...</p>
@@ -696,17 +564,14 @@ Format as JSON:
           <a href="#" style="display: inline-block; background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Read Full Study</a>
         </div>
       `,
-        plainText: `${study.title}\n\n${study.abstract.substring(0, 300)}...\n\nKey Takeaways:\n- Important finding\n- Practical application\n- Future implications\n\nRead more at our website.`,
-        keyTakeaways: [
-          "Important finding from the research",
-          "Practical application for readers",
-          "Future implications of this study",
-        ],
-      }),
-    { model: "gpt-4o", prompt: "Generate newsletter content" },
-  );
-
-  const newsletterData = JSON.parse(response);
+      plainText: `${study.title}\n\n${study.abstract.substring(0, 300)}...\n\nKey Takeaways:\n- Important finding\n- Practical application\n- Future implications\n\nRead more at our website.`,
+      keyTakeaways: [
+        "Important finding from the research",
+        "Practical application for readers",
+        "Future implications of this study",
+      ],
+    };
+  }
 
   return {
     studyId: study.id!,

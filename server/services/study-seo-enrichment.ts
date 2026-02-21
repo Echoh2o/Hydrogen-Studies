@@ -14,29 +14,12 @@
  * that won't be flagged as duplicate content.
  */
 
-import OpenAI from "openai";
+import { ai } from "./ai-provider";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { eq, isNull, sql, and, or } from "drizzle-orm";
 
 const SITE_NAME = "Hydrogen Studies";
-
-const initializeOpenAI = (): OpenAI | null => {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn("[StudyEnrichment] OpenAI API key not configured");
-    return null;
-  }
-  try {
-    return new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 45000,
-      maxRetries: 2,
-    });
-  } catch (error) {
-    console.error("[StudyEnrichment] Failed to initialize OpenAI:", error);
-    return null;
-  }
-};
 
 interface EnrichmentResult {
   plainLanguageTitle: string;
@@ -78,8 +61,7 @@ async function enrichStudyWithAI(study: {
   studyType?: string | null;
   outcome?: string | null;
 }): Promise<EnrichmentResult | null> {
-  const openai = initializeOpenAI();
-  if (!openai) return null;
+  if (ai.getProviderStatus().primary === "none") return null;
 
   const prompt = `You are an expert science communicator and SEO specialist. Analyze this hydrogen therapy research study and generate enrichment data.
 
@@ -141,20 +123,12 @@ Generate a JSON object with ALL of these fields:
 Return ONLY the JSON object, no markdown formatting.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "You are an expert science communicator and SEO specialist. Always return valid JSON." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
+    const systemPrompt = "You are an expert science communicator and SEO specialist. Always return valid JSON.";
+
+    const data = await ai.generateJSON(systemPrompt, prompt, {
       temperature: 0.7,
-    });
+    }) as EnrichmentResult;
 
-    const content = response.choices[0].message.content;
-    if (!content) return null;
-
-    const data = JSON.parse(content) as EnrichmentResult;
     return data;
   } catch (error) {
     console.error(`[StudyEnrichment] Error enriching study ${study.id}:`, error);

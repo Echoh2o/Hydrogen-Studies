@@ -27,21 +27,12 @@ import {
   InsertSmartLink,
 } from "@shared/schema";
 import { eq, and, or, desc, asc, sql, inArray, gte, lte } from "drizzle-orm";
-import OpenAI from "openai";
+import { ai } from "./ai-provider";
 import {
   handleOpenAIRequest,
   handleBatchOperation,
 } from "../utils/service-error-handlers";
 import { AppError, ErrorCode } from "../utils/app-errors";
-
-// Initialize OpenAI for content analysis
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 30000,
-      maxRetries: 2,
-    })
-  : null;
 
 export interface RelationshipDetectionResult {
   relationships: InsertContentRelationship[];
@@ -102,7 +93,7 @@ export class ContentOptimizationService {
       const relationships: InsertContentRelationship[] = [];
       const dependencies: InsertContentDependency[] = [];
 
-      if (openai) {
+      if (ai.getProviderStatus().primary !== "none") {
         // Analyze relationships using AI
         for (const relatedStudy of relatedStudies) {
           const relationship = await this.analyzeRelationship(
@@ -525,36 +516,19 @@ export class ContentOptimizationService {
     sourceType: string,
     targetType: string,
   ): Promise<{ type: string; confidence: number; notes: string } | null> {
-    if (!openai) return null;
+    if (ai.getProviderStatus().primary === "none") return null;
 
     try {
-      const response = await handleOpenAIRequest(
-        async () => {
-          const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "Analyze the relationship between two pieces of content and identify the relationship type: 'supports', 'contradicts', 'references', 'extends', or 'updates'. Return a JSON object with type, confidence (0-100), and notes.",
-              },
-              {
-                role: "user",
-                content: `Source (${sourceType}): "${source.title}"\nSummary: ${source.summary || source.abstract}\n\nTarget (${targetType}): "${target.title}"\nSummary: ${target.summary || target.abstract}`,
-              },
-            ],
-            max_tokens: 200,
-            temperature: 0.3,
-          });
+      const systemPrompt = "Analyze the relationship between two pieces of content and identify the relationship type: 'supports', 'contradicts', 'references', 'extends', or 'updates'. Return a JSON object with type, confidence (0-100), and notes.";
 
-          const result = JSON.parse(
-            completion.choices[0].message.content || "{}",
-          );
-          return result;
-        },
-        () => null,
-      );
-      return response;
+      const userPrompt = `Source (${sourceType}): "${source.title}"\nSummary: ${source.summary || source.abstract}\n\nTarget (${targetType}): "${target.title}"\nSummary: ${target.summary || target.abstract}`;
+
+      const result = await ai.generateJSON(systemPrompt, userPrompt, {
+        maxTokens: 200,
+        temperature: 0.3,
+      });
+
+      return result;
     } catch (error) {
       console.error("Error analyzing relationship:", error);
       return null;
@@ -595,36 +569,19 @@ export class ContentOptimizationService {
   }
 
   private async checkIfUpdateNeeded(content: any, newStudy: any): Promise<any> {
-    if (!openai) return null;
+    if (ai.getProviderStatus().primary === "none") return null;
 
     try {
-      const response = await handleOpenAIRequest(
-        async () => {
-          const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "Analyze if existing content needs updates based on new research. Return JSON with: updateNeeded (boolean), triggerType ('contradicting_evidence', 'supporting_evidence', 'new_data'), score (0-100 priority), summary, changes (suggested text changes), sections (array of impacted sections).",
-              },
-              {
-                role: "user",
-                content: `Existing content: "${content.title}"\nSummary: ${content.summary}\n\nNew study: "${newStudy.title}"\nFindings: ${newStudy.conclusion}`,
-              },
-            ],
-            max_tokens: 500,
-            temperature: 0.3,
-          });
+      const systemPrompt = "Analyze if existing content needs updates based on new research. Return JSON with: updateNeeded (boolean), triggerType ('contradicting_evidence', 'supporting_evidence', 'new_data'), score (0-100 priority), summary, changes (suggested text changes), sections (array of impacted sections).";
 
-          const result = JSON.parse(
-            completion.choices[0].message.content || "{}",
-          );
-          return result.updateNeeded ? result : null;
-        },
-        () => null,
-      );
-      return response;
+      const userPrompt = `Existing content: "${content.title}"\nSummary: ${content.summary}\n\nNew study: "${newStudy.title}"\nFindings: ${newStudy.conclusion}`;
+
+      const result = await ai.generateJSON(systemPrompt, userPrompt, {
+        maxTokens: 500,
+        temperature: 0.3,
+      });
+
+      return result.updateNeeded ? result : null;
     } catch (error) {
       console.error("Error checking update needs:", error);
       return null;

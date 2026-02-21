@@ -5,11 +5,7 @@ import {
   studyQualityScores,
 } from "../../shared/schema";
 import { eq, and, or, sql, desc, inArray, ne, like, gt, lt } from "drizzle-orm";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { ai } from "./ai-provider";
 
 interface StudyRecommendations {
   priority: "high" | "medium" | "low";
@@ -195,34 +191,30 @@ export class ReviewRecommendationsService {
    * Extract key findings using AI
    */
   private async extractKeyFindings(study: any): Promise<string[]> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (ai.getProviderStatus().primary === "none") {
       return this.extractKeyFindingsBasic(study);
     }
 
     try {
-      const prompt = `
+      const systemPrompt = "You are a research analyst. Extract key findings from studies and return JSON.";
+
+      const userPrompt = `
         Extract 3-5 key findings from this research study:
-        
+
         Title: ${study.title}
         Abstract: ${study.abstract}
         Results: ${study.results || "Not provided"}
         Conclusion: ${study.conclusion || "Not provided"}
-        
-        Return a JSON array of concise, clear key findings.
+
+        Return a JSON object with a "findings" array of concise, clear key findings.
         Focus on the most important and actionable results.
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
+      const result = await ai.generateJSON(systemPrompt, userPrompt, {
         temperature: 0.3,
-        max_tokens: 500,
+        maxTokens: 500,
       });
 
-      const result = JSON.parse(
-        response.choices[0].message.content || '{"findings":[]}',
-      );
       return result.findings || this.extractKeyFindingsBasic(study);
     } catch (error) {
       console.error("Error extracting key findings with AI:", error);

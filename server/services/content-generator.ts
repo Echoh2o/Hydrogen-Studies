@@ -1,9 +1,7 @@
 import { db } from "../db";
 import { blogArticles, studies } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
-import OpenAI from "openai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { ai } from "./ai-provider";
 
 interface ContentGenerationResult {
   articleId: number;
@@ -70,16 +68,11 @@ export class ContentGenerator {
     `;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-            { role: "system", content: "You are an expert health blogger who simplifies complex science for the general public." },
-            { role: "user", content: prompt }
-        ],
-        response_format: { type: "json_object" }
-      });
-
-      const data = JSON.parse(response.choices[0].message.content || "{}");
+      const data = await ai.generateJSON(
+        "You are an expert health blogger who simplifies complex science for the general public.",
+        prompt,
+        { maxTokens: 4096, temperature: 0.7 },
+      );
       
       // Inject internal links to specific Echo products if keywords match
       let content = data.content;

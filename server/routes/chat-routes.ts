@@ -4,30 +4,10 @@
  */
 
 import express from "express";
-import OpenAI from "openai";
+import { ai } from "../services/ai-provider";
 import { studyService } from "../services/study-service";
 
 const router = express.Router();
-
-// Initialize OpenAI client
-let openai: OpenAI | null = null;
-
-try {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (apiKey && apiKey.trim() !== "") {
-    openai = new OpenAI({
-      apiKey: apiKey.trim(),
-    });
-    console.log("✅ OpenAI client initialized successfully");
-  } else {
-    console.warn(
-      "⚠️ OpenAI API key not configured - chat will use fallback responses",
-    );
-  }
-} catch (error) {
-  console.error("❌ Failed to initialize OpenAI client:", error);
-  console.warn("⚠️ Chat will use fallback responses");
-}
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -63,9 +43,9 @@ router.post("/chat", async (req, res) => {
     const relevantStudies = await searchRelevantStudies(query);
     console.log(`Found ${relevantStudies.length} relevant studies`);
 
-    // Generate AI response using OpenAI or fallback
+    // Generate AI response using ai-provider or fallback
     let aiResponse: string;
-    if (openai) {
+    if (ai.getProviderStatus().primary !== "none") {
       try {
         aiResponse = await generateAIResponse(query, relevantStudies);
       } catch (error) {
@@ -162,13 +142,13 @@ function generateFallbackResponse(query: string, studies: any[]): string {
   return response;
 }
 
-// Generate AI response using OpenAI
+// Generate AI response using ai-provider
 async function generateAIResponse(
   query: string,
   studies: any[],
 ): Promise<string> {
-  if (!openai) {
-    throw new Error("OpenAI client not available");
+  if (ai.getProviderStatus().primary === "none") {
+    throw new Error("AI provider not available");
   }
 
   try {
@@ -180,7 +160,7 @@ async function generateAIResponse(
       )
       .join("\n");
 
-    const systemPrompt = `You are a specialized AI assistant for hydrogen health research. 
+    const systemPrompt = `You are a specialized AI assistant for hydrogen health research.
     Provide accurate, evidence-based answers about hydrogen therapy, hydrogen water, and molecular hydrogen health benefits.
     Always base your responses on the provided scientific studies.
     Write at a 6th grade reading level to ensure accessibility.
@@ -194,22 +174,17 @@ async function generateAIResponse(
 
     Please provide a comprehensive answer based on the scientific evidence from these studies.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_tokens: 1000,
+    const response = await ai.generateText(systemPrompt, userPrompt, {
+      maxTokens: 1000,
       temperature: 0.7,
     });
 
     return (
-      completion.choices[0]?.message?.content ||
+      response ||
       "I apologize, but I could not generate a response at this time."
     );
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    console.error("AI provider error:", error);
     throw new Error("Failed to generate AI response");
   }
 }
@@ -340,9 +315,9 @@ router.post("/advanced-chat", async (req, res) => {
     const relevantStudies = await searchRelevantStudies(query);
     console.log(`Found ${relevantStudies.length} relevant studies`);
 
-    // Generate AI response using OpenAI or fallback
+    // Generate AI response using ai-provider or fallback
     let aiResponse: string;
-    if (openai) {
+    if (ai.getProviderStatus().primary !== "none") {
       try {
         // Enhanced AI response with context
         const studyContext = relevantStudies
@@ -353,7 +328,7 @@ router.post("/advanced-chat", async (req, res) => {
           )
           .join("\n");
 
-        const systemPrompt = `You are an advanced AI assistant specializing in hydrogen health research. 
+        const systemPrompt = `You are an advanced AI assistant specializing in hydrogen health research.
         Provide comprehensive, evidence-based answers about hydrogen therapy, hydrogen water, and molecular hydrogen health benefits.
         Always base your responses on the provided scientific studies.
         Write at a 6th grade reading level to ensure accessibility.
@@ -362,25 +337,20 @@ router.post("/advanced-chat", async (req, res) => {
 
         const userPrompt = `Question: ${query}
         ${context ? `Additional Context: ${context}` : ""}
-        
+
         Relevant Studies:
         ${studyContext}
-        
+
         Please provide a detailed, comprehensive answer based on the scientific evidence from these studies.
         Include specific findings, recommended dosages, and practical applications where relevant.`;
 
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          max_tokens: 1500,
+        const response = await ai.generateText(systemPrompt, userPrompt, {
+          maxTokens: 1500,
           temperature: 0.7,
         });
 
         aiResponse =
-          completion.choices[0]?.message?.content ||
+          response ||
           generateFallbackResponse(query, relevantStudies);
       } catch (error) {
         console.error(

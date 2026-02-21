@@ -6,11 +6,7 @@
 import { eq, desc, sql } from "drizzle-orm";
 import { db } from "../db";
 import { studies, blogArticles } from "@shared/schema";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { ai } from "./ai-provider";
 
 export interface BlogRecommendation {
   studyId: number;
@@ -242,29 +238,20 @@ async function generateSingleBlogContent(
     // Generate main content with timeout
     const contentPrompt = createContentPrompt(study, articleType, readingLevel);
 
+    const systemPrompt = `You are an expert medical content writer. Write concise, engaging content about hydrogen therapy research.`;
+
     const contentResponse = await Promise.race([
-      openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert medical content writer. Write concise, engaging content about hydrogen therapy research.`,
-          },
-          {
-            role: "user",
-            content: contentPrompt,
-          },
-        ],
+      ai.generateText(systemPrompt, contentPrompt, {
         temperature: 0.7,
-        max_tokens: 1200,
+        maxTokens: 1200,
       }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("OpenAI timeout")), 10000),
+      new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error("AI provider timeout")), 10000),
       ),
     ]);
 
     const content =
-      (contentResponse as any).choices[0]?.message?.content ||
+      contentResponse ||
       `This is a ${articleType} article about ${study.title}. ${study.abstract || "Research findings on hydrogen therapy applications."}`;
 
     // Generate optimized metadata quickly

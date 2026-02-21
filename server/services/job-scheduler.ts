@@ -19,7 +19,7 @@ export class JobScheduler {
   private lastRetractionCheck: Date | null = null;
 
   // Configuration
-  private readonly CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute
+  private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
   private readonly RETRACTION_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // Check retractions once per day
 
   private constructor() {}

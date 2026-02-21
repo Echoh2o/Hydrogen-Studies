@@ -3,16 +3,11 @@
  * Creates vector representations of studies and performs semantic similarity matching
  */
 
-import { OpenAI } from "openai";
+import { ai } from "./ai-provider";
 import { db } from "../db";
 import { studies } from "@shared/schema";
 import { sql, desc, or, and, gte, lte, eq, ilike } from "drizzle-orm";
 import { ParsedQuery } from "./natural-language-parser";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Cache for embeddings to reduce API calls
 const embeddingCache = new Map<string, number[]>();
@@ -76,7 +71,12 @@ async function generateEmbedding(text: string): Promise<number[]> {
   }
 
   try {
-    const response = await openai.embeddings.create({
+    const openaiClient = ai.getOpenAIClient();
+    if (!openaiClient) {
+      throw new Error("OpenAI client not available for embeddings");
+    }
+
+    const response = await openaiClient.embeddings.create({
       model: "text-embedding-3-small",
       input: text,
       encoding_format: "float",

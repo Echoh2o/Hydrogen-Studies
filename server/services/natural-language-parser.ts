@@ -3,12 +3,7 @@
  * Uses OpenAI to understand and parse natural language search queries
  */
 
-import { OpenAI } from "openai";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { ai } from "./ai-provider";
 
 // Entity types for extraction
 export interface ParsedQuery {
@@ -133,18 +128,10 @@ export async function parseNaturalLanguageQuery(
       "explanation": "Interpreted as a search for..."
     }`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+    const parsed = await ai.generateJSON(systemPrompt, userPrompt, {
       temperature: 0.3,
-      max_tokens: 1000,
-      response_format: { type: "json_object" },
+      maxTokens: 1000,
     });
-
-    const parsed = JSON.parse(completion.choices[0].message.content || "{}");
 
     // Map the parsed intent string to enum
     const intentMap: Record<string, QueryIntent> = {
@@ -314,27 +301,14 @@ export async function generateSearchSuggestions(
   if (partial.length < 3) return [];
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Generate 5 relevant search suggestions for hydrogen therapy research based on the partial query. Return as JSON array of strings.",
-        },
-        {
-          role: "user",
-          content: `Partial query: "${partial}"\nSuggest completions focused on hydrogen therapy, medical conditions, and research.`,
-        },
-      ],
+    const systemPrompt = "Generate 5 relevant search suggestions for hydrogen therapy research based on the partial query. Return as JSON object with a \"suggestions\" array of strings.";
+    const userPrompt = `Partial query: "${partial}"\nSuggest completions focused on hydrogen therapy, medical conditions, and research.`;
+
+    const result = await ai.generateJSON(systemPrompt, userPrompt, {
       temperature: 0.5,
-      max_tokens: 200,
-      response_format: { type: "json_object" },
+      maxTokens: 200,
     });
 
-    const result = JSON.parse(
-      completion.choices[0].message.content || '{"suggestions":[]}',
-    );
     return result.suggestions || [];
   } catch (error) {
     console.error("Error generating suggestions:", error);
@@ -357,24 +331,15 @@ export async function generateSearchSuggestions(
  */
 export async function correctAndExpandQuery(query: string): Promise<string> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Correct spelling errors and expand medical abbreviations in the query. Keep the meaning intact. Return only the corrected query.",
-        },
-        {
-          role: "user",
-          content: `Query: "${query}"\nExpand abbreviations like H2->hydrogen, ROS->reactive oxygen species, etc.`,
-        },
-      ],
+    const systemPrompt = "Correct spelling errors and expand medical abbreviations in the query. Keep the meaning intact. Return only the corrected query.";
+    const userPrompt = `Query: "${query}"\nExpand abbreviations like H2->hydrogen, ROS->reactive oxygen species, etc.`;
+
+    const result = await ai.generateText(systemPrompt, userPrompt, {
       temperature: 0.1,
-      max_tokens: 100,
+      maxTokens: 100,
     });
 
-    return completion.choices[0].message.content?.trim() || query;
+    return result?.trim() || query;
   } catch (error) {
     console.error("Error correcting query:", error);
 

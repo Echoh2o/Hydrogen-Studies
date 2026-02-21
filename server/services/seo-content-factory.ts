@@ -9,30 +9,13 @@
  * and targets specific keyword patterns for SEO dominance.
  */
 
-import OpenAI from "openai";
+import { ai } from "./ai-provider";
 import { db } from "../db";
 import { studies, blogArticles } from "../../shared/schema";
 import { eq, sql, and, ilike, or, desc, isNotNull } from "drizzle-orm";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 const SITE_NAME = "Hydrogen Studies";
-
-const initializeOpenAI = (): OpenAI | null => {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn("[ContentFactory] OpenAI API key not configured");
-    return null;
-  }
-  try {
-    return new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 120000, // 2 min for long-form content
-      maxRetries: 2,
-    });
-  } catch (error) {
-    console.error("[ContentFactory] Failed to initialize OpenAI:", error);
-    return null;
-  }
-};
 
 // ============================================================
 // Topic Mapping — maps conditions to keyword clusters
@@ -138,8 +121,7 @@ export interface GeneratedArticle {
  * Generate a pillar page for a specific topic cluster
  */
 export async function generatePillarPage(cluster: TopicCluster): Promise<GeneratedArticle | null> {
-  const openai = initializeOpenAI();
-  if (!openai) return null;
+  if (ai.getProviderStatus().primary === "none") return null;
 
   // Fetch all related studies for this topic
   const relatedStudies = await db.select({
@@ -239,18 +221,12 @@ Return a JSON object with these fields:
 - "readingLevel": "general" or "intermediate"`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "You are an expert health science writer. Return only valid JSON." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 8000,
-    });
+    const systemPrompt = "You are an expert health science writer. Return only valid JSON.";
 
-    const data = JSON.parse(response.choices[0].message.content || "{}");
+    const data = await ai.generateJSON(systemPrompt, prompt, {
+      temperature: 0.7,
+      maxTokens: 8000,
+    });
 
     return {
       title: data.title || cluster.pillarTitle,
@@ -284,8 +260,7 @@ export async function generateClusterPost(
   cluster: TopicCluster,
   clusterKeyword: TopicCluster["clusterKeywords"][number],
 ): Promise<GeneratedArticle | null> {
-  const openai = initializeOpenAI();
-  if (!openai) return null;
+  if (ai.getProviderStatus().primary === "none") return null;
 
   // Fetch related studies
   const relatedStudies = await db.select({
@@ -374,18 +349,12 @@ Return JSON with these fields:
 - "quickInsights": Key takeaways as bulleted string`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "You are an expert health science writer. Return only valid JSON." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 4000,
-    });
+    const systemPrompt = "You are an expert health science writer. Return only valid JSON.";
 
-    const data = JSON.parse(response.choices[0].message.content || "{}");
+    const data = await ai.generateJSON(systemPrompt, prompt, {
+      temperature: 0.7,
+      maxTokens: 4000,
+    });
 
     return {
       title: data.title || clusterKeyword.title,

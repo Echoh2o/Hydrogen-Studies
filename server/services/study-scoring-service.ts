@@ -5,11 +5,7 @@ import {
   reviewRecommendations,
 } from "../../shared/schema";
 import { eq, and, or, sql, desc } from "drizzle-orm";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { ai } from "./ai-provider";
 
 interface ScoringResult {
   methodologyScore: number;
@@ -310,19 +306,21 @@ export class StudyScoringService {
    * Use AI to detect additional red flags
    */
   private async detectAIRedFlags(study: StudyData): Promise<string[]> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (ai.getProviderStatus().primary === "none") {
       return [];
     }
 
     try {
-      const prompt = `
+      const systemPrompt = "You are a research quality analyst. Analyze studies for red flags and return JSON.";
+
+      const userPrompt = `
         Analyze this research study for potential red flags or quality concerns:
-        
+
         Title: ${study.title}
         Journal: ${study.journal}
         Abstract: ${study.abstract}
         Methods: ${study.methods || "Not provided"}
-        
+
         Identify any of these specific red flags:
         1. Statistical manipulation or p-hacking
         2. Selective reporting of outcomes
@@ -331,22 +329,16 @@ export class StudyScoringService {
         5. Overgeneralized conclusions
         6. Missing ethics approval
         7. Inconsistent data
-        
-        Return a JSON array of identified red flags (empty array if none).
+
+        Return a JSON object with a "redFlags" array of identified red flags (empty array if none).
         Be conservative and only flag clear issues.
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
+      const result = await ai.generateJSON(systemPrompt, userPrompt, {
         temperature: 0.3,
-        max_tokens: 500,
+        maxTokens: 500,
       });
 
-      const result = JSON.parse(
-        response.choices[0].message.content || '{"redFlags":[]}',
-      );
       return result.redFlags || [];
     } catch (error) {
       console.error("Error detecting AI red flags:", error);

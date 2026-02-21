@@ -8,12 +8,16 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import OpenAI from "openai";
 import { db } from "../db";
 import { studies as studiesTable, blogArticles } from "../../shared/schema";
 import { eq, isNull, or } from "drizzle-orm";
+import { ai } from "./ai-provider";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  const client = ai.getOpenAIClient();
+  if (!client) throw new Error("OpenAI API key not configured for image generation");
+  return client;
+}
 
 /**
  * Generate a scientific image based on text content
@@ -36,7 +40,7 @@ export async function generateScientificImage(
     const prompt = `Scientific illustration of ${content}. Professional medical illustration in hyper-realistic style with clean lighting and neutral background. No text or labels.`;
 
     // Generate the image using DALL-E 3
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: "dall-e-3",
       prompt: prompt,
       n: 1,
@@ -108,7 +112,7 @@ export async function generateBlogImage(blogId: number): Promise<{
     const prompt = `Create a modern, engaging image to represent a blog article titled "${title}" about ${summary}. The image should be appropriate for a health and wellness website focused on hydrogen research. Use a clean, professional style with subtle medical/scientific elements. No text in the image.`;
 
     // Generate the image using DALL-E 3
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: "dall-e-3",
       prompt: prompt,
       n: 1,
@@ -237,7 +241,7 @@ export async function generateImageForStudy(studyId: number): Promise<{
     }
 
     // Generate the image using DALL-E 3
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: "dall-e-3",
       prompt: prompt,
       n: 1,
@@ -324,49 +328,37 @@ async function createImagePrompt(
       title + " " + abstract + " " + methods,
     );
 
-    // Use OpenAI to generate a detailed image prompt
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert scientific illustrator specializing in hydrogen health research. 
-          Your task is to create detailed, scientifically accurate prompts for generating medical/scientific illustrations.
-          Focus on creating prompts that would yield realistic, professional images suitable for scientific publications.
-          Do not include text labels in the image description as they will appear distorted.
-          Avoid references to specific people, brands, or copyrighted concepts.`,
-        },
-        {
-          role: "user",
-          content: `Create a detailed prompt for generating a scientific illustration for a hydrogen health study with the following details:
-          
-          TITLE: ${title}
-          
-          ABSTRACT: ${abstractSummary}
-          
-          CATEGORY: ${category}
-          
-          FOCUS: ${focus}
-          
-          DELIVERY METHOD: ${deliveryMethod}
-          
-          HEALTH BENEFITS: ${healthBenefits.join(", ")}
-          
-          The image should be:
-          1. Scientifically accurate and professionally styled
-          2. Suitable for a medical or scientific publication
-          3. Clear and focused on the hydrogen therapy mechanism
-          4. Without any text labels or annotations
-          5. In a modern scientific illustration style with a clean background
-          
-          Provide only the image generation prompt with no additional explanation or commentary.`,
-        },
-      ],
-      max_tokens: 300,
-      temperature: 0.7,
-    });
+    // Use AI to generate a detailed image prompt
+    const generatedPrompt = (await ai.generateText(
+      `You are an expert scientific illustrator specializing in hydrogen health research.
+      Your task is to create detailed, scientifically accurate prompts for generating medical/scientific illustrations.
+      Focus on creating prompts that would yield realistic, professional images suitable for scientific publications.
+      Do not include text labels in the image description as they will appear distorted.
+      Avoid references to specific people, brands, or copyrighted concepts.`,
+      `Create a detailed prompt for generating a scientific illustration for a hydrogen health study with the following details:
 
-    const generatedPrompt = response.choices[0]?.message.content?.trim();
+      TITLE: ${title}
+
+      ABSTRACT: ${abstractSummary}
+
+      CATEGORY: ${category}
+
+      FOCUS: ${focus}
+
+      DELIVERY METHOD: ${deliveryMethod}
+
+      HEALTH BENEFITS: ${healthBenefits.join(", ")}
+
+      The image should be:
+      1. Scientifically accurate and professionally styled
+      2. Suitable for a medical or scientific publication
+      3. Clear and focused on the hydrogen therapy mechanism
+      4. Without any text labels or annotations
+      5. In a modern scientific illustration style with a clean background
+
+      Provide only the image generation prompt with no additional explanation or commentary.`,
+      { maxTokens: 300, temperature: 0.7 },
+    ))?.trim();
 
     if (!generatedPrompt) {
       // Fallback to a generic prompt if AI generation fails

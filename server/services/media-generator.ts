@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { db } from "../db";
 import { blogArticles, studies } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -6,8 +5,13 @@ import fs from "fs";
 import path from "path";
 import https from "https";
 import { pipeline } from "stream/promises";
+import { ai } from "./ai-provider";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  const client = ai.getOpenAIClient();
+  if (!client) throw new Error("OpenAI API key not configured for image generation");
+  return client;
+}
 
 export class MediaGenerator {
   private static instance: MediaGenerator;
@@ -44,7 +48,7 @@ export class MediaGenerator {
     `;
 
     try {
-      const response = await openai.images.generate({
+      const response = await getOpenAI().images.generate({
         model: "dall-e-3",
         prompt: prompt,
         n: 1,
