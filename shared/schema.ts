@@ -103,6 +103,27 @@ export const auditLogs = pgTable(
   },
 );
 
+// Password reset tokens table
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    usedAt: timestamp("used_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      tokenIdx: index("password_reset_token_idx").on(table.token),
+      userIdIdx: index("password_reset_user_id_idx").on(table.userId),
+    };
+  },
+);
+
 // User preferences table schema
 export const userPreferences = pgTable("user_preferences", {
   id: serial("id").primaryKey(),

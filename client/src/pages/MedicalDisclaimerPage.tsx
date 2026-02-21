@@ -29,7 +29,7 @@ export default function MedicalDisclaimerPage() {
           
           <div className="prose prose-gray max-w-none">
             <p className="text-sm text-gray-600 mb-6">
-              Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              Last Updated: February 21, 2026
             </p>
 
             <div className="bg-red-50 border-l-4 border-red-400 p-6 mb-8">

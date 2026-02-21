@@ -55,17 +55,37 @@ export function handleApiError(
   // Generate request ID if not present
   const requestId = (res.req as any).requestId || uuidv4();
 
-  // Enhanced logging with more context
+  // Sanitized logging — strip sensitive fields from request data
+  const sanitizedBody = res.req?.body
+    ? Object.fromEntries(
+        Object.entries(res.req.body).filter(
+          ([key]) =>
+            !["password", "confirmPassword", "currentPassword", "newPassword",
+              "token", "secret", "authorization", "cookie", "sessionId",
+              "passwordHash", "creditCard", "ssn"].includes(key),
+        ),
+      )
+    : undefined;
+
+  const sanitizedHeaders = res.req?.headers
+    ? Object.fromEntries(
+        Object.entries(res.req.headers).filter(
+          ([key]) =>
+            !["authorization", "cookie", "x-csrf-token", "x-admin-token"].includes(key),
+        ),
+      )
+    : undefined;
+
   const logContext = {
     requestId,
     message: error.message,
-    stack: error.stack,
+    stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     url: res.req?.url,
     method: res.req?.method,
-    body: res.req?.body,
+    body: sanitizedBody,
     params: res.req?.params,
     query: res.req?.query,
-    headers: res.req?.headers,
+    headers: sanitizedHeaders,
     ip: res.req?.ip,
     userAgent: res.req?.get("user-agent"),
   };

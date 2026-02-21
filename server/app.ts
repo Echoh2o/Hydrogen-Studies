@@ -1,4 +1,5 @@
 import express from "express";
+import helmet from "helmet";
 // @ts-ignore - no type declarations available
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -87,6 +88,41 @@ if (process.env.NODE_ENV === "production") {
 // Initialize database circuit breaker
 export const dbCircuitBreaker = new DatabaseCircuitBreaker();
 
+// Security headers via helmet (CSP, HSTS, X-Frame-Options, etc.)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://www.googletagmanager.com",
+          "https://www.google-analytics.com",
+        ],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        connectSrc: [
+          "'self'",
+          "https://www.google-analytics.com",
+          "https://api.anthropic.com",
+        ],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests:
+          process.env.NODE_ENV === "production" ? [] : null,
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+  }),
+);
+
 // Request tracking and error recovery middleware
 app.use(requestIdMiddleware);
 app.use(errorRecoveryMiddleware);
@@ -100,8 +136,8 @@ validateCorsConfig();
 app.use(cors(getCorsConfig()));
 
 // Body parsing middleware
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 // Dynamic SEO routes (sitemaps, robots.txt) — must be before CSRF and session
 app.use(seoRoutes);
@@ -131,6 +167,9 @@ const csrf = csrfProtection({
     "/api/auth/register", // Registration doesn't require CSRF (no session yet)
     "/api/auth/login", // Login doesn't require CSRF (no session yet)
     "/api/auth/logout", // Logout doesn't require CSRF (session being destroyed)
+    "/api/auth/forgot-password", // Password reset (no session yet)
+    "/api/auth/reset-password", // Password reset (token-verified)
+    "/api/client-errors", // Client error reporting (fire-and-forget)
     "/api/import", // Import endpoints (protected by admin auth)
     "/api/blogs", // Blog CRUD (protected by admin auth)
     "/api/content-enrichment", // Content enrichment (protected by admin auth)
@@ -296,6 +335,14 @@ app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "uploads")),
 );
+
+// Client error reporting endpoint (receives errors from frontend error-tracking.ts)
+app.post("/api/client-errors", (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    console.warn("[CLIENT ERROR]", JSON.stringify(req.body));
+  }
+  res.status(204).end();
+});
 
 // Health check endpoint for load balancers (before error handlers)
 app.get("/health", async (req, res) => {

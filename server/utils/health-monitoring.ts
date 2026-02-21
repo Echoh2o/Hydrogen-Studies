@@ -11,6 +11,7 @@ interface HealthStatus {
   timestamp: string;
   errors: string[];
   uptime: number;
+  version: string;
   database: {
     connected: boolean;
     latency: number;
@@ -20,13 +21,23 @@ interface HealthStatus {
     total: number;
     percentage: number;
   };
+  requestStats: {
+    totalRequests: number;
+    errorCount: number;
+    avgResponseTimeMs: number;
+  };
 }
+
+let totalRequests = 0;
+let totalErrors = 0;
+let totalResponseTime = 0;
 
 let healthStatus: HealthStatus = {
   status: "healthy",
   timestamp: new Date().toISOString(),
   errors: [],
   uptime: 0,
+  version: process.env.npm_package_version || "unknown",
   database: {
     connected: false,
     latency: 0,
@@ -36,11 +47,23 @@ let healthStatus: HealthStatus = {
     total: 0,
     percentage: 0,
   },
+  requestStats: {
+    totalRequests: 0,
+    errorCount: 0,
+    avgResponseTimeMs: 0,
+  },
 };
 
 let errorCount = 0;
 const MAX_ERRORS = 10;
 const startTime = Date.now();
+
+/** Track a completed request for health metrics */
+export function trackRequest(durationMs: number, isError: boolean): void {
+  totalRequests++;
+  totalResponseTime += durationMs;
+  if (isError) totalErrors++;
+}
 
 /**
  * Check database connectivity
@@ -114,8 +137,14 @@ export async function performHealthCheck(): Promise<HealthStatus> {
     timestamp: new Date().toISOString(),
     errors,
     uptime: Date.now() - startTime,
+    version: process.env.npm_package_version || "unknown",
     database: dbHealth,
     memory,
+    requestStats: {
+      totalRequests,
+      errorCount: totalErrors,
+      avgResponseTimeMs: totalRequests > 0 ? Math.round(totalResponseTime / totalRequests) : 0,
+    },
   };
 
   return healthStatus;
