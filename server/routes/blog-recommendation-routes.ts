@@ -5,6 +5,8 @@ import {
   generateBulkBlogs,
   type BulkGenerationRequest,
 } from "../services/blog-recommendation-system";
+import { db } from "../db";
+import { blogArticles } from "@shared/schema";
 
 const router = Router();
 
@@ -55,14 +57,46 @@ router.post("/bulk-generate", async (req, res) => {
     // Generate the blogs
     const results = await generateBulkBlogs(validatedRequest);
 
-    // TODO: Implement save to database functionality
-    let saveResults = null;
+    // Save to database if requested
+    let savedCount = 0;
+    let failedSaves = 0;
+
+    if (validatedRequest.saveToDatabase) {
+      for (const studyResult of results) {
+        if (!studyResult.success) continue;
+        for (const blog of studyResult.generatedBlogs) {
+          try {
+            const slug = (blog.title || "untitled")
+              .toLowerCase()
+              .replace(/[^\w\s-]/g, "")
+              .replace(/\s+/g, "-")
+              .replace(/-+/g, "-")
+              .replace(/^-+|-+$/g, "")
+              .substring(0, 100) || "untitled-blog";
+
+            await db.insert(blogArticles).values({
+              title: blog.title,
+              slug: `${slug}-${Date.now()}`,
+              summary: blog.summary || blog.title,
+              content: blog.content,
+              studyId: studyResult.studyId,
+              articleType: blog.articleType || "summary",
+              readingLevel: validatedRequest.readingLevel || "general",
+              isPublished: false,
+            });
+            savedCount++;
+          } catch (saveError) {
+            console.error("Error saving bulk blog:", saveError);
+            failedSaves++;
+          }
+        }
+      }
+    }
 
     res.json({
       success: true,
       data: {
         generationResults: results,
-        saveResults: saveResults,
         summary: {
           totalStudies: results.length,
           successfulStudies: results.filter((r) => r.success).length,
@@ -71,8 +105,8 @@ router.post("/bulk-generate", async (req, res) => {
             (sum, r) => sum + r.generatedBlogs.length,
             0,
           ),
-          savedBlogs: 0,
-          failedSaves: 0,
+          savedBlogs: savedCount,
+          failedSaves,
         },
       },
     });

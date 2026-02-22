@@ -184,6 +184,12 @@ const csrf = csrfProtection({
     "/api/seo", // SEO content factory (protected by admin auth)
     "/api/webhooks", // Shopify webhooks (verified by HMAC signature)
     "/api/newsletter", // Public newsletter signup
+    "/api/research", // Research import (protected by admin auth)
+    "/api/europepmc", // Europe PMC routes (protected by admin auth)
+    "/api/semantic-scholar", // Semantic Scholar import (protected by admin auth)
+    "/api/crossref", // CrossRef routes (protected by admin auth)
+    "/api/multi-format", // Multi-format generation (protected by admin auth)
+    "/api/blog-recommendations", // Blog recommendations (protected by admin auth)
   ],
 });
 
@@ -232,7 +238,8 @@ app.get("/api/stats/dashboard", generalApiRateLimiter, (req, res, next) => {
 });
 
 // Research & Content
-app.use("/api/research", researchUnifiedRoutes);
+// Mount without prefix — routes define full paths like /api/research/search
+app.use(researchUnifiedRoutes);
 app.use("/api/content-enrichment", aiGenerationRateLimiter, contentEnrichmentRoutes);
 app.use("/api/enrichment", aiGenerationRateLimiter, enrichmentRoutes);
 app.use("/api/blog-recommendations", aiGenerationRateLimiter, blogRecommendationRoutes);
