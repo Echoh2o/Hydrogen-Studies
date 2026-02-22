@@ -178,4 +178,141 @@ router.post("/preview", async (req, res) => {
   }
 });
 
+// ============================
+// Background Job Queue Endpoints
+// ============================
+
+import {
+  createJob,
+  startJob,
+  pauseJob,
+  cancelJob,
+  getJobStatus,
+  listJobs,
+  getWorkerState,
+} from "../services/blog-generation-worker";
+
+/**
+ * Create a new background generation job
+ * POST /api/blog-recommendations/jobs
+ */
+router.post("/jobs", async (req, res) => {
+  try {
+    const jobSchema = z.object({
+      studyIds: z.array(z.number()).min(1, "At least one study required"),
+      articleTypes: z.array(z.string()).min(1, "At least one article type required"),
+      readingLevel: z.string().default("general"),
+      includeImages: z.boolean().default(true),
+      includeSEO: z.boolean().default(true),
+      autoStart: z.boolean().default(true),
+    });
+
+    const config = jobSchema.parse(req.body);
+    const result = await createJob(config);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    // Auto-start if requested
+    if (config.autoStart && result.jobId) {
+      const startResult = await startJob(result.jobId);
+      return res.json({ ...result, started: startResult.success, startMessage: startResult.message });
+    }
+
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: error.errors[0].message });
+    }
+    console.error("Error creating job:", error);
+    res.status(500).json({ success: false, error: "Failed to create job" });
+  }
+});
+
+/**
+ * List all jobs
+ * GET /api/blog-recommendations/jobs
+ */
+router.get("/jobs", async (req, res) => {
+  try {
+    const jobs = await listJobs();
+    const worker = getWorkerState();
+    res.json({ success: true, jobs, worker });
+  } catch (error) {
+    console.error("Error listing jobs:", error);
+    res.status(500).json({ success: false, error: "Failed to list jobs" });
+  }
+});
+
+/**
+ * Get job status
+ * GET /api/blog-recommendations/jobs/:id
+ */
+router.get("/jobs/:id", async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });
+
+    const status = await getJobStatus(jobId);
+    if (!status) return res.status(404).json({ error: "Job not found" });
+
+    res.json({ success: true, job: status });
+  } catch (error) {
+    console.error("Error getting job status:", error);
+    res.status(500).json({ success: false, error: "Failed to get job status" });
+  }
+});
+
+/**
+ * Start/resume a job
+ * POST /api/blog-recommendations/jobs/:id/start
+ */
+router.post("/jobs/:id/start", async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });
+
+    const result = await startJob(jobId);
+    res.json(result);
+  } catch (error) {
+    console.error("Error starting job:", error);
+    res.status(500).json({ success: false, error: "Failed to start job" });
+  }
+});
+
+/**
+ * Pause a running job
+ * POST /api/blog-recommendations/jobs/:id/pause
+ */
+router.post("/jobs/:id/pause", async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });
+
+    const result = await pauseJob(jobId);
+    res.json(result);
+  } catch (error) {
+    console.error("Error pausing job:", error);
+    res.status(500).json({ success: false, error: "Failed to pause job" });
+  }
+});
+
+/**
+ * Cancel a job
+ * POST /api/blog-recommendations/jobs/:id/cancel
+ */
+router.post("/jobs/:id/cancel", async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });
+
+    const result = await cancelJob(jobId);
+    res.json(result);
+  } catch (error) {
+    console.error("Error cancelling job:", error);
+    res.status(500).json({ success: false, error: "Failed to cancel job" });
+  }
+});
+
 export default router;

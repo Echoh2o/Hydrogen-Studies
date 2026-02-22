@@ -2070,3 +2070,32 @@ export type UserSession = typeof userSessions.$inferSelect;
 export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
+// Blog generation job queue — supports thousands of blogs via background processing
+export const blogGenerationJobs = pgTable("blog_generation_jobs", {
+  id: serial("id").primaryKey(),
+  // Job configuration
+  studyIds: integer("study_ids").array().notNull(),
+  articleTypes: text("article_types").array().notNull(),
+  readingLevel: text("reading_level").notNull().default("general"),
+  includeImages: boolean("include_images").default(true),
+  includeSEO: boolean("include_seo").default(true),
+  // Job status
+  status: text("status").notNull().default("pending"), // pending | running | paused | completed | failed | cancelled
+  // Progress tracking
+  totalItems: integer("total_items").notNull().default(0), // studyIds.length * articleTypes.length
+  completedItems: integer("completed_items").notNull().default(0),
+  failedItems: integer("failed_items").notNull().default(0),
+  savedItems: integer("saved_items").notNull().default(0),
+  // Current position (for resume)
+  currentStudyIndex: integer("current_study_index").notNull().default(0),
+  currentTypeIndex: integer("current_type_index").notNull().default(0),
+  // Error tracking
+  lastError: text("last_error"),
+  errors: text("errors"), // JSON array of { studyId, articleType, error }
+  // Timestamps
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
