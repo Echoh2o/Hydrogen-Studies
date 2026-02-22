@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DoiEnhancer } from "@/components/admin/DoiEnhancer";
+import AdminLayout from "@/components/admin/AdminLayout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -260,7 +261,7 @@ export default function ResearchDatabasePage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <AdminLayout title="Research Database" description="Search and manage research studies">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Research Database Search</h1>
@@ -960,6 +961,6 @@ export default function ResearchDatabasePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminLayout>
   );
 }

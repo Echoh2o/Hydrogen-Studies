@@ -451,4 +451,115 @@ router.post("/retractions/check-study/:id", async (req: Request, res: Response) 
   }
 });
 
+// ============================================================
+// SEO Keyword Strategy Endpoints
+// ============================================================
+
+import {
+  seedKeywordClusters,
+  getKeywordClusters,
+  generateKeywordPillarPage,
+  generateKeywordClusterPost,
+  generateFullCluster,
+  getStrategyOverview,
+} from "../services/seo-keyword-strategy";
+
+/**
+ * GET /api/seo/keyword-strategy/overview
+ * Get full keyword strategy overview with all clusters and progress
+ */
+router.get("/keyword-strategy/overview", async (req: Request, res: Response) => {
+  try {
+    const overview = await getStrategyOverview();
+    res.json(overview);
+  } catch (error) {
+    console.error("[SEO API] Strategy overview error:", error);
+    res.status(500).json({ error: "Failed to get strategy overview" });
+  }
+});
+
+/**
+ * POST /api/seo/keyword-strategy/seed
+ * Seed default keyword clusters into the database
+ */
+router.post("/keyword-strategy/seed", async (req: Request, res: Response) => {
+  try {
+    const result = await seedKeywordClusters();
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error("[SEO API] Seed clusters error:", error);
+    res.status(500).json({ error: "Failed to seed keyword clusters" });
+  }
+});
+
+/**
+ * GET /api/seo/keyword-strategy/clusters
+ * Get all keyword clusters
+ */
+router.get("/keyword-strategy/clusters", async (req: Request, res: Response) => {
+  try {
+    const clusters = await getKeywordClusters();
+    res.json({ clusters });
+  } catch (error) {
+    console.error("[SEO API] Get clusters error:", error);
+    res.status(500).json({ error: "Failed to get clusters" });
+  }
+});
+
+/**
+ * POST /api/seo/keyword-strategy/generate-pillar/:id
+ * Generate a pillar page for a specific cluster
+ */
+router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const clusterId = parseInt(req.params.id);
+    if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
+
+    const result = await generateKeywordPillarPage(clusterId);
+    res.json(result);
+  } catch (error) {
+    console.error("[SEO API] Generate pillar error:", error);
+    res.status(500).json({ error: "Failed to generate pillar page" });
+  }
+});
+
+/**
+ * POST /api/seo/keyword-strategy/generate-cluster-post/:id
+ * Generate a single cluster post
+ * Body: { keywordIndex: number }
+ */
+router.post("/keyword-strategy/generate-cluster-post/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const clusterId = parseInt(req.params.id);
+    const { keywordIndex } = req.body;
+    if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
+    if (typeof keywordIndex !== "number") return res.status(400).json({ error: "keywordIndex required" });
+
+    const result = await generateKeywordClusterPost(clusterId, keywordIndex);
+    res.json(result);
+  } catch (error) {
+    console.error("[SEO API] Generate cluster post error:", error);
+    res.status(500).json({ error: "Failed to generate cluster post" });
+  }
+});
+
+/**
+ * POST /api/seo/keyword-strategy/generate-full-cluster/:id
+ * Generate pillar + all cluster posts for a cluster
+ * Body: { delayMs?: number }
+ */
+router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const clusterId = parseInt(req.params.id);
+    if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
+
+    const { delayMs = 3000 } = req.body;
+    const result = await generateFullCluster(clusterId, delayMs);
+    res.json(result);
+  } catch (error) {
+    console.error("[SEO API] Generate full cluster error:", error);
+    res.status(500).json({ error: "Failed to generate full cluster" });
+  }
+});
+
 export default router;

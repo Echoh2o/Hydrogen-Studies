@@ -7,6 +7,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import AdminLayout from "@/components/admin/AdminLayout";
 import {
   Card,
   CardContent,
@@ -208,7 +209,7 @@ export default function UserManagementPage() {
 
   return (
     <ProtectedRoute requiredRoles={["admin"]}>
-      <div className="container mx-auto px-4 py-8">
+      <AdminLayout title="User Management" description="Manage users, roles, and permissions">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -612,7 +613,7 @@ export default function UserManagementPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }

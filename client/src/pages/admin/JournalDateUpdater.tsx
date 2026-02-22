@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
+import AdminLayout from "@/components/admin/AdminLayout";
 
 interface JournalDateUpdaterProps {}
 
@@ -129,11 +130,7 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
   };
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-8">
-        Journal Publication Date Updater
-      </h1>
-
+    <AdminLayout title="Journal Date Updater" description="Update and fix journal publication dates">
       <div className="grid gap-6">
         {/* Statistics Dashboard */}
         <Card>
@@ -332,7 +329,7 @@ const JournalDateUpdater: React.FC<JournalDateUpdaterProps> = () => {
           </CardFooter>
         </Card>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

@@ -426,13 +426,20 @@ router.post("/generate-content", requireAdmin, aiGenerationRateLimiter, async (r
       temperature: 0.7,
     });
 
-    // Also generate a summary
-    const summaryPrompt = `Write a 2-3 sentence summary of this article for use in blog listings:\n\n${content.substring(0, 1000)}`;
-    const summary = await ai.generateText(
-      "You are a concise writer. Output only the summary text, no HTML tags.",
-      summaryPrompt,
-      { maxTokens: 200, temperature: 0.3 },
-    );
+    // Also generate a summary (with fallback if this step fails)
+    let summary = "";
+    try {
+      const summaryPrompt = `Write a 2-3 sentence summary of this article for use in blog listings:\n\n${content.substring(0, 1000)}`;
+      summary = await ai.generateText(
+        "You are a concise writer. Output only the summary text, no HTML tags.",
+        summaryPrompt,
+        { maxTokens: 200, temperature: 0.3 },
+      );
+    } catch (summaryErr) {
+      // Fallback: extract first paragraph text from generated content
+      const textMatch = content.match(/<p>(.*?)<\/p>/);
+      summary = textMatch ? textMatch[1].substring(0, 200) : title;
+    }
 
     res.json({ success: true, content, summary });
   } catch (error) {

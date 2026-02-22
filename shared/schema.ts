@@ -2099,3 +2099,32 @@ export const blogGenerationJobs = pgTable("blog_generation_jobs", {
   completedAt: timestamp("completed_at"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// SEO Content Strategy — keyword-centric pillar/cluster content model
+export const seoContentClusters = pgTable("seo_content_clusters", {
+  id: serial("id").primaryKey(),
+  // Keyword targeting
+  pillarKeyword: text("pillar_keyword").notNull(), // e.g. "hydrogen water bottle"
+  pillarTitle: text("pillar_title").notNull(), // e.g. "The Ultimate Guide to Hydrogen Water Bottles"
+  slug: text("slug").notNull().unique(),
+  // Classification
+  category: text("category").notNull().default("research"), // product | research | competitor
+  targetAudience: text("target_audience").notNull().default("consumer"), // consumer | researcher | skeptic
+  searchIntent: text("search_intent").notNull().default("informational"), // informational | commercial | transactional
+  // Cluster configuration
+  clusterKeywords: text("cluster_keywords").notNull().default("[]"), // JSON: [{ keyword, title, slug, articleType, searchIntent }]
+  // Content status
+  pillarArticleId: integer("pillar_article_id"), // FK to blogArticles when generated
+  totalClusterPosts: integer("total_cluster_posts").notNull().default(0),
+  generatedClusterPosts: integer("generated_cluster_posts").notNull().default(0),
+  // Echo Water integration
+  echoProductReferences: text("echo_product_references").notNull().default("[]"), // JSON: [{ product, url, keyword }]
+  includeProductCTA: boolean("include_product_cta").notNull().default(true),
+  // SEO metrics
+  estimatedSearchVolume: integer("estimated_search_volume"),
+  keywordDifficulty: integer("keyword_difficulty"), // 0-100
+  priority: integer("priority").notNull().default(50), // 0-100
+  // Timestamps
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});

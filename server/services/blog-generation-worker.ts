@@ -7,13 +7,14 @@
  */
 import { db } from "../db";
 import { blogGenerationJobs, blogArticles, studies } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ai } from "./ai-provider";
 
 // Worker state
 let isProcessing = false;
 let currentJobId: number | null = null;
 let shouldStop = false;
+let tableExists: boolean | null = null; // cached after first check
 
 // Configurable settings
 const DELAY_BETWEEN_ARTICLES_MS = 2000; // 2s between articles to avoid rate limits
@@ -21,9 +22,31 @@ const AI_TIMEOUT_MS = 30000; // 30s timeout for AI calls
 const MAX_RETRIES = 2;
 
 /**
+ * Check if the blog_generation_jobs table exists in the database.
+ * Result is cached after first successful check (table found).
+ */
+async function ensureTableExists(): Promise<boolean> {
+  if (tableExists === true) return true;
+  try {
+    const result = await db.execute(
+      sql`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'blog_generation_jobs') AS "exists"`
+    );
+    const exists = (result as any).rows?.[0]?.exists === true || (result as any)[0]?.exists === true;
+    if (exists) tableExists = true;
+    return exists;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Start or resume a blog generation job
  */
 export async function startJob(jobId: number): Promise<{ success: boolean; message: string }> {
+  if (!(await ensureTableExists())) {
+    return { success: false, message: "Job queue table not yet created. Deploy with db:push first." };
+  }
+
   if (isProcessing) {
     return { success: false, message: `Worker is busy with job #${currentJobId}` };
   }
@@ -74,6 +97,9 @@ export async function startJob(jobId: number): Promise<{ success: boolean; messa
  * Pause the currently running job
  */
 export async function pauseJob(jobId: number): Promise<{ success: boolean; message: string }> {
+  if (!(await ensureTableExists())) {
+    return { success: false, message: "Job queue table not yet created." };
+  }
   if (currentJobId !== jobId) {
     return { success: false, message: "This job is not currently running" };
   }
@@ -85,6 +111,9 @@ export async function pauseJob(jobId: number): Promise<{ success: boolean; messa
  * Cancel a job
  */
 export async function cancelJob(jobId: number): Promise<{ success: boolean; message: string }> {
+  if (!(await ensureTableExists())) {
+    return { success: false, message: "Job queue table not yet created." };
+  }
   if (currentJobId === jobId) {
     shouldStop = true;
   }
@@ -104,6 +133,8 @@ export async function cancelJob(jobId: number): Promise<{ success: boolean; mess
  * Get job status
  */
 export async function getJobStatus(jobId: number) {
+  if (!(await ensureTableExists())) return null;
+
   const [job] = await db
     .select()
     .from(blogGenerationJobs)
@@ -126,6 +157,8 @@ export async function getJobStatus(jobId: number) {
  * Get all jobs
  */
 export async function listJobs() {
+  if (!(await ensureTableExists())) return [];
+
   const jobs = await db
     .select()
     .from(blogGenerationJobs)
@@ -150,6 +183,10 @@ export async function createJob(config: {
   includeImages?: boolean;
   includeSEO?: boolean;
 }): Promise<{ success: boolean; jobId?: number; message: string }> {
+  if (!(await ensureTableExists())) {
+    return { success: false, message: "Job queue table not yet created. The database migration will run on next deploy." };
+  }
+
   const totalItems = config.studyIds.length * config.articleTypes.length;
 
   if (totalItems === 0) {

@@ -21,6 +21,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AdminLayout from "@/components/admin/AdminLayout";
 
 interface ContentStats {
   totalStudies: number;
@@ -252,8 +253,8 @@ export default function AdminMonitoringPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <AdminLayout title="System Monitoring" description="Content pipeline status and health checks">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -727,6 +728,6 @@ export default function AdminMonitoringPage() {
           </div>
         )}
       </div>
-    </div>
+    </AdminLayout>
   );
 }

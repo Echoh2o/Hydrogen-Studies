@@ -25,6 +25,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import AdminLayout from "@/components/admin/AdminLayout";
 import {
   Dialog,
   DialogContent,
@@ -329,15 +330,8 @@ export default function MultiFormatGeneratorPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          Multi-Format Content Generator
-        </h1>
-        <p className="text-gray-600">
-          Transform research studies into multiple engaging content formats
-        </p>
-      </div>
+    <AdminLayout title="Multi-Format Generator" description="Transform research studies into multiple content formats">
+      <div className="space-y-6">
 
       {/* Statistics Cards */}
       {statsData && (
@@ -667,7 +661,8 @@ export default function MultiFormatGeneratorPage() {
           }
         />
       )}
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
 
