@@ -16,6 +16,8 @@ import {
   Calendar,
   Image,
   Activity,
+  Sparkles,
+  Layers,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -62,6 +64,16 @@ export default function AdminLayout({
       title: "Content",
       items: [
         { href: "/admin/blogs", label: "Blog Articles", icon: FileText },
+        {
+          href: "/admin/blog-recommendations",
+          label: "AI Blog Generator",
+          icon: Sparkles,
+        },
+        {
+          href: "/admin/multi-format",
+          label: "Multi-Format",
+          icon: Layers,
+        },
         { href: "/admin/data-import", label: "Data Import", icon: Upload },
       ],
     },

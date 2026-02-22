@@ -37,6 +37,11 @@ import {
   Sparkles,
   Download,
   Eye,
+  Play,
+  Pause,
+  XCircle,
+  RefreshCw,
+  ListChecks,
 } from "lucide-react";
 
 interface BlogRecommendation {
@@ -342,6 +347,7 @@ export function BlogRecommendationSystem() {
         <TabsList>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
           <TabsTrigger value="generation">Bulk Generation</TabsTrigger>
+          <TabsTrigger value="jobs">Background Jobs</TabsTrigger>
           {generationProgress.isGenerating && (
             <TabsTrigger value="progress">Generation Progress</TabsTrigger>
           )}
@@ -668,7 +674,7 @@ export function BlogRecommendationSystem() {
               <Separator />
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Button
                   onClick={() => previewMutation.mutate()}
                   disabled={
@@ -678,7 +684,7 @@ export function BlogRecommendationSystem() {
                   variant="outline"
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  Preview Generation
+                  Preview
                 </Button>
                 <Button
                   onClick={() => generateMutation.mutate()}
@@ -687,13 +693,52 @@ export function BlogRecommendationSystem() {
                     generationOptions.articleTypes.length === 0 ||
                     generateMutation.isPending
                   }
+                  variant="outline"
                 >
                   {generateMutation.isPending ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Sparkles className="h-4 w-4 mr-2" />
                   )}
-                  Generate Blog Articles
+                  Generate Now (small batch)
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const studyIds = Array.from(selectedStudies);
+                    try {
+                      const res = await apiRequest(
+                        "POST",
+                        "/api/blog-recommendations/jobs",
+                        {
+                          studyIds,
+                          articleTypes: generationOptions.articleTypes,
+                          readingLevel: generationOptions.readingLevel,
+                          includeImages: generationOptions.includeImages,
+                          includeSEO: generationOptions.includeSEO,
+                          autoStart: true,
+                        },
+                      );
+                      const data = await res.json();
+                      if (data.success) {
+                        toast({
+                          title: "Background Job Started",
+                          description: data.message + (data.started ? " — Processing in background." : ""),
+                        });
+                        queryClient.invalidateQueries({ queryKey: ["/api/blog-recommendations/jobs"] });
+                      } else {
+                        toast({ title: "Error", description: data.message || data.error, variant: "destructive" });
+                      }
+                    } catch (err: any) {
+                      toast({ title: "Error", description: err.message, variant: "destructive" });
+                    }
+                  }}
+                  disabled={
+                    selectedStudies.size === 0 ||
+                    generationOptions.articleTypes.length === 0
+                  }
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  Queue Background Job (large batch)
                 </Button>
               </div>
 
@@ -709,11 +754,20 @@ export function BlogRecommendationSystem() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {selectedStudies.size} studies ×{" "}
                       {generationOptions.articleTypes.length} article types
+                      {selectedStudies.size * generationOptions.articleTypes.length > 20 && (
+                        <span className="block mt-1 text-amber-600">
+                          Use "Queue Background Job" for batches over 20 articles — it runs in the background with progress tracking.
+                        </span>
+                      )}
                     </p>
                   </div>
                 )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="jobs" className="space-y-4">
+          <JobsPanel />
         </TabsContent>
 
         {generationProgress.isGenerating && (
@@ -774,6 +828,181 @@ export function BlogRecommendationSystem() {
           </TabsContent>
         )}
       </Tabs>
+    </div>
+  );
+}
+
+/**
+ * Background Jobs Panel — shows all generation jobs with live progress
+ */
+function JobsPanel() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: jobsResponse, isLoading } = useQuery({
+    queryKey: ["/api/blog-recommendations/jobs"],
+    refetchInterval: 3000, // Poll every 3 seconds for live updates
+  });
+
+  const jobs = (jobsResponse as any)?.jobs || [];
+  const worker = (jobsResponse as any)?.worker || {};
+
+  const actionMutation = useMutation({
+    mutationFn: async ({ jobId, action }: { jobId: number; action: string }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/blog-recommendations/jobs/${jobId}/${action}`,
+      );
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast({ title: data.message || "Action completed" });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-recommendations/jobs"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      pending: "bg-gray-100 text-gray-800",
+      running: "bg-blue-100 text-blue-800",
+      paused: "bg-yellow-100 text-yellow-800",
+      completed: "bg-green-100 text-green-800",
+      failed: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-200 text-gray-600",
+    };
+    return <Badge className={styles[status] || "bg-gray-100"}>{status}</Badge>;
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-8 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          Loading jobs...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Worker status */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Worker Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2 text-sm">
+            <div className={`h-2 w-2 rounded-full ${worker.isProcessing ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
+            {worker.isProcessing
+              ? `Processing job #${worker.currentJobId}`
+              : "Idle — ready for new jobs"}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Jobs list */}
+      {jobs.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            No generation jobs yet. Select studies and click "Queue Background Job" to get started.
+          </CardContent>
+        </Card>
+      ) : (
+        jobs.map((job: any) => (
+          <Card key={job.id}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Job #{job.id}</span>
+                  {getStatusBadge(job.status)}
+                </div>
+                <div className="flex gap-1">
+                  {(job.status === "pending" || job.status === "paused") && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => actionMutation.mutate({ jobId: job.id, action: "start" })}
+                      disabled={actionMutation.isPending}
+                    >
+                      <Play className="h-3 w-3 mr-1" />
+                      {job.status === "paused" ? "Resume" : "Start"}
+                    </Button>
+                  )}
+                  {job.status === "running" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => actionMutation.mutate({ jobId: job.id, action: "pause" })}
+                      disabled={actionMutation.isPending}
+                    >
+                      <Pause className="h-3 w-3 mr-1" />
+                      Pause
+                    </Button>
+                  )}
+                  {(job.status === "running" || job.status === "paused" || job.status === "pending") && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive"
+                      onClick={() => actionMutation.mutate({ jobId: job.id, action: "cancel" })}
+                      disabled={actionMutation.isPending}
+                    >
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mb-2">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>{job.completedItems + job.failedItems} / {job.totalItems} articles</span>
+                  <span>{job.progress}%</span>
+                </div>
+                <Progress value={job.progress} className="h-2" />
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-4 gap-2 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Studies:</span>{" "}
+                  <span className="font-medium">{job.studyIds?.length || 0}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Saved:</span>{" "}
+                  <span className="font-medium text-green-600">{job.savedItems}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Failed:</span>{" "}
+                  <span className="font-medium text-red-600">{job.failedItems}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Types:</span>{" "}
+                  <span className="font-medium">{job.articleTypes?.length || 0}</span>
+                </div>
+              </div>
+
+              {/* Error display */}
+              {job.lastError && (
+                <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
+                  Last error: {job.lastError}
+                </div>
+              )}
+
+              {/* Timing */}
+              <div className="mt-2 text-xs text-muted-foreground">
+                Created: {new Date(job.createdAt).toLocaleString()}
+                {job.completedAt && ` | Completed: ${new Date(job.completedAt).toLocaleString()}`}
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 }
