@@ -42,15 +42,21 @@ export class JobScheduler {
 
     console.log("[JobScheduler] Starting...");
 
-    // Run immediately on startup
-    this.runJobs();
+    // Delay first run by 10s to let the app fully initialize (DB, routes, etc.)
+    setTimeout(() => {
+      this.runJobs().catch(err => {
+        console.error("[JobScheduler] Initial run failed:", err);
+      });
+    }, 10000);
 
-    // Set up periodic check
+    // Set up periodic check with error boundary
     this.checkInterval = setInterval(() => {
-      this.runJobs();
+      this.runJobs().catch(err => {
+        console.error("[JobScheduler] Periodic run failed:", err);
+      });
     }, this.CHECK_INTERVAL_MS);
 
-    console.log(`[JobScheduler] Active (interval: ${this.CHECK_INTERVAL_MS}ms)`);
+    console.log(`[JobScheduler] Active (interval: ${this.CHECK_INTERVAL_MS}ms, first run in 10s)`);
   }
 
   /**

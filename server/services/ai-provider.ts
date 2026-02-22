@@ -108,7 +108,21 @@ async function generateJSON<T = any>(
   // Strip markdown code fences if present
   const cleaned = raw.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
 
-  return JSON.parse(cleaned) as T;
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (parseError) {
+    console.error("[AI] JSON parse failed. Raw response (first 500 chars):", cleaned.substring(0, 500));
+    // Try to extract JSON from the response (AI sometimes wraps it in text)
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]) as T;
+      } catch {
+        // fall through
+      }
+    }
+    throw new Error(`AI returned invalid JSON: ${(parseError as Error).message}`);
+  }
 }
 
 /**

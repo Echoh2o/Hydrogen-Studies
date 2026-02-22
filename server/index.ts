@@ -98,10 +98,20 @@ process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled promise rejection:", reason);
 });
 
-// Catch uncaught exceptions — log and exit (unsafe to continue)
+// Catch uncaught exceptions — log but only exit for truly fatal errors
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught exception — shutting down:", error);
-  process.exit(1);
+  console.error("Uncaught exception:", error);
+  // Only exit for fatal system-level errors; request-level errors are survivable
+  if (
+    error.message?.includes("EACCES") ||
+    error.message?.includes("EADDRINUSE") ||
+    error.message?.includes("out of memory")
+  ) {
+    console.error("Fatal system error — shutting down.");
+    process.exit(1);
+  }
+  // For other errors, log and continue — the server can recover
+  console.error("Server continuing after non-fatal uncaught exception.");
 });
 
 setupServer().catch((err) => {

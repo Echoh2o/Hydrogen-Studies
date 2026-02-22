@@ -264,7 +264,7 @@ async function generateSingleBlogContent(
 
     const summary = study.abstract
       ? `${study.abstract.substring(0, 150)}...`
-      : `New research explores hydrogen therapy applications in ${study.category.toLowerCase()}.`;
+      : `New research explores hydrogen therapy applications in ${(study.category || "health").toLowerCase()}.`;
 
     const result: GeneratedBlogContent = {
       title:

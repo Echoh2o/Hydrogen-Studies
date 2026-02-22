@@ -229,9 +229,27 @@ export const DEFAULT_KEYWORD_CLUSTERS: KeywordClusterSeed[] = [
 // ============================================================
 
 /**
+ * Check if the seo_content_clusters table exists
+ */
+async function ensureClusterTableExists(): Promise<boolean> {
+  try {
+    const result = await db.execute(
+      sql`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'seo_content_clusters') AS "exists"`
+    );
+    return (result as any).rows?.[0]?.exists === true || (result as any)[0]?.exists === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Seed the default keyword clusters into the database
  */
 export async function seedKeywordClusters(): Promise<{ created: number; existing: number }> {
+  if (!(await ensureClusterTableExists())) {
+    throw new Error("seo_content_clusters table does not exist yet. Run db:push first.");
+  }
+
   let created = 0;
   let existing = 0;
 
@@ -305,6 +323,9 @@ export async function generateKeywordPillarPage(clusterId: number): Promise<{
   title?: string;
   message: string;
 }> {
+  if (!(await ensureClusterTableExists())) {
+    return { success: false, message: "seo_content_clusters table not yet created. Deploy with db:push." };
+  }
   if (ai.getProviderStatus().primary === "none") {
     return { success: false, message: "No AI provider configured" };
   }
@@ -477,6 +498,9 @@ export async function generateKeywordClusterPost(
   title?: string;
   message: string;
 }> {
+  if (!(await ensureClusterTableExists())) {
+    return { success: false, message: "seo_content_clusters table not yet created." };
+  }
   if (ai.getProviderStatus().primary === "none") {
     return { success: false, message: "No AI provider configured" };
   }
