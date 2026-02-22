@@ -11,11 +11,9 @@ import {
   Search,
   Upload,
   Settings,
-  Tag,
   Calendar,
   RefreshCcw,
   Home,
-  Folders,
   KeyRound,
   FolderTree,
 } from "lucide-react";
@@ -90,14 +88,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <BarChart2 className="h-5 w-5" />,
     },
     {
+      name: "Monitoring",
+      path: "/admin/monitoring",
+      icon: <BarChart2 className="h-5 w-5" />,
+    },
+    {
       name: "Journal Dates",
-      path: "/admin/journal-dates",
+      path: "/admin/journal-date-updater",
       icon: <Calendar className="h-5 w-5" />,
     },
     {
-      name: "Categories",
-      path: "/admin/categories",
-      icon: <Tag className="h-5 w-5" />,
+      name: "Research Import",
+      path: "/admin/research-import",
+      icon: <Search className="h-5 w-5" />,
     },
     {
       name: "Settings",

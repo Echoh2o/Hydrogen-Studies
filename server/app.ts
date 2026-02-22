@@ -40,6 +40,7 @@ import trendsRoutes from "./routes/trends-routes";
 import contentAnalyticsRoutes from "./routes/content-analytics-routes";
 import explorerRoutes from "./routes/explorer-routes";
 import reviewAssistantRoutes from "./routes/review-assistant-routes";
+import adminMonitoringRoutes from "./routes/admin-monitoring-routes";
 import contentOptimizationRoutes from "./routes/content-optimization-routes";
 import multiFormatRoutes from "./routes/multi-format-routes";
 import hydrogenRoutes from "./routes/hydrogen-routes";
@@ -325,6 +326,10 @@ app.use("/api/me", userDashboardRoutes);
 
 // Admin settings
 app.use("/api/admin/settings", adminSettingsRoutes);
+
+// Admin monitoring & process control
+app.use("/api/admin/monitoring", adminMonitoringRoutes);
+app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes
 
 // Serve public assets
 app.use(

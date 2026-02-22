@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Calendar,
   Image,
+  Activity,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -68,6 +69,7 @@ export default function AdminLayout({
       title: "Administration",
       items: [
         { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
+        { href: "/admin/monitoring", label: "Monitoring", icon: Activity },
         { href: "/admin/users", label: "Users", icon: UserCog },
         { href: "/admin/settings", label: "Settings", icon: Settings },
       ],
