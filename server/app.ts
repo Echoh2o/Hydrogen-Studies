@@ -374,6 +374,15 @@ app.use(globalErrorHandler);
 // Initialize health monitoring
 initializeHealthMonitoring();
 
+// Verify database connectivity on startup
+import { pool } from "./db";
+pool.query("SELECT 1").then(() => {
+  console.log("Database connection verified");
+}).catch((err: any) => {
+  console.error("WARNING: Database connection failed on startup:", err.message);
+  console.error("The app will start but DB-dependent features will fail until the connection is restored.");
+});
+
 import { jobScheduler } from "./services/job-scheduler";
 // Start background jobs
 jobScheduler.start();
