@@ -1,18 +1,11 @@
 import SmartReviewQueue from "@/components/review/SmartReviewQueue";
-import { Helmet } from "react-helmet";
+import AdminLayout from "@/components/admin/AdminLayout";
 
 const ReviewAssistantPage = () => {
   return (
-    <>
-      <Helmet>
-        <title>Review Assistant - Admin Panel</title>
-        <meta
-          name="description"
-          content="Smart review assistant for managing research studies"
-        />
-      </Helmet>
+    <AdminLayout title="Review Assistant" description="Smart review assistant for managing research studies">
       <SmartReviewQueue />
-    </>
+    </AdminLayout>
   );
 };
 

@@ -4,12 +4,12 @@
  */
 
 import TrendsDashboard from "@/components/trends/TrendsDashboard";
-import { Card } from "@/components/ui/card";
+import AdminLayout from "@/components/admin/AdminLayout";
 
 export default function TrendsAnalysisPage() {
   return (
-    <div className="container mx-auto py-6" data-testid="admin-trends-page">
+    <AdminLayout title="Trends Analysis" description="Hydrogen research trends and insights">
       <TrendsDashboard />
-    </div>
+    </AdminLayout>
   );
 }

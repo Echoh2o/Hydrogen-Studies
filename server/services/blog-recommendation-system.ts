@@ -243,10 +243,10 @@ async function generateSingleBlogContent(
     const contentResponse = await Promise.race([
       ai.generateText(systemPrompt, contentPrompt, {
         temperature: 0.7,
-        maxTokens: 1200,
+        maxTokens: 2048,
       }),
       new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error("AI provider timeout")), 10000),
+        setTimeout(() => reject(new Error("AI provider timeout")), 45000),
       ),
     ]);
 

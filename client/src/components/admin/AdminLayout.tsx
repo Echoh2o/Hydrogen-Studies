@@ -18,6 +18,7 @@ import {
   Activity,
   Sparkles,
   Layers,
+  Target,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -73,6 +74,11 @@ export default function AdminLayout({
           href: "/admin/multi-format",
           label: "Multi-Format",
           icon: Layers,
+        },
+        {
+          href: "/admin/seo-strategy",
+          label: "SEO Strategy",
+          icon: Target,
         },
         { href: "/admin/data-import", label: "Data Import", icon: Upload },
       ],

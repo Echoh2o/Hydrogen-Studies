@@ -117,6 +117,44 @@ router.get("/schedule", async (req, res) => {
 });
 
 /**
+ * Update schedule (alias for /schedule)
+ */
+router.post("/schedule", async (req, res) => {
+  try {
+    const data = scheduleSchema.parse(req.body);
+
+    const [existingSchedule] = await db.select().from(monitorSchedule);
+
+    if (existingSchedule) {
+      const [updatedSchedule] = await db
+        .update(monitorSchedule)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(monitorSchedule.id, existingSchedule.id))
+        .returning();
+
+      return res.json(updatedSchedule);
+    } else {
+      const [newSchedule] = await db
+        .insert(monitorSchedule)
+        .values({
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      return res.json(newSchedule);
+    }
+  } catch (error) {
+    console.error("Error updating schedule:", error);
+    return res.status(500).json({ message: "Failed to update schedule" });
+  }
+});
+
+/**
  * Update schedule
  */
 router.post("/", async (req, res) => {
@@ -161,14 +199,7 @@ router.post("/", async (req, res) => {
  */
 router.post("/run-now", async (req, res) => {
   try {
-    // Get the schedule configuration to verify it exists
-    const [schedule] = await db.select().from(monitorSchedule);
-
-    if (!schedule) {
-      return res.status(404).json({ message: "Schedule not found" });
-    }
-
-    // Run the keyword monitor immediately
+    // Run the keyword monitor immediately (no schedule required)
     const result = await runKeywordMonitorNow();
 
     if (!result.success) {

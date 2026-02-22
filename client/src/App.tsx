@@ -179,6 +179,9 @@ const ContentOptimizationPage = lazy(
 const MultiFormatGeneratorPage = lazy(
   () => import("./pages/admin/MultiFormatGeneratorPage"),
 );
+const SEOContentStrategyPage = lazy(
+  () => import("./pages/admin/SEOContentStrategyPage"),
+);
 const NaturalLanguageSearchPage = lazy(
   () => import("./pages/NaturalLanguageSearchPage"),
 );
@@ -421,6 +424,14 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin", "editor"]}>
               <MultiFormatGeneratorPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+
+        <Route path="/admin/seo-strategy">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <SEOContentStrategyPage />
             </ProtectedRoute>
           )}
         </Route>

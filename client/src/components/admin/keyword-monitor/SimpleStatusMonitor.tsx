@@ -46,10 +46,14 @@ export default function SimpleStatusMonitor({
   const runSearchMutation = useMutation({
     mutationFn: async () => {
       setRunningSearch(true);
-      const response = await fetch("/api/keywords/monitor/schedule/run", {
+      const response = await fetch("/api/keywords/monitor/run-now", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
 
+      if (!response.ok) {
+        throw new Error("Search failed");
+      }
       const data = await response.json();
       return data;
     },
@@ -162,7 +166,7 @@ export default function SimpleStatusMonitor({
 
         <Button
           onClick={() => runSearchMutation.mutate()}
-          disabled={runningSearch || !isScheduleEnabled || !hasScheduleSources}
+          disabled={runningSearch}
         >
           {runningSearch ? (
             <>
