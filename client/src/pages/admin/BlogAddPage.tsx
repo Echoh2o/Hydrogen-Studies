@@ -413,52 +413,53 @@ export default function BlogAddPage() {
                           <Button
                             variant="outline"
                             className="flex justify-start items-center gap-2 text-sm"
-                            onClick={() => {
-                              if (blogData.title) {
+                            disabled={!blogData.title}
+                            onClick={async () => {
+                              if (!blogData.title) {
                                 toast({
-                                  title: "Generating content...",
+                                  title: "Title Required",
                                   description:
-                                    "AI is creating blog content based on your title.",
+                                    "Please add a title before generating content.",
+                                  variant: "destructive",
                                 });
-
-                                setTimeout(() => {
-                                  const mockContent = `<h2>Introduction to Hydrogen Therapy</h2>
-<p>Hydrogen therapy has emerged as a promising approach in medical research, with studies showing its potential in addressing various health conditions. Molecular hydrogen (H₂) is a gas that can easily penetrate cell membranes and other barriers in the body due to its small size.</p>
-
-<h2>How Hydrogen Works in the Body</h2>
-<p>When introduced to the body, hydrogen acts as a selective antioxidant, meaning it targets only the most harmful free radicals while preserving beneficial ones. This selective action is what sets hydrogen apart from other antioxidants.</p>
-
-<h2>Research Findings</h2>
-<p>Recent studies have demonstrated hydrogen's effectiveness in reducing inflammation, protecting against oxidative stress, and supporting cellular health. Researchers are particularly interested in its applications for neurodegenerative conditions, metabolic disorders, and exercise recovery.</p>
-
-<h2>Methods of Administration</h2>
-<p>Hydrogen can be administered in several ways, including:</p>
-<ul>
-<li>Hydrogen-rich water</li>
-<li>Inhalation of hydrogen gas</li>
-<li>Hydrogen baths</li>
-<li>Hydrogen-saline injections</li>
-</ul>
-
-<h2>Future Directions</h2>
-<p>While research is still in its early stages, the potential applications of hydrogen therapy continue to expand. Clinical trials are currently underway to further evaluate its efficacy and optimal delivery methods for various conditions.</p>`;
-
-                                  setBlogData({
-                                    ...blogData,
-                                    content: mockContent,
-                                  });
-
+                                return;
+                              }
+                              toast({
+                                title: "Generating content...",
+                                description:
+                                  "AI is creating blog content based on your title.",
+                              });
+                              try {
+                                const res = await apiRequest(
+                                  "POST",
+                                  "/api/blogs/generate-content",
+                                  {
+                                    title: blogData.title,
+                                    studyId: blogData.studyId,
+                                    articleType: blogData.articleType,
+                                    readingLevel: blogData.readingLevel,
+                                  },
+                                );
+                                const data = await res.json();
+                                if (data.success) {
+                                  setBlogData((prev) => ({
+                                    ...prev,
+                                    content: data.content,
+                                    summary: data.summary || prev.summary,
+                                  }));
                                   toast({
                                     title: "Content Generated",
                                     description:
                                       "AI has created content based on your blog title.",
                                   });
-                                }, 2000);
-                              } else {
+                                } else {
+                                  throw new Error(data.error || "Generation failed");
+                                }
+                              } catch (err: any) {
                                 toast({
-                                  title: "Title Required",
+                                  title: "Generation Failed",
                                   description:
-                                    "Please add a title before generating content.",
+                                    err.message || "Failed to generate content.",
                                   variant: "destructive",
                                 });
                               }
@@ -470,37 +471,51 @@ export default function BlogAddPage() {
                           <Button
                             variant="outline"
                             className="flex justify-start items-center gap-2 text-sm"
-                            onClick={() => {
-                              if (blogData.content) {
+                            disabled={!blogData.content}
+                            onClick={async () => {
+                              if (!blogData.content) {
                                 toast({
-                                  title: "Improving content...",
-                                  description: "AI is enhancing your content.",
+                                  title: "Content Required",
+                                  description:
+                                    "Please add some content before requesting improvements.",
+                                  variant: "destructive",
                                 });
-
-                                setTimeout(() => {
-                                  const improvedContent =
-                                    blogData.content.replace(
-                                      /<p>(.*?)<\/p>/g,
-                                      (match, p1) =>
-                                        `<p>${p1} Additionally, recent research has provided further evidence to support these findings.</p>`,
-                                    );
-
-                                  setBlogData({
-                                    ...blogData,
-                                    content: improvedContent,
-                                  });
-
+                                return;
+                              }
+                              toast({
+                                title: "Improving content...",
+                                description: "AI is enhancing your content.",
+                              });
+                              try {
+                                const res = await apiRequest(
+                                  "POST",
+                                  "/api/blogs/generate-content",
+                                  {
+                                    title: `Improve: ${blogData.title}`,
+                                    studyId: blogData.studyId,
+                                    articleType: blogData.articleType,
+                                    readingLevel: blogData.readingLevel,
+                                  },
+                                );
+                                const data = await res.json();
+                                if (data.success) {
+                                  setBlogData((prev) => ({
+                                    ...prev,
+                                    content: data.content,
+                                  }));
                                   toast({
                                     title: "Content Improved",
                                     description:
                                       "AI has enhanced your existing content.",
                                   });
-                                }, 1500);
-                              } else {
+                                } else {
+                                  throw new Error(data.error || "Improvement failed");
+                                }
+                              } catch (err: any) {
                                 toast({
-                                  title: "Content Required",
+                                  title: "Improvement Failed",
                                   description:
-                                    "Please add some content before requesting improvements.",
+                                    err.message || "Failed to improve content.",
                                   variant: "destructive",
                                 });
                               }
@@ -512,33 +527,53 @@ export default function BlogAddPage() {
                           <Button
                             variant="outline"
                             className="flex justify-start items-center gap-2 text-sm"
-                            onClick={() => {
-                              if (blogData.content) {
+                            disabled={!blogData.content}
+                            onClick={async () => {
+                              if (!blogData.content) {
                                 toast({
-                                  title: "Simplifying content...",
+                                  title: "Content Required",
                                   description:
-                                    "AI is making your content easier to understand.",
+                                    "Please add some content before simplifying.",
+                                  variant: "destructive",
                                 });
-
-                                setTimeout(() => {
-                                  // In a real implementation, this would call the API
-                                  setBlogData({
-                                    ...blogData,
-                                    content: blogData.content,
+                                return;
+                              }
+                              toast({
+                                title: "Simplifying content...",
+                                description:
+                                  "AI is making your content easier to understand.",
+                              });
+                              try {
+                                const res = await apiRequest(
+                                  "POST",
+                                  "/api/blogs/generate-content",
+                                  {
+                                    title: blogData.title,
+                                    studyId: blogData.studyId,
+                                    articleType: blogData.articleType,
                                     readingLevel: "6th",
-                                  });
-
+                                  },
+                                );
+                                const data = await res.json();
+                                if (data.success) {
+                                  setBlogData((prev) => ({
+                                    ...prev,
+                                    content: data.content,
+                                    readingLevel: "6th",
+                                  }));
                                   toast({
                                     title: "Reading Level Adjusted",
                                     description:
                                       "Content has been simplified to a 6th grade reading level.",
                                   });
-                                }, 1500);
-                              } else {
+                                } else {
+                                  throw new Error(data.error || "Simplification failed");
+                                }
+                              } catch (err: any) {
                                 toast({
-                                  title: "Content Required",
+                                  title: "Simplification Failed",
                                   description:
-                                    "Please add some content before simplifying.",
+                                    err.message || "Failed to simplify content.",
                                   variant: "destructive",
                                 });
                               }

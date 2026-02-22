@@ -17,6 +17,7 @@ import {
   userStudyInteractions,
   userReadingHistory,
   searchHistory,
+  auditLogs,
   studies,
 } from "../../shared/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -238,6 +239,106 @@ router.get("/saved-studies", async (req: Request, res: Response) => {
     res.json({ savedStudyIds: saved.map(s => s.studyId) });
   } catch (error) {
     res.status(500).json({ error: "Failed to get saved studies" });
+  }
+});
+
+/**
+ * GET /api/me/data-export
+ * GDPR: Export all user data as JSON
+ */
+router.get("/data-export", async (req: Request, res: Response) => {
+  try {
+    const userId = req.session?.userId;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+    // Gather all user data
+    const [userData] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        role: users.role,
+        createdAt: users.createdAt,
+        lastLogin: users.lastLogin,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    const preferences = await db
+      .select()
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, userId));
+
+    const interactions = await db
+      .select()
+      .from(userStudyInteractions)
+      .where(eq(userStudyInteractions.userId, userId));
+
+    const history = await db
+      .select()
+      .from(userReadingHistory)
+      .where(eq(userReadingHistory.userId, userId));
+
+    const searches = await db
+      .select()
+      .from(searchHistory)
+      .where(eq(searchHistory.userId, userId));
+
+    const logs = await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.userId, userId))
+      .orderBy(desc(auditLogs.createdAt));
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      user: userData,
+      preferences,
+      studyInteractions: interactions,
+      readingHistory: history,
+      searchHistory: searches,
+      auditLogs: logs,
+    };
+
+    res.setHeader("Content-Disposition", "attachment; filename=my-data-export.json");
+    res.setHeader("Content-Type", "application/json");
+    res.json(exportData);
+  } catch (error) {
+    console.error("[Dashboard] Data export error:", error);
+    res.status(500).json({ error: "Failed to export data" });
+  }
+});
+
+/**
+ * DELETE /api/me/account
+ * GDPR: Delete user account and all associated data
+ */
+router.delete("/account", async (req: Request, res: Response) => {
+  try {
+    const userId = req.session?.userId;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+    // Delete user data in order (respecting foreign key constraints)
+    await db.delete(userReadingHistory).where(eq(userReadingHistory.userId, userId));
+    await db.delete(userStudyInteractions).where(eq(userStudyInteractions.userId, userId));
+    await db.delete(searchHistory).where(eq(searchHistory.userId, userId));
+    await db.delete(userPreferences).where(eq(userPreferences.userId, userId));
+    await db.delete(auditLogs).where(eq(auditLogs.userId, userId));
+
+    // Delete user account
+    await db.delete(users).where(eq(users.id, userId));
+
+    // Destroy session
+    req.session.destroy((err) => {
+      if (err) console.error("Session destroy error during account deletion:", err);
+    });
+
+    res.clearCookie("hydrogen.sid", { path: "/" });
+    res.json({ message: "Account and all associated data deleted successfully" });
+  } catch (error) {
+    console.error("[Dashboard] Account deletion error:", error);
+    res.status(500).json({ error: "Failed to delete account" });
   }
 });
 

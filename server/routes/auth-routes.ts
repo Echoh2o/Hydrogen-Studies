@@ -7,9 +7,11 @@ import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { db } from "../db";
-import { users, auditLogs, UserRole } from "../../shared/schema";
-import { eq } from "drizzle-orm";
+import { users, auditLogs, passwordResetTokens, UserRole } from "../../shared/schema";
+import { eq, and, gt } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { isAuthenticated, requireRole, hasPermission } from "../auth";
+import { authRateLimiter } from "../utils/rate-limiting";
 
 const router = Router();
 
@@ -46,6 +48,7 @@ const changePasswordSchema = z
   });
 
 // Helper function to create audit log - fails silently to never block authentication
+// Retries once on transient failures for better reliability
 function createAuditLog(
   userId: string | null,
   action: string,
@@ -56,8 +59,7 @@ function createAuditLog(
   sessionId: string | null = null,
   changes: any = null,
 ): void {
-  // Fire and forget - don't await, don't block the main flow
-  db.insert(auditLogs).values({
+  const values = {
     userId,
     action,
     entityType,
@@ -66,14 +68,25 @@ function createAuditLog(
     userAgent,
     sessionId,
     changes: changes ? JSON.stringify(changes) : null,
-  }).catch((error: any) => {
-    // Silently log - audit logging should never block authentication
-    console.warn("Audit log skipped (table may not exist):", error?.message || String(error));
-  });
+  };
+
+  // Fire and forget with one retry
+  db.insert(auditLogs)
+    .values(values)
+    .catch(() => {
+      // Retry once after 500ms on failure
+      setTimeout(() => {
+        db.insert(auditLogs)
+          .values(values)
+          .catch((retryErr: any) => {
+            console.warn("Audit log failed after retry:", retryErr?.message);
+          });
+      }, 500);
+    });
 }
 
 // POST /api/auth/register - User registration
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register", authRateLimiter, async (req: Request, res: Response) => {
   try {
     // Validate input
     const validatedData = registerSchema.parse(req.body);
@@ -172,7 +185,7 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/login - User login
-router.post("/login", async (req: Request, res: Response) => {
+router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
   try {
     // Validate input
     const validatedData = loginSchema.parse(req.body);
@@ -658,6 +671,147 @@ router.post(
       }
       console.error("Create user error:", error);
       res.status(500).json({ error: "Failed to create user" });
+    }
+  },
+);
+
+// POST /api/auth/forgot-password - Request password reset
+router.post(
+  "/forgot-password",
+  authRateLimiter,
+  async (req: Request, res: Response) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+
+      // Always return success to prevent email enumeration
+      const successMsg = "If an account with that email exists, a password reset link has been sent.";
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (!user) {
+        return res.json({ message: successMsg });
+      }
+
+      // Generate reset token
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await db.insert(passwordResetTokens).values({
+        userId: user.id,
+        token,
+        expiresAt,
+      });
+
+      // Log the reset request (don't expose token in log)
+      createAuditLog(
+        user.id,
+        "password_reset_requested",
+        "user",
+        user.id,
+        req.ip,
+        req.headers["user-agent"] as string,
+        null,
+      );
+
+      // In production, send email via SendGrid
+      if (process.env.SENDGRID_API_KEY) {
+        try {
+          const sgMail = await import("@sendgrid/mail");
+          sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
+          const resetUrl = `${process.env.APP_URL || req.protocol + "://" + req.get("host")}/reset-password?token=${token}`;
+          await sgMail.default.send({
+            to: email,
+            from: process.env.FROM_EMAIL || "noreply@hydrogenstudies.com",
+            subject: "Password Reset - Hydrogen Studies",
+            html: `
+              <h2>Password Reset Request</h2>
+              <p>You requested a password reset. Click the link below to reset your password:</p>
+              <p><a href="${resetUrl}">Reset Password</a></p>
+              <p>This link expires in 1 hour.</p>
+              <p>If you did not request this, please ignore this email.</p>
+            `,
+          });
+        } catch (emailErr) {
+          console.error("Failed to send reset email:", emailErr);
+        }
+      } else {
+        console.warn("SENDGRID_API_KEY not configured — password reset email not sent. Token:", token);
+      }
+
+      res.json({ message: successMsg });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      console.error("Forgot password error:", error);
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  },
+);
+
+// POST /api/auth/reset-password - Reset password with token
+router.post(
+  "/reset-password",
+  authRateLimiter,
+  async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = z
+        .object({
+          token: z.string().min(1),
+          newPassword: z.string().min(6),
+        })
+        .parse(req.body);
+
+      // Find valid, unused token
+      const [resetToken] = await db
+        .select()
+        .from(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.token, token),
+            gt(passwordResetTokens.expiresAt, new Date()),
+          ),
+        )
+        .limit(1);
+
+      if (!resetToken || resetToken.usedAt) {
+        return res.status(400).json({ error: "Invalid or expired reset token" });
+      }
+
+      // Hash new password and update user
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await db
+        .update(users)
+        .set({ passwordHash })
+        .where(eq(users.id, resetToken.userId));
+
+      // Mark token as used
+      await db
+        .update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(passwordResetTokens.id, resetToken.id));
+
+      createAuditLog(
+        resetToken.userId,
+        "password_reset_completed",
+        "user",
+        resetToken.userId,
+        req.ip,
+        req.headers["user-agent"] as string,
+        null,
+      );
+
+      res.json({ message: "Password reset successfully. Please log in." });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: "Failed to reset password" });
     }
   },
 );

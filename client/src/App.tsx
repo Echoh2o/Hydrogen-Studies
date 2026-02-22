@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { initGA } from "./lib/analytics";
+import { initErrorTracking, trackError } from "./lib/error-tracking";
 import { useAnalytics } from "./hooks/use-analytics";
 import PageLoader from "@/components/ui/page-loader";
 import {
@@ -23,6 +24,10 @@ import HomePage from "@/pages/HomePage";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+
+// Password reset pages
+const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 
 // Lazy load all non-critical pages for better performance
 const SearchPage = lazy(() => import("@/pages/SearchPage"));
@@ -200,6 +205,8 @@ function Router() {
         {/* Authentication Routes */}
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
 
         {/* Core Public Routes */}
         <Route path="/" component={HomePage} />
@@ -495,17 +502,11 @@ function App() {
   const isAdminRoute = location.startsWith("/admin");
   const isHomePage = location === "/";
 
-  // Initialize Google Analytics when app loads
+  // Initialize error tracking and analytics
   useEffect(() => {
+    initErrorTracking();
     startTransition(() => {
-      // Verify required environment variable is present
-      if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
-        console.warn(
-          "Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID",
-        );
-      } else {
-        initGA();
-      }
+      initGA();
     });
 
     // Global error handling
@@ -557,16 +558,23 @@ function App() {
     <EnhancedErrorBoundary
       onError={(error, errorInfo) => {
         console.error("App-level error:", error);
-        // Could send to error tracking service here
+        trackError(error instanceof Error ? error : new Error(String(error)), "App");
       }}
     >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ScrollToTop />
+          {/* Skip to main content link for keyboard/screen reader users */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-teal-600 focus:text-white focus:px-4 focus:py-2 focus:rounded"
+          >
+            Skip to main content
+          </a>
           <div className="flex min-h-screen flex-col">
             {!isAdminRoute && <CookieConsent />}
             {!isAdminRoute && <MedicalDisclaimer />}
-            <main className={`flex-1 ${isAdminRoute ? "p-0" : ""}`}>
+            <main id="main-content" className={`flex-1 ${isAdminRoute ? "p-0" : ""}`}>
               <AsyncErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
                   <Router />

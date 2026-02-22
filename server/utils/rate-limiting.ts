@@ -146,6 +146,23 @@ export function createCustomRateLimiter(
   });
 }
 
+/**
+ * Authentication rate limiter for login/register
+ * 10 attempts per 15 minutes per IP (prevents brute force)
+ */
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  message:
+    "Too many authentication attempts. Please try again after 15 minutes.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  keyGenerator: (req: Request) => {
+    return req.ip || req.socket.remoteAddress || "unknown";
+  },
+});
+
 // Export rate limit configurations for logging/monitoring
 export const rateLimitConfigs = {
   aiGeneration: { windowMs: 60 * 1000, max: 5, name: "AI Generation" },
@@ -157,4 +174,5 @@ export const rateLimitConfigs = {
     max: 10,
     name: "Blog Generation",
   },
+  auth: { windowMs: 15 * 60 * 1000, max: 10, name: "Authentication" },
 };

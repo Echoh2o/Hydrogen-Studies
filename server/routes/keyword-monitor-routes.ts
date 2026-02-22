@@ -425,72 +425,20 @@ router.patch("/results/:id/status", async (req, res) => {
   }
 });
 
-// Run the keyword monitor
+// Run the keyword monitor with real API searches
 router.post("/monitor/run", async (req, res) => {
   try {
-    // This would be a more complex operation in production, involving:
-    // 1. Fetching active keywords from the database
-    // 2. Searching scientific databases (PubMed, EuropePMC, etc.) using those keywords
-    // 3. Applying exclusion filters to remove results with excluded keywords
-    // 4. Checking for duplicates (against existing studies and monitor results)
-    // 5. Storing new results in the monitor_results table
+    const { runKeywordMonitorNow } = await import("../services/keyword-monitor-service");
+    const result = await runKeywordMonitorNow();
 
-    // For demo purposes, we'll create a few sample results
-    const sampleResults = [
-      {
-        title:
-          "Molecular hydrogen attenuates hypoxia/reoxygenation injury in neuronal SH-SY5Y cells",
-        abstract:
-          "Molecular hydrogen (H2) has been reported to have a therapeutic effect against various diseases. Here, we investigated the efficacy of H2 on hypoxia/reoxygenation (H/R) injury in human neuroblastoma SH-SY5Y cells.",
-        authors: "Tanaka M, Kurihara K, Sugimoto N, et al.",
-        journal: "Journal of Neuroscience Research",
-        publishDate: "2023-03-15",
-        doi: "10.1002/jnr.25023",
-        url: "https://example.com/study1",
-        matchedKeywords: ["molecular hydrogen", "neuroprotection"],
-        source: "PubMed",
-      },
-      {
-        title:
-          "Hydrogen-rich water improves cognitive function in elderly patients: a randomized controlled trial",
-        abstract:
-          "This randomized controlled trial investigated whether hydrogen-rich water consumption could improve cognitive function in elderly patients with mild cognitive impairment.",
-        authors: "Yamada S, Takahashi R, Watanabe K, et al.",
-        journal: "Journal of Gerontology and Geriatrics",
-        publishDate: "2023-04-22",
-        doi: "10.1093/geriat/gbc056",
-        url: "https://example.com/study2",
-        matchedKeywords: ["hydrogen-rich water", "cognitive function"],
-        source: "CrossRef",
-      },
-      {
-        title:
-          "Effects of hydrogen inhalation on exercise-induced oxidative stress in healthy athletes",
-        abstract:
-          "This study aimed to investigate whether hydrogen gas inhalation could reduce exercise-induced oxidative stress and improve recovery in healthy athletes.",
-        authors: "Chen J, Liu D, Wang T, et al.",
-        journal: "Sports Medicine and Exercise Science",
-        publishDate: "2023-05-10",
-        doi: "10.1007/s40279-023-01234-1",
-        url: "https://example.com/study3",
-        matchedKeywords: ["hydrogen inhalation", "oxidative stress"],
-        source: "EuropePMC",
-      },
-    ];
+    if (!result.success) {
+      return res.status(400).json({
+        message: result.message || "Failed to run monitor",
+        error: result.error,
+      });
+    }
 
-    // Insert sample results
-    const insertedResults = await db
-      .insert(monitorResults)
-      .values(
-        sampleResults.map((result) => ({
-          ...result,
-          status: "pending",
-          foundAt: new Date(),
-        })),
-      )
-      .returning();
-
-    // Update last searched timestamp for keywords
+    // Update last searched timestamp for active keywords
     const activeKeywords = await db
       .select()
       .from(keywords)
@@ -508,8 +456,8 @@ router.post("/monitor/run", async (req, res) => {
 
     res.json({
       message: "Keyword monitor ran successfully",
-      found: insertedResults.length,
-      results: insertedResults,
+      found: result.results?.total || 0,
+      results: result.results,
     });
   } catch (error) {
     console.error("Error running keyword monitor:", error);

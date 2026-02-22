@@ -93,9 +93,15 @@ async function setupServer() {
   }
 }
 
-// Catch unhandled rejections so they don't silently kill the process
-process.on("unhandledRejection", (reason) => {
+// Catch unhandled rejections — log and continue (don't crash)
+process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled promise rejection:", reason);
+});
+
+// Catch uncaught exceptions — log and exit (unsafe to continue)
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception — shutting down:", error);
+  process.exit(1);
 });
 
 setupServer().catch((err) => {

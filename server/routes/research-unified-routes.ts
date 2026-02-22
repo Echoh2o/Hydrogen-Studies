@@ -9,7 +9,27 @@ import {
 import { searchCrossRef, extractStudyFromCrossRef } from "../services/crossref-api";
 import { studyService } from "../services/study-service";
 import { reviewService } from "../services/review-service";
-import { enrichStudyFromPubMed as extractStudyFromPubMed } from "../services/pubmed-enricher";
+import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
+
+/**
+ * Build study data from PubMed search result (client-sent paper data).
+ * enrichStudyFromPubMed enriches an EXISTING study by ID, so we need this
+ * helper to create the initial study record from search result data.
+ */
+function buildStudyFromPubMedData(paperData: any) {
+  if (!paperData) return null;
+  return {
+    title: paperData.title || "Untitled",
+    abstract: paperData.abstract || paperData.abstractText || "",
+    authors: paperData.authors || paperData.authorString || "Unknown",
+    journal: paperData.journal || paperData.journalTitle || "Unknown",
+    publishDate: paperData.publishDate || paperData.publicationDate || new Date().toISOString().split("T")[0],
+    category: "hydrogen",
+    doi: paperData.doi || null,
+    url: paperData.url || (paperData.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${paperData.pmid}` : null),
+    sourcePlatform: "pubmed",
+  };
+}
 
 const router = Router();
 
@@ -601,7 +621,7 @@ router.post(
       let studyData;
       switch (source.toLowerCase()) {
         case "pubmed":
-          studyData = await extractStudyFromPubMed(paperData);
+          studyData = buildStudyFromPubMedData(paperData);
           break;
         case "europepmc":
           studyData = extractStudyFromEuropePMC(paperData);
@@ -837,7 +857,7 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
     let study;
     switch (source.toLowerCase()) {
       case "pubmed":
-        study = await extractStudyFromPubMed(paperData);
+        study = buildStudyFromPubMedData(paperData);
         break;
       case "europepmc":
         study = extractStudyFromEuropePMC(paperData);
@@ -869,6 +889,138 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Error importing paper:", error);
     res.status(500).json({ error: error.message || "Failed to import paper" });
+  }
+});
+
+/**
+ * Source-specific import endpoints
+ * These wrap the generic /api/research/import with the correct source parameter
+ */
+router.post("/api/research/pubmed/import", async (req: Request, res: Response) => {
+  try {
+    const { pmid, title, abstract, authors, journal, publishDate, doi, url } = req.body;
+    if (!pmid && !title) return res.status(400).json({ error: "pmid or title is required" });
+
+    const identifier = doi || pmid || "";
+    if (identifier) {
+      const existing = await studyService.getStudyByIdentifier(identifier);
+      if (existing) return res.status(409).json({ message: "Study already exists", study: existing });
+    }
+
+    // Build study from client-provided search result data
+    const studyData = {
+      title: title || "Untitled",
+      abstract: abstract || "",
+      authors: authors || "Unknown",
+      journal: journal || "Unknown",
+      publishDate: publishDate || new Date().toISOString().split("T")[0],
+      category: "hydrogen",
+      doi: doi || null,
+      url: url || (pmid ? `https://pubmed.ncbi.nlm.nih.gov/${pmid}` : null),
+      sourcePlatform: "pubmed",
+    };
+
+    const saved = await studyService.createStudy(studyData);
+
+    // Optionally enrich with full PubMed data after saving
+    if (saved?.id) {
+      enrichStudyFromPubMed(saved.id).catch(err =>
+        console.error("Background PubMed enrichment failed:", err)
+      );
+    }
+
+    res.json({ success: true, message: "Study imported from PubMed", study: saved });
+  } catch (error: any) {
+    console.error("PubMed import error:", error);
+    res.status(500).json({ error: error.message || "PubMed import failed" });
+  }
+});
+
+router.post("/api/semantic-scholar/import", async (req: Request, res: Response) => {
+  try {
+    const { paperId, ...rest } = req.body;
+    if (!paperId) return res.status(400).json({ error: "paperId is required" });
+
+    const existing = await studyService.getStudyByIdentifier(paperId);
+    if (existing) return res.status(409).json({ message: "Study already exists", study: existing });
+
+    const study = extractStudyFromSemanticScholar({ paperId, ...rest });
+    if (!study) return res.status(404).json({ error: "Failed to extract study from Semantic Scholar" });
+
+    const saved = await studyService.createStudy(study);
+    res.json({ success: true, message: "Study imported from Semantic Scholar", study: saved });
+  } catch (error: any) {
+    console.error("Semantic Scholar import error:", error);
+    res.status(500).json({ error: error.message || "Semantic Scholar import failed" });
+  }
+});
+
+router.post("/api/crossref/import", async (req: Request, res: Response) => {
+  try {
+    const { doi, ...rest } = req.body;
+    if (!doi) return res.status(400).json({ error: "doi is required" });
+
+    const existing = await studyService.getStudyByIdentifier(doi);
+    if (existing) return res.status(409).json({ message: "Study already exists", study: existing });
+
+    const study = extractStudyFromCrossRef({ doi, ...rest });
+    if (!study) return res.status(404).json({ error: "Failed to extract study from CrossRef" });
+
+    const saved = await studyService.createStudy(study);
+    res.json({ success: true, message: "Study imported from CrossRef", study: saved });
+  } catch (error: any) {
+    console.error("CrossRef import error:", error);
+    res.status(500).json({ error: error.message || "CrossRef import failed" });
+  }
+});
+
+router.get("/api/europepmc/article/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const source = (req.query.source as string) || "MED";
+
+    // Fetch full article details from Europe PMC
+    const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:${encodeURIComponent(id)}%20AND%20SRC:${source}&format=json&resultType=core`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.resultList?.result?.[0]) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    res.json(data.resultList.result[0]);
+  } catch (error: any) {
+    console.error("Europe PMC article fetch error:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch article" });
+  }
+});
+
+router.post("/api/europepmc/save", async (req: Request, res: Response) => {
+  try {
+    const { id, source, ...rest } = req.body;
+    if (!id) return res.status(400).json({ error: "id is required" });
+
+    // First fetch the article details
+    const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:${encodeURIComponent(id)}%20AND%20SRC:${source || "MED"}&format=json&resultType=core`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const article = data.resultList?.result?.[0];
+    if (!article) return res.status(404).json({ error: "Article not found in Europe PMC" });
+
+    // Check for duplicate
+    const identifier = article.doi || article.pmid || id;
+    const existing = await studyService.getStudyByIdentifier(identifier);
+    if (existing) return res.status(409).json({ message: "Study already exists", study: existing });
+
+    const study = extractStudyFromEuropePMC(article);
+    if (!study) return res.status(404).json({ error: "Failed to extract study" });
+
+    const saved = await studyService.createStudy(study);
+    res.json({ success: true, message: "Study imported from Europe PMC", study: saved });
+  } catch (error: any) {
+    console.error("Europe PMC save error:", error);
+    res.status(500).json({ error: error.message || "Europe PMC save failed" });
   }
 });
 

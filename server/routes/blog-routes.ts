@@ -391,6 +391,184 @@ router.put("/:id(\\d+)", requireAdmin, async (req, res) => {
 });
 
 /**
+ * Generate AI content for a blog article
+ * Used by BlogAddPage "Generate Full Article" button
+ */
+router.post("/generate-content", requireAdmin, aiGenerationRateLimiter, async (req, res) => {
+  try {
+    const { title, studyId, articleType, readingLevel } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: "Title is required" });
+    }
+
+    // Get study context if available
+    let studyContext = "";
+    if (studyId) {
+      const [study] = await db
+        .select()
+        .from(studies)
+        .where(eq(studies.id, studyId))
+        .limit(1);
+      if (study) {
+        studyContext = `Study title: ${study.title}\nAbstract: ${study.abstract || "N/A"}\nMethods: ${study.methods || "N/A"}\nResults: ${study.results || "N/A"}\nConclusion: ${study.conclusion || "N/A"}`;
+      }
+    }
+
+    const { ai } = await import("../services/ai-provider");
+
+    const systemPrompt = `You are a health science writer creating blog articles about hydrogen therapy research for a general audience. Write at a ${readingLevel || "6th"} grade reading level. Use clear, simple language. Output valid HTML content with <h2>, <p>, <ul>, <li> tags. Do not include the title as an <h1> — start with the first section.`;
+
+    const userPrompt = `Write a comprehensive blog article titled "${title}"${articleType ? ` in the style of a ${articleType} article` : ""}.${studyContext ? `\n\nBase it on this study:\n${studyContext}` : ""}\n\nInclude sections for: Introduction, Key Findings, How It Works, What This Means For You, and Future Directions. Each section should have an <h2> heading and 2-3 paragraphs.`;
+
+    const content = await ai.generateText(systemPrompt, userPrompt, {
+      maxTokens: 4096,
+      temperature: 0.7,
+    });
+
+    // Also generate a summary
+    const summaryPrompt = `Write a 2-3 sentence summary of this article for use in blog listings:\n\n${content.substring(0, 1000)}`;
+    const summary = await ai.generateText(
+      "You are a concise writer. Output only the summary text, no HTML tags.",
+      summaryPrompt,
+      { maxTokens: 200, temperature: 0.3 },
+    );
+
+    res.json({ success: true, content, summary });
+  } catch (error) {
+    console.error("Error generating blog content:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to generate content",
+    });
+  }
+});
+
+/**
+ * Generate an AI image for a blog article
+ * Called by BlogImageGenerator component
+ */
+router.post("/:id(\\d+)/generate-image", requireAdmin, aiGenerationRateLimiter, async (req, res) => {
+  try {
+    const blogId = parseInt(req.params.id);
+    if (isNaN(blogId)) {
+      return res.status(400).json({ error: "Invalid blog ID" });
+    }
+
+    const { generateBlogImage } = await import("../services/image-generator");
+    const result = await generateBlogImage(blogId);
+
+    if (!result.success) {
+      return res.status(500).json({ error: result.message || "Image generation failed" });
+    }
+
+    res.json({
+      success: true,
+      imageUrl: result.imageUrl,
+      imageAlt: `Featured image for blog article ${blogId}`,
+    });
+  } catch (error) {
+    console.error("Error generating blog image:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to generate image",
+    });
+  }
+});
+
+/**
+ * Generate content suggestions for a blog
+ * Called by BlogContentSuggestions component
+ */
+router.post("/:id(\\d+)/generate-suggestion", requireAdmin, aiGenerationRateLimiter, async (req, res) => {
+  try {
+    const blogId = parseInt(req.params.id);
+    const { suggestionType, selectedContent } = req.body;
+
+    if (isNaN(blogId)) {
+      return res.status(400).json({ error: "Invalid blog ID" });
+    }
+
+    const [blog] = await db
+      .select()
+      .from(blogArticles)
+      .where(eq(blogArticles.id, blogId))
+      .limit(1);
+
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    const { ai } = await import("../services/ai-provider");
+
+    const prompts: Record<string, string> = {
+      improve: "Improve the following content to be more engaging and informative while maintaining the same reading level:",
+      expand: "Expand on the following content with more detail, examples, and research context:",
+      simplify: "Simplify the following content to be understandable at a 6th grade reading level:",
+      add_examples: "Add real-world examples and practical applications to the following content:",
+      add_research_context: "Add relevant research context and citations to the following content:",
+      elon_style: "Rewrite the following in a bold, visionary style with short punchy sentences:",
+      add_conclusion: "Write a compelling conclusion section for an article that includes this content:",
+    };
+
+    const userPrompt = `${prompts[suggestionType] || prompts.improve}\n\n${selectedContent || blog.content}`;
+
+    const result = await ai.generateText(
+      "You are a health science content editor. Output only the improved HTML content using <p>, <h2>, <ul>, <li> tags. No explanations.",
+      userPrompt,
+      { maxTokens: 2048, temperature: 0.7 },
+    );
+
+    res.json({ success: true, suggestion: result });
+  } catch (error) {
+    console.error("Error generating suggestion:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to generate suggestion",
+    });
+  }
+});
+
+/**
+ * Generate title suggestions for a blog
+ * Called by BlogContentSuggestions component
+ */
+router.post("/:id(\\d+)/generate-titles", requireAdmin, aiGenerationRateLimiter, async (req, res) => {
+  try {
+    const blogId = parseInt(req.params.id);
+    if (isNaN(blogId)) {
+      return res.status(400).json({ error: "Invalid blog ID" });
+    }
+
+    const [blog] = await db
+      .select()
+      .from(blogArticles)
+      .where(eq(blogArticles.id, blogId))
+      .limit(1);
+
+    if (!blog) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    const { ai } = await import("../services/ai-provider");
+
+    const titles = await ai.generateJSON<string[]>(
+      "You are an SEO and health content expert. Generate exactly 5 alternative blog titles.",
+      `Generate 5 alternative titles for a blog article currently titled "${blog.title}". The article content starts with: ${(blog.content || "").substring(0, 500)}\n\nReturn a JSON array of 5 strings.`,
+      { maxTokens: 500, temperature: 0.8 },
+    );
+
+    res.json({ success: true, titles: Array.isArray(titles) ? titles : [] });
+  } catch (error) {
+    console.error("Error generating titles:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to generate titles",
+    });
+  }
+});
+
+/**
  * Get all blog categories with article counts
  */
 router.get("/categories", async (req, res) => {

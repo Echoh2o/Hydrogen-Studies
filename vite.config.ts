@@ -15,11 +15,22 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist", "public"),
     emptyOutDir: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ["react", "react-dom"],
-          ui: ["@radix-ui/react-slot", "@radix-ui/react-dialog", "@radix-ui/react-select", "@radix-ui/react-collapsible"],
+          router: ["wouter"],
+          query: ["@tanstack/react-query"],
+          ui: [
+            "@radix-ui/react-slot",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-select",
+            "@radix-ui/react-collapsible",
+            "@radix-ui/react-tooltip",
+          ],
+          icons: ["lucide-react"],
+          charts: ["recharts"],
         },
       },
     },

@@ -1,9 +1,11 @@
 import { randomBytes } from "crypto";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 // Comprehensive environment validation
 export function validateEnvironment() {
   const requiredEnvVars = ["DATABASE_URL"];
-  const missingRequired = [];
+  const missingRequired: string[] = [];
 
   // Check required environment variables
   for (const envVar of requiredEnvVars) {
@@ -12,41 +14,43 @@ export function validateEnvironment() {
     }
   }
 
-  // Exit if DATABASE_URL is missing - can't run without a database
+  // In production, SESSION_SECRET is required (not auto-generated)
+  if (isProduction && !process.env.SESSION_SECRET) {
+    missingRequired.push("SESSION_SECRET");
+  }
+
+  // Exit if required vars are missing
   if (missingRequired.length > 0) {
     console.error(
       "Missing required environment variables:",
       missingRequired.join(", "),
     );
+    if (isProduction) {
+      console.error(
+        "Generate SESSION_SECRET with: openssl rand -hex 32",
+      );
+    }
     process.exit(1);
   }
 
-  // Generate SESSION_SECRET if not provided (with warning)
+  // Generate SESSION_SECRET in development if not provided
   if (!process.env.SESSION_SECRET) {
     process.env.SESSION_SECRET = randomBytes(32).toString("hex");
     console.warn(
-      "⚠️  SESSION_SECRET not set — generated a random secret for this instance.",
-    );
-    console.warn(
-      "⚠️  Sessions will not persist across restarts. Set SESSION_SECRET in Railway env vars.",
-    );
-    console.warn(
-      "⚠️  Generate one with: openssl rand -hex 32",
+      "SESSION_SECRET not set — generated a random secret for this dev instance.",
     );
   } else if (process.env.SESSION_SECRET.length < 32) {
-    console.warn("⚠️  SESSION_SECRET is short. Use at least 32 characters.");
+    if (isProduction) {
+      console.error("SESSION_SECRET must be at least 32 characters in production.");
+      process.exit(1);
+    }
+    console.warn("SESSION_SECRET is short. Use at least 32 characters.");
   }
 
-  // Default ALLOWED_ORIGINS if not provided
-  if (!process.env.ALLOWED_ORIGINS) {
+  // Warn about ALLOWED_ORIGINS in production
+  if (isProduction && !process.env.ALLOWED_ORIGINS) {
     console.warn(
-      "⚠️  ALLOWED_ORIGINS not set — defaulting to allow all origins.",
-    );
-    console.warn(
-      "⚠️  Set ALLOWED_ORIGINS in Railway env vars for production security.",
-    );
-    console.warn(
-      "⚠️  Example: ALLOWED_ORIGINS=https://yourdomain.com",
+      "ALLOWED_ORIGINS not set in production — only same-origin requests will be allowed.",
     );
   }
 

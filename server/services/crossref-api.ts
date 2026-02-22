@@ -160,7 +160,7 @@ export function extractStudyFromCrossRef(articleData: any): any {
       abstract: data.abstract || "No abstract available",
       authors: authors,
       journal: journal,
-      publishDate: new Date().toISOString().substring(0, 10), // Today's date for website publish date
+      publishDate: journalPublishDate || new Date().toISOString().substring(0, 10),
       journalPublishDate:
         journalPublishDate || new Date().toISOString().substring(0, 10),
       category: "General", // Default category - can be updated later
