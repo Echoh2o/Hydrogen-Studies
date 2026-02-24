@@ -739,7 +739,7 @@ router.post(
           console.error("Failed to send reset email:", emailErr);
         }
       } else {
-        console.warn("SENDGRID_API_KEY not configured — password reset email not sent. Token:", token);
+        console.warn("SENDGRID_API_KEY not configured — password reset email not sent.");
       }
 
       res.json({ message: successMsg });
