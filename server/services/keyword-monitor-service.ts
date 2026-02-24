@@ -168,7 +168,7 @@ export async function checkScheduledSearches() {
       return { ran: false, message: "No active keywords to search" };
     }
 
-    console.log(`🕒 Running scheduled search for ${activeKeywords.length} keywords across ${schedule.sources?.length || 'all'} sources`);
+    console.info(`Keyword monitor: searching ${activeKeywords.length} keywords across ${schedule.sources?.length || 'all'} sources`);
 
     // Run the searches
     const results = await runScheduledSearch(schedule.sources || [], activeKeywords);
@@ -219,7 +219,7 @@ async function runScheduledSearch(sources: string[], keywords: any[]) {
     
     if (SEARCH_SOURCES[normalizedSource as keyof typeof SEARCH_SOURCES]) {
       try {
-        console.log(`   Searching ${source}...`);
+        // Searching source
         const searchFn = SEARCH_SOURCES[normalizedSource as keyof typeof SEARCH_SOURCES];
         const sourceResults = await searchFn(searchTerms);
         
@@ -236,7 +236,7 @@ async function runScheduledSearch(sources: string[], keywords: any[]) {
         return [];
       }
     } else {
-      console.warn(`   Source ${source} not supported or implemented`);
+      console.warn(`Keyword monitor: source "${source}" not supported`);
       results.bySource[source] = { error: "Source not supported" };
       return [];
     }
@@ -397,7 +397,7 @@ async function saveSearchResults(results: any[], source: string, keywords: any[]
 
   const savedResults = await Promise.all(insertPromises);
   const count = savedResults.filter(Boolean).length;
-  if(count > 0) console.log(`   Saved ${count} new studies from ${source}`);
+  if (count > 0) console.info(`Keyword monitor: saved ${count} new studies from ${source}`);
   return savedResults.filter(Boolean);
 }
 
@@ -423,7 +423,7 @@ export async function runKeywordMonitorNow() {
       return { success: false, message: "No active keywords to search" };
     }
     
-    console.log(`🔁 Manual monitor trigger for ${activeKeywords.length} keywords`);
+    console.info(`Keyword monitor: manual trigger for ${activeKeywords.length} keywords`);
 
     // Run the searches
     const results = await runScheduledSearch(schedule.sources || [], activeKeywords);

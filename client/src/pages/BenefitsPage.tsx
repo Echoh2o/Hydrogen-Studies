@@ -41,7 +41,7 @@ export default function BenefitsPage() {
         "How does it work in the body?",
         "Safety and dosage",
       ],
-      studyCount: 1326,
+      link: "/search?q=molecular+hydrogen+therapy",
       difficulty: "Beginner",
     },
     {
@@ -55,7 +55,7 @@ export default function BenefitsPage() {
         "Anti-inflammatory effects",
         "Neurological support",
       ],
-      studyCount: 850,
+      link: "/explore-by-benefit",
       difficulty: "Intermediate",
     },
     {
@@ -69,7 +69,7 @@ export default function BenefitsPage() {
         "Cellular signaling",
         "Gene expression",
       ],
-      studyCount: 420,
+      link: "/search?q=antioxidant+oxidative+stress",
       difficulty: "Advanced",
     },
     {
@@ -79,7 +79,7 @@ export default function BenefitsPage() {
         "Learn about different ways to consume hydrogen for health benefits",
       icon: <Zap className="h-8 w-8 text-green-600" />,
       topics: ["Hydrogen water", "Inhalation therapy", "Hydrogen baths"],
-      studyCount: 380,
+      link: "/explore-by-delivery-method",
       difficulty: "Beginner",
     },
   ];
@@ -377,57 +377,55 @@ export default function BenefitsPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {learningTopics.map((topic) => (
-                  <Card
-                    key={topic.id}
-                    className="hover:shadow-lg transition-shadow border-2 hover:border-teal-200 h-full"
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          {topic.icon}
+                  <Link key={topic.id} href={topic.link}>
+                    <Card
+                      className="hover:shadow-lg transition-shadow border-2 hover:border-teal-200 h-full cursor-pointer"
+                    >
+                      <CardHeader>
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            {topic.icon}
+                            <div>
+                              <Badge variant="outline" className="mb-2">
+                                {topic.difficulty}
+                              </Badge>
+                              <CardTitle className="text-xl">
+                                {topic.title}
+                              </CardTitle>
+                            </div>
+                          </div>
+                        </div>
+                        <CardDescription className="text-base">
+                          {topic.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
                           <div>
-                            <Badge variant="outline" className="mb-2">
-                              {topic.difficulty}
-                            </Badge>
-                            <CardTitle className="text-xl">
-                              {topic.title}
-                            </CardTitle>
+                            <p className="font-medium text-gray-700 mb-2">
+                              What you'll learn:
+                            </p>
+                            <ul className="space-y-1">
+                              {topic.topics.map((subtopic, index) => (
+                                <li
+                                  key={index}
+                                  className="text-sm text-gray-600 flex items-center"
+                                >
+                                  <CheckCircle className="h-3 w-3 text-green-600 mr-2" />
+                                  {subtopic}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="flex items-center justify-end pt-4 border-t">
+                            <div className="flex items-center text-teal-600 font-medium">
+                              Explore research <ChevronRight className="h-4 w-4 ml-1" />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <CardDescription className="text-base">
-                        {topic.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="font-medium text-gray-700 mb-2">
-                            What you'll learn:
-                          </p>
-                          <ul className="space-y-1">
-                            {topic.topics.map((subtopic, index) => (
-                              <li
-                                key={index}
-                                className="text-sm text-gray-600 flex items-center"
-                              >
-                                <CheckCircle className="h-3 w-3 text-green-600 mr-2" />
-                                {subtopic}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="flex items-center justify-between pt-4 border-t">
-                          <span className="text-sm text-gray-500">
-                            {topic.studyCount} supporting studies
-                          </span>
-                          <div className="flex items-center text-teal-600 font-medium">
-                            Learn more <ChevronRight className="h-4 w-4 ml-1" />
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             </CardContent>
@@ -489,25 +487,25 @@ export default function BenefitsPage() {
           <Card className="bg-gradient-to-r from-teal-600 to-teal-500 text-white">
             <CardContent className="p-12 text-center">
               <h2 className="text-3xl font-bold mb-4">
-                Ready to Experience These Benefits?
+                Explore the Research Yourself
               </h2>
               <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-                Explore our research-backed product recommendations and start
-                your hydrogen water journey today.
+                Search our database of peer-reviewed hydrogen studies by health condition,
+                delivery method, or keyword.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/products">
+                <Link href="/studies">
                   <Button variant="secondary" size="lg">
-                    View Products
+                    Browse All Studies
                   </Button>
                 </Link>
-                <Link href="/studies">
+                <Link href="/explore-by-benefit">
                   <Button
                     variant="outline"
                     size="lg"
                     className="text-white border-white hover:bg-white hover:text-teal-600"
                   >
-                    Browse All Studies
+                    Explore by Health Benefit
                   </Button>
                 </Link>
               </div>

@@ -222,8 +222,15 @@ export default function BlogPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    alert("Link copied to clipboard!");
+                    if (navigator.share) {
+                      navigator.share({
+                        title: blog.title,
+                        text: blog.summary,
+                        url: window.location.href,
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                    }
                   }}
                 >
                   <Share className="h-4 w-4 mr-2" />
