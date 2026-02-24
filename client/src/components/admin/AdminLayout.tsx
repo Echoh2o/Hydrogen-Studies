@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,16 @@ import {
   Sparkles,
   Layers,
   Target,
+  FolderOpen,
+  Zap,
+  Tags,
+  ClipboardCheck,
+  TrendingUp,
+  SlidersHorizontal,
+  BookOpen,
+  Menu,
+  X,
+  ChevronRight,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -33,69 +43,70 @@ export default function AdminLayout({
   description,
 }: AdminLayoutProps) {
   const [location] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Organize navigation by content type for better usability
+  // Check if a nav item is active (supports child routes)
+  const isActive = (href: string) => {
+    if (href === "/admin") return location === "/admin";
+    return location === href || location.startsWith(href + "/");
+  };
+
+  // All admin navigation organized by workflow
   const navSections = [
     {
       title: "Main",
-      items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }],
+      items: [
+        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      ],
     },
     {
       title: "Studies",
       items: [
         { href: "/admin/studies", label: "Manage Studies", icon: Database },
-        {
-          href: "/admin/research-import",
-          label: "Find New Studies",
-          icon: Search,
-        },
-        {
-          href: "/admin/content-enrichment",
-          label: "Content Enrichment",
-          icon: RefreshCw,
-        },
-        {
-          href: "/admin/keyword-monitor",
-          label: "Keyword Monitor",
-          icon: Calendar,
-        },
+        { href: "/admin/research-import", label: "Find New Studies", icon: Search },
+        { href: "/admin/research-database", label: "Research Database", icon: BookOpen },
       ],
     },
     {
-      title: "Content",
+      title: "Enrichment",
+      items: [
+        { href: "/admin/content-enrichment", label: "Content Enrichment", icon: RefreshCw },
+        { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: Zap },
+        { href: "/admin/batch-categorization", label: "Batch Categorization", icon: Tags },
+        { href: "/admin/image-generation", label: "Image Generation", icon: Image },
+        { href: "/admin/review-assistant", label: "Review Queue", icon: ClipboardCheck },
+        { href: "/admin/content-optimization", label: "Content Optimization", icon: SlidersHorizontal },
+      ],
+    },
+    {
+      title: "Blogs",
       items: [
         { href: "/admin/blogs", label: "Blog Articles", icon: FileText },
-        {
-          href: "/admin/blog-recommendations",
-          label: "AI Blog Generator",
-          icon: Sparkles,
-        },
-        {
-          href: "/admin/multi-format",
-          label: "Multi-Format",
-          icon: Layers,
-        },
-        {
-          href: "/admin/seo-strategy",
-          label: "SEO Strategy",
-          icon: Target,
-        },
-        { href: "/admin/data-import", label: "Data Import", icon: Upload },
+        { href: "/admin/blog-categories", label: "Blog Categories", icon: FolderOpen },
+        { href: "/admin/blog-recommendations", label: "AI Blog Generator", icon: Sparkles },
+        { href: "/admin/multi-format", label: "Multi-Format", icon: Layers },
+      ],
+    },
+    {
+      title: "SEO & Analytics",
+      items: [
+        { href: "/admin/seo-strategy", label: "SEO Strategy", icon: Target },
+        { href: "/admin/keyword-monitor", label: "Keyword Monitor", icon: Calendar },
+        { href: "/admin/trends", label: "Trends Analysis", icon: TrendingUp },
+        { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
       ],
     },
     {
       title: "Administration",
       items: [
-        { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
+        { href: "/admin/data-import", label: "Data Import", icon: Upload },
+        { href: "/admin/journal-date-updater", label: "Journal Dates", icon: Calendar },
         { href: "/admin/monitoring", label: "Monitoring", icon: Activity },
         { href: "/admin/users", label: "Users", icon: UserCog },
         { href: "/admin/settings", label: "Settings", icon: Settings },
       ],
     },
   ];
-
-  // Flatten items for mobile navigation (limited space)
-  const mainNavItems = navSections.flatMap((section) => section.items);
 
   return (
     <div className="min-h-screen bg-background">
@@ -106,10 +117,18 @@ export default function AdminLayout({
       <div className="flex min-h-screen flex-col">
         {/* Top navigation */}
         <header className="sticky top-0 z-40 border-b bg-background">
-          <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center mr-8">
-                <span className="font-semibold tracking-tight text-xl">
+          <div className="flex h-14 items-center justify-between px-4">
+            <div className="flex items-center gap-4">
+              {/* Mobile menu toggle */}
+              <button
+                className="md:hidden p-1.5 rounded-md hover:bg-accent"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+
+              <Link href="/admin" className="flex items-center">
+                <span className="font-semibold tracking-tight text-lg">
                   HydrogenStudies
                 </span>
                 <span className="bg-primary text-primary-foreground ml-2 rounded-sm px-1.5 py-0.5 text-xs font-medium">
@@ -117,56 +136,57 @@ export default function AdminLayout({
                 </span>
               </Link>
 
-              <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
+              <nav className="hidden md:flex items-center ml-4">
                 <Link
                   href="/"
                   className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                 >
-                  <Home className="mr-2 h-4 w-4" />
+                  <Home className="mr-1.5 h-4 w-4" />
                   View Site
                 </Link>
               </nav>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1">
-                <span className="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full">
-                  <span className="flex h-full w-full items-center justify-center bg-muted text-sm">
-                    A
-                  </span>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/"
+                className="md:hidden flex items-center text-xs text-muted-foreground"
+              >
+                <Home className="h-4 w-4" />
+              </Link>
+              <span className="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full">
+                <span className="flex h-full w-full items-center justify-center bg-muted text-sm">
+                  A
                 </span>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium">Admin User</p>
-                </div>
-              </div>
+              </span>
             </div>
           </div>
         </header>
 
         <div className="flex-1 flex">
-          {/* Sidebar */}
-          <aside className="hidden md:flex w-72 flex-col border-r bg-background">
-            <nav className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-6">
+          {/* Desktop Sidebar */}
+          <aside className="hidden md:flex w-64 flex-col border-r bg-background shrink-0">
+            <nav className="flex-1 overflow-y-auto py-3 px-3">
+              <div className="space-y-5">
                 {navSections.map((section, index) => (
                   <div key={index}>
-                    <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {section.title}
                     </h3>
-                    <ul className="space-y-1">
+                    <ul className="space-y-0.5">
                       {section.items.map(({ href, label, icon: Icon }) => (
                         <li key={href}>
                           <Link
                             href={href}
                             className={cn(
-                              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
-                              location === href
+                              "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                              isActive(href)
                                 ? "bg-accent text-accent-foreground"
-                                : "transparent",
+                                : "text-muted-foreground",
                             )}
                           >
-                            <Icon className="h-4 w-4" />
-                            {label}
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{label}</span>
                           </Link>
                         </li>
                       ))}
@@ -177,89 +197,61 @@ export default function AdminLayout({
             </nav>
           </aside>
 
-          {/* Mobile navigation */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-background">
-            <nav className="flex h-16 items-center justify-around">
-              {/* Main Dashboard */}
-              <Link
-                href="/admin"
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin"
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                )}
-              >
-                <LayoutDashboard className="h-5 w-5" />
-                <span>Dashboard</span>
-              </Link>
-
-              {/* Studies Section */}
-              <Link
-                href="/admin/studies"
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location.includes("/admin/stud") ||
-                    location.includes("/admin/research-import") ||
-                    location.includes("/admin/keyword-monitor") ||
-                    location.includes("/admin/content-enrichment") ||
-                    location.includes("/admin/batch-enrichment") ||
-                    location.includes("/admin/image-generation")
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                )}
-              >
-                <Database className="h-5 w-5" />
-                <span>Studies</span>
-              </Link>
-
-              {/* Blogs Section */}
-              <Link
-                href="/admin/blogs"
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location.includes("/admin/blog")
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                )}
-              >
-                <FileText className="h-5 w-5" />
-                <span>Blogs</span>
-              </Link>
-
-              {/* Data Import */}
-              <Link
-                href="/admin/data-import"
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/data-import"
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                )}
-              >
-                <Upload className="h-5 w-5" />
-                <span>Import</span>
-              </Link>
-
-              {/* Settings */}
-              <Link
-                href="/admin/settings"
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 text-xs font-medium",
-                  location === "/admin/settings"
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                )}
-              >
-                <Settings className="h-5 w-5" />
-                <span>Settings</span>
-              </Link>
-            </nav>
-          </div>
+          {/* Mobile Sidebar Overlay */}
+          {mobileMenuOpen && (
+            <>
+              <div
+                className="md:hidden fixed inset-0 z-40 bg-black/50"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+              <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-72 bg-background border-r shadow-xl overflow-y-auto">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <span className="font-semibold text-sm">Admin Menu</span>
+                  <button
+                    className="p-1.5 rounded-md hover:bg-accent"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <nav className="py-3 px-3">
+                  <div className="space-y-5">
+                    {navSections.map((section, index) => (
+                      <div key={index}>
+                        <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {section.title}
+                        </h3>
+                        <ul className="space-y-0.5">
+                          {section.items.map(({ href, label, icon: Icon }) => (
+                            <li key={href}>
+                              <Link
+                                href={href}
+                                className={cn(
+                                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
+                                  isActive(href)
+                                    ? "bg-accent text-accent-foreground"
+                                    : "text-muted-foreground",
+                                )}
+                                onClick={() => setMobileMenuOpen(false)}
+                              >
+                                <Icon className="h-4 w-4 shrink-0" />
+                                <span className="truncate">{label}</span>
+                                <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </nav>
+              </aside>
+            </>
+          )}
 
           {/* Main content */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
-            <div className="container mx-auto max-w-6xl">{children}</div>
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="mx-auto max-w-6xl">{children}</div>
           </main>
         </div>
       </div>
