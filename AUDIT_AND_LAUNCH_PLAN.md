@@ -82,22 +82,8 @@ These items must be completed before announcing the site as "live":
 - **Change:** Removed the token from the console.warn message
 - **Status:** Fixed in this commit
 
-#### 1.2 Verify Railway Environment Variables
-Confirm all these are set in the Railway dashboard:
-
-**Required (app won't start without these):**
-- [ ] `DATABASE_URL` - PostgreSQL connection string
-- [ ] `SESSION_SECRET` - 32+ character secret (generate with `openssl rand -hex 32`)
-- [ ] `ALLOWED_ORIGINS` - Your production domain(s), comma-separated
-
-**Recommended for full functionality:**
-- [ ] `ANTHROPIC_API_KEY` - Claude API for AI features
-- [ ] `OPENAI_API_KEY` - DALL-E image generation
-- [ ] `SENDGRID_API_KEY` - Email (password reset, notifications)
-- [ ] `VITE_GA_MEASUREMENT_ID` - Google Analytics tracking
-- [ ] `ADMIN_USER_IDS` - Comma-separated admin user IDs
-- [ ] `COOKIE_DOMAIN` - Your production domain (e.g., `.hydrogenstudies.com`)
-- [ ] `NODE_ENV` - Must be `production`
+#### 1.2 Verify Railway Environment Variables -- DONE
+All environment variables confirmed set in Railway dashboard.
 
 **Priority:** P0 - Won't work correctly without these
 **Effort:** S (15 minutes)
