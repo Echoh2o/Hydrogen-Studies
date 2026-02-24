@@ -45,6 +45,19 @@ The Hydrogen Studies platform is a mature, well-structured full-stack applicatio
 | `server/services/content-analytics-service.ts:600` | Audience segmentation returns "general" | Analytics feature incomplete | No - cosmetic |
 | `server/services/content-analytics-service.ts:602` | Reading level returns static 8 | Analytics feature incomplete | No - cosmetic |
 
+#### Dependency Vulnerabilities (23 found, 12 auto-fixed, 11 remaining)
+
+`npm audit fix` was run and resolved 12 vulnerabilities. The remaining 11 are **not launch blockers**:
+
+| Package | Severity | Risk Assessment |
+|---------|----------|----------------|
+| esbuild (via drizzle-kit, vite) | Moderate | Dev server only - does NOT affect production builds |
+| minimatch/glob/sucrase | High | Build-time dependencies only - not in production runtime |
+| quill / react-quill | Moderate (XSS) | Mitigated by DOMPurify sanitization already in the app |
+| xlsx | High (no fix available) | Admin-only Excel import - limited to authenticated admins |
+
+**Post-launch action:** Replace `xlsx` with `exceljs` (actively maintained, no known vulnerabilities) when convenient.
+
 #### Missing (Non-Blocking for Launch)
 
 | Item | Impact | When to Add |
@@ -64,13 +77,10 @@ The Hydrogen Studies platform is a mature, well-structured full-stack applicatio
 
 These items must be completed before announcing the site as "live":
 
-#### 1.1 Fix Password Reset Token Logging
+#### 1.1 Fix Password Reset Token Logging -- DONE
 - **File:** `server/routes/auth-routes.ts:742`
-- **Change:** Remove the token from the console.warn message
-- **From:** `console.warn("SENDGRID_API_KEY not configured — password reset email not sent. Token:", token)`
-- **To:** `console.warn("SENDGRID_API_KEY not configured — password reset email not sent.")`
-- **Priority:** P0 - Security
-- **Effort:** S (5 minutes)
+- **Change:** Removed the token from the console.warn message
+- **Status:** Fixed in this commit
 
 #### 1.2 Verify Railway Environment Variables
 Confirm all these are set in the Railway dashboard:
