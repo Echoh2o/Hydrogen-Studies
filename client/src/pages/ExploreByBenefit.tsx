@@ -289,7 +289,7 @@ const ExploreByBenefit: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <Badge variant="outline">
-                        {getCategoryCount("bodySystem", category)} studies
+                        {getCategoryCount("body_system", category)} studies
                       </Badge>
                     </CardContent>
                   </Card>
@@ -328,7 +328,7 @@ const ExploreByBenefit: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <Badge variant="outline">
-                        {getCategoryCount("lifeStage", category)} studies
+                        {getCategoryCount("life_stage", category)} studies
                       </Badge>
                     </CardContent>
                   </Card>

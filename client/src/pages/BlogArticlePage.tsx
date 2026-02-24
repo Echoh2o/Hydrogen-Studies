@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useParams } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
   Calendar,
@@ -175,6 +176,8 @@ For those interested in diving deeper into the research, here are key studies re
     });
   };
 
+  const { toast } = useToast();
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -184,6 +187,10 @@ For those interested in diving deeper into the research, here are key studies re
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link copied",
+        description: "Article link has been copied to your clipboard.",
+      });
     }
   };
 

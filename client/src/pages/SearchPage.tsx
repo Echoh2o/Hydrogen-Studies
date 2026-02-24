@@ -318,33 +318,12 @@ export default function SearchPage() {
                       </Select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        External Sources
-                      </label>
-                      <Button
-                        type="button"
-                        variant={includeExternal ? "default" : "outline"}
-                        className="w-full flex items-center gap-2"
-                        onClick={() => {
-                          setIncludeExternal(!includeExternal);
-                          setTimeout(handleFilterChange, 100);
-                        }}
-                      >
-                        <Globe className="h-4 w-4" />
-                        {includeExternal
-                          ? "Consensus AI On"
-                          : "Include Consensus AI"}
-                      </Button>
-                    </div>
-
                     <div className="flex items-end">
                       <Button
                         variant="outline"
                         onClick={() => {
                           setCategory("all");
                           setCountry("all");
-                          setIncludeExternal(false);
                           setCurrentPage(1);
                           setTimeout(
                             () => performSearch(searchQuery, {}, 1),
@@ -623,22 +602,6 @@ export default function SearchPage() {
                 >
                   Browse All Studies
                 </Button>
-                {!includeExternal && searchQuery && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIncludeExternal(true);
-                      performSearch(
-                        searchQuery,
-                        { category, country },
-                        1,
-                      );
-                    }}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    Search Consensus AI
-                  </Button>
-                )}
               </div>
             </div>
           )}

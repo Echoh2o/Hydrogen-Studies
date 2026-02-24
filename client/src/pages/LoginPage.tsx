@@ -53,7 +53,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 const VALUE_FEATURES = [
   {
     icon: BookOpen,
-    title: "700+ Research Studies",
+    title: "1,300+ Research Studies",
     description: "Access peer-reviewed hydrogen therapy research, summarized in plain language",
   },
   {
@@ -142,7 +142,10 @@ export default function LoginPage() {
         <div className="relative z-10">
           <Link href="/" className="flex items-center gap-3 mb-16">
             <Droplets className="h-10 w-10" />
-            <span className="text-2xl font-bold">Hydrogen Studies</span>
+            <div>
+              <span className="text-2xl font-bold block">Hydrogen Studies</span>
+              <span className="text-xs text-teal-200">powered by Echo Water</span>
+            </div>
           </Link>
 
           <h1 className="text-4xl font-bold mb-4 leading-tight">

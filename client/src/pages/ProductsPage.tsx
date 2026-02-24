@@ -162,8 +162,8 @@ export default function ProductsPage() {
               </h1>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 Carefully selected products based on scientific studies and
-                quality standards. Each recommendation is backed by our research
-                database of 1,304+ studies.
+                quality standards. Hydrogen water is the most-studied delivery
+                method in molecular hydrogen research.
               </p>
             </div>
           </div>

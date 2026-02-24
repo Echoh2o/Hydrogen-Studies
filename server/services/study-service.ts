@@ -36,17 +36,32 @@ export class StudyService {
     try {
       const whereConditions = [];
 
-      // Unified search helper
+      // Unified search helper — split multi-word queries into individual terms
+      // so "exercise athletic performance" matches any study containing ANY of those words
       const searchTerm = filters.query || filters.search;
       if (searchTerm) {
-        const term = `%${searchTerm.toLowerCase()}%`;
-        whereConditions.push(
-          or(
-            sql`LOWER(${studies.title}) LIKE ${term}`,
-            sql`LOWER(${studies.abstract}) LIKE ${term}`,
-            sql`LOWER(${studies.authors}) LIKE ${term}`
-          )
-        );
+        const words = searchTerm.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length >= 2);
+        if (words.length <= 1) {
+          // Single word: simple LIKE match
+          const term = `%${searchTerm.toLowerCase().trim()}%`;
+          whereConditions.push(
+            or(
+              sql`LOWER(${studies.title}) LIKE ${term}`,
+              sql`LOWER(${studies.abstract}) LIKE ${term}`,
+              sql`LOWER(${studies.authors}) LIKE ${term}`
+            )
+          );
+        } else {
+          // Multiple words: match ANY word in title or abstract (OR logic)
+          const wordConditions = words.map((word: string) => {
+            const term = `%${word}%`;
+            return or(
+              sql`LOWER(${studies.title}) LIKE ${term}`,
+              sql`LOWER(${studies.abstract}) LIKE ${term}`
+            );
+          });
+          whereConditions.push(or(...wordConditions));
+        }
       }
 
       // Keyword filter

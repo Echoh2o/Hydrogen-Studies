@@ -88,20 +88,7 @@ export default function ContactPage() {
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
-    
-    // For now, just show a success message since we don't have a backend endpoint
-    // In production, you would send this to your backend
-    setTimeout(() => {
-      toast({
-        title: "Message received!",
-        description: "Thank you for contacting us. We'll respond within 24-48 hours.",
-      });
-      form.reset();
-      setIsSubmitting(false);
-    }, 1000);
-    
-    // Uncomment this when you have a backend endpoint:
-    // contactMutation.mutate(data);
+    contactMutation.mutate(data);
   };
 
   return (

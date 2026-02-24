@@ -58,6 +58,7 @@ import shopifyWebhookRoutes from "./routes/shopify-webhook-routes";
 import newsletterRoutes from "./routes/newsletter-routes";
 import userDashboardRoutes from "./routes/user-dashboard-routes";
 import adminSettingsRoutes from "./routes/admin-settings-routes";
+import contactRoutes from "./routes/contact-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -219,6 +220,51 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api", searchController.router); // Mounts /advanced-search, /search, etc.
 app.use("/api/natural-language-search", naturalLanguageSearchRoutes);
 
+// Public site stats (no auth — cached for 5 minutes)
+let cachedStats: any = null;
+let cachedStatsTime = 0;
+app.get("/api/public-stats", generalApiRateLimiter, async (req, res) => {
+  try {
+    const now = Date.now();
+    if (cachedStats && now - cachedStatsTime < 5 * 60 * 1000) {
+      return res.json(cachedStats);
+    }
+    const { db: database } = await import("./db");
+    const { studies: studiesTable } = await import("@shared/schema");
+    const { count: countFn, countDistinct, sql: sqlFn } = await import("drizzle-orm");
+
+    const [totalResult] = await database.select({ value: countFn() }).from(studiesTable);
+    const [countryResult] = await database.select({ value: countDistinct(studiesTable.country) }).from(studiesTable);
+    const [peerReviewedResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`${studiesTable.peerReviewed} = true`);
+    const [humanResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`LOWER(${studiesTable.studyType}) LIKE '%human%' OR LOWER(${studiesTable.studyType}) LIKE '%clinical%'`);
+    const [oldestResult] = await database.select({ value: sqlFn`MIN(EXTRACT(YEAR FROM ${studiesTable.publishDate}::date))` }).from(studiesTable);
+
+    const totalStudies = Number(totalResult?.value || 0);
+    const countries = Number(countryResult?.value || 0);
+    const peerReviewed = Number(peerReviewedResult?.value || 0);
+    const humanTrials = Number(humanResult?.value || 0);
+    const oldestYear = Number(oldestResult?.value || 2007);
+    const yearsOfResearch = new Date().getFullYear() - oldestYear;
+    const peerReviewedPct = totalStudies > 0 ? Math.round((peerReviewed / totalStudies) * 100) : 0;
+
+    cachedStats = {
+      success: true,
+      totalStudies,
+      countries,
+      peerReviewed,
+      peerReviewedPct,
+      humanTrials,
+      yearsOfResearch,
+      oldestYear,
+    };
+    cachedStatsTime = now;
+    res.json(cachedStats);
+  } catch (error) {
+    console.error("Public stats error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch stats" });
+  }
+});
+
 // Admin & Stats
 app.use("/api/admin", adminController.router);
 // Admin controller has /dashboard-stats, /status, /tagging...
@@ -327,6 +373,9 @@ app.use("/api/webhooks/shopify", shopifyWebhookRoutes);
 
 // Newsletter signup (public, no auth required)
 app.use("/api/newsletter", newsletterRoutes);
+
+// Contact form (public POST, admin GET)
+app.use("/api/contact", contactRoutes);
 
 // User dashboard (authenticated customers)
 app.use("/api/me", userDashboardRoutes);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   Droplets,
@@ -8,8 +9,6 @@ import {
   Brain,
   Shield,
   Zap,
-  Users,
-  Award,
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,17 @@ import SiteHeader from "@/components/layout/SiteHeader";
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
+
+  const { data: siteStats } = useQuery<{
+    totalStudies: number;
+    countries: number;
+    humanTrials: number;
+    yearsOfResearch: number;
+    peerReviewedPct: number;
+  }>({
+    queryKey: ["/api/public-stats"],
+    staleTime: 5 * 60 * 1000,
+  });
 
   const benefits = [
     {
@@ -61,10 +71,10 @@ export default function HomePage() {
   ];
 
   const stats = [
-    { number: "1,304", label: "Scientific Studies" },
-    { number: "25+", label: "Countries Researching" },
-    { number: "500+", label: "Published Papers" },
-    { number: "15+", label: "Years of Research" },
+    { number: siteStats ? siteStats.totalStudies.toLocaleString() : "1,300+", label: "Scientific Studies" },
+    { number: siteStats ? `${siteStats.countries}+` : "25+", label: "Countries Researching" },
+    { number: siteStats ? siteStats.humanTrials.toLocaleString() : "300+", label: "Human Clinical Trials" },
+    { number: siteStats ? `${siteStats.yearsOfResearch}+` : "15+", label: "Years of Research" },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -93,9 +103,8 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Explore 1,304+ peer-reviewed studies from leading universities
-              worldwide. Learn how molecular hydrogen could transform your
-              health and wellness journey.
+              Molecular hydrogen has been studied in {siteStats ? `over ${siteStats.totalStudies.toLocaleString()} peer-reviewed papers across ${siteStats.countries}+ countries` : "over 1,000 peer-reviewed papers across 25+ countries"}.
+              {" "}Here's what the science actually says.
             </p>
 
             {/* Search Bar */}
@@ -120,12 +129,13 @@ export default function HomePage() {
 
             <div className="flex flex-wrap justify-center gap-4 mb-12">
               <Badge variant="outline" className="px-4 py-2">
-                <Users className="h-4 w-4 mr-2" />
-                Join 50K+ Health Enthusiasts
+                {siteStats ? `${siteStats.peerReviewedPct}% Peer-Reviewed` : "Peer-Reviewed Research"}
               </Badge>
               <Badge variant="outline" className="px-4 py-2">
-                <Award className="h-4 w-4 mr-2" />
-                Backed by Science
+                Updated Weekly
+              </Badge>
+              <Badge variant="outline" className="px-4 py-2">
+                Free Access
               </Badge>
             </div>
           </div>
@@ -172,14 +182,10 @@ export default function HomePage() {
                 | "Energy & Recovery";
 
               const searchQueries: Record<BenefitTitle, string> = {
-                "Heart Health":
-                  "cardiovascular heart cardiac hypertension blood pressure",
-                "Brain Function":
-                  "neurological cognitive brain neuroprotective memory",
-                "Antioxidant Power":
-                  "antioxidant oxidative stress free radicals ROS",
-                "Energy & Recovery":
-                  "athletic performance exercise recovery fatigue energy",
+                "Heart Health": "cardiovascular heart",
+                "Brain Function": "brain cognitive",
+                "Antioxidant Power": "antioxidant oxidative",
+                "Energy & Recovery": "exercise athlete",
               };
 
               const detailedBenefits: Record<BenefitTitle, string[]> = {
@@ -298,7 +304,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
               <CardContent className="p-8 text-center">
-                <div className="text-3xl font-bold mb-2">25+</div>
+                <div className="text-3xl font-bold mb-2">{siteStats ? `${siteStats.countries}+` : "25+"}</div>
                 <div className="text-lg opacity-90">Countries</div>
                 <div className="text-sm opacity-70 mt-2">
                   Conducting hydrogen research
@@ -307,16 +313,16 @@ export default function HomePage() {
             </Card>
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
               <CardContent className="p-8 text-center">
-                <div className="text-3xl font-bold mb-2">500+</div>
-                <div className="text-lg opacity-90">Universities</div>
+                <div className="text-3xl font-bold mb-2">{siteStats ? siteStats.humanTrials.toLocaleString() : "300+"}</div>
+                <div className="text-lg opacity-90">Human Clinical Trials</div>
                 <div className="text-sm opacity-70 mt-2">
-                  Publishing hydrogen studies
+                  Testing hydrogen on real patients
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
               <CardContent className="p-8 text-center">
-                <div className="text-3xl font-bold mb-2">98%</div>
+                <div className="text-3xl font-bold mb-2">{siteStats ? `${siteStats.peerReviewedPct}%` : "95%+"}</div>
                 <div className="text-lg opacity-90">Peer-Reviewed</div>
                 <div className="text-sm opacity-70 mt-2">
                   Studies in our database
@@ -392,9 +398,6 @@ export default function HomePage() {
             <Link href="/explore-by-mechanism">
               <Button variant="outline" className="rounded-full px-6">By Mechanism</Button>
             </Link>
-            <Link href="/chat">
-              <Button variant="outline" className="rounded-full px-6">Ask AI Assistant</Button>
-            </Link>
           </div>
         </div>
       </section>
@@ -403,15 +406,15 @@ export default function HomePage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Have Questions About Hydrogen Therapy?
+            Explore the Research for Yourself
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Our AI research assistant can answer your questions based on published scientific studies. Try it for free.
+            Browse our curated collection of peer-reviewed studies, read plain-language summaries, and explore what the science actually says about molecular hydrogen.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/chat">
+            <Link href="/studies">
               <Button size="lg" className="rounded-full px-8">
-                Talk to AI Assistant
+                Browse All Studies
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
