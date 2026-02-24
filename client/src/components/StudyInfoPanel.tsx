@@ -94,21 +94,18 @@ export function StudyInfoPanel({
         .filter(Boolean)
     : [];
 
-  // Fetch real data counts
-  const { data: keywordCounts } = useQuery<Array<{ keyword?: string; category?: string; count: number }>>({
-    queryKey: ["/api/metadata/keywords/counts"],
-    enabled: keywords.length > 0,
-  });
+  // Fetch real data counts (no backend keywords/counts endpoint exists, so skip)
+  const keywordCounts: Array<{ keyword?: string; category?: string; count: number }> | undefined = undefined;
 
   const { data: categoryCounts } = useQuery<Array<{ keyword?: string; category?: string; count: number }>>({
-    queryKey: ["/api/metadata/consumer-categories/counts"],
+    queryKey: ["/api/consumer-categories/counts"],
     enabled: consumerCategories.length > 0,
   });
 
   const { data: relatedStudiesData } = useQuery({
-    queryKey: ["/api/metadata/related", study.id],
+    queryKey: ["/api/studies/metadata/related", study.id],
     queryFn: async () => {
-      const response = await fetch(`/api/metadata/related/${study.id}`);
+      const response = await fetch(`/api/studies/metadata/related/${study.id}`);
       if (!response.ok) throw new Error("Failed to fetch related studies");
       return response.json();
     },

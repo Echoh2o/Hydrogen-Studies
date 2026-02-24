@@ -76,24 +76,28 @@ export function handleApiError(
       )
     : undefined;
 
-  const logContext = {
-    requestId,
-    message: error.message,
-    stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    url: res.req?.url,
-    method: res.req?.method,
-    body: sanitizedBody,
-    params: res.req?.params,
-    query: res.req?.query,
-    headers: sanitizedHeaders,
-    ip: res.req?.ip,
-    userAgent: res.req?.get("user-agent"),
-  };
+  // For NOT_FOUND errors, log minimally to avoid noisy production logs
+  if (errorType === ErrorType.NOT_FOUND) {
+    console.warn(`404 Not Found: ${res.req?.method} ${res.req?.url}`);
+  } else {
+    const logContext = {
+      requestId,
+      message: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      url: res.req?.url,
+      method: res.req?.method,
+      body: sanitizedBody,
+      params: res.req?.params,
+      query: res.req?.query,
+      ip: res.req?.ip,
+      userAgent: res.req?.get("user-agent"),
+    };
 
-  console.error(
-    `API Error [${errorType}] at ${new Date().toISOString()}:`,
-    logContext,
-  );
+    console.error(
+      `API Error [${errorType}] at ${new Date().toISOString()}:`,
+      logContext,
+    );
+  }
 
   // Log to external error tracking service in production
   if (process.env.NODE_ENV === "production" && !isOperationalError(error)) {
