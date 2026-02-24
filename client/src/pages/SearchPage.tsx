@@ -10,13 +10,10 @@ import {
   Award,
   ChevronDown,
   ArrowLeft,
-  Sparkles,
-  Globe,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,21 +59,10 @@ interface Study {
   plain_language_title: string;
 }
 
-interface ExternalPaper {
-  title: string;
-  authors: string;
-  journal: string;
-  year: number;
-  doi: string;
-  abstract: string;
-  detailsUrl: string;
-  source: string;
-}
 
 export default function SearchPage() {
   const [location] = useLocation();
   const [studies, setStudies] = useState<Study[]>([]);
-  const [externalPapers, setExternalPapers] = useState<ExternalPaper[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -85,8 +71,6 @@ export default function SearchPage() {
   const [category, setCategory] = useState("all");
   const [country, setCountry] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
-  const [includeExternal, setIncludeExternal] = useState(false);
-  const [showExternalResults, setShowExternalResults] = useState(false);
   const pageSize = 20;
 
   // Parse URL parameters
@@ -115,7 +99,6 @@ export default function SearchPage() {
 
       if (categoryValue !== "all") params.set("category", categoryValue);
       if (countryValue !== "all") params.set("country", countryValue);
-      if (includeExternal && query) params.set("includeExternal", "true");
 
       const response = await fetch(`/api/unified-search?${params}`);
       if (!response.ok) throw new Error(`Search failed (${response.status})`);
@@ -123,7 +106,6 @@ export default function SearchPage() {
 
       setStudies(data.studies || []);
       setTotal(data.total || 0);
-      setExternalPapers(data.externalPapers || []);
       setError(null);
     } catch (err) {
       console.error("Search error:", err);
@@ -359,7 +341,7 @@ export default function SearchPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Searching studies...</p>
             </div>
-          ) : studies.length > 0 || externalPapers.length > 0 ? (
+          ) : studies.length > 0 ? (
             <div className="space-y-6">
               {/* Local study results */}
               {studies.map((study) => (
@@ -510,75 +492,6 @@ export default function SearchPage() {
                 </div>
               )}
 
-              {/* External papers from Consensus */}
-              {externalPapers.length > 0 && (
-                <div className="mt-8">
-                  <button
-                    onClick={() => setShowExternalResults(!showExternalResults)}
-                    className="flex items-center gap-2 text-lg font-semibold mb-4 hover:text-teal-600 transition-colors"
-                  >
-                    <Globe className="h-5 w-5" />
-                    Additional Papers from Consensus AI (
-                    {externalPapers.length})
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform ${showExternalResults ? "rotate-180" : ""}`}
-                    />
-                  </button>
-
-                  {showExternalResults && (
-                    <div className="space-y-4">
-                      {externalPapers.map((paper, index) => (
-                        <Card
-                          key={index}
-                          className="border-teal-100 bg-teal-50/30"
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-semibold text-gray-900 line-clamp-2 flex-1">
-                                {paper.title}
-                              </h4>
-                              <Badge
-                                variant="secondary"
-                                className="ml-2 flex-shrink-0"
-                              >
-                                <Globe className="h-3 w-3 mr-1" />
-                                Consensus
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                              {paper.abstract}
-                            </p>
-                            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                              <span>{paper.authors}</span>
-                              <span>|</span>
-                              <span>{paper.journal}</span>
-                              <span>|</span>
-                              <span>{paper.year}</span>
-                              {paper.doi && (
-                                <>
-                                  <span>|</span>
-                                  <a
-                                    href={`https://doi.org/${paper.doi}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-teal-600 hover:underline flex items-center gap-1"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    DOI <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                </>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                      <p className="text-xs text-gray-400 text-center">
-                        External results powered by Consensus AI
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           ) : (
             <div className="text-center py-12">
