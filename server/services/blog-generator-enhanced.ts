@@ -277,9 +277,20 @@ async function generateArticleContent(
     );
   }
 
-  // Extract summary (first paragraph or first 200 words)
-  const paragraphs = content.split("\n\n");
-  const summary = paragraphs[0] || content.substring(0, 500);
+  // Generate a proper meta-description-style summary via AI
+  let summary: string;
+  try {
+    const generatedSummary = await ai.generateText(
+      "Write a meta description for a blog post. Rules: 140-155 characters, include 'hydrogen', plain language a 6th grader can understand, end with a hook or call to read more. Respond with ONLY the description.",
+      `Summarize this blog post in one sentence:\n\n${content.substring(0, 800)}`,
+      { maxTokens: 60, temperature: 0.6 },
+    );
+    summary = generatedSummary?.trim() || content.split("\n\n")[0]?.substring(0, 300) || content.substring(0, 300);
+  } catch {
+    // Fallback: use first paragraph
+    const paragraphs = content.split("\n\n");
+    summary = paragraphs[0] || content.substring(0, 300);
+  }
 
   return {
     fullContent: content,
@@ -295,9 +306,15 @@ async function generateArticleTitle(
   articleType: string,
   summary: string,
 ): Promise<string> {
+  const category = study.category || "health";
   const title = await ai.generateText(
-    "Create engaging, SEO-friendly titles for health articles. Keep titles under 60 characters. Respond with ONLY the title, nothing else.",
-    `Create a title for a ${articleType} article about: ${summary.substring(0, 200)}`,
+    `You write SEO-optimized blog titles about hydrogen therapy and ${category}. Rules:
+1. Under 60 characters
+2. 4th-6th grade reading level — no medical jargon
+3. Include "hydrogen" or "hydrogen water" in the title
+4. Make it compelling for someone who knows nothing about hydrogen therapy
+5. Respond with ONLY the title text, nothing else`,
+    `Create a title for a ${articleType} blog post.\n\nStudy topic: ${summary.substring(0, 200)}\nCategory: ${category}`,
     { maxTokens: 50, temperature: 0.8 },
   );
 
@@ -309,7 +326,7 @@ async function generateArticleTitle(
     );
   }
 
-  return title.trim();
+  return title.trim().replace(/^["']|["']$/g, "");
 }
 
 /**
@@ -347,7 +364,7 @@ async function generateArticleImageWithFallback(
 
     return {
       imageUrl: localPath,
-      imageAlt: `Illustration for ${title}`,
+      imageAlt: `${title} - hydrogen therapy research illustration`,
     };
   } catch (error) {
     console.warn("Image generation failed, using default:", error);
@@ -536,10 +553,11 @@ Abstract: ${study.abstract}
 Category: ${study.category || "General Health"}
 
 Requirements:
-- Write at a 6th grade reading level
-- Include specific details from the study
-- Make it engaging and informative
-- Keep it factual and scientifically accurate
-- Structure with clear sections and headings
-- Aim for 500-800 words`;
+- Write at a 4th-6th grade reading level (Flesch-Kincaid score 60-70)
+- Use short sentences and simple words — explain any scientific terms
+- Include specific details from the study (numbers, percentages, outcomes)
+- Structure with clear H2 (##) and H3 (###) headings that include keyword variations of "hydrogen therapy" or "hydrogen water"
+- Include a "Key Takeaways" or "What This Means for You" section
+- End with a brief disclaimer: "Consult your healthcare provider before starting any new health regimen"
+- Aim for 600-900 words`;
 }

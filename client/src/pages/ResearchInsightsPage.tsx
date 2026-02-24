@@ -18,7 +18,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function ResearchInsightsPage() {
   // Get database statistics
-  const { data: statsData, isLoading: statsLoading } = useQuery({
+  const { data: statsData, isLoading: statsLoading } = useQuery<Record<string, any>>({
     queryKey: ["/api/studies/stats"],
     staleTime: 5 * 60 * 1000,
   });
@@ -30,7 +30,7 @@ export default function ResearchInsightsPage() {
         <title>Research Insights & Analytics - Hydrogen Studies Database</title>
         <meta
           name="description"
-          content="Explore comprehensive insights and analytics from our hydrogen health research database. Discover trends, outcomes, and patterns across 1,300+ studies."
+          content="Explore insights and analytics from our hydrogen health research database. Discover publication trends, health outcomes, and research patterns."
         />
       </Helmet>
 
@@ -56,23 +56,23 @@ export default function ResearchInsightsPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Database className="w-6 h-6 mx-auto mb-2" />
-                  <div className="text-2xl font-bold">1,326</div>
+                  <div className="text-2xl font-bold">{statsData?.totalStudies?.toLocaleString() || "1,300+"}</div>
                   <div className="text-sm text-teal-100">Total Studies</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Calendar className="w-6 h-6 mx-auto mb-2" />
-                  <div className="text-2xl font-bold">20+</div>
+                  <div className="text-2xl font-bold">{statsData?.yearsOfResearch || "20"}+</div>
                   <div className="text-sm text-teal-100">Years Covered</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Users className="w-6 h-6 mx-auto mb-2" />
-                  <div className="text-2xl font-bold">50K+</div>
-                  <div className="text-sm text-teal-100">Participants</div>
+                  <div className="text-2xl font-bold">{statsData?.countries || "25"}+</div>
+                  <div className="text-sm text-teal-100">Countries</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <TrendingUp className="w-6 h-6 mx-auto mb-2" />
-                  <div className="text-2xl font-bold">85%</div>
-                  <div className="text-sm text-teal-100">Positive Results</div>
+                  <div className="text-2xl font-bold">{statsData?.peerReviewedPercent || "90"}%</div>
+                  <div className="text-sm text-teal-100">Peer-Reviewed</div>
                 </div>
               </div>
             </div>
@@ -227,16 +227,16 @@ export default function ResearchInsightsPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
-                  href="/improved-search"
+                  href="/studies"
                   className="bg-white text-teal-600 px-6 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-colors"
                 >
-                  Advanced Search
+                  Browse Studies
                 </a>
                 <a
-                  href="/explore-by-condition"
+                  href="/explore-by-benefit"
                   className="bg-teal-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-teal-400 transition-colors"
                 >
-                  Browse by Condition
+                  Explore by Health Benefit
                 </a>
               </div>
             </section>

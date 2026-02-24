@@ -144,8 +144,8 @@ export default function BlogListPage() {
                       <div className="md:flex">
                         <div className="md:w-1/2">
                           <img
-                            src={article.imageUrl}
-                            alt={article.title}
+                            src={article.imageUrl || "/images/fallback-study-image.svg"}
+                            alt={article.imageAlt || `${article.title} - Hydrogen therapy research`}
                             className="w-full h-64 md:h-full object-cover"
                             loading="lazy"
                           />
@@ -223,8 +223,8 @@ export default function BlogListPage() {
                       <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                         <div className="aspect-video">
                           <img
-                            src={article.imageUrl || "https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+Studies"}
-                            alt={article.title}
+                            src={article.imageUrl || "/images/fallback-study-image.svg"}
+                            alt={article.imageAlt || `${article.title} - Hydrogen therapy research`}
                             className="w-full h-full object-cover rounded-t-lg"
                             loading="lazy"
                           />

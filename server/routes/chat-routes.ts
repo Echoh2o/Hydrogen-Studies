@@ -36,12 +36,8 @@ router.post("/chat", async (req, res) => {
       });
     }
 
-    // Log query processing
-    console.log("📝 Processing chat query:", query);
-
     // Search for relevant studies
     const relevantStudies = await searchRelevantStudies(query);
-    console.log(`Found ${relevantStudies.length} relevant studies`);
 
     // Generate AI response using ai-provider or fallback
     let aiResponse: string;
@@ -308,12 +304,8 @@ router.post("/advanced-chat", async (req, res) => {
       });
     }
 
-    // Log query processing
-    console.log("📝 Processing advanced chat query:", query);
-
     // Search for relevant studies with enhanced scoring
     const relevantStudies = await searchRelevantStudies(query);
-    console.log(`Found ${relevantStudies.length} relevant studies`);
 
     // Generate AI response using ai-provider or fallback
     let aiResponse: string;
