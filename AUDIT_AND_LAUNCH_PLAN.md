@@ -92,18 +92,22 @@ All environment variables confirmed set in Railway dashboard.
 Railway deploy logs confirm: server running on port 8080, health check endpoint active,
 database connection verified, environment validation passed, static files serving correctly.
 
-#### 1.4 Smoke Test Critical Paths
-Quick manual verification of the 6 core user flows:
+#### 1.4 Smoke Test Critical Paths -- DONE (issues found)
+Manual smoke test completed. All 6 flows were tested:
 
-1. **Homepage loads** → Browse studies → Open a study detail page
-2. **Search** → Type a query → Results appear → Click a result
-3. **Blog** → Blog listing loads → Open a blog article
-4. **Registration** → Create account → Login → Logout
-5. **Admin** → Login as admin → View dashboard → Create/edit a study
-6. **Contact form** → Submit → Confirmation appears
+1. **Homepage loads** → Works, but stats are hardcoded and repetitive
+2. **Search** → BROKEN for multi-word queries (returns 0 results)
+3. **Blog** → Listing works, but titles are scientific jargon, images often missing
+4. **Registration** → Works, but customer dashboard is a dead end after first visit
+5. **Admin** → Works for admin users
+6. **Contact form** → Shows "message sent" but data goes NOWHERE (handler is a setTimeout mock)
 
-**Priority:** P0
-**Effort:** M (30 minutes)
+**28 issues documented in `SMOKE_TEST_FINDINGS.md`** — categorized as:
+- 6 broken features (search, contact form, share button, dashboard nav, explore counts, consensus filter)
+- 13 UX/content problems (repetitive stats, generic copy, wrong numbers, dead links)
+- 9 features needing major improvement (search upgrade, blog SEO, internal linking, etc.)
+
+**Next step:** Begin fixing Priority 1 issues (broken features)
 
 ---
 
