@@ -247,10 +247,12 @@ export default function SiteHeader() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
+                  {!isAdminOrEditor && (
+                    <DropdownMenuItem onClick={() => navigate("/my-dashboard")}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>My Dashboard</span>
+                    </DropdownMenuItem>
+                  )}
 
                   {isAdminOrEditor && (
                     <>
@@ -354,15 +356,17 @@ export default function SiteHeader() {
                         </div>
                       </div>
 
-                      <Link href="/admin/settings">
-                        <div
-                          className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <Settings className="inline mr-2 h-4 w-4" />
-                          Settings
-                        </div>
-                      </Link>
+                      {!isAdminOrEditor && (
+                        <Link href="/my-dashboard">
+                          <div
+                            className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors text-sm"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <Settings className="inline mr-2 h-4 w-4" />
+                            My Dashboard
+                          </div>
+                        </Link>
+                      )}
 
                       {isAdminOrEditor && (
                         <>

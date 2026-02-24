@@ -88,7 +88,7 @@ export default function BenefitsPage() {
     "Hydrogen is the smallest and lightest molecule in the universe",
     "It can easily penetrate cell membranes and reach mitochondria",
     "Acts as a selective antioxidant targeting harmful free radicals",
-    "Over 1,300 scientific studies have been published on hydrogen therapy",
+    "Molecular hydrogen research began with a landmark 2007 paper in Nature Medicine",
     "Safe with no known toxic effects at therapeutic concentrations",
     "Multiple delivery methods available including water, inhalation, and baths",
   ];
@@ -97,7 +97,7 @@ export default function BenefitsPage() {
     {
       id: "cardiovascular",
       title: "Heart Health",
-      searchQuery: "cardiovascular hydrogen",
+      searchQuery: "cardiovascular heart",
       icon: <Heart className="h-8 w-8 text-red-500" />,
       description:
         "Research shows hydrogen water may support cardiovascular function and reduce oxidative stress.",
@@ -116,7 +116,7 @@ export default function BenefitsPage() {
     {
       id: "neurological",
       title: "Brain Function",
-      searchQuery: "neurological hydrogen brain",
+      searchQuery: "brain cognitive",
       icon: <Brain className="h-8 w-8 text-teal-500" />,
       description:
         "Studies indicate potential cognitive benefits and neuroprotective effects.",
@@ -135,7 +135,7 @@ export default function BenefitsPage() {
     {
       id: "antioxidant",
       title: "Antioxidant Power",
-      searchQuery: "antioxidant oxidative stress hydrogen",
+      searchQuery: "antioxidant oxidative",
       icon: <Shield className="h-8 w-8 text-green-500" />,
       description:
         "Hydrogen acts as a selective antioxidant, targeting harmful free radicals.",
@@ -154,7 +154,7 @@ export default function BenefitsPage() {
     {
       id: "exercise",
       title: "Athletic Performance",
-      searchQuery: "exercise athletic hydrogen performance",
+      searchQuery: "exercise athlete",
       icon: <Zap className="h-8 w-8 text-yellow-500" />,
       description:
         "Athletes report improved performance and faster recovery times.",
@@ -174,9 +174,9 @@ export default function BenefitsPage() {
 
   const researchHighlights = [
     {
-      stat: "1,304+",
-      label: "Published Studies",
-      description: "Peer-reviewed research papers",
+      stat: "2007",
+      label: "First Major Study",
+      description: "Published in Nature Medicine",
     },
     {
       stat: "25+",
@@ -184,14 +184,14 @@ export default function BenefitsPage() {
       description: "Conducting hydrogen research",
     },
     {
-      stat: "15+",
-      label: "Years",
-      description: "Of scientific investigation",
+      stat: "4x",
+      label: "Growth Since 2015",
+      description: "Research output accelerating",
     },
     {
-      stat: "98%",
-      label: "Peer-Reviewed",
-      description: "Studies in our database",
+      stat: "50+",
+      label: "Health Conditions",
+      description: "Studied across all categories",
     },
   ];
 
@@ -203,7 +203,7 @@ export default function BenefitsPage() {
         </title>
         <meta
           name="description"
-          content="Learn about hydrogen therapy benefits backed by 1,300+ studies. Comprehensive guide covering health benefits, mechanisms, delivery methods, and scientific research."
+          content="Learn how molecular hydrogen may improve health. Explore benefits backed by peer-reviewed research covering heart health, brain function, antioxidant effects, and athletic performance."
         />
       </Helmet>
 
@@ -327,9 +327,9 @@ export default function BenefitsPage() {
                           Search {category.title} Studies
                         </Button>
                       </Link>
-                      <Link href="/studies">
+                      <Link href={`/search?q=${encodeURIComponent(category.searchQuery)}&category=${category.id}`}>
                         <Button variant="outline">
-                          Browse Research Database
+                          Browse {category.title} Research
                         </Button>
                       </Link>
                     </div>
@@ -437,11 +437,10 @@ export default function BenefitsPage() {
           <Card className="mb-16">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl mb-4">
-                How Hydrogen Water Works
+                How Molecular Hydrogen Improves Health
               </CardTitle>
               <CardDescription className="text-lg max-w-3xl mx-auto">
-                Understanding the science behind molecular hydrogen's potential
-                health benefits.
+                Three key mechanisms researchers have identified in peer-reviewed studies.
               </CardDescription>
             </CardHeader>
             <CardContent>
