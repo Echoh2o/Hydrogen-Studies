@@ -7,7 +7,7 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -50,10 +50,10 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-const VALUE_FEATURES = [
+const getValueFeatures = (studyCount?: string) => [
   {
     icon: BookOpen,
-    title: "1,300+ Research Studies",
+    title: `${studyCount || "1,300+"} Research Studies`,
     description: "Access peer-reviewed hydrogen therapy research, summarized in plain language",
   },
   {
@@ -74,6 +74,13 @@ const VALUE_FEATURES = [
 ];
 
 export default function LoginPage() {
+  const { data: siteStats } = useQuery<{ totalStudies: number }>({
+    queryKey: ["/api/public-stats"],
+    staleTime: 5 * 60 * 1000,
+  });
+  const VALUE_FEATURES = getValueFeatures(
+    siteStats ? `${siteStats.totalStudies.toLocaleString()}+` : undefined,
+  );
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const [loginError, setLoginError] = useState<string>("");
