@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { blogArticles, studies } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { ai } from "./ai-provider";
 
 interface ContentGenerationResult {
@@ -36,6 +36,23 @@ export class ContentGenerator {
     if (!study) {
         console.error(`Study ${studyId} not found`);
         return null;
+    }
+
+    // Check for duplicate: skip if a blog_post already exists for this study
+    const [existing] = await db
+      .select({ id: blogArticles.id })
+      .from(blogArticles)
+      .where(
+        and(
+          eq(blogArticles.studyId, studyId),
+          eq(blogArticles.articleType, "blog_post"),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      console.log(`Blog post already exists for study ${studyId} (article #${existing.id}), skipping`);
+      return null;
     }
 
     console.log(`Generating blog post for study: ${study.title}`);
