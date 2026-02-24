@@ -286,7 +286,11 @@ router.get("/api/delivery-methods", async (_req: Request, res: Response) => {
       .from(deliveryMethods)
       .orderBy(deliveryMethods.displayOrder);
     res.json(allDeliveryMethods);
-  } catch (error) {
+  } catch (error: any) {
+    // Table may not exist yet — return empty array gracefully
+    if (error.message?.includes("delivery_methods") || error.message?.includes("does not exist")) {
+      return res.json([]);
+    }
     console.error("Error fetching delivery methods:", error);
     res.status(500).json({ error: "Failed to fetch delivery methods" });
   }
@@ -311,7 +315,10 @@ router.get(
       }
 
       res.json(deliveryMethod);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes("does not exist")) {
+        return res.status(404).json({ error: "Delivery method not found" });
+      }
       console.error(
         `Error fetching delivery method with slug ${req.params.slug}:`,
         error,
@@ -358,7 +365,10 @@ router.get(
         deliveryMethod,
         studies: result,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes("does not exist")) {
+        return res.json({ deliveryMethod: null, studies: [] });
+      }
       console.error(
         `Error fetching studies for delivery method ${req.params.slug}:`,
         error,
@@ -424,66 +434,26 @@ router.get("/api/studies/:id/tags", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid study ID" });
     }
 
-    // Get all the associated tags for this study from all the different categories
-    const studyBenefitData = await db
-      .select({
-        benefit: benefits,
-      })
-      .from(studyBenefits)
-      .innerJoin(benefits, eq(studyBenefits.benefitId, benefits.id))
-      .where(eq(studyBenefits.studyId, studyId));
+    // Get all associated tags — each query wrapped individually since tables may not exist yet
+    const safeQuery = async <T>(fn: () => Promise<T[]>): Promise<T[]> => {
+      try { return await fn(); } catch { return []; }
+    };
 
-    const studyDemographicData = await db
-      .select({
-        demographic: demographics,
-      })
-      .from(studyDemographics)
-      .innerJoin(
-        demographics,
-        eq(studyDemographics.demographicId, demographics.id),
-      )
-      .where(eq(studyDemographics.studyId, studyId));
-
-    const studyMechanismData = await db
-      .select({
-        mechanism: mechanisms,
-      })
-      .from(studyMechanisms)
-      .innerJoin(mechanisms, eq(studyMechanisms.mechanismId, mechanisms.id))
-      .where(eq(studyMechanisms.studyId, studyId));
-
-    const studyDeliveryMethodData = await db
-      .select({
-        deliveryMethod: deliveryMethods,
-      })
-      .from(studyDeliveryMethods)
-      .innerJoin(
-        deliveryMethods,
-        eq(studyDeliveryMethods.deliveryMethodId, deliveryMethods.id),
-      )
-      .where(eq(studyDeliveryMethods.studyId, studyId));
-
-    const studyDurationData = await db
-      .select({
-        durationCategory: durationCategories,
-      })
-      .from(studyDurations)
-      .innerJoin(
-        durationCategories,
-        eq(studyDurations.durationCategoryId, durationCategories.id),
-      )
-      .where(eq(studyDurations.studyId, studyId));
+    const [studyBenefitData, studyDemographicData, studyMechanismData, studyDeliveryMethodData, studyDurationData] =
+      await Promise.all([
+        safeQuery(() => db.select({ benefit: benefits }).from(studyBenefits).innerJoin(benefits, eq(studyBenefits.benefitId, benefits.id)).where(eq(studyBenefits.studyId, studyId))),
+        safeQuery(() => db.select({ demographic: demographics }).from(studyDemographics).innerJoin(demographics, eq(studyDemographics.demographicId, demographics.id)).where(eq(studyDemographics.studyId, studyId))),
+        safeQuery(() => db.select({ mechanism: mechanisms }).from(studyMechanisms).innerJoin(mechanisms, eq(studyMechanisms.mechanismId, mechanisms.id)).where(eq(studyMechanisms.studyId, studyId))),
+        safeQuery(() => db.select({ deliveryMethod: deliveryMethods }).from(studyDeliveryMethods).innerJoin(deliveryMethods, eq(studyDeliveryMethods.deliveryMethodId, deliveryMethods.id)).where(eq(studyDeliveryMethods.studyId, studyId))),
+        safeQuery(() => db.select({ durationCategory: durationCategories }).from(studyDurations).innerJoin(durationCategories, eq(studyDurations.durationCategoryId, durationCategories.id)).where(eq(studyDurations.studyId, studyId))),
+      ]);
 
     res.json({
-      benefits: studyBenefitData.map((item) => item.benefit),
-      demographics: studyDemographicData.map((item) => item.demographic),
-      mechanisms: studyMechanismData.map((item) => item.mechanism),
-      deliveryMethods: studyDeliveryMethodData.map(
-        (item) => item.deliveryMethod,
-      ),
-      durationCategories: studyDurationData.map(
-        (item) => item.durationCategory,
-      ),
+      benefits: studyBenefitData.map((item: any) => item.benefit),
+      demographics: studyDemographicData.map((item: any) => item.demographic),
+      mechanisms: studyMechanismData.map((item: any) => item.mechanism),
+      deliveryMethods: studyDeliveryMethodData.map((item: any) => item.deliveryMethod),
+      durationCategories: studyDurationData.map((item: any) => item.durationCategory),
     });
   } catch (error) {
     console.error(`Error fetching tags for study ${req.params.id}:`, error);

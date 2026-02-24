@@ -271,11 +271,11 @@ export class StudyService {
       ORDER BY year
     `);
     
-    // Category distribution
+    // Category distribution (body_systems is text[] so use array_to_string)
     const categoryResult = await db.execute(sql`
-       SELECT 
-        CASE 
-          WHEN body_systems IS NOT NULL AND body_systems != '' THEN body_systems
+       SELECT
+        CASE
+          WHEN body_systems IS NOT NULL AND array_length(body_systems, 1) > 0 THEN array_to_string(body_systems, ', ')
           WHEN category IS NOT NULL AND category != '' THEN category
           WHEN title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' THEN 'Cardiovascular'
           WHEN title ILIKE '%brain%' OR title ILIKE '%neuro%' THEN 'Neurological'
@@ -305,12 +305,13 @@ export class StudyService {
   }
   
   async getHealthOutcomes() {
+    // body_systems is text[] — use array_to_string() instead of ILIKE directly on array
     const [cardioResult, nervousResult, metabolicResult, immuneResult] =
       await Promise.all([
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Cardiovascular%' OR 'cardiovascular' = ANY(keywords) OR 'heart' = ANY(keywords) OR 'blood pressure' = ANY(keywords) OR title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%cardioprotect%'`),
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Nervous%' OR 'brain' = ANY(keywords) OR 'neurological' = ANY(keywords) OR 'cognitive' = ANY(keywords) OR title ILIKE '%brain%' OR title ILIKE '%neuro%' OR abstract ILIKE '%neurological%' OR abstract ILIKE '%neuroprotect%'`),
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Metabolic%' OR 'diabetes' = ANY(keywords) OR 'metabolism' = ANY(keywords) OR 'glucose' = ANY(keywords) OR title ILIKE '%metabolic%' OR title ILIKE '%diabetes%' OR abstract ILIKE '%metabolism%' OR abstract ILIKE '%glucose%'`),
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE body_systems ILIKE '%Immune%' OR 'immune' = ANY(keywords) OR 'inflammation' = ANY(keywords) OR 'oxidative' = ANY(keywords) OR title ILIKE '%immune%' OR title ILIKE '%inflammation%' OR abstract ILIKE '%antioxidant%' OR abstract ILIKE '%anti-inflammatory%'`)
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Cardiovascular%' OR 'cardiovascular' = ANY(keywords) OR 'heart' = ANY(keywords) OR 'blood pressure' = ANY(keywords) OR title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%cardioprotect%'`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Nervous%' OR 'brain' = ANY(keywords) OR 'neurological' = ANY(keywords) OR 'cognitive' = ANY(keywords) OR title ILIKE '%brain%' OR title ILIKE '%neuro%' OR abstract ILIKE '%neurological%' OR abstract ILIKE '%neuroprotect%'`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Metabolic%' OR 'diabetes' = ANY(keywords) OR 'metabolism' = ANY(keywords) OR 'glucose' = ANY(keywords) OR title ILIKE '%metabolic%' OR title ILIKE '%diabetes%' OR abstract ILIKE '%metabolism%' OR abstract ILIKE '%glucose%'`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Immune%' OR 'immune' = ANY(keywords) OR 'inflammation' = ANY(keywords) OR 'oxidative' = ANY(keywords) OR title ILIKE '%immune%' OR title ILIKE '%inflammation%' OR abstract ILIKE '%antioxidant%' OR abstract ILIKE '%anti-inflammatory%'`)
       ]);
 
       const parseCount = (res: any) => parseInt(res.rows[0]?.studies || 0);
