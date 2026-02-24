@@ -7,7 +7,7 @@
  */
 import { db } from "../db";
 import { blogGenerationJobs, blogArticles, studies } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { ai } from "./ai-provider";
 
 // Worker state
@@ -289,6 +289,34 @@ async function processJob(jobId: number) {
         const articleType = articleTypes[ti];
 
         try {
+          // Check for duplicate: skip if an article with this studyId + articleType already exists
+          const [existing] = await db
+            .select({ id: blogArticles.id })
+            .from(blogArticles)
+            .where(
+              and(
+                eq(blogArticles.studyId, studyId),
+                eq(blogArticles.articleType, articleType),
+              ),
+            )
+            .limit(1);
+
+          if (existing) {
+            console.log(`[BlogWorker] Skipping duplicate: study ${studyId}, type ${articleType} (article #${existing.id} exists)`);
+            completedItems++; // Count as completed (already done)
+            // Update progress and continue
+            await db.update(blogGenerationJobs).set({
+              currentStudyIndex: si,
+              currentTypeIndex: ti + 1,
+              completedItems,
+              failedItems,
+              savedItems,
+              updatedAt: new Date(),
+            }).where(eq(blogGenerationJobs.id, jobId));
+            await sleep(500); // Short delay for skips
+            continue;
+          }
+
           const blog = await generateArticle(study, articleType, readingLevel);
 
           // Save to database
@@ -300,6 +328,20 @@ async function processJob(jobId: number) {
             .replace(/^-+|-+$/g, "")
             .substring(0, 100) || "untitled-blog";
 
+          // Generate image for the blog article if configured
+          let imageUrl: string | null = null;
+          let imageAlt: string | null = null;
+          if (job.includeImages) {
+            try {
+              const imageResult = await generateBlogImageForWorker(study, blog.title, articleType);
+              imageUrl = imageResult.imageUrl;
+              imageAlt = imageResult.imageAlt;
+            } catch (imgErr: any) {
+              console.warn(`[BlogWorker] Image generation failed for study ${studyId}, type ${articleType}: ${imgErr.message}`);
+              // Continue without image — don't fail the article
+            }
+          }
+
           await db.insert(blogArticles).values({
             title: blog.title,
             slug: `${slug}-${Date.now()}`,
@@ -308,6 +350,8 @@ async function processJob(jobId: number) {
             studyId: study.id,
             articleType,
             readingLevel,
+            imageUrl,
+            imageAlt,
             isPublished: false,
           });
 
@@ -432,6 +476,73 @@ Write 800-1200 words with clear sections. Include: Introduction, Key Findings, P
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Generate an image for a blog article during bulk generation.
+ * Uses DALL-E (OpenAI) if available, otherwise returns a category-based default.
+ */
+async function generateBlogImageForWorker(
+  study: any,
+  title: string,
+  articleType: string,
+): Promise<{ imageUrl: string | null; imageAlt: string | null }> {
+  const openaiClient = ai.getOpenAIClient();
+  if (!openaiClient) {
+    // No OpenAI key — return a default placeholder based on category
+    return getDefaultCategoryImage(study.category);
+  }
+
+  const prompt = `Scientific illustration for a hydrogen therapy article titled "${title}".
+Clean, professional medical illustration style. No text or labels. Neutral background.`.substring(0, 1000);
+
+  const response = await openaiClient.images.generate({
+    model: "dall-e-3",
+    prompt,
+    n: 1,
+    size: "1024x1024",
+    quality: "standard",
+  });
+
+  const dalleUrl = response.data?.[0]?.url;
+  if (!dalleUrl) {
+    return getDefaultCategoryImage(study.category);
+  }
+
+  // Download and save locally
+  const fs = await import("fs");
+  const pathMod = await import("path");
+  const axiosMod = await import("axios");
+  const axiosClient = axiosMod.default;
+
+  const uploadDir = pathMod.join(process.cwd(), "public", "uploads", "blog");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const safeType = articleType.replace(/[^a-z0-9-]/g, "-");
+  const filename = `blog-${safeType}-${study.id}-${Date.now()}.png`;
+  const filepath = pathMod.join(uploadDir, filename);
+
+  const imgResponse = await axiosClient.get(dalleUrl, { responseType: "arraybuffer", timeout: 15000 });
+
+  fs.writeFileSync(filepath, Buffer.from(imgResponse.data));
+
+  return {
+    imageUrl: `/uploads/blog/${filename}`,
+    imageAlt: `Illustration for ${title}`,
+  };
+}
+
+/**
+ * Returns a default placeholder image path based on study category.
+ */
+function getDefaultCategoryImage(category?: string): { imageUrl: string | null; imageAlt: string | null } {
+  // Use the fallback SVG that actually exists in the repo
+  return {
+    imageUrl: "/images/fallback-study-image.svg",
+    imageAlt: `${category || "Hydrogen therapy"} research illustration`,
+  };
 }
 
 /**

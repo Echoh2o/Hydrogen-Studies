@@ -10,7 +10,7 @@ import axios from "axios";
 import slugify from "slugify";
 import { Study, InsertBlogArticle, blogArticles } from "@shared/schema";
 import { db } from "../db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   handleOpenAIRequest,
   handleBatchOperation,
@@ -164,12 +164,32 @@ async function generateSingleBlogArticle(
   articleType: string,
 ): Promise<InsertBlogArticle> {
   try {
+    // Check for duplicate: skip if an article with this studyId + articleType already exists
+    const [existing] = await db
+      .select({ id: blogArticles.id })
+      .from(blogArticles)
+      .where(
+        and(
+          eq(blogArticles.studyId, study.id),
+          eq(blogArticles.articleType, articleType),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      throw new AppError(
+        `Article already exists for study ${study.id} with type ${articleType} (article #${existing.id})`,
+        409,
+        ErrorCode.VALIDATION_ERROR,
+      );
+    }
+
     // 1. Generate content with fallback
     const blogContent = await handleOpenAIRequest(
       () => generateArticleContent(study, articleType),
       generateFallbackContent(study, articleType),
       {
-        model: "gpt-4o",
+        model: "claude-sonnet",
         prompt: `Generate ${articleType} article for study ${study.id}`,
       },
     );
@@ -178,7 +198,7 @@ async function generateSingleBlogArticle(
     const blogTitle = await handleOpenAIRequest(
       () => generateArticleTitle(study, articleType, blogContent.summary),
       generateFallbackTitle(study, articleType),
-      { model: "gpt-4o", prompt: "Generate article title" },
+      { model: "claude-sonnet", prompt: "Generate article title" },
     );
 
     // 3. Generate unique slug
@@ -452,19 +472,9 @@ function getDefaultImage(category?: string): {
   imageUrl: string;
   imageAlt: string;
 } {
-  const categoryImages: Record<string, string> = {
-    Neurological: "/images/default-neuro.svg",
-    Cardiovascular: "/images/default-cardio.svg",
-    Cancer: "/images/default-cancer.svg",
-    "Sports Performance": "/images/default-sports.svg",
-    "General Health": "/images/default-health.svg",
-  };
-
-  const imageUrl =
-    categoryImages[category || ""] || "/images/default-study.svg";
-
+  // Use the actual fallback SVG that exists in the repository
   return {
-    imageUrl,
+    imageUrl: "/images/fallback-study-image.svg",
     imageAlt: `${category || "Hydrogen therapy"} research illustration`,
   };
 }
