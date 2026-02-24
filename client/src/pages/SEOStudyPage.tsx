@@ -242,18 +242,20 @@ export default function SEOStudyPage() {
                         /
                       </span>
                     </li>
-                    <li className="inline-flex items-center">
-                      <Link
-                        href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}
-                      >
-                        <span className="hover:text-primary cursor-pointer">
-                          {study.category}
+                    {study.category && (
+                      <li className="inline-flex items-center">
+                        <Link
+                          href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}
+                        >
+                          <span className="hover:text-primary cursor-pointer">
+                            {study.category}
+                          </span>
+                        </Link>
+                        <span className="mx-2" aria-hidden="true">
+                          /
                         </span>
-                      </Link>
-                      <span className="mx-2" aria-hidden="true">
-                        /
-                      </span>
-                    </li>
+                      </li>
+                    )}
                     <li
                       className="inline-flex items-center"
                       aria-current="page"
@@ -267,12 +269,14 @@ export default function SEOStudyPage() {
                 <header className="mb-6 md:mb-8">
                   {/* Category and date */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                    <Badge
-                      variant="secondary"
-                      className="bg-primary/10 text-primary hover:bg-primary/15 w-fit"
-                    >
-                      {study.category}
-                    </Badge>
+                    {study.category && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-primary/10 text-primary hover:bg-primary/15 w-fit"
+                      >
+                        {study.category}
+                      </Badge>
+                    )}
                     {(study.year || study.publishYear) && (
                       <time
                         dateTime={(study.year || study.publishYear)?.toString()}
