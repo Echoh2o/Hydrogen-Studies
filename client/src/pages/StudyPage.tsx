@@ -256,7 +256,8 @@ const StudyPage = () => {
     queryKey: ["/api/studies", { category: study?.category, limit: "4" }],
     enabled: !!study?.category,
   });
-  const relatedStudies = (relatedData?.data || relatedData || [])
+  const relatedArray = Array.isArray(relatedData?.data) ? relatedData.data : Array.isArray(relatedData) ? relatedData : [];
+  const relatedStudies = relatedArray
     .filter((s: any) => s.id !== studyId)
     .slice(0, 3);
 
@@ -324,7 +325,7 @@ const StudyPage = () => {
         />
         <meta
           name="keywords"
-          content={`hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, research study, scientific evidence, health effects`}
+          content={`hydrogen therapy, molecular hydrogen, ${(study.category || '').toLowerCase()}, research study, scientific evidence, health effects`}
         />
         <meta name="author" content={study.authors} />
         <meta name="date" content={study.publishDate} />
@@ -352,7 +353,7 @@ const StudyPage = () => {
           content={study.imageUrl || study.image_url || fallbackImageBase64}
         />
         <meta property="article:published_time" content={study.publishDate} />
-        <meta property="article:section" content={study.category} />
+        {study.category && <meta property="article:section" content={study.category} />}
 
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
@@ -389,10 +390,10 @@ const StudyPage = () => {
             name: "Research Studies",
             url: "https://hydrogenstudies.com/studies",
           },
-          {
+          ...(study.category ? [{
             name: study.category,
             url: `https://hydrogenstudies.com/category/${encodeURIComponent(study.category)}`,
-          },
+          }] : []),
           {
             name: study.title,
             url: `https://hydrogenstudies.com/study/${study.slug || study.id}`,
@@ -448,6 +449,7 @@ const StudyPage = () => {
                     /
                   </span>
                 </li>
+                {study.category && (
                 <li
                   itemProp="itemListElement"
                   itemScope
@@ -469,6 +471,7 @@ const StudyPage = () => {
                     /
                   </span>
                 </li>
+                )}
                 <li
                   itemProp="itemListElement"
                   itemScope
@@ -488,12 +491,14 @@ const StudyPage = () => {
             <header className="mb-6 md:mb-8">
               {/* Mobile-first category and date */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+                {study.category && (
                 <Badge
                   variant="secondary"
                   className="bg-primary/10 text-primary hover:bg-primary/15 w-fit"
                 >
                   {study.category}
                 </Badge>
+                )}
                 {study.year && (
                   <time
                     dateTime={study.year.toString()}
