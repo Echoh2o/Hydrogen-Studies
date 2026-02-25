@@ -158,8 +158,9 @@ export function getSessionMiddleware() {
     if (sessionMiddleware) {
       sessionMiddleware(req, res, next);
     } else {
-      // Session store failed — continue without session instead of crashing
-      next();
+      // Session store failed — return error instead of silently bypassing auth
+      console.error("Session middleware unavailable, rejecting request");
+      res.status(503).json({ error: "Service temporarily unavailable" });
     }
   };
 }

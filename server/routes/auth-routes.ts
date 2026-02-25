@@ -70,18 +70,11 @@ function createAuditLog(
     changes: changes ? JSON.stringify(changes) : null,
   };
 
-  // Fire and forget with one retry
-  db.insert(auditLogs)
+  // Fire and forget — void prevents unhandled promise rejection
+  void db.insert(auditLogs)
     .values(values)
-    .catch(() => {
-      // Retry once after 500ms on failure
-      setTimeout(() => {
-        db.insert(auditLogs)
-          .values(values)
-          .catch((retryErr: any) => {
-            console.warn("Audit log failed after retry:", retryErr?.message);
-          });
-      }, 500);
+    .catch((err: any) => {
+      console.warn("Audit log failed:", err?.message);
     });
 }
 
@@ -766,34 +759,40 @@ router.post(
         })
         .parse(req.body);
 
-      // Find valid, unused token
-      const [resetToken] = await db
-        .select()
-        .from(passwordResetTokens)
-        .where(
-          and(
-            eq(passwordResetTokens.token, token),
-            gt(passwordResetTokens.expiresAt, new Date()),
-          ),
-        )
-        .limit(1);
-
-      if (!resetToken || resetToken.usedAt) {
-        return res.status(400).json({ error: "Invalid or expired reset token" });
-      }
-
-      // Hash new password and update user
+      // Hash password before transaction to avoid holding DB lock during bcrypt
       const passwordHash = await bcrypt.hash(newPassword, 10);
-      await db
-        .update(users)
-        .set({ passwordHash })
-        .where(eq(users.id, resetToken.userId));
 
-      // Mark token as used
-      await db
-        .update(passwordResetTokens)
-        .set({ usedAt: new Date() })
-        .where(eq(passwordResetTokens.id, resetToken.id));
+      // Use transaction to atomically validate token + update password + mark used
+      // Prevents race condition where same token could be used by concurrent requests
+      let resetToken: any;
+      await db.transaction(async (tx: any) => {
+        [resetToken] = await tx
+          .select()
+          .from(passwordResetTokens)
+          .where(
+            and(
+              eq(passwordResetTokens.token, token),
+              gt(passwordResetTokens.expiresAt, new Date()),
+            ),
+          )
+          .limit(1);
+
+        if (!resetToken || resetToken.usedAt) {
+          throw new Error("INVALID_TOKEN");
+        }
+
+        // Mark token as used first (prevents concurrent use)
+        await tx
+          .update(passwordResetTokens)
+          .set({ usedAt: new Date() })
+          .where(eq(passwordResetTokens.id, resetToken.id));
+
+        // Update password atomically
+        await tx
+          .update(users)
+          .set({ passwordHash })
+          .where(eq(users.id, resetToken.userId));
+      });
 
       createAuditLog(
         resetToken.userId,
@@ -809,6 +808,9 @@ router.post(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation error", details: error.errors });
+      }
+      if (error instanceof Error && error.message === "INVALID_TOKEN") {
+        return res.status(400).json({ error: "Invalid or expired reset token" });
       }
       console.error("Reset password error:", error);
       res.status(500).json({ error: "Failed to reset password" });
