@@ -127,11 +127,11 @@ export function NaturalLanguageSearchResults({
     });
   };
 
-  // Highlight text
+  // Highlight text - sanitized to prevent XSS
   const highlightText = (text?: string) => {
     if (!text) return null;
-    // Simple implementation - in production, would use proper highlighting
-    return <span dangerouslySetInnerHTML={{ __html: text }} />;
+    const sanitized = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return <span dangerouslySetInnerHTML={{ __html: sanitized }} />;
   };
 
   return (

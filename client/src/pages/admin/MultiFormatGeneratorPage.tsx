@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -819,7 +820,7 @@ function ContentPreview({ content }: { content: any }) {
                 <h3 className="font-medium mb-2">HTML Preview</h3>
                 <div
                   className="border p-4 rounded bg-white"
-                  dangerouslySetInnerHTML={{ __html: content.newsletterHtml }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content.newsletterHtml) }}
                 />
               </div>
             )}

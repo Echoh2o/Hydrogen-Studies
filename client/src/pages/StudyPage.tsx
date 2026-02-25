@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import DOMPurify from "dompurify";
 import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -321,7 +322,7 @@ const StudyPage = () => {
         </title>
         <meta
           name="description"
-          content={study.abstract?.substring(0, 160) + "..."}
+          content={(study.abstract || "").substring(0, 160) + "..."}
         />
         <meta
           name="keywords"
@@ -341,7 +342,7 @@ const StudyPage = () => {
         />
         <meta
           property="og:description"
-          content={study.abstract?.substring(0, 200) + "..."}
+          content={(study.abstract || "").substring(0, 200) + "..."}
         />
         <meta property="og:type" content="article" />
         <meta
@@ -367,7 +368,7 @@ const StudyPage = () => {
         />
         <meta
           name="twitter:description"
-          content={study.abstract?.substring(0, 200) + "..."}
+          content={(study.abstract || "").substring(0, 200) + "..."}
         />
         <meta
           name="twitter:image"
@@ -645,7 +646,7 @@ const StudyPage = () => {
                       <div className="prose prose-sm md:prose max-w-none prose-teal">
                         <div
                           dangerouslySetInnerHTML={{
-                            __html: (study as any).summaryMarkdown,
+                            __html: DOMPurify.sanitize((study as any).summaryMarkdown),
                           }}
                         />
                       </div>
