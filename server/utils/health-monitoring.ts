@@ -31,6 +31,8 @@ interface HealthStatus {
 let totalRequests = 0;
 let totalErrors = 0;
 let totalResponseTime = 0;
+let lastStatsReset = Date.now();
+const STATS_WINDOW_MS = 15 * 60 * 1000; // Reset counters every 15 minutes to prevent overflow
 
 let healthStatus: HealthStatus = {
   status: "healthy",
@@ -60,6 +62,14 @@ const startTime = Date.now();
 
 /** Track a completed request for health metrics */
 export function trackRequest(durationMs: number, isError: boolean): void {
+  // Reset counters periodically to prevent integer overflow on long-running servers
+  const now = Date.now();
+  if (now - lastStatsReset > STATS_WINDOW_MS) {
+    totalRequests = 0;
+    totalErrors = 0;
+    totalResponseTime = 0;
+    lastStatsReset = now;
+  }
   totalRequests++;
   totalResponseTime += durationMs;
   if (isError) totalErrors++;

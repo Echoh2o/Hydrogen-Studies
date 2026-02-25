@@ -85,9 +85,10 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [loginError, setLoginError] = useState<string>("");
 
-  // Get redirect path from URL params or default to home
+  // Get redirect path from URL params or default to home (validated to prevent open redirect)
   const params = new URLSearchParams(location.split("?")[1] || "");
-  const redirectTo = params.get("redirect") || "/";
+  const rawRedirect = params.get("redirect") || "/";
+  const redirectTo = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/";
 
   // Form setup
   const form = useForm<LoginFormData>({

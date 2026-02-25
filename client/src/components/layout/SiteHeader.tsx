@@ -201,13 +201,6 @@ export default function SiteHeader() {
             >
               Products
             </Link>
-            <Link
-              href="/chat"
-              className="text-gray-700 hover:text-teal-600 transition-colors"
-            >
-              AI Assistant
-            </Link>
-
             {/* User Menu */}
             {isLoading ? (
               <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
@@ -533,14 +526,6 @@ export default function SiteHeader() {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Products
-                </div>
-              </Link>
-              <Link href="/chat">
-                <div
-                  className="block px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  AI Assistant
                 </div>
               </Link>
             </div>

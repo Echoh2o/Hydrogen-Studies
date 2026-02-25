@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft, Calendar, Eye, Share } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import ReactMarkdown from "react-markdown";
 import SiteHeader from "@/components/layout/SiteHeader";
@@ -29,6 +30,7 @@ export default function BlogPage() {
   // But App.tsx has /blog/:id/:slug? and /blog/:id
   // Use a more robust check.
   
+  const { toast } = useToast();
   const idOrSlug = params.id || params.slug;
   const isId = /^\d+$/.test(idOrSlug || "");
 
@@ -230,6 +232,10 @@ export default function BlogPage() {
                       });
                     } else {
                       navigator.clipboard.writeText(window.location.href);
+                      toast({
+                        title: "Link copied",
+                        description: "Article link has been copied to your clipboard.",
+                      });
                     }
                   }}
                 >

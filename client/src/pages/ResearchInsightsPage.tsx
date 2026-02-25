@@ -23,6 +23,12 @@ export default function ResearchInsightsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Get category counts for insight cards
+  const { data: categoryStats } = useQuery<Record<string, any>>({
+    queryKey: ["/api/consumer-categories/counts"],
+    staleTime: 5 * 60 * 1000,
+  });
+
   return (
     <>
       <SiteHeader />
@@ -134,7 +140,10 @@ export default function ResearchInsightsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       <div className="text-2xl font-bold text-red-600">
-                        180+ Studies
+                        {(() => {
+                          const count = categoryStats?.data?.body_system?.find((s: any) => s.name === "Cardiovascular System")?.count;
+                          return count ? `${count}+ Studies` : "Top Category";
+                        })()}
                       </div>
                       <p className="text-gray-600 text-sm">
                         Hydrogen shows significant cardioprotective effects,
@@ -164,7 +173,10 @@ export default function ResearchInsightsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       <div className="text-2xl font-bold text-purple-600">
-                        150+ Studies
+                        {(() => {
+                          const count = categoryStats?.data?.body_system?.find((s: any) => s.name === "Nervous System")?.count;
+                          return count ? `${count}+ Studies` : "Top Category";
+                        })()}
                       </div>
                       <p className="text-gray-600 text-sm">
                         Strong neuroprotective effects shown across multiple
@@ -194,12 +206,12 @@ export default function ResearchInsightsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       <div className="text-2xl font-bold text-green-600">
-                        300% Increase
+                        {statsData?.totalStudies ? `${statsData.totalStudies.toLocaleString()}+ Studies` : "Growing Fast"}
                       </div>
                       <p className="text-gray-600 text-sm">
                         Hydrogen health research has grown dramatically since
                         2010, with accelerating interest from the scientific
-                        community.
+                        community worldwide.
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary" className="text-xs">

@@ -185,12 +185,12 @@ export default function SEOStudyPage() {
         <title>{pageTitle}</title>
         <meta
           name="description"
-          content={study.abstract?.substring(0, 160) + "..."}
+          content={(study.abstract || "").substring(0, 160) + "..."}
         />
         <meta property="og:title" content={seoTitle} />
         <meta
           property="og:description"
-          content={study.abstract?.substring(0, 160) + "..."}
+          content={(study.abstract || "").substring(0, 160) + "..."}
         />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonicalUrl} />
@@ -209,7 +209,7 @@ export default function SEOStudyPage() {
         <meta name="twitter:title" content={seoTitle} />
         <meta
           name="twitter:description"
-          content={study.abstract?.substring(0, 160) + "..."}
+          content={(study.abstract || "").substring(0, 160) + "..."}
         />
       </Helmet>
 

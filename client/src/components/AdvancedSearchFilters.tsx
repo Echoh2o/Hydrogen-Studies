@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Filter, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,9 +158,12 @@ export function AdvancedSearchFilters({
     { value: "rating", label: "Highest Rated" },
   ];
 
+  const onFiltersChangeRef = useRef(onFiltersChange);
+  onFiltersChangeRef.current = onFiltersChange;
+
   useEffect(() => {
-    onFiltersChange(filters);
-  }, [filters, onFiltersChange]);
+    onFiltersChangeRef.current(filters);
+  }, [filters]);
 
   const updateFilter = (key: keyof SearchFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

@@ -229,10 +229,18 @@ router.post("/googlesheet", async (req: Request, res: Response) => {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    fs.writeFileSync(tempFilePath, Buffer.from(response.data));
+    let workbook;
+    try {
+      fs.writeFileSync(tempFilePath, Buffer.from(response.data));
+      workbook = XLSX.readFile(tempFilePath);
+    } catch (fileErr) {
+      cleanupTempFile(tempFilePath);
+      return res.status(500).json({
+        success: false,
+        message: `File processing failed: ${fileErr instanceof Error ? fileErr.message : "Unknown error"}`,
+      });
+    }
 
-    // Process the CSV file
-    const workbook = XLSX.readFile(tempFilePath);
     const studies = processExcelData(workbook);
 
     // Import studies to database

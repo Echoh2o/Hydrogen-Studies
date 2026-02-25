@@ -9,8 +9,12 @@ import {
 } from "@shared/schema";
 import { eq, like, and, desc, asc, or, sql, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { requireAdmin } from "../auth";
 
 const router = express.Router();
+
+// All keyword management routes require admin authentication
+router.use(requireAdmin);
 
 // Schema for adding a new keyword
 const addKeywordSchema = z.object({
