@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { logger } from "../utils/logger";
 import { db } from "../db";
 import { studies } from "@shared/schema";
 import {
@@ -29,7 +30,7 @@ router.get("/api/benefits", async (_req: Request, res: Response) => {
       .orderBy(benefits.displayOrder);
     res.json(allBenefits);
   } catch (error) {
-    console.error("Error fetching benefits:", error);
+    logger.error("Error fetching benefits", error, "HydrogenRoutes");
     res.status(500).json({ error: "Failed to fetch benefits" });
   }
 });
@@ -52,10 +53,7 @@ router.get("/api/benefits/:slug", async (req: Request, res: Response) => {
 
     res.json(benefit);
   } catch (error) {
-    console.error(
-      `Error fetching benefit with slug ${req.params.slug}:`,
-      error,
-    );
+    logger.error("Error fetching benefit by slug", error, "HydrogenRoutes", { slug: req.params.slug });
     res.status(500).json({ error: "Failed to fetch benefit" });
   }
 });
@@ -95,10 +93,7 @@ router.get(
         studies: result,
       });
     } catch (error) {
-      console.error(
-        `Error fetching studies for benefit ${req.params.slug}:`,
-        error,
-      );
+      logger.error("Error fetching studies for benefit", error, "HydrogenRoutes", { slug: req.params.slug });
       res.status(500).json({ error: "Failed to fetch studies" });
     }
   },
@@ -115,7 +110,7 @@ router.get("/api/demographics", async (_req: Request, res: Response) => {
       .orderBy(demographics.displayOrder);
     res.json(allDemographics);
   } catch (error) {
-    console.error("Error fetching demographics:", error);
+    logger.error("Error fetching demographics", error, "HydrogenRoutes");
     res.status(500).json({ error: "Failed to fetch demographics" });
   }
 });
@@ -138,10 +133,7 @@ router.get("/api/demographics/:slug", async (req: Request, res: Response) => {
 
     res.json(demographic);
   } catch (error) {
-    console.error(
-      `Error fetching demographic with slug ${req.params.slug}:`,
-      error,
-    );
+    logger.error("Error fetching demographic by slug", error, "HydrogenRoutes", { slug: req.params.slug });
     res.status(500).json({ error: "Failed to fetch demographic" });
   }
 });
@@ -181,10 +173,7 @@ router.get(
         studies: result,
       });
     } catch (error) {
-      console.error(
-        `Error fetching studies for demographic ${req.params.slug}:`,
-        error,
-      );
+      logger.error("Error fetching studies for demographic", error, "HydrogenRoutes", { slug: req.params.slug });
       res.status(500).json({ error: "Failed to fetch studies" });
     }
   },
@@ -201,7 +190,7 @@ router.get("/api/mechanisms", async (_req: Request, res: Response) => {
       .orderBy(mechanisms.displayOrder);
     res.json(allMechanisms);
   } catch (error) {
-    console.error("Error fetching mechanisms:", error);
+    logger.error("Error fetching mechanisms", error, "HydrogenRoutes");
     res.status(500).json({ error: "Failed to fetch mechanisms" });
   }
 });
@@ -224,10 +213,7 @@ router.get("/api/mechanisms/:slug", async (req: Request, res: Response) => {
 
     res.json(mechanism);
   } catch (error) {
-    console.error(
-      `Error fetching mechanism with slug ${req.params.slug}:`,
-      error,
-    );
+    logger.error("Error fetching mechanism by slug", error, "HydrogenRoutes", { slug: req.params.slug });
     res.status(500).json({ error: "Failed to fetch mechanism" });
   }
 });
@@ -267,10 +253,7 @@ router.get(
         studies: result,
       });
     } catch (error) {
-      console.error(
-        `Error fetching studies for mechanism ${req.params.slug}:`,
-        error,
-      );
+      logger.error("Error fetching studies for mechanism", error, "HydrogenRoutes", { slug: req.params.slug });
       res.status(500).json({ error: "Failed to fetch studies" });
     }
   },
@@ -286,12 +269,13 @@ router.get("/api/delivery-methods", async (_req: Request, res: Response) => {
       .from(deliveryMethods)
       .orderBy(deliveryMethods.displayOrder);
     res.json(allDeliveryMethods);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Table may not exist yet — return empty array gracefully
-    if (error.message?.includes("delivery_methods") || error.message?.includes("does not exist")) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("delivery_methods") || message.includes("does not exist")) {
       return res.json([]);
     }
-    console.error("Error fetching delivery methods:", error);
+    logger.error("Error fetching delivery methods", error, "HydrogenRoutes");
     res.status(500).json({ error: "Failed to fetch delivery methods" });
   }
 });
@@ -315,14 +299,12 @@ router.get(
       }
 
       res.json(deliveryMethod);
-    } catch (error: any) {
-      if (error.message?.includes("does not exist")) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("does not exist")) {
         return res.status(404).json({ error: "Delivery method not found" });
       }
-      console.error(
-        `Error fetching delivery method with slug ${req.params.slug}:`,
-        error,
-      );
+      logger.error("Error fetching delivery method by slug", error, "HydrogenRoutes", { slug: req.params.slug });
       res.status(500).json({ error: "Failed to fetch delivery method" });
     }
   },
@@ -365,14 +347,12 @@ router.get(
         deliveryMethod,
         studies: result,
       });
-    } catch (error: any) {
-      if (error.message?.includes("does not exist")) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("does not exist")) {
         return res.json({ deliveryMethod: null, studies: [] });
       }
-      console.error(
-        `Error fetching studies for delivery method ${req.params.slug}:`,
-        error,
-      );
+      logger.error("Error fetching studies for delivery method", error, "HydrogenRoutes", { slug: req.params.slug });
       res.status(500).json({ error: "Failed to fetch studies" });
     }
   },
@@ -389,7 +369,7 @@ router.get("/api/duration-categories", async (_req: Request, res: Response) => {
       .orderBy(durationCategories.displayOrder);
     res.json(allDurationCategories);
   } catch (error) {
-    console.error("Error fetching duration categories:", error);
+    logger.error("Error fetching duration categories", error, "HydrogenRoutes");
     res.status(500).json({ error: "Failed to fetch duration categories" });
   }
 });
@@ -417,7 +397,7 @@ router.get("/api/studies/:id/outcome", async (req: Request, res: Response) => {
 
     res.json(outcome);
   } catch (error) {
-    console.error(`Error fetching outcome for study ${req.params.id}:`, error);
+    logger.error("Error fetching outcome for study", error, "HydrogenRoutes", { studyId: req.params.id });
     res.status(500).json({ error: "Failed to fetch study outcome" });
   }
 });
@@ -449,14 +429,14 @@ router.get("/api/studies/:id/tags", async (req: Request, res: Response) => {
       ]);
 
     res.json({
-      benefits: studyBenefitData.map((item: any) => item.benefit),
-      demographics: studyDemographicData.map((item: any) => item.demographic),
-      mechanisms: studyMechanismData.map((item: any) => item.mechanism),
-      deliveryMethods: studyDeliveryMethodData.map((item: any) => item.deliveryMethod),
-      durationCategories: studyDurationData.map((item: any) => item.durationCategory),
+      benefits: studyBenefitData.map((item: Record<string, unknown>) => item.benefit),
+      demographics: studyDemographicData.map((item: Record<string, unknown>) => item.demographic),
+      mechanisms: studyMechanismData.map((item: Record<string, unknown>) => item.mechanism),
+      deliveryMethods: studyDeliveryMethodData.map((item: Record<string, unknown>) => item.deliveryMethod),
+      durationCategories: studyDurationData.map((item: Record<string, unknown>) => item.durationCategory),
     });
   } catch (error) {
-    console.error(`Error fetching tags for study ${req.params.id}:`, error);
+    logger.error("Error fetching tags for study", error, "HydrogenRoutes", { studyId: req.params.id });
     res.status(500).json({ error: "Failed to fetch study tags" });
   }
 });

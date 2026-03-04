@@ -14,6 +14,7 @@ import axios from "axios";
 import fs from "fs";
 import path from "path";
 import { load } from "cheerio";
+import { logger } from "../utils/logger";
 
 interface EnhancementResult {
   success: boolean;
@@ -82,7 +83,7 @@ export async function enhanceStudyContent(
 
     // Try CrossRef first
     try {
-      console.log(`Fetching CrossRef data for DOI: ${study.doi}`);
+      logger.info("Fetching CrossRef data", "ContentEnrichment", { doi: study.doi });
       const crossRefData = await getCrossRefArticleByDOI(study.doi);
 
       if (crossRefData && crossRefData.abstract) {
@@ -131,22 +132,16 @@ export async function enhanceStudyContent(
             }
           }
         } catch (error) {
-          console.error(
-            `Error fetching HTML content from ${crossRefData.URL}:`,
-            error,
-          );
+          logger.error("Error fetching HTML content", error, "ContentEnrichment", { url: crossRefData.URL });
         }
       }
     } catch (error) {
-      console.error(
-        `Error fetching CrossRef data for DOI ${study.doi}:`,
-        error,
-      );
+      logger.error("Error fetching CrossRef data", error, "ContentEnrichment", { doi: study.doi });
     }
 
     // Try Europe PMC next
     try {
-      console.log(`Fetching Europe PMC data for DOI: ${study.doi}`);
+      logger.info("Fetching Europe PMC data", "ContentEnrichment", { doi: study.doi });
       const europePmcData = await getEuropePmcArticleByDOI(study.doi);
 
       if (europePmcData) {
@@ -195,15 +190,12 @@ export async function enhanceStudyContent(
         }
       }
     } catch (error) {
-      console.error(
-        `Error fetching Europe PMC data for DOI ${study.doi}:`,
-        error,
-      );
+      logger.error("Error fetching Europe PMC data", error, "ContentEnrichment", { doi: study.doi });
     }
 
     // Try Semantic Scholar last
     try {
-      console.log(`Fetching Semantic Scholar data for DOI: ${study.doi}`);
+      logger.info("Fetching Semantic Scholar data", "ContentEnrichment", { doi: study.doi });
       const semanticScholarData = await getSemanticScholarArticleByDOI(
         study.doi,
       );
@@ -225,10 +217,7 @@ export async function enhanceStudyContent(
         }
       }
     } catch (error) {
-      console.error(
-        `Error fetching Semantic Scholar data for DOI ${study.doi}:`,
-        error,
-      );
+      logger.error("Error fetching Semantic Scholar data", error, "ContentEnrichment", { doi: study.doi });
     }
 
     // Process image if one was found
@@ -238,7 +227,7 @@ export async function enhanceStudyContent(
         imageUrl = await downloadImage(imageSrc, studyId);
         updates.images = !!imageUrl;
       } catch (error) {
-        console.error(`Error downloading image from ${imageSrc}:`, error);
+        logger.error("Error downloading image", error, "ContentEnrichment", { url: imageSrc });
       }
     }
 
@@ -268,7 +257,7 @@ export async function enhanceStudyContent(
       studyId,
     };
   } catch (error: any) {
-    console.error(`Error enhancing study #${studyId}:`, error);
+    logger.error("Error enhancing study", error, "ContentEnrichment", { studyId });
     return {
       success: false,
       message: `Error: ${error.message || "Unknown error"}`,
@@ -293,7 +282,7 @@ export async function batchEnhanceStudies(studyIds: number[]): Promise<{
     message: "",
   };
 
-  console.log(`Starting batch enhancement for ${studyIds.length} studies`);
+  logger.info("Starting batch enhancement", "ContentEnrichment", { count: studyIds.length });
 
   for (const studyId of studyIds) {
     try {
@@ -310,12 +299,12 @@ export async function batchEnhanceStudies(studyIds: number[]): Promise<{
       await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       results.failed++;
-      console.error(`Error processing study #${studyId}:`, error);
+      logger.error("Error processing study", error, "ContentEnrichment", { studyId });
     }
   }
 
   results.message = `Processed ${results.processed} studies. Successfully enhanced: ${results.success}, Failed: ${results.failed}`;
-  console.log(results.message);
+  logger.info(results.message, "ContentEnrichment");
 
   return results;
 }
@@ -344,7 +333,7 @@ async function fetchHtmlContent(url: string): Promise<string> {
 
     return mainContent || $("body").text().trim();
   } catch (error) {
-    console.error(`Error fetching URL ${url}:`, error);
+    logger.error("Error fetching URL", error, "ContentEnrichment", { url });
     return "";
   }
 }
@@ -483,7 +472,7 @@ function extractSectionsFromXml(xml: string): {
 
     return sections;
   } catch (error) {
-    console.error("Error extracting sections from XML:", error);
+    logger.error("Error extracting sections from XML", error, "ContentEnrichment");
     return {};
   }
 }
@@ -521,7 +510,7 @@ async function downloadImage(
     // Return the relative path for storage in the database
     return `/uploads/${fileName}`;
   } catch (error) {
-    console.error(`Error downloading image from ${url}:`, error);
+    logger.error("Error downloading image", error, "ContentEnrichment", { url });
     return null;
   }
 }
@@ -555,7 +544,7 @@ export async function findStudiesForEnhancement(
 
     return result.rows.map((row) => Number(row.id));
   } catch (error) {
-    console.error("Error finding studies for enhancement:", error);
+    logger.error("Error finding studies for enhancement", error, "ContentEnrichment");
     return [];
   }
 }

@@ -19,6 +19,7 @@ import {
   hydrogenTopics,
   getTopicBySlug,
   getTopicsByCategory,
+  type TopicConfig,
 } from "../config/hydrogen-topics";
 
 const router = Router();
@@ -50,11 +51,12 @@ router.get("/search", async (req: Request, res: Response) => {
       fromCache: result.fromCache,
       query,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Consensus search error:", error);
-    res.status(error.message?.includes("Rate limit") ? 429 : 500).json({
+    const message = error instanceof Error ? error.message : "Consensus search failed";
+    res.status(message.includes("Rate limit") ? 429 : 500).json({
       success: false,
-      error: error.message || "Consensus search failed",
+      error: message,
     });
   }
 });
@@ -82,11 +84,11 @@ router.post(
         success: true,
         data: summary,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Consensus summarize error:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Summarization failed",
+        error: error instanceof Error ? error.message : "Summarization failed",
       });
     }
   },
@@ -100,7 +102,7 @@ router.get("/topics", (req: Request, res: Response) => {
   const category = req.query.category as string | undefined;
 
   const topics = category
-    ? getTopicsByCategory(category as any)
+    ? getTopicsByCategory(category as TopicConfig["category"])
     : hydrogenTopics;
 
   res.json({
@@ -147,11 +149,11 @@ router.get("/topics/:slug", async (req: Request, res: Response) => {
       },
       data: synthesis,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Topic synthesis error:", error);
     res.status(500).json({
       success: false,
-      error: error.message || "Topic synthesis failed",
+      error: error instanceof Error ? error.message : "Topic synthesis failed",
     });
   }
 });
@@ -194,11 +196,11 @@ router.post(
         data: outline,
         topic,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Blog outline error:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Blog outline generation failed",
+        error: error instanceof Error ? error.message : "Blog outline generation failed",
       });
     }
   },

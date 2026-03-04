@@ -22,6 +22,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../db";
 import { users } from "../../shared/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -31,8 +32,12 @@ const router = Router();
 function verifyShopifyWebhook(rawBody: Buffer, hmacHeader: string): boolean {
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn("[Shopify] SHOPIFY_WEBHOOK_SECRET not configured, skipping verification");
-    return true; // Allow in development if no secret set
+    if (process.env.NODE_ENV === "production") {
+      logger.error("SHOPIFY_WEBHOOK_SECRET not configured in production — rejecting webhook", undefined, "Shopify");
+      return false;
+    }
+    logger.warn("SHOPIFY_WEBHOOK_SECRET not configured, skipping verification in development", "Shopify");
+    return true;
   }
 
   const computed = crypto
@@ -74,7 +79,7 @@ router.post("/customer-created", async (req: Request, res: Response) => {
     // Verify webhook signature
     const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string;
     if (process.env.SHOPIFY_WEBHOOK_SECRET && !hmacHeader) {
-      console.warn("[Shopify] Missing HMAC header");
+      logger.warn("Missing HMAC header", "Shopify");
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -83,7 +88,7 @@ router.post("/customer-created", async (req: Request, res: Response) => {
 
     const customer = req.body;
     if (!customer || !customer.email) {
-      console.warn("[Shopify] Invalid webhook payload — missing email");
+      logger.warn("Invalid webhook payload — missing email", "Shopify");
       return res.status(400).json({ error: "Invalid payload" });
     }
 
@@ -92,7 +97,7 @@ router.post("/customer-created", async (req: Request, res: Response) => {
     const lastName = customer.last_name || "";
     const shopifyCustomerId = String(customer.id);
 
-    console.log(`[Shopify] Customer created webhook: ${email} (Shopify ID: ${shopifyCustomerId})`);
+    logger.info("Customer created webhook received", "Shopify", { email, shopifyCustomerId });
 
     // Check if user already exists
     const [existing] = await db.select({ id: users.id, email: users.email })
@@ -101,7 +106,7 @@ router.post("/customer-created", async (req: Request, res: Response) => {
       .limit(1);
 
     if (existing) {
-      console.log(`[Shopify] User already exists for ${email} (id: ${existing.id}), skipping`);
+      logger.info("User already exists, skipping", "Shopify", { email, userId: existing.id });
       return res.status(200).json({ status: "exists", userId: existing.id });
     }
 
@@ -134,7 +139,7 @@ router.post("/customer-created", async (req: Request, res: Response) => {
       isActive: true,
     }).returning({ id: users.id });
 
-    console.log(`[Shopify] Created account for ${email} (user id: ${newUser.id}, username: ${username})`);
+    logger.info("Created account", "Shopify", { email, userId: newUser.id, username });
 
     // Return success to Shopify (they expect 200)
     res.status(200).json({
@@ -143,7 +148,7 @@ router.post("/customer-created", async (req: Request, res: Response) => {
       username,
     });
   } catch (error) {
-    console.error("[Shopify] Customer created webhook error:", error);
+    logger.error("Customer created webhook error", error, "Shopify");
     // Return 200 anyway to prevent Shopify from retrying
     // Log the error and handle it manually
     res.status(200).json({ status: "error", message: "Internal error, will retry" });
@@ -156,6 +161,13 @@ router.post("/customer-created", async (req: Request, res: Response) => {
  */
 router.post("/customer-updated", async (req: Request, res: Response) => {
   try {
+    // Verify webhook signature
+    const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string;
+    if (process.env.SHOPIFY_WEBHOOK_SECRET && !hmacHeader) {
+      logger.warn("Missing HMAC header on customer-updated", "Shopify");
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const customer = req.body;
     if (!customer || !customer.email) {
       return res.status(400).json({ error: "Invalid payload" });
@@ -174,13 +186,13 @@ router.post("/customer-updated", async (req: Request, res: Response) => {
       return res.status(200).json({ status: "no_match" });
     }
 
-    console.log(`[Shopify] Customer updated: ${email}`);
+    logger.info("Customer updated", "Shopify", { email });
 
     // We could update profile fields here if needed
     // For now, just acknowledge
     res.status(200).json({ status: "acknowledged" });
   } catch (error) {
-    console.error("[Shopify] Customer updated webhook error:", error);
+    logger.error("Customer updated webhook error", error, "Shopify");
     res.status(200).json({ status: "error" });
   }
 });
@@ -191,13 +203,20 @@ router.post("/customer-updated", async (req: Request, res: Response) => {
  */
 router.post("/order-created", async (req: Request, res: Response) => {
   try {
+    // Verify webhook signature
+    const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string;
+    if (process.env.SHOPIFY_WEBHOOK_SECRET && !hmacHeader) {
+      logger.warn("Missing HMAC header on order-created", "Shopify");
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const order = req.body;
     if (!order || !order.email) {
       return res.status(400).json({ error: "Invalid payload" });
     }
 
     const email = order.email.toLowerCase().trim();
-    console.log(`[Shopify] Order created for ${email}: $${order.total_price}`);
+    logger.info("Order created", "Shopify", { email, totalPrice: order.total_price });
 
     // Find or create user
     const [existingUser] = await db.select({ id: users.id })
@@ -221,12 +240,12 @@ router.post("/order-created", async (req: Request, res: Response) => {
         isActive: true,
       }).returning({ id: users.id });
 
-      console.log(`[Shopify] Auto-created account for order customer: ${email} (user id: ${newUser.id})`);
+      logger.info("Auto-created account for order customer", "Shopify", { email, userId: newUser.id });
     }
 
     res.status(200).json({ status: "acknowledged" });
   } catch (error) {
-    console.error("[Shopify] Order webhook error:", error);
+    logger.error("Order webhook error", error, "Shopify");
     res.status(200).json({ status: "error" });
   }
 });

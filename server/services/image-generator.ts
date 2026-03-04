@@ -12,6 +12,7 @@ import { db } from "../db";
 import { studies as studiesTable, blogArticles } from "../../shared/schema";
 import { eq, isNull, or } from "drizzle-orm";
 import { ai } from "./ai-provider";
+import { logger } from "../utils/logger";
 
 function getOpenAI() {
   const client = ai.getOpenAIClient();
@@ -63,7 +64,7 @@ export async function generateScientificImage(
       imageUrl: imageUrl,
     };
   } catch (error) {
-    console.error("Error generating scientific image:", error);
+    logger.error("Error generating scientific image", error, "ImageGenerator");
     return {
       success: false,
       message: `Error generating image: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -162,7 +163,7 @@ export async function generateBlogImage(blogId: number): Promise<{
       imageUrl: relativeImagePath,
     };
   } catch (error) {
-    console.error("Error generating blog image:", error);
+    logger.error("Error generating blog image", error, "ImageGenerator");
     return {
       success: false,
       message: `Error generating image: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -291,7 +292,7 @@ export async function generateImageForStudy(studyId: number): Promise<{
       imagePath,
     };
   } catch (error) {
-    console.error("Error generating image:", error);
+    logger.error("Error generating image", error, "ImageGenerator");
     return {
       success: false,
       message: `Error generating image: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -373,7 +374,7 @@ async function createImagePrompt(
 
     return enhancedPrompt;
   } catch (error) {
-    console.error("Error creating image prompt with AI:", error);
+    logger.error("Error creating image prompt with AI", error, "ImageGenerator");
     // Fallback to a generic prompt
     const detectedDeliveryMethod = determineHydrogenDeliveryMethod(
       title + " " + abstract + " " + methods,
@@ -481,16 +482,14 @@ export async function findStudiesNeedingImages(
       .limit(limit);
 
     if (!studiesWithoutImages || studiesWithoutImages.length === 0) {
-      console.log("No studies found that need images");
+      logger.info("No studies found that need images", "ImageGenerator");
       return [];
     }
 
-    console.log(
-      `Found ${studiesWithoutImages.length} studies that need images`,
-    );
+    logger.info("Found studies that need images", "ImageGenerator", { count: studiesWithoutImages.length });
     return studiesWithoutImages.map((study) => study.id);
   } catch (error) {
-    console.error("Error finding studies needing images:", error);
+    logger.error("Error finding studies needing images", error, "ImageGenerator");
     return [];
   }
 }
@@ -520,25 +519,23 @@ export async function batchGenerateImagesForStudies(
     let studyIds: number[];
     if (Array.isArray(studyIdsOrLimit)) {
       studyIds = studyIdsOrLimit;
-      console.log(`Processing ${studyIds.length} specified studies`);
+      logger.info("Processing specified studies", "ImageGenerator", { count: studyIds.length });
     } else {
       // Find studies that need images up to the limit
       studyIds = await findStudiesNeedingImages(studyIdsOrLimit);
-      console.log(
-        `Found ${studyIds.length} studies that need images (limit: ${studyIdsOrLimit})`,
-      );
+      logger.info("Found studies that need images", "ImageGenerator", { count: studyIds.length, limit: studyIdsOrLimit });
     }
 
     results.total = studyIds.length;
 
     if (studyIds.length === 0) {
-      console.log("No studies to process for image generation");
+      logger.info("No studies to process for image generation", "ImageGenerator");
       return results;
     }
 
     // Check if API key is set
     if (!process.env.OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY not set, batch processing aborted");
+      logger.error("OPENAI_API_KEY not set, batch processing aborted", undefined, "ImageGenerator");
       results.errors.push({
         studyId: 0,
         error: "OPENAI_API_KEY not set in environment variables",
@@ -549,23 +546,19 @@ export async function batchGenerateImagesForStudies(
     // Process each study with a delay to avoid rate limits
     for (const studyId of studyIds) {
       try {
-        console.log(`Generating image for study ${studyId}...`);
+        logger.info("Generating image for study", "ImageGenerator", { studyId });
         const result = await generateImageForStudy(studyId);
 
         if (result.success) {
           results.success++;
-          console.log(
-            `Successfully generated image for study ${studyId}: ${result.imagePath}`,
-          );
+          logger.info("Successfully generated image for study", "ImageGenerator", { studyId, imagePath: result.imagePath });
         } else {
           results.failed++;
           results.errors.push({
             studyId,
             error: result.message || "Unknown error",
           });
-          console.error(
-            `Failed to generate image for study ${studyId}: ${result.message || "Unknown error"}`,
-          );
+          logger.error("Failed to generate image for study", result.message || "Unknown error", "ImageGenerator", { studyId });
         }
       } catch (error) {
         results.failed++;
@@ -573,22 +566,20 @@ export async function batchGenerateImagesForStudies(
           studyId,
           error: error instanceof Error ? error.message : "Unknown error",
         });
-        console.error(`Error generating image for study ${studyId}:`, error);
+        logger.error("Error generating image for study", error, "ImageGenerator", { studyId });
       }
 
       // Add a delay to avoid rate limits
       if (studyIds.indexOf(studyId) < studyIds.length - 1) {
-        console.log("Waiting 10 seconds before processing next study...");
+        logger.debug("Waiting 10 seconds before processing next study", "ImageGenerator");
         await new Promise((resolve) => setTimeout(resolve, 10000));
       }
     }
 
-    console.log(
-      `Batch processing complete: ${results.success} successful, ${results.failed} failed`,
-    );
+    logger.info("Batch processing complete", "ImageGenerator", { success: results.success, failed: results.failed });
     return results;
   } catch (error) {
-    console.error("Error in batch image generation:", error);
+    logger.error("Error in batch image generation", error, "ImageGenerator");
     return results;
   }
 }

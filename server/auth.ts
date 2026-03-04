@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from "express";
 import { db } from "./db";
 import { users, UserRole } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "./utils/logger";
 
 // Extend Express Request type to include session properties
 declare module "express-session" {
@@ -89,7 +90,7 @@ export function requireRole(roles: string[]) {
         userRole: user.role,
       });
     } catch (error) {
-      console.error("Role check error:", error);
+      logger.error("Role check error", error, "Auth");
       return res.status(500).json({ error: "Failed to verify permissions" });
     }
   };
@@ -137,7 +138,7 @@ export function hasPermission(permission: string) {
         requiredPermission: permission,
       });
     } catch (error) {
-      console.error("Permission check error:", error);
+      logger.error("Permission check error", error, "Auth");
       return res.status(500).json({ error: "Failed to verify permissions" });
     }
   };
@@ -186,7 +187,7 @@ export async function getCurrentUser(req: Request) {
 
     return user || null;
   } catch (error) {
-    console.error("Get current user error:", error);
+    logger.error("Get current user error", error, "Auth");
     return null;
   }
 }
@@ -207,7 +208,7 @@ export async function userHasRole(
 
     return user ? user.role === role : false;
   } catch (error) {
-    console.error("User role check error:", error);
+    logger.error("User role check error", error, "Auth");
     return false;
   }
 }
@@ -234,22 +235,18 @@ export async function userHasPermission(
     // Check specific permissions
     return user.permissions ? user.permissions.includes(permission) : false;
   } catch (error) {
-    console.error("User permission check error:", error);
+    logger.error("User permission check error", error, "Auth");
     return false;
   }
 }
 
 // Export legacy functions for compatibility (these will be deprecated)
 export async function registerUser(userData: any) {
-  console.warn(
-    "registerUser is deprecated. Use /api/auth/register endpoint instead.",
-  );
+  logger.warn("registerUser is deprecated. Use /api/auth/register endpoint instead.", "Auth");
   throw new Error("Method deprecated");
 }
 
 export async function authenticateUser(email: string, password: string) {
-  console.warn(
-    "authenticateUser is deprecated. Use /api/auth/login endpoint instead.",
-  );
+  logger.warn("authenticateUser is deprecated. Use /api/auth/login endpoint instead.", "Auth");
   throw new Error("Method deprecated");
 }

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "wouter";
 import { Study } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -9,7 +10,7 @@ interface StudyCardProps {
   study: Study;
 }
 
-export default function StudyCard({ study }: StudyCardProps) {
+const StudyCard = memo(function StudyCard({ study }: StudyCardProps) {
   // Handle null/undefined category gracefully
   const category = study.category || "General";
   const categoryColor = getCategoryColor(category);
@@ -108,4 +109,6 @@ export default function StudyCard({ study }: StudyCardProps) {
       </motion.div>
     </motion.div>
   );
-}
+});
+
+export default StudyCard;

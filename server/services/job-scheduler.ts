@@ -6,6 +6,7 @@ import { batchRetractionCheck } from "./retraction-monitor";
 import { db } from "../db";
 import { studies, blogArticles } from "@shared/schema";
 import { eq, sql, isNull } from "drizzle-orm";
+import { logger } from "../utils/logger";
 
 /**
  * Job Scheduler Service
@@ -36,27 +37,27 @@ export class JobScheduler {
    */
   public start(): void {
     if (this.checkInterval) {
-      console.log("[JobScheduler] Already running");
+      logger.info("Already running", "JobScheduler");
       return;
     }
 
-    console.log("[JobScheduler] Starting...");
+    logger.info("Starting...", "JobScheduler");
 
     // Delay first run by 10s to let the app fully initialize (DB, routes, etc.)
     setTimeout(() => {
       this.runJobs().catch(err => {
-        console.error("[JobScheduler] Initial run failed:", err);
+        logger.error("Initial run failed", err, "JobScheduler");
       });
     }, 10000);
 
     // Set up periodic check with error boundary
     this.checkInterval = setInterval(() => {
       this.runJobs().catch(err => {
-        console.error("[JobScheduler] Periodic run failed:", err);
+        logger.error("Periodic run failed", err, "JobScheduler");
       });
     }, this.CHECK_INTERVAL_MS);
 
-    console.log(`[JobScheduler] Active (interval: ${this.CHECK_INTERVAL_MS}ms, first run in 10s)`);
+    logger.info("Active", "JobScheduler", { intervalMs: this.CHECK_INTERVAL_MS, firstRunIn: "10s" });
   }
 
   /**
@@ -66,7 +67,7 @@ export class JobScheduler {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
-      console.log("[JobScheduler] Stopped");
+      logger.info("Stopped", "JobScheduler");
     }
   }
 
@@ -85,13 +86,13 @@ export class JobScheduler {
       // Job 1: Automated Study Discovery
       const discoveryResult = await checkScheduledSearches();
       if (discoveryResult.ran) {
-        console.log("[JobScheduler] Discovery job completed:", discoveryResult);
+        logger.info("Discovery job completed", "JobScheduler", { result: discoveryResult });
       }
 
       // Job 2: Intelligent Content Enrichment
       const enrichmentStats = await checkAndEnrichStudies();
       if (enrichmentStats.totalProcessed > 0) {
-        console.log(`[JobScheduler] Enrichment: processed ${enrichmentStats.totalProcessed} studies`);
+        logger.info("Enrichment completed", "JobScheduler", { totalProcessed: enrichmentStats.totalProcessed });
       }
 
       // Job 3: Automated Content Generation
@@ -102,7 +103,7 @@ export class JobScheduler {
       await this.runRetractionCheckJob();
 
     } catch (error) {
-      console.error("[JobScheduler] Critical error:", error);
+      logger.error("Critical error", error, "JobScheduler");
     } finally {
       this.isJobRunning = false;
     }
@@ -125,13 +126,13 @@ export class JobScheduler {
         });
 
         if (!existingBlog) {
-          console.log(`[JobScheduler] Creating blog post for Study #${study.id}...`);
+          logger.info("Creating blog post for study", "JobScheduler", { studyId: study.id });
 
           const result = await contentGenerator.generateBlogPost(study.id);
 
           if (result) {
             await mediaGenerator.generateBlogHeroImage(result.articleId);
-            console.log(`[JobScheduler] Content generation complete: ${result.title}`);
+            logger.info("Content generation complete", "JobScheduler", { title: result.title });
           }
 
           // Stop after 1 successful generation to prevent spamming/cost
@@ -139,7 +140,7 @@ export class JobScheduler {
         }
       }
     } catch (error) {
-      console.error("[JobScheduler] Content generation error:", error);
+      logger.error("Content generation error", error, "JobScheduler");
     }
   }
   /**
@@ -157,14 +158,14 @@ export class JobScheduler {
         }
       }
 
-      console.log("[JobScheduler] Running daily retraction check...");
+      logger.info("Running daily retraction check", "JobScheduler");
 
       const result = await batchRetractionCheck({
         batchSize: 50, // Check 50 studies per day (rotates through all over time)
         delayMs: 1000, // 1 second between API calls to avoid rate limits
         onProgress: (checked, total) => {
           if (checked % 10 === 0) {
-            console.log(`[JobScheduler] Retraction check: ${checked}/${total}`);
+            logger.info("Retraction check progress", "JobScheduler", { checked, total });
           }
         },
       });
@@ -172,17 +173,17 @@ export class JobScheduler {
       this.lastRetractionCheck = new Date();
 
       if (result.retracted > 0 || result.corrected > 0 || result.expressionOfConcern > 0) {
-        console.warn(
-          `[JobScheduler] Retraction check complete: ` +
-          `${result.retracted} retracted, ${result.corrected} corrected, ` +
-          `${result.expressionOfConcern} expression of concern ` +
-          `(checked ${result.checked} studies)`
-        );
+        logger.warn("Retraction check complete — issues found", "JobScheduler", {
+          retracted: result.retracted,
+          corrected: result.corrected,
+          expressionOfConcern: result.expressionOfConcern,
+          checked: result.checked,
+        });
       } else {
-        console.log(`[JobScheduler] Retraction check: ${result.checked} studies checked, no issues found`);
+        logger.info("Retraction check complete, no issues found", "JobScheduler", { checked: result.checked });
       }
     } catch (error) {
-      console.error("[JobScheduler] Retraction check error:", error);
+      logger.error("Retraction check error", error, "JobScheduler");
     }
   }
 }

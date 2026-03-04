@@ -10,6 +10,7 @@
  */
 
 import { Router, Request, Response } from "express";
+import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
 import { aiGenerationRateLimiter } from "../utils/rate-limiting";
 import {
@@ -59,7 +60,7 @@ router.get("/enrichment/status", async (req: Request, res: Response) => {
       sampleCandidates: candidates,
     });
   } catch (error) {
-    console.error("[SEO API] Enrichment status error:", error);
+    logger.error("Enrichment status error", error, "SEO API");
     res.status(500).json({ error: "Failed to get enrichment status" });
   }
 });
@@ -78,7 +79,7 @@ router.post("/enrichment/study/:id", aiGenerationRateLimiter, async (req: Reques
     const success = await enrichAndSaveStudy(studyId);
     res.json({ success, studyId });
   } catch (error) {
-    console.error("[SEO API] Study enrichment error:", error);
+    logger.error("Study enrichment error", error, "SEO API");
     res.status(500).json({ error: "Failed to enrich study" });
   }
 });
@@ -92,19 +93,19 @@ router.post("/enrichment/batch", aiGenerationRateLimiter, async (req: Request, r
   try {
     const { batchSize = 10, delayMs = 1500 } = req.body;
 
-    console.log(`[SEO API] Starting batch enrichment: ${batchSize} studies, ${delayMs}ms delay`);
+    logger.info("Starting batch enrichment", "SEO API", { batchSize, delayMs });
 
     const result = await batchEnrichStudies({
       batchSize: Math.min(batchSize, 100), // Cap at 100
       delayMs,
       onProgress: (done, total, studyId) => {
-        console.log(`[SEO API] Enrichment progress: ${done}/${total} (study ${studyId})`);
+        logger.info("Enrichment progress", "SEO API", { done, total, studyId });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Batch enrichment error:", error);
+    logger.error("Batch enrichment error", error, "SEO API");
     res.status(500).json({ error: "Failed to run batch enrichment" });
   }
 });
@@ -122,7 +123,7 @@ router.get("/content-factory/status", async (req: Request, res: Response) => {
     const status = await getContentFactoryStatus();
     res.json(status);
   } catch (error) {
-    console.error("[SEO API] Content factory status error:", error);
+    logger.error("Content factory status error", error, "SEO API");
     res.status(500).json({ error: "Failed to get content factory status" });
   }
 });
@@ -151,7 +152,7 @@ router.get("/content-factory/topics", async (req: Request, res: Response) => {
       })),
     });
   } catch (error) {
-    console.error("[SEO API] Topics error:", error);
+    logger.error("Topics error", error, "SEO API");
     res.status(500).json({ error: "Failed to get topics" });
   }
 });
@@ -178,7 +179,7 @@ router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (
       return res.status(404).json({ error: `Topic "${topic}" not found` });
     }
 
-    console.log(`[SEO API] Generating pillar page for: ${cluster.condition}`);
+    logger.info("Generating pillar page", "SEO API", { condition: cluster.condition });
 
     const article = await generatePillarPage(cluster);
     if (!article) {
@@ -194,7 +195,7 @@ router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (
       wordCount: article.content.split(/\s+/).length,
     });
   } catch (error) {
-    console.error("[SEO API] Pillar generation error:", error);
+    logger.error("Pillar generation error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate pillar page" });
   }
 });
@@ -221,7 +222,7 @@ router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async 
       return res.status(404).json({ error: `Topic "${topic}" not found` });
     }
 
-    console.log(`[SEO API] Generating ${maxPosts} cluster posts for: ${cluster.condition}`);
+    logger.info("Generating cluster posts", "SEO API", { maxPosts, condition: cluster.condition });
 
     const results: Array<{ title: string; slug: string; success: boolean; articleId?: number | null }> = [];
 
@@ -254,7 +255,7 @@ router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async 
       failed: results.filter(r => !r.success).length,
     });
   } catch (error) {
-    console.error("[SEO API] Cluster generation error:", error);
+    logger.error("Cluster generation error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate cluster posts" });
   }
 });
@@ -275,7 +276,7 @@ router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request
       topic: specificTopic,
     } = req.body;
 
-    console.log(`[SEO API] Running content factory: ${maxTopics} topics, ${maxClustersPerTopic} clusters each`);
+    logger.info("Running content factory", "SEO API", { maxTopics, maxClustersPerTopic });
 
     const result = await runContentFactory({
       maxTopics: Math.min(maxTopics, 50),
@@ -285,17 +286,20 @@ router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request
       clusterOnly,
       specificTopic,
       onProgress: (progress) => {
-        console.log(
-          `[SEO API] Factory progress: ${progress.phase} | ` +
-          `Topic ${progress.topicIndex + 1}/${progress.topicTotal} (${progress.currentTopic}) | ` +
-          `Articles: ${progress.articlesGenerated} generated, ${progress.articlesFailed} failed`
-        );
+        logger.info("Factory progress", "SEO API", {
+          phase: progress.phase,
+          topicIndex: progress.topicIndex + 1,
+          topicTotal: progress.topicTotal,
+          currentTopic: progress.currentTopic,
+          articlesGenerated: progress.articlesGenerated,
+          articlesFailed: progress.articlesFailed,
+        });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Content factory run error:", error);
+    logger.error("Content factory run error", error, "SEO API");
     res.status(500).json({ error: "Failed to run content factory" });
   }
 });
@@ -311,18 +315,18 @@ router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request
 router.post("/links/build-study-links", async (req: Request, res: Response) => {
   try {
     const { batchSize = 200 } = req.body;
-    console.log(`[SEO API] Building study links for ${batchSize} studies`);
+    logger.info("Building study links", "SEO API", { batchSize });
 
     const result = await buildAllStudyLinks({
       batchSize,
       onProgress: (done, total) => {
-        if (done % 50 === 0) console.log(`[SEO API] Study links: ${done}/${total}`);
+        if (done % 50 === 0) logger.info("Study links progress", "SEO API", { done, total });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Build study links error:", error);
+    logger.error("Build study links error", error, "SEO API");
     res.status(500).json({ error: "Failed to build study links" });
   }
 });
@@ -334,18 +338,18 @@ router.post("/links/build-study-links", async (req: Request, res: Response) => {
 router.post("/links/build-blog-links", async (req: Request, res: Response) => {
   try {
     const { batchSize = 200 } = req.body;
-    console.log(`[SEO API] Building blog links for ${batchSize} blogs`);
+    logger.info("Building blog links", "SEO API", { batchSize });
 
     const result = await buildAllBlogLinks({
       batchSize,
       onProgress: (done, total) => {
-        if (done % 50 === 0) console.log(`[SEO API] Blog links: ${done}/${total}`);
+        if (done % 50 === 0) logger.info("Blog links progress", "SEO API", { done, total });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Build blog links error:", error);
+    logger.error("Build blog links error", error, "SEO API");
     res.status(500).json({ error: "Failed to build blog links" });
   }
 });
@@ -365,7 +369,7 @@ router.get("/links/:type/:id", async (req: Request, res: Response) => {
     const links = await getLinksFor(type, contentId);
     res.json({ links });
   } catch (error) {
-    console.error("[SEO API] Get links error:", error);
+    logger.error("Get links error", error, "SEO API");
     res.status(500).json({ error: "Failed to get links" });
   }
 });
@@ -383,7 +387,7 @@ router.get("/retractions/status", async (req: Request, res: Response) => {
     const status = await getRetractionStatus();
     res.json(status);
   } catch (error) {
-    console.error("[SEO API] Retraction status error:", error);
+    logger.error("Retraction status error", error, "SEO API");
     res.status(500).json({ error: "Failed to get retraction status" });
   }
 });
@@ -397,19 +401,19 @@ router.post("/retractions/check", async (req: Request, res: Response) => {
   try {
     const { batchSize = 50, delayMs = 500 } = req.body;
 
-    console.log(`[SEO API] Running retraction check on ${batchSize} studies`);
+    logger.info("Running retraction check", "SEO API", { batchSize });
 
     const result = await batchRetractionCheck({
       batchSize: Math.min(batchSize, 200),
       delayMs,
       onProgress: (checked, total) => {
-        if (checked % 20 === 0) console.log(`[SEO API] Retraction check: ${checked}/${total}`);
+        if (checked % 20 === 0) logger.info("Retraction check progress", "SEO API", { checked, total });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Retraction check error:", error);
+    logger.error("Retraction check error", error, "SEO API");
     res.status(500).json({ error: "Failed to run retraction check" });
   }
 });
@@ -446,7 +450,7 @@ router.post("/retractions/check-study/:id", async (req: Request, res: Response) 
       result: result || { status: "none", details: "No retraction or correction detected" },
     });
   } catch (error) {
-    console.error("[SEO API] Single retraction check error:", error);
+    logger.error("Single retraction check error", error, "SEO API");
     res.status(500).json({ error: "Failed to check study retraction" });
   }
 });
@@ -473,7 +477,7 @@ router.get("/keyword-strategy/overview", async (req: Request, res: Response) => 
     const overview = await getStrategyOverview();
     res.json(overview);
   } catch (error) {
-    console.error("[SEO API] Strategy overview error:", error);
+    logger.error("Strategy overview error", error, "SEO API");
     res.status(500).json({ error: "Failed to get strategy overview" });
   }
 });
@@ -487,7 +491,7 @@ router.post("/keyword-strategy/seed", async (req: Request, res: Response) => {
     const result = await seedKeywordClusters();
     res.json({ success: true, ...result });
   } catch (error) {
-    console.error("[SEO API] Seed clusters error:", error);
+    logger.error("Seed clusters error", error, "SEO API");
     res.status(500).json({ error: "Failed to seed keyword clusters" });
   }
 });
@@ -501,7 +505,7 @@ router.get("/keyword-strategy/clusters", async (req: Request, res: Response) => 
     const clusters = await getKeywordClusters();
     res.json({ clusters });
   } catch (error) {
-    console.error("[SEO API] Get clusters error:", error);
+    logger.error("Get clusters error", error, "SEO API");
     res.status(500).json({ error: "Failed to get clusters" });
   }
 });
@@ -518,7 +522,7 @@ router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, as
     const result = await generateKeywordPillarPage(clusterId);
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Generate pillar error:", error);
+    logger.error("Generate pillar error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate pillar page" });
   }
 });
@@ -538,7 +542,7 @@ router.post("/keyword-strategy/generate-cluster-post/:id", aiGenerationRateLimit
     const result = await generateKeywordClusterPost(clusterId, keywordIndex);
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Generate cluster post error:", error);
+    logger.error("Generate cluster post error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate cluster post" });
   }
 });
@@ -557,7 +561,7 @@ router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimit
     const result = await generateFullCluster(clusterId, delayMs);
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Generate full cluster error:", error);
+    logger.error("Generate full cluster error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate full cluster" });
   }
 });

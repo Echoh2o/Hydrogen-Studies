@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "wouter";
 import {
   Card,
@@ -6,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Calendar, User, ArrowRight } from "lucide-react";
 
 export interface StudyCardProps {
@@ -20,7 +20,7 @@ export interface StudyCardProps {
   reason?: string;
 }
 
-export function StudyCard({
+export const StudyCard = memo(function StudyCard({
   id,
   title,
   category,
@@ -35,8 +35,8 @@ export function StudyCard({
       <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer flex flex-col group overflow-hidden">
         {imageUrl && (
             <div className="relative h-40 overflow-hidden">
-                <img 
-                    src={imageUrl} 
+                <img
+                    src={imageUrl}
                     alt={title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -78,7 +78,7 @@ export function StudyCard({
               </div>
             )}
           </div>
-          
+
           <div className="mt-4 pt-4 border-t border-neutral-100 flex justify-between items-center">
             <span className="text-xs font-medium text-teal-600 group-hover:underline">
                 Read Study
@@ -89,4 +89,4 @@ export function StudyCard({
       </Card>
     </Link>
   );
-}
+});

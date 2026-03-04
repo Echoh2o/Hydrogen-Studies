@@ -12,6 +12,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { isAuthenticated, requireRole, hasPermission } from "../auth";
 import { authRateLimiter } from "../utils/rate-limiting";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -47,6 +48,12 @@ const changePasswordSchema = z
     path: ["confirmPassword"],
   });
 
+const updateUserSchema = z.object({
+  role: z.enum(["admin", "editor", "customer", "visitor"]).optional(),
+  permissions: z.array(z.string()).optional(),
+  isActive: z.boolean().optional(),
+});
+
 // Helper function to create audit log - fails silently to never block authentication
 // Retries once on transient failures for better reliability
 function createAuditLog(
@@ -57,7 +64,7 @@ function createAuditLog(
   ipAddress: string | null = null,
   userAgent: string | null = null,
   sessionId: string | null = null,
-  changes: any = null,
+  changes: Record<string, unknown> | null = null,
 ): void {
   const values = {
     userId,
@@ -73,8 +80,8 @@ function createAuditLog(
   // Fire and forget — void prevents unhandled promise rejection
   void db.insert(auditLogs)
     .values(values)
-    .catch((err: any) => {
-      console.warn("Audit log failed:", err?.message);
+    .catch((err: unknown) => {
+      logger.warn("Audit log failed", "AuthRoutes", { error: err instanceof Error ? err.message : String(err) });
     });
 }
 
@@ -170,7 +177,7 @@ router.post("/register", authRateLimiter, async (req: Request, res: Response) =>
       });
     }
 
-    console.error("Registration error:", error);
+    logger.error("Registration error", error, "AuthRoutes");
     res.status(500).json({
       error: "Failed to register user",
     });
@@ -272,7 +279,7 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
       });
     }
 
-    console.error("Login error:", error);
+    logger.error("Login error", error, "AuthRoutes");
     res.status(500).json({
       error: "Failed to login",
     });
@@ -309,7 +316,7 @@ router.post("/logout", async (req: Request, res: Response) => {
     if (req.session) {
       req.session.destroy((err) => {
         if (err) {
-          console.error("Session destruction error:", err);
+          logger.error("Session destruction error", err, "AuthRoutes");
         }
         // Always return success - we cleared the cookie
         res.json({ message: "Logout successful" });
@@ -319,7 +326,7 @@ router.post("/logout", async (req: Request, res: Response) => {
       res.json({ message: "Logout successful" });
     }
   } catch (error) {
-    console.error("Logout error:", error);
+    logger.error("Logout error", error, "AuthRoutes");
     // Still clear cookie and return success
     res.clearCookie("hydrogen.sid", {
       path: "/",
@@ -360,7 +367,7 @@ router.get("/me", isAuthenticated, async (req: Request, res: Response) => {
       user: userWithoutPassword,
     });
   } catch (error) {
-    console.error("Get user error:", error);
+    logger.error("Get user error", error, "AuthRoutes");
     res.status(500).json({
       error: "Failed to get user information",
     });
@@ -440,7 +447,7 @@ router.post(
         });
       }
 
-      console.error("Change password error:", error);
+      logger.error("Change password error", error, "AuthRoutes");
       res.status(500).json({
         error: "Failed to change password",
       });
@@ -488,7 +495,7 @@ router.get(
 
       res.json({ users: allUsers });
     } catch (error) {
-      console.error("Get users error:", error);
+      logger.error("Get users error", error, "AuthRoutes");
       res.status(500).json({
         error: "Failed to get users",
       });
@@ -504,23 +511,23 @@ router.patch(
   async (req: Request, res: Response) => {
     try {
       const targetUserId = req.params.id;
-      const { role, permissions, isActive } = req.body;
+      const validated = updateUserSchema.parse(req.body);
 
       // Prevent admin from modifying themselves
       if (
         targetUserId === req.session.userId &&
-        (role !== UserRole.ADMIN || isActive === false)
+        (validated.role !== UserRole.ADMIN || validated.isActive === false)
       ) {
         return res.status(400).json({
           error: "Cannot remove admin privileges from yourself",
         });
       }
 
-      // Update user
-      const updateData: any = {};
-      if (role !== undefined) updateData.role = role;
-      if (permissions !== undefined) updateData.permissions = permissions;
-      if (isActive !== undefined) updateData.isActive = isActive;
+      // Build typed update object from validated fields
+      const updateData: Partial<{ role: string; permissions: string[]; isActive: boolean }> = {};
+      if (validated.role !== undefined) updateData.role = validated.role;
+      if (validated.permissions !== undefined) updateData.permissions = validated.permissions;
+      if (validated.isActive !== undefined) updateData.isActive = validated.isActive;
 
       await db.update(users).set(updateData).where(eq(users.id, targetUserId));
 
@@ -540,7 +547,7 @@ router.patch(
         message: "User updated successfully",
       });
     } catch (error) {
-      console.error("Update user error:", error);
+      logger.error("Update user error", error, "AuthRoutes");
       res.status(500).json({
         error: "Failed to update user",
       });
@@ -576,7 +583,7 @@ router.get(
 
       res.json({ logs });
     } catch (error) {
-      console.error("Get audit logs error:", error);
+      logger.error("Get audit logs error", error, "AuthRoutes");
       res.status(500).json({
         error: "Failed to get audit logs",
       });
@@ -662,7 +669,7 @@ router.post(
           details: error.errors,
         });
       }
-      console.error("Create user error:", error);
+      logger.error("Create user error", error, "AuthRoutes");
       res.status(500).json({ error: "Failed to create user" });
     }
   },
@@ -729,10 +736,10 @@ router.post(
             `,
           });
         } catch (emailErr) {
-          console.error("Failed to send reset email:", emailErr);
+          logger.error("Failed to send reset email", emailErr, "AuthRoutes");
         }
       } else {
-        console.warn("SENDGRID_API_KEY not configured — password reset email not sent.");
+        logger.warn("SENDGRID_API_KEY not configured — password reset email not sent", "AuthRoutes");
       }
 
       res.json({ message: successMsg });
@@ -740,7 +747,7 @@ router.post(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Valid email required" });
       }
-      console.error("Forgot password error:", error);
+      logger.error("Forgot password error", error, "AuthRoutes");
       res.status(500).json({ error: "Failed to process request" });
     }
   },
@@ -764,8 +771,8 @@ router.post(
 
       // Use transaction to atomically validate token + update password + mark used
       // Prevents race condition where same token could be used by concurrent requests
-      let resetToken: any;
-      await db.transaction(async (tx: any) => {
+      let resetToken: typeof passwordResetTokens.$inferSelect | undefined;
+      await db.transaction(async (tx) => {
         [resetToken] = await tx
           .select()
           .from(passwordResetTokens)
@@ -795,10 +802,10 @@ router.post(
       });
 
       createAuditLog(
-        resetToken.userId,
+        resetToken!.userId,
         "password_reset_completed",
         "user",
-        resetToken.userId,
+        resetToken!.userId,
         req.ip,
         req.headers["user-agent"] as string,
         null,
@@ -812,7 +819,7 @@ router.post(
       if (error instanceof Error && error.message === "INVALID_TOKEN") {
         return res.status(400).json({ error: "Invalid or expired reset token" });
       }
-      console.error("Reset password error:", error);
+      logger.error("Reset password error", error, "AuthRoutes");
       res.status(500).json({ error: "Failed to reset password" });
     }
   },

@@ -4,6 +4,7 @@ import { getPersonalizedRecommendations } from "../services/recommendation-engin
 import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiting";
 import { requireAdmin } from "../auth";
 import analyticsRoutes from "../routes/content-analytics-routes";
+import { logger } from "../utils/logger";
 
 export class StudiesController {
   public router: Router;
@@ -41,7 +42,7 @@ export class StudiesController {
           const stats = await studyService.getFilterStats();
           res.json(stats.years);
       } catch (error) {
-          console.error("Error fetching years:", error);
+          logger.error("Error fetching years", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch years" });
       }
   }
@@ -51,7 +52,7 @@ export class StudiesController {
           const stats = await studyService.getFilterStats();
           res.json(stats.countries);
       } catch (error) {
-          console.error("Error fetching countries:", error);
+          logger.error("Error fetching countries", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch countries" });
       }
   }
@@ -61,7 +62,7 @@ export class StudiesController {
           const stats = await studyService.getFilterStats();
           res.json(stats.studyTypes);
       } catch (error) {
-          console.error("Error fetching study types:", error);
+          logger.error("Error fetching study types", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch study types" });
       }
   }
@@ -71,7 +72,7 @@ export class StudiesController {
           const stats = await studyService.getFilterStats();
           res.json(stats.journals);
       } catch (error) {
-          console.error("Error fetching journals:", error);
+          logger.error("Error fetching journals", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch journals" });
       }
   }
@@ -81,7 +82,7 @@ export class StudiesController {
           const stats = await studyService.getFilterStats();
           res.json(stats);
       } catch (error) {
-          console.error("Error fetching filters:", error);
+          logger.error("Error fetching filters", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch filters" });
       }
   }
@@ -91,7 +92,7 @@ export class StudiesController {
           const overview = await studyService.getOverview();
           res.json(overview);
       } catch (error) {
-          console.error("Error fetching overview:", error);
+          logger.error("Error fetching overview", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch overview" });
       }
   }
@@ -101,7 +102,7 @@ export class StudiesController {
       const data = await studyService.getResearchTrends();
       res.json(data);
     } catch (error) {
-      console.error("Error fetching research trends:", error);
+      logger.error("Error fetching research trends", error, "StudiesController");
       res.status(500).json({ message: "Failed to fetch research trends" });
     }
   };
@@ -111,7 +112,7 @@ export class StudiesController {
       const data = await studyService.getHealthOutcomes();
       res.json(data);
     } catch (error) {
-      console.error("Error fetching health outcomes:", error);
+      logger.error("Error fetching health outcomes", error, "StudiesController");
       res.status(500).json({ message: "Failed to fetch health outcomes" });
     }
   };
@@ -157,7 +158,7 @@ export class StudiesController {
       res.json({ success: true, data: mockStudies });
 
     } catch (error) {
-      console.error("Error fetching studies by consumer category:", error);
+      logger.error("Error fetching studies by consumer category", error, "StudiesController");
       res.status(500).json({ success: false, message: "Failed to fetch studies by consumer category" });
     }
   };
@@ -167,7 +168,7 @@ export class StudiesController {
       const result = await studyService.getStudies(req.query);
       res.json(result);
     } catch (error) {
-       console.error("Error fetching studies:", error);
+       logger.error("Error fetching studies", error, "StudiesController");
        res.status(500).json({ message: "Failed to fetch studies" });
     }
   };
@@ -178,7 +179,7 @@ export class StudiesController {
         const result = await studyService.getLatestStudies(limit);
         res.json(result);
     } catch (error) {
-        console.error("Error fetching latest studies:", error);
+        logger.error("Error fetching latest studies", error, "StudiesController");
         res.status(500).json({ message: "Failed to fetch latest studies" });
     }
   };
@@ -193,7 +194,7 @@ export class StudiesController {
 
         res.json(study);
     } catch (error) {
-        console.error("Error fetching study:", error);
+        logger.error("Error fetching study", error, "StudiesController");
         res.status(500).json({ message: "Failed to fetch study" });
     }
   };
@@ -208,7 +209,7 @@ export class StudiesController {
 
           res.json(study);
       } catch (error) {
-          console.error("Error fetching study by slug:", error);
+          logger.error("Error fetching study by slug", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch study" });
       }
   };
@@ -224,7 +225,7 @@ export class StudiesController {
           const relatedStudies = await studyService.getRelatedStudies(studyId, study.category || "");
           res.json(relatedStudies);
       } catch (error) {
-          console.error("Error fetching related studies:", error);
+          logger.error("Error fetching related studies", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch related studies" });
       }
   }
@@ -264,7 +265,7 @@ export class StudiesController {
 
           res.json(response);
       } catch (error) {
-          console.error("Error fetching detailed study:", error);
+          logger.error("Error fetching detailed study", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch detailed study" });
       }
   }
@@ -283,7 +284,7 @@ export class StudiesController {
           
           res.json(result.recommendations);
       } catch (error) {
-          console.error("Error fetching recommendations:", error);
+          logger.error("Error fetching recommendations", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch recommendations" });
       }
   }
@@ -296,7 +297,7 @@ export class StudiesController {
           await studyService.recordView(studyId);
           res.json({ success: true });
       } catch (error) {
-          console.error("Error recording view:", error);
+          logger.error("Error recording view", error, "StudiesController");
           res.status(500).json({ error: "Failed to record view" });
       }
   }
@@ -308,7 +309,7 @@ export class StudiesController {
           const insights = await studyService.getStudyInsights(studyId);
           res.json(insights || {});
       } catch (error) {
-          console.error("Error fetching study insights:", error);
+          logger.error("Error fetching study insights", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch study insights" });
       }
   }
@@ -365,7 +366,7 @@ export class StudiesController {
             warnings: result.warnings,
           });
       } catch (error: any) {
-          console.error("Blog generation error:", error);
+          logger.error("Blog generation error", error, "StudiesController");
 
           if (error.message?.includes("already exist")) {
             return res.status(409).json({

@@ -18,6 +18,7 @@ import {
 } from "@shared/schema";
 import { eq, sql, ilike, and, or, inArray } from "drizzle-orm";
 import { ai } from "./services/ai-provider";
+import { logger } from "./utils/logger";
 
 interface TaggingResult {
   studyId: number;
@@ -250,7 +251,7 @@ const HYDROGEN_TAG_DEFINITIONS: TagDefinition[] = [
  * Initialize the tagging system database tables
  */
 export async function initializeTaggingSystem(): Promise<void> {
-  console.log("Initializing automated tagging system...");
+  logger.info("Initializing automated tagging system", "AutomatedTagging");
 
   try {
     // Create tag categories
@@ -333,9 +334,9 @@ export async function initializeTaggingSystem(): Promise<void> {
       }
     }
 
-    console.log("Tagging system initialized successfully");
+    logger.info("Tagging system initialized successfully", "AutomatedTagging");
   } catch (error) {
-    console.error("Error initializing tagging system:", error);
+    logger.error("Error initializing tagging system", error, "AutomatedTagging");
     throw error;
   }
 }
@@ -465,7 +466,7 @@ Return a JSON object with a "tags" array of tag names, maximum 8 tags.`;
 
     return Array.isArray(result.tags) ? result.tags.slice(0, 8) : [];
   } catch (error) {
-    console.error("Error extracting tags with AI:", error);
+    logger.error("Error extracting tags with AI", error, "AutomatedTagging");
     return [];
   }
 }
@@ -603,7 +604,7 @@ export async function tagSingleStudy(studyId: number): Promise<TaggingResult> {
       processingTime,
     };
   } catch (error) {
-    console.error(`Error tagging study ${studyId}:`, error);
+    logger.error("Error tagging study", error, "AutomatedTagging", { studyId });
     throw error;
   }
 }
@@ -618,7 +619,7 @@ export async function processAllStudiesForTagging(): Promise<{
   totalTagsAdded: number;
   avgProcessingTime: number;
 }> {
-  console.log("Starting automated tagging for all studies...");
+  logger.info("Starting automated tagging for all studies", "AutomatedTagging");
 
   const allStudies = await db.select({ id: studies.id }).from(studies);
 
@@ -631,9 +632,7 @@ export async function processAllStudiesForTagging(): Promise<{
     const study = allStudies[i];
 
     try {
-      console.log(
-        `[${i + 1}/${allStudies.length}] Tagging study ${study.id}...`,
-      );
+      logger.info("Tagging study", "AutomatedTagging", { progress: `${i + 1}/${allStudies.length}`, studyId: study.id });
 
       const result = await tagSingleStudy(study.id);
 
@@ -642,12 +641,12 @@ export async function processAllStudiesForTagging(): Promise<{
       totalProcessingTime += result.processingTime;
 
       if (result.tagsAdded > 0) {
-        console.log(`  ✓ Added ${result.tagsAdded} tags`);
+        logger.info("Added tags to study", "AutomatedTagging", { tagsAdded: result.tagsAdded });
       } else {
-        console.log(`  ○ No new tags added`);
+        logger.info("No new tags added", "AutomatedTagging");
       }
     } catch (error) {
-      console.error(`  ✗ Error tagging study ${study.id}:`, error);
+      logger.error("Error tagging study in batch", error, "AutomatedTagging", { studyId: study.id });
       errors++;
     }
 
@@ -660,14 +659,13 @@ export async function processAllStudiesForTagging(): Promise<{
   const avgProcessingTime =
     totalProcessingTime / Math.max(successfullyTagged, 1);
 
-  console.log("\n=== AUTOMATED TAGGING COMPLETE ===");
-  console.log(`Total studies: ${allStudies.length}`);
-  console.log(`Successfully tagged: ${successfullyTagged}`);
-  console.log(`Errors: ${errors}`);
-  console.log(`Total tags added: ${totalTagsAdded}`);
-  console.log(
-    `Average processing time: ${avgProcessingTime.toFixed(0)}ms per study`,
-  );
+  logger.info("Automated tagging complete", "AutomatedTagging", {
+    totalStudies: allStudies.length,
+    successfullyTagged,
+    errors,
+    totalTagsAdded,
+    avgProcessingTimeMs: Math.round(avgProcessingTime),
+  });
 
   return {
     totalStudies: allStudies.length,
