@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import AdminLayout from "@/components/admin/AdminLayout";
 import {
   PlusCircle,
   Loader2,
@@ -205,6 +206,7 @@ export default function StudiesPage() {
   };
 
   return (
+    <AdminLayout>
     <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0">
@@ -480,5 +482,6 @@ export default function StudiesPage() {
         </CardFooter>
       )}
     </Card>
+    </AdminLayout>
   );
 }

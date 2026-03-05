@@ -187,6 +187,8 @@ const NaturalLanguageSearchPage = lazy(
 );
 const RecentStudiesPage = lazy(() => import("./pages/RecentStudiesPage"));
 const MyDashboardPage = lazy(() => import("./pages/MyDashboardPage"));
+const PipelineDashboardPage = lazy(() => import("./pages/admin/PipelineDashboardPage"));
+const ThisWeekPage = lazy(() => import("./pages/ThisWeekPage"));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -460,6 +462,14 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
+        {/* Research Pipeline Dashboard - Protected */}
+        <Route path="/admin/pipeline">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <PipelineDashboardPage />
+            </ProtectedRoute>
+          )}
+        </Route>
         {/* Research source pages consolidated into /admin/research-import */}
         <Route path="/admin/article-search">{() => <Redirect to="/admin/research-import" />}</Route>
         <Route path="/admin/europe-pmc">{() => <Redirect to="/admin/research-import" />}</Route>
@@ -488,6 +498,7 @@ function Router() {
         <Route path="/study-explorer" component={StudyExplorerPage} />
         <Route path="/learn/therapy-guide" component={HydrogenTherapyGuide} />
         <Route path="/contact-us" component={ContactUsPage} />
+        <Route path="/this-week" component={ThisWeekPage} />
 
         {/* Tag-based Navigation */}
         <Route path="/studies/tags" component={TaggedStudiesPage} />

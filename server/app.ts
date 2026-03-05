@@ -59,6 +59,8 @@ import newsletterRoutes from "./routes/newsletter-routes";
 import userDashboardRoutes from "./routes/user-dashboard-routes";
 import adminSettingsRoutes from "./routes/admin-settings-routes";
 import contactRoutes from "./routes/contact-routes";
+import pipelineRoutes from "./routes/pipeline-routes";
+import imageGenerationRoutes from "./routes/image-generation-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -191,6 +193,8 @@ const csrf = csrfProtection({
     "/api/crossref", // CrossRef routes (protected by admin auth)
     "/api/multi-format", // Multi-format generation (protected by admin auth)
     "/api/blog-recommendations", // Blog recommendations (protected by admin auth)
+    "/api/pipeline", // Research pipeline (protected by admin auth)
+    "/api/image-generation", // Image generation (protected by admin auth)
   ],
 });
 
@@ -310,6 +314,24 @@ app.use("/api/scraper", scraperRoutes);
 // SEO Content Factory (admin-only)
 app.use("/api/seo", seoContentFactoryRoutes);
 
+// Public weekly research digest endpoint
+app.get("/api/public/this-week", generalApiRateLimiter, async (req, res) => {
+  try {
+    const { getLatestDigest, getDigestArchive, getDigestBySlug } = await import("./services/research-digest-generator");
+    const slug = req.query.slug as string;
+    if (slug) {
+      const digest = await getDigestBySlug(slug);
+      if (!digest) return res.status(404).json({ error: "Digest not found" });
+      return res.json({ digest });
+    }
+    const latest = await getLatestDigest();
+    const archive = await getDigestArchive(10, 0);
+    res.json({ latest, archive });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get digest" });
+  }
+});
+
 // Public internal links endpoint (for "Related Content" sidebar on study/blog pages)
 app.get("/api/internal-links/:type/:id", async (req, res) => {
   try {
@@ -383,6 +405,12 @@ app.use("/api/me", userDashboardRoutes);
 // Admin settings
 app.use("/api/admin/settings", adminSettingsRoutes);
 
+// Research Intelligence Pipeline (admin-only)
+app.use("/api/pipeline", pipelineRoutes);
+
+// Image Generation (admin-only)
+app.use("/api/image-generation", requireAdmin, imageGenerationRoutes);
+
 // Admin monitoring & process control
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
 app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes
@@ -439,6 +467,13 @@ pool.query("SELECT 1").then(async () => {
     await addFullTextSearch();
   } catch (err: any) {
     console.warn("Full-text search migration skipped:", err.message);
+  }
+  // Run pipeline tables migration
+  try {
+    const { createPipelineTables } = await import("./migrations/pipeline-tables-migration");
+    await createPipelineTables();
+  } catch (err: any) {
+    console.warn("Pipeline tables migration skipped:", err.message);
   }
 }).catch((err: any) => {
   console.error("WARNING: Database connection failed on startup:", err.message);
