@@ -31,16 +31,21 @@ const RecentStudiesPage = () => {
   const itemsPerPage = 10;
 
   const {
-    data: studies,
+    data: studiesResponse,
     isLoading,
     error,
   } = useQuery<any>({
     queryKey: ["/api/studies"],
   });
 
+  // Extract array from paginated response or use directly if already an array
+  const studies = Array.isArray(studiesResponse)
+    ? studiesResponse
+    : studiesResponse?.data || [];
+
   // Sort studies based on selected order
-  const sortedStudies = studies
-    ? [...(studies as any[])].sort((a: any, b: any) => {
+  const sortedStudies = studies.length > 0
+    ? [...studies].sort((a: any, b: any) => {
         if (sortOrder === "newest") return (b.year || 0) - (a.year || 0);
         if (sortOrder === "oldest") return (a.year || 0) - (b.year || 0);
         if (sortOrder === "citations") return (b.citations || 0) - (a.citations || 0);

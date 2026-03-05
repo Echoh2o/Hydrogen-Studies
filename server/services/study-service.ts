@@ -233,10 +233,12 @@ export class StudyService {
   }
 
   async getStudyBySlug(slug: string): Promise<Study | undefined> {
+    // Normalize non-breaking hyphens (U+2011) and other dash variants to regular hyphens
+    const normalizedSlug = slug.replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\uFE58\uFE63\uFF0D]/g, "-");
     const result = await db
         .select()
         .from(studies)
-        .where(eq(studies.slug, slug))
+        .where(eq(studies.slug, normalizedSlug))
         .limit(1);
     return result[0];
   }
