@@ -281,8 +281,8 @@ async function generateArticleContent(
   let summary: string;
   try {
     const generatedSummary = await ai.generateText(
-      "Write a meta description for a blog post. Rules: 140-155 characters, include 'hydrogen', plain language a 6th grader can understand, end with a hook or call to read more. Respond with ONLY the description.",
-      `Summarize this blog post in one sentence:\n\n${content.substring(0, 800)}`,
+      "Write a meta description for a blog post. Rules: 140-155 characters, include 'hydrogen' and the topic keyword naturally, plain language a 6th grader can understand, convey a clear benefit or finding, end with a hook. Respond with ONLY the description.",
+      `Summarize this blog post in one sentence:\n\nTopic: ${study.category || "health"}\n\n${content.substring(0, 800)}`,
       { maxTokens: 60, temperature: 0.6 },
     );
     summary = generatedSummary?.trim() || content.split("\n\n")[0]?.substring(0, 300) || content.substring(0, 300);
@@ -307,14 +307,31 @@ async function generateArticleTitle(
   summary: string,
 ): Promise<string> {
   const category = study.category || "health";
+
+  // Map study categories to target SEO keywords for better search visibility
+  const seoKeywords: Record<string, string> = {
+    cardiovascular: "hydrogen water heart health",
+    neurological: "hydrogen therapy brain health",
+    metabolic: "hydrogen water diabetes",
+    inflammation: "hydrogen water inflammation",
+    respiratory: "hydrogen therapy lungs",
+    gastrointestinal: "hydrogen water gut health",
+    cancer: "hydrogen therapy cancer research",
+    exercise: "hydrogen water athletic performance",
+    skin: "hydrogen water skin benefits",
+    aging: "hydrogen water anti-aging",
+  };
+  const targetKeyword = seoKeywords[category.toLowerCase()] || `hydrogen water ${category}`;
+
   const title = await ai.generateText(
     `You write SEO-optimized blog titles about hydrogen therapy and ${category}. Rules:
 1. Under 60 characters
 2. 4th-6th grade reading level — no medical jargon
-3. Include "hydrogen" or "hydrogen water" in the title
+3. Include one of these target keywords (or a close variation): "${targetKeyword}"
 4. Make it compelling for someone who knows nothing about hydrogen therapy
-5. Respond with ONLY the title text, nothing else`,
-    `Create a title for a ${articleType} blog post.\n\nStudy topic: ${summary.substring(0, 200)}\nCategory: ${category}`,
+5. Use power words like "surprising", "proven", "new research shows", "what science says"
+6. Respond with ONLY the title text, nothing else`,
+    `Create a title for a ${articleType} blog post.\n\nStudy topic: ${summary.substring(0, 200)}\nCategory: ${category}\nTarget SEO keyword: ${targetKeyword}`,
     { maxTokens: 50, temperature: 0.8 },
   );
 
@@ -364,7 +381,7 @@ async function generateArticleImageWithFallback(
 
     return {
       imageUrl: localPath,
-      imageAlt: `${title} - hydrogen therapy research illustration`,
+      imageAlt: `${title} - hydrogen ${articleType.replace(/_/g, " ")} research illustration`,
     };
   } catch (error) {
     console.warn("Image generation failed, using default:", error);

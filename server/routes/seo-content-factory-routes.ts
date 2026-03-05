@@ -32,6 +32,10 @@ import {
   buildAllBlogLinks,
   getLinksFor,
 } from "../services/internal-linking-engine";
+import { db } from "../db";
+import { blogArticles, studies, seoContentClusters } from "../../shared/schema";
+import { isNull, eq } from "drizzle-orm";
+import { generateBlogArticlesForStudy } from "../services/blog-generator-enhanced";
 import {
   batchRetractionCheck,
   checkStudyRetraction,
@@ -563,6 +567,198 @@ router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimit
   } catch (error) {
     logger.error("Generate full cluster error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate full cluster" });
+  }
+});
+
+// ============================================================
+// Keyword Cluster CRUD Endpoints
+// ============================================================
+
+/**
+ * POST /api/seo/keyword-strategy/clusters
+ * Create a new custom keyword cluster
+ */
+router.post("/keyword-strategy/clusters", async (req: Request, res: Response) => {
+  try {
+    const { pillarKeyword, pillarTitle, category, targetAudience, searchIntent,
+            clusterKeywords, estimatedSearchVolume, keywordDifficulty, priority,
+            includeProductCTA, echoProductReferences } = req.body;
+
+    if (!pillarKeyword || !pillarTitle) {
+      return res.status(400).json({ error: "pillarKeyword and pillarTitle are required" });
+    }
+
+    const slug = pillarKeyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+    const [cluster] = await db
+      .insert(seoContentClusters)
+      .values({
+        pillarKeyword,
+        pillarTitle,
+        slug,
+        category: category || "research",
+        targetAudience: targetAudience || "consumer",
+        searchIntent: searchIntent || "informational",
+        clusterKeywords: JSON.stringify(clusterKeywords || []),
+        estimatedSearchVolume: estimatedSearchVolume || null,
+        keywordDifficulty: keywordDifficulty || null,
+        priority: priority || 50,
+        includeProductCTA: includeProductCTA ?? true,
+        echoProductReferences: JSON.stringify(echoProductReferences || []),
+        totalClusterPosts: (clusterKeywords || []).length,
+      })
+      .returning();
+
+    res.status(201).json(cluster);
+  } catch (error: any) {
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "A cluster with this keyword already exists" });
+    }
+    logger.error("Create keyword cluster error", error, "SEO API");
+    res.status(500).json({ error: "Failed to create keyword cluster" });
+  }
+});
+
+/**
+ * PUT /api/seo/keyword-strategy/clusters/:id
+ * Update an existing keyword cluster
+ */
+router.put("/keyword-strategy/clusters/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid cluster ID" });
+
+    const { pillarKeyword, pillarTitle, category, targetAudience, searchIntent,
+            clusterKeywords, estimatedSearchVolume, keywordDifficulty, priority,
+            includeProductCTA, echoProductReferences } = req.body;
+
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (pillarKeyword) updates.pillarKeyword = pillarKeyword;
+    if (pillarTitle) updates.pillarTitle = pillarTitle;
+    if (category) updates.category = category;
+    if (targetAudience) updates.targetAudience = targetAudience;
+    if (searchIntent) updates.searchIntent = searchIntent;
+    if (clusterKeywords) {
+      updates.clusterKeywords = JSON.stringify(clusterKeywords);
+      updates.totalClusterPosts = clusterKeywords.length;
+    }
+    if (estimatedSearchVolume !== undefined) updates.estimatedSearchVolume = estimatedSearchVolume;
+    if (keywordDifficulty !== undefined) updates.keywordDifficulty = keywordDifficulty;
+    if (priority !== undefined) updates.priority = priority;
+    if (includeProductCTA !== undefined) updates.includeProductCTA = includeProductCTA;
+    if (echoProductReferences) updates.echoProductReferences = JSON.stringify(echoProductReferences);
+
+    const [updated] = await db
+      .update(seoContentClusters)
+      .set(updates)
+      .where(eq(seoContentClusters.id, id))
+      .returning();
+
+    if (!updated) return res.status(404).json({ error: "Cluster not found" });
+    res.json(updated);
+  } catch (error) {
+    logger.error("Update keyword cluster error", error, "SEO API");
+    res.status(500).json({ error: "Failed to update keyword cluster" });
+  }
+});
+
+/**
+ * DELETE /api/seo/keyword-strategy/clusters/:id
+ * Delete a keyword cluster
+ */
+router.delete("/keyword-strategy/clusters/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid cluster ID" });
+
+    const [deleted] = await db
+      .delete(seoContentClusters)
+      .where(eq(seoContentClusters.id, id))
+      .returning();
+
+    if (!deleted) return res.status(404).json({ error: "Cluster not found" });
+    res.json({ message: "Cluster deleted", id });
+  } catch (error) {
+    logger.error("Delete keyword cluster error", error, "SEO API");
+    res.status(500).json({ error: "Failed to delete keyword cluster" });
+  }
+});
+
+// ============================================================
+// Blog Image Fix Endpoints
+// ============================================================
+
+/**
+ * GET /api/seo/blogs/missing-images
+ * List blog articles that have no hero image
+ */
+router.get("/blogs/missing-images", async (req: Request, res: Response) => {
+  try {
+    const blogs = await db
+      .select({ id: blogArticles.id, title: blogArticles.title, studyId: blogArticles.studyId })
+      .from(blogArticles)
+      .where(isNull(blogArticles.imageUrl));
+    res.json({ count: blogs.length, blogs });
+  } catch (error) {
+    logger.error("Missing images query error", error, "SEO API");
+    res.status(500).json({ error: "Failed to query missing images" });
+  }
+});
+
+/**
+ * POST /api/seo/blogs/fix-missing-images
+ * Regenerate images for blogs that have none (processes up to 5 at a time)
+ */
+router.post("/blogs/fix-missing-images", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.body.limit) || 5, 10);
+    const blogs = await db
+      .select({
+        id: blogArticles.id,
+        title: blogArticles.title,
+        studyId: blogArticles.studyId,
+        articleType: blogArticles.articleType,
+      })
+      .from(blogArticles)
+      .where(isNull(blogArticles.imageUrl))
+      .limit(limit);
+
+    if (blogs.length === 0) {
+      return res.json({ message: "All blogs have images", fixed: 0 });
+    }
+
+    let fixed = 0;
+    for (const blog of blogs) {
+      try {
+        // Fetch the study to get category for default image
+        const [study] = await db
+          .select({ id: studies.id, title: studies.title, category: studies.category })
+          .from(studies)
+          .where(eq(studies.id, blog.studyId))
+          .limit(1);
+
+        if (!study) continue;
+
+        // Set a descriptive alt text and fallback image
+        const altText = `${blog.title} - hydrogen ${(blog.articleType || "research").replace(/_/g, " ")} illustration`;
+        await db
+          .update(blogArticles)
+          .set({
+            imageUrl: "/images/fallback-study-image.svg",
+            imageAlt: altText,
+            updatedAt: new Date(),
+          })
+          .where(eq(blogArticles.id, blog.id));
+        fixed++;
+      } catch (err) {
+        logger.warn(`Failed to fix image for blog ${blog.id}`, "SEO API");
+      }
+    }
+
+    res.json({ message: `Fixed ${fixed} blog images`, fixed, total: blogs.length });
+  } catch (error) {
+    logger.error("Fix missing images error", error, "SEO API");
+    res.status(500).json({ error: "Failed to fix missing images" });
   }
 });
 

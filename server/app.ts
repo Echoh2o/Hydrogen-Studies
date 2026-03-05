@@ -417,16 +417,29 @@ app.use("/api/*", (req, res, next) => {
   next(new NotFoundError("API endpoint"));
 });
 
+// Sentry error handler - captures errors before globalErrorHandler
+import { Sentry } from "./utils/sentry";
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
 // Global error handler - MUST be last middleware
 app.use(globalErrorHandler);
 
 // Initialize health monitoring
 initializeHealthMonitoring();
 
-// Verify database connectivity on startup
+// Verify database connectivity on startup, then run migrations
 import { pool } from "./db";
-pool.query("SELECT 1").then(() => {
+pool.query("SELECT 1").then(async () => {
   console.log("Database connection verified");
+  // Run full-text search migration if needed
+  try {
+    const { addFullTextSearch } = await import("./migrations/add-fulltext-search");
+    await addFullTextSearch();
+  } catch (err: any) {
+    console.warn("Full-text search migration skipped:", err.message);
+  }
 }).catch((err: any) => {
   console.error("WARNING: Database connection failed on startup:", err.message);
   console.error("The app will start but DB-dependent features will fail until the connection is restored.");

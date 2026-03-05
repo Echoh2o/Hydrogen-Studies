@@ -10,6 +10,7 @@ import {
   getUserFriendlyMessage,
   isRetryableError,
 } from "./app-errors";
+import { Sentry } from "./sentry";
 
 // Standard error types for the application
 export enum ErrorType {
@@ -99,9 +100,12 @@ export function handleApiError(
     );
   }
 
-  // Log to external error tracking service in production
+  // Send non-operational errors to Sentry in production
   if (process.env.NODE_ENV === "production" && !isOperationalError(error)) {
-    // TODO: Send to error tracking service (e.g., Sentry)
+    Sentry.captureException(error, {
+      tags: { errorType },
+      extra: { requestId, url: res.req?.url, method: res.req?.method },
+    });
   }
 
   // Determine if error is from AppError class

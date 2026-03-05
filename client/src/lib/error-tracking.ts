@@ -1,8 +1,10 @@
 /**
  * Client-side Error Tracking
- * Collects frontend errors and reports them to the server for monitoring.
- * In production, can be swapped for Sentry/LogRocket/etc.
+ * Uses Sentry in production when VITE_SENTRY_DSN is set.
+ * Falls back to server beacon reporting.
  */
+
+import * as Sentry from "@sentry/react";
 
 interface ErrorReport {
   message: string;
@@ -18,13 +20,12 @@ interface ErrorReport {
 const MAX_ERRORS_PER_SESSION = 20;
 let errorsReported = 0;
 
-/** Report an error to the server */
+/** Report an error to the server (fallback when Sentry not configured) */
 async function reportError(report: ErrorReport): Promise<void> {
   if (errorsReported >= MAX_ERRORS_PER_SESSION) return;
   errorsReported++;
 
   try {
-    // Send to server error reporting endpoint (non-blocking)
     navigator.sendBeacon?.(
       "/api/client-errors",
       JSON.stringify(report),
@@ -37,6 +38,16 @@ async function reportError(report: ErrorReport): Promise<void> {
 /** Initialize global error tracking listeners */
 export function initErrorTracking(): void {
   if (typeof window === "undefined") return;
+
+  // Initialize Sentry if DSN is configured
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (dsn) {
+    Sentry.init({
+      dsn,
+      environment: import.meta.env.MODE,
+      tracesSampleRate: 0.1,
+    });
+  }
 
   window.addEventListener("error", (event) => {
     reportError({
@@ -65,6 +76,10 @@ export function initErrorTracking(): void {
 
 /** Manually track an error (e.g., from error boundaries) */
 export function trackError(error: Error, context?: string): void {
+  // Send to Sentry if available
+  Sentry.captureException(error, { tags: { context: context || "unknown" } });
+
+  // Also send to server beacon as fallback
   reportError({
     message: `${context ? `[${context}] ` : ""}${error.message}`,
     stack: error.stack,

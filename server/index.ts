@@ -3,6 +3,10 @@
  * Refactored to minimal setup, delegating app configuration to app.ts
  */
 
+import { initSentry, Sentry } from "./utils/sentry";
+// Initialize Sentry before anything else so it captures all errors
+initSentry();
+
 import { validateEnvironment } from "./config/env";
 // Validate environment before anything else
 validateEnvironment();
@@ -39,16 +43,19 @@ async function setupServer() {
     // Production mode - serve static files from dist/public (Vite output)
     const staticPath = path.join(__dirname, "public");
 
-    console.log(`Static files path: ${staticPath}`);
-    console.log(`Static path exists: ${fs.existsSync(staticPath)}`);
-    if (fs.existsSync(staticPath)) {
-      console.log(`index.html exists: ${fs.existsSync(path.join(staticPath, "index.html"))}`);
+    if (!fs.existsSync(staticPath)) {
+      console.error(`Static files path not found: ${staticPath}`);
     }
 
     // SEO bot middleware — inject correct meta tags for crawlers BEFORE static files
     app.use(seoBotMiddleware(staticPath));
 
-    app.use(express.static(staticPath));
+    // Serve static assets with long-term caching (Vite adds content hashes to filenames)
+    app.use(express.static(staticPath, {
+      maxAge: "1y",
+      immutable: true,
+      index: false, // Don't serve index.html for directory requests — SPA fallback handles that
+    }));
 
     // SPA fallback — serve index.html for all non-API GET requests
     app.get("*", (req, res) => {
@@ -96,11 +103,13 @@ async function setupServer() {
 // Catch unhandled rejections — log and continue (don't crash)
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled promise rejection:", reason);
+  if (reason instanceof Error) Sentry.captureException(reason);
 });
 
 // Catch uncaught exceptions — log but only exit for truly fatal errors
 process.on("uncaughtException", (error) => {
   console.error("Uncaught exception:", error);
+  Sentry.captureException(error);
   // Only exit for fatal system-level errors; request-level errors are survivable
   if (
     error.message?.includes("EACCES") ||

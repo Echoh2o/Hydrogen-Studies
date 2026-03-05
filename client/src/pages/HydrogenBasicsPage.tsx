@@ -21,9 +21,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQuery } from "@tanstack/react-query";
 import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function HydrogenBasicsPage() {
+  const { data: siteStats } = useQuery<{ totalStudies: number }>({
+    queryKey: ["/api/public-stats"],
+    staleTime: 10 * 60 * 1000,
+  });
+
   const deliveryMethods = [
     {
       method: "Hydrogen Water",
@@ -114,7 +120,7 @@ export default function HydrogenBasicsPage() {
               potential health benefits
             </p>
             <Badge className="bg-teal-100 text-teal-800 px-4 py-2">
-              Based on 1,300+ peer-reviewed studies
+              Based on {siteStats?.totalStudies ? `${siteStats.totalStudies.toLocaleString()}+` : "1,300+"} peer-reviewed studies
             </Badge>
           </div>
         </section>

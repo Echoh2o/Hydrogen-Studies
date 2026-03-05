@@ -3,6 +3,7 @@ import { checkAndEnrichStudies } from "./targeted-enrichment";
 import { contentGenerator } from "./content-generator";
 import { mediaGenerator } from "./media-generator";
 import { batchRetractionCheck } from "./retraction-monitor";
+import { buildAllStudyLinks, buildAllBlogLinks } from "./internal-linking-engine";
 import { db } from "../db";
 import { studies, blogArticles } from "@shared/schema";
 import { eq, sql, isNull } from "drizzle-orm";
@@ -18,6 +19,8 @@ export class JobScheduler {
   private checkInterval: NodeJS.Timeout | null = null;
   private isJobRunning: boolean = false;
   private lastRetractionCheck: Date | null = null;
+  private lastLinkBuildCheck: Date | null = null;
+  private readonly LINK_BUILD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -102,6 +105,9 @@ export class JobScheduler {
       // Job 4: Retraction & Correction Monitoring (runs once per day)
       await this.runRetractionCheckJob();
 
+      // Job 5: Internal Link Building (runs once per week)
+      await this.runLinkBuildingJob();
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
@@ -184,6 +190,26 @@ export class JobScheduler {
       }
     } catch (error) {
       logger.error("Retraction check error", error, "JobScheduler");
+    }
+  }
+  /**
+   * Job 5: Rebuild internal links between studies and blogs
+   * Runs once per week to keep cross-references fresh.
+   */
+  private async runLinkBuildingJob() {
+    try {
+      if (this.lastLinkBuildCheck) {
+        const elapsed = Date.now() - this.lastLinkBuildCheck.getTime();
+        if (elapsed < this.LINK_BUILD_INTERVAL_MS) return;
+      }
+
+      logger.info("Running weekly link building", "JobScheduler");
+      await buildAllStudyLinks({ batchSize: 200 });
+      await buildAllBlogLinks({ batchSize: 200 });
+      this.lastLinkBuildCheck = new Date();
+      logger.info("Link building complete", "JobScheduler");
+    } catch (error) {
+      logger.error("Link building error", error, "JobScheduler");
     }
   }
 }

@@ -324,7 +324,7 @@ export default function ResearchAnalyticsPage() {
                     <CardContent>
                       <div className="space-y-2">
                         <div className="text-2xl font-bold text-purple-600">
-                          2,450+
+                          {citationData && typeof citationData === 'object' && 'totalConnections' in (citationData as any) ? (citationData as any).totalConnections.toLocaleString() : "2,450+"}
                         </div>
                         <p className="text-sm text-gray-600">
                           Total citation connections between studies in our

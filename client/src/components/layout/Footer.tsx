@@ -210,10 +210,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/insights"
+                  href="/research-analytics"
                   className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >
-                  Research Insights
+                  Research Analytics
                 </Link>
               </li>
               <li>

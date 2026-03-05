@@ -19,7 +19,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 export default function ResearchInsightsPage() {
   // Get database statistics
   const { data: statsData, isLoading: statsLoading } = useQuery<Record<string, any>>({
-    queryKey: ["/api/studies/stats"],
+    queryKey: ["/api/public-stats"],
     staleTime: 5 * 60 * 1000,
   });
 

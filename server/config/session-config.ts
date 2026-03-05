@@ -25,15 +25,9 @@ async function ensureSessionTable(): Promise<void> {
         PRIMARY KEY (sid)
       );
     `);
-    console.log("✅ Session table created or already exists");
-
-    // Add index for expired session cleanup
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS IDX_session_expire ON session(expire);
-    `);
-    console.log("✅ Session expire index created or already exists");
+    // Session table and index ready
   } catch (err) {
-    console.error("❌ Error setting up session table:", err);
+    console.error("Error setting up session table:", err);
 
     // Try alternative approach - check if table exists first
     try {
@@ -45,10 +39,6 @@ async function ensureSessionTable(): Promise<void> {
       `);
 
       if (!result.rows[0].exists) {
-        console.log(
-          "🔄 Attempting to create session table with alternative method...",
-        );
-
         await pool.query(`
           CREATE TABLE session (
             sid varchar PRIMARY KEY,
@@ -60,18 +50,10 @@ async function ensureSessionTable(): Promise<void> {
         await pool.query(`
           CREATE INDEX IDX_session_expire ON session(expire);
         `);
-
-        console.log("✅ Session table created with alternative method");
-      } else {
-        console.log("✅ Session table already exists");
       }
     } catch (altErr) {
-      console.error(
-        "❌ Failed to create session table with alternative method:",
-        altErr,
-      );
+      console.error("Failed to create session table:", altErr);
       // Don't throw - let connect-pg-simple try to create it
-      console.log("⚠️  Will let connect-pg-simple attempt to create the table");
     }
   }
 }
@@ -144,7 +126,6 @@ export function getSessionMiddleware() {
         initPromise = getSessionConfig()
           .then((config) => {
             sessionMiddleware = session(config);
-            console.log("Session middleware initialized");
           })
           .catch((err) => {
             // Reset so next request retries initialization

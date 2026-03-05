@@ -11,7 +11,7 @@ export const studyLinks: NavLink[] = [
   { href: "/explore-by-life-stage", label: "By Life Stage" },
   { href: "/explore-by-delivery-method", label: "By Delivery Method" },
   { href: "/explore-by-benefit", label: "By Health Benefit" },
-  { href: "/insights", label: "Research Insights" },
+  { href: "/research-analytics", label: "Research Insights" },
 ];
 
 export const mainLinks: NavLink[] = [

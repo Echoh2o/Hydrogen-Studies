@@ -17,6 +17,10 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
   ],
   // Start the dev server before running tests (optional)
   webServer: process.env.BASE_URL

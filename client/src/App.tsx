@@ -54,7 +54,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const BlogPage = lazy(() => import("@/pages/BlogPage"));
 const ChatPage = lazy(() => import("@/pages/ChatPage"));
 const RecommendationsPage = lazy(() => import("@/pages/RecommendationsPage"));
-const ResearchInsightsPage = lazy(() => import("./pages/ResearchInsightsPage"));
+// /insights redirects to /research-analytics (consolidated)
 const ResearchAnalyticsPage = lazy(
   () => import("./pages/ResearchAnalyticsPage"),
 );
@@ -482,7 +482,7 @@ function Router() {
         <Route path="/explore-by-delivery-method/:method" component={DeliveryMethodDetailPage} />
 
         {/* Additional Public Pages */}
-        <Route path="/insights" component={ResearchInsightsPage} />
+        <Route path="/insights">{() => { window.location.replace("/research-analytics"); return null; }}</Route>
         <Route path="/research-analytics" component={ResearchAnalyticsPage} />
         <Route path="/recent-studies" component={RecentStudiesPage} />
         <Route path="/study-explorer" component={StudyExplorerPage} />
