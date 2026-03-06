@@ -21,12 +21,10 @@ export default function ThisWeekPage() {
   const latest = data?.latest;
   const archive = data?.archive || [];
 
-  const trendingTopics = latest?.trendingTopics
-    ? JSON.parse(latest.trendingTopics)
-    : [];
-  const notableFindings = latest?.notableFindings
-    ? JSON.parse(latest.notableFindings)
-    : [];
+  let trendingTopics: string[] = [];
+  let notableFindings: Array<{ title: string; summary: string }> = [];
+  try { if (latest?.trendingTopics) trendingTopics = JSON.parse(latest.trendingTopics); } catch {}
+  try { if (latest?.notableFindings) notableFindings = JSON.parse(latest.notableFindings); } catch {}
 
   return (
     <>

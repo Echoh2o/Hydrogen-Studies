@@ -345,6 +345,52 @@ app.get("/api/internal-links/:type/:id", async (req, res) => {
   }
 });
 
+// Fire-and-forget analytics sinks (prevent 404 noise in logs)
+app.post("/api/search/analytics", (req, res) => res.json({ ok: true }));
+app.post("/api/studies/analytics", (req, res) => res.json({ ok: true }));
+
+// Journal Date Updater (admin)
+app.get("/api/admin/journal-date-stats", requireAdmin, async (req, res) => {
+  try {
+    const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
+    const result = await db.execute(sql`
+      SELECT
+        count(*) FILTER (WHERE journal_publish_date IS NOT NULL AND journal_publish_date != '') as with_date,
+        count(*) FILTER (WHERE journal_publish_date IS NULL OR journal_publish_date = '') as without_date,
+        count(*) as total
+      FROM studies
+    `);
+    const row = result.rows?.[0] || result[0] || {};
+    res.json({ success: true, stats: row });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Failed to get journal date stats" });
+  }
+});
+
+app.post("/api/admin/update-journal-dates", requireAdmin, async (req, res) => {
+  try {
+    const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
+    const limit = Math.min(Number(req.body.limit) || 50, 200);
+    const result = await db.execute(sql`
+      SELECT id, doi FROM studies
+      WHERE (journal_publish_date IS NULL OR journal_publish_date = '')
+        AND doi IS NOT NULL AND doi != ''
+      LIMIT ${limit}
+    `);
+    const rows = result.rows || result;
+    res.json({
+      success: true,
+      message: `Found ${(rows as any[]).length} studies to update. Use CrossRef/EuropePMC update-journal-date endpoints per DOI.`,
+      count: (rows as any[]).length,
+      studyIds: (rows as any[]).map((r: any) => r.id),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Failed to process journal dates" });
+  }
+});
+
 // Quality Monitoring — protected with admin auth
 app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
   try {
@@ -410,6 +456,21 @@ app.use("/api/pipeline", pipelineRoutes);
 
 // Image Generation (admin-only)
 app.use("/api/image-generation", requireAdmin, imageGenerationRoutes);
+
+// Legacy image generation path (used by StudyPage "Generate Image" button)
+app.post("/api/images/generate/:studyId", requireAdmin, async (req, res) => {
+  try {
+    const studyId = Number(req.params.studyId);
+    if (!studyId || isNaN(studyId)) {
+      return res.status(400).json({ success: false, message: "Invalid study ID" });
+    }
+    const { generateImageForStudy } = await import("./services/image-generator");
+    const result = await generateImageForStudy(studyId);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Image generation failed" });
+  }
+});
 
 // Admin monitoring & process control
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
