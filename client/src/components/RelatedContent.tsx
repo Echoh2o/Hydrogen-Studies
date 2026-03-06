@@ -45,7 +45,7 @@ export default function RelatedContent({ contentType, contentId, title = "Relate
       <CardContent className="space-y-2">
         {links.slice(0, 8).map((link, i) => {
           const href = link.toType === "study"
-            ? `/studies/${link.toId}`
+            ? `/study/id/${link.toId}`
             : `/blog/${link.toId}`;
           return (
             <Link key={`${link.toType}-${link.toId}-${i}`} href={href}>

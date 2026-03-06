@@ -112,7 +112,7 @@ export default function ThisWeekPage() {
                       <Card key={i}>
                         <CardContent className="py-4">
                           <Link
-                            href={`/studies/${f.studyId}`}
+                            href={`/study/id/${f.studyId}`}
                             className="font-medium text-primary hover:underline"
                           >
                             {f.title}

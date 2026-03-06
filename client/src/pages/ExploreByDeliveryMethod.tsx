@@ -72,7 +72,7 @@ const DeliveryMethodGroup: React.FC<{
         <p className="text-muted-foreground text-sm mb-4">{description}</p>
         <div className="space-y-2">
           {methods.map((method: any) => (
-            <Link key={method.id} href={`/delivery-methods/${method.slug}`}>
+            <Link key={method.id} href={`/explore-by-delivery-method/${method.slug}`}>
               <div className="flex items-center justify-between p-2 rounded-md hover:bg-white/60 transition-colors cursor-pointer">
                 <div className="flex items-center gap-2">
                   {getDeliveryMethodIcon(method.slug, "h-4 w-4")}
@@ -181,7 +181,7 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
                 <h2 className="text-2xl font-semibold mb-6">All Delivery Methods</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {deliveryMethods?.map((method: any) => (
-                    <Link key={method.id} href={`/delivery-methods/${method.slug}`}>
+                    <Link key={method.id} href={`/explore-by-delivery-method/${method.slug}`}>
                       <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                         <CardHeader className="p-4 pb-2 flex flex-row items-start space-x-4">
                           <div className="bg-primary/10 p-2 rounded-md">
@@ -249,8 +249,8 @@ export default ExploreByDeliveryMethodPage;
 
 // Detail page for a specific delivery method
 export const DeliveryMethodDetailPage: React.FC = () => {
-  const [, params] = useRoute("/delivery-methods/:slug");
-  const slug = params?.slug || "";
+  const [, params] = useRoute("/explore-by-delivery-method/:method");
+  const slug = params?.method || "";
 
   // Fetch delivery method details
   const { data: methodData, isLoading: methodLoading } = useQuery<any>({
