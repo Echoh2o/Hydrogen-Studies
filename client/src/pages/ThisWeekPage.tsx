@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, BookOpen, TrendingUp } from "lucide-react";
+import DOMPurify from "dompurify";
 
 export default function ThisWeekPage() {
   const { data, isLoading } = useQuery({
@@ -99,7 +100,7 @@ export default function ThisWeekPage() {
               {/* Narrative Content */}
               <div
                 className="prose prose-slate max-w-none"
-                dangerouslySetInnerHTML={{ __html: latest.narrative }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(latest.narrative) }}
               />
 
               {/* Notable Findings */}

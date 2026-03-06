@@ -46,7 +46,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   useEffect(() => {
     const saved = localStorage.getItem("hydrogenstudies_recent_searches");
     if (saved) {
-      setRecentSearches(JSON.parse(saved));
+      try { setRecentSearches(JSON.parse(saved)); } catch {}
     }
   }, []);
 

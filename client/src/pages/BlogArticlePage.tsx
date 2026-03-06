@@ -276,7 +276,7 @@ For those interested in diving deeper into the research, here are key studies re
 
           {/* Article Content */}
           <div className="prose prose-lg max-w-none">
-            {article.content.split("\n").map((paragraph, index) => {
+            {(article.content || "").split("\n").map((paragraph, index) => {
               if (paragraph.startsWith("# ")) {
                 return (
                   <h1
@@ -351,7 +351,7 @@ For those interested in diving deeper into the research, here are key studies re
               <span className="text-sm font-medium text-gray-700">Tags:</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {article.tags.map((tag, index) => (
+              {(article.tags || []).map((tag, index) => (
                 <Badge
                   key={index}
                   variant="outline"

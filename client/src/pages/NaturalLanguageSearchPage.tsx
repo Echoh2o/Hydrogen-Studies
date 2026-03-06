@@ -88,9 +88,8 @@ export default function NaturalLanguageSearchPage() {
       const searchName = prompt("Name this search:");
       if (searchName) {
         // Save to localStorage for now
-        const savedSearches = JSON.parse(
-          localStorage.getItem("savedSearches") || "[]",
-        );
+        let savedSearches: any[] = [];
+        try { savedSearches = JSON.parse(localStorage.getItem("savedSearches") || "[]"); } catch {}
         savedSearches.push({
           id: Date.now(),
           name: searchName,

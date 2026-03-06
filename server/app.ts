@@ -61,6 +61,7 @@ import adminSettingsRoutes from "./routes/admin-settings-routes";
 import contactRoutes from "./routes/contact-routes";
 import pipelineRoutes from "./routes/pipeline-routes";
 import imageGenerationRoutes from "./routes/image-generation-routes";
+import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -195,6 +196,7 @@ const csrf = csrfProtection({
     "/api/blog-recommendations", // Blog recommendations (protected by admin auth)
     "/api/pipeline", // Research pipeline (protected by admin auth)
     "/api/image-generation", // Image generation (protected by admin auth)
+    "/api/doi", // DOI enhancer (protected by admin auth)
   ],
 });
 
@@ -222,7 +224,7 @@ app.use("/api/blogs", blogRoutes);
 
 // Search
 app.use("/api", searchController.router); // Mounts /advanced-search, /search, etc.
-app.use("/api/natural-language-search", naturalLanguageSearchRoutes);
+app.use(naturalLanguageSearchRoutes);
 
 // Public site stats (no auth — cached for 5 minutes)
 let cachedStats: any = null;
@@ -296,8 +298,8 @@ app.use("/api/blog-recommendations", aiGenerationRateLimiter, blogRecommendation
 app.use("/api/trends", generalApiRateLimiter, trendsRoutes);
 app.use("/api/analytics", generalApiRateLimiter, contentAnalyticsRoutes);
 app.use("/api", chatRoutes);
-app.use("/api/explorer", explorerRoutes);
-app.use("/api/review", aiGenerationRateLimiter, reviewAssistantRoutes); // or /api/review-assistant
+app.use(explorerRoutes);
+app.use("/api/review-assistant", aiGenerationRateLimiter, reviewAssistantRoutes);
 app.use("/api/content-optimization", aiGenerationRateLimiter, contentOptimizationRoutes);
 app.use("/api/multi-format", multiFormatRoutes);
 app.use(hydrogenRoutes);
@@ -313,6 +315,9 @@ app.use("/api/scraper", scraperRoutes);
 
 // SEO Content Factory (admin-only)
 app.use("/api/seo", seoContentFactoryRoutes);
+
+// DOI Enhancer (admin-only)
+app.use("/api/doi", requireAdmin, doiEnhancerRoutes);
 
 // Public weekly research digest endpoint
 app.get("/api/public/this-week", generalApiRateLimiter, async (req, res) => {
