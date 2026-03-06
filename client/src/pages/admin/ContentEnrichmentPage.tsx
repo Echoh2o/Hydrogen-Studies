@@ -418,7 +418,7 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open(`/studies/${study.id}`, "_blank")}
+                onClick={() => window.open(`/study/id/${study.id}`, "_blank")}
               >
                 View Study
               </Button>

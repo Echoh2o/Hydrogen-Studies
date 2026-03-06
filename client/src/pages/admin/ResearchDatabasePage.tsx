@@ -87,6 +87,7 @@ export default function ResearchDatabasePage() {
   const [selectedDatabases, setSelectedDatabases] = useState<string[]>([
     "pubmed",
   ]);
+  const [importedPaperIds, setImportedPaperIds] = useState<Set<string>>(new Set());
 
   const pageSize = 10;
   const { toast } = useToast();
@@ -153,10 +154,15 @@ export default function ResearchDatabasePage() {
 
       return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       if (data && data.study) {
         setImportedStudy(data.study);
         setShowSuccessDialog(true);
+        // Track this paper as imported so the UI updates
+        const paperId = variables?.id || variables?.paperId || variables?.pmid || variables?.doi;
+        if (paperId) {
+          setImportedPaperIds(prev => { const next = new Set(Array.from(prev)); next.add(String(paperId)); return next; });
+        }
         queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
         toast({
           title: "Success",
@@ -485,11 +491,17 @@ export default function ResearchDatabasePage() {
                             paper.paperId ||
                             paper.pmid ||
                             `${paper.source}-${paper.title}`;
+                          const isAlreadyInDb = paper.inDatabase || importedPaperIds.has(String(paperId)) || importedPaperIds.has(String(paper.doi));
+                          const dbId = paper.databaseId;
                           return (
                             <TableRow
                               key={paperId}
                               className={
-                                selectedPapers[paperId] ? "bg-primary/5" : ""
+                                isAlreadyInDb
+                                  ? "bg-green-50/50"
+                                  : selectedPapers[paperId]
+                                    ? "bg-primary/5"
+                                    : ""
                               }
                             >
                               <TableCell>
@@ -498,10 +510,19 @@ export default function ResearchDatabasePage() {
                                   onCheckedChange={(checked) =>
                                     togglePaperSelection(paperId, paper)
                                   }
+                                  disabled={isAlreadyInDb}
                                 />
                               </TableCell>
                               <TableCell className="font-medium">
-                                {paper.title}
+                                <div className="flex items-center gap-2">
+                                  {paper.title}
+                                  {isAlreadyInDb && (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs shrink-0">
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      In Database
+                                    </Badge>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {paper.authors ||
@@ -521,20 +542,36 @@ export default function ResearchDatabasePage() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleImport(paper, paper.source)
-                                  }
-                                  disabled={importPaperMutation.isPending}
-                                >
-                                  {importPaperMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                {isAlreadyInDb ? (
+                                  dbId ? (
+                                    <Link href={`/study/id/${dbId}`}>
+                                      <Button size="sm" variant="ghost" className="text-green-700">
+                                        <BookOpenCheck className="h-4 w-4 mr-1" />
+                                        View
+                                      </Button>
+                                    </Link>
                                   ) : (
-                                    "Import"
-                                  )}
-                                </Button>
+                                    <Button size="sm" variant="ghost" disabled className="text-green-700">
+                                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                                      Imported
+                                    </Button>
+                                  )
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleImport(paper, paper.source)
+                                    }
+                                    disabled={importPaperMutation.isPending}
+                                  >
+                                    {importPaperMutation.isPending ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      "Import"
+                                    )}
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
@@ -914,7 +951,15 @@ export default function ResearchDatabasePage() {
                   </div>
 
                   <div className="mt-4">
-                    <Button className="w-full">
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        toast({
+                          title: "Coming Soon",
+                          description: "Multi-source enrichment is being developed. Use the Data Quality tab for DOI-based enhancement in the meantime.",
+                        });
+                      }}
+                    >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Start Multi-Source Enrichment
                     </Button>
