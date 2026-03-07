@@ -31,7 +31,7 @@ export const StudyCard = memo(function StudyCard({
   reason,
 }: StudyCardProps) {
   return (
-    <Link href={`/study/${id}`}>
+    <Link href={`/study/id/${id}`}>
       <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer flex flex-col group overflow-hidden">
         {imageUrl && (
             <div className="relative h-40 overflow-hidden">

@@ -641,7 +641,7 @@ export default function TrendsDashboard() {
                       <div className="space-y-2">
                         <CardTitle className="text-base">
                           <a
-                            href={`/study/${study.id}`}
+                            href={`/study/id/${study.id}`}
                             className="hover:underline"
                             data-testid={`link-study-${study.id}`}
                           >

@@ -170,7 +170,7 @@ const RecentStudiesPage = () => {
                       </span>
                     </div>
                     <h2 className="text-xl font-semibold mb-3">
-                      <Link href={`/study/${study.id}`}>
+                      <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                         <a className="hover:text-primary">{study.title}</a>
                       </Link>
                     </h2>
@@ -189,7 +189,7 @@ const RecentStudiesPage = () => {
                           <HiAnnotation className="mr-1" /> {(study as any).citations}{" "}
                           citations
                         </span>
-                        <Link href={`/study/${study.id}`}>
+                        <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                           <Button
                             variant="outline"
                             size="sm"

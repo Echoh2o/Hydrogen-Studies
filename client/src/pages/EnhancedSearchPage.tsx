@@ -420,7 +420,7 @@ export default function EnhancedSearchPage() {
                                   setLocation(
                                     study.slug
                                       ? `/study/${study.slug}`
-                                      : `/study/${study.id}`,
+                                      : `/study/id/${study.id}`,
                                   )
                                 }
                               >

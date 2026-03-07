@@ -20,6 +20,7 @@ export interface Study {
   status?: string | null;
   sourceId?: string | null;
   sourcePlatform?: string | null;
+  slug?: string | null;
   fullText?: string | null;
   hasMedia?: boolean | null;
   hasHealthImplications?: boolean | null;

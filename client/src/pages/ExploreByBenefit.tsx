@@ -395,7 +395,7 @@ const ExploreByBenefit: React.FC = () => {
                           >
                             <CardHeader>
                               <CardTitle className="text-xl hover:text-primary transition-colors">
-                                <Link to={`/study/${study.id}`}>
+                                <Link to={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                                   {study.title}
                                 </Link>
                               </CardTitle>

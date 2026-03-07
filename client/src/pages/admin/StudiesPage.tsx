@@ -397,7 +397,7 @@ export default function StudiesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/study/${study.id}`}>
+                            <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                               <Eye className="h-4 w-4 mr-2" /> View
                             </Link>
                           </DropdownMenuItem>

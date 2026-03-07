@@ -261,7 +261,7 @@ const BodySystemCategoryPage = () => {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link href={`/study/${study.slug || study.id}`}>
+                    <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                       <Button>View Full Study</Button>
                     </Link>
                   </CardFooter>
