@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 interface LifeStageCategory {
   name: string;
@@ -210,6 +211,7 @@ const ExploreByLifeStage = () => {
           </p>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

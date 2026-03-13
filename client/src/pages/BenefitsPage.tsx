@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import JsonLd, { generateFaqSchema } from "@/components/seo/JsonLd";
 
 export default function BenefitsPage() {
   const learningTopics = [
@@ -205,7 +206,22 @@ export default function BenefitsPage() {
           name="description"
           content="Learn how molecular hydrogen may improve health. Explore benefits backed by peer-reviewed research covering heart health, brain function, antioxidant effects, and athletic performance."
         />
+        <meta property="og:title" content="Hydrogen Benefits & Education - Complete Guide to Hydrogen Therapy" />
+        <meta property="og:description" content="Learn how molecular hydrogen may improve health. Explore benefits backed by peer-reviewed research." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/benefits" />
+        <link rel="canonical" href="https://hydrogenstudies.com/benefits" />
       </Helmet>
+      <JsonLd
+        type="FAQPage"
+        data={generateFaqSchema([
+          { question: "What is molecular hydrogen?", answer: "Molecular hydrogen (H2) is the smallest and lightest molecule in the universe. It can easily penetrate cell membranes and reach mitochondria, acting as a selective antioxidant that targets harmful free radicals while preserving beneficial reactive oxygen species." },
+          { question: "How does hydrogen therapy work in the body?", answer: "Hydrogen works through three key mechanisms: it acts as a selective antioxidant neutralizing harmful hydroxyl radicals, it provides cellular protection by penetrating cell membranes, and it has anti-inflammatory properties that help modulate inflammatory responses in various body systems." },
+          { question: "Is hydrogen therapy safe?", answer: "Molecular hydrogen has no known toxic effects at therapeutic concentrations. It is considered safe for consumption. Multiple delivery methods are available including hydrogen water, inhalation therapy, and hydrogen baths." },
+          { question: "What are the health benefits of hydrogen water?", answer: "Research suggests hydrogen water may support cardiovascular health, brain function, athletic performance and recovery, and provide antioxidant protection. Studies show potential benefits for reducing blood pressure, improving cognitive function, decreasing muscle damage, and reducing oxidative stress." },
+          { question: "How can I consume molecular hydrogen?", answer: "There are several delivery methods: hydrogen water (the most-studied method), hydrogen inhalation therapy, hydrogen baths, and hydrogen tablets. Each method has different absorption rates and applications." },
+        ])}
+      />
 
       <SiteHeader />
 

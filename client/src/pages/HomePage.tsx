@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Footer from "@/components/layout/Footer";
 import SiteHeader from "@/components/layout/SiteHeader";
+import JsonLd, { generateOrganizationSchema, generateFaqSchema } from "@/components/seo/JsonLd";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,34 +40,47 @@ export default function HomePage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: categoryStats } = useQuery<Record<string, any>>({
+    queryKey: ["/api/consumer-categories/counts"],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Derive dynamic study counts from API data
+  const getStudyCount = (systemName: string, fallback: string) => {
+    const count = categoryStats?.data?.body_system?.find(
+      (s: any) => s.name === systemName
+    )?.count;
+    return count ? `${count} studies` : fallback;
+  };
+
   const benefits = [
     {
       icon: <Heart className="h-8 w-8 text-red-500" />,
       title: "Heart Health",
       description:
         "Studies show hydrogen water may support cardiovascular function and reduce oxidative stress on heart tissue.",
-      studyCount: "47 studies",
+      studyCount: getStudyCount("Cardiovascular System", "47 studies"),
     },
     {
       icon: <Brain className="h-8 w-8 text-teal-500" />,
       title: "Brain Function",
       description:
         "Research indicates potential cognitive benefits and neuroprotective effects from molecular hydrogen.",
-      studyCount: "32 studies",
+      studyCount: getStudyCount("Nervous System", "32 studies"),
     },
     {
       icon: <Shield className="h-8 w-8 text-green-500" />,
       title: "Antioxidant Power",
       description:
         "Hydrogen acts as a selective antioxidant, targeting harmful free radicals while preserving beneficial ones.",
-      studyCount: "89 studies",
+      studyCount: getStudyCount("Immune System", "89 studies"),
     },
     {
       icon: <Zap className="h-8 w-8 text-yellow-500" />,
       title: "Energy & Recovery",
       description:
         "Athletes report improved performance and faster recovery times with hydrogen water supplementation.",
-      studyCount: "23 studies",
+      studyCount: getStudyCount("Musculoskeletal System", "23 studies"),
     },
   ];
 
@@ -89,7 +103,38 @@ export default function HomePage() {
       <Helmet>
         <title>Hydrogen Studies - Science-Backed Hydrogen Health Research</title>
         <meta name="description" content="Explore peer-reviewed research on hydrogen therapy, hydrogen water, and molecular hydrogen health benefits. Browse hundreds of scientific studies." />
+        <meta property="og:title" content="Hydrogen Studies - Science-Backed Hydrogen Health Research" />
+        <meta property="og:description" content="Explore peer-reviewed research on hydrogen therapy, hydrogen water, and molecular hydrogen health benefits. Browse hundreds of scientific studies." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Hydrogen Studies - Science-Backed Hydrogen Health Research" />
+        <meta name="twitter:description" content="Explore peer-reviewed research on hydrogen therapy, hydrogen water, and molecular hydrogen health benefits." />
+        <link rel="canonical" href="https://hydrogenstudies.com" />
       </Helmet>
+      <JsonLd
+        type="Organization"
+        data={generateOrganizationSchema({
+          name: "Hydrogen Studies",
+          url: "https://hydrogenstudies.com",
+          logo: "https://hydrogenstudies.com/logo.png",
+          description: "The most comprehensive database of peer-reviewed molecular hydrogen health research. Powered by Echo Water.",
+          socialLinks: ["https://echowater.com"],
+        })}
+      />
+      <JsonLd
+        type="WebSite"
+        data={{
+          name: "Hydrogen Studies",
+          url: "https://hydrogenstudies.com",
+          description: "Science-backed hydrogen health research database powered by Echo Water",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://hydrogenstudies.com/search?search={search_term_string}",
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
       <SiteHeader />
 
       {/* Hero Section */}
@@ -418,14 +463,20 @@ export default function HomePage() {
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/blog">
+            <Link href="/hydrogen-therapy-guide">
               <Button variant="outline" size="lg" className="rounded-full px-8">
-                Read Our Blog
+                Complete Science Guide
+              </Button>
+            </Link>
+            <Link href="/products">
+              <Button variant="outline" size="lg" className="rounded-full px-8">
+                Shop Hydrogen Products
               </Button>
             </Link>
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }

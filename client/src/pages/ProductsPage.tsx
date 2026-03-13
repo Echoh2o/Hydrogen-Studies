@@ -17,8 +17,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import JsonLd, { generateProductSchema } from "@/components/seo/JsonLd";
 
 export default function ProductsPage() {
   const products = [
@@ -145,6 +147,30 @@ export default function ProductsPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Research-Backed Hydrogen Water Products - Hydrogen Studies</title>
+        <meta name="description" content="Carefully selected hydrogen water products backed by scientific research. Explore Echo Water hydrogen generators, bottles, and inhalation machines." />
+        <meta property="og:title" content="Research-Backed Hydrogen Water Products - Hydrogen Studies" />
+        <meta property="og:description" content="Carefully selected hydrogen water products backed by scientific research. Explore Echo Water hydrogen generators, bottles, and inhalation machines." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/products" />
+        <link rel="canonical" href="https://hydrogenstudies.com/products" />
+      </Helmet>
+      {products.map((product) => (
+        <JsonLd
+          key={`schema-${product.id}`}
+          type="Product"
+          data={generateProductSchema({
+            name: product.name,
+            description: product.description,
+            image: product.image,
+            url: product.url,
+            brand: "Echo Water",
+            reviewCount: product.reviews,
+            reviewRating: product.rating,
+          })}
+        />
+      ))}
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white border-b">
@@ -278,16 +304,20 @@ export default function ProductsPage() {
                 solution based on your needs and budget.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button variant="secondary" size="lg">
-                  Free Consultation
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-white border-white hover:bg-white hover:text-teal-600"
-                >
-                  Download Buyer's Guide
-                </Button>
+                <a href="https://echowater.com/pages/contact" target="_blank" rel="noopener noreferrer">
+                  <Button variant="secondary" size="lg">
+                    Free Consultation
+                  </Button>
+                </a>
+                <Link href="/hydrogen-therapy-guide">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="text-white border-white hover:bg-white hover:text-teal-600"
+                  >
+                    Read the Science Guide
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

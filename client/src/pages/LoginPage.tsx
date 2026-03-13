@@ -40,6 +40,8 @@ import {
   Shield,
   CheckCircle2,
 } from "lucide-react";
+import { Helmet } from "react-helmet";
+import Footer from "@/components/layout/Footer";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -138,6 +140,11 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+    <Helmet>
+      <title>Login - Hydrogen Studies</title>
+      <meta name="description" content="Sign in to your Hydrogen Studies account to save studies, track research, and access personalized features." />
+    </Helmet>
     <div className="min-h-screen flex">
       {/* Left Panel — Value Proposition (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-900 text-white p-12 flex-col justify-between relative overflow-hidden">
@@ -357,5 +364,7 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }

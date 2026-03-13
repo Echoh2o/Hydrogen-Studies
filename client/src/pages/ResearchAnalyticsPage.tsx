@@ -20,6 +20,7 @@ import CitationNetworkMap from "@/components/visualizations/CitationNetworkMap";
 import ResearchTrendsChart from "@/components/visualizations/ResearchTrendsChart";
 import HealthOutcomesMap from "@/components/visualizations/HealthOutcomesMap";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function ResearchAnalyticsPage() {
   // Get analytics data
@@ -526,6 +527,7 @@ export default function ResearchAnalyticsPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

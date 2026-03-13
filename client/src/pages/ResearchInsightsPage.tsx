@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function ResearchInsightsPage() {
   // Get database statistics
@@ -255,6 +256,7 @@ export default function ResearchInsightsPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

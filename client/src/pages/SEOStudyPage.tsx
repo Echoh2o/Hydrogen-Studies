@@ -29,6 +29,7 @@ function markdownToSafeHtml(text: string): string {
 import { useEffect } from "react";
 import { StudyInfoPanel } from "@/components/StudyInfoPanel";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 interface Study {
   id: number;
@@ -641,6 +642,7 @@ export default function SEOStudyPage() {
           </div>
         </div>
       </section>
+      <Footer />
     </>
   );
 }

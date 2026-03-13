@@ -190,6 +190,12 @@ export default function SiteHeader() {
               Benefits
             </Link>
             <Link
+              href="/hydrogen-therapy-guide"
+              className="text-gray-700 hover:text-teal-600 transition-colors"
+            >
+              Science Guide
+            </Link>
+            <Link
               href="/research-analytics"
               className="text-gray-700 hover:text-teal-600 transition-colors"
             >
@@ -510,6 +516,14 @@ export default function SiteHeader() {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Benefits
+                </div>
+              </Link>
+              <Link href="/hydrogen-therapy-guide">
+                <div
+                  className="block px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Science Guide
                 </div>
               </Link>
               <Link href="/research-analytics">

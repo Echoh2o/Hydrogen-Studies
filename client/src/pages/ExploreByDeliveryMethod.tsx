@@ -25,6 +25,7 @@ import {
   Soup,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 const getDeliveryMethodIcon = (slug: string, className: string = "") => {
   switch (slug) {
@@ -156,6 +157,7 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

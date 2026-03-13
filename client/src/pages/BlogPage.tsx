@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import ReactMarkdown from "react-markdown";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 interface BlogArticle {
     id: number;
@@ -247,6 +248,7 @@ export default function BlogPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

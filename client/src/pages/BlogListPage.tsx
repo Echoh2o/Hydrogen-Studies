@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Calendar,
   User,
@@ -27,11 +27,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function BlogListPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState("all");
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
+
+  const newsletterMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "blog_page" }),
+      });
+      if (!res.ok) throw new Error("Failed to subscribe");
+      return res.json();
+    },
+    onSuccess: () => {
+      setNewsletterSubmitted(true);
+      setNewsletterEmail("");
+    },
+  });
 
   // Fetch blog articles from database
   const { data: response, isLoading } = useQuery({
@@ -71,6 +91,10 @@ export default function BlogListPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Hydrogen Health Blog - Latest Articles &amp; Research Insights</title>
+        <meta name="description" content="Read the latest articles on hydrogen therapy research, health benefits, and scientific discoveries from our expert team." />
+      </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Hero Section */}
         <section className="py-16 px-4 sm:px-6 lg:px-8">
@@ -285,19 +309,41 @@ export default function BlogListPage() {
             <p className="text-lg text-gray-600 mb-8">
               Get the latest hydrogen research insights delivered to your inbox
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1"
-              />
-              <Button className="bg-teal-600 hover:bg-teal-700">
-                Subscribe
-              </Button>
-            </div>
+            {newsletterSubmitted ? (
+              <p className="text-teal-700 font-medium text-lg">
+                Thank you for subscribing! You'll receive our latest hydrogen research updates.
+              </p>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newsletterEmail.trim()) {
+                    newsletterMutation.mutate(newsletterEmail.trim());
+                  }
+                }}
+                className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto"
+              >
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  className="flex-1"
+                  required
+                />
+                <Button
+                  type="submit"
+                  className="bg-teal-600 hover:bg-teal-700"
+                  disabled={newsletterMutation.isPending}
+                >
+                  {newsletterMutation.isPending ? "Subscribing..." : "Subscribe"}
+                </Button>
+              </form>
+            )}
           </div>
         </section>
       </div>
+      <Footer />
     </>
   );
 }

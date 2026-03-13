@@ -45,6 +45,8 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
+import { Helmet } from "react-helmet";
+import Footer from "@/components/layout/Footer";
 
 // Password strength calculation
 function calculatePasswordStrength(password: string): number {
@@ -199,6 +201,11 @@ export default function RegisterPage() {
   };
 
   return (
+    <>
+    <Helmet>
+      <title>Create Account - Hydrogen Studies</title>
+      <meta name="description" content="Create a free Hydrogen Studies account to save studies, track research progress, and get personalized recommendations." />
+    </Helmet>
     <div className="min-h-screen flex">
       {/* Left Panel — Value Proposition (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-900 text-white p-12 flex-col justify-between relative overflow-hidden">
@@ -485,6 +492,8 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }
 

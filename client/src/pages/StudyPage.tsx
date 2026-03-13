@@ -29,6 +29,7 @@ import SEOHead from "@/components/seo/SEOHead";
 import StructuredData from "@/components/seo/StructuredData";
 import { useEffect, useRef } from "react";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 // Simple pure component for rendering a study image or fallback
 interface StudyImageProps {
@@ -1003,6 +1004,7 @@ const StudyPage = () => {
           </div>
         </div>
       </section>
+      <Footer />
     </>
   );
 };

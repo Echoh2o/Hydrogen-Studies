@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 const RecentStudiesPage = () => {
   const [limit, setLimit] = useState(10);
@@ -253,6 +254,7 @@ const RecentStudiesPage = () => {
           )}
         </div>
       </section>
+      <Footer />
     </>
   );
 };

@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import { Helmet } from "react-helmet";
 
 export default function HydrogenBasicsPage() {
   const deliveryMethods = [
@@ -84,6 +86,10 @@ export default function HydrogenBasicsPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Hydrogen Basics - Understanding Molecular Hydrogen Therapy</title>
+        <meta name="description" content="Learn the fundamentals of molecular hydrogen therapy. Understand how H2 works, delivery methods, and the science behind hydrogen health benefits." />
+      </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Navigation */}
         <div className="bg-white border-b">
@@ -361,6 +367,7 @@ export default function HydrogenBasicsPage() {
           </div>
         </section>
       </div>
+      <Footer />
     </>
   );
 }

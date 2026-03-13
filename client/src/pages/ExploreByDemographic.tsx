@@ -25,6 +25,7 @@ import {
   Hourglass,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 const getDemographicIcon = (slug: string, className: string = "") => {
   switch (slug) {
@@ -129,6 +130,7 @@ const ExploreByDemographicPage: React.FC = () => {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 };

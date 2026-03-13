@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import Footer from "@/components/layout/Footer";
 
 interface DashboardData {
   savedStudies: Array<{
@@ -86,6 +87,7 @@ export default function MyDashboardPage() {
   const firstName = user.username || "there";
 
   return (
+    <>
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <Helmet>
         <title>My Dashboard | Hydrogen Studies</title>
@@ -310,5 +312,7 @@ export default function MyDashboardPage() {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }

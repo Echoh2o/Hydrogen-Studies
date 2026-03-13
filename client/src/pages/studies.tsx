@@ -24,6 +24,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { FileSearch, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Study } from "@/types";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function Studies() {
   const [location] = useLocation();
@@ -430,6 +431,7 @@ export default function Studies() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

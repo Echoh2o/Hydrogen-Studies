@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 // Icons for mechanisms
 import {
@@ -129,6 +130,7 @@ const ExploreByMechanismPage: React.FC = () => {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 };
