@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import {
   ArrowLeft,
   Heart,
@@ -229,13 +230,10 @@ export default function BenefitsPage() {
         {/* Header */}
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Link
-              href="/"
-              className="flex items-center text-teal-600 hover:text-teal-700 mb-6"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Link>
+            <PageBreadcrumb items={[
+              { label: "Home", href: "/" },
+              { label: "Benefits & Education" },
+            ]} />
             <div className="text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Hydrogen Benefits & Education

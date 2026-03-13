@@ -21,6 +21,7 @@ import {
 import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
+import RelatedContent from "@/components/seo/RelatedContent";
 import JsonLd, {
   generateMedicalArticleSchema,
   generateBreadcrumbSchema,
@@ -1001,6 +1002,9 @@ const StudyPage = () => {
               </h2>
               <RelatedBlogs studyId={study.id} />
             </section>
+
+            {/* Internal Links - Cross-linked Content */}
+            <RelatedContent contentType="study" contentId={study.id} className="mt-8" />
           </div>
         </div>
       </section>

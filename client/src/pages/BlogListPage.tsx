@@ -30,6 +30,7 @@ import {
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 export default function BlogListPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -94,8 +95,20 @@ export default function BlogListPage() {
       <Helmet>
         <title>Hydrogen Health Blog - Latest Articles &amp; Research Insights</title>
         <meta name="description" content="Read the latest articles on hydrogen therapy research, health benefits, and scientific discoveries from our expert team." />
+        <meta property="og:title" content="Hydrogen Health Blog - Latest Articles & Research Insights" />
+        <meta property="og:description" content="Read the latest articles on hydrogen therapy research, health benefits, and scientific discoveries from our expert team." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/blog" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/blog" />
       </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <PageBreadcrumb items={[
+            { label: "Home", href: "/" },
+            { label: "Blog" },
+          ]} />
+        </div>
         {/* Hero Section */}
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">

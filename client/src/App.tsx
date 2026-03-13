@@ -71,6 +71,7 @@ const ExploreByCondition = lazy(() => import("@/pages/ExploreByCondition"));
 const ConditionCategoryPage = lazy(
   () => import("@/pages/ConditionCategoryPage"),
 );
+const HydrogenForConditionPage = lazy(() => import("@/pages/HydrogenForConditionPage"));
 const ExploreByBodySystem = lazy(() => import("@/pages/ExploreByBodySystem"));
 const BodySystemCategoryPage = lazy(
   () => import("@/pages/BodySystemCategoryPage"),
@@ -470,6 +471,7 @@ function Router() {
         <Route path="/explore-by-benefit" component={ExploreByBenefit} />
         <Route path="/explore-by-condition" component={ExploreByCondition} />
         <Route path="/explore-by-condition/:category" component={ConditionCategoryPage} />
+        <Route path="/hydrogen-for/:condition" component={HydrogenForConditionPage} />
         <Route path="/explore-by-body-system" component={ExploreByBodySystem} />
         <Route path="/explore-by-body-system/:category" component={BodySystemCategoryPage} />
         <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />

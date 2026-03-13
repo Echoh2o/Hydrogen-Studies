@@ -128,6 +128,12 @@ export default function StudyExplorerPage() {
       <Helmet>
         <title>Study Explorer - Interactive Research Tool</title>
         <meta name="description" content="Explore hydrogen health research with our interactive study explorer. Filter, sort, and discover studies across categories." />
+        <meta property="og:title" content="Study Explorer - Interactive Research Tool" />
+        <meta property="og:description" content="Explore hydrogen health research with our interactive study explorer. Filter, sort, and discover studies across categories." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/study-explorer" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/study-explorer" />
       </Helmet>
       <HeadMetaTags
         title="Interactive Study Explorer - Hydrogen Therapy Research"

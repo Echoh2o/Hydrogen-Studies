@@ -146,6 +146,12 @@ export default function EnhancedSearchPage() {
       <Helmet>
         <title>Advanced Search - Hydrogen Studies Database</title>
         <meta name="description" content="Use our advanced search to find specific hydrogen research studies with detailed filters and options." />
+        <meta property="og:title" content="Advanced Search - Hydrogen Studies Database" />
+        <meta property="og:description" content="Use our advanced search to find specific hydrogen research studies with detailed filters and options." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/advanced-search" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/advanced-search" />
       </Helmet>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">

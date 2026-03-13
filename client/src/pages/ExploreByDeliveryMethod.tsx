@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 const getDeliveryMethodIcon = (slug: string, className: string = "") => {
   switch (slug) {
@@ -59,6 +60,13 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
   return (
     <>
       <SiteHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Studies", href: "/studies" },
+          { label: "By Delivery Method" },
+        ]} />
+      </div>
       <div className="container mx-auto py-10">
         <Helmet>
           <title>
@@ -68,6 +76,12 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
             name="description"
             content="Discover hydrogen research organized by delivery methods including drinking water, inhalation, bathing, tablets, and injections."
           />
+          <meta property="og:title" content="Explore Hydrogen Studies by Delivery Method | HydrogenStudies.com" />
+          <meta property="og:description" content="Discover hydrogen research organized by delivery methods including drinking water, inhalation, bathing, tablets, and injections." />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://hydrogenstudies.com/explore-by-delivery-method" />
+          <meta name="twitter:card" content="summary" />
+          <link rel="canonical" href="https://hydrogenstudies.com/explore-by-delivery-method" />
         </Helmet>
 
         <div className="space-y-8">

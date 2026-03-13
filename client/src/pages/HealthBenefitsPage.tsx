@@ -141,6 +141,12 @@ export default function HealthBenefitsPage() {
       <Helmet>
         <title>Hydrogen Health Benefits - Scientific Evidence &amp; Research</title>
         <meta name="description" content="Explore the scientifically-studied health benefits of molecular hydrogen. Evidence-based information on how H2 supports various body systems." />
+        <meta property="og:title" content="Hydrogen Health Benefits - Scientific Evidence & Research" />
+        <meta property="og:description" content="Explore the scientifically-studied health benefits of molecular hydrogen. Evidence-based information on how H2 supports various body systems." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/health-benefits" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/health-benefits" />
       </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Navigation */}

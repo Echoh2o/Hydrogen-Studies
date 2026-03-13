@@ -89,6 +89,12 @@ export default function HydrogenBasicsPage() {
       <Helmet>
         <title>Hydrogen Basics - Understanding Molecular Hydrogen Therapy</title>
         <meta name="description" content="Learn the fundamentals of molecular hydrogen therapy. Understand how H2 works, delivery methods, and the science behind hydrogen health benefits." />
+        <meta property="og:title" content="Hydrogen Basics - Understanding Molecular Hydrogen Therapy" />
+        <meta property="og:description" content="Learn the fundamentals of molecular hydrogen therapy. Understand how H2 works, delivery methods, and the science behind hydrogen health benefits." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/hydrogen-basics" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/hydrogen-basics" />
       </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Navigation */}
