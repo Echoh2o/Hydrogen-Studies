@@ -2,6 +2,7 @@ import React from "react";
 import ChatWidget from "@/components/chat/ChatWidget";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 const ChatPage: React.FC = () => {
   return (
@@ -85,6 +86,7 @@ const ChatPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

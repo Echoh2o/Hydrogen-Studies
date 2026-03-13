@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 interface Condition {
   name: string;
@@ -205,6 +206,7 @@ const ExploreByCondition = () => {
           </>
         )}
       </div>
+      <Footer />
     </>
   );
 };

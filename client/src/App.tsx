@@ -4,7 +4,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, lazy, Suspense, startTransition } from "react";
-import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { initGA } from "./lib/analytics";
@@ -594,7 +593,6 @@ function App() {
                 </Suspense>
               </AsyncErrorBoundary>
             </main>
-            <Footer />
           </div>
           <Toaster />
         </TooltipProvider>

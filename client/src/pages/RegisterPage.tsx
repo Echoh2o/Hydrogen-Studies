@@ -44,7 +44,15 @@ import {
   TrendingUp,
   Sparkles,
   Star,
+  ChevronDown,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Helmet } from "react-helmet";
 import Footer from "@/components/layout/Footer";
 
@@ -86,6 +94,7 @@ const registerSchema = z
       .min(6, "Password must be at least 6 characters")
       .max(100, "Password must be less than 100 characters"),
     confirmPassword: z.string(),
+    source: z.string().optional(),
     acceptTerms: z
       .boolean()
       .refine(
@@ -148,6 +157,7 @@ export default function RegisterPage() {
       email: "",
       password: "",
       confirmPassword: "",
+      source: "",
       acceptTerms: false,
     },
   });
@@ -398,6 +408,33 @@ export default function RegisterPage() {
                             />
                           </div>
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="source"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>How did you hear about us?</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="Select (optional)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="search">Search engine</SelectItem>
+                            <SelectItem value="social">Social media</SelectItem>
+                            <SelectItem value="echo_water">Echo Water customer</SelectItem>
+                            <SelectItem value="research_study">Found via a study</SelectItem>
+                            <SelectItem value="friend">Friend or colleague</SelectItem>
+                            <SelectItem value="blog">Blog or article</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

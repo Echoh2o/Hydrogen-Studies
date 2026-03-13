@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 interface Study {
   id: number;
@@ -301,6 +302,7 @@ const ConditionCategoryPage = () => {
           </>
         )}
       </div>
+      <Footer />
     </>
   );
 };

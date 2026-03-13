@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet";
 import { Separator } from "@/components/ui/separator";
 import { HiMail, HiPhone, HiLocationMarker } from "react-icons/hi";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function About() {
   return (
@@ -287,6 +288,7 @@ export default function About() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

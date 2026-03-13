@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
+import Footer from "@/components/layout/Footer";
 
 interface Study {
   id: number;
@@ -125,6 +126,7 @@ const BodySystemCategoryPage = () => {
   };
 
   return (
+    <>
     <div className="container mx-auto px-4 py-8">
       <Helmet>
         <title>{`Hydrogen Therapy for ${displayName} | Health Benefits & Research Evidence`}</title>
@@ -301,6 +303,8 @@ const BodySystemCategoryPage = () => {
         </>
       )}
     </div>
+    <Footer />
+    </>
   );
 };
 

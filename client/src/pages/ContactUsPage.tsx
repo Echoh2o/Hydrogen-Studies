@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function ContactUsPage() {
   const { toast } = useToast();
@@ -492,6 +493,7 @@ export default function ContactUsPage() {
           </div>
         </section>
       </div>
+      <Footer />
     </>
   );
 }

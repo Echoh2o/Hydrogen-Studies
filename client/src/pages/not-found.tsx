@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, Home, ArrowLeft } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 
@@ -59,6 +60,7 @@ export default function NotFound() {
           </CardContent>
         </Card>
       </main>
+      <Footer />
     </>
   );
 }

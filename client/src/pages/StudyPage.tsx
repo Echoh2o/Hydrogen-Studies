@@ -760,7 +760,7 @@ const StudyPage = () => {
                           </span>
                         </div>
                         <div className="flex-1">
-                          <Link href="/products" className="group">
+                          <Link href="/products?filter=drinking-water" className="group">
                             <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
                               Hydrogen Water
                             </h3>
@@ -779,10 +779,8 @@ const StudyPage = () => {
                           </span>
                         </div>
                         <div className="flex-1">
-                          <a
-                            href="https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <Link
+                            href="/products?filter=inhalation"
                             className="group"
                           >
                             <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
@@ -793,7 +791,7 @@ const StudyPage = () => {
                               gas. View the Echo Refresh hydrogen inhalation
                               machine for safe, professional-grade equipment.
                             </p>
-                          </a>
+                          </Link>
                         </div>
                       </div>
                       <div className="flex items-start space-x-3">
@@ -803,10 +801,8 @@ const StudyPage = () => {
                           </span>
                         </div>
                         <div className="flex-1">
-                          <a
-                            href="https://echowater.com/products/echo-revive"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <Link
+                            href="/products?filter=bathing"
                             className="group"
                           >
                             <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
@@ -818,7 +814,7 @@ const StudyPage = () => {
                               absorption. View the Echo Revive bath water
                               machine.
                             </p>
-                          </a>
+                          </Link>
                         </div>
                       </div>
                       <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">

@@ -12,6 +12,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { isAuthenticated, requireRole, hasPermission } from "../auth";
 import { authRateLimiter } from "../utils/rate-limiting";
+import { addCustomerProfile } from "../services/klaviyo-api";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ const registerSchema = z
     confirmPassword: z.string(),
     firstName: z.string().optional(),
     lastName: z.string().optional(),
+    source: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -153,7 +155,18 @@ router.post("/register", authRateLimiter, async (req: Request, res: Response) =>
       req.ip,
       req.headers["user-agent"] as string,
       req.sessionID,
+      validatedData.source ? { source: validatedData.source } : null,
     );
+
+    // Add customer profile to Klaviyo (fire and forget — never blocks registration)
+    void addCustomerProfile(validatedData.email, {
+      username: validatedData.username,
+      firstName: validatedData.firstName,
+      lastName: validatedData.lastName,
+      source: validatedData.source || "website_registration",
+    }).catch((err) => {
+      console.warn("[Registration] Klaviyo profile creation failed:", err?.message);
+    });
 
     // Return user data (without password)
     const { passwordHash: _, ...userWithoutPassword } = newUser;

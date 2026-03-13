@@ -17,7 +17,7 @@ const router = Router();
  */
 router.post("/subscribe", async (req: Request, res: Response) => {
   try {
-    const { email, firstName, lastName } = req.body;
+    const { email, firstName, lastName, source } = req.body;
 
     if (!email || typeof email !== "string") {
       return res.status(400).json({ error: "Email is required" });
@@ -41,7 +41,7 @@ router.post("/subscribe", async (req: Request, res: Response) => {
     const result = await subscribeToNewsletter(email.trim(), {
       firstName,
       lastName,
-      source: "website_footer_newsletter",
+      source: source || "website_footer_newsletter",
     });
 
     if (result.success) {
