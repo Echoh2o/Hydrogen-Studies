@@ -21,6 +21,10 @@ import {
   errorRecoveryMiddleware,
   timeoutMiddleware,
 } from "./utils/error-handler";
+import {
+  errorReportingMiddleware,
+  errorReportingHandler,
+} from "./utils/error-reporting";
 import { NotFoundError } from "./utils/app-errors";
 import { DatabaseCircuitBreaker } from "./utils/database-wrapper";
 
@@ -125,8 +129,9 @@ app.use(
   }),
 );
 
-// Request tracking and error recovery middleware
+// Request tracking, error reporting, and recovery middleware
 app.use(requestIdMiddleware);
+app.use(errorReportingMiddleware());
 app.use(errorRecoveryMiddleware);
 app.use(timeoutMiddleware(30000)); // 30 second timeout
 
@@ -399,8 +404,18 @@ app.use(
 
 // Client error reporting endpoint (receives errors from frontend error-tracking.ts)
 app.post("/api/client-errors", (req, res) => {
-  if (process.env.NODE_ENV === "production") {
-    console.warn("[CLIENT ERROR]", JSON.stringify(req.body));
+  const body = req.body;
+  if (body && typeof body === "object") {
+    // Only log safe, expected fields — never log raw user input
+    const safeReport = {
+      message: typeof body.message === "string" ? body.message.slice(0, 500) : "unknown",
+      source: typeof body.source === "string" ? body.source.slice(0, 200) : undefined,
+      lineno: typeof body.lineno === "number" ? body.lineno : undefined,
+      colno: typeof body.colno === "number" ? body.colno : undefined,
+      url: typeof body.url === "string" ? body.url.slice(0, 300) : undefined,
+      timestamp: typeof body.timestamp === "string" ? body.timestamp : new Date().toISOString(),
+    };
+    console.warn("[CLIENT ERROR]", JSON.stringify(safeReport));
   }
   res.status(204).end();
 });
@@ -417,6 +432,8 @@ app.use("/api/*", (req, res, next) => {
   next(new NotFoundError("API endpoint"));
 });
 
+// Error reporting handler — captures unexpected errors before responding
+app.use(errorReportingHandler());
 // Global error handler - MUST be last middleware
 app.use(globalErrorHandler);
 

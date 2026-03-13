@@ -10,6 +10,7 @@ import {
   getUserFriendlyMessage,
   isRetryableError,
 } from "./app-errors";
+import { reportError } from "./error-reporting";
 
 // Standard error types for the application
 export enum ErrorType {
@@ -99,9 +100,17 @@ export function handleApiError(
     );
   }
 
-  // Log to external error tracking service in production
-  if (process.env.NODE_ENV === "production" && !isOperationalError(error)) {
-    // TODO: Send to error tracking service (e.g., Sentry)
+  // Report non-operational errors to error tracking service
+  if (!isOperationalError(error)) {
+    reportError(error, {
+      requestId,
+      userId: (res.req as any)?.session?.userId,
+      url: res.req?.url,
+      method: res.req?.method,
+      ip: res.req?.ip,
+      userAgent: res.req?.get("user-agent"),
+      tags: { errorType },
+    });
   }
 
   // Determine if error is from AppError class

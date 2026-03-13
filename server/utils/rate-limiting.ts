@@ -58,9 +58,7 @@ export const searchRateLimiter = rateLimit({
   handler: rateLimitHandler,
   skip: skipForAdmin,
   keyGenerator: (req: Request) => {
-    const key = req.ip || req.socket.remoteAddress || "unknown";
-    console.log(`[RATE LIMIT] Search endpoint - IP: ${key}, Path: ${req.path}`);
-    return key;
+    return req.ip || req.socket.remoteAddress || "unknown";
   },
 });
 

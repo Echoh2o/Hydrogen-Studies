@@ -115,6 +115,11 @@ export function getCorsConfig(): cors.CorsOptions {
       "X-CSRF-Token",
       "X-Total-Count",
       "X-Page-Count",
+      "X-Request-Id",
+      "RateLimit-Limit",
+      "RateLimit-Remaining",
+      "RateLimit-Reset",
+      "Retry-After",
     ],
 
     maxAge: isProduction ? 86400 : 3600,
