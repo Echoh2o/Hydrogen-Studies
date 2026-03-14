@@ -583,6 +583,11 @@ class ContentAnalyticsService {
       // Analyze patterns
       const patterns = await this.analyzeSuccessPatterns(contentType);
 
+      const content = await this.getContentDetails(contentType, contentId);
+      const contentText = this.extractText(content);
+      const audience = this.segmentAudience(contentText);
+      const readingLevel = this.calculateReadingLevel(contentText);
+
       // Generate insights
       const insights: InsertContentInsights = {
         contentType,
@@ -597,9 +602,9 @@ class ContentAnalyticsService {
         ),
         similarHighPerformers: similarContent.map((c) => String(c.contentId)),
         optimalPublishTime: patterns.optimalPublishTime,
-        primaryAudience: "general", // TODO: Implement audience segmentation
+        primaryAudience: audience,
         audiencePreferences: JSON.stringify({}),
-        readingLevel: 8, // TODO: Calculate from content
+        readingLevel,
         missingTopics: [],
         suggestedFollowUps: [],
         predictedEngagement: Math.round(performance.engagementScore * 1.2),
@@ -763,6 +768,91 @@ class ContentAnalyticsService {
       .limit(limit);
 
     return similar;
+  }
+
+  /**
+   * Extract plain text from content for analysis
+   */
+  private extractText(content: any): string {
+    if (!content) return "";
+    const fields = [content.title, content.abstract, content.content, content.summary, content.methods, content.results, content.conclusion];
+    return fields.filter(Boolean).join(" ");
+  }
+
+  /**
+   * Segment audience based on content vocabulary and complexity
+   */
+  private segmentAudience(text: string): string {
+    if (!text) return "general";
+
+    const lower = text.toLowerCase();
+
+    // Clinical/medical audience indicators
+    const clinicalTerms = ["randomized", "placebo", "double-blind", "cohort", "p-value", "confidence interval", "meta-analysis", "systematic review", "etiology", "pathogenesis", "pharmacokinetic"];
+    const clinicalCount = clinicalTerms.filter((t) => lower.includes(t)).length;
+
+    // Research/academic audience indicators
+    const academicTerms = ["hypothesis", "methodology", "statistical", "correlation", "in vitro", "in vivo", "biomarker", "oxidative stress", "mitochondrial", "antioxidant"];
+    const academicCount = academicTerms.filter((t) => lower.includes(t)).length;
+
+    // Consumer/wellness audience indicators
+    const consumerTerms = ["benefit", "wellness", "health", "supplement", "product", "daily", "routine", "lifestyle", "energy", "recovery", "anti-aging"];
+    const consumerCount = consumerTerms.filter((t) => lower.includes(t)).length;
+
+    // Practitioner audience indicators
+    const practitionerTerms = ["treatment", "patient", "dosage", "administration", "clinical trial", "therapy", "protocol", "prescription", "diagnosis"];
+    const practitionerCount = practitionerTerms.filter((t) => lower.includes(t)).length;
+
+    const scores = [
+      { audience: "clinical_researcher", count: clinicalCount },
+      { audience: "academic", count: academicCount },
+      { audience: "health_consumer", count: consumerCount },
+      { audience: "healthcare_practitioner", count: practitionerCount },
+    ];
+
+    const best = scores.sort((a, b) => b.count - a.count)[0];
+    return best.count >= 2 ? best.audience : "general";
+  }
+
+  /**
+   * Calculate Flesch-Kincaid reading grade level from text
+   */
+  private calculateReadingLevel(text: string): number {
+    if (!text || text.length < 50) return 8;
+
+    // Count sentences (split on . ! ?)
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+    const sentenceCount = Math.max(sentences.length, 1);
+
+    // Count words
+    const words = text.split(/\s+/).filter((w) => w.length > 0);
+    const wordCount = Math.max(words.length, 1);
+
+    // Count syllables (approximation)
+    const syllableCount = words.reduce((total, word) => total + this.countSyllables(word), 0);
+
+    // Flesch-Kincaid Grade Level formula
+    const grade = 0.39 * (wordCount / sentenceCount) + 11.8 * (syllableCount / wordCount) - 15.59;
+
+    // Clamp to reasonable range (1-18)
+    return Math.max(1, Math.min(18, Math.round(grade)));
+  }
+
+  /**
+   * Approximate syllable count for a word
+   */
+  private countSyllables(word: string): number {
+    word = word.toLowerCase().replace(/[^a-z]/g, "");
+    if (word.length <= 2) return 1;
+
+    // Remove trailing silent e
+    word = word.replace(/e$/, "");
+
+    // Count vowel groups
+    const vowelGroups = word.match(/[aeiouy]+/g);
+    const count = vowelGroups ? vowelGroups.length : 1;
+
+    return Math.max(1, count);
   }
 
   private async analyzeSuccessPatterns(contentType: ContentType): Promise<any> {
