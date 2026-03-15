@@ -628,6 +628,17 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="videoUrl">Video URL</Label>
+                <Input
+                  id="videoUrl"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={form.watch("videoUrl") || ""}
+                  onChange={(e) => form.setValue("videoUrl", e.target.value)}
+                />
+                <p className="text-xs text-gray-500">YouTube or video link related to this study</p>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="url">Study URL</Label>

@@ -36,6 +36,7 @@ export class StudiesController {
     this.router.get("/:id/recommendations", this.getStudyRecommendations);
     this.router.get("/:id/insights", this.getStudyInsights);
     this.router.post("/:id/generate-blogs", requireAdmin, aiGenerationRateLimiter, this.generateBlogs);
+    this.router.put("/:id", requireAdmin, this.updateStudy);
     this.router.post("/:id/view", this.recordView);
     this.router.get("/:id", this.getStudyById);
     this.router.get("/", searchRateLimiter, this.getAllStudies);
@@ -449,6 +450,19 @@ export class StudiesController {
       } catch (error) {
           logger.error("Error fetching study insights", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch study insights" });
+      }
+  }
+
+  private updateStudy = async (req: Request, res: Response) => {
+      try {
+          const studyId = parseInt(req.params.id);
+          if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
+
+          const updatedStudy = await studyService.updateStudy(studyId, req.body);
+          res.json(updatedStudy);
+      } catch (error) {
+          logger.error("Error updating study", error, "StudiesController");
+          res.status(500).json({ error: "Failed to update study" });
       }
   }
 

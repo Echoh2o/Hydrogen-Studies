@@ -46,14 +46,17 @@ const studyFormSchema = z.object({
   results: z.string().optional(),
   conclusion: z.string().optional(),
   doi: z.string().optional(),
+  url: z.string().optional(),
   pdfUrl: z.string().optional(),
   citationUrl: z.string().optional(),
+  videoUrl: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 type StudyFormValues = z.infer<typeof studyFormSchema>;
 
 interface StudyFormProps {
-  initialData?: Partial<StudyFormValues>;
+  initialData?: Partial<StudyFormValues> & Record<string, any>;
   studyId?: number;
   onSuccess?: () => void;
 }
@@ -81,8 +84,11 @@ export default function StudyForm({
     results: initialData?.results || "",
     conclusion: initialData?.conclusion || "",
     doi: initialData?.doi || "",
-    pdfUrl: initialData?.pdfUrl || "",
-    citationUrl: initialData?.citationUrl || "",
+    url: initialData?.url || "",
+    pdfUrl: initialData?.pdfUrl || initialData?.pdf_url || "",
+    citationUrl: initialData?.citationUrl || initialData?.citation_url || "",
+    videoUrl: initialData?.videoUrl || initialData?.video_url || "",
+    imageUrl: initialData?.imageUrl || initialData?.image_url || "",
   };
 
   // Initialize form
@@ -406,6 +412,23 @@ export default function StudyForm({
 
             <FormField
               control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Study URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://example.com/study"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="pdfUrl"
               render={({ field }) => (
                 <FormItem>
@@ -430,6 +453,43 @@ export default function StudyForm({
                   <FormControl>
                     <Input
                       placeholder="https://pubmed.ncbi.nlm.nih.gov/12345678/"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="videoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Video URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    YouTube or video link related to this study
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://example.com/image.jpg"
                       {...field}
                     />
                   </FormControl>

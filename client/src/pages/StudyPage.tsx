@@ -32,6 +32,20 @@ import { useEffect, useRef } from "react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import StudyImage from "@/components/studies/StudyImage";
 
+/** Extract YouTube video ID from various URL formats */
+function getYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
 const StudyPage = () => {
   const { id } = useParams();
   const studyId = id ? parseInt(id) : 0; // Provide fallback to prevent NaN
@@ -65,6 +79,8 @@ const StudyPage = () => {
     year?: number;
     publishYear?: number; // Added to handle the publish year field
     studyType?: string;
+    videoUrl?: string;
+    video_url?: string;
     citations?: number;
     fullTextAvailable?: boolean;
   }
@@ -589,12 +605,42 @@ const StudyPage = () => {
                   >
                     Research Abstract
                   </h2>
-                  <div className="prose max-w-none prose-neutral mb-8">
-                    <p className="text-lg leading-relaxed" itemProp="abstract">
-                      {study.abstract}
-                    </p>
+                  <div className="prose max-w-none prose-neutral mb-8" itemProp="abstract">
+                    <div
+                      className="text-lg leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(study.abstract),
+                      }}
+                    />
                   </div>
                 </section>
+
+                {/* Video Section */}
+                {(study.videoUrl || study.video_url) && (() => {
+                  const videoUrl = study.videoUrl || study.video_url || "";
+                  const youtubeId = getYouTubeId(videoUrl);
+                  if (!youtubeId) return null;
+                  return (
+                    <section aria-labelledby="video-heading">
+                      <Separator className="my-6" />
+                      <h2
+                        id="video-heading"
+                        className="text-xl font-semibold mb-4"
+                      >
+                        Research Video
+                      </h2>
+                      <div className="relative w-full mb-6" style={{ paddingBottom: "56.25%" }}>
+                        <iframe
+                          className="absolute top-0 left-0 w-full h-full rounded-lg"
+                          src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
+                          title={`Video: ${study.title}`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    </section>
+                  );
+                })()}
 
                 {/* Methods Section */}
                 {study.methods && (
@@ -609,9 +655,10 @@ const StudyPage = () => {
                     <div
                       className="prose max-w-none prose-neutral mb-6"
                       itemProp="methodDescription"
-                    >
-                      <p>{study.methods}</p>
-                    </div>
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(study.methods),
+                      }}
+                    />
                   </section>
                 )}
 
@@ -628,9 +675,10 @@ const StudyPage = () => {
                     <div
                       className="prose max-w-none prose-neutral mb-6"
                       itemProp="resultDescription"
-                    >
-                      <p>{study.results}</p>
-                    </div>
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(study.results),
+                      }}
+                    />
                   </section>
                 )}
 
@@ -739,9 +787,10 @@ const StudyPage = () => {
                     <div
                       className="prose max-w-none prose-neutral mb-6"
                       itemProp="conclusion"
-                    >
-                      <p>{study.conclusion}</p>
-                    </div>
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(study.conclusion),
+                      }}
+                    />
                   </section>
                 )}
 
