@@ -200,6 +200,8 @@ function SearchResultsCard({
   importedPaperIds,
   renderPagination,
   toast,
+  hideImported,
+  setHideImported,
 }: {
   searchResults: any;
   activeQuery: string;
@@ -210,7 +212,45 @@ function SearchResultsCard({
   importedPaperIds: Set<string>;
   renderPagination: () => React.ReactNode;
   toast: any;
+  hideImported: boolean;
+  setHideImported: (v: boolean) => void;
 }) {
+  // Filter articles based on hideImported toggle
+  const allArticles: any[] = searchResults.articles || [];
+  const visibleArticles = hideImported
+    ? allArticles.filter((paper: any) => {
+        const paperId = paper.id || paper.paperId || paper.pmid || `${paper.source}-${paper.title}`;
+        return !(paper.inDatabase || importedPaperIds.has(String(paperId)) || importedPaperIds.has(String(paper.doi)));
+      })
+    : allArticles;
+
+  // Select All logic: only selectable (non-imported) papers on current page
+  const selectablePapers = visibleArticles.filter((paper: any) => {
+    const paperId = paper.id || paper.paperId || paper.pmid || `${paper.source}-${paper.title}`;
+    return !(paper.inDatabase || importedPaperIds.has(String(paperId)) || importedPaperIds.has(String(paper.doi)));
+  });
+  const allSelectableSelected = selectablePapers.length > 0 && selectablePapers.every((paper: any) => {
+    const paperId = paper.id || paper.paperId || paper.pmid || `${paper.source}-${paper.title}`;
+    return !!selectedPapers[paperId];
+  });
+  const someSelected = selectablePapers.some((paper: any) => {
+    const paperId = paper.id || paper.paperId || paper.pmid || `${paper.source}-${paper.title}`;
+    return !!selectedPapers[paperId];
+  });
+
+  const handleSelectAll = (checked: boolean) => {
+    for (const paper of selectablePapers) {
+      const paperId = paper.id || paper.paperId || paper.pmid || `${paper.source}-${paper.title}`;
+      if (checked && !selectedPapers[paperId]) {
+        togglePaperSelection(paperId, paper);
+      } else if (!checked && selectedPapers[paperId]) {
+        togglePaperSelection(paperId, paper);
+      }
+    }
+  };
+
+  const importedCount = allArticles.length - selectablePapers.length;
+
   return (
     <Card>
       <CardHeader>
@@ -220,43 +260,74 @@ function SearchResultsCard({
             <CardDescription>
               Found {searchResults.total || 0} results for "
               {activeQuery}"
+              {importedCount > 0 && (
+                <span className="ml-1 text-green-600">
+                  ({importedCount} already in database)
+                </span>
+              )}
             </CardDescription>
           </div>
 
-          {Object.keys(selectedPapers).length > 0 && (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={importPaperMutation.isPending}
-              onClick={() => {
-                const papers = Object.values(selectedPapers);
-                toast({
-                  title: "Batch Import Started",
-                  description: `Importing ${papers.length} selected papers...`,
-                });
-                for (const paper of papers) {
-                  handleImport(paper, paper.source || "pubmed");
-                }
-              }}
-            >
-              <FileDown className="mr-2 h-4 w-4" />
-              Import Selected ({Object.keys(selectedPapers).length})
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hide-imported"
+                checked={hideImported}
+                onCheckedChange={(checked) => setHideImported(checked as boolean)}
+              />
+              <Label htmlFor="hide-imported" className="text-sm whitespace-nowrap">
+                Hide imported
+              </Label>
+            </div>
+
+            {Object.keys(selectedPapers).length > 0 && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={importPaperMutation.isPending}
+                onClick={() => {
+                  const papers = Object.values(selectedPapers);
+                  toast({
+                    title: "Batch Import Started",
+                    description: `Importing ${papers.length} selected papers...`,
+                  });
+                  for (const paper of papers) {
+                    handleImport(paper, paper.source || "pubmed");
+                  }
+                }}
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Import Selected ({Object.keys(selectedPapers).length})
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {!searchResults.articles ||
-        searchResults.articles.length === 0 ? (
+        {visibleArticles.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            No results found for your search query
+            {hideImported && allArticles.length > 0
+              ? `All ${allArticles.length} results are already in your database`
+              : "No results found for your search query"}
           </div>
         ) : (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[5%]"></TableHead>
+                  <TableHead className="w-[5%]">
+                    <Checkbox
+                      checked={allSelectableSelected}
+                      ref={(el) => {
+                        if (el) {
+                          (el as any).indeterminate = someSelected && !allSelectableSelected;
+                        }
+                      }}
+                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                      disabled={selectablePapers.length === 0}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead className="w-[40%]">Title</TableHead>
                   <TableHead className="w-[25%]">Authors</TableHead>
                   <TableHead className="w-[10%]">Year</TableHead>
@@ -265,7 +336,7 @@ function SearchResultsCard({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {searchResults.articles.map((paper: any) => {
+                {visibleArticles.map((paper: any) => {
                   const paperId =
                     paper.id ||
                     paper.paperId ||
@@ -568,6 +639,7 @@ export default function ResearchDatabasePage() {
     "pubmed",
   ]);
   const [importedPaperIds, setImportedPaperIds] = useState<Set<string>>(new Set());
+  const [hideImported, setHideImported] = useState(true);
 
   const pageSize = 10;
   const { toast } = useToast();
@@ -836,6 +908,8 @@ export default function ResearchDatabasePage() {
               importedPaperIds={importedPaperIds}
               renderPagination={renderPagination}
               toast={toast}
+              hideImported={hideImported}
+              setHideImported={setHideImported}
             />
           ) : null}
         </TabsContent>
