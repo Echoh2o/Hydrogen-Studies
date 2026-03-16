@@ -37,15 +37,69 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface NLSearchResult {
+  id: number;
+  title: string;
+  slug?: string;
+  abstract?: string;
+  relevanceScore?: number;
+  [key: string]: unknown;
+}
+
+interface NLSearchEntities {
+  conditions?: string[];
+  deliveryMethods?: string[];
+  bodySystems?: string[];
+  demographics?: {
+    ageGroups?: string[];
+    populations?: string[];
+  };
+  comparisons?: {
+    itemA?: string;
+    itemB?: string;
+  };
+}
+
+interface NLSearchResponse {
+  success: boolean;
+  query: {
+    original: string;
+    corrected: string;
+    intent: string;
+    confidence: number;
+    complexity: string;
+  };
+  interpretation: {
+    understood: string;
+    entities: NLSearchEntities;
+    filters: Record<string, unknown>;
+    expandedQueries: string[];
+  };
+  results: NLSearchResult[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
+  facets?: Record<string, unknown>;
+  suggestions: {
+    corrections: Array<{ type: string; value: string }>;
+    refinements: Array<{ type: string; value: string }>;
+    alternatives: Array<{ type: string; value: string }>;
+    related: string[];
+  };
+}
+
 interface NaturalLanguageSearchProps {
-  onResultsUpdate?: (results: any[]) => void;
+  onResultsUpdate?: (results: NLSearchResult[]) => void;
   initialQuery?: string;
   embedded?: boolean;
 }
 
 interface QueryExample {
   category: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   queries: string[];
 }
 
@@ -102,17 +156,16 @@ export function NaturalLanguageSearch({
   ];
 
   // Natural language search mutation
-  const searchMutation = useMutation({
+  const searchMutation = useMutation<NLSearchResponse, Error, string>({
     mutationFn: async (searchQuery: string) => {
       const res = await apiRequest("POST", "/api/search/natural-language", {
         query: searchQuery,
         page: 1,
         pageSize: 20,
       });
-      return await res.json() as any;
+      return (await res.json()) as NLSearchResponse;
     },
-    onSuccess: (data: any) => {
-      console.log("Search successful:", data);
+    onSuccess: (data) => {
       if (onResultsUpdate) {
         onResultsUpdate(data.results);
       }
@@ -129,7 +182,7 @@ export function NaturalLanguageSearch({
         });
       }
     },
-    onError: (error: any) => {
+    onError: (error) => {
       console.error("Search error:", error);
       toast({
         title: "Search Error",

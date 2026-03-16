@@ -64,5 +64,20 @@ export function validateEnvironment() {
     process.exit(1);
   }
 
+  // Warn about missing optional service keys
+  const optionalServiceKeys = [
+    { key: "ANTHROPIC_API_KEY", feature: "AI content enrichment" },
+    { key: "OPENAI_API_KEY", feature: "image generation" },
+    { key: "SENDGRID_API_KEY", feature: "email delivery (password resets)" },
+    { key: "SENTRY_DSN", feature: "server error tracking" },
+    { key: "VITE_SENTRY_DSN", feature: "client error tracking" },
+    { key: "SHOPIFY_WEBHOOK_SECRET", feature: "Shopify webhook verification" },
+  ];
+  for (const { key, feature } of optionalServiceKeys) {
+    if (!process.env[key]) {
+      console.warn(`${key} not set — ${feature} will be disabled.`);
+    }
+  }
+
   console.log("Environment validation completed successfully");
 }

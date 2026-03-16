@@ -78,13 +78,22 @@ router.post("/customer-created", async (req: Request, res: Response) => {
   try {
     // Verify webhook signature
     const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string;
-    if (process.env.SHOPIFY_WEBHOOK_SECRET && !hmacHeader) {
-      logger.warn("Missing HMAC header", "Shopify");
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+    const rawBody = (req as any).rawBody as Buffer | undefined;
 
-    // Note: rawBody needs to be captured by express middleware before JSON parsing
-    // The webhook verification uses the raw body, not the parsed JSON
+    if (process.env.SHOPIFY_WEBHOOK_SECRET) {
+      if (!hmacHeader) {
+        logger.warn("Missing HMAC header", "Shopify");
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      if (!rawBody) {
+        logger.error("Raw body not available for HMAC verification", undefined, "Shopify");
+        return res.status(500).json({ error: "Webhook verification failed" });
+      }
+      if (!verifyShopifyWebhook(rawBody, hmacHeader)) {
+        logger.warn("Invalid HMAC signature on customer-created webhook", "Shopify");
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+    }
 
     const customer = req.body;
     if (!customer || !customer.email) {
@@ -163,9 +172,17 @@ router.post("/customer-updated", async (req: Request, res: Response) => {
   try {
     // Verify webhook signature
     const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string;
-    if (process.env.SHOPIFY_WEBHOOK_SECRET && !hmacHeader) {
-      logger.warn("Missing HMAC header on customer-updated", "Shopify");
-      return res.status(401).json({ error: "Unauthorized" });
+    const rawBody = (req as any).rawBody as Buffer | undefined;
+
+    if (process.env.SHOPIFY_WEBHOOK_SECRET) {
+      if (!hmacHeader) {
+        logger.warn("Missing HMAC header on customer-updated", "Shopify");
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      if (!rawBody || !verifyShopifyWebhook(rawBody, hmacHeader)) {
+        logger.warn("Invalid HMAC signature on customer-updated webhook", "Shopify");
+        return res.status(401).json({ error: "Invalid signature" });
+      }
     }
 
     const customer = req.body;
@@ -205,9 +222,17 @@ router.post("/order-created", async (req: Request, res: Response) => {
   try {
     // Verify webhook signature
     const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string;
-    if (process.env.SHOPIFY_WEBHOOK_SECRET && !hmacHeader) {
-      logger.warn("Missing HMAC header on order-created", "Shopify");
-      return res.status(401).json({ error: "Unauthorized" });
+    const rawBody = (req as any).rawBody as Buffer | undefined;
+
+    if (process.env.SHOPIFY_WEBHOOK_SECRET) {
+      if (!hmacHeader) {
+        logger.warn("Missing HMAC header on order-created", "Shopify");
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      if (!rawBody || !verifyShopifyWebhook(rawBody, hmacHeader)) {
+        logger.warn("Invalid HMAC signature on order-created webhook", "Shopify");
+        return res.status(401).json({ error: "Invalid signature" });
+      }
     }
 
     const order = req.body;

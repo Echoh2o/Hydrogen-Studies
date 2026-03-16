@@ -212,9 +212,9 @@ export default function HealthBenefitsPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {healthCategories.map((category, index) => (
+              {healthCategories.map((category) => (
                 <Card
-                  key={index}
+                  key={category.category}
                   className="hover:shadow-lg transition-shadow border-l-4 border-l-teal-600"
                 >
                   <CardHeader>
@@ -261,9 +261,9 @@ export default function HealthBenefitsPage() {
                         Potential Benefits:
                       </p>
                       <ul className="space-y-1">
-                        {category.benefits.map((benefit, i) => (
+                        {category.benefits.map((benefit) => (
                           <li
-                            key={i}
+                            key={benefit}
                             className="text-sm text-gray-600 flex items-start"
                           >
                             <div className="h-1.5 w-1.5 bg-teal-600 rounded-full mr-2 mt-2 flex-shrink-0"></div>

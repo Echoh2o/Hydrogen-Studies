@@ -89,7 +89,7 @@ export default function NaturalLanguageSearchPage() {
       if (searchName) {
         // Save to localStorage for now
         let savedSearches: any[] = [];
-        try { savedSearches = JSON.parse(localStorage.getItem("savedSearches") || "[]"); } catch {}
+        try { savedSearches = JSON.parse(localStorage.getItem("savedSearches") || "[]"); } catch (e) { console.warn("Failed to parse saved searches from localStorage", e); }
         savedSearches.push({
           id: Date.now(),
           name: searchName,

@@ -107,6 +107,469 @@ interface MonitorResult {
   notes?: string;
 }
 
+// --- Extracted sub-components ---
+
+function KeywordsTable({
+  isLoading,
+  isError,
+  filteredKeywords,
+  totalCount,
+  editingKeyword,
+  setEditingKeyword,
+  handleToggleKeywordActive,
+  handleDeleteKeyword,
+}: {
+  isLoading: boolean;
+  isError: boolean;
+  filteredKeywords: Keyword[];
+  totalCount: number;
+  editingKeyword: Keyword | null;
+  setEditingKeyword: (k: Keyword | null) => void;
+  handleToggleKeywordActive: (id: number, isActive: boolean) => void;
+  handleDeleteKeyword: (id: number) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Monitored Keywords</CardTitle>
+        <CardDescription>
+          Keywords to search for in medical research databases
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : isError ? (
+          <div className="text-center py-10 text-destructive">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p>Failed to load keywords. Please try again.</p>
+          </div>
+        ) : filteredKeywords.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <p>No keywords found. Add some to start monitoring.</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Term</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Search</TableHead>
+                  <TableHead>Matches</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredKeywords.map((keyword) => (
+                  <TableRow key={keyword.id}>
+                    {editingKeyword &&
+                    editingKeyword.id === keyword.id ? (
+                      <TableCell colSpan={6}>
+                        <KeywordEditor
+                          keyword={keyword}
+                          onCancel={() => setEditingKeyword(null)}
+                        />
+                      </TableCell>
+                    ) : (
+                      <>
+                        <TableCell>{keyword.term}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {keyword.category}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={keyword.isActive}
+                              onCheckedChange={() =>
+                                handleToggleKeywordActive(
+                                  keyword.id,
+                                  !keyword.isActive,
+                                )
+                              }
+                            />
+                            <span>
+                              {keyword.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {keyword.lastSearched ? (
+                            <span className="flex items-center text-sm">
+                              <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
+                              {new Date(
+                                keyword.lastSearched,
+                              ).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            "Never"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {typeof keyword.matchCount === "number" ? (
+                            <Badge
+                              variant={
+                                keyword.matchCount > 0
+                                  ? "default"
+                                  : "outline"
+                              }
+                            >
+                              {keyword.matchCount}{" "}
+                              {keyword.matchCount === 1
+                                ? "match"
+                                : "matches"}
+                            </Badge>
+                          ) : (
+                            "0"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingKeyword(keyword)}
+                              title="Edit keyword"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                handleDeleteKeyword(keyword.id)
+                              }
+                              title="Delete keyword"
+                            >
+                              <Trash className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <div className="text-xs text-muted-foreground">
+          {totalCount} total keywords
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function ExcludedTermsTable({
+  isLoading,
+  isError,
+  excludedKeywords,
+  searchTerm,
+  setEditingExcluded,
+}: {
+  isLoading: boolean;
+  isError: boolean;
+  excludedKeywords: ExcludedKeyword[];
+  searchTerm: string;
+  setEditingExcluded: (k: ExcludedKeyword | null) => void;
+}) {
+  const filtered = excludedKeywords.filter(
+    (keyword) =>
+      searchTerm === "" ||
+      keyword.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      keyword.reason.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Excluded Terms</CardTitle>
+        <CardDescription>
+          Terms that will exclude studies from search results
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : isError ? (
+          <div className="text-center py-10 text-destructive">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p>Failed to load excluded terms. Please try again.</p>
+          </div>
+        ) : excludedKeywords.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <p>
+              No excluded terms found. Add some to filter out irrelevant
+              results.
+            </p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Term</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((keyword) => (
+                  <TableRow key={keyword.id}>
+                    <TableCell>{keyword.term}</TableCell>
+                    <TableCell>{keyword.reason}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingExcluded(keyword)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            /* Handle delete */
+                          }}
+                        >
+                          <Trash className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <div className="text-xs text-muted-foreground">
+          {excludedKeywords.length} total excluded terms
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function MonitorResultsTable({
+  isLoading,
+  isError,
+  filteredResults,
+  totalCount,
+  selectedResults,
+  setSelectedResults,
+  toggleResultSelection,
+  handleUpdateResultStatus,
+  setActiveTab,
+}: {
+  isLoading: boolean;
+  isError: boolean;
+  filteredResults: MonitorResult[];
+  totalCount: number;
+  selectedResults: number[];
+  setSelectedResults: (ids: number[]) => void;
+  toggleResultSelection: (id: number) => void;
+  handleUpdateResultStatus: (id: number, status: string) => void;
+  setActiveTab: (tab: string) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle>Monitor Results</CardTitle>
+          <CardDescription>
+            Studies found by the keyword monitor
+          </CardDescription>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            queryClient.invalidateQueries({
+              queryKey: ["/api/keywords/results"],
+            });
+          }}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh Results
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : isError ? (
+          <div className="text-center py-10 text-destructive">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p>Failed to load monitor results. Please try again.</p>
+          </div>
+        ) : filteredResults.length === 0 ? (
+          <div className="py-10">
+            <div className="text-center py-6 border rounded-md bg-muted/30">
+              <div className="mb-4">
+                <Search className="h-12 w-12 mx-auto text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">
+                No results found
+              </h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                No matches have been found for your keywords yet. You can
+                trigger a new search from the Monitor tab or wait for the
+                scheduled search to run automatically.
+              </p>
+              <div className="mt-4">
+                <Button
+                  onClick={() => {
+                    setActiveTab("monitor");
+                  }}
+                >
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Go to Monitor Settings
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <ScrollArea className="h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={
+                        filteredResults.length > 0 &&
+                        selectedResults.length === filteredResults.length
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedResults(
+                            filteredResults.map((r) => r.id),
+                          );
+                        } else {
+                          setSelectedResults([]);
+                        }
+                      }}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Matched Keywords</TableHead>
+                  <TableHead>Found</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredResults.map((result) => (
+                  <TableRow key={result.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedResults.includes(result.id)}
+                        onCheckedChange={() =>
+                          toggleResultSelection(result.id)
+                        }
+                        aria-label={`Select result ${result.id}`}
+                      />
+                    </TableCell>
+                    <TableCell className="max-w-md truncate">
+                      <div>
+                        <div className="font-medium">{result.title}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {result.authors} | {result.journal}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{result.source}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {result.matchedKeywords.map((keyword) => (
+                          <Badge key={keyword} variant="outline">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>{result.foundAt}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          result.status === "approved"
+                            ? "default"
+                            : result.status === "rejected"
+                              ? "destructive"
+                              : result.status === "archived"
+                                ? "outline"
+                                : "secondary"
+                        }
+                      >
+                        {result.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            handleUpdateResultStatus(
+                              result.id,
+                              "approved",
+                            )
+                          }
+                          disabled={result.status === "approved"}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            handleUpdateResultStatus(
+                              result.id,
+                              "rejected",
+                            )
+                          }
+                          disabled={result.status === "rejected"}
+                        >
+                          <XCircle className="h-4 w-4 mr-1 text-red-500" />
+                          Reject
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <div className="text-xs text-muted-foreground">
+          {totalCount} total results
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+// --- Main component ---
+
 export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState("keywords");
   const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
@@ -826,145 +1289,16 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
 
         {/* Keywords Tab */}
         <TabsContent value="keywords">
-          <Card>
-            <CardHeader>
-              <CardTitle>Monitored Keywords</CardTitle>
-              <CardDescription>
-                Keywords to search for in medical research databases
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {keywordsQuery.isLoading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : keywordsQuery.isError ? (
-                <div className="text-center py-10 text-destructive">
-                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                  <p>Failed to load keywords. Please try again.</p>
-                </div>
-              ) : filteredKeywords.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p>No keywords found. Add some to start monitoring.</p>
-                </div>
-              ) : (
-                <ScrollArea className="h-[400px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Term</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Last Search</TableHead>
-                        <TableHead>Matches</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredKeywords.map((keyword) => (
-                        <TableRow key={keyword.id}>
-                          {editingKeyword &&
-                          editingKeyword.id === keyword.id ? (
-                            <TableCell colSpan={6}>
-                              <KeywordEditor
-                                keyword={keyword}
-                                onCancel={() => setEditingKeyword(null)}
-                              />
-                            </TableCell>
-                          ) : (
-                            <>
-                              <TableCell>{keyword.term}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">
-                                  {keyword.category}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-2">
-                                  <Switch
-                                    checked={keyword.isActive}
-                                    onCheckedChange={() =>
-                                      handleToggleKeywordActive(
-                                        keyword.id,
-                                        !keyword.isActive,
-                                      )
-                                    }
-                                  />
-                                  <span>
-                                    {keyword.isActive ? "Active" : "Inactive"}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {keyword.lastSearched ? (
-                                  <span className="flex items-center text-sm">
-                                    <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-                                    {new Date(
-                                      keyword.lastSearched,
-                                    ).toLocaleDateString()}
-                                  </span>
-                                ) : (
-                                  "Never"
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {typeof keyword.matchCount === "number" ? (
-                                  <Badge
-                                    variant={
-                                      keyword.matchCount > 0
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                  >
-                                    {keyword.matchCount}{" "}
-                                    {keyword.matchCount === 1
-                                      ? "match"
-                                      : "matches"}
-                                  </Badge>
-                                ) : (
-                                  "0"
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setEditingKeyword(keyword)}
-                                    title="Edit keyword"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() =>
-                                      handleDeleteKeyword(keyword.id)
-                                    }
-                                    title="Delete keyword"
-                                  >
-                                    <Trash className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <div className="text-xs text-muted-foreground">
-                {keywordsQuery.data
-                  ? (keywordsQuery.data as Keyword[]).length
-                  : 0}{" "}
-                total keywords
-              </div>
-            </CardFooter>
-          </Card>
+          <KeywordsTable
+            isLoading={keywordsQuery.isLoading}
+            isError={keywordsQuery.isError}
+            filteredKeywords={filteredKeywords}
+            totalCount={keywordsQuery.data ? (keywordsQuery.data as Keyword[]).length : 0}
+            editingKeyword={editingKeyword}
+            setEditingKeyword={setEditingKeyword}
+            handleToggleKeywordActive={handleToggleKeywordActive}
+            handleDeleteKeyword={handleDeleteKeyword}
+          />
 
           {/* Edit Keyword Dialog */}
           {editingKeyword && (
@@ -1049,89 +1383,13 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
 
         {/* Excluded Keywords Tab */}
         <TabsContent value="excluded">
-          <Card>
-            <CardHeader>
-              <CardTitle>Excluded Terms</CardTitle>
-              <CardDescription>
-                Terms that will exclude studies from search results
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {excludedKeywordsQuery.isLoading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : excludedKeywordsQuery.isError ? (
-                <div className="text-center py-10 text-destructive">
-                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                  <p>Failed to load excluded terms. Please try again.</p>
-                </div>
-              ) : excludedKeywords.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p>
-                    No excluded terms found. Add some to filter out irrelevant
-                    results.
-                  </p>
-                </div>
-              ) : (
-                <ScrollArea className="h-[400px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Term</TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {excludedKeywords
-                        .filter(
-                          (keyword) =>
-                            searchTerm === "" ||
-                            keyword.term
-                              .toLowerCase()
-                              .includes(searchTerm.toLowerCase()) ||
-                            keyword.reason
-                              .toLowerCase()
-                              .includes(searchTerm.toLowerCase()),
-                        )
-                        .map((keyword) => (
-                          <TableRow key={keyword.id}>
-                            <TableCell>{keyword.term}</TableCell>
-                            <TableCell>{keyword.reason}</TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setEditingExcluded(keyword)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    /* Handle delete */
-                                  }}
-                                >
-                                  <Trash className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <div className="text-xs text-muted-foreground">
-                {excludedKeywords.length} total excluded terms
-              </div>
-            </CardFooter>
-          </Card>
+          <ExcludedTermsTable
+            isLoading={excludedKeywordsQuery.isLoading}
+            isError={excludedKeywordsQuery.isError}
+            excludedKeywords={excludedKeywords}
+            searchTerm={searchTerm}
+            setEditingExcluded={setEditingExcluded}
+          />
 
           {/* Edit Excluded Keyword Dialog */}
           {editingExcluded && (
@@ -1280,188 +1538,17 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
 
         {/* Monitor Results Tab */}
         <TabsContent value="results">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <div>
-                <CardTitle>Monitor Results</CardTitle>
-                <CardDescription>
-                  Studies found by the keyword monitor
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  queryClient.invalidateQueries({
-                    queryKey: ["/api/keywords/results"],
-                  });
-                }}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh Results
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {monitorResultsQuery.isLoading ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : monitorResultsQuery.isError ? (
-                <div className="text-center py-10 text-destructive">
-                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                  <p>Failed to load monitor results. Please try again.</p>
-                </div>
-              ) : filteredResults.length === 0 ? (
-                <div className="py-10">
-                  <div className="text-center py-6 border rounded-md bg-muted/30">
-                    <div className="mb-4">
-                      <Search className="h-12 w-12 mx-auto text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-medium mb-2">
-                      No results found
-                    </h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      No matches have been found for your keywords yet. You can
-                      trigger a new search from the Monitor tab or wait for the
-                      scheduled search to run automatically.
-                    </p>
-                    <div className="mt-4">
-                      <Button
-                        onClick={() => {
-                          setActiveTab("monitor");
-                        }}
-                      >
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        Go to Monitor Settings
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <ScrollArea className="h-[400px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">
-                          <Checkbox
-                            checked={
-                              filteredResults.length > 0 &&
-                              selectedResults.length === filteredResults.length
-                            }
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedResults(
-                                  filteredResults.map((r) => r.id),
-                                );
-                              } else {
-                                setSelectedResults([]);
-                              }
-                            }}
-                            aria-label="Select all"
-                          />
-                        </TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Matched Keywords</TableHead>
-                        <TableHead>Found</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredResults.map((result) => (
-                        <TableRow key={result.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedResults.includes(result.id)}
-                              onCheckedChange={() =>
-                                toggleResultSelection(result.id)
-                              }
-                              aria-label={`Select result ${result.id}`}
-                            />
-                          </TableCell>
-                          <TableCell className="max-w-md truncate">
-                            <div>
-                              <div className="font-medium">{result.title}</div>
-                              <div className="text-xs text-muted-foreground truncate">
-                                {result.authors} | {result.journal}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{result.source}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {result.matchedKeywords.map((keyword) => (
-                                <Badge key={keyword} variant="outline">
-                                  {keyword}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>{result.foundAt}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                result.status === "approved"
-                                  ? "default"
-                                  : result.status === "rejected"
-                                    ? "destructive"
-                                    : result.status === "archived"
-                                      ? "outline"
-                                      : "secondary"
-                              }
-                            >
-                              {result.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleUpdateResultStatus(
-                                    result.id,
-                                    "approved",
-                                  )
-                                }
-                                disabled={result.status === "approved"}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                                Approve
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleUpdateResultStatus(
-                                    result.id,
-                                    "rejected",
-                                  )
-                                }
-                                disabled={result.status === "rejected"}
-                              >
-                                <XCircle className="h-4 w-4 mr-1 text-red-500" />
-                                Reject
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <div className="text-xs text-muted-foreground">
-                {monitorResultsQuery.data
-                  ? (monitorResultsQuery.data as MonitorResult[]).length
-                  : 0}{" "}
-                total results
-              </div>
-            </CardFooter>
-          </Card>
+          <MonitorResultsTable
+            isLoading={monitorResultsQuery.isLoading}
+            isError={monitorResultsQuery.isError}
+            filteredResults={filteredResults}
+            totalCount={monitorResultsQuery.data ? (monitorResultsQuery.data as MonitorResult[]).length : 0}
+            selectedResults={selectedResults}
+            setSelectedResults={setSelectedResults}
+            toggleResultSelection={toggleResultSelection}
+            handleUpdateResultStatus={handleUpdateResultStatus}
+            setActiveTab={setActiveTab}
+          />
         </TabsContent>
       </Tabs>
 

@@ -24,8 +24,8 @@ export default function ThisWeekPage() {
 
   let trendingTopics: string[] = [];
   let notableFindings: Array<{ title: string; summary: string }> = [];
-  try { if (latest?.trendingTopics) trendingTopics = JSON.parse(latest.trendingTopics); } catch {}
-  try { if (latest?.notableFindings) notableFindings = JSON.parse(latest.notableFindings); } catch {}
+  try { if (latest?.trendingTopics) trendingTopics = JSON.parse(latest.trendingTopics); } catch (e) { console.warn("Failed to parse trendingTopics", e); }
+  try { if (latest?.notableFindings) notableFindings = JSON.parse(latest.notableFindings); } catch (e) { console.warn("Failed to parse notableFindings", e); }
 
   return (
     <>
@@ -89,8 +89,8 @@ export default function ThisWeekPage() {
               {trendingTopics.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-6">
                   <TrendingUp className="h-4 w-4 mt-1 text-muted-foreground" />
-                  {trendingTopics.map((topic: string, i: number) => (
-                    <Badge key={i} variant="secondary">
+                  {trendingTopics.map((topic: string) => (
+                    <Badge key={topic} variant="secondary">
                       {topic}
                     </Badge>
                   ))}
@@ -108,8 +108,8 @@ export default function ThisWeekPage() {
                 <section className="mt-8">
                   <h3 className="text-lg font-semibold mb-4">Notable Findings</h3>
                   <div className="space-y-3">
-                    {notableFindings.map((f: any, i: number) => (
-                      <Card key={i}>
+                    {notableFindings.map((f: any) => (
+                      <Card key={f.studyId || f.title}>
                         <CardContent className="py-4">
                           <Link
                             href={`/study/id/${f.studyId}`}

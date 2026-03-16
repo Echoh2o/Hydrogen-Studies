@@ -35,12 +35,10 @@ router.get("/search", async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: "Query is required" });
     }
 
-    const yearFrom = req.query.yearFrom
-      ? parseInt(String(req.query.yearFrom))
-      : undefined;
-    const yearTo = req.query.yearTo
-      ? parseInt(String(req.query.yearTo))
-      : undefined;
+    const parsedYearFrom = req.query.yearFrom ? parseInt(String(req.query.yearFrom)) : NaN;
+    const parsedYearTo = req.query.yearTo ? parseInt(String(req.query.yearTo)) : NaN;
+    const yearFrom = !isNaN(parsedYearFrom) && parsedYearFrom > 1900 && parsedYearFrom < 2100 ? parsedYearFrom : undefined;
+    const yearTo = !isNaN(parsedYearTo) && parsedYearTo > 1900 && parsedYearTo < 2100 ? parsedYearTo : undefined;
 
     const result = await searchHydrogenPapers(query, { yearFrom, yearTo });
 

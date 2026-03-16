@@ -93,8 +93,8 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       timestamp: new Date().toISOString(),
     };
 
-    // Log for now - replace with actual service call
-    console.log("Error report:", errorReport);
+    // TODO: Replace with actual service call (e.g., Sentry)
+    // Error report is prepared but not yet sent to an external service
   }
 
   private handleRetry = () => {

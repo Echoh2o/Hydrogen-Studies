@@ -176,8 +176,8 @@ export default function ProductsPage() {
               Why Choose Hydrogen Water?
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
-              {benefits.map((benefit, index) => (
-                <Card key={index} className="text-center">
+              {benefits.map((benefit) => (
+                <Card key={benefit.title} className="text-center">
                   <CardContent className="p-6">
                     <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 w-fit">
                       {benefit.icon}
@@ -229,9 +229,9 @@ export default function ProductsPage() {
                   </CardDescription>
 
                   <ul className="space-y-2 mb-6">
-                    {product.features.map((feature, index) => (
+                    {product.features.map((feature) => (
                       <li
-                        key={index}
+                        key={feature}
                         className="text-sm text-gray-600 flex items-center"
                       >
                         <div className="w-1.5 h-1.5 bg-teal-500 rounded-full mr-2 flex-shrink-0"></div>

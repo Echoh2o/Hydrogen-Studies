@@ -351,9 +351,9 @@ For those interested in diving deeper into the research, here are key studies re
               <span className="text-sm font-medium text-gray-700">Tags:</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {(article.tags || []).map((tag, index) => (
+              {(article.tags || []).map((tag) => (
                 <Badge
-                  key={index}
+                  key={tag}
                   variant="outline"
                   className="hover:bg-teal-50 cursor-pointer"
                 >
@@ -388,8 +388,8 @@ For those interested in diving deeper into the research, here are key studies re
                 Related Research Studies
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {article.relatedStudies.slice(0, 3).map((studyId, index) => (
-                  <Link key={index} href={`/study/id/${studyId}`}>
+                {article.relatedStudies.slice(0, 3).map((studyId) => (
+                  <Link key={studyId} href={`/study/id/${studyId}`}>
                     <Card className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardHeader>
                         <CardTitle className="text-sm">

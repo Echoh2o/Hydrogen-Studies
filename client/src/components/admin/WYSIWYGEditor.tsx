@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import DOMPurify from "dompurify";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
@@ -95,7 +96,10 @@ const WYSIWYGEditor: React.FC<WYSIWYGEditorProps> = ({
             ref={quillRef}
             theme="snow"
             value={value}
-            onChange={onChange}
+            onChange={useCallback((html: string) => {
+              // Sanitize HTML output to mitigate Quill XSS vulnerabilities (GHSA-4943-9vgg-gr5r)
+              onChange(DOMPurify.sanitize(html));
+            }, [onChange])}
             placeholder={placeholder}
             readOnly={readonly}
             modules={modules}

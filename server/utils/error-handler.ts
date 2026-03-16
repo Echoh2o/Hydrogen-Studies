@@ -410,3 +410,18 @@ export function timeoutMiddleware(timeout = 30000) {
     next();
   };
 }
+
+/**
+ * Standardized API response helpers
+ * Use these in route handlers for consistent response formats across all endpoints.
+ *
+ * Success: { success: true, data: ... }
+ * Error:   { success: false, error: "message" }
+ */
+export function apiSuccess<T>(res: Response, data: T, statusCode = 200): void {
+  res.status(statusCode).json({ success: true, data });
+}
+
+export function apiError(res: Response, message: string, statusCode = 500): void {
+  res.status(statusCode).json({ success: false, error: message });
+}

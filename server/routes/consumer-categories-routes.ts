@@ -1,7 +1,8 @@
 import express from "express";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
-import { sql } from "drizzle-orm";
+import { sql, eq, isNull, or } from "drizzle-orm";
+import { ai } from "../services/ai-provider";
 
 const router = express.Router();
 
@@ -652,5 +653,205 @@ router.get("/anchor-content/:type/:category", async (req, res) => {
     return res.status(500).json({ success: false, error: "Failed to retrieve anchor content" });
   }
 });
+
+/**
+ * POST /api/consumer-categories/categorize/:studyId
+ * Categorize a single study using AI
+ */
+router.post("/categorize/:studyId", async (req, res) => {
+  try {
+    const studyId = parseInt(req.params.studyId);
+    if (isNaN(studyId)) {
+      return res.status(400).json({ success: false, error: "Invalid study ID" });
+    }
+
+    const [study] = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        methods: studies.methods,
+        results: studies.results,
+        conclusion: studies.conclusion,
+        category: studies.category,
+      })
+      .from(studies)
+      .where(eq(studies.id, studyId))
+      .limit(1);
+
+    if (!study) {
+      return res.status(404).json({ success: false, error: "Study not found" });
+    }
+
+    const categories = await categorizeStudyWithAI(study);
+
+    await db
+      .update(studies)
+      .set({ consumerCategories: JSON.stringify(categories) })
+      .where(eq(studies.id, studyId));
+
+    return res.json({ success: true, studyId, categories });
+  } catch (error) {
+    console.error("Error categorizing study:", error);
+    return res.status(500).json({ success: false, error: "Failed to categorize study" });
+  }
+});
+
+/**
+ * POST /api/consumer-categories/batch-categorize
+ * Batch categorize uncategorized studies
+ */
+router.post("/batch-categorize", async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.body.limit) || 10, 50);
+
+    const uncategorized = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        methods: studies.methods,
+        results: studies.results,
+        conclusion: studies.conclusion,
+        category: studies.category,
+      })
+      .from(studies)
+      .where(or(isNull(studies.consumerCategories), eq(studies.consumerCategories, "")))
+      .limit(limit);
+
+    let successful = 0;
+    let failed = 0;
+    const errors: { studyId: number; error: string }[] = [];
+
+    for (const study of uncategorized) {
+      try {
+        const categories = await categorizeStudyWithAI(study);
+        await db
+          .update(studies)
+          .set({ consumerCategories: JSON.stringify(categories) })
+          .where(eq(studies.id, study.id));
+        successful++;
+        // Small delay to avoid rate limits
+        await new Promise((r) => setTimeout(r, 2000));
+      } catch (err) {
+        failed++;
+        errors.push({ studyId: study.id, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    return res.json({
+      success: true,
+      total: uncategorized.length,
+      successful,
+      failed,
+      errors,
+    });
+  } catch (error) {
+    console.error("Error in batch categorization:", error);
+    return res.status(500).json({ success: false, error: "Failed to run batch categorization" });
+  }
+});
+
+/**
+ * Use AI to categorize a study into consumer-friendly categories
+ */
+async function categorizeStudyWithAI(study: {
+  id: number;
+  title: string;
+  abstract: string | null;
+  methods: string | null;
+  results: string | null;
+  conclusion: string | null;
+  category: string;
+}) {
+  if (ai.getProviderStatus().primary === "none") {
+    // Fallback: use existing category to make a best guess
+    return inferCategoriesFromStudyCategory(study.category);
+  }
+
+  const studyContent = [
+    `Title: ${study.title}`,
+    study.abstract ? `Abstract: ${study.abstract.substring(0, 500)}` : "",
+    study.methods ? `Methods: ${study.methods.substring(0, 300)}` : "",
+    study.conclusion ? `Conclusion: ${study.conclusion.substring(0, 300)}` : "",
+  ].filter(Boolean).join("\n");
+
+  const prompt = `Categorize this hydrogen therapy study into consumer-friendly categories.
+
+${studyContent}
+
+Return JSON with these arrays (use ONLY the exact category names listed):
+
+condition: Pick from: "Heart Disease & Hypertension", "Brain & Neurological Disorders", "Diabetes & Metabolic Health", "Arthritis & Inflammation", "Lung & Respiratory Conditions", "Digestive Health (Gut/Liver)", "Cancer Supportive Care"
+
+bodySystem: Pick from: "Cardiovascular System", "Nervous System", "Respiratory System", "Digestive System", "Immune System", "Musculoskeletal System", "Renal System", "Integumentary System"
+
+lifeStage: Pick from: "Infants & Newborns", "Children & Adolescents", "Adults", "Older Adults", "Athletes & Fitness"
+
+Only include categories that are clearly relevant. Return valid JSON only.`;
+
+  try {
+    const result = await ai.generateJSON(
+      "You are a medical research categorization assistant. Return valid JSON only.",
+      prompt,
+      { temperature: 0.3, maxTokens: 300 },
+    );
+
+    return {
+      condition: Array.isArray(result.condition) ? result.condition : [],
+      bodySystem: Array.isArray(result.bodySystem) ? result.bodySystem : [],
+      lifeStage: Array.isArray(result.lifeStage) ? result.lifeStage : [],
+    };
+  } catch {
+    return inferCategoriesFromStudyCategory(study.category);
+  }
+}
+
+function inferCategoriesFromStudyCategory(category: string) {
+  const cat = (category || "").toLowerCase();
+  const result: { condition: string[]; bodySystem: string[]; lifeStage: string[] } = {
+    condition: [],
+    bodySystem: [],
+    lifeStage: ["Adults"],
+  };
+
+  if (cat.includes("cardiovascular")) {
+    result.condition.push("Heart Disease & Hypertension");
+    result.bodySystem.push("Cardiovascular System");
+  }
+  if (cat.includes("neurological")) {
+    result.condition.push("Brain & Neurological Disorders");
+    result.bodySystem.push("Nervous System");
+  }
+  if (cat.includes("diabetes") || cat.includes("metabolic")) {
+    result.condition.push("Diabetes & Metabolic Health");
+  }
+  if (cat.includes("inflammation")) {
+    result.condition.push("Arthritis & Inflammation");
+    result.bodySystem.push("Immune System");
+  }
+  if (cat.includes("respiratory")) {
+    result.condition.push("Lung & Respiratory Conditions");
+    result.bodySystem.push("Respiratory System");
+  }
+  if (cat.includes("gastrointestinal") || cat.includes("hepatic")) {
+    result.condition.push("Digestive Health (Gut/Liver)");
+    result.bodySystem.push("Digestive System");
+  }
+  if (cat.includes("cancer")) {
+    result.condition.push("Cancer Supportive Care");
+  }
+  if (cat.includes("kidney")) {
+    result.bodySystem.push("Renal System");
+  }
+  if (cat.includes("dermatology")) {
+    result.bodySystem.push("Integumentary System");
+  }
+  if (cat.includes("exercise") || cat.includes("fitness")) {
+    result.lifeStage.push("Athletes & Fitness");
+  }
+
+  return result;
+}
 
 export default router;

@@ -255,6 +255,29 @@ router.get("/report", async (req, res) => {
         period as "weekly" | "monthly" | "quarterly",
       );
 
+      // If generation failed, return empty report without saving
+      if ((report as any).status === "failed") {
+        return res.json({
+          success: true,
+          cached: false,
+          report: {
+            id: 0,
+            period,
+            periodStart: (report as any).periodStart,
+            periodEnd: (report as any).periodEnd,
+            emergingTopics: [],
+            breakthroughStudies: [],
+            momentum: { accelerating: [], declining: [], stable: [] },
+            keywordTrends: [],
+            summary: "No trend data available for this period. Try running an analysis or selecting a longer time range.",
+            insights: [],
+            recommendations: ["Add more studies to generate meaningful trend analysis"],
+            metrics: { totalStudiesAnalyzed: 0, newStudiesCount: 0, avgCitationCount: 0, topResearchAreas: [] },
+            generatedAt: new Date().toISOString(),
+          },
+        });
+      }
+
       // Save to database
       const [savedReport] = await db
         .insert(trendAnalysis)

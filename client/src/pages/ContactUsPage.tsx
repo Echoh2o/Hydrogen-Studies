@@ -167,9 +167,9 @@ export default function ContactUsPage() {
               How to Reach Us
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {contactMethods.map((method, index) => (
+              {contactMethods.map((method) => (
                 <Card
-                  key={index}
+                  key={method.title}
                   className="text-center hover:shadow-lg transition-shadow"
                 >
                   <CardHeader>
@@ -331,8 +331,8 @@ export default function ContactUsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {supportCategories.map((category, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
+              {supportCategories.map((category) => (
+                <Card key={category.value} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center space-x-3">
                       {category.icon}

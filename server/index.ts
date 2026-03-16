@@ -79,20 +79,29 @@ async function setupServer() {
     });
 
     // Graceful shutdown for container deployments (Railway, Docker, etc.)
+    let isShuttingDown = false;
     const shutdown = (signal: string) => {
+      if (isShuttingDown) return; // Prevent double shutdown
+      isShuttingDown = true;
       console.log(`Received ${signal}. Shutting down gracefully...`);
+
+      // Stop accepting new connections and background work
       jobScheduler.stop();
       stopHealthMonitoring();
+
+      // Stop accepting new connections; existing ones finish naturally
       server.close(async () => {
+        console.log("All connections closed.");
         try { await pool.end(); } catch {}
-        console.log("Server closed.");
+        console.log("Database pool closed. Shutdown complete.");
         process.exit(0);
       });
-      // Force exit after 10 seconds if graceful shutdown hangs
+
+      // Give in-flight requests time to complete before force exit
       setTimeout(() => {
-        console.error("Forced shutdown after timeout.");
+        console.error("Forced shutdown after 15s timeout.");
         process.exit(1);
-      }, 10000);
+      }, 15000).unref();
     };
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));

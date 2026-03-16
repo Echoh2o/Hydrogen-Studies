@@ -108,6 +108,11 @@ export default function BlogPage() {
       <Helmet>
         <title>{blog.title} | Hydrogen Studies Blog</title>
         <meta name="description" content={blog.summary} />
+        <meta property="og:title" content={blog.title} />
+        <meta property="og:description" content={blog.summary} />
+        {blog.imageUrl && <meta property="og:image" content={blog.imageUrl} />}
+        <meta property="og:type" content="article" />
+        {blog.createdAt && <meta property="article:published_time" content={blog.createdAt} />}
 
         {/* Schema.org markup for article */}
         <script type="application/ld+json">

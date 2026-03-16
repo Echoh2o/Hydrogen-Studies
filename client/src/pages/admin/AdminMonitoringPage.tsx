@@ -94,7 +94,7 @@ export default function AdminMonitoringPage() {
 
   // Mutations for triggering processes
   const consumerContentMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/trigger/consumer-content", "POST"),
+    mutationFn: () => apiRequest("POST", "/api/admin/trigger/consumer-content"),
     onSuccess: (data: any) => {
       toast({
         title: data.started ? "Process Started" : "Process Failed",
@@ -116,7 +116,7 @@ export default function AdminMonitoringPage() {
 
   const researchEnrichmentMutation = useMutation({
     mutationFn: () =>
-      apiRequest("/api/admin/trigger/research-enrichment", "POST"),
+      apiRequest("POST", "/api/admin/trigger/research-enrichment"),
     onSuccess: (data: any) => {
       toast({
         title: data.started ? "Process Started" : "Process Failed",
@@ -138,7 +138,7 @@ export default function AdminMonitoringPage() {
 
   const visualEnhancementMutation = useMutation({
     mutationFn: () =>
-      apiRequest("/api/admin/trigger/visual-enhancement", "POST"),
+      apiRequest("POST", "/api/admin/trigger/visual-enhancement"),
     onSuccess: (data: any) => {
       toast({
         title: data.started ? "Process Started" : "Process Failed",
@@ -159,7 +159,7 @@ export default function AdminMonitoringPage() {
   });
 
   const stopProcessesMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/stop-processes", "POST"),
+    mutationFn: () => apiRequest("POST", "/api/admin/stop-processes"),
     onSuccess: (data: any) => {
       toast({
         title: "Processes Stopped",

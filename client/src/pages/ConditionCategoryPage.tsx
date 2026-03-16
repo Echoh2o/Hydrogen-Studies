@@ -77,7 +77,6 @@ const ConditionCategoryPage = () => {
           const data = await response.json();
           if (data.success && data.data) {
             setStudies(data.data);
-            console.log("Studies for condition:", data.data);
           } else {
             console.warn("No studies found or invalid response format:", data);
             setStudies([]);

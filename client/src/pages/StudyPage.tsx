@@ -584,9 +584,9 @@ const StudyPage = () => {
                         <div className="flex flex-wrap gap-2">
                           {(study as any).keywords
                             .slice(0, 6)
-                            .map((keyword: string, index: number) => (
+                            .map((keyword: string) => (
                               <Badge
-                                key={index}
+                                key={keyword}
                                 variant="outline"
                                 className="bg-green-100 text-green-800 border-green-300 text-xs md:text-sm"
                               >

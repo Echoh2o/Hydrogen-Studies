@@ -15,6 +15,8 @@ declare module "express-session" {
     userId: string;
     username: string | null;
     userRole: string;
+    userIsActive: boolean;
+    roleCachedAt: number;
   }
 }
 
@@ -63,10 +65,29 @@ export function requireRole(roles: string[]) {
       return res.status(401).json({ error: "Unauthorized - Please login" });
     }
 
-    // Get user from database to check role
+    // Use cached role from session if available (refreshed every 5 minutes)
+    const now = Date.now();
+    const cacheAge = now - (req.session.roleCachedAt || 0);
+    const ROLE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+    if (req.session.userRole && req.session.userIsActive !== undefined && cacheAge < ROLE_CACHE_TTL) {
+      if (!req.session.userIsActive) {
+        return res.status(403).json({ error: "Account is deactivated" });
+      }
+      if (roles.includes(req.session.userRole)) {
+        return next();
+      }
+      return res.status(403).json({
+        error: "Forbidden - Insufficient permissions",
+        requiredRoles: roles,
+        userRole: req.session.userRole,
+      });
+    }
+
+    // Cache miss or expired — fetch from database
     try {
       const [user] = await db
-        .select()
+        .select({ role: users.role, isActive: users.isActive })
         .from(users)
         .where(eq(users.id, req.session.userId))
         .limit(1);
@@ -75,11 +96,15 @@ export function requireRole(roles: string[]) {
         return res.status(401).json({ error: "User not found" });
       }
 
+      // Cache role in session
+      req.session.userRole = user.role || "";
+      req.session.userIsActive = user.isActive ?? true;
+      req.session.roleCachedAt = now;
+
       if (!user.isActive) {
         return res.status(403).json({ error: "Account is deactivated" });
       }
 
-      // Check if user has one of the required roles
       if (roles.includes(user.role || "")) {
         return next();
       }

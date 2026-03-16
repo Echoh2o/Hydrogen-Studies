@@ -22,6 +22,18 @@ import { type studies } from "@shared/schema";
 
 type Study = typeof studies.$inferSelect;
 
+/** Minimal shape for related/similar study items returned by the API */
+interface RelatedStudyItem {
+  id: number;
+  title: string;
+  slug?: string | null;
+  plainLanguageTitle?: string | null;
+  journal?: string | null;
+  publishDate?: string | null;
+  journalPublishDate?: string | null;
+  publishYear?: number | null;
+}
+
 interface StudyInfoPanelProps {
   study: Study;
   relatedStudies?: Study[];
@@ -58,18 +70,22 @@ export function StudyInfoPanel({
     : parseJsonField(study.keywords || "");
 
   // Use health conditions and body systems instead of outdated consumer categories
-  const healthCategories = [];
-  if (
-    (study as any).health_conditions &&
-    (study as any).health_conditions !== "General Wellness"
-  ) {
-    healthCategories.push((study as any).health_conditions);
+  const healthCategories: string[] = [];
+  if (study.healthConditions) {
+    const conditions = Array.isArray(study.healthConditions)
+      ? study.healthConditions
+      : [study.healthConditions];
+    conditions
+      .filter((c): c is string => typeof c === "string" && c !== "General Wellness")
+      .forEach((c) => healthCategories.push(c));
   }
-  if (
-    (study as any).body_systems &&
-    (study as any).body_systems !== "General Wellness"
-  ) {
-    healthCategories.push((study as any).body_systems);
+  if (study.bodySystems) {
+    const systems = Array.isArray(study.bodySystems)
+      ? study.bodySystems
+      : [study.bodySystems];
+    systems
+      .filter((s): s is string => typeof s === "string" && s !== "General Wellness")
+      .forEach((s) => healthCategories.push(s));
   }
   if (study.category && study.category !== "General Wellness") {
     healthCategories.push(study.category);
@@ -102,12 +118,12 @@ export function StudyInfoPanel({
     enabled: consumerCategories.length > 0,
   });
 
-  const { data: relatedStudiesData } = useQuery({
+  const { data: relatedStudiesData } = useQuery<RelatedStudyItem[]>({
     queryKey: ["/api/studies/metadata/related", study.id],
     queryFn: async () => {
       const response = await fetch(`/api/studies/metadata/related/${study.id}`);
       if (!response.ok) throw new Error("Failed to fetch related studies");
-      return response.json();
+      return response.json() as Promise<RelatedStudyItem[]>;
     },
     enabled: !!study.id,
   });
@@ -429,7 +445,7 @@ export function StudyInfoPanel({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {relatedStudiesData.slice(0, 4).map((relatedStudy: any) => (
+              {relatedStudiesData.slice(0, 4).map((relatedStudy) => (
                 <Link
                   key={relatedStudy.id}
                   href={`/study/${relatedStudy.slug || relatedStudy.id}`}
@@ -460,47 +476,26 @@ export function StudyInfoPanel({
       )}
 
       {/* Study Methodology */}
-      {((study as any).sample_size ||
-        (study as any).duration ||
-        (study as any).vehicle ||
-        (study as any).ph) && (
+      {(study.sampleSize || study.duration) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Study Methodology</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {(study as any).sample_size && (
+              {study.sampleSize && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-neutral-600">Sample Size:</span>
                   <Badge variant="outline" className="text-xs">
-                    {(study as any).sample_size}
+                    {study.sampleSize}
                   </Badge>
                 </div>
               )}
-              {(study as any).duration && (
+              {study.duration && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-neutral-600">Duration:</span>
                   <Badge variant="outline" className="text-xs">
-                    {(study as any).duration}
-                  </Badge>
-                </div>
-              )}
-              {(study as any).vehicle && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-neutral-600">
-                    Delivery Method:
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {(study as any).vehicle}
-                  </Badge>
-                </div>
-              )}
-              {(study as any).ph && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-neutral-600">pH Level:</span>
-                  <Badge variant="outline" className="text-xs">
-                    {(study as any).ph}
+                    {study.duration} days
                   </Badge>
                 </div>
               )}
@@ -510,16 +505,16 @@ export function StudyInfoPanel({
       )}
 
       {/* Study Quality Indicators */}
-      {((study as any).citation_count > 0 ||
-        (study as any).peer_reviewed ||
-        (study as any).has_full_text) && (
+      {((study.citationCount && study.citationCount > 0) ||
+        study.peerReviewed ||
+        study.hasFullText) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Quality Indicators</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {(study as any).peer_reviewed && (
+              {study.peerReviewed && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm text-neutral-700">
@@ -527,15 +522,15 @@ export function StudyInfoPanel({
                   </span>
                 </div>
               )}
-              {(study as any).citation_count > 0 && (
+              {study.citationCount && study.citationCount > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-neutral-600">Citations:</span>
                   <Badge variant="outline" className="text-xs">
-                    {(study as any).citation_count}
+                    {study.citationCount}
                   </Badge>
                 </div>
               )}
-              {(study as any).has_full_text && (
+              {study.hasFullText && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                   <span className="text-sm text-neutral-700">
@@ -549,26 +544,26 @@ export function StudyInfoPanel({
       )}
 
       {/* Geographic Information */}
-      {((study as any).country || (study as any).region) && (
+      {(study.country || study.region) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Geographic Information</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {(study as any).country && (
+              {study.country && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-neutral-600">Country:</span>
                   <Badge variant="outline" className="text-xs">
-                    {(study as any).country}
+                    {study.country}
                   </Badge>
                 </div>
               )}
-              {(study as any).region && (
+              {study.region && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-neutral-600">Region:</span>
                   <Badge variant="outline" className="text-xs">
-                    {(study as any).region}
+                    {study.region}
                   </Badge>
                 </div>
               )}

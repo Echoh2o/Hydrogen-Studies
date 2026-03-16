@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
+import JsonLd from "@/components/seo/JsonLd";
 import { useQuery } from "@tanstack/react-query";
 import {
   Search,
@@ -90,6 +91,28 @@ export default function HomePage() {
         <title>Hydrogen Studies - Science-Backed Hydrogen Health Research</title>
         <meta name="description" content="Explore peer-reviewed research on hydrogen therapy, hydrogen water, and molecular hydrogen health benefits. Browse hundreds of scientific studies." />
       </Helmet>
+      <JsonLd
+        type="WebSite"
+        data={{
+          name: "Hydrogen Studies",
+          url: "https://hydrogenstudies.com",
+          description: "Comprehensive database of peer-reviewed research on molecular hydrogen therapy and hydrogen water health benefits.",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://hydrogenstudies.com/search?q={search_term_string}",
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
+      <JsonLd
+        type="Organization"
+        data={{
+          name: "Hydrogen Studies",
+          url: "https://hydrogenstudies.com",
+          logo: "https://hydrogenstudies.com/logo.png",
+          description: "Science-backed hydrogen health research database featuring peer-reviewed studies on molecular hydrogen therapy.",
+        }}
+      />
       <SiteHeader />
 
       {/* Hero Section */}

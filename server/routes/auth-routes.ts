@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { db } from "../db";
 import { users, auditLogs, passwordResetTokens, UserRole } from "../../shared/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { isAuthenticated, requireRole, hasPermission } from "../auth";
 import { authRateLimiter } from "../utils/rate-limiting";
@@ -769,20 +769,17 @@ router.post(
       // Hash password before transaction to avoid holding DB lock during bcrypt
       const passwordHash = await bcrypt.hash(newPassword, 10);
 
-      // Use transaction to atomically validate token + update password + mark used
-      // Prevents race condition where same token could be used by concurrent requests
+      // Use transaction with row-level locking to atomically validate token + update password
+      // FOR UPDATE prevents race condition where concurrent requests reuse the same token
       let resetToken: typeof passwordResetTokens.$inferSelect | undefined;
       await db.transaction(async (tx) => {
-        [resetToken] = await tx
-          .select()
-          .from(passwordResetTokens)
-          .where(
-            and(
-              eq(passwordResetTokens.token, token),
-              gt(passwordResetTokens.expiresAt, new Date()),
-            ),
-          )
-          .limit(1);
+        const rows = await tx.execute(
+          sql`SELECT * FROM password_reset_tokens
+              WHERE token = ${token} AND expires_at > NOW()
+              LIMIT 1
+              FOR UPDATE SKIP LOCKED`
+        );
+        resetToken = (rows.rows?.[0] || rows[0]) as typeof resetToken;
 
         if (!resetToken || resetToken.usedAt) {
           throw new Error("INVALID_TOKEN");

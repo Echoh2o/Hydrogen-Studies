@@ -146,6 +146,7 @@ export default function TrendsDashboard() {
   const {
     data: trendReport,
     isLoading: reportLoading,
+    isError: reportError,
     refetch: refetchReport,
   } = useQuery({
     queryKey: ["/api/trends/report", selectedPeriod],
@@ -158,6 +159,7 @@ export default function TrendsDashboard() {
       return data.report as TrendReport;
     },
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    retry: 1,
   });
 
   // Fetch trend alerts
@@ -284,6 +286,31 @@ export default function TrendsDashboard() {
           ))}
         </div>
         <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  if (reportError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Research Trends Analysis</h1>
+            <p className="text-muted-foreground">AI-powered insights into emerging topics and breakthrough research</p>
+          </div>
+          <Button onClick={() => refetchReport()} variant="outline">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Retry
+          </Button>
+        </div>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Failed to load trends</AlertTitle>
+          <AlertDescription>
+            Could not generate the trend report. This may happen if no studies have been added recently.
+            Try clicking "Run Analysis" or selecting a different time period.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

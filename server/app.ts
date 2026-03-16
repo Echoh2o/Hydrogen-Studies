@@ -101,7 +101,6 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'",
           "https://www.googletagmanager.com",
           "https://www.google-analytics.com",
         ],
@@ -140,8 +139,15 @@ app.use(cookieParser());
 validateCorsConfig();
 app.use(cors(getCorsConfig()));
 
-// Body parsing middleware
-app.use(express.json({ limit: "2mb" }));
+// Body parsing middleware — capture raw body for webhook HMAC verification
+app.use(express.json({
+  limit: "2mb",
+  verify: (req: any, _res, buf) => {
+    if (req.originalUrl?.startsWith("/api/webhooks/")) {
+      req.rawBody = buf;
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 // Dynamic SEO routes (sitemaps, robots.txt) — must be before CSRF and session
@@ -196,6 +202,8 @@ const csrf = csrfProtection({
     "/api/blog-recommendations", // Blog recommendations (protected by admin auth)
     "/api/pipeline", // Research pipeline (protected by admin auth)
     "/api/image-generation", // Image generation (protected by admin auth)
+    "/api/content-optimization", // Content optimization (protected by admin auth)
+    "/api/consumer-categories", // Consumer categories (protected by admin auth)
     "/api/doi", // DOI enhancer (protected by admin auth)
   ],
 });
@@ -355,7 +363,7 @@ app.post("/api/search/analytics", (req, res) => res.json({ ok: true }));
 app.post("/api/studies/analytics", (req, res) => res.json({ ok: true }));
 
 // Journal Date Updater (admin)
-app.get("/api/admin/journal-date-stats", requireAdmin, async (req, res) => {
+app.get("/api/admin/journal-date-stats", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { db } = await import("./db");
     const { sql } = await import("drizzle-orm");
@@ -366,38 +374,53 @@ app.get("/api/admin/journal-date-stats", requireAdmin, async (req, res) => {
         count(*) as total
       FROM studies
     `);
-    const row = result.rows?.[0] || result[0] || {};
-    res.json({ success: true, stats: row });
+    const row: any = result.rows?.[0] || result[0] || {};
+    const total = Number(row.total) || 0;
+    const withDate = Number(row.with_date) || 0;
+    const withoutDate = Number(row.without_date) || 0;
+
+    // Fetch recently updated studies with journal dates
+    const recentResult = await db.execute(sql`
+      SELECT title, journal_publish_date, doi
+      FROM studies
+      WHERE journal_publish_date IS NOT NULL AND journal_publish_date != ''
+      ORDER BY updated_at DESC NULLS LAST
+      LIMIT 5
+    `);
+    const recentRows: any[] = recentResult.rows || recentResult || [];
+
+    res.json({
+      success: true,
+      stats: {
+        totalStudies: total,
+        studiesWithDate: withDate,
+        studiesNeedingDate: withoutDate,
+        percentComplete: total > 0 ? Math.round((withDate / total) * 100) : 0,
+        recentlyUpdated: recentRows.map((r: any) => ({
+          title: r.title,
+          journalPublishDate: r.journal_publish_date,
+          doi: r.doi,
+        })),
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: "Failed to get journal date stats" });
   }
 });
 
-app.post("/api/admin/update-journal-dates", requireAdmin, async (req, res) => {
+app.post("/api/admin/update-journal-dates", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
-    const { db } = await import("./db");
-    const { sql } = await import("drizzle-orm");
     const limit = Math.min(Number(req.body.limit) || 50, 200);
-    const result = await db.execute(sql`
-      SELECT id, doi FROM studies
-      WHERE (journal_publish_date IS NULL OR journal_publish_date = '')
-        AND doi IS NOT NULL AND doi != ''
-      LIMIT ${limit}
-    `);
-    const rows = result.rows || result;
-    res.json({
-      success: true,
-      message: `Found ${(rows as any[]).length} studies to update. Use CrossRef/EuropePMC update-journal-date endpoints per DOI.`,
-      count: (rows as any[]).length,
-      studyIds: (rows as any[]).map((r: any) => r.id),
-    });
+    const { updateJournalPublicationDates } = await import("./services/journal-date-updater");
+    const result = await updateJournalPublicationDates(limit);
+    res.json(result);
   } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to process journal dates" });
+    res.status(500).json({ success: false, totalUpdated: 0, failedDois: [], message: "Failed to process journal dates" });
   }
 });
 
 // Quality Monitoring — protected with admin auth
-app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
+app.get("/api/admin/quality/monitor", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { qualityMonitor } = await import("./utils/quality-assurance-monitor");
     const report = qualityMonitor.getQualityReport();
@@ -408,7 +431,7 @@ app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
   }
 });
 
-app.get("/api/admin/quality/integrity", requireAdmin, async (req, res) => {
+app.get("/api/admin/quality/integrity", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { dataIntegrityValidator } = await import("./data-integrity-validator");
     const validation = await dataIntegrityValidator.validateDataIntegrity();
@@ -419,7 +442,7 @@ app.get("/api/admin/quality/integrity", requireAdmin, async (req, res) => {
   }
 });
 
-app.post("/api/admin/quality/fix-issues", requireAdmin, async (req, res) => {
+app.post("/api/admin/quality/fix-issues", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { dataIntegrityValidator } = await import("./data-integrity-validator");
     const result = await dataIntegrityValidator.fixCommonIssues();
@@ -430,7 +453,7 @@ app.post("/api/admin/quality/fix-issues", requireAdmin, async (req, res) => {
   }
 });
 
-app.get("/api/admin/quality/tests", requireAdmin, async (req, res) => {
+app.get("/api/admin/quality/tests", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { qualityTests } = await import("./automated-quality-tests");
     const results = await qualityTests.runAllTests();
@@ -499,11 +522,28 @@ app.post("/api/client-errors", (req, res) => {
   res.status(204).end();
 });
 
-// Health check endpoint for load balancers (before error handlers)
+// Health check endpoints for load balancers (before error handlers)
+
+// Full health check (database, memory, request stats)
 app.get("/health", async (req, res) => {
   const health = await performHealthCheck();
   const statusCode = health.status === "healthy" ? 200 : 503;
   res.status(statusCode).json(health);
+});
+
+// Liveness probe — is the process alive? (lightweight, no DB call)
+app.get("/health/live", (req, res) => {
+  res.status(200).json({ status: "alive", uptime: process.uptime() });
+});
+
+// Readiness probe — can the server accept requests? (checks DB connectivity)
+app.get("/health/ready", async (req, res) => {
+  const health = await performHealthCheck();
+  if (health.database.connected) {
+    res.status(200).json({ status: "ready", dbLatency: health.database.latency });
+  } else {
+    res.status(503).json({ status: "not_ready", reason: "database unavailable" });
+  }
 });
 
 // 404 handler for API routes
@@ -523,23 +563,24 @@ app.use(globalErrorHandler);
 // Initialize health monitoring
 initializeHealthMonitoring();
 
-// Verify database connectivity on startup, then run migrations
+// Verify database connectivity on startup, then run versioned migrations
 import { pool } from "./db";
 pool.query("SELECT 1").then(async () => {
   console.log("Database connection verified");
-  // Run full-text search migration if needed
   try {
+    const { runMigrations } = await import("./migrations/migration-runner");
     const { addFullTextSearch } = await import("./migrations/add-fulltext-search");
-    await addFullTextSearch();
-  } catch (err: any) {
-    console.warn("Full-text search migration skipped:", err.message);
-  }
-  // Run pipeline tables migration
-  try {
     const { createPipelineTables } = await import("./migrations/pipeline-tables-migration");
-    await createPipelineTables();
+    const { createBlogGenerationJobsTable } = await import("./migrations/blog-generation-jobs-migration");
+
+    await runMigrations([
+      { name: "001_add_fulltext_search", up: addFullTextSearch },
+      { name: "002_create_pipeline_tables", up: createPipelineTables },
+      { name: "003_create_blog_generation_jobs", up: createBlogGenerationJobsTable },
+      // Add new migrations here in order
+    ]);
   } catch (err: any) {
-    console.warn("Pipeline tables migration skipped:", err.message);
+    console.warn("Migration runner error:", err.message);
   }
 }).catch((err: any) => {
   console.error("WARNING: Database connection failed on startup:", err.message);

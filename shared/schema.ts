@@ -13,6 +13,10 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// ============================================================
+// ENUMS & CONSTANTS
+// ============================================================
+
 // Consumer-friendly categorization model
 export enum CategorizationModel {
   CONDITION = "condition",
@@ -27,6 +31,10 @@ export enum UserRole {
   CUSTOMER = "customer",
   VISITOR = "visitor",
 }
+
+// ============================================================
+// USER & AUTH TABLES (users, sessions, audit, preferences)
+// ============================================================
 
 // Users table schema - Enhanced for authentication
 export const users = pgTable(
@@ -224,6 +232,10 @@ export const userBlogInteractions = pgTable(
   },
 );
 
+// ============================================================
+// STUDY & RESEARCH TABLES (studies, categories, collections)
+// ============================================================
+
 // Studies table schema
 export const studies = pgTable(
   "studies",
@@ -353,6 +365,11 @@ export const studies = pgTable(
       lastModifiedIdx: index("studies_last_modified_idx").on(
         table.lastModified,
       ),
+      // Additional performance indexes for filtered queries
+      countryIdx: index("studies_country_idx").on(table.country),
+      peerReviewedIdx: index("studies_peer_reviewed_idx").on(table.peerReviewed),
+      studyTypeIdx: index("studies_study_type_idx").on(table.studyType),
+      publishDateIdx: index("studies_publish_date_idx").on(table.publishDate),
     };
   },
 );
@@ -469,6 +486,10 @@ export const collectionStudies = pgTable(
   },
 );
 
+// ============================================================
+// CONTENT & COMMUNICATION TABLES (newsletters, blogs, FAQ, etc.)
+// ============================================================
+
 // Newsletter subscriptions table schema
 export const newsletters = pgTable("newsletters", {
   id: serial("id").primaryKey(),
@@ -523,6 +544,10 @@ export const contactMessages = pgTable("contact_messages", {
   message: text("message").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// ============================================================
+// SEO & ANALYTICS TABLES (metadata, keyword tracking, smart links)
+// ============================================================
 
 // SEO Metadata table for centralized SEO management
 export const seoMetadata = pgTable(

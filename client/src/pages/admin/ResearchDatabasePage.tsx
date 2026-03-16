@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -69,6 +69,485 @@ import { queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Pagination } from "@/components/ui/pagination";
+
+// --- Extracted sub-components ---
+
+function SearchFormPanel({
+  searchQuery,
+  setSearchQuery,
+  selectedDatabases,
+  handleDatabaseChange,
+  handleSearch,
+  isSearching,
+}: {
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  selectedDatabases: string[];
+  handleDatabaseChange: (checked: boolean, value: string) => void;
+  handleSearch: () => void;
+  isSearching: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Search Databases</CardTitle>
+        <CardDescription>
+          Search across multiple scientific databases for hydrogen
+          research
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium mb-2">Select Databases</h3>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="pubmed"
+                  checked={selectedDatabases.includes("pubmed")}
+                  onCheckedChange={(checked) =>
+                    handleDatabaseChange(checked as boolean, "pubmed")
+                  }
+                />
+                <Label htmlFor="pubmed">PubMed</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="europepmc"
+                  checked={selectedDatabases.includes("europepmc")}
+                  onCheckedChange={(checked) =>
+                    handleDatabaseChange(checked as boolean, "europepmc")
+                  }
+                />
+                <Label htmlFor="europepmc">Europe PMC</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="semanticscholar"
+                  checked={selectedDatabases.includes("semanticscholar")}
+                  onCheckedChange={(checked) =>
+                    handleDatabaseChange(
+                      checked as boolean,
+                      "semanticscholar",
+                    )
+                  }
+                />
+                <Label htmlFor="semanticscholar">Semantic Scholar</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="crossref"
+                  checked={selectedDatabases.includes("crossref")}
+                  onCheckedChange={(checked) =>
+                    handleDatabaseChange(checked as boolean, "crossref")
+                  }
+                />
+                <Label htmlFor="crossref">CrossRef</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="search-query">Search Query</Label>
+            <div className="flex">
+              <Input
+                id="search-query"
+                placeholder="E.g., hydrogen therapy cancer, hydrogen water inflammation"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleSearch}
+                disabled={
+                  isSearching ||
+                  !searchQuery ||
+                  selectedDatabases.length === 0
+                }
+                className="ml-2"
+              >
+                {isSearching ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="mr-2 h-4 w-4" />
+                )}
+                Search
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Tip: The search will automatically include hydrogen-related
+              terms if not specified
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SearchResultsCard({
+  searchResults,
+  activeQuery,
+  selectedPapers,
+  togglePaperSelection,
+  handleImport,
+  importPaperMutation,
+  importedPaperIds,
+  renderPagination,
+  toast,
+}: {
+  searchResults: any;
+  activeQuery: string;
+  selectedPapers: { [key: string]: any };
+  togglePaperSelection: (paperId: string, paper: any) => void;
+  handleImport: (paper: any, source: string) => void;
+  importPaperMutation: any;
+  importedPaperIds: Set<string>;
+  renderPagination: () => React.ReactNode;
+  toast: any;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>Search Results</CardTitle>
+            <CardDescription>
+              Found {searchResults.total || 0} results for "
+              {activeQuery}"
+            </CardDescription>
+          </div>
+
+          {Object.keys(selectedPapers).length > 0 && (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={importPaperMutation.isPending}
+              onClick={() => {
+                const papers = Object.values(selectedPapers);
+                toast({
+                  title: "Batch Import Started",
+                  description: `Importing ${papers.length} selected papers...`,
+                });
+                for (const paper of papers) {
+                  handleImport(paper, paper.source || "pubmed");
+                }
+              }}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Import Selected ({Object.keys(selectedPapers).length})
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {!searchResults.articles ||
+        searchResults.articles.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No results found for your search query
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[5%]"></TableHead>
+                  <TableHead className="w-[40%]">Title</TableHead>
+                  <TableHead className="w-[25%]">Authors</TableHead>
+                  <TableHead className="w-[10%]">Year</TableHead>
+                  <TableHead className="w-[10%]">Source</TableHead>
+                  <TableHead className="w-[10%]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {searchResults.articles.map((paper: any) => {
+                  const paperId =
+                    paper.id ||
+                    paper.paperId ||
+                    paper.pmid ||
+                    `${paper.source}-${paper.title}`;
+                  const isAlreadyInDb = paper.inDatabase || importedPaperIds.has(String(paperId)) || importedPaperIds.has(String(paper.doi));
+                  const dbId = paper.databaseId;
+                  return (
+                    <TableRow
+                      key={paperId}
+                      className={
+                        isAlreadyInDb
+                          ? "bg-green-50/50"
+                          : selectedPapers[paperId]
+                            ? "bg-primary/5"
+                            : ""
+                      }
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={!!selectedPapers[paperId]}
+                          onCheckedChange={(checked) =>
+                            togglePaperSelection(paperId, paper)
+                          }
+                          disabled={isAlreadyInDb}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {paper.title}
+                          {isAlreadyInDb && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs shrink-0">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              In Database
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {paper.authors ||
+                          paper.authorString ||
+                          "Unknown"}
+                      </TableCell>
+                      <TableCell>
+                        {paper.year ||
+                          paper.pubYear ||
+                          (paper.publishDate &&
+                            paper.publishDate.split("-")[0]) ||
+                          "Unknown"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {paper.source || "Unknown"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {isAlreadyInDb ? (
+                          dbId ? (
+                            <Link href={`/study/id/${dbId}`}>
+                              <Button size="sm" variant="ghost" className="text-green-700">
+                                <BookOpenCheck className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button size="sm" variant="ghost" disabled className="text-green-700">
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Imported
+                            </Button>
+                          )
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleImport(paper, paper.source)
+                            }
+                            disabled={importPaperMutation.isPending}
+                          >
+                            {importPaperMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Import"
+                            )}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            <div className="mt-4 flex justify-center">
+              {renderPagination()}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ExcelImportPanel({ toast }: { toast: any }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Excel & Spreadsheet Import</CardTitle>
+        <CardDescription>
+          Import hydrogen studies from Excel, CSV, or Google Sheets
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="flex flex-col space-y-4 border rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-medium">Upload Excel File</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Upload Excel (.xlsx) or CSV files containing research data
+            </p>
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="file-upload">File</Label>
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".xlsx,.csv"
+                className="cursor-pointer"
+              />
+              <p className="text-xs text-muted-foreground">
+                Max file size: 10MB
+              </p>
+            </div>
+            <Button className="w-full mt-2">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload & Analyze
+            </Button>
+          </div>
+
+          <div className="flex flex-col space-y-4 border rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <TableIcon className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-medium">
+                Google Sheets Import
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Import studies directly from a Google Sheets document
+            </p>
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="sheets-url">Google Sheets URL</Label>
+              <Input
+                id="sheets-url"
+                type="url"
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Spreadsheet must be publicly accessible or shared
+              </p>
+            </div>
+            <Button className="w-full mt-2">
+              <TableIcon className="mr-2 h-4 w-4" />
+              Connect & Import
+            </Button>
+          </div>
+        </div>
+
+        <div className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-center space-x-2">
+            <FilePlus2 className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-medium">
+              Column Mapping & Advanced Options
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Configure how your spreadsheet data maps to study fields
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="text-sm">Required Fields</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="font-medium">Title</span>
+                  <Select defaultValue="title">
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Map to column" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="title">Title</SelectItem>
+                      <SelectItem value="study_title">
+                        Study Title
+                      </SelectItem>
+                      <SelectItem value="paper_title">
+                        Paper Title
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="font-medium">Authors</span>
+                  <Select defaultValue="authors">
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Map to column" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="authors">Authors</SelectItem>
+                      <SelectItem value="researcher">
+                        Researcher
+                      </SelectItem>
+                      <SelectItem value="author_list">
+                        Author List
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm">Optional Fields</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="font-medium">DOI</span>
+                  <Select defaultValue="doi">
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Map to column" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="doi">DOI</SelectItem>
+                      <SelectItem value="digital_id">
+                        Digital ID
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="font-medium">PMID</span>
+                  <Select defaultValue="pmid">
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Map to column" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pmid">PMID</SelectItem>
+                      <SelectItem value="pubmed_id">PubMed ID</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4 mt-4">
+            <Checkbox id="auto-enrich" />
+            <div className="grid gap-1.5 leading-none">
+              <Label
+                htmlFor="auto-enrich"
+                className="text-sm font-medium leading-none"
+              >
+                Auto-enrich from multiple sources
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically fetch missing study data from PubMed, Europe
+                PMC, and other sources
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline">Reset</Button>
+            <Button>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Update Mapping
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --- Main component ---
 
 export default function ResearchDatabasePage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -311,104 +790,14 @@ export default function ResearchDatabasePage() {
         </TabsList>
 
         <TabsContent value="search" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Search Databases</CardTitle>
-              <CardDescription>
-                Search across multiple scientific databases for hydrogen
-                research
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Select Databases</h3>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="pubmed"
-                        checked={selectedDatabases.includes("pubmed")}
-                        onCheckedChange={(checked) =>
-                          handleDatabaseChange(checked as boolean, "pubmed")
-                        }
-                      />
-                      <Label htmlFor="pubmed">PubMed</Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="europepmc"
-                        checked={selectedDatabases.includes("europepmc")}
-                        onCheckedChange={(checked) =>
-                          handleDatabaseChange(checked as boolean, "europepmc")
-                        }
-                      />
-                      <Label htmlFor="europepmc">Europe PMC</Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="semanticscholar"
-                        checked={selectedDatabases.includes("semanticscholar")}
-                        onCheckedChange={(checked) =>
-                          handleDatabaseChange(
-                            checked as boolean,
-                            "semanticscholar",
-                          )
-                        }
-                      />
-                      <Label htmlFor="semanticscholar">Semantic Scholar</Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="crossref"
-                        checked={selectedDatabases.includes("crossref")}
-                        onCheckedChange={(checked) =>
-                          handleDatabaseChange(checked as boolean, "crossref")
-                        }
-                      />
-                      <Label htmlFor="crossref">CrossRef</Label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="search-query">Search Query</Label>
-                  <div className="flex">
-                    <Input
-                      id="search-query"
-                      placeholder="E.g., hydrogen therapy cancer, hydrogen water inflammation"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleSearch}
-                      disabled={
-                        isSearching ||
-                        !searchQuery ||
-                        selectedDatabases.length === 0
-                      }
-                      className="ml-2"
-                    >
-                      {isSearching ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Search className="mr-2 h-4 w-4" />
-                      )}
-                      Search
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Tip: The search will automatically include hydrogen-related
-                    terms if not specified
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <SearchFormPanel
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedDatabases={selectedDatabases}
+            handleDatabaseChange={handleDatabaseChange}
+            handleSearch={handleSearch}
+            isSearching={isSearching}
+          />
 
           {isSearching ? (
             <div className="flex justify-center items-center h-40">
@@ -436,334 +825,22 @@ export default function ResearchDatabasePage() {
               </CardContent>
             </Card>
           ) : searchResults ? (
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>Search Results</CardTitle>
-                    <CardDescription>
-                      Found {searchResults.total || 0} results for "
-                      {activeQuery}"
-                    </CardDescription>
-                  </div>
-
-                  {Object.keys(selectedPapers).length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        // Implement batch import
-                        toast({
-                          title: "Batch Import",
-                          description: `Importing ${Object.keys(selectedPapers).length} selected papers`,
-                        });
-                      }}
-                    >
-                      <FileDown className="mr-2 h-4 w-4" />
-                      Import Selected ({Object.keys(selectedPapers).length})
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {!searchResults.articles ||
-                searchResults.articles.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    No results found for your search query
-                  </div>
-                ) : (
-                  <>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[5%]"></TableHead>
-                          <TableHead className="w-[40%]">Title</TableHead>
-                          <TableHead className="w-[25%]">Authors</TableHead>
-                          <TableHead className="w-[10%]">Year</TableHead>
-                          <TableHead className="w-[10%]">Source</TableHead>
-                          <TableHead className="w-[10%]">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {searchResults.articles.map((paper: any) => {
-                          const paperId =
-                            paper.id ||
-                            paper.paperId ||
-                            paper.pmid ||
-                            `${paper.source}-${paper.title}`;
-                          const isAlreadyInDb = paper.inDatabase || importedPaperIds.has(String(paperId)) || importedPaperIds.has(String(paper.doi));
-                          const dbId = paper.databaseId;
-                          return (
-                            <TableRow
-                              key={paperId}
-                              className={
-                                isAlreadyInDb
-                                  ? "bg-green-50/50"
-                                  : selectedPapers[paperId]
-                                    ? "bg-primary/5"
-                                    : ""
-                              }
-                            >
-                              <TableCell>
-                                <Checkbox
-                                  checked={!!selectedPapers[paperId]}
-                                  onCheckedChange={(checked) =>
-                                    togglePaperSelection(paperId, paper)
-                                  }
-                                  disabled={isAlreadyInDb}
-                                />
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                <div className="flex items-center gap-2">
-                                  {paper.title}
-                                  {isAlreadyInDb && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs shrink-0">
-                                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                                      In Database
-                                    </Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {paper.authors ||
-                                  paper.authorString ||
-                                  "Unknown"}
-                              </TableCell>
-                              <TableCell>
-                                {paper.year ||
-                                  paper.pubYear ||
-                                  (paper.publishDate &&
-                                    paper.publishDate.split("-")[0]) ||
-                                  "Unknown"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">
-                                  {paper.source || "Unknown"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {isAlreadyInDb ? (
-                                  dbId ? (
-                                    <Link href={`/study/id/${dbId}`}>
-                                      <Button size="sm" variant="ghost" className="text-green-700">
-                                        <BookOpenCheck className="h-4 w-4 mr-1" />
-                                        View
-                                      </Button>
-                                    </Link>
-                                  ) : (
-                                    <Button size="sm" variant="ghost" disabled className="text-green-700">
-                                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                                      Imported
-                                    </Button>
-                                  )
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleImport(paper, paper.source)
-                                    }
-                                    disabled={importPaperMutation.isPending}
-                                  >
-                                    {importPaperMutation.isPending ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      "Import"
-                                    )}
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-
-                    <div className="mt-4 flex justify-center">
-                      {renderPagination()}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <SearchResultsCard
+              searchResults={searchResults}
+              activeQuery={activeQuery}
+              selectedPapers={selectedPapers}
+              togglePaperSelection={togglePaperSelection}
+              handleImport={handleImport}
+              importPaperMutation={importPaperMutation}
+              importedPaperIds={importedPaperIds}
+              renderPagination={renderPagination}
+              toast={toast}
+            />
           ) : null}
         </TabsContent>
 
         <TabsContent value="excel">
-          <Card>
-            <CardHeader>
-              <CardTitle>Excel & Spreadsheet Import</CardTitle>
-              <CardDescription>
-                Import hydrogen studies from Excel, CSV, or Google Sheets
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="flex flex-col space-y-4 border rounded-lg p-4">
-                  <div className="flex items-center space-x-2">
-                    <FileSpreadsheet className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-medium">Upload Excel File</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Upload Excel (.xlsx) or CSV files containing research data
-                  </p>
-                  <div className="grid w-full max-w-sm items-center gap-1.5">
-                    <Label htmlFor="file-upload">File</Label>
-                    <Input
-                      id="file-upload"
-                      type="file"
-                      accept=".xlsx,.csv"
-                      className="cursor-pointer"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Max file size: 10MB
-                    </p>
-                  </div>
-                  <Button className="w-full mt-2">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload & Analyze
-                  </Button>
-                </div>
-
-                <div className="flex flex-col space-y-4 border rounded-lg p-4">
-                  <div className="flex items-center space-x-2">
-                    <TableIcon className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-medium">
-                      Google Sheets Import
-                    </h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Import studies directly from a Google Sheets document
-                  </p>
-                  <div className="grid w-full max-w-sm items-center gap-1.5">
-                    <Label htmlFor="sheets-url">Google Sheets URL</Label>
-                    <Input
-                      id="sheets-url"
-                      type="url"
-                      placeholder="https://docs.google.com/spreadsheets/d/..."
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Spreadsheet must be publicly accessible or shared
-                    </p>
-                  </div>
-                  <Button className="w-full mt-2">
-                    <TableIcon className="mr-2 h-4 w-4" />
-                    Connect & Import
-                  </Button>
-                </div>
-              </div>
-
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center space-x-2">
-                  <FilePlus2 className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-medium">
-                    Column Mapping & Advanced Options
-                  </h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Configure how your spreadsheet data maps to study fields
-                </p>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label className="text-sm">Required Fields</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div className="flex items-center space-x-2 text-sm">
-                        <span className="font-medium">Title</span>
-                        <Select defaultValue="title">
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Map to column" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="title">Title</SelectItem>
-                            <SelectItem value="study_title">
-                              Study Title
-                            </SelectItem>
-                            <SelectItem value="paper_title">
-                              Paper Title
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm">
-                        <span className="font-medium">Authors</span>
-                        <Select defaultValue="authors">
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Map to column" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="authors">Authors</SelectItem>
-                            <SelectItem value="researcher">
-                              Researcher
-                            </SelectItem>
-                            <SelectItem value="author_list">
-                              Author List
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Optional Fields</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div className="flex items-center space-x-2 text-sm">
-                        <span className="font-medium">DOI</span>
-                        <Select defaultValue="doi">
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Map to column" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="doi">DOI</SelectItem>
-                            <SelectItem value="digital_id">
-                              Digital ID
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm">
-                        <span className="font-medium">PMID</span>
-                        <Select defaultValue="pmid">
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Map to column" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pmid">PMID</SelectItem>
-                            <SelectItem value="pubmed_id">PubMed ID</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-4 mt-4">
-                  <Checkbox id="auto-enrich" />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label
-                      htmlFor="auto-enrich"
-                      className="text-sm font-medium leading-none"
-                    >
-                      Auto-enrich from multiple sources
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Automatically fetch missing study data from PubMed, Europe
-                      PMC, and other sources
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-2 mt-4">
-                  <Button variant="outline">Reset</Button>
-                  <Button>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Update Mapping
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ExcelImportPanel toast={toast} />
         </TabsContent>
 
         <TabsContent value="scheduled">
