@@ -8,9 +8,26 @@ import { formatDate } from "@/lib/utils";
 import { ArrowLeft, Calendar, Eye, Share } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
-import ReactMarkdown from "react-markdown";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import React, { Component, type ReactNode } from "react";
+
+// Lazy-load ReactMarkdown to isolate any import errors
+const ReactMarkdown = React.lazy(() => import("react-markdown"));
+
+// Error boundary specifically for markdown rendering
+class MarkdownErrorBoundary extends Component<{ children: ReactNode; fallbackContent?: string }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return <div className="prose prose-neutral max-w-none" dangerouslySetInnerHTML={{
+        __html: (this.props.fallbackContent || "").replace(/\n/g, "<br/>")
+      }} />;
+    }
+    return this.props.children;
+  }
+}
 
 interface BlogArticle {
     id: number;
@@ -194,7 +211,11 @@ export default function BlogPage() {
 
           {/* Article content */}
           <article className="prose prose-neutral max-w-none mb-8">
-            <ReactMarkdown>{blog.content || ""}</ReactMarkdown>
+            <MarkdownErrorBoundary fallbackContent={blog.content}>
+              <React.Suspense fallback={<div className="animate-pulse space-y-2">{[1,2,3,4].map(i => <div key={i} className="h-4 bg-neutral-200 rounded w-full" />)}</div>}>
+                <ReactMarkdown>{blog.content || ""}</ReactMarkdown>
+              </React.Suspense>
+            </MarkdownErrorBoundary>
           </article>
 
           {/* Related study box */}
