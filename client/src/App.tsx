@@ -50,7 +50,7 @@ const SEOStudyPage = lazy(() => import("@/pages/SEOStudyPage"));
 const About = lazy(() => import("@/pages/about"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const BlogPage = lazy(() => import("@/pages/BlogPage"));
-const ChatPage = lazy(() => import("@/pages/ChatPage"));
+// ChatPage removed — AI assistant disabled per user request
 const RecommendationsPage = lazy(() => import("@/pages/RecommendationsPage"));
 // /insights redirects to /research-analytics (consolidated)
 const ResearchAnalyticsPage = lazy(
@@ -241,7 +241,7 @@ function Router() {
         <Route path="/blog/:id" component={BlogPage} />
         <Route path="/blog/:id/:slug" component={BlogPage} />
         <Route path="/recommendations" component={RecommendationsPage} />
-        <Route path="/chat" component={ChatPage} />
+        {/* /chat route removed — AI assistant disabled */}
 
         {/* User Dashboard - Authenticated */}
         <Route path="/my-dashboard" component={MyDashboardPage} />

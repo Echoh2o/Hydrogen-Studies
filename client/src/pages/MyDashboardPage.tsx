@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Footer from "@/components/layout/Footer";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 interface DashboardData {
   savedStudies: Array<{
@@ -64,6 +65,8 @@ export default function MyDashboardPage() {
 
   if (!user) {
     return (
+      <>
+      <SiteHeader />
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
           <CardContent className="pt-6 text-center space-y-4">
@@ -81,6 +84,7 @@ export default function MyDashboardPage() {
           </CardContent>
         </Card>
       </div>
+      </>
     );
   }
 
@@ -88,6 +92,7 @@ export default function MyDashboardPage() {
 
   return (
     <>
+    <SiteHeader />
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <Helmet>
         <title>My Dashboard | Hydrogen Studies</title>
@@ -143,7 +148,7 @@ export default function MyDashboardPage() {
                 <Bookmark className="h-5 w-5 text-teal-500" />
                 Saved Studies
               </CardTitle>
-              {(dashboard?.savedStudies.length || 0) > 5 && (
+              {(dashboard?.savedStudies?.length || 0) > 5 && (
                 <Button variant="ghost" size="sm" onClick={() => setLocation("/studies")}>
                   View all <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
@@ -152,7 +157,7 @@ export default function MyDashboardPage() {
             <CardContent>
               {isLoading ? (
                 <p className="text-muted-foreground text-center py-8">Loading...</p>
-              ) : !dashboard?.savedStudies.length ? (
+              ) : !dashboard?.savedStudies?.length ? (
                 <div className="text-center py-8 space-y-3">
                   <Heart className="h-10 w-10 text-muted-foreground mx-auto" />
                   <p className="text-muted-foreground">No saved studies yet</p>
@@ -165,7 +170,7 @@ export default function MyDashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {dashboard.savedStudies.slice(0, 5).map((study) => (
+                  {dashboard?.savedStudies?.slice(0, 5)?.map((study) => (
                     <Link
                       key={study.studyId}
                       href={study.studySlug ? `/study/${study.studySlug}` : `/study/id/${study.studyId}`}
@@ -197,13 +202,13 @@ export default function MyDashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!dashboard?.recentViews.length ? (
+              {!dashboard?.recentViews?.length ? (
                 <p className="text-muted-foreground text-center py-6 text-sm">
                   Studies you view will appear here.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {dashboard.recentViews.slice(0, 8).map((view) => (
+                  {dashboard?.recentViews?.slice(0, 8)?.map((view) => (
                     <Link
                       key={`${view.studyId}-${view.viewedAt}`}
                       href={view.studySlug ? `/study/${view.studySlug}` : `/study/id/${view.studyId}`}
@@ -213,7 +218,7 @@ export default function MyDashboardPage() {
                         {view.plainLanguageTitle || view.studyTitle}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(view.viewedAt).toLocaleDateString()}
+                        {view.viewedAt ? new Date(view.viewedAt).toLocaleDateString() : ""}
                       </p>
                     </Link>
                   ))}
@@ -254,7 +259,7 @@ export default function MyDashboardPage() {
           </Card>
 
           {/* Recent Searches */}
-          {(dashboard?.recentSearches.length || 0) > 0 && (
+          {(dashboard?.recentSearches?.length || 0) > 0 && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
@@ -264,7 +269,7 @@ export default function MyDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {dashboard!.recentSearches.slice(0, 8).map((query, i) => (
+                  {dashboard?.recentSearches?.slice(0, 8)?.map((query, i) => (
                     <Badge
                       key={i}
                       variant="secondary"

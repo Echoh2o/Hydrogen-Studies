@@ -384,13 +384,13 @@ export default function HealthBenefitsPage() {
                 </Card>
               </Link>
 
-              <Link href="/chat">
+              <Link href="/blog">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
                     <Brain className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                    <CardTitle className="text-center">Ask Questions</CardTitle>
+                    <CardTitle className="text-center">Read Articles</CardTitle>
                     <CardDescription className="text-center">
-                      Get personalized information about hydrogen therapy
+                      Plain-language summaries of hydrogen research
                     </CardDescription>
                   </CardHeader>
                 </Card>

@@ -328,7 +328,7 @@ export default function ProductsPage() {
   const faqs = [
     {
       question: "What is hydrogen water and how does it work?",
-      answer: "Hydrogen water is regular water infused with dissolved molecular hydrogen (H2) gas. Research suggests H2 acts as a selective antioxidant, targeting harmful hydroxyl radicals without disrupting beneficial reactive oxygen species. Over 1,000 peer-reviewed studies have explored its potential health benefits.",
+      answer: "Hydrogen water is regular water infused with dissolved molecular hydrogen (H2) gas. Research suggests H2 acts as a selective antioxidant, targeting harmful hydroxyl radicals without disrupting beneficial reactive oxygen species. Hundreds of peer-reviewed studies have explored its potential health benefits.",
     },
     {
       question: "Which product is right for me?",

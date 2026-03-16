@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import {
   ArrowLeft,
@@ -31,6 +32,15 @@ import Footer from "@/components/layout/Footer";
 import JsonLd, { generateFaqSchema } from "@/components/seo/JsonLd";
 
 export default function BenefitsPage() {
+  const { data: siteStats } = useQuery<{
+    totalStudies: number;
+    countries: number;
+    humanTrials: number;
+    yearsOfResearch: number;
+  }>({
+    queryKey: ["/api/public-stats"],
+    staleTime: 5 * 60 * 1000,
+  });
   const learningTopics = [
     {
       id: "basics",
@@ -181,19 +191,19 @@ export default function BenefitsPage() {
       description: "Published in Nature Medicine",
     },
     {
-      stat: "25+",
+      stat: siteStats ? `${siteStats.countries}+` : "25+",
       label: "Countries",
       description: "Conducting hydrogen research",
     },
     {
-      stat: "4x",
-      label: "Growth Since 2015",
-      description: "Research output accelerating",
+      stat: siteStats ? `${siteStats.humanTrials.toLocaleString()}+` : "300+",
+      label: "Human Trials",
+      description: "Clinical studies on real patients",
     },
     {
-      stat: "50+",
-      label: "Health Conditions",
-      description: "Studied across all categories",
+      stat: siteStats ? `${siteStats.yearsOfResearch}+` : "15+",
+      label: "Years of Research",
+      description: "And growing every year",
     },
   ];
 

@@ -160,14 +160,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/chat"
-                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
-                >
-                  AI Assistant
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/blog"
                   className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
                 >

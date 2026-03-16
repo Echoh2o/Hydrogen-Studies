@@ -364,13 +364,13 @@ export default function HydrogenBasicsPage() {
                 </Card>
               </Link>
 
-              <Link href="/chat">
+              <Link href="/blog">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
                     <Atom className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                    <CardTitle className="text-center">Ask Questions</CardTitle>
+                    <CardTitle className="text-center">Read Articles</CardTitle>
                     <CardDescription className="text-center">
-                      Get personalized answers from our AI assistant
+                      Plain-language summaries of hydrogen research
                     </CardDescription>
                   </CardHeader>
                 </Card>

@@ -81,7 +81,8 @@ export default function BlogListPage() {
   const articles: any[] = response?.data || [];
   const filteredArticles = articles;
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",

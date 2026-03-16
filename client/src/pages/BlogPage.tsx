@@ -11,19 +11,42 @@ import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import React, { Component, type ReactNode } from "react";
+import Markdown from "react-markdown";
 
-// Lazy-load ReactMarkdown to isolate any import errors
-const ReactMarkdown = React.lazy(() => import("react-markdown"));
-
-// Error boundary specifically for markdown rendering
-class MarkdownErrorBoundary extends Component<{ children: ReactNode; fallbackContent?: string }, { hasError: boolean }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
+// Error boundary for the entire blog page
+class BlogErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
+  state: { hasError: boolean; error?: Error } = { hasError: false };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
   render() {
     if (this.state.hasError) {
-      return <div className="prose prose-neutral max-w-none" dangerouslySetInnerHTML={{
-        __html: (this.props.fallbackContent || "").replace(/\n/g, "<br/>")
-      }} />;
+      return (
+        <>
+          <SiteHeader />
+          <div className="max-w-4xl mx-auto px-4 py-8">
+            <Alert variant="destructive">
+              <AlertTitle>Something went wrong</AlertTitle>
+              <AlertDescription>
+                This article couldn't be displayed. Please try refreshing the page.
+                {this.state.error && (
+                  <details className="mt-2 text-xs">
+                    <summary>Error details</summary>
+                    <pre className="mt-1 whitespace-pre-wrap">{this.state.error.message}</pre>
+                  </details>
+                )}
+              </AlertDescription>
+            </Alert>
+            <div className="mt-4">
+              <Link to="/blog">
+                <Button variant="outline">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Blog
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <Footer />
+        </>
+      );
     }
     return this.props.children;
   }
@@ -42,13 +65,31 @@ interface BlogArticle {
     studyId?: number;
 }
 
-export default function BlogPage() {
+function safeDateFormat(dateString: string | null | undefined): string {
+  if (!dateString) return "";
+  try {
+    return formatDate(dateString);
+  } catch {
+    return "";
+  }
+}
+
+function MarkdownContent({ content }: { content: string }) {
+  try {
+    return <Markdown>{content}</Markdown>;
+  } catch {
+    // Fallback: render as plain text with line breaks
+    return (
+      <div
+        className="prose prose-neutral max-w-none"
+        dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, "<br/>") }}
+      />
+    );
+  }
+}
+
+function BlogPageContent() {
   const params = useParams();
-  // Support both /blog/:id and /blog/:slug (via conditional logic or unifying route).
-  // Wouter params might be { id: "slug-val" } if route is /blog/:id
-  // But App.tsx has /blog/:id/:slug? and /blog/:id
-  // Use a more robust check.
-  
   const { toast } = useToast();
   const idOrSlug = params.id || params.slug;
   const isId = /^\d+$/.test(idOrSlug || "");
@@ -57,10 +98,10 @@ export default function BlogPage() {
   const { data: blog, isLoading, error } = useQuery<BlogArticle>({
     queryKey: [`/api/blogs/${idOrSlug}`],
     queryFn: async () => {
-        const endpoint = isId 
-            ? `/api/blogs/${idOrSlug}` 
+        const endpoint = isId
+            ? `/api/blogs/${idOrSlug}`
             : `/api/blogs/slug/${idOrSlug}`;
-            
+
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error("Failed to fetch blog");
         return (await res.json()).data;
@@ -77,47 +118,67 @@ export default function BlogPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Skeleton className="h-8 w-3/4 mb-2" />
-          <Skeleton className="h-4 w-1/2 mb-8" />
-          <Skeleton className="h-64 w-full mb-8" />
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
+      <>
+        <SiteHeader />
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="mb-6">
+            <Skeleton className="h-8 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-1/2 mb-8" />
+            <Skeleton className="h-64 w-full mb-8" />
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
           </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   // Show error state
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Failed to load the article. Please try again later.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <>
+        <SiteHeader />
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              Failed to load the article. Please try again later.
+            </AlertDescription>
+          </Alert>
+          <div className="mt-4">
+            <Link to="/blog">
+              <Button variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Blog
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </>
     );
   }
 
   // If blog not found
   if (!blog) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Article Not Found</h1>
-        <p className="text-neutral-600 mb-6">
-          The article you're looking for doesn't exist or has been removed.
-        </p>
-        <Link to="/">
-          <Button>Return to Homepage</Button>
-        </Link>
-      </div>
+      <>
+        <SiteHeader />
+        <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+          <h1 className="text-2xl font-bold mb-4">Article Not Found</h1>
+          <p className="text-neutral-600 mb-6">
+            The article you're looking for doesn't exist or has been removed.
+          </p>
+          <Link to="/blog">
+            <Button>Back to Blog</Button>
+          </Link>
+        </div>
+        <Footer />
+      </>
     );
   }
 
@@ -156,7 +217,7 @@ export default function BlogPage() {
             },
             mainEntityOfPage: {
               "@type": "WebPage",
-              "@id": window.location.href,
+              "@id": typeof window !== "undefined" ? window.location.href : "",
             },
           })}
         </script>
@@ -166,10 +227,10 @@ export default function BlogPage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Back button */}
           <div className="mb-6">
-            <Link to={study ? (study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`) : "/studies"}>
+            <Link to={study ? (study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`) : "/blog"}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {study ? "Back to Study" : "Back to Studies"}
+                {study ? "Back to Study" : "Back to Blog"}
               </Button>
             </Link>
           </div>
@@ -180,10 +241,12 @@ export default function BlogPage() {
               {blog.title}
             </h1>
             <div className="flex items-center text-neutral-500 text-sm mb-6">
-              <span className="flex items-center mr-4">
-                <Calendar className="h-4 w-4 mr-1" />
-                {formatDate(blog.createdAt)}
-              </span>
+              {blog.createdAt && (
+                <span className="flex items-center mr-4">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  {safeDateFormat(blog.createdAt)}
+                </span>
+              )}
               <span className="flex items-center">
                 <Eye className="h-4 w-4 mr-1" />
                 {blog.viewCount || 0} views
@@ -202,20 +265,18 @@ export default function BlogPage() {
             )}
 
             {/* Article summary */}
-            <div className="bg-neutral-50 p-4 rounded-md border border-neutral-200 mb-6">
-              <p className="text-neutral-700 font-medium italic">
-                {blog.summary}
-              </p>
-            </div>
+            {blog.summary && (
+              <div className="bg-neutral-50 p-4 rounded-md border border-neutral-200 mb-6">
+                <p className="text-neutral-700 font-medium italic">
+                  {blog.summary}
+                </p>
+              </div>
+            )}
           </header>
 
           {/* Article content */}
           <article className="prose prose-neutral max-w-none mb-8">
-            <MarkdownErrorBoundary fallbackContent={blog.content}>
-              <React.Suspense fallback={<div className="animate-pulse space-y-2">{[1,2,3,4].map(i => <div key={i} className="h-4 bg-neutral-200 rounded w-full" />)}</div>}>
-                <ReactMarkdown>{blog.content || ""}</ReactMarkdown>
-              </React.Suspense>
-            </MarkdownErrorBoundary>
+            <MarkdownContent content={blog.content || ""} />
           </article>
 
           {/* Related study box */}
@@ -229,13 +290,17 @@ export default function BlogPage() {
               </p>
               <div className="bg-white p-4 rounded-md border border-teal-100">
                 <h4 className="font-bold text-lg mb-1">{study.title}</h4>
-                <p className="text-sm text-neutral-600 mb-2">
-                  <strong>Authors:</strong> {study.authors}
-                </p>
-                <p className="text-sm text-neutral-600 mb-3">
-                  <strong>Published:</strong> {formatDate(study.publishDate)} in{" "}
-                  {study.journal}
-                </p>
+                {study.authors && (
+                  <p className="text-sm text-neutral-600 mb-2">
+                    <strong>Authors:</strong> {study.authors}
+                  </p>
+                )}
+                {study.publishDate && (
+                  <p className="text-sm text-neutral-600 mb-3">
+                    <strong>Published:</strong> {safeDateFormat(study.publishDate)} in{" "}
+                    {study.journal}
+                  </p>
+                )}
                 <Link to={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                   <Button size="sm">View Original Research</Button>
                 </Link>
@@ -284,5 +349,13 @@ export default function BlogPage() {
       </div>
       <Footer />
     </>
+  );
+}
+
+export default function BlogPage() {
+  return (
+    <BlogErrorBoundary>
+      <BlogPageContent />
+    </BlogErrorBoundary>
   );
 }

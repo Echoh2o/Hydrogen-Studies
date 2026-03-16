@@ -28,7 +28,7 @@ import JsonLd, {
 } from "@/components/seo/JsonLd";
 import SEOHead from "@/components/seo/SEOHead";
 import StructuredData from "@/components/seo/StructuredData";
-import { useEffect, useRef } from "react";
+import React, { Component, type ReactNode, useEffect, useRef } from "react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 
@@ -37,6 +37,8 @@ import { useAuth } from "@/components/auth/ProtectedRoute";
 
 /** Detect which hydrogen delivery methods are relevant to a study */
 function detectDeliveryMethods(study: any): { method: string; emoji: string; title: string; description: string; filter: string }[] {
+  if (!study) return [];
+
   const text = [study.title, study.abstract, study.methods, study.results, study.conclusion, study.category]
     .filter(Boolean)
     .join(" ")
@@ -168,7 +170,48 @@ function getYouTubeId(url: string): string | null {
   return null;
 }
 
-const StudyPage = () => {
+// Error boundary for the entire study page
+class StudyErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
+  state: { hasError: boolean; error?: Error } = { hasError: false };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <>
+          <SiteHeader />
+          <div className="max-w-4xl mx-auto px-4 py-8">
+            <Card className="max-w-md mx-auto">
+              <CardContent className="pt-6 pb-6 text-center">
+                <h1 className="text-xl font-bold mb-4">Something went wrong</h1>
+                <p className="text-neutral-600 mb-4">
+                  This study couldn't be displayed. Please try refreshing the page.
+                </p>
+                {this.state.error && (
+                  <details className="mt-2 text-xs text-left">
+                    <summary>Error details</summary>
+                    <pre className="mt-1 whitespace-pre-wrap">{this.state.error.message}</pre>
+                  </details>
+                )}
+                <div className="mt-4">
+                  <Link href="/recent-studies">
+                    <Button>
+                      <HiArrowLeft className="mr-2" />
+                      Browse Recent Studies
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <Footer />
+        </>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const StudyPageContent = () => {
   const { id } = useParams();
   const studyId = id ? parseInt(id) : 0; // Provide fallback to prevent NaN
   const { toast } = useToast();
@@ -325,49 +368,57 @@ const StudyPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="h-6 bg-neutral-200 rounded w-48 mb-6 animate-pulse"></div>
-            <div className="h-10 bg-neutral-200 rounded w-full mb-4 animate-pulse"></div>
-            <div className="flex space-x-4 mb-6">
-              <div className="h-6 bg-neutral-200 rounded w-24 animate-pulse"></div>
-              <div className="h-6 bg-neutral-200 rounded w-24 animate-pulse"></div>
-            </div>
-            <div className="space-y-2 mb-8">
-              <div className="h-4 bg-neutral-200 rounded w-full animate-pulse"></div>
-              <div className="h-4 bg-neutral-200 rounded w-full animate-pulse"></div>
-              <div className="h-4 bg-neutral-200 rounded w-full animate-pulse"></div>
-              <div className="h-4 bg-neutral-200 rounded w-3/4 animate-pulse"></div>
+      <>
+        <SiteHeader />
+        <div className="min-h-screen bg-white py-12">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="h-6 bg-neutral-200 rounded w-48 mb-6 animate-pulse"></div>
+              <div className="h-10 bg-neutral-200 rounded w-full mb-4 animate-pulse"></div>
+              <div className="flex space-x-4 mb-6">
+                <div className="h-6 bg-neutral-200 rounded w-24 animate-pulse"></div>
+                <div className="h-6 bg-neutral-200 rounded w-24 animate-pulse"></div>
+              </div>
+              <div className="space-y-2 mb-8">
+                <div className="h-4 bg-neutral-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-neutral-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-neutral-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-neutral-200 rounded w-3/4 animate-pulse"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   if (error || !study) {
     return (
-      <div className="min-h-screen bg-white py-12">
-        <div className="container mx-auto px-4 text-center">
-          <Card className="max-w-md mx-auto">
-            <CardContent className="pt-6 pb-6">
-              <h1 className="text-xl font-bold mb-4">Study Not Found</h1>
-              <p className="text-neutral-600 mb-6">
-                {error instanceof Error
-                  ? error.message
-                  : "We couldn't find the study you're looking for. It may have been removed or the ID is incorrect."}
-              </p>
-              <Link href="/recent-studies">
-                <Button>
-                  <HiArrowLeft className="mr-2" />
-                  Browse Recent Studies
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+      <>
+        <SiteHeader />
+        <div className="min-h-screen bg-white py-12">
+          <div className="container mx-auto px-4 text-center">
+            <Card className="max-w-md mx-auto">
+              <CardContent className="pt-6 pb-6">
+                <h1 className="text-xl font-bold mb-4">Study Not Found</h1>
+                <p className="text-neutral-600 mb-6">
+                  {error instanceof Error
+                    ? error.message
+                    : "We couldn't find the study you're looking for. It may have been removed or the ID is incorrect."}
+                </p>
+                <Link href="/recent-studies">
+                  <Button>
+                    <HiArrowLeft className="mr-2" />
+                    Browse Recent Studies
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
@@ -790,7 +841,7 @@ const StudyPage = () => {
                     <div
                       className="text-lg leading-relaxed"
                       dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(study.abstract),
+                        __html: DOMPurify.sanitize(study.abstract || ""),
                       }}
                     />
                   </div>
@@ -1048,4 +1099,10 @@ const StudyPage = () => {
   );
 };
 
-export default StudyPage;
+export default function StudyPage() {
+  return (
+    <StudyErrorBoundary>
+      <StudyPageContent />
+    </StudyErrorBoundary>
+  );
+}
