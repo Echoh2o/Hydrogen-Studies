@@ -232,23 +232,10 @@ async function createSEOOptimizedPrompt(study: any): Promise<string> {
   const abstract = study.abstract || "";
   const category = study.category || "";
 
-  // Determine hydrogen delivery method for accurate visualization
-  const deliveryMethod = determineDeliveryMethod(title + " " + abstract);
+  // Create a simple, artistic prompt based on the study topic
+  const basePrompt = `Beautiful, artistic editorial photo related to ${category || "health and wellness"} research. Simple, clean, modern health magazine style with soft natural lighting.`;
 
-  // Create contextual prompt based on study content
-  let basePrompt = "";
-
-  if (deliveryMethod === "water") {
-    basePrompt = `Professional medical illustration: hydrogen-rich water therapy research. Clean glass of water with visible H2 molecules, cellular interaction diagram, therapeutic benefits visualization. Medical research style.`;
-  } else if (deliveryMethod === "inhalation") {
-    basePrompt = `Professional medical illustration: hydrogen gas inhalation therapy research. Medical-grade breathing apparatus, H2 gas molecules, respiratory system benefits. Clinical research style.`;
-  } else if (deliveryMethod === "injection") {
-    basePrompt = `Professional medical illustration: hydrogen-rich saline injection therapy research. Medical syringe with H2-enriched solution, cellular uptake visualization. Clinical research style.`;
-  } else {
-    basePrompt = `Professional medical illustration: molecular hydrogen therapy research for ${category}. H2 molecules reducing oxidative stress in cells, therapeutic mechanisms. Medical research style.`;
-  }
-
-  return `${basePrompt} Clean white background, scientific accuracy, no text labels, photorealistic medical illustration style suitable for research publication.`;
+  return `${basePrompt} No text, labels, molecules, or complex scientific diagrams.`;
 }
 
 /**

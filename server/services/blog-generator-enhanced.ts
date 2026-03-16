@@ -380,7 +380,7 @@ async function generateArticleImageWithFallback(
       return getDefaultImage(study.category);
     }
 
-    const prompt = `Scientific illustration for hydrogen therapy article: ${title}. Medical research visualization, clean professional style.`;
+    const prompt = `Beautiful, artistic editorial photo for health article: ${title}. Simple, clean, modern magazine style with soft natural lighting. No text, labels, or complex diagrams.`;
 
     const response = await openaiClient.images.generate({
       model: "dall-e-3",
