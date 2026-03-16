@@ -589,12 +589,13 @@ pool.query("SELECT 1").then(async () => {
     const { addFullTextSearch } = await import("./migrations/add-fulltext-search");
     const { createPipelineTables } = await import("./migrations/pipeline-tables-migration");
     const { createBlogGenerationJobsTable } = await import("./migrations/blog-generation-jobs-migration");
+    const { fixUntitledStudies } = await import("./migrations/fix-untitled-studies");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
       { name: "002_create_pipeline_tables", up: createPipelineTables },
       { name: "003_create_blog_generation_jobs", up: createBlogGenerationJobsTable },
-      // Add new migrations here in order
+      { name: "004_fix_untitled_studies", up: fixUntitledStudies },
     ]);
   } catch (err: any) {
     console.warn("Migration runner error:", err.message);

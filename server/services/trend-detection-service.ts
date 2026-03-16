@@ -20,6 +20,15 @@ import { eq, and, gte, lte, desc, asc, sql, count, avg } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { subDays, subMonths, subQuarters, format } from "date-fns";
 
+/**
+ * SQL expression for effective publication date.
+ * Uses journalPublishDate (original pub date) if available,
+ * falls back to publishDate, then createdAt.
+ * This ensures bulk-imported studies are filtered by their actual
+ * publication date rather than the date they were imported.
+ */
+const effectiveDate = sql`COALESCE(${studies.journalPublishDate}, ${studies.publishDate}, ${studies.createdAt}::text)`;
+
 // Types for analysis results
 interface EmergingTopic {
   topic: string;
@@ -194,8 +203,8 @@ export class TrendDetectionService {
       .from(studies)
       .where(
         and(
-          gte(studies.createdAt, periodStart),
-          lte(studies.createdAt, periodEnd),
+          sql`${effectiveDate} >= ${periodStart.toISOString()}`,
+          sql`${effectiveDate} <= ${periodEnd.toISOString()}`,
         ),
       )
       .orderBy(desc(studies.citationCount), desc(studies.viewCount));
@@ -516,7 +525,7 @@ export class TrendDetectionService {
       .innerJoin(tags, eq(studyTags.tagId, tags.id))
       .innerJoin(studies, eq(studyTags.studyId, studies.id))
       .where(
-        and(gte(studies.createdAt, startDate), lte(studies.createdAt, endDate)),
+        and(sql`${effectiveDate} >= ${startDate.toISOString()}`, sql`${effectiveDate} <= ${endDate.toISOString()}`),
       );
 
     // Count keyword frequencies
@@ -643,7 +652,7 @@ export class TrendDetectionService {
       })
       .from(studies)
       .where(
-        and(gte(studies.createdAt, startDate), lte(studies.createdAt, endDate)),
+        and(sql`${effectiveDate} >= ${startDate.toISOString()}`, sql`${effectiveDate} <= ${endDate.toISOString()}`),
       );
 
     const activity: Record<string, { count: number; studyIds: number[] }> = {};

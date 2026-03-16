@@ -22,13 +22,13 @@ export default defineConfig({
       use: { ...devices["Desktop Firefox"] },
     },
   ],
-  // Start the dev server before running tests (optional)
+  // Start the server before running tests
   webServer: process.env.BASE_URL
     ? undefined
     : {
-        command: "npm run dev",
+        command: process.env.CI ? "npm start" : "npm run dev",
         url: "http://localhost:5000",
         reuseExistingServer: !process.env.CI,
-        timeout: 30000,
+        timeout: 60000,
       },
 });
