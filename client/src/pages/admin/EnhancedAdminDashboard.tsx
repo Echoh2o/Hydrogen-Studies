@@ -428,9 +428,9 @@ const EnhancedAdminDashboard: React.FC = () => {
                     asChild
                     className="flex items-center justify-center h-20 flex-col space-y-2"
                   >
-                    <Link href="/admin/content-enrichment">
+                    <Link href="/admin/seo-strategy">
                       <Target className="h-6 w-6" />
-                      <span className="text-sm">Enrich Content</span>
+                      <span className="text-sm">SEO Strategy</span>
                     </Link>
                   </Button>
 
@@ -439,23 +439,51 @@ const EnhancedAdminDashboard: React.FC = () => {
                     asChild
                     className="flex items-center justify-center h-20 flex-col space-y-2"
                   >
-                    <Link href="/admin/trends">
+                    <Link href="/admin/monitoring">
                       <TrendingUp className="h-6 w-6" />
-                      <span className="text-sm">Trends Analysis</span>
-                    </Link>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    asChild
-                    className="flex items-center justify-center h-20 flex-col space-y-2"
-                  >
-                    <Link href="/admin/multi-format">
-                      <FileText className="h-6 w-6" />
-                      <span className="text-sm">Multi-Format Generator</span>
+                      <span className="text-sm">System Monitor</span>
                     </Link>
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+            {/* Automation Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Clock className="h-5 w-5 mr-2" />
+                  Automation Status
+                </CardTitle>
+                <CardDescription>
+                  Content is automatically enriched, categorized, and blogged when studies are imported
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                    <p className="text-xs text-green-700 font-medium">Auto-Enrichment</p>
+                    <p className="text-xs text-green-600">Every 15 min</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                    <p className="text-xs text-green-700 font-medium">Blog Generation</p>
+                    <p className="text-xs text-green-600">5 per cycle</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                    <p className="text-xs text-green-700 font-medium">TLDR Generation</p>
+                    <p className="text-xs text-green-600">10 per cycle</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                    <p className="text-xs text-green-700 font-medium">Study Discovery</p>
+                    <p className="text-xs text-green-600">Every 6 hours</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 text-center">
+                  When a study is imported, the full pipeline runs automatically: DOI enhancement, content enrichment, SEO, TLDR, image, blog, and link building.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
