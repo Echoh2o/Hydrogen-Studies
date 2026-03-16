@@ -35,7 +35,6 @@ const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const HydrogenBasicsPage = lazy(() => import("@/pages/HydrogenBasicsPage"));
 const HealthBenefitsPage = lazy(() => import("@/pages/HealthBenefitsPage"));
 const PublicBlogListPage = lazy(() => import("@/pages/BlogListPage"));
-const BlogArticlePage = lazy(() => import("@/pages/BlogArticlePage"));
 const ContactUsPage = lazy(() => import("@/pages/ContactUsPage"));
 
 // Legal and Policy Pages

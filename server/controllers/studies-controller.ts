@@ -38,6 +38,7 @@ export class StudiesController {
     this.router.get("/:id/blogs", this.getStudyBlogs);
     this.router.post("/:id/generate-blogs", requireAdmin, aiGenerationRateLimiter, this.generateBlogs);
     this.router.post("/:id/generate-tldr", requireAdmin, aiGenerationRateLimiter, this.generateTldr);
+    this.router.post("/batch-generate-tldrs", requireAdmin, this.batchGenerateTldrs);
     this.router.put("/:id", requireAdmin, this.updateStudy);
     this.router.post("/:id/view", this.recordView);
     this.router.get("/:id", this.getStudyById);
@@ -599,6 +600,70 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
       } catch (error) {
           logger.error("TLDR generation error", error, "StudiesController");
           res.status(500).json({ error: "Failed to generate TLDR" });
+      }
+  }
+
+  private batchGenerateTldrs = async (req: Request, res: Response) => {
+      try {
+          const limit = Math.min(parseInt(req.body.limit) || 10, 50);
+
+          const { db } = await import("../db");
+          const { studies } = await import("../../shared/schema");
+          const { isNull, sql } = await import("drizzle-orm");
+
+          // Get studies without TLDRs
+          const studiesWithoutTldr = await db
+            .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
+            .from(studies)
+            .where(isNull(studies.tldr))
+            .limit(limit);
+
+          if (studiesWithoutTldr.length === 0) {
+            return res.json({ success: true, message: "All studies already have TLDRs", generated: 0 });
+          }
+
+          const Anthropic = (await import("@anthropic-ai/sdk")).default;
+          const anthropic = new Anthropic();
+          const { eq } = await import("drizzle-orm");
+
+          let generated = 0;
+          const errors: string[] = [];
+
+          for (const study of studiesWithoutTldr) {
+            try {
+              const prompt = `You are a science communicator. Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.
+
+Study title: ${study.title}
+Abstract: ${study.abstract}
+${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}
+
+Write ONLY the TL;DR text, nothing else.`;
+
+              const message = await anthropic.messages.create({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 200,
+                messages: [{ role: "user", content: prompt }],
+              });
+
+              const tldr = (message.content[0] as any).text?.trim();
+              if (tldr) {
+                await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
+                generated++;
+              }
+            } catch (err: any) {
+              errors.push(`Study ${study.id}: ${err.message}`);
+            }
+          }
+
+          res.json({
+            success: true,
+            generated,
+            remaining: studiesWithoutTldr.length - generated,
+            errors: errors.length > 0 ? errors : undefined,
+          });
+      } catch (error) {
+          logger.error("Batch TLDR generation error", error, "StudiesController");
+          res.status(500).json({ error: "Failed to batch generate TLDRs" });
       }
   }
 }
