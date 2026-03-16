@@ -56,7 +56,7 @@ import crossRefRoutes from "./routes/crossref-routes";
 import consensusRoutes from "./routes/consensus-routes";
 import unifiedSearchRoutes from "./routes/unified-search-routes";
 import scraperRoutes from "./routes/scraper-routes";
-import seoRoutes from "./routes/seo-routes";
+import seoRoutes, { seoAdminRouter } from "./routes/seo-routes";
 import seoContentFactoryRoutes from "./routes/seo-content-factory-routes";
 import shopifyWebhookRoutes from "./routes/shopify-webhook-routes";
 import newsletterRoutes from "./routes/newsletter-routes";
@@ -328,6 +328,9 @@ app.use("/api/scraper", scraperRoutes);
 
 // SEO Content Factory (admin-only)
 app.use("/api/seo", seoContentFactoryRoutes);
+
+// SEO Admin routes (blog publish, SEO field population)
+app.use("/api/seo", seoAdminRouter);
 
 // DOI Enhancer (admin-only)
 app.use("/api/doi", requireAdmin, doiEnhancerRoutes);

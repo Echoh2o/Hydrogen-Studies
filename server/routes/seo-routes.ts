@@ -575,9 +575,12 @@ function escapeXml(str: string): string {
 }
 
 // ============================================================
-// Admin: Bulk-populate missing SEO fields for blog articles
+// Admin routes — exported separately so they can be mounted
+// AFTER session middleware in app.ts
 // ============================================================
-router.post("/api/seo/blogs/populate-seo-fields", requireAdmin, async (req: Request, res: Response) => {
+export const seoAdminRouter = Router();
+
+seoAdminRouter.post("/blogs/populate-seo-fields", requireAdmin, async (req: Request, res: Response) => {
   try {
     const allBlogs = await db.select({
       id: blogArticles.id,
@@ -732,7 +735,7 @@ router.post("/api/seo/blogs/populate-seo-fields", requireAdmin, async (req: Requ
 // ============================================================
 // Admin: Publish all blog articles that have content and title
 // ============================================================
-router.post("/api/seo/blogs/publish-all", requireAdmin, async (req: Request, res: Response) => {
+seoAdminRouter.post("/blogs/publish-all", requireAdmin, async (req: Request, res: Response) => {
   try {
     // Find all unpublished blogs that have both content and title
     const unpublished = await db.select({
