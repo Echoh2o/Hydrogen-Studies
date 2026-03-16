@@ -35,6 +35,125 @@ import Footer from "@/components/layout/Footer";
 import StudyImage from "@/components/studies/StudyImage";
 import { useAuth } from "@/components/auth/ProtectedRoute";
 
+/** Detect which hydrogen delivery methods are relevant to a study */
+function detectDeliveryMethods(study: any): { method: string; emoji: string; title: string; description: string; filter: string }[] {
+  const text = [study.title, study.abstract, study.methods, study.results, study.conclusion, study.category]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  // Check for stored how_to_apply JSON first
+  if (study.howToApply || study.how_to_apply) {
+    try {
+      const parsed = JSON.parse(study.howToApply || study.how_to_apply);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+  }
+
+  const methods: { method: string; emoji: string; title: string; description: string; filter: string }[] = [];
+
+  // Detect hydrogen water / drinking
+  const drinkingPatterns = /hydrogen.?rich water|hrw|drinking|oral intake|dissolved hydrogen|hydrogen water|ingestion|beverage|consumption|electrolyz/;
+  if (drinkingPatterns.test(text)) {
+    const conditions = (study.healthConditions || study.health_conditions || []).slice(0, 2).join(" and ");
+    methods.push({
+      method: "drinking",
+      emoji: "\u{1F4A7}",
+      title: "Hydrogen Water",
+      description: conditions
+        ? `This study used hydrogen-rich water and found potential benefits for ${conditions}. Explore Echo hydrogen water machines for convenient daily use.`
+        : "This study used hydrogen-rich water as its delivery method. Explore Echo hydrogen water machines for convenient daily use.",
+      filter: "drinking-water",
+    });
+  }
+
+  // Detect inhalation
+  const inhalationPatterns = /inhalation|inhaling|breathing|h2 gas|hydrogen gas|gaseous hydrogen|nasal cannula|ventilat/;
+  if (inhalationPatterns.test(text)) {
+    const conditions = (study.healthConditions || study.health_conditions || []).slice(0, 2).join(" and ");
+    methods.push({
+      method: "inhalation",
+      emoji: "\u{1FAC1}",
+      title: "Hydrogen Inhalation",
+      description: conditions
+        ? `This research used hydrogen gas inhalation to address ${conditions}. The Echo Refresh provides professional-grade hydrogen inhalation at home.`
+        : "This research studied hydrogen gas inhalation therapy. The Echo Refresh provides professional-grade hydrogen inhalation at home.",
+      filter: "inhalation",
+    });
+  }
+
+  // Detect bathing / topical
+  const bathingPatterns = /bath|bathing|topical|dermal|skin|immersion|soak|wound|hydrogen.?saline/;
+  if (bathingPatterns.test(text)) {
+    methods.push({
+      method: "bathing",
+      emoji: "\u{1F6C1}",
+      title: "Hydrogen Baths",
+      description: "This study suggests hydrogen absorption through the skin may provide benefits. The Echo Revive bath machine makes hydrogen-enriched bathing easy.",
+      filter: "bathing",
+    });
+  }
+
+  // If no specific method detected, default to hydrogen water (most common)
+  if (methods.length === 0) {
+    methods.push({
+      method: "drinking",
+      emoji: "\u{1F4A7}",
+      title: "Hydrogen Water",
+      description: "Molecular hydrogen research like this study supports the potential health benefits of hydrogen-rich water. Explore Echo hydrogen water products.",
+      filter: "drinking-water",
+    });
+  }
+
+  return methods;
+}
+
+/** Study-specific "How to Apply This Research" section */
+function HowToApplySection({ study }: { study: any }) {
+  const methods = detectDeliveryMethods(study);
+
+  return (
+    <section aria-labelledby="practical-heading" className="mb-6 md:mb-8">
+      <h2
+        id="practical-heading"
+        className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-purple-600"
+      >
+        How to Apply This Research
+      </h2>
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 md:p-6">
+        <div className="space-y-4">
+          {methods.map((m) => (
+            <div key={m.method} className="flex items-start space-x-3">
+              <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-purple-600 text-base md:text-sm font-semibold">
+                  {m.emoji}
+                </span>
+              </div>
+              <div className="flex-1">
+                <Link href={`/products?filter=${m.filter}`} className="group">
+                  <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
+                    {m.title}
+                  </h3>
+                  <p className="text-xs md:text-sm text-purple-700 leading-relaxed">
+                    {m.description}
+                  </p>
+                </Link>
+              </div>
+            </div>
+          ))}
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-xs md:text-sm text-yellow-800 leading-relaxed">
+              <strong>Remember:</strong> Always talk to your doctor before
+              starting any new health routine. These are research findings, not
+              medical advice.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /** Extract YouTube video ID from various URL formats */
 function getYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -88,6 +207,11 @@ const StudyPage = () => {
     video_url?: string;
     citations?: number;
     fullTextAvailable?: boolean;
+    tldr?: string;
+    howToApply?: string;
+    how_to_apply?: string;
+    healthConditions?: string[];
+    health_conditions?: string[];
   }
 
   const {
@@ -167,6 +291,25 @@ const StudyPage = () => {
         description: "Unable to generate an image. Please try again later.",
         variant: "destructive",
       });
+    },
+  });
+
+  const generateTldrMutation = useMutation({
+    mutationFn: () => {
+      return fetch(`/api/studies/${studyId}/generate-tldr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }).then((res) => {
+        if (!res.ok) throw new Error("Failed to generate TLDR");
+        return res.json();
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/studies/${studyId}`] });
+      toast({ title: "TLDR Generated", description: "A simplified summary has been created." });
+    },
+    onError: () => {
+      toast({ title: "TLDR Generation Failed", description: "Please try again later.", variant: "destructive" });
     },
   });
 
@@ -605,6 +748,37 @@ const StudyPage = () => {
                     </section>
                   )}
 
+                {/* TLDR - Super Simplified Summary */}
+                {((study as any).tldr || isAdmin) && (
+                  <section aria-labelledby="tldr-heading" className="mb-6 md:mb-8">
+                    <h2
+                      id="tldr-heading"
+                      className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-blue-600"
+                    >
+                      TL;DR
+                    </h2>
+                    {(study as any).tldr ? (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
+                        <p className="text-base md:text-lg text-blue-900 leading-relaxed font-medium">
+                          {(study as any).tldr}
+                        </p>
+                      </div>
+                    ) : isAdmin ? (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6 text-center">
+                        <p className="text-sm text-blue-700 mb-3">No TLDR generated yet.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => generateTldrMutation.mutate()}
+                          disabled={generateTldrMutation.isPending}
+                        >
+                          {generateTldrMutation.isPending ? "Generating..." : "Generate TLDR"}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </section>
+                )}
+
                 <section aria-labelledby="abstract-heading">
                   <h2
                     id="abstract-heading"
@@ -689,94 +863,8 @@ const StudyPage = () => {
                   </section>
                 )}
 
-                {/* Conclusion Section */}
-                {/* Mobile-Optimized Practical Application Section */}
-                <section
-                  aria-labelledby="practical-heading"
-                  className="mb-6 md:mb-8"
-                >
-                  <h2
-                    id="practical-heading"
-                    className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-purple-600"
-                  >
-                    How to Apply This Research
-                  </h2>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 md:p-6">
-                    <div className="space-y-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-base md:text-sm font-semibold">
-                            💧
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <Link href="/products?filter=drinking-water" className="group">
-                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
-                              Hydrogen Water
-                            </h3>
-                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">
-                              This research suggests drinking hydrogen-rich
-                              water may provide health benefits. View our Echo
-                              Flask and Hydrogen Prebiotic products.
-                            </p>
-                          </Link>
-                        </div>
-                      </div>
-                      <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-base md:text-sm font-semibold">
-                            🫁
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <Link
-                            href="/products?filter=inhalation"
-                            className="group"
-                          >
-                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
-                              Hydrogen Inhalation
-                            </h3>
-                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">
-                              Some studies show benefits from breathing hydrogen
-                              gas. View the Echo Refresh hydrogen inhalation
-                              machine for safe, professional-grade equipment.
-                            </p>
-                          </Link>
-                        </div>
-                      </div>
-                      <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 md:w-6 md:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-600 text-base md:text-sm font-semibold">
-                            🛁
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <Link
-                            href="/products?filter=bathing"
-                            className="group"
-                          >
-                            <h3 className="font-medium text-purple-800 text-sm md:text-base group-hover:text-purple-900 underline decoration-2 decoration-purple-300 hover:decoration-purple-500 transition-colors">
-                              Hydrogen Baths
-                            </h3>
-                            <p className="text-xs md:text-sm text-purple-700 leading-relaxed">
-                              Bathing in hydrogen-enriched water may provide
-                              skin and overall health benefits through
-                              absorption. View the Echo Revive bath water
-                              machine.
-                            </p>
-                          </Link>
-                        </div>
-                      </div>
-                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                        <p className="text-xs md:text-sm text-yellow-800 leading-relaxed">
-                          <strong>Remember:</strong> Always talk to your doctor
-                          before starting any new health routine. These are
-                          research findings, not medical advice.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </section>
+                {/* Study-Specific Practical Application Section */}
+                <HowToApplySection study={study} />
 
                 {study.conclusion && (
                   <section aria-labelledby="conclusion-heading">

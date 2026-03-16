@@ -351,6 +351,10 @@ export const studies = pgTable(
     semanticKeywords: text("semantic_keywords").array(), // LSI keywords for SEO
     topicalRelevance: integer("topical_relevance"), // Score for topical authority (0-100)
 
+    // TLDR and practical application fields
+    tldr: text("tldr"), // AI-generated super-simplified summary
+    howToApply: text("how_to_apply"), // Study-specific practical application guidance (JSON)
+
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => {

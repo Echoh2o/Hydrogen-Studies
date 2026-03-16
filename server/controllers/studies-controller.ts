@@ -35,7 +35,9 @@ export class StudiesController {
     this.router.get("/:id/detailed", this.getDetailedStudy);
     this.router.get("/:id/recommendations", this.getStudyRecommendations);
     this.router.get("/:id/insights", this.getStudyInsights);
+    this.router.get("/:id/blogs", this.getStudyBlogs);
     this.router.post("/:id/generate-blogs", requireAdmin, aiGenerationRateLimiter, this.generateBlogs);
+    this.router.post("/:id/generate-tldr", requireAdmin, aiGenerationRateLimiter, this.generateTldr);
     this.router.put("/:id", requireAdmin, this.updateStudy);
     this.router.post("/:id/view", this.recordView);
     this.router.get("/:id", this.getStudyById);
@@ -466,6 +468,28 @@ export class StudiesController {
       }
   }
 
+  private getStudyBlogs = async (req: Request, res: Response) => {
+      try {
+          const studyId = parseInt(req.params.id);
+          if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
+
+          const { db } = await import("../db");
+          const { blogArticles } = await import("../../shared/schema");
+          const { eq, desc } = await import("drizzle-orm");
+
+          const blogs = await db
+            .select()
+            .from(blogArticles)
+            .where(eq(blogArticles.studyId, studyId))
+            .orderBy(desc(blogArticles.createdAt));
+
+          res.json(blogs);
+      } catch (error) {
+          logger.error("Error fetching study blogs", error, "StudiesController");
+          res.status(500).json({ error: "Failed to fetch study blogs" });
+      }
+  }
+
   private generateBlogs = async (req: Request, res: Response) => {
       try {
           const studyId = parseInt(req.params.id);
@@ -528,6 +552,53 @@ export class StudiesController {
           }
 
           res.status(500).json({ error: "Failed to generate blog articles" });
+      }
+  }
+
+  private generateTldr = async (req: Request, res: Response) => {
+      try {
+          const studyId = parseInt(req.params.id);
+          if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
+
+          const study = await studyService.getStudyById(studyId);
+          if (!study) return res.status(404).json({ error: "Study not found" });
+
+          const Anthropic = (await import("@anthropic-ai/sdk")).default;
+          const anthropic = new Anthropic();
+
+          const prompt = `You are a science communicator. Write a TL;DR (too long; didn't read) summary of this study in 1-2 simple sentences.
+
+Use plain language a 6th grader could understand. Focus on the key finding and why it matters. Do NOT use scientific jargon. Be conversational and direct.
+
+Study title: ${study.title}
+Abstract: ${study.abstract}
+${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}
+
+Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
+
+          const message = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 200,
+            messages: [{ role: "user", content: prompt }],
+          });
+
+          const tldr = (message.content[0] as any).text?.trim();
+
+          if (!tldr) {
+            return res.status(500).json({ error: "Failed to generate TLDR" });
+          }
+
+          // Save to database
+          const { db } = await import("../db");
+          const { studies } = await import("../../shared/schema");
+          const { eq } = await import("drizzle-orm");
+
+          await db.update(studies).set({ tldr }).where(eq(studies.id, studyId));
+
+          res.json({ success: true, tldr });
+      } catch (error) {
+          logger.error("TLDR generation error", error, "StudiesController");
+          res.status(500).json({ error: "Failed to generate TLDR" });
       }
   }
 }
