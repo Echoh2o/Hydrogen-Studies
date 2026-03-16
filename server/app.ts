@@ -256,7 +256,7 @@ app.get("/api/public-stats", generalApiRateLimiter, async (req, res) => {
     const [countryResult] = await database.select({ value: countDistinct(studiesTable.country) }).from(studiesTable);
     const [peerReviewedResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`${studiesTable.peerReviewed} = true`);
     const [humanResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`LOWER(${studiesTable.studyType}) LIKE '%human%' OR LOWER(${studiesTable.studyType}) LIKE '%clinical%'`);
-    const [oldestResult] = await database.select({ value: sqlFn`MIN(EXTRACT(YEAR FROM ${studiesTable.publishDate}::date))` }).from(studiesTable).where(sqlFn`${studiesTable.publishDate} IS NOT NULL`);
+    const [oldestResult] = await database.select({ value: sqlFn`MIN(${studiesTable.publishYear})` }).from(studiesTable).where(sqlFn`${studiesTable.publishYear} IS NOT NULL AND ${studiesTable.publishYear} > 1900`);
 
     const totalStudies = Number(totalResult?.value || 0);
     const countries = Number(countryResult?.value || 0);

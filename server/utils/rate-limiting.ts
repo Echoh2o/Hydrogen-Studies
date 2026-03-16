@@ -53,10 +53,6 @@ export const aiGenerationRateLimiter = rateLimit({
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   handler: rateLimitHandler,
   skip: skipForAdmin,
-  keyGenerator: (req: Request) => {
-    // Use IP address for rate limiting
-    return req.ip || req.socket.remoteAddress || "unknown";
-  },
 });
 
 /**
@@ -72,9 +68,6 @@ export const searchRateLimiter = rateLimit({
   legacyHeaders: false,
   handler: rateLimitHandler,
   skip: skipForAdmin,
-  keyGenerator: (req: Request) => {
-    return req.ip || req.socket.remoteAddress || "unknown";
-  },
 });
 
 /**
@@ -97,9 +90,6 @@ export const generalApiRateLimiter = rateLimit({
       retryAfter: res.getHeader("Retry-After"),
     });
   },
-  keyGenerator: (req: Request) => {
-    return req.ip || req.socket.remoteAddress || "unknown";
-  },
 });
 
 /**
@@ -115,9 +105,6 @@ export const imageGenerationRateLimiter = rateLimit({
   legacyHeaders: false,
   handler: rateLimitHandler,
   skip: skipForAdmin,
-  keyGenerator: (req: Request) => {
-    return req.ip || req.socket.remoteAddress || "unknown";
-  },
 });
 
 /**
@@ -133,9 +120,6 @@ export const blogGenerationRateLimiter = rateLimit({
   legacyHeaders: false,
   handler: rateLimitHandler,
   skip: skipForAdmin,
-  keyGenerator: (req: Request) => {
-    return req.ip || req.socket.remoteAddress || "unknown";
-  },
 });
 
 /**
@@ -153,9 +137,6 @@ export function createCustomRateLimiter(
     standardHeaders: true,
     legacyHeaders: false,
     handler: rateLimitHandler,
-    keyGenerator: (req: Request) => {
-      return req.ip || req.socket.remoteAddress || "unknown";
-    },
   });
 }
 
@@ -171,9 +152,6 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
-  keyGenerator: (req: Request) => {
-    return req.ip || req.socket.remoteAddress || "unknown";
-  },
 });
 
 // Export rate limit configurations for logging/monitoring
