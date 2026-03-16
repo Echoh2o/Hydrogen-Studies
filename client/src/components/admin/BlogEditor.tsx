@@ -45,11 +45,12 @@ import {
 } from "lucide-react";
 
 // Extended schema for the blog form
-const blogFormSchema = insertBlogArticleSchema.extend({
+// Note: Using 'as any' due to drizzle-zod generating Zod v3 types while zod@3.25+ uses v4 internals
+const blogFormSchema = (insertBlogArticleSchema as any).extend({
   studyTitle: z.string().optional(),
 });
 
-type BlogFormData = z.infer<typeof blogFormSchema>;
+type BlogFormData = Record<string, any>;
 
 interface BlogEditorProps {
   blogId?: number;
@@ -87,7 +88,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   });
 
   const form = useForm<BlogFormData>({
-    resolver: zodResolver(blogFormSchema),
+    resolver: zodResolver(blogFormSchema as any),
     defaultValues: {
       studyId: preselectedStudyId || 0,
       title: "",

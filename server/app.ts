@@ -379,7 +379,7 @@ app.get("/api/admin/journal-date-stats", generalApiRateLimiter, requireAdmin, as
         count(*) as total
       FROM studies
     `);
-    const row: any = result.rows?.[0] || result[0] || {};
+    const row: any = result.rows?.[0] || (result as any)[0] || {};
     const total = Number(row.total) || 0;
     const withDate = Number(row.with_date) || 0;
     const withoutDate = Number(row.without_date) || 0;

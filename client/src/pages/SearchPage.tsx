@@ -59,6 +59,7 @@ interface Study {
   image_url: string;
   doi: string;
   plain_language_title: string;
+  slug?: string;
 }
 
 

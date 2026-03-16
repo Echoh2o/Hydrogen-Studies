@@ -624,9 +624,6 @@ class ContentAnalyticsService {
         primaryAudience: audience,
         audiencePreferences: JSON.stringify({}),
         readingLevel,
-        primaryAudience: await this.inferAudience(contentType, contentId),
-        audiencePreferences: JSON.stringify({}),
-        readingLevel: await this.calculateReadingLevel(contentType, contentId),
         missingTopics: [],
         suggestedFollowUps: [],
         predictedEngagement: Math.round(performance.engagementScore * 1.2),
@@ -944,86 +941,6 @@ class ContentAnalyticsService {
     };
   }
 
-  /**
-   * Infer primary audience from content category and type.
-   */
-  private async inferAudience(
-    contentType: ContentType,
-    contentId: number,
-  ): Promise<string> {
-    try {
-      if (contentType === ContentType.STUDY) {
-        const [study] = await db
-          .select({ category: studies.category, studyType: studies.studyType })
-          .from(studies)
-          .where(eq(studies.id, contentId))
-          .limit(1);
-        if (!study) return "general";
-        const cat = (study.category || "").toLowerCase();
-        const type = (study.studyType || "").toLowerCase();
-        if (type === "human" || cat.includes("clinical")) return "healthcare_professional";
-        if (cat.includes("athlet") || cat.includes("exercise") || cat.includes("sport")) return "athlete";
-        if (cat.includes("aging") || cat.includes("elder")) return "older_adult";
-        return "general";
-      }
-      if (contentType === ContentType.BLOG) {
-        const [blog] = await db
-          .select({ articleType: blogArticles.articleType })
-          .from(blogArticles)
-          .where(eq(blogArticles.id, contentId))
-          .limit(1);
-        if (!blog) return "general";
-        const type = (blog.articleType || "").toLowerCase();
-        if (["how_to_guide", "daily_routine", "tips"].includes(type)) return "consumer";
-        if (["patient_story", "side_effects"].includes(type)) return "patient";
-        if (["overview", "comparison", "future_implications"].includes(type)) return "researcher";
-        return "general";
-      }
-      return "general";
-    } catch {
-      return "general";
-    }
-  }
-
-  /**
-   * Calculate Flesch-Kincaid reading grade level from content text.
-   */
-  private async calculateReadingLevel(
-    contentType: ContentType,
-    contentId: number,
-  ): Promise<number> {
-    try {
-      let text = "";
-      if (contentType === ContentType.STUDY) {
-        const [study] = await db
-          .select({ abstract: studies.abstract })
-          .from(studies)
-          .where(eq(studies.id, contentId))
-          .limit(1);
-        text = study?.abstract || "";
-      } else if (contentType === ContentType.BLOG) {
-        const [blog] = await db
-          .select({ content: blogArticles.content })
-          .from(blogArticles)
-          .where(eq(blogArticles.id, contentId))
-          .limit(1);
-        text = blog?.content || "";
-      }
-
-      if (text.length < 50) return 8; // Default for very short content
-
-      const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0).length || 1;
-      const words = text.split(/\s+/).filter((w) => w.length > 0);
-      const wordCount = words.length || 1;
-      const syllableCount = words.reduce((sum, word) => sum + countSyllables(word), 0);
-
-      // Flesch-Kincaid Grade Level formula
-      const grade = 0.39 * (wordCount / sentences) + 11.8 * (syllableCount / wordCount) - 15.59;
-      return Math.max(1, Math.min(20, Math.round(grade)));
-    } catch {
-      return 8;
-    }
-  }
 }
 
 // Export singleton instance

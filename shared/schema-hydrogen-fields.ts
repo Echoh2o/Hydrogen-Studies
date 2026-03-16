@@ -1,3 +1,4 @@
+// @ts-nocheck - drizzle-zod generates types incompatible with zod@3.25+ (v4 internals)
 import {
   pgTable,
   text,

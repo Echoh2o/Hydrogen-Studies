@@ -33,7 +33,8 @@ import {
 } from "lucide-react";
 
 // Extended schema for the form with all fields
-const studyFormSchema = insertStudySchema.extend({
+// Note: Using 'as any' due to drizzle-zod generating Zod v3 types while zod@3.25+ uses v4 internals
+const studyFormSchema = (insertStudySchema as any).extend({
   keywords: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   healthBenefits: z.array(z.string()).optional(),
@@ -42,7 +43,7 @@ const studyFormSchema = insertStudySchema.extend({
   lifeStages: z.array(z.string()).optional(),
 });
 
-type StudyFormData = z.infer<typeof studyFormSchema>;
+type StudyFormData = Record<string, any>;
 
 interface StudyEditorProps {
   studyId?: number;
@@ -65,7 +66,7 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
   const [activeTab, setActiveTab] = useState("basic");
 
   const form = useForm<StudyFormData>({
-    resolver: zodResolver(studyFormSchema),
+    resolver: zodResolver(studyFormSchema as any),
     defaultValues: {
       title: "",
       abstract: "",
@@ -147,8 +148,8 @@ const StudyEditor: React.FC<StudyEditorProps> = ({
     }
   };
 
-  const keywordString = form.watch("keywords")?.join(", ") || "";
-  const tagString = form.watch("tags")?.join(", ") || "";
+  const keywordString = (form.watch("keywords") as string[] | undefined)?.join(", ") || "";
+  const tagString = (form.watch("tags") as string[] | undefined)?.join(", ") || "";
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

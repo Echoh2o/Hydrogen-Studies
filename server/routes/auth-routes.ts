@@ -792,7 +792,7 @@ router.post(
               LIMIT 1
               FOR UPDATE SKIP LOCKED`
         );
-        resetToken = (rows.rows?.[0] || rows[0]) as typeof resetToken;
+        resetToken = (rows.rows?.[0] || (rows as any)[0]) as typeof resetToken;
 
         if (!resetToken || resetToken.usedAt) {
           throw new Error("INVALID_TOKEN");

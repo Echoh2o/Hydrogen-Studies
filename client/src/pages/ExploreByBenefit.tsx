@@ -57,6 +57,7 @@ interface Study {
   authors: string;
   doi?: string;
   imageUrl?: string;
+  slug?: string;
 }
 
 interface ConsumerCategory {

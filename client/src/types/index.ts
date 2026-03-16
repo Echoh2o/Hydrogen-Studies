@@ -27,6 +27,7 @@ export interface Study {
   citationCount?: number;
   sourceUrl?: string | null;
   sourcePlatform?: string | null;
+  slug?: string | null;
 }
 
 // Category interfaces
