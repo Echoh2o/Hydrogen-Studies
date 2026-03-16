@@ -375,6 +375,28 @@ function BlogPageContent() {
               </div>
             </div>
           </div>
+
+          {/* Echo Water cross-link CTA */}
+          <div className="bg-teal-50 border border-teal-100 rounded-lg p-6 my-8">
+            <p className="text-sm font-medium text-teal-900 mb-2">
+              Interested in hydrogen water?
+            </p>
+            <p className="text-sm text-teal-700 mb-3">
+              Browse research-backed hydrogen water products from Echo Water.
+            </p>
+            <div className="flex gap-3">
+              <a href="https://echowater.com" target="_blank" rel="noopener">
+                <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
+                  Shop Echo Water
+                </Button>
+              </a>
+              <Link to="/products">
+                <Button variant="outline" size="sm">
+                  Compare Products
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Related Content from Internal Linking Engine */}

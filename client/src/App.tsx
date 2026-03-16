@@ -189,6 +189,10 @@ const MyDashboardPage = lazy(() => import("./pages/MyDashboardPage"));
 const PipelineDashboardPage = lazy(() => import("./pages/admin/PipelineDashboardPage"));
 const ThisWeekPage = lazy(() => import("./pages/ThisWeekPage"));
 
+// Content Hub / Pillar Pages
+const ContentHubIndexPage = lazy(() => import("./pages/ContentHubIndexPage"));
+const ContentHubPage = lazy(() => import("./pages/ContentHubPage"));
+
 function ScrollToTop() {
   const [location] = useLocation();
 
@@ -499,6 +503,10 @@ function Router() {
         <Route path="/learn/therapy-guide" component={HydrogenTherapyGuide} />
         <Route path="/contact-us" component={ContactUsPage} />
         <Route path="/this-week" component={ThisWeekPage} />
+
+        {/* Content Hubs / Pillar Pages */}
+        <Route path="/hub" component={ContentHubIndexPage} />
+        <Route path="/hub/:topic" component={ContentHubPage} />
 
         {/* Tag-based Navigation */}
         <Route path="/studies/tags" component={TaggedStudiesPage} />

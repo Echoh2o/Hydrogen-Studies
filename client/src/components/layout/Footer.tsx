@@ -9,6 +9,7 @@ import {
   Shield,
   HelpCircle,
   Building2,
+  ShoppingCart,
   CheckCircle2,
   Loader2,
 } from "lucide-react";
@@ -46,7 +47,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white border-t-4 border-teal-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center">
@@ -215,6 +216,56 @@ export default function Footer() {
                 >
                   Products
                 </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Echo Water Section */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-base flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4 text-teal-500" />
+              Echo Water
+            </h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a
+                  href="https://echowater.com"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
+                >
+                  Shop Hydrogen Water
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://echowater.com/products/echo-flask"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
+                >
+                  Echo Flask
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://echowater.com/products/echo-ultimate-hydrogen-water"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
+                >
+                  Echo Ultimate
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
+                >
+                  Echo Refresh (Inhalation)
+                </a>
               </li>
             </ul>
           </div>
