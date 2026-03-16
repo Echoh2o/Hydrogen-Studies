@@ -361,7 +361,11 @@ export default function StudiesPage() {
               </TableHeader>
               <TableBody>
                 {studies.map((study: any) => (
-                  <TableRow key={study.id}>
+                  <TableRow
+                    key={study.id}
+                    className="cursor-pointer hover:bg-accent/50"
+                    onClick={() => window.location.href = `/admin/studies/edit/${study.id}`}
+                  >
                     <TableCell>
                       <div className="max-w-[350px]">
                         <p className="font-medium truncate">{study.title}</p>

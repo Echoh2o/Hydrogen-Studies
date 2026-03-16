@@ -165,97 +165,36 @@ export default function AdminLayout({
           </div>
         </header>
 
-        <div className="flex-1 flex">
-          {/* Desktop Sidebar */}
-          <aside className="hidden md:flex w-64 flex-col border-r bg-background shrink-0">
-            <nav className="flex-1 overflow-y-auto py-3 px-3">
-              <div className="space-y-5">
-                {navSections.map((section, index) => (
-                  <div key={index}>
-                    <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {section.title}
-                    </h3>
-                    <ul className="space-y-0.5">
-                      {section.items.map(({ href, label, icon: Icon }) => (
-                        <li key={href}>
-                          <Link
-                            href={href}
-                            className={cn(
-                              "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
-                              isActive(href)
-                                ? "bg-accent text-accent-foreground"
-                                : "text-muted-foreground",
-                            )}
-                          >
-                            <Icon className="h-4 w-4 shrink-0" />
-                            <span className="truncate">{label}</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </nav>
-          </aside>
-
-          {/* Mobile Sidebar Overlay */}
-          {mobileMenuOpen && (
-            <>
-              <div
-                className="md:hidden fixed inset-0 z-40 bg-black/50"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-              <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-72 bg-background border-r shadow-xl overflow-y-auto">
-                <div className="flex items-center justify-between p-4 border-b">
-                  <span className="font-semibold text-sm">Admin Menu</span>
-                  <button
-                    className="p-1.5 rounded-md hover:bg-accent"
+        {/* Mobile nav dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-b bg-background px-4 py-3">
+            <div className="grid grid-cols-2 gap-2">
+              {navSections.flatMap((section) =>
+                section.items.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent transition-colors",
+                      isActive(href)
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground",
+                    )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <nav className="py-3 px-3">
-                  <div className="space-y-5">
-                    {navSections.map((section, index) => (
-                      <div key={index}>
-                        <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          {section.title}
-                        </h3>
-                        <ul className="space-y-0.5">
-                          {section.items.map(({ href, label, icon: Icon }) => (
-                            <li key={href}>
-                              <Link
-                                href={href}
-                                className={cn(
-                                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
-                                  isActive(href)
-                                    ? "bg-accent text-accent-foreground"
-                                    : "text-muted-foreground",
-                                )}
-                                onClick={() => setMobileMenuOpen(false)}
-                              >
-                                <Icon className="h-4 w-4 shrink-0" />
-                                <span className="truncate">{label}</span>
-                                <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </nav>
-              </aside>
-            </>
-          )}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{label}</span>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="mx-auto max-w-6xl">{children}</div>
-          </main>
-        </div>
+        {/* Main content — full width, no sidebar */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );
