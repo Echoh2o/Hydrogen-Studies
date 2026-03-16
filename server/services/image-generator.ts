@@ -37,8 +37,8 @@ export async function generateScientificImage(
       };
     }
 
-    // Create a simplified prompt for generic scientific images
-    const prompt = `Scientific illustration of ${content}. Professional medical illustration in hyper-realistic style with clean lighting and neutral background. No text or labels.`;
+    // Create a simplified prompt for artistic health images
+    const prompt = `Beautiful, artistic editorial photo representing ${content}. Simple, clean, modern health magazine style with soft natural lighting. No text, labels, or scientific diagrams.`;
 
     // Generate the image using DALL-E 3
     const response = await getOpenAI().images.generate({
@@ -331,34 +331,26 @@ async function createImagePrompt(
 
     // Use AI to generate a detailed image prompt
     const generatedPrompt = (await ai.generateText(
-      `You are an expert scientific illustrator specializing in hydrogen health research.
-      Your task is to create detailed, scientifically accurate prompts for generating medical/scientific illustrations.
-      Focus on creating prompts that would yield realistic, professional images suitable for scientific publications.
-      Do not include text labels in the image description as they will appear distorted.
+      `You are an art director creating simple, beautiful editorial images for a health and wellness website.
+      Your images should be artistic and visually appealing, NOT complex scientific diagrams.
+      Think editorial photography or clean illustration style — like what you'd see in a modern health magazine.
+      Do not include text, labels, molecules, chemical formulas, or complex scientific diagrams.
       Avoid references to specific people, brands, or copyrighted concepts.`,
-      `Create a detailed prompt for generating a scientific illustration for a hydrogen health study with the following details:
+      `Create a simple, artistic image prompt for a health study about:
 
-      TITLE: ${title}
-
-      ABSTRACT: ${abstractSummary}
+      TOPIC: ${title}
 
       CATEGORY: ${category}
 
-      FOCUS: ${focus}
-
-      DELIVERY METHOD: ${deliveryMethod}
-
-      HEALTH BENEFITS: ${healthBenefits.join(", ")}
-
       The image should be:
-      1. Scientifically accurate and professionally styled
-      2. Suitable for a medical or scientific publication
-      3. Clear and focused on the hydrogen therapy mechanism
-      4. Without any text labels or annotations
-      5. In a modern scientific illustration style with a clean background
+      1. Simple, clean, and artistic — like editorial health photography
+      2. Related to the study topic (e.g., cancer study = artistic cancer ribbon or cells, eye study = close-up of an eye or eye drops, gut health = stomach/digestive imagery)
+      3. Beautiful and calming with soft, natural colors
+      4. WITHOUT any text, labels, molecules, chemical structures, or complex scientific diagrams
+      5. More like a magazine cover photo than a textbook illustration
 
-      Provide only the image generation prompt with no additional explanation or commentary.`,
-      { maxTokens: 300, temperature: 0.7 },
+      Provide only the image generation prompt with no additional explanation.`,
+      { maxTokens: 200, temperature: 0.7 },
     ))?.trim();
 
     if (!generatedPrompt) {
@@ -370,7 +362,7 @@ async function createImagePrompt(
     }
 
     // Ensure the prompt is suitable for DALL-E by adding some guardrails
-    const enhancedPrompt = `Scientific illustration for hydrogen therapy research: ${generatedPrompt}. Create a professional medical illustration in a hyper-realistic style with clean lighting and neutral background. No text or labels.`;
+    const enhancedPrompt = `${generatedPrompt}. Simple, artistic, editorial health photography style. Soft natural lighting. Clean composition. No text, labels, or scientific diagrams.`;
 
     return enhancedPrompt;
   } catch (error) {
@@ -398,22 +390,10 @@ function createGenericPrompt(
   // Format the category for better prompting
   const formattedCategory = category.toLowerCase();
 
-  // Based on delivery method, create appropriate visualization
-  let basePrompt = "";
-  if (deliveryMethod === "water") {
-    basePrompt = `Scientific illustration of hydrogen-rich water therapy for ${formattedCategory}. Glass of clear water with visible hydrogen molecules, medical setting, photorealistic.`;
-  } else if (deliveryMethod === "inhalation") {
-    basePrompt = `Scientific illustration of hydrogen gas inhalation therapy for ${formattedCategory}. Medical-grade inhalation device, visible hydrogen gas, clinical setting, photorealistic.`;
-  } else if (deliveryMethod === "injection") {
-    basePrompt = `Scientific illustration of hydrogen-rich saline injection for ${formattedCategory}. Medical syringe with hydrogen-enriched solution, clinical setting, photorealistic.`;
-  } else if (deliveryMethod === "bath") {
-    basePrompt = `Scientific illustration of hydrogen-rich water bath therapy for ${formattedCategory}. Therapeutic bath with dissolved hydrogen, medical setting, photorealistic.`;
-  } else {
-    basePrompt = `Scientific illustration of molecular hydrogen therapy for ${formattedCategory}. Hydrogen molecules interacting with human cells, medical setting, photorealistic.`;
-  }
+  // Create a simple, artistic image prompt based on the study topic
+  const basePrompt = `Beautiful, artistic editorial photo representing ${formattedCategory} health and wellness. Simple, clean composition with soft natural lighting.`;
 
-  // Add style guidance for consistent scientific illustration
-  return `${basePrompt} Professional medical illustration in hyper-realistic style with clean lighting and neutral background. No text or labels.`;
+  return `${basePrompt} Modern health magazine style. No text, labels, or scientific diagrams.`;
 }
 
 /**
