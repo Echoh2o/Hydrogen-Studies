@@ -11,7 +11,7 @@ import {
   isRetryableError,
 } from "./app-errors";
 import { reportError } from "./error-reporting";
-import { Sentry } from "./sentry";
+
 
 // Standard error types for the application
 export enum ErrorType {
@@ -111,11 +111,6 @@ export function handleApiError(
       ip: res.req?.ip,
       userAgent: res.req?.get("user-agent"),
       tags: { errorType },
-  // Send non-operational errors to Sentry in production
-  if (process.env.NODE_ENV === "production" && !isOperationalError(error)) {
-    Sentry.captureException(error, {
-      tags: { errorType },
-      extra: { requestId, url: res.req?.url, method: res.req?.method },
     });
   }
 

@@ -21,7 +21,6 @@ import {
 import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
-import RelatedContent from "@/components/seo/RelatedContent";
 import RelatedContent from "@/components/RelatedContent";
 import JsonLd, {
   generateMedicalArticleSchema,
@@ -33,82 +32,6 @@ import { useEffect, useRef } from "react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 
-// Simple pure component for rendering a study image or fallback
-interface StudyImageProps {
-  studyId: number;
-  imageUrl?: string;
-  imageAlt?: string;
-  title?: string;
-  authors?: string;
-  journal?: string;
-  year?: number;
-}
-
-const StudyImage = ({
-  studyId,
-  imageUrl,
-  imageAlt,
-  title = "Hydrogen Research Study",
-  authors = "Hydrogen Researchers",
-  journal = "Scientific Journal",
-  year,
-}: StudyImageProps) => {
-  // If image URL is provided and seems valid, return an actual image
-  if (
-    imageUrl &&
-    imageUrl.trim() !== "" &&
-    !imageUrl.includes("placehold.co")
-  ) {
-    return (
-      <div className="w-full rounded-md shadow-md overflow-hidden bg-white">
-        <img
-          src={imageUrl}
-          alt={imageAlt || `Study visualization: ${title}`}
-          className="w-full object-cover h-auto max-h-96"
-          loading="lazy"
-          onError={(e) => {
-            // On error, replace with a styled div
-            const target = e.target as HTMLImageElement;
-            const parent = target.parentNode as HTMLElement;
-
-            if (parent) {
-              // Create a fallback element
-              const fallback = document.createElement("div");
-              fallback.className =
-                "w-full h-96 bg-sky-50 flex flex-col items-center justify-center p-6 text-center";
-
-              // Add study ID
-              const idEl = document.createElement("div");
-              idEl.className = "text-teal-900 text-lg font-semibold mb-2";
-              idEl.textContent = `Study #${studyId}`;
-              fallback.appendChild(idEl);
-
-              // Add title
-              const titleEl = document.createElement("h3");
-              titleEl.className =
-                "text-teal-900 text-xl font-bold mb-4 max-w-lg";
-              titleEl.textContent = title;
-              fallback.appendChild(titleEl);
-
-              // Add authors
-              const authorsEl = document.createElement("p");
-              authorsEl.className = "text-teal-800 mb-4";
-              authorsEl.textContent = authors;
-              fallback.appendChild(authorsEl);
-
-              // Add journal info
-              const journalEl = document.createElement("p");
-              journalEl.className = "text-teal-700 text-sm mb-8";
-              journalEl.textContent = `${journal} (${year || new Date().getFullYear()})`;
-              fallback.appendChild(journalEl);
-
-              // Replace the img with the fallback
-              parent.replaceChild(fallback, target);
-            }
-          }}
-        />
-      </div>
-    );
 import StudyImage from "@/components/studies/StudyImage";
 
 /** Extract YouTube video ID from various URL formats */
@@ -1022,8 +945,6 @@ const StudyPage = () => {
               <RelatedBlogs studyId={study.id} />
             </section>
 
-            {/* Internal Links - Cross-linked Content */}
-            <RelatedContent contentType="study" contentId={study.id} className="mt-8" />
             {/* Smart Internal Links */}
             <RelatedContent contentType="study" contentId={study.id} title="Explore Related Research" />
           </div>
