@@ -78,7 +78,7 @@ export default function BlogListPage() {
     { value: "case-studies", label: "Case Studies" },
   ];
 
-  const articles: any[] = response?.data || [];
+  const articles: any[] = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   const filteredArticles = articles;
 
   const formatDate = (dateString: string | null | undefined) => {

@@ -91,36 +91,40 @@ const EnhancedAdminDashboard: React.FC = () => {
 
   const { data: studies = [] } = useQuery<Study[]>({
     queryKey: ["/api/studies"],
-    select: (data: any[]) =>
-      data.map((study) => ({
+    select: (response: any) => {
+      const data = Array.isArray(response) ? response : (response?.data || response?.studies || []);
+      return Array.isArray(data) ? data.map((study: any) => ({
         id: study.id,
         title: study.title,
         authors: study.authors,
-        journal: study.journal,
-        category: study.category,
+        journal: study.journal || "",
+        category: study.category || "",
         publishDate: study.publishDate,
         isPublished: study.isPublished || false,
         isFeatured: study.isFeatured || false,
         viewCount: study.viewCount || 0,
         imageUrl: study.imageUrl,
-      })),
+      })) : [];
+    },
   });
 
   const { data: blogArticles = [] } = useQuery<BlogArticle[]>({
     queryKey: ["/api/blogs"],
-    select: (data: any[]) =>
-      data.map((blog) => ({
+    select: (response: any) => {
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      return Array.isArray(data) ? data.map((blog: any) => ({
         id: blog.id,
         title: blog.title,
-        summary: blog.summary,
+        summary: blog.summary || "",
         studyId: blog.studyId,
-        readingLevel: blog.readingLevel,
-        articleType: blog.articleType,
+        readingLevel: blog.readingLevel || "general",
+        articleType: blog.articleType || "article",
         isPublished: blog.isPublished || false,
         viewCount: blog.viewCount || 0,
         createdAt: blog.createdAt,
         updatedAt: blog.updatedAt,
-      })),
+      })) : [];
+    },
   });
 
   // Filter studies
