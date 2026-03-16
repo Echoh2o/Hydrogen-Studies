@@ -859,22 +859,14 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
     // Save study to database
     const savedStudy = await studyService.createStudy(study);
 
-    // Trigger background enrichment to fill in missing metadata (title, slug, etc.)
+    // Trigger full lifecycle pipeline in background (non-blocking)
+    // This chains: DOI enhancement → content enrichment → SEO → TLDR → image → blog → links
     if (savedStudy?.id) {
-      if (source.toLowerCase() === "pubmed") {
-        enrichStudyFromPubMed(savedStudy.id).catch(err =>
-          logger.error("Background PubMed enrichment failed", err, "ResearchUnifiedRoutes")
+      import("../services/study-lifecycle").then(({ runStudyLifecyclePipeline }) => {
+        runStudyLifecyclePipeline(savedStudy.id).catch(err =>
+          logger.error("Study lifecycle pipeline failed", err, "ResearchUnifiedRoutes")
         );
-      }
-      // Also trigger SEO enrichment for slug, plainLanguageTitle, etc.
-      import("../services/study-seo-enrichment").then(({ enrichAndSaveStudy }) => {
-        // Delay SEO enrichment slightly to let PubMed enrichment finish first
-        setTimeout(() => {
-          enrichAndSaveStudy(savedStudy.id).catch(err =>
-            logger.error("Background SEO enrichment failed", err, "ResearchUnifiedRoutes")
-          );
-        }, source.toLowerCase() === "pubmed" ? 5000 : 1000);
-      }).catch(err => logger.error("Failed to load SEO enrichment module", err, "ResearchUnifiedRoutes"));
+      }).catch(err => logger.error("Failed to load lifecycle module", err, "ResearchUnifiedRoutes"));
     }
 
     res.json({
@@ -918,19 +910,13 @@ router.post("/api/research/pubmed/import", async (req: Request, res: Response) =
 
     const saved = await studyService.createStudy(studyData);
 
-    // Enrich with full PubMed data + SEO enrichment after saving
+    // Trigger full lifecycle pipeline in background
     if (saved?.id) {
-      enrichStudyFromPubMed(saved.id).catch(err =>
-        logger.error("Background PubMed enrichment failed", err, "ResearchUnifiedRoutes")
-      );
-      // Delay SEO enrichment to let PubMed enrichment finish first
-      import("../services/study-seo-enrichment").then(({ enrichAndSaveStudy }) => {
-        setTimeout(() => {
-          enrichAndSaveStudy(saved.id).catch(err =>
-            logger.error("Background SEO enrichment failed", err, "ResearchUnifiedRoutes")
-          );
-        }, 5000);
-      }).catch(err => logger.error("Failed to load SEO enrichment module", err, "ResearchUnifiedRoutes"));
+      import("../services/study-lifecycle").then(({ runStudyLifecyclePipeline }) => {
+        runStudyLifecyclePipeline(saved.id).catch(err =>
+          logger.error("Study lifecycle pipeline failed", err, "ResearchUnifiedRoutes")
+        );
+      }).catch(err => logger.error("Failed to load lifecycle module", err, "ResearchUnifiedRoutes"));
     }
 
     res.json({ success: true, message: "Study imported from PubMed", study: saved });
@@ -952,6 +938,15 @@ router.post("/api/semantic-scholar/import", async (req: Request, res: Response) 
     if (!study) return res.status(404).json({ error: "Failed to extract study from Semantic Scholar" });
 
     const saved = await studyService.createStudy(study);
+
+    if (saved?.id) {
+      import("../services/study-lifecycle").then(({ runStudyLifecyclePipeline }) => {
+        runStudyLifecyclePipeline(saved.id).catch(err =>
+          logger.error("Study lifecycle pipeline failed", err, "ResearchUnifiedRoutes")
+        );
+      }).catch(err => logger.error("Failed to load lifecycle module", err, "ResearchUnifiedRoutes"));
+    }
+
     res.json({ success: true, message: "Study imported from Semantic Scholar", study: saved });
   } catch (error: unknown) {
     logger.error("Semantic Scholar import error", error, "ResearchUnifiedRoutes");
@@ -971,6 +966,15 @@ router.post("/api/crossref/import", async (req: Request, res: Response) => {
     if (!study) return res.status(404).json({ error: "Failed to extract study from CrossRef" });
 
     const saved = await studyService.createStudy(study);
+
+    if (saved?.id) {
+      import("../services/study-lifecycle").then(({ runStudyLifecyclePipeline }) => {
+        runStudyLifecyclePipeline(saved.id).catch(err =>
+          logger.error("Study lifecycle pipeline failed", err, "ResearchUnifiedRoutes")
+        );
+      }).catch(err => logger.error("Failed to load lifecycle module", err, "ResearchUnifiedRoutes"));
+    }
+
     res.json({ success: true, message: "Study imported from CrossRef", study: saved });
   } catch (error: unknown) {
     logger.error("CrossRef import error", error, "ResearchUnifiedRoutes");
