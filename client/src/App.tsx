@@ -4,7 +4,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, lazy, Suspense, startTransition } from "react";
-import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/ui/cookie-consent";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { initGA } from "./lib/analytics";
@@ -71,6 +70,7 @@ const ExploreByCondition = lazy(() => import("@/pages/ExploreByCondition"));
 const ConditionCategoryPage = lazy(
   () => import("@/pages/ConditionCategoryPage"),
 );
+const HydrogenForConditionPage = lazy(() => import("@/pages/HydrogenForConditionPage"));
 const ExploreByBodySystem = lazy(() => import("@/pages/ExploreByBodySystem"));
 const BodySystemCategoryPage = lazy(
   () => import("@/pages/BodySystemCategoryPage"),
@@ -480,6 +480,7 @@ function Router() {
         <Route path="/explore-by-benefit" component={ExploreByBenefit} />
         <Route path="/explore-by-condition" component={ExploreByCondition} />
         <Route path="/explore-by-condition/:category" component={ConditionCategoryPage} />
+        <Route path="/hydrogen-for/:condition" component={HydrogenForConditionPage} />
         <Route path="/explore-by-body-system" component={ExploreByBodySystem} />
         <Route path="/explore-by-body-system/:category" component={BodySystemCategoryPage} />
         <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />
@@ -603,7 +604,6 @@ function App() {
                 </Suspense>
               </AsyncErrorBoundary>
             </main>
-            <Footer />
           </div>
           <Toaster />
         </TooltipProvider>

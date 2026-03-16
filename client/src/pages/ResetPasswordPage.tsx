@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, CheckCircle } from "lucide-react";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 import { useLocation, useSearch } from "wouter";
 
 export default function ResetPasswordPage() {
@@ -64,6 +66,10 @@ export default function ResetPasswordPage() {
     return (
       <>
         <SiteHeader />
+        <Helmet>
+          <title>Reset Password - Hydrogen Studies</title>
+          <meta name="description" content="Set a new password for your Hydrogen Studies account." />
+        </Helmet>
         <main className="min-h-[70vh] flex items-center justify-center bg-gray-50 px-4 py-16">
           <Card className="w-full max-w-md">
             <CardContent className="pt-8 pb-8 text-center space-y-4">
@@ -80,6 +86,7 @@ export default function ResetPasswordPage() {
             </CardContent>
           </Card>
         </main>
+        <Footer />
       </>
     );
   }
@@ -87,6 +94,10 @@ export default function ResetPasswordPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Reset Password - Hydrogen Studies</title>
+        <meta name="description" content="Set a new password for your Hydrogen Studies account." />
+      </Helmet>
       <main className="min-h-[70vh] flex items-center justify-center bg-gray-50 px-4 py-16">
         <Card className="w-full max-w-md">
           <CardContent className="pt-8 pb-8 space-y-6">
@@ -155,6 +166,7 @@ export default function ResetPasswordPage() {
           </CardContent>
         </Card>
       </main>
+      <Footer />
     </>
   );
 }

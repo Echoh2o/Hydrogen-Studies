@@ -25,6 +25,8 @@ import {
   Hourglass,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 const getDemographicIcon = (slug: string, className: string = "") => {
   switch (slug) {
@@ -56,6 +58,13 @@ const ExploreByDemographicPage: React.FC = () => {
   return (
     <>
       <SiteHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Studies", href: "/studies" },
+          { label: "By Demographic" },
+        ]} />
+      </div>
       <div className="container mx-auto py-10">
         <Helmet>
           <title>
@@ -65,6 +74,12 @@ const ExploreByDemographicPage: React.FC = () => {
             name="description"
             content="Discover hydrogen research organized by demographics including athletes, elderly, children, healthy adults, and those with specific health conditions."
           />
+          <meta property="og:title" content="Explore Hydrogen Studies by Demographic | HydrogenStudies.com" />
+          <meta property="og:description" content="Discover hydrogen research organized by demographics including athletes, elderly, children, healthy adults, and those with specific health conditions." />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://hydrogenstudies.com/explore-by-demographic" />
+          <meta name="twitter:card" content="summary" />
+          <link rel="canonical" href="https://hydrogenstudies.com/explore-by-demographic" />
         </Helmet>
 
         <div className="space-y-8">
@@ -129,6 +144,7 @@ const ExploreByDemographicPage: React.FC = () => {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 };

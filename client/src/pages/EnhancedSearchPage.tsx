@@ -29,6 +29,8 @@ import {
   Users,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import { Helmet } from "react-helmet";
 
 interface SearchFilters {
   query: string;
@@ -141,6 +143,16 @@ export default function EnhancedSearchPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Advanced Search - Hydrogen Studies Database</title>
+        <meta name="description" content="Use our advanced search to find specific hydrogen research studies with detailed filters and options." />
+        <meta property="og:title" content="Advanced Search - Hydrogen Studies Database" />
+        <meta property="og:description" content="Use our advanced search to find specific hydrogen research studies with detailed filters and options." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/advanced-search" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/advanced-search" />
+      </Helmet>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">
@@ -566,6 +578,7 @@ export default function EnhancedSearchPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

@@ -46,6 +46,8 @@ import ResearchTimeline from "@/components/explorer/ResearchTimeline";
 import StudyComparison from "@/components/explorer/StudyComparison";
 import ResearchEvolution from "@/components/explorer/ResearchEvolution";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import { Helmet } from "react-helmet";
 
 export default function StudyExplorerPage() {
   const [, navigate] = useLocation();
@@ -123,6 +125,16 @@ export default function StudyExplorerPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Study Explorer - Interactive Research Tool</title>
+        <meta name="description" content="Explore hydrogen health research with our interactive study explorer. Filter, sort, and discover studies across categories." />
+        <meta property="og:title" content="Study Explorer - Interactive Research Tool" />
+        <meta property="og:description" content="Explore hydrogen health research with our interactive study explorer. Filter, sort, and discover studies across categories." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/study-explorer" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/study-explorer" />
+      </Helmet>
       <HeadMetaTags
         title="Interactive Study Explorer - Hydrogen Therapy Research"
         description="Explore hydrogen therapy research with interactive visualizations including timeline, body map, and evolution diagrams. Discover research trends and compare studies."
@@ -460,6 +472,7 @@ export default function StudyExplorerPage() {
           </Card>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

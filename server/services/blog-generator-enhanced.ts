@@ -10,7 +10,7 @@ import axios from "axios";
 import slugify from "slugify";
 import { Study, InsertBlogArticle, blogArticles } from "@shared/schema";
 import { db } from "../db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import {
   handleOpenAIRequest,
   handleBatchOperation,
@@ -237,6 +237,26 @@ async function generateSingleBlogArticle(
       },
       { maxRetries: 2, retryDelay: 1000 },
     );
+
+    // Generate internal links for the new blog post and its source study
+    try {
+      const { generateBlogLinks, generateStudyLinks, saveLinks } = await import("./internal-linking-engine");
+      // Get the newly inserted blog's ID
+      const [inserted] = await db.select({ id: blogArticles.id })
+        .from(blogArticles)
+        .where(eq(blogArticles.studyId, study.id))
+        .orderBy(desc(blogArticles.id))
+        .limit(1);
+      if (inserted) {
+        const blogLinks = await generateBlogLinks(inserted.id);
+        const studyLinks = await generateStudyLinks(study.id);
+        const saved = await saveLinks([...blogLinks, ...studyLinks]);
+        console.log(`[Blog Generator] Created ${saved} internal links for blog ${inserted.id}`);
+      }
+    } catch (linkError) {
+      // Non-fatal: don't fail blog generation if linking fails
+      console.warn("[Blog Generator] Internal linking failed:", linkError);
+    }
 
     return article;
   } catch (error) {

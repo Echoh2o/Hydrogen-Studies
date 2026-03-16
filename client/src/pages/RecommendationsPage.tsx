@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Star, TrendingUp, Clock, Users, BookOpen, Target } from "lucide-react";
+import { Helmet } from "react-helmet";
+import Footer from "@/components/layout/Footer";
 
 interface RecommendedStudy {
   id: number;
@@ -154,7 +156,12 @@ export default function RecommendationsPage() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <Helmet>
+        <title>Personalized Study Recommendations - Hydrogen Studies</title>
+        <meta name="description" content="Get personalized hydrogen research recommendations based on your health interests and reading history." />
+      </Helmet>
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">
           Recommended for You
@@ -453,5 +460,7 @@ export default function RecommendationsPage() {
         </TabsContent>
       </Tabs>
     </div>
+      <Footer />
+    </>
   );
 }

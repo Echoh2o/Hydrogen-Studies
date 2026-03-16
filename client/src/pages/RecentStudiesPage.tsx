@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 const RecentStudiesPage = () => {
   const [limit, setLimit] = useState(10);
@@ -67,12 +69,25 @@ const RecentStudiesPage = () => {
   return (
     <>
       <SiteHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Studies", href: "/studies" },
+          { label: "Recent Studies" },
+        ]} />
+      </div>
       <Helmet>
         <title>Recent Studies - Hydrogen Research Database</title>
         <meta
           name="description"
           content="Browse the latest research studies on hydrogen gas and its health applications. Discover new findings in hydrogen therapy research."
         />
+        <meta property="og:title" content="Recent Studies - Hydrogen Research Database" />
+        <meta property="og:description" content="Browse the latest research studies on hydrogen gas and its health applications. Discover new findings in hydrogen therapy research." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/recent-studies" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/recent-studies" />
       </Helmet>
 
       <section className="bg-primary-gradient text-white py-12 md:py-16">
@@ -258,6 +273,7 @@ const RecentStudiesPage = () => {
           )}
         </div>
       </section>
+      <Footer />
     </>
   );
 };

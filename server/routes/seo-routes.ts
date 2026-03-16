@@ -149,6 +149,20 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/explore-by-demographic", priority: "0.7", freq: "weekly" },
     { url: "/explore-by-delivery-method", priority: "0.8", freq: "weekly" },
     { url: "/explore-by-benefit", priority: "0.8", freq: "weekly" },
+    { url: "/insights", priority: "0.7", freq: "weekly" },
+    { url: "/research-analytics", priority: "0.7", freq: "weekly" },
+    { url: "/hydrogen-therapy-guide", priority: "0.9", freq: "monthly" },
+    // Programmatic hydrogen-for condition pages
+    { url: "/hydrogen-for/heart-disease", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/diabetes", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/brain-health", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/inflammation", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/cancer-support", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/athletic-performance", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/skin-health", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/gut-health", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/kidney-health", priority: "0.8", freq: "weekly" },
+    { url: "/hydrogen-for/lung-health", priority: "0.8", freq: "weekly" },
     { url: "/privacy", priority: "0.2", freq: "yearly" },
     { url: "/terms", priority: "0.2", freq: "yearly" },
   ];
@@ -407,6 +421,75 @@ ${urls.join("\n")}
     console.error("[Sitemap] Error generating explore sitemap:", err);
     res.status(500).send("Error generating sitemap");
   }
+});
+
+// ============================================================
+// RSS Feed (RSS 2.0)
+// ============================================================
+router.get("/rss.xml", async (req: Request, res: Response) => {
+  try {
+    const cached = getCached("rss");
+    if (cached) {
+      res.set("Content-Type", "application/rss+xml; charset=utf-8");
+      res.set("Cache-Control", "public, max-age=3600");
+      return res.send(cached);
+    }
+
+    const recentPosts = await db.select({
+      id: blogArticles.id,
+      title: blogArticles.title,
+      slug: blogArticles.slug,
+      summary: blogArticles.summary,
+      createdAt: blogArticles.createdAt,
+    }).from(blogArticles)
+      .where(eq(blogArticles.isPublished, true))
+      .orderBy(desc(blogArticles.createdAt))
+      .limit(50);
+
+    const items = recentPosts.map(post => {
+      const pubDate = post.createdAt
+        ? new Date(post.createdAt).toUTCString()
+        : new Date().toUTCString();
+      const link = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`;
+      return `    <item>
+      <title>${escapeXml(post.title)}</title>
+      <description>${escapeXml(post.summary)}</description>
+      <link>${link}</link>
+      <guid isPermaLink="true">${link}</guid>
+      <pubDate>${pubDate}</pubDate>
+    </item>`;
+    }).join("\n");
+
+    const lastBuildDate = recentPosts.length > 0 && recentPosts[0].createdAt
+      ? new Date(recentPosts[0].createdAt).toUTCString()
+      : new Date().toUTCString();
+
+    const xml = xmlHeader() +
+`<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Hydrogen Studies Blog - Latest Research Insights</title>
+    <description>Latest articles on hydrogen therapy research, health benefits, and scientific discoveries</description>
+    <link>${SITE_URL}/blog</link>
+    <atom:link href="${SITE_URL}/rss.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <lastBuildDate>${lastBuildDate}</lastBuildDate>
+${items}
+  </channel>
+</rss>`;
+
+    setCache("rss", xml);
+    res.set("Content-Type", "application/rss+xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  } catch (err) {
+    console.error("[RSS] Error generating RSS feed:", err);
+    res.status(500).send("Error generating RSS feed");
+  }
+});
+
+// Also serve at /feed.xml as an alias
+router.get("/feed.xml", (req: Request, res: Response) => {
+  res.redirect(301, "/rss.xml");
 });
 
 function escapeXml(str: string): string {

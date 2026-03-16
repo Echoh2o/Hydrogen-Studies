@@ -21,6 +21,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import { Helmet } from "react-helmet";
 
 export default function HealthBenefitsPage() {
   // Fetch real study counts from the API
@@ -163,6 +165,16 @@ export default function HealthBenefitsPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Hydrogen Health Benefits - Scientific Evidence &amp; Research</title>
+        <meta name="description" content="Explore the scientifically-studied health benefits of molecular hydrogen. Evidence-based information on how H2 supports various body systems." />
+        <meta property="og:title" content="Hydrogen Health Benefits - Scientific Evidence & Research" />
+        <meta property="og:description" content="Explore the scientifically-studied health benefits of molecular hydrogen. Evidence-based information on how H2 supports various body systems." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/health-benefits" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/health-benefits" />
+      </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Navigation */}
         <div className="bg-white border-b">
@@ -387,6 +399,7 @@ export default function HealthBenefitsPage() {
           </div>
         </section>
       </div>
+      <Footer />
     </>
   );
 }

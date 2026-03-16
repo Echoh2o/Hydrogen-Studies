@@ -38,7 +38,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Link } from "wouter";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 interface Study {
   id: number;
@@ -153,6 +155,16 @@ export default function SearchPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Search Studies - Hydrogen Studies Database</title>
+        <meta name="description" content="Search our comprehensive database of molecular hydrogen research studies. Find peer-reviewed studies by condition, body system, or keyword." />
+        <meta property="og:title" content="Search Studies - Hydrogen Studies Database" />
+        <meta property="og:description" content="Search our comprehensive database of molecular hydrogen research studies. Find peer-reviewed studies by condition, body system, or keyword." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/search" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/search" />
+      </Helmet>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white border-b sticky top-0 z-10">
@@ -520,6 +532,7 @@ export default function SearchPage() {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 }

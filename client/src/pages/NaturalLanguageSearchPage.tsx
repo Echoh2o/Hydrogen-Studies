@@ -20,6 +20,8 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Helmet } from "react-helmet";
+import Footer from "@/components/layout/Footer";
 
 export default function NaturalLanguageSearchPage() {
   const [location, setLocation] = useLocation();
@@ -140,7 +142,12 @@ export default function NaturalLanguageSearchPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <Helmet>
+        <title>AI-Powered Research Search - Hydrogen Studies</title>
+        <meta name="description" content="Search hydrogen research studies using natural language. Our AI helps you find the most relevant studies for your questions." />
+      </Helmet>
+      <div className="container mx-auto px-4 py-8">
       {/* Page Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -310,5 +317,7 @@ export default function NaturalLanguageSearchPage() {
         </motion.div>
       )}
     </div>
+      <Footer />
+    </>
   );
 }

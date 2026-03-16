@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 interface LifeStageCategory {
   name: string;
@@ -131,6 +133,13 @@ const ExploreByLifeStage = () => {
   return (
     <>
       <SiteHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Studies", href: "/studies" },
+          { label: "By Life Stage" },
+        ]} />
+      </div>
       <Helmet>
         <title>
           Explore Hydrogen Studies by Life Stage | HydrogenStudies.com
@@ -139,6 +148,12 @@ const ExploreByLifeStage = () => {
           name="description"
           content="Browse hydrogen research organized by different life stages and demographics. Find studies about how hydrogen therapy affects infants, children, adults, seniors, pregnant women, and athletes."
         />
+        <meta property="og:title" content="Explore Hydrogen Studies by Life Stage | HydrogenStudies.com" />
+        <meta property="og:description" content="Browse hydrogen research organized by different life stages and demographics. Find studies about how hydrogen therapy affects infants, children, adults, seniors, pregnant women, and athletes." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/explore-by-life-stage" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/explore-by-life-stage" />
       </Helmet>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto mb-12 text-center">
@@ -210,6 +225,7 @@ const ExploreByLifeStage = () => {
           </p>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

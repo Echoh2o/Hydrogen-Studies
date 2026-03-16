@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function ResearchInsightsPage() {
   // Get database statistics
@@ -38,6 +39,12 @@ export default function ResearchInsightsPage() {
           name="description"
           content="Explore insights and analytics from our hydrogen health research database. Discover publication trends, health outcomes, and research patterns."
         />
+        <meta property="og:title" content="Research Insights & Analytics - Hydrogen Studies Database" />
+        <meta property="og:description" content="Explore insights and analytics from our hydrogen health research database. Discover publication trends, health outcomes, and research patterns." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/insights" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/insights" />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-purple-50">
@@ -255,6 +262,7 @@ export default function ResearchInsightsPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

@@ -24,6 +24,8 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { FileSearch, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Study } from "@/types";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 export default function Studies() {
   const [location] = useLocation();
@@ -188,9 +190,22 @@ export default function Studies() {
           name="description"
           content="Browse and search through our comprehensive database of hydrogen gas studies and research papers."
         />
+        <meta property="og:title" content="Studies - Hydrogen Studies Research Database" />
+        <meta property="og:description" content="Browse and search through our comprehensive database of hydrogen gas studies and research papers." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/studies" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/studies" />
       </Helmet>
 
       <SiteHeader />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Studies" },
+        ]} />
+      </div>
 
       <div className="bg-neutral-100 py-8">
         <div className="container mx-auto px-4">
@@ -430,6 +445,7 @@ export default function Studies() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

@@ -28,6 +28,8 @@ import {
   Heart,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import { Helmet } from "react-helmet";
 
 interface Tag {
   id: number;
@@ -185,6 +187,10 @@ export default function TaggedStudiesPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Tagged Studies - Hydrogen Studies Database</title>
+        <meta name="description" content="Browse hydrogen research studies by tags and categories." />
+      </Helmet>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2">
@@ -509,6 +515,7 @@ export default function TaggedStudiesPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <Footer />
     </>
   );
 }

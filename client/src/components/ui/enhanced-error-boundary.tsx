@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from "react";
+import { trackError } from "@/lib/error-tracking";
 import { Button } from "./button";
 import { Alert, AlertDescription, AlertTitle } from "./alert";
 import {
@@ -82,6 +83,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
   }
 
   private reportErrorToService(error: Error, errorInfo: ErrorInfo) {
+    trackError(error, `ErrorBoundary${errorInfo.componentStack ? " | " + errorInfo.componentStack.split("\n")[1]?.trim() : ""}`);
     // Send to error tracking service (e.g., Sentry, LogRocket)
     // This is a placeholder - implement actual service integration
     const errorReport = {

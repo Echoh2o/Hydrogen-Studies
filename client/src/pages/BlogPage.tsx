@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
+import RelatedContent from "@/components/seo/RelatedContent";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -9,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import ReactMarkdown from "react-markdown";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 interface BlogArticle {
     id: number;
@@ -251,7 +253,15 @@ export default function BlogPage() {
             </div>
           </div>
         </div>
+
+        {/* Related Content from Internal Linking Engine */}
+        {blog?.id && (
+          <div className="max-w-4xl mx-auto px-4 py-8">
+            <RelatedContent contentType="blog" contentId={blog.id} />
+          </div>
+        )}
       </div>
+      <Footer />
     </>
   );
 }

@@ -11,6 +11,10 @@ import { validateEnvironment } from "./config/env";
 // Validate environment before anything else
 validateEnvironment();
 
+import { initErrorReporting, reportError } from "./utils/error-reporting";
+// Initialize error reporting early (before app setup)
+initErrorReporting();
+
 import { app } from "./app";
 import { log } from "./vite";
 import { pool } from "./db";
@@ -50,6 +54,17 @@ async function setupServer() {
     // SEO bot middleware — inject correct meta tags for crawlers BEFORE static files
     app.use(seoBotMiddleware(staticPath));
 
+    // Hashed assets (JS/CSS) — immutable, cache for 1 year
+    app.use(
+      "/assets",
+      express.static(path.join(staticPath, "assets"), {
+        maxAge: "1y",
+        immutable: true,
+      }),
+    );
+
+    // Other static files — cache for 1 hour, revalidate
+    app.use(express.static(staticPath, { maxAge: "1h" }));
     // Serve static assets with long-term caching (Vite adds content hashes to filenames)
     app.use(express.static(staticPath, {
       maxAge: "1y",
@@ -109,15 +124,19 @@ async function setupServer() {
   }
 }
 
-// Catch unhandled rejections — log and continue (don't crash)
+// Catch unhandled rejections — log and report
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled promise rejection:", reason);
+  reportError(reason instanceof Error ? reason : new Error(String(reason)), {
+    tags: { source: "unhandledRejection" },
+  });
   if (reason instanceof Error) Sentry.captureException(reason);
 });
 
-// Catch uncaught exceptions — log but only exit for truly fatal errors
+// Catch uncaught exceptions — log, report, but only exit for truly fatal errors
 process.on("uncaughtException", (error) => {
   console.error("Uncaught exception:", error);
+  reportError(error, { tags: { source: "uncaughtException" } });
   Sentry.captureException(error);
   // Only exit for fatal system-level errors; request-level errors are survivable
   if (

@@ -10,6 +10,7 @@ import {
   getUserFriendlyMessage,
   isRetryableError,
 } from "./app-errors";
+import { reportError } from "./error-reporting";
 import { Sentry } from "./sentry";
 
 // Standard error types for the application
@@ -100,6 +101,16 @@ export function handleApiError(
     );
   }
 
+  // Report non-operational errors to error tracking service
+  if (!isOperationalError(error)) {
+    reportError(error, {
+      requestId,
+      userId: (res.req as any)?.session?.userId,
+      url: res.req?.url,
+      method: res.req?.method,
+      ip: res.req?.ip,
+      userAgent: res.req?.get("user-agent"),
+      tags: { errorType },
   // Send non-operational errors to Sentry in production
   if (process.env.NODE_ENV === "production" && !isOperationalError(error)) {
     Sentry.captureException(error, {

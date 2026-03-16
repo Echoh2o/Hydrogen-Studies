@@ -17,7 +17,9 @@ import RelatedContent from "@/components/RelatedContent";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 
 export default function BlogArticlePage() {
   const { id } = useParams();
@@ -199,6 +201,10 @@ For those interested in diving deeper into the research, here are key studies re
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Hydrogen Health Blog - Hydrogen Studies</title>
+        <meta name="description" content="Read in-depth articles on hydrogen therapy research and health benefits." />
+      </Helmet>
       <div className="min-h-screen bg-white">
         {/* Back Navigation - removed sticky nav since we have SiteHeader */}
         <div className="bg-white border-b">
@@ -444,6 +450,7 @@ For those interested in diving deeper into the research, here are key studies re
           </div>
         </section>
       </div>
+      <Footer />
     </>
   );
 }

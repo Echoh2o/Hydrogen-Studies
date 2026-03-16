@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 // Icons for mechanisms
 import {
@@ -59,6 +61,13 @@ const ExploreByMechanismPage: React.FC = () => {
   return (
     <>
       <SiteHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Studies", href: "/studies" },
+          { label: "By Mechanism" },
+        ]} />
+      </div>
       <div className="container mx-auto py-10">
         <Helmet>
           <title>
@@ -68,6 +77,12 @@ const ExploreByMechanismPage: React.FC = () => {
             name="description"
             content="Discover hydrogen research organized by biological mechanisms including antioxidant effects, gene expression, mitochondrial function, and more."
           />
+          <meta property="og:title" content="Explore Hydrogen Studies by Mechanism | HydrogenStudies.com" />
+          <meta property="og:description" content="Discover hydrogen research organized by biological mechanisms including antioxidant effects, gene expression, mitochondrial function, and more." />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://hydrogenstudies.com/explore-by-mechanism" />
+          <meta name="twitter:card" content="summary" />
+          <link rel="canonical" href="https://hydrogenstudies.com/explore-by-mechanism" />
         </Helmet>
 
         <div className="space-y-8">
@@ -129,6 +144,7 @@ const ExploreByMechanismPage: React.FC = () => {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 };

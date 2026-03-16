@@ -13,7 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 // Condition-focused categories
 const conditionCategories = [
@@ -198,6 +201,23 @@ const ExploreByBenefit: React.FC = () => {
   return (
     <>
       <SiteHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Studies", href: "/studies" },
+          { label: "Explore by Benefit" },
+        ]} />
+      </div>
+      <Helmet>
+        <title>Explore Studies by Health Benefit - Hydrogen Studies</title>
+        <meta name="description" content="Browse hydrogen research studies organized by health benefit. Discover how molecular hydrogen supports different aspects of health." />
+        <meta property="og:title" content="Explore Studies by Health Benefit - Hydrogen Studies" />
+        <meta property="og:description" content="Browse hydrogen research studies organized by health benefit. Discover how molecular hydrogen supports different aspects of health." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/explore-by-benefit" />
+        <meta name="twitter:card" content="summary" />
+        <link rel="canonical" href="https://hydrogenstudies.com/explore-by-benefit" />
+      </Helmet>
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6 text-center">
           Explore Hydrogen Research by Health Benefits
@@ -442,6 +462,7 @@ const ExploreByBenefit: React.FC = () => {
           </div>
         )}
       </div>
+      <Footer />
     </>
   );
 };

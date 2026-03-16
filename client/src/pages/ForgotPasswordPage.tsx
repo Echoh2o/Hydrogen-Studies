@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
+import Footer from "@/components/layout/Footer";
 import { useLocation } from "wouter";
 
 export default function ForgotPasswordPage() {
@@ -46,6 +48,10 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <SiteHeader />
+      <Helmet>
+        <title>Reset Password - Hydrogen Studies</title>
+        <meta name="description" content="Reset your Hydrogen Studies account password." />
+      </Helmet>
       <main className="min-h-[70vh] flex items-center justify-center bg-gray-50 px-4 py-16">
         <Card className="w-full max-w-md">
           <CardContent className="pt-8 pb-8 space-y-6">
@@ -116,6 +122,7 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
       </main>
+      <Footer />
     </>
   );
 }
