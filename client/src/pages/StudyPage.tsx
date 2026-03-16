@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { formatAuthors } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -338,24 +338,6 @@ const StudyPageContent = () => {
     },
   });
 
-  const generateTldrMutation = useMutation({
-    mutationFn: () => {
-      return fetch(`/api/studies/${studyId}/generate-tldr`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      }).then((res) => {
-        if (!res.ok) throw new Error("Failed to generate TLDR");
-        return res.json();
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/studies/${studyId}`] });
-      toast({ title: "TLDR Generated", description: "A simplified summary has been created." });
-    },
-    onError: () => {
-      toast({ title: "TLDR Generation Failed", description: "Please try again later.", variant: "destructive" });
-    },
-  });
 
   // Get related studies (same category, exclude current) — limited query
   const { data: relatedData } = useQuery<any>({
@@ -366,6 +348,14 @@ const StudyPageContent = () => {
   const relatedStudies = relatedArray
     .filter((s: any) => s.id !== studyId)
     .slice(0, 3);
+
+  // Redirect /study/id/:id to SEO-friendly /study/:slug
+  const [, navigate] = useLocation();
+  React.useEffect(() => {
+    if (study?.slug && window.location.pathname.includes("/study/id/")) {
+      navigate(`/study/${study.slug}`, { replace: true });
+    }
+  }, [study?.slug, navigate]);
 
   if (isLoading) {
     return (
@@ -801,7 +791,7 @@ const StudyPageContent = () => {
                   )}
 
                 {/* TLDR - Super Simplified Summary */}
-                {((study as any).tldr || isAdmin) && (
+                {(study as any).tldr && (
                   <section aria-labelledby="tldr-heading" className="mb-6 md:mb-8">
                     <h2
                       id="tldr-heading"
@@ -809,25 +799,11 @@ const StudyPageContent = () => {
                     >
                       TL;DR
                     </h2>
-                    {(study as any).tldr ? (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
-                        <p className="text-base md:text-lg text-blue-900 leading-relaxed font-medium">
-                          {(study as any).tldr}
-                        </p>
-                      </div>
-                    ) : isAdmin ? (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6 text-center">
-                        <p className="text-sm text-blue-700 mb-3">No TLDR generated yet.</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => generateTldrMutation.mutate()}
-                          disabled={generateTldrMutation.isPending}
-                        >
-                          {generateTldrMutation.isPending ? "Generating..." : "Generate TLDR"}
-                        </Button>
-                      </div>
-                    ) : null}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
+                      <p className="text-base md:text-lg text-blue-900 leading-relaxed font-medium">
+                        {(study as any).tldr}
+                      </p>
+                    </div>
                   </section>
                 )}
 

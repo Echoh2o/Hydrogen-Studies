@@ -131,6 +131,9 @@ export class JobScheduler {
       // Job 10: Study Metadata Freshness Check (runs once per week on Sundays)
       await this.runMetadataFreshnessJob();
 
+      // Job 11: Auto-generate TLDRs for studies missing them
+      await this.runTldrGenerationJob();
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
@@ -388,6 +391,60 @@ export class JobScheduler {
       logger.info("Digest generation complete", "JobScheduler");
     } catch (error) {
       logger.error("Digest generation error", error, "JobScheduler");
+    }
+  }
+
+  /**
+   * Job 11: Auto-generate TLDRs for studies missing them
+   * Generates 10 TLDRs per cycle using Claude AI.
+   */
+  private async runTldrGenerationJob() {
+    const MAX_TLDRS_PER_CYCLE = 10;
+
+    try {
+      const { isNull } = await import("drizzle-orm");
+
+      const studiesWithoutTldr = await db
+        .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
+        .from(studies)
+        .where(isNull(studies.tldr))
+        .limit(MAX_TLDRS_PER_CYCLE);
+
+      if (studiesWithoutTldr.length === 0) return;
+
+      const Anthropic = (await import("@anthropic-ai/sdk")).default;
+      const anthropic = new Anthropic();
+      const { eq } = await import("drizzle-orm");
+
+      let generated = 0;
+
+      for (const study of studiesWithoutTldr) {
+        try {
+          if (!study.abstract) continue;
+
+          const prompt = `You are a science communicator. Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.\n\nStudy title: ${study.title}\nAbstract: ${study.abstract}\n${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}\n\nWrite ONLY the TL;DR text, nothing else.`;
+
+          const message = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 200,
+            messages: [{ role: "user", content: prompt }],
+          });
+
+          const tldr = (message.content[0] as any).text?.trim();
+          if (tldr) {
+            await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
+            generated++;
+          }
+        } catch (err: any) {
+          logger.warn(`TLDR generation failed for study ${study.id}: ${err.message}`, "JobScheduler");
+        }
+      }
+
+      if (generated > 0) {
+        logger.info(`Auto-generated ${generated} TLDRs (${studiesWithoutTldr.length - generated} remaining)`, "JobScheduler");
+      }
+    } catch (error) {
+      logger.error("TLDR generation job error", error, "JobScheduler");
     }
   }
 
