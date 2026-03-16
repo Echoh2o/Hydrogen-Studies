@@ -859,6 +859,24 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
     // Save study to database
     const savedStudy = await studyService.createStudy(study);
 
+    // Trigger background enrichment to fill in missing metadata (title, slug, etc.)
+    if (savedStudy?.id) {
+      if (source.toLowerCase() === "pubmed") {
+        enrichStudyFromPubMed(savedStudy.id).catch(err =>
+          logger.error("Background PubMed enrichment failed", err, "ResearchUnifiedRoutes")
+        );
+      }
+      // Also trigger SEO enrichment for slug, plainLanguageTitle, etc.
+      import("../services/study-seo-enrichment").then(({ enrichAndSaveStudy }) => {
+        // Delay SEO enrichment slightly to let PubMed enrichment finish first
+        setTimeout(() => {
+          enrichAndSaveStudy(savedStudy.id).catch(err =>
+            logger.error("Background SEO enrichment failed", err, "ResearchUnifiedRoutes")
+          );
+        }, source.toLowerCase() === "pubmed" ? 5000 : 1000);
+      }).catch(err => logger.error("Failed to load SEO enrichment module", err, "ResearchUnifiedRoutes"));
+    }
+
     res.json({
       success: true,
       message: "Study imported successfully",
@@ -900,11 +918,19 @@ router.post("/api/research/pubmed/import", async (req: Request, res: Response) =
 
     const saved = await studyService.createStudy(studyData);
 
-    // Optionally enrich with full PubMed data after saving
+    // Enrich with full PubMed data + SEO enrichment after saving
     if (saved?.id) {
       enrichStudyFromPubMed(saved.id).catch(err =>
         logger.error("Background PubMed enrichment failed", err, "ResearchUnifiedRoutes")
       );
+      // Delay SEO enrichment to let PubMed enrichment finish first
+      import("../services/study-seo-enrichment").then(({ enrichAndSaveStudy }) => {
+        setTimeout(() => {
+          enrichAndSaveStudy(saved.id).catch(err =>
+            logger.error("Background SEO enrichment failed", err, "ResearchUnifiedRoutes")
+          );
+        }, 5000);
+      }).catch(err => logger.error("Failed to load SEO enrichment module", err, "ResearchUnifiedRoutes"));
     }
 
     res.json({ success: true, message: "Study imported from PubMed", study: saved });
