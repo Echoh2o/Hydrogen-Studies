@@ -6,30 +6,13 @@ import {
   LayoutDashboard,
   Database,
   FileText,
-  Upload,
   Settings,
-  UserCog,
   Search,
-  BarChart2,
   Home,
-  RefreshCw,
-  Calendar,
-  Image,
   Activity,
-  Sparkles,
-  Layers,
   Target,
-  FolderOpen,
-  Zap,
-  Tags,
-  ClipboardCheck,
-  TrendingUp,
-  SlidersHorizontal,
-  BookOpen,
   Menu,
   X,
-  ChevronRight,
-  Workflow,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -52,59 +35,17 @@ export default function AdminLayout({
     return location === href || location.startsWith(href + "/");
   };
 
-  // All admin navigation organized by workflow
+  // Simplified admin navigation
   const navSections = [
     {
       title: "Main",
       items: [
         { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      ],
-    },
-    {
-      title: "Studies",
-      items: [
-        { href: "/admin/studies", label: "Manage Studies", icon: Database },
-        { href: "/admin/research-import", label: "Find New Studies", icon: Search },
-        { href: "/admin/research-database", label: "Research Database", icon: BookOpen },
-        { href: "/admin/pipeline", label: "Research Pipeline", icon: Workflow },
-      ],
-    },
-    {
-      title: "Enrichment",
-      items: [
-        { href: "/admin/content-enrichment", label: "Content Enrichment", icon: RefreshCw },
-        { href: "/admin/batch-enrichment", label: "Batch Enrichment", icon: Zap },
-        { href: "/admin/batch-categorization", label: "Batch Categorization", icon: Tags },
-        { href: "/admin/image-generation", label: "Image Generation", icon: Image },
-        { href: "/admin/review-assistant", label: "Review Queue", icon: ClipboardCheck },
-        { href: "/admin/content-optimization", label: "Content Optimization", icon: SlidersHorizontal },
-      ],
-    },
-    {
-      title: "Blogs",
-      items: [
-        { href: "/admin/blogs", label: "Blog Articles", icon: FileText },
-        { href: "/admin/blog-categories", label: "Blog Categories", icon: FolderOpen },
-        { href: "/admin/blog-recommendations", label: "AI Blog Generator", icon: Sparkles },
-        { href: "/admin/multi-format", label: "Multi-Format", icon: Layers },
-      ],
-    },
-    {
-      title: "SEO & Analytics",
-      items: [
-        { href: "/admin/seo-strategy", label: "SEO Strategy", icon: Target },
-        { href: "/admin/keyword-monitor", label: "Keyword Monitor", icon: Calendar },
-        { href: "/admin/trends", label: "Trends Analysis", icon: TrendingUp },
-        { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
-      ],
-    },
-    {
-      title: "Administration",
-      items: [
-        { href: "/admin/data-import", label: "Data Import", icon: Upload },
-        { href: "/admin/journal-date-updater", label: "Journal Dates", icon: Calendar },
-        { href: "/admin/monitoring", label: "Monitoring", icon: Activity },
-        { href: "/admin/users", label: "Users", icon: UserCog },
+        { href: "/admin/studies", label: "Studies", icon: Database },
+        { href: "/admin/research-database", label: "Import Studies", icon: Search },
+        { href: "/admin/blogs", label: "Blogs", icon: FileText },
+        { href: "/admin/seo-strategy", label: "SEO", icon: Target },
+        { href: "/admin/monitoring", label: "System", icon: Activity },
         { href: "/admin/settings", label: "Settings", icon: Settings },
       ],
     },
@@ -138,13 +79,29 @@ export default function AdminLayout({
                 </span>
               </Link>
 
-              <nav className="hidden md:flex items-center ml-4">
+              <nav className="hidden md:flex items-center ml-6 gap-1">
+                {navSections[0].items.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                      isActive(href)
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-primary hover:bg-accent/50",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </Link>
+                ))}
+                <span className="mx-2 h-4 w-px bg-border" />
                 <Link
                   href="/"
-                  className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent/50 transition-colors"
                 >
-                  <Home className="mr-1.5 h-4 w-4" />
-                  View Site
+                  <Home className="h-3.5 w-3.5" />
+                  Site
                 </Link>
               </nav>
             </div>
@@ -193,7 +150,7 @@ export default function AdminLayout({
 
         {/* Main content — full width, no sidebar */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="mx-auto max-w-6xl">{children}</div>
+          <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
     </div>
