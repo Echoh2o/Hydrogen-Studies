@@ -139,7 +139,7 @@ const BodySystemCategoryPage = () => {
         />
         <link
           rel="canonical"
-          href={`https://hydrogenstudies.com/body-system/${name}`}
+          href={`https://hydrogenstudies.com/body-system/${encodeURIComponent(decodedName)}`}
         />
 
         {/* Open Graph Tags for social sharing */}
@@ -154,7 +154,7 @@ const BodySystemCategoryPage = () => {
         <meta property="og:type" content="website" />
         <meta
           property="og:url"
-          content={`https://hydrogenstudies.com/body-system/${name}`}
+          content={`https://hydrogenstudies.com/body-system/${encodeURIComponent(decodedName)}`}
         />
         <meta property="og:image" content="/og-body-system-image.jpg" />
 
@@ -176,7 +176,7 @@ const BodySystemCategoryPage = () => {
             headline: `Hydrogen Therapy Research for ${displayName}`,
             description: `Scientific research database on how hydrogen therapy affects the ${displayName.toLowerCase()}. Evidence-based studies on molecular hydrogen health benefits.`,
             keywords: `hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 benefits`,
-            url: `https://hydrogenstudies.com/body-system/${name}`,
+            url: `https://hydrogenstudies.com/body-system/${encodeURIComponent(decodedName)}`,
             mainEntityOfPage: {
               "@type": "MedicalWebPage",
               about: {

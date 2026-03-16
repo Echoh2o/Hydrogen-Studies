@@ -140,7 +140,7 @@ const ConditionCategoryPage = () => {
           />
           <link
             rel="canonical"
-            href={`https://hydrogenstudies.com/condition/${name}`}
+            href={`https://hydrogenstudies.com/condition/${encodeURIComponent(decodedName)}`}
           />
 
           {/* Open Graph Tags */}
@@ -155,7 +155,7 @@ const ConditionCategoryPage = () => {
           <meta property="og:type" content="website" />
           <meta
             property="og:url"
-            content={`https://hydrogenstudies.com/condition/${name}`}
+            content={`https://hydrogenstudies.com/condition/${encodeURIComponent(decodedName)}`}
           />
           <meta property="og:image" content="/og-category-image.jpg" />
 

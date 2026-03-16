@@ -149,7 +149,7 @@ const LifeStageCategoryPage = () => {
         />
         <link
           rel="canonical"
-          href={`https://hydrogenstudies.com/life-stage/${name}`}
+          href={`https://hydrogenstudies.com/life-stage/${encodeURIComponent(decodedName)}`}
         />
 
         {/* Open Graph Tags */}
@@ -164,7 +164,7 @@ const LifeStageCategoryPage = () => {
         <meta property="og:type" content="website" />
         <meta
           property="og:url"
-          content={`https://hydrogenstudies.com/life-stage/${name}`}
+          content={`https://hydrogenstudies.com/life-stage/${encodeURIComponent(decodedName)}`}
         />
         <meta property="og:image" content="/og-lifestage-image.jpg" />
 
@@ -186,7 +186,7 @@ const LifeStageCategoryPage = () => {
             headline: `Hydrogen Therapy Research for ${displayName}`,
             description: `Scientific research database on how hydrogen therapy affects ${displayName.toLowerCase()}. Age-specific evidence on molecular hydrogen health benefits.`,
             keywords: `hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 benefits, age-specific research`,
-            url: `https://hydrogenstudies.com/life-stage/${name}`,
+            url: `https://hydrogenstudies.com/life-stage/${encodeURIComponent(decodedName)}`,
             mainEntity: {
               "@type": "ItemList",
               itemListElement: studies.map((study, index) => ({

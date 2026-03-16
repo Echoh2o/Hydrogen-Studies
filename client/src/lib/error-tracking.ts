@@ -26,47 +26,17 @@ interface ErrorReport {
 const MAX_ERRORS_PER_SESSION = 20;
 let errorsReported = 0;
 
-// Sentry client (lazy-loaded if DSN is configured)
-let sentryClient: any = null;
+let sentryInitialized = false;
 
-function initSentry(): void {
-  const dsn = import.meta.env?.VITE_SENTRY_DSN;
-  if (!dsn) return;
-
-  // Dynamic module name prevents Vite/Rollup from resolving at build time
-  const sentryModule = ["@sentry", "react"].join("/");
-  import(/* @vite-ignore */ sentryModule)
-    .then((Sentry) => {
-      Sentry.init({
-        dsn,
-        environment: import.meta.env?.MODE || "production",
-        tracesSampleRate: 0.1,
-        // Don't report errors from browser extensions
-        beforeSend(event: any) {
-          const frames = event.exception?.values?.[0]?.stacktrace?.frames;
-          if (frames?.some((f: any) => f.filename?.includes("extension://"))) {
-            return null;
-          }
-          return event;
-        },
-      });
-      sentryClient = Sentry;
-    })
-    .catch(() => {
-      // @sentry/react not installed — silent fallback
-    });
-}
-
-/** Report an error to the server (and Sentry if available) */
-/** Report an error to the server (fallback when Sentry not configured) */
+/** Report an error to the server and Sentry if available */
 async function reportError(report: ErrorReport): Promise<void> {
   if (errorsReported >= MAX_ERRORS_PER_SESSION) return;
   errorsReported++;
 
   // Report to Sentry if available
-  if (sentryClient) {
+  if (sentryInitialized) {
     try {
-      sentryClient.captureException(new Error(report.message));
+      Sentry.captureException(new Error(report.message));
     } catch {
       // Swallow
     }
@@ -87,14 +57,21 @@ export function initErrorTracking(): void {
   if (typeof window === "undefined") return;
 
   // Initialize Sentry if DSN is configured
-  initSentry();
   const dsn = import.meta.env.VITE_SENTRY_DSN;
-  if (dsn) {
+  if (dsn && !sentryInitialized) {
     Sentry.init({
       dsn,
       environment: import.meta.env.MODE,
       tracesSampleRate: 0.1,
+      beforeSend(event) {
+        const frames = event.exception?.values?.[0]?.stacktrace?.frames;
+        if (frames?.some((f) => f.filename?.includes("extension://"))) {
+          return null;
+        }
+        return event;
+      },
     });
+    sentryInitialized = true;
   }
 
   window.addEventListener("error", (event) => {

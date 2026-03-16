@@ -30,7 +30,7 @@ export const studyBenefits = pgTable(
   {
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     benefitId: integer("benefit_id")
       .notNull()
       .references(() => benefits.id),
@@ -60,7 +60,7 @@ export const studyDemographics = pgTable(
   {
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     demographicId: integer("demographic_id")
       .notNull()
       .references(() => demographics.id),
@@ -90,7 +90,7 @@ export const studyMechanisms = pgTable(
   {
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     mechanismId: integer("mechanism_id")
       .notNull()
       .references(() => mechanisms.id),
@@ -120,7 +120,7 @@ export const studyDeliveryMethods = pgTable(
   {
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     deliveryMethodId: integer("delivery_method_id")
       .notNull()
       .references(() => deliveryMethods.id),
@@ -149,7 +149,7 @@ export const studyDurations = pgTable(
   {
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     durationCategoryId: integer("duration_category_id")
       .notNull()
       .references(() => durationCategories.id),

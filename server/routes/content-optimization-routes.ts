@@ -142,7 +142,7 @@ router.get(
       await contentOptimizationService.getPendingNotifications({
         priority: priority as string,
         contentType: contentType as string,
-        limit: limit ? parseInt(limit as string) : 50,
+        limit: limit ? parseInt(limit as string) || 50 : 50,
       });
 
     res.json({
@@ -187,8 +187,8 @@ router.get(
     }
 
     // Apply pagination
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 20;
     query = query
       .orderBy(
         desc(updateNotifications.priorityScore),

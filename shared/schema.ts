@@ -429,7 +429,7 @@ export const studyHealthConditions = pgTable(
   {
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     healthConditionId: integer("health_condition_id")
       .notNull()
       .references(() => healthConditions.id),
@@ -476,7 +476,7 @@ export const collectionStudies = pgTable(
       .references(() => studyCollections.id),
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     displayOrder: integer("display_order").default(0),
     addedAt: timestamp("added_at").notNull().defaultNow(),
   },
@@ -634,7 +634,7 @@ export const scrapedSources = pgTable("scraped_sources", {
   sourcePlatform: text("source_platform").notNull(),
   studyId: integer("study_id")
     .notNull()
-    .references(() => studies.id),
+    .references(() => studies.id, { onDelete: "cascade" }),
   scrapedAt: timestamp("scraped_at").notNull().defaultNow(),
 });
 
@@ -688,7 +688,7 @@ export const multiFormatContent = pgTable(
     id: serial("id").primaryKey(),
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     formatType: text("format_type").notNull(), // podcast, infographic, social_twitter, social_linkedin, video, newsletter
     title: text("title").notNull(),
 
@@ -779,7 +779,7 @@ export const blogArticles = pgTable(
     id: serial("id").primaryKey(),
     studyId: integer("study_id")
       .notNull()
-      .references(() => studies.id),
+      .references(() => studies.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     slug: text("slug").notNull().unique(),
     summary: text("summary").notNull(),
@@ -2177,7 +2177,7 @@ export const pipelineQueue = pgTable(
     currentStep: integer("current_step").notNull().default(0), // 0-5 (AI pipeline steps)
     stepResults: text("step_results").notNull().default("{}"), // JSON: accumulated results from each step
     // Output
-    createdStudyId: integer("created_study_id").references(() => studies.id),
+    createdStudyId: integer("created_study_id").references(() => studies.id, { onDelete: "cascade" }),
     // Error tracking
     errorMessage: text("error_message"),
     retryCount: integer("retry_count").notNull().default(0),

@@ -24,8 +24,8 @@ router.get("/search", async (req, res) => {
 
     const results = await searchCrossRef(
       query as string,
-      parseInt(page as string),
-      parseInt(pageSize as string),
+      parseInt(page as string) || 1,
+      parseInt(pageSize as string) || 10,
     );
 
     res.json({

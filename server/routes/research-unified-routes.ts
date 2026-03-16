@@ -54,8 +54,8 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Query parameter is required" });
     }
 
-    const pageNum = parseInt(page as string);
-    const pageSizeNum = parseInt(pageSize as string);
+    const pageNum = parseInt(page as string) || 1;
+    const pageSizeNum = parseInt(pageSize as string) || 10;
     const selectedSources =
       typeof sources === "string" ? sources.split(",") : ["pubmed"];
 
@@ -1041,8 +1041,8 @@ router.get(
         return res.status(400).json({ error: "Query parameter is required" });
       }
 
-      const pageNum = parseInt(page as string);
-      const pageSizeNum = parseInt(pageSize as string);
+      const pageNum = parseInt(page as string) || 1;
+      const pageSizeNum = parseInt(pageSize as string) || 10;
 
       logger.info("PubMed search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
@@ -1082,8 +1082,8 @@ router.get(
         return res.status(400).json({ error: "Query parameter is required" });
       }
 
-      const pageNum = parseInt(page as string);
-      const pageSizeNum = parseInt(pageSize as string);
+      const pageNum = parseInt(page as string) || 1;
+      const pageSizeNum = parseInt(pageSize as string) || 10;
 
       logger.info("Europe PMC search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
@@ -1119,8 +1119,8 @@ router.get(
         return res.status(400).json({ error: "Query parameter is required" });
       }
 
-      const pageNum = parseInt(page as string);
-      const pageSizeNum = parseInt(pageSize as string);
+      const pageNum = parseInt(page as string) || 1;
+      const pageSizeNum = parseInt(pageSize as string) || 10;
 
       logger.info("CrossRef search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
@@ -1156,8 +1156,8 @@ router.get(
         return res.status(400).json({ error: "Query parameter is required" });
       }
 
-      const pageNum = parseInt(page as string);
-      const pageSizeNum = parseInt(pageSize as string);
+      const pageNum = parseInt(page as string) || 1;
+      const pageSizeNum = parseInt(pageSize as string) || 10;
 
       logger.info("Semantic Scholar search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
