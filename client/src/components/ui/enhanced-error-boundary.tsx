@@ -153,7 +153,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     }
 
     // Fallback to error message in development, generic in production
-    return process.env.NODE_ENV === "development"
+    return true
       ? error.message
       : "Something unexpected happened. Our team has been notified.";
   }
@@ -240,7 +240,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                   Go to Home
                 </Button>
 
-                {process.env.NODE_ENV === "development" && (
+                {true && (
                   <Button
                     onClick={this.toggleDetails}
                     variant="ghost"
@@ -262,7 +262,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
                 )}
               </div>
 
-              {process.env.NODE_ENV === "development" &&
+              {true &&
                 showDetails &&
                 errorInfo && (
                   <Card className="bg-muted/50">
@@ -313,7 +313,7 @@ export function AsyncErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <EnhancedErrorBoundary
       retryable={true}
-      showDetails={process.env.NODE_ENV === "development"}
+      showDetails={true}
       onError={(error, errorInfo) => {
         // Additional async error handling
         if (error.message.includes("Failed to fetch")) {
@@ -330,32 +330,8 @@ export function AsyncErrorBoundary({ children }: { children: ReactNode }) {
 export function PageErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <EnhancedErrorBoundary
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-              <CardTitle>Page Error</CardTitle>
-              <CardDescription>
-                This page encountered an error and cannot be displayed.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center gap-4">
-                <Button onClick={() => window.location.reload()}>
-                  Refresh Page
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => (window.location.href = "/")}
-                >
-                  Go Home
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      }
+      retryable={true}
+      showDetails={true}
     >
       {children}
     </EnhancedErrorBoundary>
