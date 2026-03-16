@@ -157,7 +157,7 @@ export function StudyInfoPanel({
     }
 
     const getCount = (item: string) => {
-      if (!countsData) return 1;
+      if (!countsData || !Array.isArray(countsData)) return 1;
       const match = countsData.find(
         (c) =>
           (c.keyword && c.keyword.toLowerCase() === item.toLowerCase()) ||
