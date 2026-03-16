@@ -20,11 +20,11 @@ export async function fixUntitledStudies() {
     );
 
   if (untitled.length === 0) {
-    logger.info("No untitled studies found", undefined, "Migration");
+    logger.info("No untitled studies found", "Migration");
     return;
   }
 
-  logger.info(`Found ${untitled.length} untitled studies, scheduling enrichment`, undefined, "Migration");
+  logger.info(`Found ${untitled.length} untitled studies, scheduling enrichment`, "Migration");
 
   // Import enrichment services lazily
   const { enhanceStudyWithDoi } = await import("../services/doi-enhancer");
@@ -44,11 +44,11 @@ export async function fixUntitledStudies() {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       fixed++;
-      logger.info(`Fixed study ${study.id}`, undefined, "Migration");
+      logger.info(`Fixed study ${study.id}`, "Migration");
     } catch (err) {
-      logger.error(`Failed to fix study ${study.id}`, err, "Migration");
+      logger.error(`Failed to fix study ${study.id}`, err as Error, "Migration");
     }
   }
 
-  logger.info(`Fixed ${fixed}/${untitled.length} untitled studies`, undefined, "Migration");
+  logger.info(`Fixed ${fixed}/${untitled.length} untitled studies`, "Migration");
 }
