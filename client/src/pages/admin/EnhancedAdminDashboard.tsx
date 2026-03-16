@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { formatAuthors } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -126,7 +127,7 @@ const EnhancedAdminDashboard: React.FC = () => {
   const filteredStudies = studies.filter((study) => {
     const matchesSearch =
       study.title.toLowerCase().includes(studySearchQuery.toLowerCase()) ||
-      study.authors.toLowerCase().includes(studySearchQuery.toLowerCase()) ||
+      (formatAuthors(study.authors)).toLowerCase().includes(studySearchQuery.toLowerCase()) ||
       study.category.toLowerCase().includes(studySearchQuery.toLowerCase());
 
     const matchesFilter =
@@ -318,7 +319,7 @@ const EnhancedAdminDashboard: React.FC = () => {
                             {study.title}
                           </div>
                           <div className="text-xs text-gray-600">
-                            {study.authors}
+                            {formatAuthors(study.authors)}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -530,7 +531,7 @@ const EnhancedAdminDashboard: React.FC = () => {
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
                           <div>
-                            <strong>Authors:</strong> {study.authors}
+                            <strong>Authors:</strong> {formatAuthors(study.authors)}
                           </div>
                           <div>
                             <strong>Journal:</strong> {study.journal}

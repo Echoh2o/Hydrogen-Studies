@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { formatAuthors } from "@/lib/utils";
 import { NaturalLanguageSearch } from "@/components/search/NaturalLanguageSearch";
 import { NaturalLanguageSearchResults } from "@/components/search/NaturalLanguageSearchResults";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ export default function NaturalLanguageSearchPage() {
       ...searchResults.results.map((r: any) =>
         [
           `"${r.title?.replace(/"/g, '""') || ""}"`,
-          `"${r.authors?.replace(/"/g, '""') || ""}"`,
+          `"${formatAuthors(r.authors)?.replace(/"/g, '""') || ""}"`,
           `"${r.journal?.replace(/"/g, '""') || ""}"`,
           new Date(r.publishDate || "").getFullYear() || "",
           `"${r.abstract?.replace(/"/g, '""').substring(0, 500) || ""}"`,

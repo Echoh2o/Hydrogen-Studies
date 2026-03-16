@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { formatAuthors } from "@/lib/utils";
 import { Helmet } from "react-helmet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -329,7 +330,7 @@ export default function BlogGeneratePage() {
                               <div className="space-y-1">
                                 <h4 className="font-medium">{study.title}</h4>
                                 <p className="text-sm text-muted-foreground">
-                                  {study.authors && study.authors.split(",")[0]}{" "}
+                                  {formatAuthors(study.authors).split(",")[0]}{" "}
                                   et al. • {study.journal} •{" "}
                                   {new Date(study.publishDate).getFullYear()}
                                 </p>
@@ -381,7 +382,7 @@ export default function BlogGeneratePage() {
                           <div className="space-y-1">
                             <h4 className="font-medium">{study.title}</h4>
                             <p className="text-sm text-muted-foreground">
-                              {study.authors && study.authors.split(",")[0]} et
+                              {formatAuthors(study.authors).split(",")[0]} et
                               al. • {study.journal} •{" "}
                               {new Date(study.publishDate).getFullYear()}
                             </p>
@@ -425,7 +426,7 @@ export default function BlogGeneratePage() {
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       {selectedStudy?.authors
-                        ? selectedStudy.authors
+                        ? formatAuthors(selectedStudy.authors)
                         : "Unknown authors"}
                       {selectedStudy?.journal
                         ? ` • ${selectedStudy.journal}`

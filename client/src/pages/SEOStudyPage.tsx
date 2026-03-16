@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
+import { formatAuthors } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -198,7 +199,7 @@ export default function SEOStudyPage() {
         <link rel="canonical" href={canonicalUrl} />
 
         {/* Article-specific meta tags */}
-        <meta name="article:author" content={study.authors} />
+        <meta name="article:author" content={formatAuthors(study.authors)} />
         <meta
           name="article:published_time"
           content={study.journalPublishDate || study.publishDate}
@@ -315,7 +316,7 @@ export default function SEOStudyPage() {
                         className="mr-2 w-4 h-4 flex-shrink-0"
                         aria-hidden="true"
                       />
-                      <span className="line-clamp-1">{study.authors}</span>
+                      <span className="line-clamp-1">{formatAuthors(study.authors)}</span>
                     </div>
                     <div className="flex items-center md:ml-6">
                       <HiBookOpen

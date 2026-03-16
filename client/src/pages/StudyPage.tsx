@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
 import { Link, useParams } from "wouter";
+import { formatAuthors } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -440,7 +441,7 @@ const StudyPageContent = () => {
           name="keywords"
           content={`hydrogen therapy, molecular hydrogen, ${(study.category || '').toLowerCase()}, research study, scientific evidence, health effects`}
         />
-        <meta name="author" content={study.authors} />
+        <meta name="author" content={formatAuthors(study.authors)} />
         <meta name="date" content={study.publishDate} />
         <link
           rel="canonical"
@@ -652,7 +653,7 @@ const StudyPageContent = () => {
                     aria-hidden="true"
                   />
                   <span itemProp="author" className="line-clamp-1">
-                    {study.authors}
+                    {formatAuthors(study.authors)}
                   </span>
                 </div>
                 <div className="flex items-center md:ml-6">
@@ -704,7 +705,7 @@ const StudyPageContent = () => {
                         imageUrl={study.imageUrl || study.image_url}
                         imageAlt={study.imageAlt || study.image_alt}
                         title={study.title}
-                        authors={study.authors}
+                        authors={formatAuthors(study.authors)}
                         journal={study.journal}
                         year={study.publishYear || study.year}
                       />

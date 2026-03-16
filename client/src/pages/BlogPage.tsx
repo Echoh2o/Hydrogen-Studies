@@ -5,7 +5,7 @@ import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatAuthors } from "@/lib/utils";
 import { ArrowLeft, Calendar, Eye, Share } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
@@ -329,7 +329,7 @@ function BlogPageContent() {
                 <h4 className="font-bold text-lg mb-1">{study.title}</h4>
                 {study.authors && (
                   <p className="text-sm text-neutral-600 mb-2">
-                    <strong>Authors:</strong> {study.authors}
+                    <strong>Authors:</strong> {formatAuthors(study.authors)}
                   </p>
                 )}
                 {study.publishDate && (

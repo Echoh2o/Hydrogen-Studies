@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Study } from "@/types/study";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatAuthors } from "@/lib/utils";
 
 export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState("candidates");
@@ -270,7 +270,7 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
                 <Badge>{study.category}</Badge>
               </div>
               <CardDescription>
-                {study.authors} ({formatDate(study.publishDate)})
+                {formatAuthors(study.authors)} ({formatDate(study.publishDate)})
                 {study.doi && (
                   <span className="ml-2">
                     DOI:{" "}
@@ -374,7 +374,7 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
                 </Badge>
               </div>
               <CardDescription>
-                {study.authors} ({formatDate(study.publishDate)})
+                {formatAuthors(study.authors)} ({formatDate(study.publishDate)})
                 {study.doi && (
                   <span className="ml-2">
                     DOI:{" "}

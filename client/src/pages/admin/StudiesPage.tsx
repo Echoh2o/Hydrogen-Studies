@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { formatAuthors } from "@/lib/utils";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   PlusCircle,
@@ -382,7 +383,7 @@ export default function StudiesPage() {
                     </TableCell>
                     <TableCell>
                       <p className="text-sm truncate max-w-[200px]">
-                        {study.authors || "N/A"}
+                        {formatAuthors(study.authors) || "N/A"}
                       </p>
                     </TableCell>
                     <TableCell>

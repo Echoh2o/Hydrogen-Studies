@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { formatAuthors } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -370,7 +371,7 @@ export default function EnhancedSearchPage() {
 
                             <div className="text-sm text-muted-foreground">
                               <span className="font-medium">
-                                {study.authors}
+                                {formatAuthors(study.authors)}
                               </span>
                               {" • "}
                               <span>{study.journal}</span>

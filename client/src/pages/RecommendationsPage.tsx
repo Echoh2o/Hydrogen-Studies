@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { formatAuthors } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -111,7 +112,7 @@ export default function RecommendationsPage() {
           </div>
 
           <div className="text-sm text-muted-foreground">
-            <span className="font-medium">{study.authors}</span>
+            <span className="font-medium">{formatAuthors(study.authors)}</span>
             {" • "}
             <span>{study.journal}</span>
             {" • "}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
+import { formatAuthors } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
@@ -304,7 +305,7 @@ function SearchResultsCard({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {paper.authors ||
+                        {formatAuthors(paper.authors) ||
                           paper.authorString ||
                           "Unknown"}
                       </TableCell>
@@ -1064,7 +1065,7 @@ export default function ResearchDatabasePage() {
             <div className="bg-muted/50 p-4 rounded-md my-4">
               <p className="font-medium">{importedStudy.title}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {importedStudy.authors}
+                {formatAuthors(importedStudy.authors)}
               </p>
               <p className="text-sm mt-3">
                 <span className="font-medium">Category:</span>{" "}

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Study } from "@shared/schema";
+import { formatAuthors } from "@/lib/utils";
 import {
   HiUser,
   HiBookOpen,
@@ -193,7 +194,7 @@ const RecentStudiesPage = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex flex-col sm:flex-row sm:items-center mb-3 sm:mb-0">
                         <span className="flex items-center text-neutral-500 text-sm mr-4 mb-2 sm:mb-0">
-                          <HiUser className="mr-1" /> {study.authors}
+                          <HiUser className="mr-1" /> {formatAuthors(study.authors)}
                         </span>
                         <span className="flex items-center text-neutral-500 text-sm">
                           <HiBookOpen className="mr-1" /> {study.journal}

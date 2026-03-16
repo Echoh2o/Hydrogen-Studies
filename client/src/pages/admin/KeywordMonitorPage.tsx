@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { formatAuthors } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -490,7 +491,7 @@ function MonitorResultsTable({
                       <div>
                         <div className="font-medium">{result.title}</div>
                         <div className="text-xs text-muted-foreground truncate">
-                          {result.authors} | {result.journal}
+                          {formatAuthors(result.authors)} | {result.journal}
                         </div>
                       </div>
                     </TableCell>
@@ -945,7 +946,7 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
         searchTerm === "" ||
         result.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         result.abstract.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        result.authors.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (formatAuthors(result.authors)).toLowerCase().includes(searchTerm.toLowerCase()) ||
         result.journal.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Apply status filter
