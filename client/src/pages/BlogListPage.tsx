@@ -102,6 +102,7 @@ export default function BlogListPage() {
         <meta property="og:url" content="https://hydrogenstudies.com/blog" />
         <meta name="twitter:card" content="summary" />
         <link rel="canonical" href="https://hydrogenstudies.com/blog" />
+        <link rel="alternate" type="application/rss+xml" title="Hydrogen Studies Blog RSS" href="/rss/blog.xml" />
       </Helmet>
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">

@@ -213,7 +213,7 @@ async function generateSingleBlogArticle(
       articleType,
     );
 
-    // Create article object
+    // Create article object with full SEO fields
     const article: InsertBlogArticle = {
       title: blogTitle,
       slug,
@@ -221,13 +221,26 @@ async function generateSingleBlogArticle(
       content: blogContent.fullContent,
       summary: blogContent.summary,
       imageUrl: imageData.imageUrl,
-      imageAlt: imageData.imageAlt,
-      isPublished: false,
+      imageAlt: imageData.imageUrl ? `Illustration for: ${blogTitle.substring(0, 110)}` : imageData.imageAlt,
+      isPublished: true,
       articleType,
       metaDescription: blogContent.summary.substring(0, 160),
       semanticKeywords: extractKeywords(study, blogContent.summary),
       editorNotes:
         "AI-generated content with error handling. Review before publishing.",
+      canonicalUrl: `https://hydrogenstudies.com/blog/${slug}`,
+      ogTitle: blogTitle,
+      ogDescription: blogContent.summary.substring(0, 200),
+      ogImage: imageData.imageUrl || null,
+      twitterCard: imageData.imageUrl ? "summary_large_image" : "summary",
+      twitterTitle: blogTitle,
+      twitterDescription: blogContent.summary.substring(0, 200),
+      breadcrumbs: JSON.stringify([
+        { name: "Home", url: "/" },
+        { name: "Blog", url: "/blog" },
+        { name: blogTitle, url: `/blog/${slug}` },
+      ]),
+      lastReviewed: new Date(),
     };
 
     // Save to database with retry logic
@@ -513,12 +526,25 @@ function generateBasicArticle(
     content: content.fullContent,
     summary: content.summary,
     imageUrl: image.imageUrl,
-    imageAlt: image.imageAlt,
-    isPublished: false,
+    imageAlt: image.imageUrl ? `Illustration for: ${title.substring(0, 110)}` : image.imageAlt,
+    isPublished: true,
     articleType,
     metaDescription: content.summary.substring(0, 160),
     semanticKeywords: extractKeywords(study, content.summary),
     editorNotes: "Fallback content generated due to API unavailability.",
+    canonicalUrl: `https://hydrogenstudies.com/blog/${slug}`,
+    ogTitle: title,
+    ogDescription: content.summary.substring(0, 200),
+    ogImage: image.imageUrl || null,
+    twitterCard: image.imageUrl ? "summary_large_image" : "summary",
+    twitterTitle: title,
+    twitterDescription: content.summary.substring(0, 200),
+    breadcrumbs: JSON.stringify([
+      { name: "Home", url: "/" },
+      { name: "Blog", url: "/blog" },
+      { name: title, url: `/blog/${slug}` },
+    ]),
+    lastReviewed: new Date(),
   };
 }
 

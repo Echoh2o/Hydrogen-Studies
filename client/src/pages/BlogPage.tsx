@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import RelatedContent from "@/components/seo/RelatedContent";
+import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -63,6 +64,7 @@ interface BlogArticle {
     createdAt: string;
     viewCount?: number;
     studyId?: number;
+    semanticKeywords?: string[];
 }
 
 function safeDateFormat(dateString: string | null | undefined): string {
@@ -188,11 +190,23 @@ function BlogPageContent() {
       <Helmet>
         <title>{blog.title} | Hydrogen Studies Blog</title>
         <meta name="description" content={blog.summary} />
+        <link rel="canonical" href={`https://hydrogenstudies.com/blog/${blog.slug || idOrSlug}`} />
+
+        {/* Open Graph tags */}
         <meta property="og:title" content={blog.title} />
         <meta property="og:description" content={blog.summary} />
         {blog.imageUrl && <meta property="og:image" content={blog.imageUrl} />}
         <meta property="og:type" content="article" />
         {blog.createdAt && <meta property="article:published_time" content={blog.createdAt} />}
+
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content={blog.imageUrl ? "summary_large_image" : "summary"} />
+        <meta name="twitter:title" content={blog.title} />
+        <meta name="twitter:description" content={blog.summary} />
+        {blog.imageUrl && <meta name="twitter:image" content={blog.imageUrl} />}
+
+        {/* Keywords meta tag */}
+        {blog.semanticKeywords?.length && <meta name="keywords" content={blog.semanticKeywords.join(", ")} />}
 
         {/* Schema.org markup for article */}
         <script type="application/ld+json">
@@ -203,6 +217,10 @@ function BlogPageContent() {
             description: blog.summary,
             image: blog.imageUrl || "",
             datePublished: blog.createdAt,
+            dateModified: blog.createdAt,
+            wordCount: Math.round((blog.content || "").split(/\s+/).length),
+            ...(blog.semanticKeywords?.length ? { keywords: blog.semanticKeywords.join(", ") } : {}),
+            articleSection: "Hydrogen Research",
             author: {
               "@type": "Organization",
               name: "Hydrogen Studies Research",
@@ -217,8 +235,21 @@ function BlogPageContent() {
             },
             mainEntityOfPage: {
               "@type": "WebPage",
-              "@id": typeof window !== "undefined" ? window.location.href : "",
+              "@id": `https://hydrogenstudies.com/blog/${blog.slug || idOrSlug}`,
             },
+          })}
+        </script>
+
+        {/* BreadcrumbList JSON-LD */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://hydrogenstudies.com/" },
+              { "@type": "ListItem", position: 2, name: "Blog", item: "https://hydrogenstudies.com/blog" },
+              { "@type": "ListItem", position: 3, name: blog.title },
+            ],
           })}
         </script>
       </Helmet>
@@ -234,6 +265,12 @@ function BlogPageContent() {
               </Button>
             </Link>
           </div>
+
+          <PageBreadcrumb items={[
+            { label: "Home", href: "/" },
+            { label: "Blog", href: "/blog" },
+            { label: blog.title },
+          ]} />
 
           {/* Article header */}
           <header className="mb-8">

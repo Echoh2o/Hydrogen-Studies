@@ -9,6 +9,8 @@ import { Router, Request, Response } from "express";
 import { db } from "../db";
 import { studies, blogArticles, categories } from "../../shared/schema";
 import { eq, desc, isNotNull, sql, and } from "drizzle-orm";
+import { requireAdmin } from "../auth";
+import { logger } from "../utils/logger";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -492,6 +494,76 @@ router.get("/feed.xml", (req: Request, res: Response) => {
   res.redirect(301, "/rss.xml");
 });
 
+// ============================================================
+// Blog RSS Feed (RSS 2.0) — /rss/blog.xml
+// ============================================================
+router.get("/rss/blog.xml", async (req: Request, res: Response) => {
+  try {
+    const cached = getCached("rss-blog");
+    if (cached) {
+      res.set("Content-Type", "application/rss+xml; charset=utf-8");
+      res.set("Cache-Control", "public, max-age=3600");
+      return res.send(cached);
+    }
+
+    const recentPosts = await db.select({
+      id: blogArticles.id,
+      title: blogArticles.title,
+      slug: blogArticles.slug,
+      summary: blogArticles.summary,
+      content: blogArticles.content,
+      imageUrl: blogArticles.imageUrl,
+      createdAt: blogArticles.createdAt,
+    }).from(blogArticles)
+      .where(eq(blogArticles.isPublished, true))
+      .orderBy(desc(blogArticles.createdAt))
+      .limit(50);
+
+    const items = recentPosts.map(post => {
+      const pubDate = post.createdAt
+        ? new Date(post.createdAt).toUTCString()
+        : new Date().toUTCString();
+      const link = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`;
+      const description = post.summary || (post.content ? post.content.substring(0, 300) : "");
+      const enclosureTag = post.imageUrl
+        ? `\n      <enclosure url="${escapeXml(post.imageUrl)}" type="image/jpeg" length="0" />`
+        : "";
+      return `    <item>
+      <title>${escapeXml(post.title)}</title>
+      <description>${escapeXml(description)}</description>
+      <link>${link}</link>
+      <guid isPermaLink="true">${link}</guid>
+      <pubDate>${pubDate}</pubDate>${enclosureTag}
+    </item>`;
+    }).join("\n");
+
+    const lastBuildDate = recentPosts.length > 0 && recentPosts[0].createdAt
+      ? new Date(recentPosts[0].createdAt).toUTCString()
+      : new Date().toUTCString();
+
+    const xml = xmlHeader() +
+`<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Hydrogen Studies Research Blog</title>
+    <description>Latest research insights on molecular hydrogen therapy and hydrogen water health benefits</description>
+    <link>${SITE_URL}/blog</link>
+    <atom:link href="${SITE_URL}/rss/blog.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <lastBuildDate>${lastBuildDate}</lastBuildDate>
+${items}
+  </channel>
+</rss>`;
+
+    setCache("rss-blog", xml);
+    res.set("Content-Type", "application/rss+xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  } catch (err) {
+    console.error("[RSS] Error generating blog RSS feed:", err);
+    res.status(500).send("Error generating RSS feed");
+  }
+});
+
 function escapeXml(str: string): string {
   if (!str) return "";
   return str
@@ -501,5 +573,208 @@ function escapeXml(str: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
+
+// ============================================================
+// Admin: Bulk-populate missing SEO fields for blog articles
+// ============================================================
+router.post("/api/seo/blogs/populate-seo-fields", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const allBlogs = await db.select({
+      id: blogArticles.id,
+      title: blogArticles.title,
+      slug: blogArticles.slug,
+      summary: blogArticles.summary,
+      imageUrl: blogArticles.imageUrl,
+      imageAlt: blogArticles.imageAlt,
+      metaTitle: blogArticles.metaTitle,
+      metaDescription: blogArticles.metaDescription,
+      canonicalUrl: blogArticles.canonicalUrl,
+      ogTitle: blogArticles.ogTitle,
+      ogDescription: blogArticles.ogDescription,
+      ogImage: blogArticles.ogImage,
+      twitterCard: blogArticles.twitterCard,
+      twitterTitle: blogArticles.twitterTitle,
+      twitterDescription: blogArticles.twitterDescription,
+      breadcrumbs: blogArticles.breadcrumbs,
+      lastReviewed: blogArticles.lastReviewed,
+    }).from(blogArticles);
+
+    if (allBlogs.length === 0) {
+      return res.json({ message: "No blog articles found", updated: 0, total: 0, fields: {} });
+    }
+
+    const BATCH_SIZE = 50;
+    let totalUpdated = 0;
+    const fieldCounts: Record<string, number> = {
+      imageAlt: 0,
+      canonicalUrl: 0,
+      ogTitle: 0,
+      ogDescription: 0,
+      ogImage: 0,
+      twitterCard: 0,
+      twitterTitle: 0,
+      twitterDescription: 0,
+      breadcrumbs: 0,
+      lastReviewed: 0,
+    };
+
+    // Process in batches of BATCH_SIZE
+    for (let i = 0; i < allBlogs.length; i += BATCH_SIZE) {
+      const batch = allBlogs.slice(i, i + BATCH_SIZE);
+
+      const updatePromises = batch.map(async (blog) => {
+        const updates: Record<string, any> = {};
+        const fieldsPopulated: string[] = [];
+
+        // imageAlt: generate from title if NULL
+        if (!blog.imageAlt) {
+          const alt = `Illustration for: ${blog.title}`.substring(0, 125);
+          updates.imageAlt = alt;
+          fieldsPopulated.push("imageAlt");
+        }
+
+        // canonicalUrl: set from slug if NULL
+        if (!blog.canonicalUrl) {
+          updates.canonicalUrl = `https://hydrogenstudies.com/blog/${blog.slug}`;
+          fieldsPopulated.push("canonicalUrl");
+        }
+
+        // ogTitle: set to metaTitle || title if NULL
+        if (!blog.ogTitle) {
+          updates.ogTitle = blog.metaTitle || blog.title;
+          fieldsPopulated.push("ogTitle");
+        }
+
+        // ogDescription: set to metaDescription || summary (truncated to 200 chars) if NULL
+        if (!blog.ogDescription) {
+          const desc = (blog.metaDescription || blog.summary || "").substring(0, 200);
+          updates.ogDescription = desc;
+          fieldsPopulated.push("ogDescription");
+        }
+
+        // ogImage: set to imageUrl if it exists and ogImage is NULL
+        if (!blog.ogImage && blog.imageUrl) {
+          updates.ogImage = blog.imageUrl;
+          fieldsPopulated.push("ogImage");
+        }
+
+        // twitterCard: set based on imageUrl if NULL
+        if (!blog.twitterCard) {
+          updates.twitterCard = blog.imageUrl ? "summary_large_image" : "summary";
+          fieldsPopulated.push("twitterCard");
+        }
+
+        // twitterTitle: set to metaTitle || title if NULL
+        if (!blog.twitterTitle) {
+          updates.twitterTitle = blog.metaTitle || blog.title;
+          fieldsPopulated.push("twitterTitle");
+        }
+
+        // twitterDescription: set to metaDescription || summary (truncated to 200 chars) if NULL
+        if (!blog.twitterDescription) {
+          const tDesc = (blog.metaDescription || blog.summary || "").substring(0, 200);
+          updates.twitterDescription = tDesc;
+          fieldsPopulated.push("twitterDescription");
+        }
+
+        // breadcrumbs: set navigation structure if NULL
+        if (!blog.breadcrumbs) {
+          updates.breadcrumbs = JSON.stringify([
+            { name: "Home", url: "/" },
+            { name: "Blog", url: "/blog" },
+            { name: blog.title, url: `/blog/${blog.slug}` },
+          ]);
+          fieldsPopulated.push("breadcrumbs");
+        }
+
+        // lastReviewed: set to current date if NULL
+        if (!blog.lastReviewed) {
+          updates.lastReviewed = new Date();
+          fieldsPopulated.push("lastReviewed");
+        }
+
+        // Only update if there are fields to set
+        if (fieldsPopulated.length > 0) {
+          updates.updatedAt = new Date();
+          await db.update(blogArticles)
+            .set(updates)
+            .where(eq(blogArticles.id, blog.id));
+
+          for (const field of fieldsPopulated) {
+            fieldCounts[field]++;
+          }
+          return true;
+        }
+        return false;
+      });
+
+      const results = await Promise.all(updatePromises);
+      totalUpdated += results.filter(Boolean).length;
+    }
+
+    logger.info(
+      `Populated SEO fields for ${totalUpdated}/${allBlogs.length} blogs`,
+      "SEO API",
+    );
+
+    res.json({
+      message: `Populated SEO fields for ${totalUpdated} of ${allBlogs.length} blog articles`,
+      updated: totalUpdated,
+      total: allBlogs.length,
+      fields: fieldCounts,
+    });
+  } catch (error) {
+    logger.error("Populate SEO fields error", error, "SEO API");
+    res.status(500).json({ error: "Failed to populate SEO fields" });
+  }
+});
+
+// ============================================================
+// Admin: Publish all blog articles that have content and title
+// ============================================================
+router.post("/api/seo/blogs/publish-all", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    // Find all unpublished blogs that have both content and title
+    const unpublished = await db.select({
+      id: blogArticles.id,
+      title: blogArticles.title,
+    })
+      .from(blogArticles)
+      .where(
+        and(
+          eq(blogArticles.isPublished, false),
+          isNotNull(blogArticles.content),
+          isNotNull(blogArticles.title),
+        ),
+      );
+
+    if (unpublished.length === 0) {
+      return res.json({ message: "No unpublished blogs with content found", published: 0 });
+    }
+
+    const ids = unpublished.map((b) => b.id);
+
+    // Batch update using IN clause
+    await db.update(blogArticles)
+      .set({
+        isPublished: true,
+        updatedAt: new Date(),
+      })
+      .where(
+        sql`${blogArticles.id} IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`
+      );
+
+    logger.info(`Published ${unpublished.length} blog articles`, "SEO API");
+
+    res.json({
+      message: `Published ${unpublished.length} blog articles`,
+      published: unpublished.length,
+      articles: unpublished.map((b) => ({ id: b.id, title: b.title })),
+    });
+  } catch (error) {
+    logger.error("Publish all blogs error", error, "SEO API");
+    res.status(500).json({ error: "Failed to publish blog articles" });
+  }
+});
 
 export default router;
