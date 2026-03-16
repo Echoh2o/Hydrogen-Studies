@@ -33,6 +33,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 
 import StudyImage from "@/components/studies/StudyImage";
+import { useAuth } from "@/components/auth/ProtectedRoute";
 
 /** Extract YouTube video ID from various URL formats */
 function getYouTubeId(url: string): string | null {
@@ -52,6 +53,8 @@ const StudyPage = () => {
   const { id } = useParams();
   const studyId = id ? parseInt(id) : 0; // Provide fallback to prevent NaN
   const { toast } = useToast();
+  const { userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const queryClient = useQueryClient();
 
   // Define the Study type to match what's returned from the API
@@ -512,20 +515,22 @@ const StudyPage = () => {
                         year={study.publishYear || study.year}
                       />
 
-                      {/* Generate Image Button */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
-                        <Button
-                          variant="secondary"
-                          className="flex items-center gap-2 bg-white hover:bg-neutral-100"
-                          onClick={() => generateImageMutation.mutate()}
-                          disabled={generateImageMutation.isPending}
-                        >
-                          <HiPhotograph className="w-4 h-4" />
-                          {generateImageMutation.isPending
-                            ? "Generating..."
-                            : "Generate Scientific Visual"}
-                        </Button>
-                      </div>
+                      {/* Generate Image Button - Admin only */}
+                      {isAdmin && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-neutral-800/70 p-3 flex justify-center">
+                          <Button
+                            variant="secondary"
+                            className="flex items-center gap-2 bg-white hover:bg-neutral-100"
+                            onClick={() => generateImageMutation.mutate()}
+                            disabled={generateImageMutation.isPending}
+                          >
+                            <HiPhotograph className="w-4 h-4" />
+                            {generateImageMutation.isPending
+                              ? "Generating..."
+                              : "Generate Scientific Visual"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     <figcaption className="flex justify-between items-start mt-2">

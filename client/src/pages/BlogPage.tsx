@@ -194,7 +194,7 @@ export default function BlogPage() {
 
           {/* Article content */}
           <article className="prose prose-neutral max-w-none mb-8">
-            <ReactMarkdown>{blog.content}</ReactMarkdown>
+            <ReactMarkdown>{blog.content || ""}</ReactMarkdown>
           </article>
 
           {/* Related study box */}

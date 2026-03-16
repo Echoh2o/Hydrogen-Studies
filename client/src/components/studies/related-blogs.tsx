@@ -16,12 +16,15 @@ import { formatDate, truncateText } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Newspaper, FileText, ArrowRight, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/components/auth/ProtectedRoute";
 
 interface RelatedBlogsProps {
   studyId: number;
 }
 
 export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
+  const { userRole } = useAuth();
+  const isAdmin = userRole === "admin";
   const [activeTab, setActiveTab] = useState("overview");
 
   // Fetch blog articles for the study
@@ -78,8 +81,9 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
     );
   }
 
-  // If no blogs exist yet, show generate button
+  // If no blogs exist yet, show generate button for admin only
   if (!blogs || !Array.isArray(blogs) || blogs.length === 0) {
+    if (!isAdmin) return null;
     return (
       <Card className="mb-8">
         <CardHeader>
