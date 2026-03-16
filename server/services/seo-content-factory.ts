@@ -390,13 +390,14 @@ export async function saveGeneratedArticle(
 ): Promise<number | null> {
   try {
     // Check if slug already exists
+    let slug = article.slug;
     const [existing] = await db.select({ id: blogArticles.id })
       .from(blogArticles)
-      .where(eq(blogArticles.slug, article.slug))
+      .where(eq(blogArticles.slug, slug))
       .limit(1);
 
     if (existing) {
-      console.log(`[ContentFactory] Article with slug "${article.slug}" already exists (id: ${existing.id}), skipping`);
+      console.log(`[ContentFactory] Article with slug "${slug}" already exists (id: ${existing.id}), skipping`);
       return existing.id;
     }
 
@@ -406,27 +407,59 @@ export async function saveGeneratedArticle(
       studyId = anyStudy?.id || 1;
     }
 
-    const [inserted] = await db.insert(blogArticles).values({
-      studyId,
-      title: article.title,
-      slug: article.slug,
-      summary: article.summary,
-      content: article.content,
-      quickInsights: article.quickInsights,
-      readingLevel: article.readingLevel,
-      articleType: article.articleType,
-      isPublished: true, // Auto-publish generated content
-      metaTitle: article.metaTitle,
-      metaDescription: article.metaDescription,
-      ogTitle: article.ogTitle,
-      ogDescription: article.ogDescription,
-      semanticKeywords: article.semanticKeywords,
-      questionAnswerPairs: article.questionAnswerPairs,
-      canonicalUrl: `${SITE_URL}/blog/${article.slug}`,
-    }).returning({ id: blogArticles.id });
+    try {
+      const [inserted] = await db.insert(blogArticles).values({
+        studyId,
+        title: article.title,
+        slug,
+        summary: article.summary,
+        content: article.content,
+        quickInsights: article.quickInsights,
+        readingLevel: article.readingLevel,
+        articleType: article.articleType,
+        isPublished: true, // Auto-publish generated content
+        metaTitle: article.metaTitle,
+        metaDescription: article.metaDescription,
+        ogTitle: article.ogTitle,
+        ogDescription: article.ogDescription,
+        semanticKeywords: article.semanticKeywords,
+        questionAnswerPairs: article.questionAnswerPairs,
+        canonicalUrl: `${SITE_URL}/blog/${slug}`,
+      }).returning({ id: blogArticles.id });
 
-    console.log(`[ContentFactory] Saved article: "${article.title}" (id: ${inserted.id})`);
-    return inserted.id;
+      console.log(`[ContentFactory] Saved article: "${article.title}" (id: ${inserted.id})`);
+      return inserted.id;
+    } catch (insertError: any) {
+      // Handle unique constraint violation (race condition: slug was inserted between our check and insert)
+      if (insertError.code === "23505") {
+        const uniqueSuffix = Date.now().toString().slice(-6);
+        slug = `${article.slug}-${uniqueSuffix}`;
+        console.log(`[ContentFactory] Slug collision for "${article.slug}", retrying with "${slug}"`);
+
+        const [inserted] = await db.insert(blogArticles).values({
+          studyId,
+          title: article.title,
+          slug,
+          summary: article.summary,
+          content: article.content,
+          quickInsights: article.quickInsights,
+          readingLevel: article.readingLevel,
+          articleType: article.articleType,
+          isPublished: true,
+          metaTitle: article.metaTitle,
+          metaDescription: article.metaDescription,
+          ogTitle: article.ogTitle,
+          ogDescription: article.ogDescription,
+          semanticKeywords: article.semanticKeywords,
+          questionAnswerPairs: article.questionAnswerPairs,
+          canonicalUrl: `${SITE_URL}/blog/${slug}`,
+        }).returning({ id: blogArticles.id });
+
+        console.log(`[ContentFactory] Saved article with unique slug: "${article.title}" (id: ${inserted.id})`);
+        return inserted.id;
+      }
+      throw insertError;
+    }
   } catch (error) {
     console.error(`[ContentFactory] Error saving article "${article.slug}":`, error);
     return null;

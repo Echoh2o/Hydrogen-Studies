@@ -117,7 +117,7 @@ export class StudiesController {
       // Get top viewed studies as "high impact"
       const topStudies = await pool.query(
         `SELECT id, title, COALESCE(view_count, 0) as citations,
-         EXTRACT(YEAR FROM COALESCE(publish_date::date, journal_publish_date::date, NOW())) as year
+         COALESCE(publish_year, EXTRACT(YEAR FROM NOW())::int) as year
          FROM studies ORDER BY view_count DESC NULLS LAST LIMIT 5`
       );
 
@@ -141,12 +141,12 @@ export class StudiesController {
     try {
       const { pool } = await import("../db");
       const result = await pool.query(
-        `SELECT EXTRACT(YEAR FROM COALESCE(publish_date::date, journal_publish_date::date)) as year,
+        `SELECT publish_year as year,
          COUNT(*) as count
          FROM studies
-         WHERE publish_date IS NOT NULL OR journal_publish_date IS NOT NULL
-         GROUP BY year
-         ORDER BY year`
+         WHERE publish_year IS NOT NULL
+         GROUP BY publish_year
+         ORDER BY publish_year`
       );
 
       let cumulative = 0;
@@ -179,7 +179,7 @@ export class StudiesController {
       // Get top studies by view count for the network
       const result = await pool.query(
         `SELECT id, title, COALESCE(view_count, 0) as citations, category,
-         EXTRACT(YEAR FROM COALESCE(publish_date::date, journal_publish_date::date, NOW())) as year
+         COALESCE(publish_year, EXTRACT(YEAR FROM NOW())::int) as year
          FROM studies
          WHERE title IS NOT NULL
          ORDER BY view_count DESC NULLS LAST

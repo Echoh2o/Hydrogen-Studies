@@ -191,7 +191,7 @@ router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (
     }
 
     const savedId = await saveGeneratedArticle(article);
-    res.json({
+    return res.json({
       success: true,
       articleId: savedId,
       title: article.title,
@@ -200,7 +200,9 @@ router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (
     });
   } catch (error) {
     logger.error("Pillar generation error", error, "SEO API");
-    res.status(500).json({ error: "Failed to generate pillar page" });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Failed to generate pillar page" });
+    }
   }
 });
 
@@ -252,7 +254,7 @@ router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async 
       await new Promise(r => setTimeout(r, 2000));
     }
 
-    res.json({
+    return res.json({
       topic: cluster.condition,
       results,
       generated: results.filter(r => r.success).length,
@@ -260,7 +262,9 @@ router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async 
     });
   } catch (error) {
     logger.error("Cluster generation error", error, "SEO API");
-    res.status(500).json({ error: "Failed to generate cluster posts" });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Failed to generate cluster posts" });
+    }
   }
 });
 
@@ -301,10 +305,12 @@ router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request
       },
     });
 
-    res.json(result);
+    return res.json(result);
   } catch (error) {
     logger.error("Content factory run error", error, "SEO API");
-    res.status(500).json({ error: "Failed to run content factory" });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Failed to run content factory" });
+    }
   }
 });
 

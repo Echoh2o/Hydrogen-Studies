@@ -286,14 +286,14 @@ export class StudyService {
   async getResearchTrends() {
     // Yearly publication trends
     const yearlyResult = await db.execute(sql`
-        SELECT 
-        EXTRACT(YEAR FROM publish_date::date) as year,
+        SELECT
+        publish_year as year,
         COUNT(*) as count
-      FROM studies 
-      WHERE publish_date IS NOT NULL 
-        AND EXTRACT(YEAR FROM publish_date::date) >= 2000
-      GROUP BY EXTRACT(YEAR FROM publish_date::date)
-      ORDER BY year
+      FROM studies
+      WHERE publish_year IS NOT NULL
+        AND publish_year >= 2000
+      GROUP BY publish_year
+      ORDER BY publish_year
     `);
     
     // Category distribution (body_systems is text[] so use array_to_string)
