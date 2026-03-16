@@ -8,7 +8,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "../db";
 import { studies, blogArticles, categories } from "../../shared/schema";
-import { eq, desc, isNotNull, sql, and } from "drizzle-orm";
+import { eq, desc, isNotNull, isNull, sql, and, count, inArray, gt } from "drizzle-orm";
 import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
 
@@ -777,6 +777,234 @@ seoAdminRouter.post("/blogs/publish-all", requireAdmin, async (req: Request, res
   } catch (error) {
     logger.error("Publish all blogs error", error, "SEO API");
     res.status(500).json({ error: "Failed to publish blog articles" });
+  }
+});
+
+// ============================================================
+// Admin: Batch generate blogs for studies that don't have one
+// ============================================================
+seoAdminRouter.post("/blogs/generate-batch", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 50), 200);
+
+    // Find all study IDs that do NOT have a corresponding blog article
+    const studiesWithoutBlogs = await db
+      .select({ id: studies.id })
+      .from(studies)
+      .leftJoin(blogArticles, eq(studies.id, blogArticles.studyId))
+      .where(isNull(blogArticles.id))
+      .limit(limit);
+
+    const totalWithoutBlogs = studiesWithoutBlogs.length;
+
+    if (totalWithoutBlogs === 0) {
+      return res.json({
+        total_studies_without_blogs: 0,
+        batch_size: limit,
+        generated: 0,
+        failed: 0,
+        errors: [],
+        message: "All studies already have blog articles",
+      });
+    }
+
+    const { generateBlogArticlesForStudy } = await import("../services/blog-generator-enhanced");
+    const studyIds = studiesWithoutBlogs.map((s) => s.id);
+
+    let generated = 0;
+    let failed = 0;
+    const errors: Array<{ studyId: number; error: string }> = [];
+
+    // Process each study sequentially to avoid overwhelming AI APIs
+    for (const studyId of studyIds) {
+      try {
+        // Fetch the full study record
+        const [study] = await db.select().from(studies).where(eq(studies.id, studyId)).limit(1);
+        if (!study) {
+          failed++;
+          errors.push({ studyId, error: "Study not found" });
+          continue;
+        }
+
+        const result = await generateBlogArticlesForStudy(study, { count: 1, fallbackToBasic: true });
+
+        if (result.articles.length > 0) {
+          // Insert generated articles into the database
+          for (const article of result.articles) {
+            await db.insert(blogArticles).values(article);
+          }
+          generated++;
+        } else {
+          failed++;
+          errors.push({
+            studyId,
+            error: result.errors.length > 0 ? result.errors[0].error : "No articles generated",
+          });
+        }
+      } catch (error) {
+        failed++;
+        errors.push({
+          studyId,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    logger.info(`Batch blog generation: ${generated} generated, ${failed} failed out of ${totalWithoutBlogs}`, "SEO API");
+
+    res.json({
+      total_studies_without_blogs: totalWithoutBlogs,
+      batch_size: limit,
+      generated,
+      failed,
+      errors,
+    });
+  } catch (error) {
+    logger.error("Batch blog generation error", error, "SEO API");
+    res.status(500).json({ error: "Failed to batch generate blogs" });
+  }
+});
+
+// ============================================================
+// Admin: Remove duplicate blog articles (same studyId, keep newest)
+// ============================================================
+seoAdminRouter.post("/blogs/cleanup-duplicates", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    // Find all studyIds that have more than one blog article
+    const duplicateStudyIds = await db
+      .select({
+        studyId: blogArticles.studyId,
+        cnt: count(),
+      })
+      .from(blogArticles)
+      .where(isNotNull(blogArticles.studyId))
+      .groupBy(blogArticles.studyId)
+      .having(gt(count(), 1));
+
+    if (duplicateStudyIds.length === 0) {
+      return res.json({
+        duplicatesFound: 0,
+        articlesDeleted: 0,
+        details: [],
+        message: "No duplicate blog articles found",
+      });
+    }
+
+    let totalDeleted = 0;
+    const details: Array<{ studyId: number; kept: number; deleted: number[] }> = [];
+
+    for (const row of duplicateStudyIds) {
+      const studyId = row.studyId!;
+
+      // Get all blog articles for this studyId, ordered by ID descending (newest first)
+      const blogs = await db
+        .select({ id: blogArticles.id })
+        .from(blogArticles)
+        .where(eq(blogArticles.studyId, studyId))
+        .orderBy(desc(blogArticles.id));
+
+      if (blogs.length <= 1) continue;
+
+      const keepId = blogs[0].id;
+      const deleteIds = blogs.slice(1).map((b) => b.id);
+
+      // Delete the duplicates
+      await db
+        .delete(blogArticles)
+        .where(inArray(blogArticles.id, deleteIds));
+
+      totalDeleted += deleteIds.length;
+      details.push({
+        studyId,
+        kept: keepId,
+        deleted: deleteIds,
+      });
+    }
+
+    logger.info(`Cleaned up ${totalDeleted} duplicate blog articles across ${details.length} studies`, "SEO API");
+
+    res.json({
+      duplicatesFound: duplicateStudyIds.length,
+      articlesDeleted: totalDeleted,
+      details,
+    });
+  } catch (error) {
+    logger.error("Cleanup duplicates error", error, "SEO API");
+    res.status(500).json({ error: "Failed to cleanup duplicate blog articles" });
+  }
+});
+
+// ============================================================
+// Admin: Generate images for blogs that have no imageUrl
+// ============================================================
+seoAdminRouter.post("/blogs/generate-missing-images", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 20), 50);
+
+    // Query blogs where imageUrl IS NULL
+    const blogsWithoutImages = await db
+      .select({ id: blogArticles.id, title: blogArticles.title })
+      .from(blogArticles)
+      .where(isNull(blogArticles.imageUrl))
+      .limit(limit);
+
+    const totalMissing = blogsWithoutImages.length;
+
+    if (totalMissing === 0) {
+      return res.json({
+        total_missing: 0,
+        batch_size: limit,
+        generated: 0,
+        failed: 0,
+        message: "All blogs already have images",
+      });
+    }
+
+    const { generateBlogImage } = await import("../services/image-generator");
+
+    let generated = 0;
+    let failed = 0;
+    const errors: Array<{ blogId: number; error: string }> = [];
+
+    // Process sequentially with delays for DALL-E rate limits
+    for (let i = 0; i < blogsWithoutImages.length; i++) {
+      const blog = blogsWithoutImages[i];
+
+      try {
+        const result = await generateBlogImage(blog.id);
+
+        if (result.success) {
+          generated++;
+        } else {
+          failed++;
+          errors.push({ blogId: blog.id, error: result.message || "Image generation failed" });
+        }
+      } catch (error) {
+        failed++;
+        errors.push({
+          blogId: blog.id,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+
+      // 2-second delay between requests to respect DALL-E rate limits (skip after last)
+      if (i < blogsWithoutImages.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+
+    logger.info(`Blog image generation: ${generated} generated, ${failed} failed out of ${totalMissing}`, "SEO API");
+
+    res.json({
+      total_missing: totalMissing,
+      batch_size: limit,
+      generated,
+      failed,
+      errors,
+    });
+  } catch (error) {
+    logger.error("Generate missing images error", error, "SEO API");
+    res.status(500).json({ error: "Failed to generate missing blog images" });
   }
 });
 
