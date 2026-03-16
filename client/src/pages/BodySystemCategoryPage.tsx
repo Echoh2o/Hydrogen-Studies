@@ -65,7 +65,6 @@ const BodySystemCategoryPage = () => {
           const data = await response.json();
           if (data.success && data.data) {
             setStudies(data.data);
-            console.log("Studies for body system:", data.data);
           } else {
             console.warn("No studies found or invalid response format:", data);
             setStudies([]);
@@ -263,7 +262,7 @@ const BodySystemCategoryPage = () => {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link href={`/study/${study.slug || study.id}`}>
+                    <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                       <Button>View Full Study</Button>
                     </Link>
                   </CardFooter>

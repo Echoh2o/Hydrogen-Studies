@@ -49,6 +49,49 @@ const getDeliveryMethodIcon = (slug: string, className: string = "") => {
   }
 };
 
+/** Group card for the three primary delivery method categories */
+const DeliveryMethodGroup: React.FC<{
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  bgClass: string;
+  methods: any[];
+}> = ({ title, description, icon, bgClass, methods }) => {
+  const totalStudies = methods.reduce((sum: number, m: any) => sum + (m.studyCount || 0), 0);
+
+  return (
+    <Card className={`overflow-hidden bg-gradient-to-br ${bgClass} border-0`}>
+      <CardHeader className="p-6 pb-3">
+        <div className="flex items-center gap-3 mb-2">
+          {icon}
+          <CardTitle className="text-2xl">{title}</CardTitle>
+        </div>
+        <Badge variant="secondary" className="w-fit">
+          {totalStudies} studies
+        </Badge>
+      </CardHeader>
+      <CardContent className="p-6 pt-2">
+        <p className="text-muted-foreground text-sm mb-4">{description}</p>
+        <div className="space-y-2">
+          {methods.map((method: any) => (
+            <Link key={method.id} href={`/explore-by-delivery-method/${method.slug}`}>
+              <div className="flex items-center justify-between p-2 rounded-md hover:bg-white/60 transition-colors cursor-pointer">
+                <div className="flex items-center gap-2">
+                  {getDeliveryMethodIcon(method.slug, "h-4 w-4")}
+                  <span className="text-sm font-medium">{method.name}</span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {method.studyCount}
+                </Badge>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const ExploreByDeliveryMethodPage: React.FC = () => {
   // Fetch all delivery methods
   const { data: deliveryMethods, isLoading: deliveryMethodsLoading } = useQuery<any>(
@@ -96,48 +139,90 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
           </div>
 
           {deliveryMethodsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array(7)
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {Array(3)
                 .fill(0)
                 .map((_, i) => (
                   <Card key={i} className="overflow-hidden">
-                    <CardHeader className="p-4 pb-2">
-                      <Skeleton className="h-6 w-3/4" />
+                    <CardHeader className="p-6">
+                      <Skeleton className="h-8 w-3/4" />
                     </CardHeader>
-                    <CardContent className="p-4 pt-2">
-                      <Skeleton className="h-20" />
+                    <CardContent className="p-6 pt-2">
+                      <Skeleton className="h-32" />
                     </CardContent>
                   </Card>
                 ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {deliveryMethods?.map((method: any) => (
-                <Link key={method.id} href={`/delivery-methods/${method.slug}`}>
-                  <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
-                    <CardHeader className="p-4 pb-2 flex flex-row items-start space-x-4">
-                      <div className="bg-primary/10 p-2 rounded-md">
-                        {getDeliveryMethodIcon(
-                          method.slug,
-                          "h-6 w-6 text-primary",
-                        )}
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl">{method.name}</CardTitle>
-                        <Badge variant="outline" className="mt-1">
-                          {method.studyCount} studies
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-2">
-                      <CardDescription className="line-clamp-3 text-sm">
-                        {method.description}
-                      </CardDescription>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+            <>
+              {/* Three primary delivery method groups */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Group 1: Hydrogen Water (Drinking) */}
+                <DeliveryMethodGroup
+                  title="Hydrogen Water"
+                  description="The most accessible way to consume molecular hydrogen — through hydrogen-enriched drinking water."
+                  icon={<Droplet className="h-8 w-8 text-blue-600" />}
+                  bgClass="from-blue-50 to-blue-100"
+                  methods={(deliveryMethods || []).filter((m: any) =>
+                    ["drinking-water", "infused-liquids", "echoh-flask"].includes(m.slug)
+                  )}
+                />
+
+                {/* Group 2: Hydrogen Gas Inhalation */}
+                <DeliveryMethodGroup
+                  title="Hydrogen Inhalation"
+                  description="Therapeutic hydrogen gas administered through nasal cannula or mask, studied in clinical settings."
+                  icon={<Wind className="h-8 w-8 text-teal-600" />}
+                  bgClass="from-teal-50 to-teal-100"
+                  methods={(deliveryMethods || []).filter((m: any) =>
+                    ["inhalation"].includes(m.slug)
+                  )}
+                />
+
+                {/* Group 3: Other Methods */}
+                <DeliveryMethodGroup
+                  title="Other Methods"
+                  description="Bathing, saline injection, and tablet forms of hydrogen delivery used in research."
+                  icon={<Bath className="h-8 w-8 text-purple-600" />}
+                  bgClass="from-purple-50 to-purple-100"
+                  methods={(deliveryMethods || []).filter((m: any) =>
+                    ["bathing", "saline-injection", "tablets"].includes(m.slug)
+                  )}
+                />
+              </div>
+
+              {/* Full list below for discovery */}
+              <div className="mt-12">
+                <h2 className="text-2xl font-semibold mb-6">All Delivery Methods</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {deliveryMethods?.map((method: any) => (
+                    <Link key={method.id} href={`/explore-by-delivery-method/${method.slug}`}>
+                      <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+                        <CardHeader className="p-4 pb-2 flex flex-row items-start space-x-4">
+                          <div className="bg-primary/10 p-2 rounded-md">
+                            {getDeliveryMethodIcon(
+                              method.slug,
+                              "h-6 w-6 text-primary",
+                            )}
+                          </div>
+                          <div>
+                            <CardTitle className="text-xl">{method.name}</CardTitle>
+                            <Badge variant="outline" className="mt-1">
+                              {method.studyCount} studies
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-2">
+                          <CardDescription className="line-clamp-3 text-sm">
+                            {method.description}
+                          </CardDescription>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           {/* Echo Flask promotion */}
@@ -180,8 +265,8 @@ export default ExploreByDeliveryMethodPage;
 
 // Detail page for a specific delivery method
 export const DeliveryMethodDetailPage: React.FC = () => {
-  const [, params] = useRoute("/delivery-methods/:slug");
-  const slug = params?.slug || "";
+  const [, params] = useRoute("/explore-by-delivery-method/:method");
+  const slug = params?.method || "";
 
   // Fetch delivery method details
   const { data: methodData, isLoading: methodLoading } = useQuery<any>({

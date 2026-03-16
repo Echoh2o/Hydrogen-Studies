@@ -45,9 +45,7 @@ export default function CrossRefSearch() {
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (doi: string) => {
-      const response = await apiRequest("POST", `/api/crossref/import`, {
-        doi,
-      });
+      const response = await apiRequest("POST", `/api/crossref/import/${encodeURIComponent(doi)}`);
       return response.json();
     },
     onSuccess: (data) => {

@@ -64,7 +64,7 @@ export const generateMedicalArticleSchema = (study: any) => {
         name: "Hydrogen Therapy",
       },
     ],
-    url: `https://hydrogenstudies.com/study/${study.id}`,
+    url: `https://hydrogenstudies.com/study/${study.slug || `id/${study.id}`}`,
     ...(study.doi && { sameAs: `https://doi.org/${study.doi}` }),
     ...(study.imageUrl && { image: study.imageUrl }),
     ...(study.methods && { methodDescription: study.methods }),

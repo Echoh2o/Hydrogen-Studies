@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import AnchorContent from "@/components/AnchorContent";
 import {
   Card,
   CardContent,
@@ -361,6 +362,9 @@ const ExploreByBenefit: React.FC = () => {
         {/* Display studies for selected category */}
         {selectedCategory && (
           <div className="mt-8">
+            {/* SEO anchor content for category */}
+            <AnchorContent categoryType={selectedModel} category={selectedCategory} />
+
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">
                 {categoryIcons[selectedCategory] || "🔬"} {selectedCategory}{" "}
@@ -411,7 +415,7 @@ const ExploreByBenefit: React.FC = () => {
                           >
                             <CardHeader>
                               <CardTitle className="text-xl hover:text-primary transition-colors">
-                                <Link to={`/study/${study.id}`}>
+                                <Link to={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                                   {study.title}
                                 </Link>
                               </CardTitle>

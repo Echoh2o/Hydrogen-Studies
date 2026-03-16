@@ -21,11 +21,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQuery } from "@tanstack/react-query";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import { Helmet } from "react-helmet";
 
 export default function HydrogenBasicsPage() {
+  const { data: siteStats } = useQuery<{ totalStudies: number }>({
+    queryKey: ["/api/public-stats"],
+    staleTime: 10 * 60 * 1000,
+  });
+
   const deliveryMethods = [
     {
       method: "Hydrogen Water",
@@ -126,7 +132,7 @@ export default function HydrogenBasicsPage() {
               potential health benefits
             </p>
             <Badge className="bg-teal-100 text-teal-800 px-4 py-2">
-              Based on 1,300+ peer-reviewed studies
+              Based on {siteStats?.totalStudies ? `${siteStats.totalStudies.toLocaleString()}+` : "1,300+"} peer-reviewed studies
             </Badge>
           </div>
         </section>
@@ -190,8 +196,8 @@ export default function HydrogenBasicsPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {keyMechanisms.map((mechanism, index) => (
-                <Card key={index} className="border-t-4 border-t-teal-600">
+              {keyMechanisms.map((mechanism) => (
+                <Card key={mechanism.title} className="border-t-4 border-t-teal-600">
                   <CardHeader>
                     <CardTitle className="text-lg">{mechanism.title}</CardTitle>
                     <CardDescription>{mechanism.description}</CardDescription>
@@ -213,8 +219,8 @@ export default function HydrogenBasicsPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {deliveryMethods.map((method, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow">
+              {deliveryMethods.map((method) => (
+                <Card key={method.method} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center space-x-3 mb-4">
                       {method.icon}
@@ -228,9 +234,9 @@ export default function HydrogenBasicsPage() {
                         Benefits:
                       </p>
                       <ul className="space-y-1">
-                        {method.benefits.map((benefit, i) => (
+                        {method.benefits.map((benefit) => (
                           <li
-                            key={i}
+                            key={benefit}
                             className="text-sm text-gray-600 flex items-center"
                           >
                             <div className="h-1.5 w-1.5 bg-teal-600 rounded-full mr-2"></div>

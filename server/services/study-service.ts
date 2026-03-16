@@ -2,6 +2,19 @@ import { db } from "../db";
 import { studies, seoMetadata, type Study, type InsertStudy } from "@shared/schema";
 import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray } from "drizzle-orm";
 
+// Track whether full-text search is available (set after first successful/failed query)
+let ftsAvailable: boolean | null = null;
+async function checkFtsAvailable(): Promise<boolean> {
+  if (ftsAvailable !== null) return ftsAvailable;
+  try {
+    await db.execute(sql`SELECT search_vector FROM studies LIMIT 0`);
+    ftsAvailable = true;
+  } catch {
+    ftsAvailable = false;
+  }
+  return ftsAvailable;
+}
+
 export interface StudyFilters {
   query?: string;
   keyword?: string;
@@ -36,31 +49,36 @@ export class StudyService {
     try {
       const whereConditions = [];
 
-      // Unified search helper — split multi-word queries into individual terms
-      // so "exercise athletic performance" matches any study containing ANY of those words
+      // Full-text search using PostgreSQL tsvector/tsquery when available,
+      // with LIKE fallback when search_vector column doesn't exist
       const searchTerm = filters.query || filters.search;
+      let useRelevanceSort = false;
+      let tsQueryString = "";
       if (searchTerm) {
-        const words = searchTerm.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length >= 2);
-        if (words.length <= 1) {
-          // Single word: simple LIKE match
-          const term = `%${searchTerm.toLowerCase().trim()}%`;
-          whereConditions.push(
-            or(
-              sql`LOWER(${studies.title}) LIKE ${term}`,
-              sql`LOWER(${studies.abstract}) LIKE ${term}`,
-              sql`LOWER(${studies.authors}) LIKE ${term}`
-            )
-          );
-        } else {
-          // Multiple words: match ANY word in title or abstract (OR logic)
-          const wordConditions = words.map((word: string) => {
-            const term = `%${word}%`;
-            return or(
-              sql`LOWER(${studies.title}) LIKE ${term}`,
-              sql`LOWER(${studies.abstract}) LIKE ${term}`
+        const sanitized = searchTerm.trim().replace(/[^\w\s-]/g, " ");
+        const words = sanitized.toLowerCase().split(/\s+/).filter((w: string) => w.length >= 2);
+
+        if (words.length > 0) {
+          const hasFts = await checkFtsAvailable();
+
+          if (hasFts) {
+            // Full-text search with relevance ranking and stemming
+            tsQueryString = words.join(" | ");
+            whereConditions.push(
+              sql`search_vector @@ to_tsquery('english', ${tsQueryString})`
             );
-          });
-          whereConditions.push(or(...wordConditions));
+            useRelevanceSort = true;
+          } else {
+            // Fallback: LIKE matching with OR logic across words
+            const wordConditions = words.map((word: string) => {
+              const term = `%${word}%`;
+              return or(
+                sql`LOWER(${studies.title}) LIKE ${term}`,
+                sql`LOWER(${studies.abstract}) LIKE ${term}`
+              );
+            });
+            whereConditions.push(or(...wordConditions));
+          }
         }
       }
 
@@ -156,23 +174,28 @@ export class StudyService {
       const pageSize = Math.min(100, Math.max(1, parseInt(filters.limit?.toString() || filters.pageSize?.toString() || "20", 10)));
       const offset = (page - 1) * pageSize;
 
-      // Sorting
+      // Sorting — use relevance ranking when full-text search is active
       const sortField = filters.sortField || filters.sortBy || "publishDate";
       const sortOrder = filters.sortOrder === "asc" ? "asc" : "desc";
+      const userRequestedSort = filters.sortField || filters.sortBy;
 
-      let sortColumn;
+      let orderByClause;
 
-      // Map special sort fields
-      if (sortField === "date") sortColumn = studies.publishDate;
-      else if (sortField === "title") sortColumn = studies.title;
-      else if (sortField === "author") sortColumn = studies.authors;
-      else if (sortField === "journal") sortColumn = studies.journal;
-      else if (sortField === "publishYear") sortColumn = studies.publishYear;
-      else if (sortField === "viewCount") sortColumn = studies.viewCount;
-      else if (sortField === "journalPublishDate") sortColumn = studies.journalPublishDate;
-      else sortColumn = studies.id;
-
-      const orderByClause = sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
+      if (useRelevanceSort && !userRequestedSort && tsQueryString) {
+        // Default to relevance ranking for search queries
+        orderByClause = sql`ts_rank(search_vector, to_tsquery('english', ${tsQueryString})) DESC`;
+      } else {
+        let sortColumn;
+        if (sortField === "date") sortColumn = studies.publishDate;
+        else if (sortField === "title") sortColumn = studies.title;
+        else if (sortField === "author") sortColumn = studies.authors;
+        else if (sortField === "journal") sortColumn = studies.journal;
+        else if (sortField === "publishYear") sortColumn = studies.publishYear;
+        else if (sortField === "viewCount") sortColumn = studies.viewCount;
+        else if (sortField === "journalPublishDate") sortColumn = studies.journalPublishDate;
+        else sortColumn = studies.id;
+        orderByClause = sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
+      }
 
       // Main query - build complete chain
       const data = whereClause
@@ -210,10 +233,12 @@ export class StudyService {
   }
 
   async getStudyBySlug(slug: string): Promise<Study | undefined> {
+    // Normalize non-breaking hyphens (U+2011) and other dash variants to regular hyphens
+    const normalizedSlug = slug.replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\uFE58\uFE63\uFF0D]/g, "-");
     const result = await db
         .select()
         .from(studies)
-        .where(eq(studies.slug, slug))
+        .where(eq(studies.slug, normalizedSlug))
         .limit(1);
     return result[0];
   }

@@ -366,4 +366,73 @@ function getMonthNumber(monthName: string): string {
   return months[monthName] || "01";
 }
 
+/**
+ * POST /api/europepmc/save
+ * Save a Europe PMC article to the studies database.
+ * Accepts { id, source } where id is a PMID/PMCID and source is "MED"/"PMC"/etc.
+ */
+router.post("/api/europepmc/save", async (req, res) => {
+  try {
+    const { id, source } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Article ID is required",
+      });
+    }
+
+    // Fetch the article by PMID or PMCID
+    let articleData;
+    if (source === "PMC" || String(id).startsWith("PMC")) {
+      articleData = await getArticleByPMCID(String(id));
+    } else {
+      articleData = await getArticleByPMID(String(id));
+    }
+
+    if (!articleData) {
+      return res.status(404).json({
+        success: false,
+        message: "Article not found in Europe PMC",
+      });
+    }
+
+    // Check for duplicates by DOI if available
+    const doi = articleData.doi || articleData.DOI;
+    if (doi) {
+      const existing = await studyService.getStudyByIdentifier(doi);
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: "Study with this DOI already exists",
+          studyId: existing.id,
+        });
+      }
+    }
+
+    // Extract and save
+    const studyData = extractStudyFromEuropePMC(articleData);
+    if (!studyData) {
+      return res.status(422).json({
+        success: false,
+        message: "Could not extract study data from the article",
+      });
+    }
+
+    const createdStudy = await studyService.createStudy(studyData);
+
+    res.status(201).json({
+      success: true,
+      message: "Study successfully imported from Europe PMC",
+      study: createdStudy,
+    });
+  } catch (error: any) {
+    console.error("Europe PMC save error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to save study from Europe PMC",
+    });
+  }
+});
+
 export default router;

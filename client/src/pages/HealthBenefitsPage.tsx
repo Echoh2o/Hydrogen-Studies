@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Heart,
@@ -24,12 +25,33 @@ import Footer from "@/components/layout/Footer";
 import { Helmet } from "react-helmet";
 
 export default function HealthBenefitsPage() {
+  // Fetch real study counts from the API
+  const { data: countData } = useQuery<{
+    success: boolean;
+    data: {
+      condition: { name: string; count: string }[];
+      body_system: { name: string; count: string }[];
+    };
+  }>({
+    queryKey: ["/api/consumer-categories/counts"],
+    staleTime: 1000 * 60 * 10,
+  });
+
+  // Map health page categories to API category names
+  const getStudyCount = (apiName: string): number => {
+    if (!countData?.data) return 0;
+    const all = [...(countData.data.condition || []), ...(countData.data.body_system || [])];
+    const found = all.find((c) => c.name === apiName);
+    return found ? parseInt(found.count) || 0 : 0;
+  };
+
   const healthCategories = [
     {
       category: "Cardiovascular Health",
+      searchCategory: "cardiovascular",
       icon: <Heart className="h-8 w-8 text-red-600" />,
       description: "Heart health, circulation, and vascular function",
-      studyCount: 85,
+      studyCount: getStudyCount("Heart Disease & Hypertension"),
       evidenceLevel: 85,
       benefits: [
         "May reduce inflammation in blood vessels",
@@ -43,9 +65,10 @@ export default function HealthBenefitsPage() {
     },
     {
       category: "Neurological Health",
+      searchCategory: "neurological",
       icon: <Brain className="h-8 w-8 text-purple-600" />,
       description: "Brain function, cognitive health, and neuroprotection",
-      studyCount: 120,
+      studyCount: getStudyCount("Brain & Neurological Disorders"),
       evidenceLevel: 78,
       benefits: [
         "May protect brain cells from oxidative damage",
@@ -59,9 +82,10 @@ export default function HealthBenefitsPage() {
     },
     {
       category: "Athletic Performance",
+      searchCategory: "exercise",
       icon: <Zap className="h-8 w-8 text-green-600" />,
       description: "Exercise performance, recovery, and fatigue reduction",
-      studyCount: 45,
+      studyCount: getStudyCount("Musculoskeletal System"),
       evidenceLevel: 82,
       benefits: [
         "May reduce exercise-induced fatigue",
@@ -75,9 +99,10 @@ export default function HealthBenefitsPage() {
     },
     {
       category: "Anti-Inflammatory",
+      searchCategory: "inflammation",
       icon: <Shield className="h-8 w-8 text-orange-600" />,
       description: "Inflammation reduction and immune system support",
-      studyCount: 95,
+      studyCount: getStudyCount("Arthritis & Inflammation"),
       evidenceLevel: 88,
       benefits: [
         "May reduce inflammatory markers",
@@ -91,9 +116,10 @@ export default function HealthBenefitsPage() {
     },
     {
       category: "Metabolic Health",
+      searchCategory: "metabolic",
       icon: <TrendingUp className="h-8 w-8 text-teal-600" />,
       description: "Metabolism, energy production, and cellular health",
-      studyCount: 65,
+      studyCount: getStudyCount("Diabetes & Metabolic Health"),
       evidenceLevel: 75,
       benefits: [
         "May improve cellular energy production",
@@ -107,9 +133,10 @@ export default function HealthBenefitsPage() {
     },
     {
       category: "Skin Health",
+      searchCategory: "dermatology",
       icon: <Droplet className="h-8 w-8 text-cyan-600" />,
       description: "Skin protection, healing, and aesthetic benefits",
-      studyCount: 35,
+      studyCount: getStudyCount("Integumentary System"),
       evidenceLevel: 70,
       benefits: [
         "May protect skin from UV damage",
@@ -178,7 +205,7 @@ export default function HealthBenefitsPage() {
               health and wellness based on scientific research
             </p>
             <Badge className="bg-red-100 text-red-800 px-4 py-2">
-              Based on 450+ health-focused studies
+              Based on {healthCategories.reduce((sum, c) => sum + c.studyCount, 0) || "450"}+ health-focused studies
             </Badge>
           </div>
         </section>
@@ -197,9 +224,9 @@ export default function HealthBenefitsPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {healthCategories.map((category, index) => (
+              {healthCategories.map((category) => (
                 <Card
-                  key={index}
+                  key={category.category}
                   className="hover:shadow-lg transition-shadow border-l-4 border-l-teal-600"
                 >
                   <CardHeader>
@@ -246,9 +273,9 @@ export default function HealthBenefitsPage() {
                         Potential Benefits:
                       </p>
                       <ul className="space-y-1">
-                        {category.benefits.map((benefit, i) => (
+                        {category.benefits.map((benefit) => (
                           <li
-                            key={i}
+                            key={benefit}
                             className="text-sm text-gray-600 flex items-start"
                           >
                             <div className="h-1.5 w-1.5 bg-teal-600 rounded-full mr-2 mt-2 flex-shrink-0"></div>
@@ -273,7 +300,7 @@ export default function HealthBenefitsPage() {
                         {category.population}
                       </div>
                       <Link
-                        href={`/studies?category=${encodeURIComponent(category.category)}`}
+                        href={`/studies?category=${encodeURIComponent(category.searchCategory)}`}
                       >
                         <Badge
                           variant="outline"

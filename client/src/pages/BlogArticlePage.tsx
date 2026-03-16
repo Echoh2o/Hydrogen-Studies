@@ -13,6 +13,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import RelatedContent from "@/components/RelatedContent";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -138,6 +139,7 @@ For those interested in diving deeper into the research, here are key studies re
     category: "Research Insights",
     imageUrl:
       "https://placehold.co/800x400/e2f3ff/003366?text=Gut+Health+Research",
+    imageAlt: "Hydrogen therapy gut health research illustration",
     tags: [
       "gut health",
       "microbiome",
@@ -272,15 +274,15 @@ For those interested in diving deeper into the research, here are key studies re
           {/* Featured Image */}
           <div className="mb-8">
             <img
-              src={article.imageUrl}
-              alt={article.title}
+              src={article.imageUrl || "/images/fallback-study-image.svg"}
+              alt={article.imageAlt || `${article.title} - hydrogen research`}
               className="w-full h-64 sm:h-80 object-cover rounded-lg"
             />
           </div>
 
           {/* Article Content */}
           <div className="prose prose-lg max-w-none">
-            {article.content.split("\n").map((paragraph, index) => {
+            {(article.content || "").split("\n").map((paragraph, index) => {
               if (paragraph.startsWith("# ")) {
                 return (
                   <h1
@@ -355,9 +357,9 @@ For those interested in diving deeper into the research, here are key studies re
               <span className="text-sm font-medium text-gray-700">Tags:</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {article.tags.map((tag, index) => (
+              {(article.tags || []).map((tag) => (
                 <Badge
-                  key={index}
+                  key={tag}
                   variant="outline"
                   className="hover:bg-teal-50 cursor-pointer"
                 >
@@ -392,8 +394,8 @@ For those interested in diving deeper into the research, here are key studies re
                 Related Research Studies
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {article.relatedStudies.slice(0, 3).map((studyId, index) => (
-                  <Link key={index} href={`/study/id/${studyId}`}>
+                {article.relatedStudies.slice(0, 3).map((studyId) => (
+                  <Link key={studyId} href={`/study/id/${studyId}`}>
                     <Card className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardHeader>
                         <CardTitle className="text-sm">
@@ -411,6 +413,11 @@ For those interested in diving deeper into the research, here are key studies re
             </div>
           )}
         </article>
+
+        {/* Smart Internal Links */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <RelatedContent contentType="blog" contentId={article.id} title="More to Explore" />
+        </div>
 
         {/* Related Articles */}
         <section className="bg-gray-50 py-16">

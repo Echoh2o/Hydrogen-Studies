@@ -3,6 +3,10 @@
  * Refactored to minimal setup, delegating app configuration to app.ts
  */
 
+import { initSentry, Sentry } from "./utils/sentry";
+// Initialize Sentry before anything else so it captures all errors
+initSentry();
+
 import { validateEnvironment } from "./config/env";
 // Validate environment before anything else
 validateEnvironment();
@@ -43,10 +47,8 @@ async function setupServer() {
     // Production mode - serve static files from dist/public (Vite output)
     const staticPath = path.join(__dirname, "public");
 
-    console.log(`Static files path: ${staticPath}`);
-    console.log(`Static path exists: ${fs.existsSync(staticPath)}`);
-    if (fs.existsSync(staticPath)) {
-      console.log(`index.html exists: ${fs.existsSync(path.join(staticPath, "index.html"))}`);
+    if (!fs.existsSync(staticPath)) {
+      console.error(`Static files path not found: ${staticPath}`);
     }
 
     // SEO bot middleware — inject correct meta tags for crawlers BEFORE static files
@@ -63,6 +65,12 @@ async function setupServer() {
 
     // Other static files — cache for 1 hour, revalidate
     app.use(express.static(staticPath, { maxAge: "1h" }));
+    // Serve static assets with long-term caching (Vite adds content hashes to filenames)
+    app.use(express.static(staticPath, {
+      maxAge: "1y",
+      immutable: true,
+      index: false, // Don't serve index.html for directory requests — SPA fallback handles that
+    }));
 
     // SPA fallback — serve index.html for all non-API GET requests
     app.get("*", (req, res) => {
@@ -86,20 +94,29 @@ async function setupServer() {
     });
 
     // Graceful shutdown for container deployments (Railway, Docker, etc.)
+    let isShuttingDown = false;
     const shutdown = (signal: string) => {
+      if (isShuttingDown) return; // Prevent double shutdown
+      isShuttingDown = true;
       console.log(`Received ${signal}. Shutting down gracefully...`);
+
+      // Stop accepting new connections and background work
       jobScheduler.stop();
       stopHealthMonitoring();
+
+      // Stop accepting new connections; existing ones finish naturally
       server.close(async () => {
+        console.log("All connections closed.");
         try { await pool.end(); } catch {}
-        console.log("Server closed.");
+        console.log("Database pool closed. Shutdown complete.");
         process.exit(0);
       });
-      // Force exit after 10 seconds if graceful shutdown hangs
+
+      // Give in-flight requests time to complete before force exit
       setTimeout(() => {
-        console.error("Forced shutdown after timeout.");
+        console.error("Forced shutdown after 15s timeout.");
         process.exit(1);
-      }, 10000);
+      }, 15000).unref();
     };
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));
@@ -113,12 +130,14 @@ process.on("unhandledRejection", (reason, promise) => {
   reportError(reason instanceof Error ? reason : new Error(String(reason)), {
     tags: { source: "unhandledRejection" },
   });
+  if (reason instanceof Error) Sentry.captureException(reason);
 });
 
 // Catch uncaught exceptions — log, report, but only exit for truly fatal errors
 process.on("uncaughtException", (error) => {
   console.error("Uncaught exception:", error);
   reportError(error, { tags: { source: "uncaughtException" } });
+  Sentry.captureException(error);
   // Only exit for fatal system-level errors; request-level errors are survivable
   if (
     error.message?.includes("EACCES") ||

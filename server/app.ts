@@ -63,6 +63,9 @@ import newsletterRoutes from "./routes/newsletter-routes";
 import userDashboardRoutes from "./routes/user-dashboard-routes";
 import adminSettingsRoutes from "./routes/admin-settings-routes";
 import contactRoutes from "./routes/contact-routes";
+import pipelineRoutes from "./routes/pipeline-routes";
+import imageGenerationRoutes from "./routes/image-generation-routes";
+import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -102,7 +105,6 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'",
           "https://www.googletagmanager.com",
           "https://www.google-analytics.com",
         ],
@@ -142,8 +144,15 @@ app.use(cookieParser());
 validateCorsConfig();
 app.use(cors(getCorsConfig()));
 
-// Body parsing middleware
-app.use(express.json({ limit: "2mb" }));
+// Body parsing middleware — capture raw body for webhook HMAC verification
+app.use(express.json({
+  limit: "2mb",
+  verify: (req: any, _res, buf) => {
+    if (req.originalUrl?.startsWith("/api/webhooks/")) {
+      req.rawBody = buf;
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 // Dynamic SEO routes (sitemaps, robots.txt) — must be before CSRF and session
@@ -196,6 +205,11 @@ const csrf = csrfProtection({
     "/api/crossref", // CrossRef routes (protected by admin auth)
     "/api/multi-format", // Multi-format generation (protected by admin auth)
     "/api/blog-recommendations", // Blog recommendations (protected by admin auth)
+    "/api/pipeline", // Research pipeline (protected by admin auth)
+    "/api/image-generation", // Image generation (protected by admin auth)
+    "/api/content-optimization", // Content optimization (protected by admin auth)
+    "/api/consumer-categories", // Consumer categories (protected by admin auth)
+    "/api/doi", // DOI enhancer (protected by admin auth)
   ],
 });
 
@@ -223,7 +237,7 @@ app.use("/api/blogs", blogRoutes);
 
 // Search
 app.use("/api", searchController.router); // Mounts /advanced-search, /search, etc.
-app.use("/api/natural-language-search", naturalLanguageSearchRoutes);
+app.use(naturalLanguageSearchRoutes);
 
 // Public site stats (no auth — cached for 5 minutes)
 let cachedStats: any = null;
@@ -297,8 +311,8 @@ app.use("/api/blog-recommendations", aiGenerationRateLimiter, blogRecommendation
 app.use("/api/trends", generalApiRateLimiter, trendsRoutes);
 app.use("/api/analytics", generalApiRateLimiter, contentAnalyticsRoutes);
 app.use("/api", chatRoutes);
-app.use("/api/explorer", explorerRoutes);
-app.use("/api/review", aiGenerationRateLimiter, reviewAssistantRoutes); // or /api/review-assistant
+app.use(explorerRoutes);
+app.use("/api/review-assistant", aiGenerationRateLimiter, reviewAssistantRoutes);
 app.use("/api/content-optimization", aiGenerationRateLimiter, contentOptimizationRoutes);
 app.use("/api/multi-format", multiFormatRoutes);
 app.use(hydrogenRoutes);
@@ -315,6 +329,27 @@ app.use("/api/scraper", scraperRoutes);
 // SEO Content Factory (admin-only)
 app.use("/api/seo", seoContentFactoryRoutes);
 
+// DOI Enhancer (admin-only)
+app.use("/api/doi", requireAdmin, doiEnhancerRoutes);
+
+// Public weekly research digest endpoint
+app.get("/api/public/this-week", generalApiRateLimiter, async (req, res) => {
+  try {
+    const { getLatestDigest, getDigestArchive, getDigestBySlug } = await import("./services/research-digest-generator");
+    const slug = req.query.slug as string;
+    if (slug) {
+      const digest = await getDigestBySlug(slug);
+      if (!digest) return res.status(404).json({ error: "Digest not found" });
+      return res.json({ digest });
+    }
+    const latest = await getLatestDigest();
+    const archive = await getDigestArchive(10, 0);
+    res.json({ latest, archive });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get digest" });
+  }
+});
+
 // Public internal links endpoint (for "Related Content" sidebar on study/blog pages)
 app.get("/api/internal-links/:type/:id", async (req, res) => {
   try {
@@ -328,8 +363,69 @@ app.get("/api/internal-links/:type/:id", async (req, res) => {
   }
 });
 
+// Fire-and-forget analytics sinks (prevent 404 noise in logs)
+app.post("/api/search/analytics", (req, res) => res.json({ ok: true }));
+app.post("/api/studies/analytics", (req, res) => res.json({ ok: true }));
+
+// Journal Date Updater (admin)
+app.get("/api/admin/journal-date-stats", generalApiRateLimiter, requireAdmin, async (req, res) => {
+  try {
+    const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
+    const result = await db.execute(sql`
+      SELECT
+        count(*) FILTER (WHERE journal_publish_date IS NOT NULL AND journal_publish_date != '') as with_date,
+        count(*) FILTER (WHERE journal_publish_date IS NULL OR journal_publish_date = '') as without_date,
+        count(*) as total
+      FROM studies
+    `);
+    const row: any = result.rows?.[0] || result[0] || {};
+    const total = Number(row.total) || 0;
+    const withDate = Number(row.with_date) || 0;
+    const withoutDate = Number(row.without_date) || 0;
+
+    // Fetch recently updated studies with journal dates
+    const recentResult = await db.execute(sql`
+      SELECT title, journal_publish_date, doi
+      FROM studies
+      WHERE journal_publish_date IS NOT NULL AND journal_publish_date != ''
+      ORDER BY updated_at DESC NULLS LAST
+      LIMIT 5
+    `);
+    const recentRows: any[] = recentResult.rows || recentResult || [];
+
+    res.json({
+      success: true,
+      stats: {
+        totalStudies: total,
+        studiesWithDate: withDate,
+        studiesNeedingDate: withoutDate,
+        percentComplete: total > 0 ? Math.round((withDate / total) * 100) : 0,
+        recentlyUpdated: recentRows.map((r: any) => ({
+          title: r.title,
+          journalPublishDate: r.journal_publish_date,
+          doi: r.doi,
+        })),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Failed to get journal date stats" });
+  }
+});
+
+app.post("/api/admin/update-journal-dates", generalApiRateLimiter, requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.body.limit) || 50, 200);
+    const { updateJournalPublicationDates } = await import("./services/journal-date-updater");
+    const result = await updateJournalPublicationDates(limit);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, totalUpdated: 0, failedDois: [], message: "Failed to process journal dates" });
+  }
+});
+
 // Quality Monitoring — protected with admin auth
-app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
+app.get("/api/admin/quality/monitor", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { qualityMonitor } = await import("./utils/quality-assurance-monitor");
     const report = qualityMonitor.getQualityReport();
@@ -340,7 +436,7 @@ app.get("/api/admin/quality/monitor", requireAdmin, async (req, res) => {
   }
 });
 
-app.get("/api/admin/quality/integrity", requireAdmin, async (req, res) => {
+app.get("/api/admin/quality/integrity", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { dataIntegrityValidator } = await import("./data-integrity-validator");
     const validation = await dataIntegrityValidator.validateDataIntegrity();
@@ -351,7 +447,7 @@ app.get("/api/admin/quality/integrity", requireAdmin, async (req, res) => {
   }
 });
 
-app.post("/api/admin/quality/fix-issues", requireAdmin, async (req, res) => {
+app.post("/api/admin/quality/fix-issues", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { dataIntegrityValidator } = await import("./data-integrity-validator");
     const result = await dataIntegrityValidator.fixCommonIssues();
@@ -362,7 +458,7 @@ app.post("/api/admin/quality/fix-issues", requireAdmin, async (req, res) => {
   }
 });
 
-app.get("/api/admin/quality/tests", requireAdmin, async (req, res) => {
+app.get("/api/admin/quality/tests", generalApiRateLimiter, requireAdmin, async (req, res) => {
   try {
     const { qualityTests } = await import("./automated-quality-tests");
     const results = await qualityTests.runAllTests();
@@ -387,6 +483,27 @@ app.use("/api/me", userDashboardRoutes);
 
 // Admin settings
 app.use("/api/admin/settings", adminSettingsRoutes);
+
+// Research Intelligence Pipeline (admin-only)
+app.use("/api/pipeline", pipelineRoutes);
+
+// Image Generation (admin-only)
+app.use("/api/image-generation", requireAdmin, imageGenerationRoutes);
+
+// Legacy image generation path (used by StudyPage "Generate Image" button)
+app.post("/api/images/generate/:studyId", requireAdmin, async (req, res) => {
+  try {
+    const studyId = Number(req.params.studyId);
+    if (!studyId || isNaN(studyId)) {
+      return res.status(400).json({ success: false, message: "Invalid study ID" });
+    }
+    const { generateImageForStudy } = await import("./services/image-generator");
+    const result = await generateImageForStudy(studyId);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Image generation failed" });
+  }
+});
 
 // Admin monitoring & process control
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
@@ -420,11 +537,28 @@ app.post("/api/client-errors", (req, res) => {
   res.status(204).end();
 });
 
-// Health check endpoint for load balancers (before error handlers)
+// Health check endpoints for load balancers (before error handlers)
+
+// Full health check (database, memory, request stats)
 app.get("/health", async (req, res) => {
   const health = await performHealthCheck();
   const statusCode = health.status === "healthy" ? 200 : 503;
   res.status(statusCode).json(health);
+});
+
+// Liveness probe — is the process alive? (lightweight, no DB call)
+app.get("/health/live", (req, res) => {
+  res.status(200).json({ status: "alive", uptime: process.uptime() });
+});
+
+// Readiness probe — can the server accept requests? (checks DB connectivity)
+app.get("/health/ready", async (req, res) => {
+  const health = await performHealthCheck();
+  if (health.database.connected) {
+    res.status(200).json({ status: "ready", dbLatency: health.database.latency });
+  } else {
+    res.status(503).json({ status: "not_ready", reason: "database unavailable" });
+  }
 });
 
 // 404 handler for API routes
@@ -434,16 +568,37 @@ app.use("/api/*", (req, res, next) => {
 
 // Error reporting handler — captures unexpected errors before responding
 app.use(errorReportingHandler());
+// Sentry error handler - captures errors before globalErrorHandler
+import { Sentry } from "./utils/sentry";
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
 // Global error handler - MUST be last middleware
 app.use(globalErrorHandler);
 
 // Initialize health monitoring
 initializeHealthMonitoring();
 
-// Verify database connectivity on startup
+// Verify database connectivity on startup, then run versioned migrations
 import { pool } from "./db";
-pool.query("SELECT 1").then(() => {
+pool.query("SELECT 1").then(async () => {
   console.log("Database connection verified");
+  try {
+    const { runMigrations } = await import("./migrations/migration-runner");
+    const { addFullTextSearch } = await import("./migrations/add-fulltext-search");
+    const { createPipelineTables } = await import("./migrations/pipeline-tables-migration");
+    const { createBlogGenerationJobsTable } = await import("./migrations/blog-generation-jobs-migration");
+
+    await runMigrations([
+      { name: "001_add_fulltext_search", up: addFullTextSearch },
+      { name: "002_create_pipeline_tables", up: createPipelineTables },
+      { name: "003_create_blog_generation_jobs", up: createBlogGenerationJobsTable },
+      // Add new migrations here in order
+    ]);
+  } catch (err: any) {
+    console.warn("Migration runner error:", err.message);
+  }
 }).catch((err: any) => {
   console.error("WARNING: Database connection failed on startup:", err.message);
   console.error("The app will start but DB-dependent features will fail until the connection is restored.");

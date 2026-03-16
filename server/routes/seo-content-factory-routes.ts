@@ -10,6 +10,7 @@
  */
 
 import { Router, Request, Response } from "express";
+import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
 import { aiGenerationRateLimiter } from "../utils/rate-limiting";
 import {
@@ -31,6 +32,10 @@ import {
   buildAllBlogLinks,
   getLinksFor,
 } from "../services/internal-linking-engine";
+import { db } from "../db";
+import { blogArticles, studies, seoContentClusters } from "../../shared/schema";
+import { isNull, eq } from "drizzle-orm";
+import { generateBlogArticlesForStudy } from "../services/blog-generator-enhanced";
 import {
   batchRetractionCheck,
   checkStudyRetraction,
@@ -59,7 +64,7 @@ router.get("/enrichment/status", async (req: Request, res: Response) => {
       sampleCandidates: candidates,
     });
   } catch (error) {
-    console.error("[SEO API] Enrichment status error:", error);
+    logger.error("Enrichment status error", error, "SEO API");
     res.status(500).json({ error: "Failed to get enrichment status" });
   }
 });
@@ -78,7 +83,7 @@ router.post("/enrichment/study/:id", aiGenerationRateLimiter, async (req: Reques
     const success = await enrichAndSaveStudy(studyId);
     res.json({ success, studyId });
   } catch (error) {
-    console.error("[SEO API] Study enrichment error:", error);
+    logger.error("Study enrichment error", error, "SEO API");
     res.status(500).json({ error: "Failed to enrich study" });
   }
 });
@@ -92,19 +97,19 @@ router.post("/enrichment/batch", aiGenerationRateLimiter, async (req: Request, r
   try {
     const { batchSize = 10, delayMs = 1500 } = req.body;
 
-    console.log(`[SEO API] Starting batch enrichment: ${batchSize} studies, ${delayMs}ms delay`);
+    logger.info("Starting batch enrichment", "SEO API", { batchSize, delayMs });
 
     const result = await batchEnrichStudies({
       batchSize: Math.min(batchSize, 100), // Cap at 100
       delayMs,
       onProgress: (done, total, studyId) => {
-        console.log(`[SEO API] Enrichment progress: ${done}/${total} (study ${studyId})`);
+        logger.info("Enrichment progress", "SEO API", { done, total, studyId });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Batch enrichment error:", error);
+    logger.error("Batch enrichment error", error, "SEO API");
     res.status(500).json({ error: "Failed to run batch enrichment" });
   }
 });
@@ -122,7 +127,7 @@ router.get("/content-factory/status", async (req: Request, res: Response) => {
     const status = await getContentFactoryStatus();
     res.json(status);
   } catch (error) {
-    console.error("[SEO API] Content factory status error:", error);
+    logger.error("Content factory status error", error, "SEO API");
     res.status(500).json({ error: "Failed to get content factory status" });
   }
 });
@@ -151,7 +156,7 @@ router.get("/content-factory/topics", async (req: Request, res: Response) => {
       })),
     });
   } catch (error) {
-    console.error("[SEO API] Topics error:", error);
+    logger.error("Topics error", error, "SEO API");
     res.status(500).json({ error: "Failed to get topics" });
   }
 });
@@ -178,7 +183,7 @@ router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (
       return res.status(404).json({ error: `Topic "${topic}" not found` });
     }
 
-    console.log(`[SEO API] Generating pillar page for: ${cluster.condition}`);
+    logger.info("Generating pillar page", "SEO API", { condition: cluster.condition });
 
     const article = await generatePillarPage(cluster);
     if (!article) {
@@ -194,7 +199,7 @@ router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (
       wordCount: article.content.split(/\s+/).length,
     });
   } catch (error) {
-    console.error("[SEO API] Pillar generation error:", error);
+    logger.error("Pillar generation error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate pillar page" });
   }
 });
@@ -221,7 +226,7 @@ router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async 
       return res.status(404).json({ error: `Topic "${topic}" not found` });
     }
 
-    console.log(`[SEO API] Generating ${maxPosts} cluster posts for: ${cluster.condition}`);
+    logger.info("Generating cluster posts", "SEO API", { maxPosts, condition: cluster.condition });
 
     const results: Array<{ title: string; slug: string; success: boolean; articleId?: number | null }> = [];
 
@@ -254,7 +259,7 @@ router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async 
       failed: results.filter(r => !r.success).length,
     });
   } catch (error) {
-    console.error("[SEO API] Cluster generation error:", error);
+    logger.error("Cluster generation error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate cluster posts" });
   }
 });
@@ -275,7 +280,7 @@ router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request
       topic: specificTopic,
     } = req.body;
 
-    console.log(`[SEO API] Running content factory: ${maxTopics} topics, ${maxClustersPerTopic} clusters each`);
+    logger.info("Running content factory", "SEO API", { maxTopics, maxClustersPerTopic });
 
     const result = await runContentFactory({
       maxTopics: Math.min(maxTopics, 50),
@@ -285,17 +290,20 @@ router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request
       clusterOnly,
       specificTopic,
       onProgress: (progress) => {
-        console.log(
-          `[SEO API] Factory progress: ${progress.phase} | ` +
-          `Topic ${progress.topicIndex + 1}/${progress.topicTotal} (${progress.currentTopic}) | ` +
-          `Articles: ${progress.articlesGenerated} generated, ${progress.articlesFailed} failed`
-        );
+        logger.info("Factory progress", "SEO API", {
+          phase: progress.phase,
+          topicIndex: progress.topicIndex + 1,
+          topicTotal: progress.topicTotal,
+          currentTopic: progress.currentTopic,
+          articlesGenerated: progress.articlesGenerated,
+          articlesFailed: progress.articlesFailed,
+        });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Content factory run error:", error);
+    logger.error("Content factory run error", error, "SEO API");
     res.status(500).json({ error: "Failed to run content factory" });
   }
 });
@@ -311,18 +319,18 @@ router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request
 router.post("/links/build-study-links", async (req: Request, res: Response) => {
   try {
     const { batchSize = 200 } = req.body;
-    console.log(`[SEO API] Building study links for ${batchSize} studies`);
+    logger.info("Building study links", "SEO API", { batchSize });
 
     const result = await buildAllStudyLinks({
       batchSize,
       onProgress: (done, total) => {
-        if (done % 50 === 0) console.log(`[SEO API] Study links: ${done}/${total}`);
+        if (done % 50 === 0) logger.info("Study links progress", "SEO API", { done, total });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Build study links error:", error);
+    logger.error("Build study links error", error, "SEO API");
     res.status(500).json({ error: "Failed to build study links" });
   }
 });
@@ -334,18 +342,18 @@ router.post("/links/build-study-links", async (req: Request, res: Response) => {
 router.post("/links/build-blog-links", async (req: Request, res: Response) => {
   try {
     const { batchSize = 200 } = req.body;
-    console.log(`[SEO API] Building blog links for ${batchSize} blogs`);
+    logger.info("Building blog links", "SEO API", { batchSize });
 
     const result = await buildAllBlogLinks({
       batchSize,
       onProgress: (done, total) => {
-        if (done % 50 === 0) console.log(`[SEO API] Blog links: ${done}/${total}`);
+        if (done % 50 === 0) logger.info("Blog links progress", "SEO API", { done, total });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Build blog links error:", error);
+    logger.error("Build blog links error", error, "SEO API");
     res.status(500).json({ error: "Failed to build blog links" });
   }
 });
@@ -365,7 +373,7 @@ router.get("/links/:type/:id", async (req: Request, res: Response) => {
     const links = await getLinksFor(type, contentId);
     res.json({ links });
   } catch (error) {
-    console.error("[SEO API] Get links error:", error);
+    logger.error("Get links error", error, "SEO API");
     res.status(500).json({ error: "Failed to get links" });
   }
 });
@@ -383,7 +391,7 @@ router.get("/retractions/status", async (req: Request, res: Response) => {
     const status = await getRetractionStatus();
     res.json(status);
   } catch (error) {
-    console.error("[SEO API] Retraction status error:", error);
+    logger.error("Retraction status error", error, "SEO API");
     res.status(500).json({ error: "Failed to get retraction status" });
   }
 });
@@ -397,19 +405,19 @@ router.post("/retractions/check", async (req: Request, res: Response) => {
   try {
     const { batchSize = 50, delayMs = 500 } = req.body;
 
-    console.log(`[SEO API] Running retraction check on ${batchSize} studies`);
+    logger.info("Running retraction check", "SEO API", { batchSize });
 
     const result = await batchRetractionCheck({
       batchSize: Math.min(batchSize, 200),
       delayMs,
       onProgress: (checked, total) => {
-        if (checked % 20 === 0) console.log(`[SEO API] Retraction check: ${checked}/${total}`);
+        if (checked % 20 === 0) logger.info("Retraction check progress", "SEO API", { checked, total });
       },
     });
 
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Retraction check error:", error);
+    logger.error("Retraction check error", error, "SEO API");
     res.status(500).json({ error: "Failed to run retraction check" });
   }
 });
@@ -446,7 +454,7 @@ router.post("/retractions/check-study/:id", async (req: Request, res: Response) 
       result: result || { status: "none", details: "No retraction or correction detected" },
     });
   } catch (error) {
-    console.error("[SEO API] Single retraction check error:", error);
+    logger.error("Single retraction check error", error, "SEO API");
     res.status(500).json({ error: "Failed to check study retraction" });
   }
 });
@@ -473,7 +481,7 @@ router.get("/keyword-strategy/overview", async (req: Request, res: Response) => 
     const overview = await getStrategyOverview();
     res.json(overview);
   } catch (error) {
-    console.error("[SEO API] Strategy overview error:", error);
+    logger.error("Strategy overview error", error, "SEO API");
     res.status(500).json({ error: "Failed to get strategy overview" });
   }
 });
@@ -487,7 +495,7 @@ router.post("/keyword-strategy/seed", async (req: Request, res: Response) => {
     const result = await seedKeywordClusters();
     res.json({ success: true, ...result });
   } catch (error) {
-    console.error("[SEO API] Seed clusters error:", error);
+    logger.error("Seed clusters error", error, "SEO API");
     res.status(500).json({ error: "Failed to seed keyword clusters" });
   }
 });
@@ -501,7 +509,7 @@ router.get("/keyword-strategy/clusters", async (req: Request, res: Response) => 
     const clusters = await getKeywordClusters();
     res.json({ clusters });
   } catch (error) {
-    console.error("[SEO API] Get clusters error:", error);
+    logger.error("Get clusters error", error, "SEO API");
     res.status(500).json({ error: "Failed to get clusters" });
   }
 });
@@ -518,7 +526,7 @@ router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, as
     const result = await generateKeywordPillarPage(clusterId);
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Generate pillar error:", error);
+    logger.error("Generate pillar error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate pillar page" });
   }
 });
@@ -538,7 +546,7 @@ router.post("/keyword-strategy/generate-cluster-post/:id", aiGenerationRateLimit
     const result = await generateKeywordClusterPost(clusterId, keywordIndex);
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Generate cluster post error:", error);
+    logger.error("Generate cluster post error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate cluster post" });
   }
 });
@@ -557,8 +565,200 @@ router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimit
     const result = await generateFullCluster(clusterId, delayMs);
     res.json(result);
   } catch (error) {
-    console.error("[SEO API] Generate full cluster error:", error);
+    logger.error("Generate full cluster error", error, "SEO API");
     res.status(500).json({ error: "Failed to generate full cluster" });
+  }
+});
+
+// ============================================================
+// Keyword Cluster CRUD Endpoints
+// ============================================================
+
+/**
+ * POST /api/seo/keyword-strategy/clusters
+ * Create a new custom keyword cluster
+ */
+router.post("/keyword-strategy/clusters", async (req: Request, res: Response) => {
+  try {
+    const { pillarKeyword, pillarTitle, category, targetAudience, searchIntent,
+            clusterKeywords, estimatedSearchVolume, keywordDifficulty, priority,
+            includeProductCTA, echoProductReferences } = req.body;
+
+    if (!pillarKeyword || !pillarTitle) {
+      return res.status(400).json({ error: "pillarKeyword and pillarTitle are required" });
+    }
+
+    const slug = pillarKeyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+    const [cluster] = await db
+      .insert(seoContentClusters)
+      .values({
+        pillarKeyword,
+        pillarTitle,
+        slug,
+        category: category || "research",
+        targetAudience: targetAudience || "consumer",
+        searchIntent: searchIntent || "informational",
+        clusterKeywords: JSON.stringify(clusterKeywords || []),
+        estimatedSearchVolume: estimatedSearchVolume || null,
+        keywordDifficulty: keywordDifficulty || null,
+        priority: priority || 50,
+        includeProductCTA: includeProductCTA ?? true,
+        echoProductReferences: JSON.stringify(echoProductReferences || []),
+        totalClusterPosts: (clusterKeywords || []).length,
+      })
+      .returning();
+
+    res.status(201).json(cluster);
+  } catch (error: any) {
+    if (error.code === "23505") {
+      return res.status(409).json({ error: "A cluster with this keyword already exists" });
+    }
+    logger.error("Create keyword cluster error", error, "SEO API");
+    res.status(500).json({ error: "Failed to create keyword cluster" });
+  }
+});
+
+/**
+ * PUT /api/seo/keyword-strategy/clusters/:id
+ * Update an existing keyword cluster
+ */
+router.put("/keyword-strategy/clusters/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid cluster ID" });
+
+    const { pillarKeyword, pillarTitle, category, targetAudience, searchIntent,
+            clusterKeywords, estimatedSearchVolume, keywordDifficulty, priority,
+            includeProductCTA, echoProductReferences } = req.body;
+
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (pillarKeyword) updates.pillarKeyword = pillarKeyword;
+    if (pillarTitle) updates.pillarTitle = pillarTitle;
+    if (category) updates.category = category;
+    if (targetAudience) updates.targetAudience = targetAudience;
+    if (searchIntent) updates.searchIntent = searchIntent;
+    if (clusterKeywords) {
+      updates.clusterKeywords = JSON.stringify(clusterKeywords);
+      updates.totalClusterPosts = clusterKeywords.length;
+    }
+    if (estimatedSearchVolume !== undefined) updates.estimatedSearchVolume = estimatedSearchVolume;
+    if (keywordDifficulty !== undefined) updates.keywordDifficulty = keywordDifficulty;
+    if (priority !== undefined) updates.priority = priority;
+    if (includeProductCTA !== undefined) updates.includeProductCTA = includeProductCTA;
+    if (echoProductReferences) updates.echoProductReferences = JSON.stringify(echoProductReferences);
+
+    const [updated] = await db
+      .update(seoContentClusters)
+      .set(updates)
+      .where(eq(seoContentClusters.id, id))
+      .returning();
+
+    if (!updated) return res.status(404).json({ error: "Cluster not found" });
+    res.json(updated);
+  } catch (error) {
+    logger.error("Update keyword cluster error", error, "SEO API");
+    res.status(500).json({ error: "Failed to update keyword cluster" });
+  }
+});
+
+/**
+ * DELETE /api/seo/keyword-strategy/clusters/:id
+ * Delete a keyword cluster
+ */
+router.delete("/keyword-strategy/clusters/:id", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid cluster ID" });
+
+    const [deleted] = await db
+      .delete(seoContentClusters)
+      .where(eq(seoContentClusters.id, id))
+      .returning();
+
+    if (!deleted) return res.status(404).json({ error: "Cluster not found" });
+    res.json({ message: "Cluster deleted", id });
+  } catch (error) {
+    logger.error("Delete keyword cluster error", error, "SEO API");
+    res.status(500).json({ error: "Failed to delete keyword cluster" });
+  }
+});
+
+// ============================================================
+// Blog Image Fix Endpoints
+// ============================================================
+
+/**
+ * GET /api/seo/blogs/missing-images
+ * List blog articles that have no hero image
+ */
+router.get("/blogs/missing-images", async (req: Request, res: Response) => {
+  try {
+    const blogs = await db
+      .select({ id: blogArticles.id, title: blogArticles.title, studyId: blogArticles.studyId })
+      .from(blogArticles)
+      .where(isNull(blogArticles.imageUrl));
+    res.json({ count: blogs.length, blogs });
+  } catch (error) {
+    logger.error("Missing images query error", error, "SEO API");
+    res.status(500).json({ error: "Failed to query missing images" });
+  }
+});
+
+/**
+ * POST /api/seo/blogs/fix-missing-images
+ * Regenerate images for blogs that have none (processes up to 5 at a time)
+ */
+router.post("/blogs/fix-missing-images", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.body.limit) || 5, 10);
+    const blogs = await db
+      .select({
+        id: blogArticles.id,
+        title: blogArticles.title,
+        studyId: blogArticles.studyId,
+        articleType: blogArticles.articleType,
+      })
+      .from(blogArticles)
+      .where(isNull(blogArticles.imageUrl))
+      .limit(limit);
+
+    if (blogs.length === 0) {
+      return res.json({ message: "All blogs have images", fixed: 0 });
+    }
+
+    let fixed = 0;
+    for (const blog of blogs) {
+      try {
+        // Fetch the study to get category for default image
+        const [study] = await db
+          .select({ id: studies.id, title: studies.title, category: studies.category })
+          .from(studies)
+          .where(eq(studies.id, blog.studyId))
+          .limit(1);
+
+        if (!study) continue;
+
+        // Set a descriptive alt text and fallback image
+        const altText = `${blog.title} - hydrogen ${(blog.articleType || "research").replace(/_/g, " ")} illustration`;
+        await db
+          .update(blogArticles)
+          .set({
+            imageUrl: "/images/fallback-study-image.svg",
+            imageAlt: altText,
+            updatedAt: new Date(),
+          })
+          .where(eq(blogArticles.id, blog.id));
+        fixed++;
+      } catch (err) {
+        logger.warn(`Failed to fix image for blog ${blog.id}`, "SEO API");
+      }
+    }
+
+    res.json({ message: `Fixed ${fixed} blog images`, fixed, total: blogs.length });
+  } catch (error) {
+    logger.error("Fix missing images error", error, "SEO API");
+    res.status(500).json({ error: "Failed to fix missing images" });
   }
 });
 

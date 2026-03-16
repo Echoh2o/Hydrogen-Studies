@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "wouter";
 import { Study } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -9,7 +10,7 @@ interface StudyCardProps {
   study: Study;
 }
 
-export default function StudyCard({ study }: StudyCardProps) {
+const StudyCard = memo(function StudyCard({ study }: StudyCardProps) {
   // Handle null/undefined category gracefully
   const category = study.category || "General";
   const categoryColor = getCategoryColor(category);
@@ -68,7 +69,7 @@ export default function StudyCard({ study }: StudyCardProps) {
 
       <h3 className="font-heading font-bold text-lg mb-3 text-neutral-800 line-clamp-2">
         <Link
-          href={`/study/${study.id}`}
+          href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}
           className="hover:text-primary transition-colors duration-200"
         >
           {study.title}
@@ -100,7 +101,7 @@ export default function StudyCard({ study }: StudyCardProps) {
 
       <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
         <Link
-          href={`/study/${study.id}`}
+          href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}
           className="btn-tertiary btn-sm inline-flex items-center"
         >
           Read full study →
@@ -108,4 +109,6 @@ export default function StudyCard({ study }: StudyCardProps) {
       </motion.div>
     </motion.div>
   );
-}
+});
+
+export default StudyCard;

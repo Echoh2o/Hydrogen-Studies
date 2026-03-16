@@ -51,21 +51,8 @@ export async function findStudiesNeedingEnhancement(options: {
   } = options;
 
   try {
-    // Simplified approach - use raw SQL to get data quality issues
-    // This removes dependency on problematic Drizzle ORM syntax that isn't working
-    let query = db.select().from(studies).$dynamic();
-
-    // Build basic filters
-    const whereConditions = [];
-
-    // Only include studies with DOI (simpler condition)
-    if (requireDoi) {
-      whereConditions.push(sql`${studies.doi} IS NOT NULL AND ${studies.doi} != ''`);
-    }
-
-    // Look for common data quality issues using specific conditions
-    // rather than trying to dynamically build them
-    const qualityIssueConditions = [];
+    // Build the quality issue condition: missing abstract OR authors OR journal
+    const qualityIssueConditions: any[] = [];
 
     if (missingFields.includes("abstract")) {
       qualityIssueConditions.push(
@@ -76,13 +63,11 @@ export async function findStudiesNeedingEnhancement(options: {
         ),
       );
     }
-
     if (missingFields.includes("authors")) {
       qualityIssueConditions.push(
         or(isNull(studies.authors), eq(studies.authors, "")),
       );
     }
-
     if (missingFields.includes("journal")) {
       qualityIssueConditions.push(
         or(
@@ -93,24 +78,29 @@ export async function findStudiesNeedingEnhancement(options: {
       );
     }
 
+    // Combine: DOI requirement AND (any quality issue)
+    const allConditions: any[] = [];
+
+    if (requireDoi) {
+      allConditions.push(sql`${studies.doi} IS NOT NULL AND ${studies.doi} != ''`);
+    }
     if (qualityIssueConditions.length > 0) {
-      whereConditions.push(or(...qualityIssueConditions));
+      allConditions.push(or(...qualityIssueConditions));
     }
 
-    // Apply all where conditions
-    if (whereConditions.length > 0) {
-      query = query.where(and(...whereConditions));
-    }
+    const whereClause = allConditions.length > 0 ? and(...allConditions) : undefined;
 
-    // Get the studies that need enhancement with appropriate limits
-    const studiesNeedingEnhancement = await query
+    const result = await db
+      .select()
+      .from(studies)
+      .where(whereClause)
       .orderBy(asc(studies.id))
       .limit(limit);
 
-    return studiesNeedingEnhancement;
+    return result;
   } catch (error) {
     console.error("Error finding studies needing enhancement:", error);
-    return [];
+    throw error;
   }
 }
 

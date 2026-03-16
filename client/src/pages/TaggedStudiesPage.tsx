@@ -446,7 +446,7 @@ export default function TaggedStudiesPage() {
                                   <span className="text-xs text-muted-foreground">
                                     {study.viewCount} views
                                   </span>
-                                  <Link href={`/study/${study.id}`}>
+                                  <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                                     <Button variant="outline" size="sm">
                                       View Study
                                     </Button>

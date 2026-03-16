@@ -77,8 +77,8 @@ router.get("/stats/dashboard", async (req, res) => {
  */
 router.get("/", async (req, res) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50; // Default 50 for admin pages
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
     const offset = (page - 1) * limit;
     const search = req.query.search as string;
     const filterType = req.query.filterType as string;

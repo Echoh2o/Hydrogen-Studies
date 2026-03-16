@@ -117,11 +117,9 @@ export const ChatWidget: React.FC = () => {
             const data = await conversationsResponse.json();
             if (data.data && Array.isArray(data.data)) {
               setConversations(data.data);
-              console.log("Loaded user conversations:", data.data.length);
             }
           }
         } catch (convErr) {
-          console.log("Error loading conversations:", convErr);
           // Non-critical, continue to load popular questions
         }
 
@@ -137,7 +135,6 @@ export const ChatWidget: React.FC = () => {
             const data = await questionsResponse.json();
             if (data.data && Array.isArray(data.data)) {
               setPopularQuestions(data.data);
-              console.log("Loaded popular questions:", data.data.length);
             } else {
               // Set default popular questions as fallback
               setPopularQuestions([
@@ -150,7 +147,6 @@ export const ChatWidget: React.FC = () => {
             }
           }
         } catch (questionsErr) {
-          console.log("Error loading popular questions:", questionsErr);
           // Set default popular questions as fallback
           setPopularQuestions([
             "What are the benefits of hydrogen water?",
@@ -161,8 +157,7 @@ export const ChatWidget: React.FC = () => {
           ]);
         }
       } catch (err) {
-        // Error handling - non-critical, so we log but don't show error to user
-        console.log("Error loading initial data:", err);
+        // Error handling - non-critical, so we don't show error to user
       }
     };
 
@@ -180,13 +175,6 @@ export const ChatWidget: React.FC = () => {
         setMessages(response.data);
         setConversationId(id);
         setShowConversations(false);
-        console.log(
-          "Loaded conversation:",
-          id,
-          "with",
-          response.data.length,
-          "messages",
-        );
       }
     } catch (err: any) {
       setError("Failed to load conversation history");
@@ -212,7 +200,6 @@ export const ChatWidget: React.FC = () => {
 
       if (response.success) {
         setFeedbackSubmitted(true);
-        console.log("Feedback submitted successfully");
       }
     } catch (err) {
       console.error("Error submitting feedback:", err);
@@ -239,8 +226,6 @@ export const ChatWidget: React.FC = () => {
     try {
       // Get only the last 6 messages to maintain context without exceeding token limits
       const recentMessages = newMessages.slice(-6);
-
-      console.log("Sending chat request with conversation ID:", conversationId);
 
       // Use the API with a longer timeout for complex queries
       const controller = new AbortController();
@@ -279,10 +264,6 @@ export const ChatWidget: React.FC = () => {
           // Update conversation ID if this is a new conversation
           if (responseData.conversationId && !conversationId) {
             setConversationId(responseData.conversationId);
-            console.log(
-              "New conversation created with ID:",
-              responseData.conversationId,
-            );
 
             // Add this new conversation to the list if it's not already there
             if (
@@ -315,11 +296,6 @@ export const ChatWidget: React.FC = () => {
           setCurrentSources(responseData.sources || []);
           setRelatedQuestions(responseData.relatedQuestions || []);
           setProductRecommendations(responseData.productRecommendations || []);
-
-          console.log(
-            "Chat response received with sources:",
-            responseData.sources?.length,
-          );
         } else {
           throw new Error("Invalid response format from server");
         }

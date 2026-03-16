@@ -53,7 +53,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const BlogPage = lazy(() => import("@/pages/BlogPage"));
 const ChatPage = lazy(() => import("@/pages/ChatPage"));
 const RecommendationsPage = lazy(() => import("@/pages/RecommendationsPage"));
-const ResearchInsightsPage = lazy(() => import("./pages/ResearchInsightsPage"));
+// /insights redirects to /research-analytics (consolidated)
 const ResearchAnalyticsPage = lazy(
   () => import("./pages/ResearchAnalyticsPage"),
 );
@@ -187,6 +187,8 @@ const NaturalLanguageSearchPage = lazy(
 );
 const RecentStudiesPage = lazy(() => import("./pages/RecentStudiesPage"));
 const MyDashboardPage = lazy(() => import("./pages/MyDashboardPage"));
+const PipelineDashboardPage = lazy(() => import("./pages/admin/PipelineDashboardPage"));
+const ThisWeekPage = lazy(() => import("./pages/ThisWeekPage"));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -460,6 +462,14 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
+        {/* Research Pipeline Dashboard - Protected */}
+        <Route path="/admin/pipeline">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <PipelineDashboardPage />
+            </ProtectedRoute>
+          )}
+        </Route>
         {/* Research source pages consolidated into /admin/research-import */}
         <Route path="/admin/article-search">{() => <Redirect to="/admin/research-import" />}</Route>
         <Route path="/admin/europe-pmc">{() => <Redirect to="/admin/research-import" />}</Route>
@@ -483,12 +493,13 @@ function Router() {
         <Route path="/explore-by-delivery-method/:method" component={DeliveryMethodDetailPage} />
 
         {/* Additional Public Pages */}
-        <Route path="/insights" component={ResearchInsightsPage} />
+        <Route path="/insights">{() => { window.location.replace("/research-analytics"); return null; }}</Route>
         <Route path="/research-analytics" component={ResearchAnalyticsPage} />
         <Route path="/recent-studies" component={RecentStudiesPage} />
         <Route path="/study-explorer" component={StudyExplorerPage} />
         <Route path="/learn/therapy-guide" component={HydrogenTherapyGuide} />
         <Route path="/contact-us" component={ContactUsPage} />
+        <Route path="/this-week" component={ThisWeekPage} />
 
         {/* Tag-based Navigation */}
         <Route path="/studies/tags" component={TaggedStudiesPage} />

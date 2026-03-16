@@ -78,7 +78,6 @@ const ConditionCategoryPage = () => {
           const data = await response.json();
           if (data.success && data.data) {
             setStudies(data.data);
-            console.log("Studies for condition:", data.data);
           } else {
             console.warn("No studies found or invalid response format:", data);
             setStudies([]);
@@ -184,7 +183,7 @@ const ConditionCategoryPage = () => {
                 itemListElement: studies.map((study, index) => ({
                   "@type": "ListItem",
                   position: index + 1,
-                  url: `https://hydrogenstudies.com/study/${study.id}`,
+                  url: `https://hydrogenstudies.com/study/${study.slug || `id/${study.id}`}`,
                   name: study.title,
                 })),
               },
@@ -260,7 +259,7 @@ const ConditionCategoryPage = () => {
                       </p>
                     </CardContent>
                     <CardFooter>
-                      <Link href={`/study/${study.slug || study.id}`}>
+                      <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                         <Button>View Full Study</Button>
                       </Link>
                     </CardFooter>

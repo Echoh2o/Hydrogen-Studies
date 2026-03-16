@@ -71,7 +71,6 @@ const LifeStageCategoryPage = () => {
           const data = await response.json();
           if (data.success && data.data) {
             setStudies(data.data);
-            console.log("Studies for life stage:", data.data);
           } else {
             console.warn("No studies found or invalid response format:", data);
             setStudies([]);
@@ -279,7 +278,7 @@ const LifeStageCategoryPage = () => {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link href={`/study/${study.slug || study.id}`}>
+                    <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                       <Button>View Full Study</Button>
                     </Link>
                   </CardFooter>

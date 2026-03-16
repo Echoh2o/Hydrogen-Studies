@@ -11,6 +11,7 @@ import {
   isRetryableError,
 } from "./app-errors";
 import { reportError } from "./error-reporting";
+import { Sentry } from "./sentry";
 
 // Standard error types for the application
 export enum ErrorType {
@@ -110,6 +111,11 @@ export function handleApiError(
       ip: res.req?.ip,
       userAgent: res.req?.get("user-agent"),
       tags: { errorType },
+  // Send non-operational errors to Sentry in production
+  if (process.env.NODE_ENV === "production" && !isOperationalError(error)) {
+    Sentry.captureException(error, {
+      tags: { errorType },
+      extra: { requestId, url: res.req?.url, method: res.req?.method },
     });
   }
 
@@ -414,4 +420,19 @@ export function timeoutMiddleware(timeout = 30000) {
 
     next();
   };
+}
+
+/**
+ * Standardized API response helpers
+ * Use these in route handlers for consistent response formats across all endpoints.
+ *
+ * Success: { success: true, data: ... }
+ * Error:   { success: false, error: "message" }
+ */
+export function apiSuccess<T>(res: Response, data: T, statusCode = 200): void {
+  res.status(statusCode).json({ success: true, data });
+}
+
+export function apiError(res: Response, message: string, statusCode = 500): void {
+  res.status(statusCode).json({ success: false, error: message });
 }

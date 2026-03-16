@@ -110,6 +110,11 @@ export default function BlogPage() {
       <Helmet>
         <title>{blog.title} | Hydrogen Studies Blog</title>
         <meta name="description" content={blog.summary} />
+        <meta property="og:title" content={blog.title} />
+        <meta property="og:description" content={blog.summary} />
+        {blog.imageUrl && <meta property="og:image" content={blog.imageUrl} />}
+        <meta property="og:type" content="article" />
+        {blog.createdAt && <meta property="article:published_time" content={blog.createdAt} />}
 
         {/* Schema.org markup for article */}
         <script type="application/ld+json">
@@ -144,7 +149,7 @@ export default function BlogPage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Back button */}
           <div className="mb-6">
-            <Link to={study ? `/study/${study.id}` : "/studies"}>
+            <Link to={study ? (study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`) : "/studies"}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {study ? "Back to Study" : "Back to Studies"}
@@ -210,7 +215,7 @@ export default function BlogPage() {
                   <strong>Published:</strong> {formatDate(study.publishDate)} in{" "}
                   {study.journal}
                 </p>
-                <Link to={`/study/${study.id}`}>
+                <Link to={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                   <Button size="sm">View Original Research</Button>
                 </Link>
               </div>

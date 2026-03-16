@@ -1,7 +1,8 @@
 import express from "express";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
-import { sql } from "drizzle-orm";
+import { sql, eq, isNull, or } from "drizzle-orm";
+import { ai } from "../services/ai-provider";
 
 const router = express.Router();
 
@@ -539,46 +540,318 @@ router.get("/studies", async (req, res) => {
 // Add life stage route
 router.get("/life-stages", async (req, res) => {
   try {
-    // Life stage categories with descriptions
-    const lifeStageCategories = [
-      {
-        name: "Infants & Newborns",
-        count: 5,
-        description: "Studies focused on infant health and development",
-      },
-      {
-        name: "Children & Adolescents",
-        count: 8,
-        description: "Research on pediatric and adolescent health",
-      },
-      {
-        name: "Adults",
-        count: 45,
-        description: "Studies focused on working-age adults",
-      },
-      {
-        name: "Older Adults",
-        count: 28,
-        description: "Research on elderly populations and aging",
-      },
-      {
-        name: "Athletes & Fitness",
-        count: 18,
-        description: "Studies on performance enhancement and recovery",
-      },
+    const { pool } = await import("../db");
+
+    // Keywords to search in title/abstract for each life stage
+    const lifeStages = [
+      { name: "Infants & Newborns", keywords: ["infant", "newborn", "neonatal", "perinatal"], description: "Studies focused on infant health and development" },
+      { name: "Children & Adolescents", keywords: ["child", "children", "adolescent", "pediatric"], description: "Research on pediatric and adolescent health" },
+      { name: "Adults", keywords: ["adult"], description: "Studies focused on working-age adults" },
+      { name: "Older Adults", keywords: ["elderly", "aging", "geriatric", "older adult"], description: "Research on elderly populations and aging" },
+      { name: "Athletes & Fitness", keywords: ["athlete", "exercise", "fitness", "sport", "training"], description: "Studies on performance enhancement and recovery" },
     ];
+
+    const results = await Promise.all(
+      lifeStages.map(async (stage) => {
+        const likeTerms = stage.keywords.map((k) => `%${k}%`);
+        const result = await pool.query(
+          `SELECT COUNT(*) as count FROM studies WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($1)`,
+          [likeTerms],
+        );
+        return { name: stage.name, count: parseInt(result.rows[0]?.count || "0"), description: stage.description };
+      }),
+    );
+
+    return res.json({ success: true, data: results });
+  } catch (error) {
+    console.error("Error fetching life stages:", error);
+    return res.status(500).json({ success: false, error: "Failed to retrieve life stages" });
+  }
+});
+
+// Anchor content for category landing pages — SEO-rich introductory text
+const ANCHOR_CONTENT: Record<string, Record<string, { title: string; summary: string; content: string }>> = {
+  condition: {
+    "Heart Disease & Hypertension": {
+      title: "Hydrogen Water and Cardiovascular Health",
+      summary: "Research shows molecular hydrogen may support cardiovascular health through its selective antioxidant and anti-inflammatory properties.",
+      content: "Cardiovascular disease remains the leading cause of death worldwide. A growing body of peer-reviewed research has investigated molecular hydrogen (H2) as a potential supportive therapy for heart health. Studies suggest that H2 may help reduce oxidative stress in blood vessels, support healthy blood pressure levels, and protect cardiac tissue during ischemia-reperfusion events. While more large-scale clinical trials are needed, the existing evidence from both animal models and human studies is promising.",
+    },
+    "Brain & Neurological Disorders": {
+      title: "Hydrogen Therapy and Brain Health",
+      summary: "Molecular hydrogen shows neuroprotective potential in research on Alzheimer's, Parkinson's, and stroke recovery.",
+      content: "The brain is particularly vulnerable to oxidative stress due to its high oxygen consumption. Research into molecular hydrogen's neuroprotective properties has expanded significantly since the landmark 2007 Nature Medicine study. H2's ability to cross the blood-brain barrier and selectively neutralize harmful hydroxyl radicals makes it a unique candidate for neurological research. Studies have explored its effects on neurodegenerative conditions, traumatic brain injury, and cognitive function in aging populations.",
+    },
+    "Diabetes & Metabolic Health": {
+      title: "Hydrogen Water and Metabolic Syndrome",
+      summary: "Clinical studies have examined hydrogen-rich water's effects on glucose metabolism, insulin sensitivity, and lipid profiles.",
+      content: "Metabolic syndrome affects a significant portion of the global population. Multiple clinical trials have investigated hydrogen-rich water's potential to improve markers of metabolic health, including fasting blood glucose, HbA1c, cholesterol levels, and body composition. The anti-inflammatory and antioxidant mechanisms of molecular hydrogen may help address the underlying oxidative stress that contributes to metabolic dysfunction.",
+    },
+    "Arthritis & Inflammation": {
+      title: "Hydrogen and Inflammatory Conditions",
+      summary: "Research explores molecular hydrogen's anti-inflammatory effects on arthritis, joint pain, and systemic inflammation.",
+      content: "Chronic inflammation is at the root of many health conditions, including rheumatoid arthritis and osteoarthritis. Molecular hydrogen has been studied for its ability to modulate inflammatory pathways, including NF-kB signaling and pro-inflammatory cytokine production. Clinical studies using hydrogen-rich water and hydrogen bathing have reported improvements in joint pain, morning stiffness, and inflammatory markers in patients with rheumatoid arthritis.",
+    },
+    "Lung & Respiratory Conditions": {
+      title: "Hydrogen Therapy for Respiratory Health",
+      summary: "Hydrogen inhalation and hydrogen-rich water are being studied for lung protection and respiratory support.",
+      content: "The lungs are directly exposed to environmental oxidative stressors. Research into hydrogen therapy for respiratory conditions has gained momentum, particularly with hydrogen gas inhalation studies. Investigations have covered acute lung injury, COPD, asthma, and post-surgical lung recovery. The selective antioxidant properties of molecular hydrogen may help protect lung tissue without interfering with necessary reactive oxygen species signaling.",
+    },
+    "Digestive Health (Gut/Liver)": {
+      title: "Hydrogen Water and Gut Health",
+      summary: "Studies examine hydrogen's effects on the gut microbiome, liver function, and gastrointestinal disorders.",
+      content: "The gastrointestinal tract is where hydrogen-rich water first makes contact with the body. Research suggests that molecular hydrogen may positively influence gut microbiome composition, reduce intestinal inflammation, and support liver health. Studies have investigated its role in conditions ranging from non-alcoholic fatty liver disease to inflammatory bowel disease, with encouraging preliminary results.",
+    },
+    "Cancer Supportive Care": {
+      title: "Hydrogen Research in Cancer Support",
+      summary: "Molecular hydrogen is being studied as a supportive therapy to reduce side effects of cancer treatment.",
+      content: "While molecular hydrogen is not a cancer treatment, research has explored its potential as a supportive therapy during conventional cancer care. Studies have investigated whether H2 can help reduce the side effects of chemotherapy and radiation therapy, improve quality of life for cancer patients, and protect healthy tissue during treatment. This is an active area of research with ongoing clinical trials.",
+    },
+  },
+};
+
+/**
+ * GET /api/consumer-categories/anchor-content/:type/:category
+ * Returns SEO anchor content for a specific category landing page.
+ */
+router.get("/anchor-content/:type/:category", async (req, res) => {
+  try {
+    const { type, category } = req.params;
+    const decodedCategory = decodeURIComponent(category);
+    const content = ANCHOR_CONTENT[type]?.[decodedCategory];
+
+    if (!content) {
+      return res.json({ success: true, data: null });
+    }
+
+    // Get study count for this category to include in the response
+    let studyCount = 0;
+    try {
+      const categoryMap: Record<string, string> = {
+        "Heart Disease & Hypertension": "cardiovascular",
+        "Brain & Neurological Disorders": "neurological",
+        "Diabetes & Metabolic Health": "metabolic",
+        "Arthritis & Inflammation": "inflammation",
+        "Lung & Respiratory Conditions": "respiratory",
+        "Digestive Health (Gut/Liver)": "gastrointestinal",
+        "Cancer Supportive Care": "cancer",
+      };
+      const dbCategory = categoryMap[decodedCategory];
+      if (dbCategory) {
+        const result = await db.select({ count: sql<number>`count(*)` }).from(studies)
+          .where(sql`LOWER(${studies.category}) LIKE ${`%${dbCategory.toLowerCase()}%`}`);
+        studyCount = result[0]?.count || 0;
+      }
+    } catch {}
 
     return res.json({
       success: true,
-      data: lifeStageCategories,
+      data: { ...content, studyCount },
     });
   } catch (error) {
-    console.error("Error fetching life stages:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to retrieve life stages",
-    });
+    console.error("Error fetching anchor content:", error);
+    return res.status(500).json({ success: false, error: "Failed to retrieve anchor content" });
   }
 });
+
+/**
+ * POST /api/consumer-categories/categorize/:studyId
+ * Categorize a single study using AI
+ */
+router.post("/categorize/:studyId", async (req, res) => {
+  try {
+    const studyId = parseInt(req.params.studyId);
+    if (isNaN(studyId)) {
+      return res.status(400).json({ success: false, error: "Invalid study ID" });
+    }
+
+    const [study] = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        methods: studies.methods,
+        results: studies.results,
+        conclusion: studies.conclusion,
+        category: studies.category,
+      })
+      .from(studies)
+      .where(eq(studies.id, studyId))
+      .limit(1);
+
+    if (!study) {
+      return res.status(404).json({ success: false, error: "Study not found" });
+    }
+
+    const categories = await categorizeStudyWithAI(study);
+
+    await db
+      .update(studies)
+      .set({ consumerCategories: JSON.stringify(categories) })
+      .where(eq(studies.id, studyId));
+
+    return res.json({ success: true, studyId, categories });
+  } catch (error) {
+    console.error("Error categorizing study:", error);
+    return res.status(500).json({ success: false, error: "Failed to categorize study" });
+  }
+});
+
+/**
+ * POST /api/consumer-categories/batch-categorize
+ * Batch categorize uncategorized studies
+ */
+router.post("/batch-categorize", async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.body.limit) || 10, 50);
+
+    const uncategorized = await db
+      .select({
+        id: studies.id,
+        title: studies.title,
+        abstract: studies.abstract,
+        methods: studies.methods,
+        results: studies.results,
+        conclusion: studies.conclusion,
+        category: studies.category,
+      })
+      .from(studies)
+      .where(or(isNull(studies.consumerCategories), eq(studies.consumerCategories, "")))
+      .limit(limit);
+
+    let successful = 0;
+    let failed = 0;
+    const errors: { studyId: number; error: string }[] = [];
+
+    for (const study of uncategorized) {
+      try {
+        const categories = await categorizeStudyWithAI(study);
+        await db
+          .update(studies)
+          .set({ consumerCategories: JSON.stringify(categories) })
+          .where(eq(studies.id, study.id));
+        successful++;
+        // Small delay to avoid rate limits
+        await new Promise((r) => setTimeout(r, 2000));
+      } catch (err) {
+        failed++;
+        errors.push({ studyId: study.id, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    return res.json({
+      success: true,
+      total: uncategorized.length,
+      successful,
+      failed,
+      errors,
+    });
+  } catch (error) {
+    console.error("Error in batch categorization:", error);
+    return res.status(500).json({ success: false, error: "Failed to run batch categorization" });
+  }
+});
+
+/**
+ * Use AI to categorize a study into consumer-friendly categories
+ */
+async function categorizeStudyWithAI(study: {
+  id: number;
+  title: string;
+  abstract: string | null;
+  methods: string | null;
+  results: string | null;
+  conclusion: string | null;
+  category: string;
+}) {
+  if (ai.getProviderStatus().primary === "none") {
+    // Fallback: use existing category to make a best guess
+    return inferCategoriesFromStudyCategory(study.category);
+  }
+
+  const studyContent = [
+    `Title: ${study.title}`,
+    study.abstract ? `Abstract: ${study.abstract.substring(0, 500)}` : "",
+    study.methods ? `Methods: ${study.methods.substring(0, 300)}` : "",
+    study.conclusion ? `Conclusion: ${study.conclusion.substring(0, 300)}` : "",
+  ].filter(Boolean).join("\n");
+
+  const prompt = `Categorize this hydrogen therapy study into consumer-friendly categories.
+
+${studyContent}
+
+Return JSON with these arrays (use ONLY the exact category names listed):
+
+condition: Pick from: "Heart Disease & Hypertension", "Brain & Neurological Disorders", "Diabetes & Metabolic Health", "Arthritis & Inflammation", "Lung & Respiratory Conditions", "Digestive Health (Gut/Liver)", "Cancer Supportive Care"
+
+bodySystem: Pick from: "Cardiovascular System", "Nervous System", "Respiratory System", "Digestive System", "Immune System", "Musculoskeletal System", "Renal System", "Integumentary System"
+
+lifeStage: Pick from: "Infants & Newborns", "Children & Adolescents", "Adults", "Older Adults", "Athletes & Fitness"
+
+Only include categories that are clearly relevant. Return valid JSON only.`;
+
+  try {
+    const result = await ai.generateJSON(
+      "You are a medical research categorization assistant. Return valid JSON only.",
+      prompt,
+      { temperature: 0.3, maxTokens: 300 },
+    );
+
+    return {
+      condition: Array.isArray(result.condition) ? result.condition : [],
+      bodySystem: Array.isArray(result.bodySystem) ? result.bodySystem : [],
+      lifeStage: Array.isArray(result.lifeStage) ? result.lifeStage : [],
+    };
+  } catch {
+    return inferCategoriesFromStudyCategory(study.category);
+  }
+}
+
+function inferCategoriesFromStudyCategory(category: string) {
+  const cat = (category || "").toLowerCase();
+  const result: { condition: string[]; bodySystem: string[]; lifeStage: string[] } = {
+    condition: [],
+    bodySystem: [],
+    lifeStage: ["Adults"],
+  };
+
+  if (cat.includes("cardiovascular")) {
+    result.condition.push("Heart Disease & Hypertension");
+    result.bodySystem.push("Cardiovascular System");
+  }
+  if (cat.includes("neurological")) {
+    result.condition.push("Brain & Neurological Disorders");
+    result.bodySystem.push("Nervous System");
+  }
+  if (cat.includes("diabetes") || cat.includes("metabolic")) {
+    result.condition.push("Diabetes & Metabolic Health");
+  }
+  if (cat.includes("inflammation")) {
+    result.condition.push("Arthritis & Inflammation");
+    result.bodySystem.push("Immune System");
+  }
+  if (cat.includes("respiratory")) {
+    result.condition.push("Lung & Respiratory Conditions");
+    result.bodySystem.push("Respiratory System");
+  }
+  if (cat.includes("gastrointestinal") || cat.includes("hepatic")) {
+    result.condition.push("Digestive Health (Gut/Liver)");
+    result.bodySystem.push("Digestive System");
+  }
+  if (cat.includes("cancer")) {
+    result.condition.push("Cancer Supportive Care");
+  }
+  if (cat.includes("kidney")) {
+    result.bodySystem.push("Renal System");
+  }
+  if (cat.includes("dermatology")) {
+    result.bodySystem.push("Integumentary System");
+  }
+  if (cat.includes("exercise") || cat.includes("fitness")) {
+    result.lifeStage.push("Athletes & Fitness");
+  }
+
+  return result;
+}
 
 export default router;

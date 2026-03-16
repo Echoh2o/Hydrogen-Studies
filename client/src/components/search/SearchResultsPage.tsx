@@ -409,7 +409,7 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                 <Link
                   key={study.id}
                   href={
-                    study.slug ? `/study/${study.slug}` : `/study/${study.id}`
+                    study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`
                   }
                 >
                   <Card className="hover:shadow-md transition-shadow cursor-pointer hover:border-primary/50">

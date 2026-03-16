@@ -10,6 +10,7 @@ import { searchCrossRef, extractStudyFromCrossRef } from "../services/crossref-a
 import { studyService } from "../services/study-service";
 import { reviewService } from "../services/review-service";
 import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
+import { logger } from "../utils/logger";
 
 /**
  * Build study data from PubMed search result (client-sent paper data).
@@ -58,27 +59,20 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
     const selectedSources =
       typeof sources === "string" ? sources.split(",") : ["pubmed"];
 
-    console.log(
-      `Unified search request - Query: "${query}", Sources: ${JSON.stringify(selectedSources)}`,
-    );
+    logger.info("Unified search request", "ResearchUnifiedRoutes", { query, selectedSources });
 
     // Step 1: Check if any matching studies are already in our database to avoid duplicates
     // and to flag studies that are already imported
     let existingStudies: any[] = [];
     try {
-      console.log("Getting matching studies from database...");
+      logger.info("Getting matching studies from database", "ResearchUnifiedRoutes");
       try {
         existingStudies = await studyService.getStudiesByTitlePartial(query, 50);
       } catch (storageError) {
-        console.warn(
-          "Storage method not available, skipping database check:",
-          storageError,
-        );
+        logger.warn("Storage method not available, skipping database check", "ResearchUnifiedRoutes", { error: String(storageError) });
         existingStudies = [];
       }
-      console.log(
-        `Found ${existingStudies.length} potentially matching studies in our database`,
-      );
+      logger.info("Found potentially matching studies in database", "ResearchUnifiedRoutes", { count: existingStudies.length });
 
       // Create lookup maps for faster matching
       const existingDOIMap = new Map();
@@ -89,7 +83,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
         if (study.pmid) existingPMIDMap.set(study.pmid, study.id);
       });
     } catch (error) {
-      console.error("Error checking database for existing studies:", error);
+      logger.error("Error checking database for existing studies", error, "ResearchUnifiedRoutes");
     }
 
     // Step 2: Run searches against each requested source sequentially
@@ -101,12 +95,12 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
     // Process each source one by one
     for (const source of selectedSources) {
       try {
-        console.log(`Processing source: ${source}`);
+        logger.info("Processing source", "ResearchUnifiedRoutes", { source });
 
         switch (source.toLowerCase()) {
           case "pubmed":
             // Search PubMed with an increased limit to account for duplicates later
-            console.log("Searching PubMed...");
+            logger.info("Searching PubMed", "ResearchUnifiedRoutes");
             const pubmedData = await searchPubMedWithPagination(
               query,
               pageNum - 1,
@@ -146,15 +140,13 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
               };
             });
 
-            console.log(
-              `Found ${formattedPubmedData.length} results from PubMed`,
-            );
+            logger.info("Found results from PubMed", "ResearchUnifiedRoutes", { count: formattedPubmedData.length });
             allResults = [...allResults, ...formattedPubmedData];
             totalResultsCount += totalPubmedResults;
             break;
 
           case "europepmc":
-            console.log("Searching EuropePMC...");
+            logger.info("Searching EuropePMC", "ResearchUnifiedRoutes");
             const europepmcResults = await searchEuropePMC(
               query,
               pageNum,
@@ -165,9 +157,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
               europepmcResults.results &&
               europepmcResults.results.length > 0
             ) {
-              console.log(
-                `Found ${europepmcResults.results.length} results from EuropePMC of ${europepmcResults.total} total`,
-              );
+              logger.info("Found results from EuropePMC", "ResearchUnifiedRoutes", { count: europepmcResults.results.length, total: europepmcResults.total });
 
               const formattedEPMCData = europepmcResults.results.map(
                 (item: any) => {
@@ -203,22 +193,18 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
 
               // Log a sample result for debugging
               if (formattedEPMCData.length > 0) {
-                console.log(
-                  "Sample EuropePMC result:",
-                  JSON.stringify(formattedEPMCData[0]).substring(0, 200) +
-                    "...",
-                );
+                logger.debug("Sample EuropePMC result", "ResearchUnifiedRoutes", { sample: JSON.stringify(formattedEPMCData[0]).substring(0, 200) });
               }
 
               allResults = [...allResults, ...formattedEPMCData];
               totalResultsCount += europepmcResults.total || 0;
             } else {
-              console.log("No results from EuropePMC or unexpected format");
+              logger.info("No results from EuropePMC or unexpected format", "ResearchUnifiedRoutes");
             }
             break;
 
           case "semanticscholar":
-            console.log("Searching Semantic Scholar...");
+            logger.info("Searching Semantic Scholar", "ResearchUnifiedRoutes");
             const semanticScholarResults = await searchSemanticScholar(
               query,
               pageNum - 1,
@@ -229,9 +215,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
               semanticScholarResults.data &&
               semanticScholarResults.data.length > 0
             ) {
-              console.log(
-                `Found ${semanticScholarResults.data.length} results from Semantic Scholar`,
-              );
+              logger.info("Found results from Semantic Scholar", "ResearchUnifiedRoutes", { count: semanticScholarResults.data.length });
 
               const formattedSSData = semanticScholarResults.data.map(
                 (item: any) => {
@@ -268,7 +252,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
             break;
 
           case "crossref":
-            console.log("Searching CrossRef...");
+            logger.info("Searching CrossRef", "ResearchUnifiedRoutes");
             const crossrefResults = await searchCrossRef(
               query,
               pageNum,
@@ -279,9 +263,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
               crossrefResults.items &&
               crossrefResults.items.length > 0
             ) {
-              console.log(
-                `Found ${crossrefResults.items.length} results from CrossRef`,
-              );
+              logger.info("Found results from CrossRef", "ResearchUnifiedRoutes", { count: crossrefResults.items.length });
 
               const formattedCRData = crossrefResults.items.map((item: any) => {
                 // Check if this study is already in our database
@@ -316,16 +298,16 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
             break;
 
           default:
-            console.log(`Unsupported source: ${source}`);
+            logger.warn("Unsupported source", "ResearchUnifiedRoutes", { source });
             errors.push(`Unsupported source: ${source}`);
         }
-      } catch (error: any) {
-        console.error(`Error searching ${source}:`, error);
-        errors.push(`${source}: ${error.message || "Unknown error"}`);
+      } catch (error: unknown) {
+        logger.error("Error searching source", error, "ResearchUnifiedRoutes", { source });
+        errors.push(`${source}: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }
 
-    console.log(`Total results before deduplication: ${allResults.length}`);
+    logger.info("Total results before deduplication", "ResearchUnifiedRoutes", { count: allResults.length });
 
     // Step 3: Combine and deduplicate results using DOIs and PMIDs
     // Create DOI and PMID maps to group identical studies
@@ -511,9 +493,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
       }
     });
 
-    console.log(
-      `After deduplication and unification: ${unifiedResults.length} unique results`,
-    );
+    logger.info("After deduplication and unification", "ResearchUnifiedRoutes", { uniqueResults: unifiedResults.length });
 
     // Step 4: Sort and paginate the results
     // Sort by year (newest first) if available
@@ -542,9 +522,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
       selectedSources.length > 1 ? "unified" : selectedSources[0].toLowerCase();
 
     // Step 7: Prepare and send the response
-    console.log(
-      `Responding with source '${responseSource}' and ${paginatedResults.length} articles`,
-    );
+    logger.info("Responding with search results", "ResearchUnifiedRoutes", { responseSource, articleCount: paginatedResults.length });
 
     const responseObj = {
       success: true,
@@ -559,11 +537,11 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
     };
 
     res.json(responseObj);
-  } catch (error: any) {
-    console.error("Error in unified research search:", error);
+  } catch (error: unknown) {
+    logger.error("Error in unified research search", error, "ResearchUnifiedRoutes");
     res
       .status(500)
-      .json({ error: error.message || "Failed to search research databases" });
+      .json({ error: error instanceof Error ? error.message : "Failed to search research databases" });
   }
 });
 
@@ -672,12 +650,12 @@ router.post(
         message: "Study added to review queue successfully",
         reviewItem: savedReviewItem,
       });
-    } catch (error: any) {
-      console.error("Error adding paper to review queue:", error);
+    } catch (error: unknown) {
+      logger.error("Error adding paper to review queue", error, "ResearchUnifiedRoutes");
       res
         .status(500)
         .json({
-          error: error.message || "Failed to add paper to review queue",
+          error: error instanceof Error ? error.message : "Failed to add paper to review queue",
         });
     }
   },
@@ -706,11 +684,11 @@ router.get(
         success: true,
         data: reviewItems,
       });
-    } catch (error: any) {
-      console.error("Error fetching review queue:", error);
+    } catch (error: unknown) {
+      logger.error("Error fetching review queue", error, "ResearchUnifiedRoutes");
       res
         .status(500)
-        .json({ error: error.message || "Failed to fetch review queue" });
+        .json({ error: error instanceof Error ? error.message : "Failed to fetch review queue" });
     }
   },
 );
@@ -774,10 +752,10 @@ router.put(
             reviewItem: updatedItem,
             study: savedStudy,
           });
-        } catch (importError: any) {
-          console.error("Error importing approved study:", importError);
+        } catch (importError: unknown) {
+          logger.error("Error importing approved study", importError, "ResearchUnifiedRoutes");
           res.status(500).json({
-            error: importError.message || "Failed to import approved study",
+            error: importError instanceof Error ? importError.message : "Failed to import approved study",
             reviewItem: updatedItem, // Still return the updated review item
           });
         }
@@ -789,11 +767,11 @@ router.put(
           reviewItem: updatedItem,
         });
       }
-    } catch (error: any) {
-      console.error("Error updating review queue item:", error);
+    } catch (error: unknown) {
+      logger.error("Error updating review queue item", error, "ResearchUnifiedRoutes");
       res
         .status(500)
-        .json({ error: error.message || "Failed to update review queue item" });
+        .json({ error: error instanceof Error ? error.message : "Failed to update review queue item" });
     }
   },
 );
@@ -817,11 +795,11 @@ router.delete(
         success: true,
         message: "Study removed from review queue",
       });
-    } catch (error: any) {
-      console.error("Error deleting review queue item:", error);
+    } catch (error: unknown) {
+      logger.error("Error deleting review queue item", error, "ResearchUnifiedRoutes");
       res
         .status(500)
-        .json({ error: error.message || "Failed to delete review queue item" });
+        .json({ error: error instanceof Error ? error.message : "Failed to delete review queue item" });
     }
   },
 );
@@ -886,9 +864,9 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
       message: "Study imported successfully",
       study: savedStudy,
     });
-  } catch (error: any) {
-    console.error("Error importing paper:", error);
-    res.status(500).json({ error: error.message || "Failed to import paper" });
+  } catch (error: unknown) {
+    logger.error("Error importing paper", error, "ResearchUnifiedRoutes");
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to import paper" });
   }
 });
 
@@ -925,14 +903,14 @@ router.post("/api/research/pubmed/import", async (req: Request, res: Response) =
     // Optionally enrich with full PubMed data after saving
     if (saved?.id) {
       enrichStudyFromPubMed(saved.id).catch(err =>
-        console.error("Background PubMed enrichment failed:", err)
+        logger.error("Background PubMed enrichment failed", err, "ResearchUnifiedRoutes")
       );
     }
 
     res.json({ success: true, message: "Study imported from PubMed", study: saved });
-  } catch (error: any) {
-    console.error("PubMed import error:", error);
-    res.status(500).json({ error: error.message || "PubMed import failed" });
+  } catch (error: unknown) {
+    logger.error("PubMed import error", error, "ResearchUnifiedRoutes");
+    res.status(500).json({ error: error instanceof Error ? error.message : "PubMed import failed" });
   }
 });
 
@@ -949,9 +927,9 @@ router.post("/api/semantic-scholar/import", async (req: Request, res: Response) 
 
     const saved = await studyService.createStudy(study);
     res.json({ success: true, message: "Study imported from Semantic Scholar", study: saved });
-  } catch (error: any) {
-    console.error("Semantic Scholar import error:", error);
-    res.status(500).json({ error: error.message || "Semantic Scholar import failed" });
+  } catch (error: unknown) {
+    logger.error("Semantic Scholar import error", error, "ResearchUnifiedRoutes");
+    res.status(500).json({ error: error instanceof Error ? error.message : "Semantic Scholar import failed" });
   }
 });
 
@@ -968,9 +946,9 @@ router.post("/api/crossref/import", async (req: Request, res: Response) => {
 
     const saved = await studyService.createStudy(study);
     res.json({ success: true, message: "Study imported from CrossRef", study: saved });
-  } catch (error: any) {
-    console.error("CrossRef import error:", error);
-    res.status(500).json({ error: error.message || "CrossRef import failed" });
+  } catch (error: unknown) {
+    logger.error("CrossRef import error", error, "ResearchUnifiedRoutes");
+    res.status(500).json({ error: error instanceof Error ? error.message : "CrossRef import failed" });
   }
 });
 
@@ -989,9 +967,9 @@ router.get("/api/europepmc/article/:id", async (req: Request, res: Response) => 
     }
 
     res.json(data.resultList.result[0]);
-  } catch (error: any) {
-    console.error("Europe PMC article fetch error:", error);
-    res.status(500).json({ error: error.message || "Failed to fetch article" });
+  } catch (error: unknown) {
+    logger.error("Europe PMC article fetch error", error, "ResearchUnifiedRoutes");
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch article" });
   }
 });
 
@@ -1018,9 +996,9 @@ router.post("/api/europepmc/save", async (req: Request, res: Response) => {
 
     const saved = await studyService.createStudy(study);
     res.json({ success: true, message: "Study imported from Europe PMC", study: saved });
-  } catch (error: any) {
-    console.error("Europe PMC save error:", error);
-    res.status(500).json({ error: error.message || "Europe PMC save failed" });
+  } catch (error: unknown) {
+    logger.error("Europe PMC save error", error, "ResearchUnifiedRoutes");
+    res.status(500).json({ error: error instanceof Error ? error.message : "Europe PMC save failed" });
   }
 });
 
@@ -1040,9 +1018,7 @@ router.get(
       const pageNum = parseInt(page as string);
       const pageSizeNum = parseInt(pageSize as string);
 
-      console.log(
-        `PubMed search: "${query}", page ${pageNum}, size ${pageSizeNum}`,
-      );
+      logger.info("PubMed search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
       const results = await searchPubMedWithPagination(
         query,
@@ -1058,11 +1034,11 @@ router.get(
         page: pageNum,
         pageSize: pageSizeNum,
       });
-    } catch (error: any) {
-      console.error("Error in PubMed search:", error);
+    } catch (error: unknown) {
+      logger.error("Error in PubMed search", error, "ResearchUnifiedRoutes");
       res
         .status(500)
-        .json({ error: error.message || "Failed to search PubMed" });
+        .json({ error: error instanceof Error ? error.message : "Failed to search PubMed" });
     }
   },
 );
@@ -1083,9 +1059,7 @@ router.get(
       const pageNum = parseInt(page as string);
       const pageSizeNum = parseInt(pageSize as string);
 
-      console.log(
-        `Europe PMC search: "${query}", page ${pageNum}, size ${pageSizeNum}`,
-      );
+      logger.info("Europe PMC search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
       const results = await searchEuropePMC(query, pageNum, pageSizeNum);
 
@@ -1097,11 +1071,11 @@ router.get(
         page: pageNum,
         pageSize: pageSizeNum,
       });
-    } catch (error: any) {
-      console.error("Error in Europe PMC search:", error);
+    } catch (error: unknown) {
+      logger.error("Error in Europe PMC search", error, "ResearchUnifiedRoutes");
       res
         .status(500)
-        .json({ error: error.message || "Failed to search Europe PMC" });
+        .json({ error: error instanceof Error ? error.message : "Failed to search Europe PMC" });
     }
   },
 );
@@ -1122,9 +1096,7 @@ router.get(
       const pageNum = parseInt(page as string);
       const pageSizeNum = parseInt(pageSize as string);
 
-      console.log(
-        `CrossRef search: "${query}", page ${pageNum}, size ${pageSizeNum}`,
-      );
+      logger.info("CrossRef search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
       const results = await searchCrossRef(query, pageNum, pageSizeNum);
 
@@ -1136,11 +1108,11 @@ router.get(
         page: pageNum,
         pageSize: pageSizeNum,
       });
-    } catch (error: any) {
-      console.error("Error in CrossRef search:", error);
+    } catch (error: unknown) {
+      logger.error("Error in CrossRef search", error, "ResearchUnifiedRoutes");
       res
         .status(500)
-        .json({ error: error.message || "Failed to search CrossRef" });
+        .json({ error: error instanceof Error ? error.message : "Failed to search CrossRef" });
     }
   },
 );
@@ -1161,9 +1133,7 @@ router.get(
       const pageNum = parseInt(page as string);
       const pageSizeNum = parseInt(pageSize as string);
 
-      console.log(
-        `Semantic Scholar search: "${query}", page ${pageNum}, size ${pageSizeNum}`,
-      );
+      logger.info("Semantic Scholar search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
       const results = await searchSemanticScholar(
         query,
@@ -1179,11 +1149,11 @@ router.get(
         page: pageNum,
         pageSize: pageSizeNum,
       });
-    } catch (error: any) {
-      console.error("Error in Semantic Scholar search:", error);
+    } catch (error: unknown) {
+      logger.error("Error in Semantic Scholar search", error, "ResearchUnifiedRoutes");
       res
         .status(500)
-        .json({ error: error.message || "Failed to search Semantic Scholar" });
+        .json({ error: error instanceof Error ? error.message : "Failed to search Semantic Scholar" });
     }
   },
 );
@@ -1197,11 +1167,11 @@ router.post("/api/research/schedule", async (req: Request, res: Response) => {
     res
       .status(501)
       .json({ message: "Scheduled searches are not yet implemented" });
-  } catch (error: any) {
-    console.error("Error scheduling search:", error);
+  } catch (error: unknown) {
+    logger.error("Error scheduling search", error, "ResearchUnifiedRoutes");
     res
       .status(500)
-      .json({ error: error.message || "Failed to schedule search" });
+      .json({ error: error instanceof Error ? error.message : "Failed to schedule search" });
   }
 });
 
@@ -1246,7 +1216,7 @@ router.put(
       // If approved, create the study and generate all content
       if (status === "approved") {
         try {
-          console.log(`Processing approved study: ${reviewItem.title}`);
+          logger.info("Processing approved study", "ResearchUnifiedRoutes", { title: reviewItem.title });
 
           // 1. Create the study in the main database
           const study = {
@@ -1264,7 +1234,7 @@ router.put(
           };
 
           const createdStudy = await studyService.createStudy(study);
-          console.log(`Study created with ID: ${createdStudy.id}`);
+          logger.info("Study created", "ResearchUnifiedRoutes", { studyId: createdStudy.id });
 
           // Import enrichment modules dynamically to avoid circular dependencies
           const [
@@ -1282,20 +1252,17 @@ router.put(
           ]);
 
           // 2. Enrich the study content (6th grade reading level)
-          console.log("Starting content enrichment...");
+          logger.info("Starting content enrichment", "ResearchUnifiedRoutes");
           const enrichmentResult = await enrichStudyContent(createdStudy.id);
 
           if (enrichmentResult.success) {
-            console.log("Content enrichment completed successfully");
+            logger.info("Content enrichment completed successfully", "ResearchUnifiedRoutes");
           } else {
-            console.warn(
-              "Content enrichment had issues:",
-              enrichmentResult.message,
-            );
+            logger.warn("Content enrichment had issues", "ResearchUnifiedRoutes", { message: enrichmentResult.message });
           }
 
           // 3. Generate 7-10 blog posts (parallel generation for efficiency)
-          console.log("Generating blog articles...");
+          logger.info("Generating blog articles", "ResearchUnifiedRoutes");
           const blogGenerationPromise = generateBlogArticlesForStudy(
             createdStudy,
             {
@@ -1305,7 +1272,7 @@ router.put(
           );
 
           // 4. Generate 2 scientific articles
-          console.log("Generating scientific articles...");
+          logger.info("Generating scientific articles", "ResearchUnifiedRoutes");
           const scientificGenerationPromise =
             generateScientificArticlesForStudy(
               createdStudy,
@@ -1315,36 +1282,36 @@ router.put(
             );
 
           // 5. Generate study image using DALL-E
-          console.log("Generating study image...");
+          logger.info("Generating study image", "ResearchUnifiedRoutes");
           const imageGenerationPromise = generateStudyImage(createdStudy.id);
 
           // 6. Auto-tag and categorize for SEO
-          console.log("Auto-tagging study...");
+          logger.info("Auto-tagging study", "ResearchUnifiedRoutes");
           const taggingPromise = autoTagStudy(createdStudy.id);
 
           // Execute all content generation in parallel
           const [blogResult, scientificResult, imageResult, tagResult] =
             await Promise.all([
               blogGenerationPromise.catch((error) => {
-                console.error("Blog generation failed:", error);
+                logger.error("Blog generation failed", error, "ResearchUnifiedRoutes");
                 return {
                   articles: [],
                   errors: [{ type: "blog", error: error.message }],
                 };
               }),
               scientificGenerationPromise.catch((error) => {
-                console.error("Scientific article generation failed:", error);
+                logger.error("Scientific article generation failed", error, "ResearchUnifiedRoutes");
                 return {
                   articles: [],
                   errors: [{ type: "scientific", error: error.message }],
                 };
               }),
               imageGenerationPromise.catch((error) => {
-                console.error("Image generation failed:", error);
+                logger.error("Image generation failed", error, "ResearchUnifiedRoutes");
                 return { success: false, error: error.message };
               }),
               taggingPromise.catch((error) => {
-                console.error("Auto-tagging failed:", error);
+                logger.error("Auto-tagging failed", error, "ResearchUnifiedRoutes");
                 return { success: false, error: error.message };
               }),
             ]);
@@ -1360,11 +1327,11 @@ router.put(
               generated: scientificResult.articles?.length || 0,
               errors: scientificResult.errors?.length || 0,
             },
-            image: (imageResult as any).success ? "Generated" : "Failed",
-            tags: (tagResult as any).success !== false ? "Applied" : "Failed",
+            image: (imageResult as Record<string, unknown>).success ? "Generated" : "Failed",
+            tags: (tagResult as Record<string, unknown>).success !== false ? "Applied" : "Failed",
           };
 
-          console.log("Content generation summary:", generationSummary);
+          logger.info("Content generation summary", "ResearchUnifiedRoutes", generationSummary);
 
           res.json({
             success: true,
@@ -1373,15 +1340,15 @@ router.put(
             study: createdStudy,
             contentGeneration: generationSummary,
           });
-        } catch (error: any) {
-          console.error("Error processing approved study:", error);
+        } catch (error: unknown) {
+          logger.error("Error processing approved study", error, "ResearchUnifiedRoutes");
 
           // Still mark as approved but note the error
           res.json({
             success: true,
             message: "Study approved but content generation had issues",
             reviewItem: updatedItem,
-            error: error.message || "Content generation partially failed",
+            error: error instanceof Error ? error.message : "Content generation partially failed",
           });
         }
       } else {
@@ -1392,10 +1359,10 @@ router.put(
           reviewItem: updatedItem,
         });
       }
-    } catch (error: any) {
-      console.error("Error updating review status:", error);
+    } catch (error: unknown) {
+      logger.error("Error updating review status", error, "ResearchUnifiedRoutes");
       res.status(500).json({
-        error: error.message || "Failed to update review status",
+        error: error instanceof Error ? error.message : "Failed to update review status",
       });
     }
   },

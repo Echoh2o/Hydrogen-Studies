@@ -555,7 +555,7 @@ const EnhancedAdminDashboard: React.FC = () => {
                           Edit
                         </Button>
                         <Button variant="outline" size="sm" asChild>
-                          <Link href={`/studies/${study.id}`}>
+                          <Link href={`/study/id/${study.id}`}>
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Link>

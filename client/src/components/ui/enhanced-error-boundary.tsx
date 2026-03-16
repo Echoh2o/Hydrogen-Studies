@@ -84,6 +84,19 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
   private reportErrorToService(error: Error, errorInfo: ErrorInfo) {
     trackError(error, `ErrorBoundary${errorInfo.componentStack ? " | " + errorInfo.componentStack.split("\n")[1]?.trim() : ""}`);
+    // Send to error tracking service (e.g., Sentry, LogRocket)
+    // This is a placeholder - implement actual service integration
+    const errorReport = {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
+    };
+
+    // TODO: Replace with actual service call (e.g., Sentry)
+    // Error report is prepared but not yet sent to an external service
   }
 
   private handleRetry = () => {

@@ -6,7 +6,11 @@
  *   1. npm install @sentry/react
  *   2. Set VITE_SENTRY_DSN in environment
  *   3. The tracker auto-detects and uses Sentry alongside server reporting
+ * Uses Sentry in production when VITE_SENTRY_DSN is set.
+ * Falls back to server beacon reporting.
  */
+
+import * as Sentry from "@sentry/react";
 
 interface ErrorReport {
   message: string;
@@ -54,6 +58,7 @@ function initSentry(): void {
 }
 
 /** Report an error to the server (and Sentry if available) */
+/** Report an error to the server (fallback when Sentry not configured) */
 async function reportError(report: ErrorReport): Promise<void> {
   if (errorsReported >= MAX_ERRORS_PER_SESSION) return;
   errorsReported++;
@@ -68,7 +73,6 @@ async function reportError(report: ErrorReport): Promise<void> {
   }
 
   try {
-    // Send to server error reporting endpoint (non-blocking)
     navigator.sendBeacon?.(
       "/api/client-errors",
       JSON.stringify(report),
@@ -84,6 +88,14 @@ export function initErrorTracking(): void {
 
   // Initialize Sentry if DSN is configured
   initSentry();
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (dsn) {
+    Sentry.init({
+      dsn,
+      environment: import.meta.env.MODE,
+      tracesSampleRate: 0.1,
+    });
+  }
 
   window.addEventListener("error", (event) => {
     reportError({
@@ -112,6 +124,10 @@ export function initErrorTracking(): void {
 
 /** Manually track an error (e.g., from error boundaries) */
 export function trackError(error: Error, context?: string): void {
+  // Send to Sentry if available
+  Sentry.captureException(error, { tags: { context: context || "unknown" } });
+
+  // Also send to server beacon as fallback
   reportError({
     message: `${context ? `[${context}] ` : ""}${error.message}`,
     stack: error.stack,

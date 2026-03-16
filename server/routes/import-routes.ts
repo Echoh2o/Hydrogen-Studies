@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import multer from "multer";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { studyService } from "../services/study-service";
 import { InsertStudy } from "@shared/schema";
 import path from "path";
@@ -40,61 +40,77 @@ function cleanupTempFile(filePath: string) {
   }
 }
 
-// Helper function to process Excel/CSV data
-function processExcelData(workbook: XLSX.WorkBook): InsertStudy[] {
-  try {
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet);
+// Helper function to convert an ExcelJS worksheet to an array of row objects
+function worksheetToJson(worksheet: ExcelJS.Worksheet): Record<string, any>[] {
+  const rows: Record<string, any>[] = [];
+  const headers: string[] = [];
 
-    const studies: InsertStudy[] = data.map((row: any) => {
-      // Map fields from Excel/CSV columns to database schema
-      return {
-        title: row.Title || row.title || "",
-        abstract: row.Abstract || row.abstract || "",
-        authors:
-          row.Authors ||
-          row.authors ||
-          row["First Author"] ||
-          row.firstAuthor ||
-          "",
-        journal: row.Journal || row.journal || "",
-        publishDate:
-          row["Publish Date"] ||
-          row.publishDate ||
-          row.Year ||
-          row.year ||
-          new Date().toISOString(),
-        doi: row.DOI || row.doi || "",
-        category:
-          row.Category ||
-          row.category ||
-          row["Primary Topic"] ||
-          row.primaryTopic ||
-          "General",
-        methods: row.Methods || row.methods || "",
-        results: row.Results || row.results || "",
-        conclusion: row.Conclusion || row.conclusion || "",
-        keyFindings: row["Key Findings"] || row.keyFindings || "",
-        healthConditions:
-          row["Health Conditions"] || row.healthConditions || "",
-        bodySystems: row["Body Systems"] || row.bodySystems || "",
-        sampleSize: row["Sample Size"] || row.sampleSize || "",
-        imageUrl: row["Image URL"] || row.imageUrl || "",
-        pdfUrl: row["PDF URL"] || row.pdfUrl || "",
-        status: "published",
-        studyType: row["Study Type"] || row.studyType || "clinical",
-        country: row.Country || row.country || "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    });
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      // First row is headers
+      row.eachCell((cell, colNumber) => {
+        headers[colNumber] = String(cell.value || "").trim();
+      });
+    } else {
+      const obj: Record<string, any> = {};
+      row.eachCell((cell, colNumber) => {
+        const header = headers[colNumber];
+        if (header) {
+          obj[header] = cell.value;
+        }
+      });
+      if (Object.keys(obj).length > 0) {
+        rows.push(obj);
+      }
+    }
+  });
 
-    return studies;
-  } catch (error) {
-    console.error("Error processing Excel data:", error);
-    throw error;
-  }
+  return rows;
+}
+
+// Helper function to process workbook data
+function processWorkbookData(data: Record<string, any>[]): InsertStudy[] {
+  return data.map((row: any) => ({
+    title: String(row.Title || row.title || ""),
+    abstract: String(row.Abstract || row.abstract || ""),
+    authors: String(
+      row.Authors ||
+        row.authors ||
+        row["First Author"] ||
+        row.firstAuthor ||
+        "",
+    ),
+    journal: String(row.Journal || row.journal || ""),
+    publishDate: String(
+      row["Publish Date"] ||
+        row.publishDate ||
+        row.Year ||
+        row.year ||
+        new Date().toISOString(),
+    ),
+    doi: String(row.DOI || row.doi || ""),
+    category: String(
+      row.Category ||
+        row.category ||
+        row["Primary Topic"] ||
+        row.primaryTopic ||
+        "General",
+    ),
+    methods: String(row.Methods || row.methods || ""),
+    results: String(row.Results || row.results || ""),
+    conclusion: String(row.Conclusion || row.conclusion || ""),
+    keyFindings: String(row["Key Findings"] || row.keyFindings || ""),
+    healthConditions: String(row["Health Conditions"] || row.healthConditions || "").split(",").map((s: string) => s.trim()).filter(Boolean),
+    bodySystems: String(row["Body Systems"] || row.bodySystems || "").split(",").map((s: string) => s.trim()).filter(Boolean),
+    sampleSize: parseInt(row["Sample Size"] || row.sampleSize || "0") || undefined,
+    imageUrl: String(row["Image URL"] || row.imageUrl || ""),
+    pdfUrl: String(row["PDF URL"] || row.pdfUrl || ""),
+    status: "published",
+    studyType: String(row["Study Type"] || row.studyType || "clinical"),
+    country: String(row.Country || row.country || ""),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }));
 }
 
 // Excel import route
@@ -111,8 +127,13 @@ router.post(
     const filePath = req.file.path;
 
     try {
-      const workbook = XLSX.readFile(filePath);
-      const studies = processExcelData(workbook);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) throw new Error("No worksheet found in file");
+
+      const data = worksheetToJson(worksheet);
+      const studies = processWorkbookData(data);
 
       // Import studies to database
       const results = await importStudiesToDatabase(studies);
@@ -156,8 +177,13 @@ router.post(
     const filePath = req.file.path;
 
     try {
-      const workbook = XLSX.readFile(filePath, { type: "file" });
-      const studies = processExcelData(workbook);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.csv.readFile(filePath);
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) throw new Error("No worksheet found in CSV");
+
+      const data = worksheetToJson(worksheet);
+      const studies = processWorkbookData(data);
 
       // Import studies to database
       const results = await importStudiesToDatabase(studies);
@@ -229,10 +255,27 @@ router.post("/googlesheet", async (req: Request, res: Response) => {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    let workbook;
     try {
       fs.writeFileSync(tempFilePath, Buffer.from(response.data));
-      workbook = XLSX.readFile(tempFilePath);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.csv.readFile(tempFilePath);
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) throw new Error("No worksheet found in Google Sheet CSV");
+
+      const data = worksheetToJson(worksheet);
+      const studies = processWorkbookData(data);
+
+      // Import studies to database
+      const results = await importStudiesToDatabase(studies);
+
+      // Clean up temp file
+      cleanupTempFile(tempFilePath);
+
+      return res.json({
+        total: studies.length,
+        ...results,
+        success: true,
+      });
     } catch (fileErr) {
       cleanupTempFile(tempFilePath);
       return res.status(500).json({
@@ -240,20 +283,6 @@ router.post("/googlesheet", async (req: Request, res: Response) => {
         message: `File processing failed: ${fileErr instanceof Error ? fileErr.message : "Unknown error"}`,
       });
     }
-
-    const studies = processExcelData(workbook);
-
-    // Import studies to database
-    const results = await importStudiesToDatabase(studies);
-
-    // Clean up temp file
-    cleanupTempFile(tempFilePath);
-
-    return res.json({
-      total: studies.length,
-      ...results,
-      success: true,
-    });
   } catch (error) {
     console.error("Google Sheet import error:", error);
 

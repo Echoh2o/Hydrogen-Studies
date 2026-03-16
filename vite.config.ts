@@ -16,21 +16,21 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist", "public"),
     emptyOutDir: true,
     sourcemap: false,
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom"],
-          router: ["wouter"],
-          query: ["@tanstack/react-query"],
-          ui: [
-            "@radix-ui/react-slot",
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-select",
-            "@radix-ui/react-collapsible",
-            "@radix-ui/react-tooltip",
-          ],
-          icons: ["lucide-react"],
-          charts: ["recharts"],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react-dom")) return "vendor";
+            if (id.includes("react/")) return "vendor";
+            if (id.includes("wouter")) return "router";
+            if (id.includes("@tanstack/react-query")) return "query";
+            if (id.includes("@radix-ui/")) return "ui";
+            if (id.includes("lucide-react")) return "icons";
+            if (id.includes("recharts")) return "charts";
+            if (id.includes("framer-motion")) return "animation";
+            if (id.includes("dompurify") || id.includes("react-helmet")) return "seo";
+          }
         },
       },
     },

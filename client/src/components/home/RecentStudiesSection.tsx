@@ -15,11 +15,8 @@ const RecentStudiesSection = () => {
     isLoading,
     error,
   } = useQuery<Study[]>({
-    queryKey: ["/api/recent-studies"],
+    queryKey: ["/api/studies/latest"],
   });
-
-  // Debug log to check actual data structure
-  console.log("Recent studies data:", recentStudies);
 
   // If loading, show a loading state with placeholder cards
   if (isLoading) {

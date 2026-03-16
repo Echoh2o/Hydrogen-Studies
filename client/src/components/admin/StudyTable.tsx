@@ -147,7 +147,7 @@ export default function StudyTable({ searchQuery = "" }: StudyTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/study/${(study as any).slug || study.id}`}>
+                          <Link href={(study as any).slug ? `/study/${(study as any).slug}` : `/study/id/${study.id}`}>
                             <a className="flex items-center cursor-pointer">
                               <Eye className="h-4 w-4 mr-2" />
                               View

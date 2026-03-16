@@ -100,7 +100,7 @@ export function EnhancedStudyCard({
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2">
                 <Link
-                  href={`/study/${study.id}`}
+                  href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}
                   className="hover:text-teal-600"
                 >
                   {study.title}
@@ -154,7 +154,7 @@ export function EnhancedStudyCard({
 
               <CardTitle className="text-xl font-bold text-gray-900 leading-tight mb-3">
                 <Link
-                  href={`/study/${study.slug || study.id}`}
+                  href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}
                   className="hover:text-teal-600 transition-colors"
                 >
                   {study.seoTitle || study.title}
@@ -290,7 +290,7 @@ export function EnhancedStudyCard({
 
           {/* Action Button */}
           <div className="flex justify-between items-center">
-            <Link href={`/study/${study.id}`}>
+            <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
               <button className="btn-primary">
                 Read Full Study
               </button>
@@ -330,7 +330,7 @@ export function EnhancedStudyCard({
 
             <CardTitle className="text-lg font-semibold text-gray-900 leading-tight mb-2">
               <Link
-                href={`/study/${study.slug || study.id}`}
+                href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}
                 className="hover:text-teal-600 transition-colors"
               >
                 {study.title}
@@ -415,7 +415,7 @@ export function EnhancedStudyCard({
 
         {/* Footer */}
         <div className="flex justify-between items-center">
-          <Link href={`/study/${study.id}`}>
+          <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
             <Button variant="default" size="sm">
               View Study
             </Button>

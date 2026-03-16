@@ -13,6 +13,10 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// ============================================================
+// ENUMS & CONSTANTS
+// ============================================================
+
 // Consumer-friendly categorization model
 export enum CategorizationModel {
   CONDITION = "condition",
@@ -27,6 +31,10 @@ export enum UserRole {
   CUSTOMER = "customer",
   VISITOR = "visitor",
 }
+
+// ============================================================
+// USER & AUTH TABLES (users, sessions, audit, preferences)
+// ============================================================
 
 // Users table schema - Enhanced for authentication
 export const users = pgTable(
@@ -224,6 +232,10 @@ export const userBlogInteractions = pgTable(
   },
 );
 
+// ============================================================
+// STUDY & RESEARCH TABLES (studies, categories, collections)
+// ============================================================
+
 // Studies table schema
 export const studies = pgTable(
   "studies",
@@ -353,6 +365,11 @@ export const studies = pgTable(
       lastModifiedIdx: index("studies_last_modified_idx").on(
         table.lastModified,
       ),
+      // Additional performance indexes for filtered queries
+      countryIdx: index("studies_country_idx").on(table.country),
+      peerReviewedIdx: index("studies_peer_reviewed_idx").on(table.peerReviewed),
+      studyTypeIdx: index("studies_study_type_idx").on(table.studyType),
+      publishDateIdx: index("studies_publish_date_idx").on(table.publishDate),
     };
   },
 );
@@ -469,6 +486,10 @@ export const collectionStudies = pgTable(
   },
 );
 
+// ============================================================
+// CONTENT & COMMUNICATION TABLES (newsletters, blogs, FAQ, etc.)
+// ============================================================
+
 // Newsletter subscriptions table schema
 export const newsletters = pgTable("newsletters", {
   id: serial("id").primaryKey(),
@@ -523,6 +544,10 @@ export const contactMessages = pgTable("contact_messages", {
   message: text("message").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// ============================================================
+// SEO & ANALYTICS TABLES (metadata, keyword tracking, smart links)
+// ============================================================
 
 // SEO Metadata table for centralized SEO management
 export const seoMetadata = pgTable(
@@ -2128,3 +2153,158 @@ export const seoContentClusters = pgTable("seo_content_clusters", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// ============================================================
+// Research Intelligence Pipeline Tables
+// ============================================================
+
+// Pipeline queue — items queued for AI processing
+export const pipelineQueue = pgTable(
+  "pipeline_queue",
+  {
+    id: serial("id").primaryKey(),
+    doi: text("doi"),
+    title: text("title").notNull(),
+    authors: text("authors"),
+    journal: text("journal"),
+    publishDate: text("publish_date"),
+    abstract: text("abstract"),
+    sourceUrl: text("source_url"),
+    sourcePlatform: text("source_platform"), // crossref | europepmc
+    // Processing state
+    status: text("status").notNull().default("pending"), // pending | processing | completed | failed
+    currentStep: integer("current_step").notNull().default(0), // 0-5 (AI pipeline steps)
+    stepResults: text("step_results").notNull().default("{}"), // JSON: accumulated results from each step
+    // Output
+    createdStudyId: integer("created_study_id").references(() => studies.id),
+    // Error tracking
+    errorMessage: text("error_message"),
+    retryCount: integer("retry_count").notNull().default(0),
+    maxRetries: integer("max_retries").notNull().default(3),
+    // Discovery run reference
+    discoveryRunId: integer("discovery_run_id"),
+    // Timestamps
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    processedAt: timestamp("processed_at"),
+  },
+  (table) => {
+    return {
+      statusIdx: index("pipeline_queue_status_idx").on(table.status),
+      doiIdx: index("pipeline_queue_doi_idx").on(table.doi),
+      createdAtIdx: index("pipeline_queue_created_at_idx").on(table.createdAt),
+    };
+  },
+);
+
+export const insertPipelineQueueSchema = createInsertSchema(pipelineQueue).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type PipelineQueueItem = typeof pipelineQueue.$inferSelect;
+export type InsertPipelineQueueItem = z.infer<typeof insertPipelineQueueSchema>;
+
+// Discovery runs — history of each research discovery run
+export const discoveryRuns = pgTable(
+  "discovery_runs",
+  {
+    id: serial("id").primaryKey(),
+    source: text("source").notNull(), // crossref | europepmc | both
+    queries: text("queries").notNull().default("[]"), // JSON array of queries used
+    foundCount: integer("found_count").notNull().default(0),
+    newCount: integer("new_count").notNull().default(0),
+    duplicateCount: integer("duplicate_count").notNull().default(0),
+    queuedCount: integer("queued_count").notNull().default(0),
+    durationMs: integer("duration_ms"),
+    status: text("status").notNull().default("running"), // running | completed | failed
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      createdAtIdx: index("discovery_runs_created_at_idx").on(table.createdAt),
+      statusIdx: index("discovery_runs_status_idx").on(table.status),
+    };
+  },
+);
+
+export const insertDiscoveryRunSchema = createInsertSchema(discoveryRuns).omit({
+  id: true,
+  createdAt: true,
+});
+export type DiscoveryRun = typeof discoveryRuns.$inferSelect;
+export type InsertDiscoveryRun = z.infer<typeof insertDiscoveryRunSchema>;
+
+// Study citations — real citation relationships between studies
+export const studyCitations = pgTable(
+  "study_citations",
+  {
+    id: serial("id").primaryKey(),
+    fromStudyId: integer("from_study_id")
+      .notNull()
+      .references(() => studies.id, { onDelete: "cascade" }),
+    toStudyId: integer("to_study_id")
+      .references(() => studies.id, { onDelete: "cascade" }),
+    toDoi: text("to_doi"), // external DOI if not in our database
+    toTitle: text("to_title"), // external title for display
+    direction: text("direction").notNull(), // cites | cited_by
+    source: text("source").notNull().default("crossref"), // crossref | europepmc | manual
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      fromStudyIdx: index("study_citations_from_idx").on(table.fromStudyId),
+      toStudyIdx: index("study_citations_to_idx").on(table.toStudyId),
+      toDoiIdx: index("study_citations_to_doi_idx").on(table.toDoi),
+    };
+  },
+);
+
+export const insertStudyCitationSchema = createInsertSchema(studyCitations).omit({
+  id: true,
+  createdAt: true,
+});
+export type StudyCitation = typeof studyCitations.$inferSelect;
+export type InsertStudyCitation = z.infer<typeof insertStudyCitationSchema>;
+
+// Research digests — weekly summary content
+export const researchDigests = pgTable(
+  "research_digests",
+  {
+    id: serial("id").primaryKey(),
+    weekStart: text("week_start").notNull(), // ISO date string for the Monday
+    weekEnd: text("week_end").notNull(), // ISO date string for the Sunday
+    title: text("title").notNull(),
+    slug: text("slug").notNull().unique(),
+    narrative: text("narrative").notNull(), // Full HTML content
+    narrativeMarkdown: text("narrative_markdown"), // Markdown version
+    trendingTopics: text("trending_topics").notNull().default("[]"), // JSON array of topic strings
+    notableFindings: text("notable_findings").notNull().default("[]"), // JSON array of { studyId, title, finding }
+    studyCount: integer("study_count").notNull().default(0),
+    studyIds: text("study_ids").notNull().default("[]"), // JSON array of study IDs included
+    // SEO
+    metaTitle: text("meta_title"),
+    metaDescription: text("meta_description"),
+    // Status
+    isPublished: boolean("is_published").notNull().default(false),
+    publishedAt: timestamp("published_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      slugIdx: index("research_digests_slug_idx").on(table.slug),
+      weekStartIdx: index("research_digests_week_start_idx").on(table.weekStart),
+      publishedIdx: index("research_digests_published_idx").on(table.isPublished),
+    };
+  },
+);
+
+export const insertResearchDigestSchema = createInsertSchema(researchDigests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type ResearchDigest = typeof researchDigests.$inferSelect;
+export type InsertResearchDigest = z.infer<typeof insertResearchDigestSchema>;

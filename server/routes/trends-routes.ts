@@ -3,6 +3,7 @@
  */
 
 import express from "express";
+import { logger } from "../utils/logger";
 import { trendDetectionService } from "../services/trend-detection-service";
 import { db } from "../db";
 import {
@@ -49,7 +50,7 @@ router.get("/emerging-topics", async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error("Error fetching emerging topics:", error);
+    logger.error("Error fetching emerging topics", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch emerging topics",
       message: error instanceof Error ? error.message : String(error),
@@ -90,7 +91,7 @@ router.get("/breakthrough-studies", async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error("Error fetching breakthrough studies:", error);
+    logger.error("Error fetching breakthrough studies", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch breakthrough studies",
       message: error instanceof Error ? error.message : String(error),
@@ -140,7 +141,7 @@ router.get("/momentum", async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error("Error fetching research momentum:", error);
+    logger.error("Error fetching research momentum", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch research momentum",
       message: error instanceof Error ? error.message : String(error),
@@ -182,7 +183,7 @@ router.get("/keyword-trends", async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error("Error fetching keyword trends:", error);
+    logger.error("Error fetching keyword trends", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch keyword trends",
       message: error instanceof Error ? error.message : String(error),
@@ -254,6 +255,29 @@ router.get("/report", async (req, res) => {
         period as "weekly" | "monthly" | "quarterly",
       );
 
+      // If generation failed, return empty report without saving
+      if ((report as any).status === "failed") {
+        return res.json({
+          success: true,
+          cached: false,
+          report: {
+            id: 0,
+            period,
+            periodStart: (report as any).periodStart,
+            periodEnd: (report as any).periodEnd,
+            emergingTopics: [],
+            breakthroughStudies: [],
+            momentum: { accelerating: [], declining: [], stable: [] },
+            keywordTrends: [],
+            summary: "No trend data available for this period. Try running an analysis or selecting a longer time range.",
+            insights: [],
+            recommendations: ["Add more studies to generate meaningful trend analysis"],
+            metrics: { totalStudiesAnalyzed: 0, newStudiesCount: 0, avgCitationCount: 0, topResearchAreas: [] },
+            generatedAt: new Date().toISOString(),
+          },
+        });
+      }
+
       // Save to database
       const [savedReport] = await db
         .insert(trendAnalysis)
@@ -298,7 +322,7 @@ router.get("/report", async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error generating trend report:", error);
+    logger.error("Error generating trend report", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to generate trend report",
       message: error instanceof Error ? error.message : String(error),
@@ -349,13 +373,13 @@ router.post("/analyze", async (req, res) => {
     // Continue processing in background
     analysisPromise
       .then((result) => {
-        console.log(`Analysis completed: ${result.id}`);
+        logger.info("Analysis completed", "TrendsRoutes", { analysisId: result.id });
       })
       .catch((error) => {
-        console.error("Background analysis failed:", error);
+        logger.error("Background analysis failed", error, "TrendsRoutes");
       });
   } catch (error) {
-    console.error("Error triggering analysis:", error);
+    logger.error("Error triggering analysis", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to trigger analysis",
       message: error instanceof Error ? error.message : String(error),
@@ -388,7 +412,7 @@ router.get("/status", async (req, res) => {
       analyses: latestAnalyses,
     });
   } catch (error) {
-    console.error("Error fetching analysis status:", error);
+    logger.error("Error fetching analysis status", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch analysis status",
       message: error instanceof Error ? error.message : String(error),
@@ -433,7 +457,7 @@ router.get("/alerts", async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error("Error fetching alerts:", error);
+    logger.error("Error fetching alerts", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch alerts",
       message: error instanceof Error ? error.message : String(error),
@@ -470,7 +494,7 @@ router.put("/alerts/:id/acknowledge", async (req, res) => {
       alert: updated,
     });
   } catch (error) {
-    console.error("Error acknowledging alert:", error);
+    logger.error("Error acknowledging alert", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to acknowledge alert",
       message: error instanceof Error ? error.message : String(error),
@@ -496,7 +520,7 @@ router.get("/search-queries", async (req, res) => {
       queries,
     });
   } catch (error) {
-    console.error("Error fetching search queries:", error);
+    logger.error("Error fetching search queries", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch search queries",
       message: error instanceof Error ? error.message : String(error),
@@ -530,7 +554,7 @@ router.post("/track-search", async (req, res) => {
       message: "Search query tracked",
     });
   } catch (error) {
-    console.error("Error tracking search query:", error);
+    logger.error("Error tracking search query", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to track search query",
       message: error instanceof Error ? error.message : String(error),
@@ -559,7 +583,7 @@ router.post("/track-metrics", async (req, res) => {
       message: "Metrics tracked",
     });
   } catch (error) {
-    console.error("Error tracking metrics:", error);
+    logger.error("Error tracking metrics", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to track metrics",
       message: error instanceof Error ? error.message : String(error),
@@ -612,7 +636,7 @@ router.get("/study-metrics/:id", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching study metrics:", error);
+    logger.error("Error fetching study metrics", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch study metrics",
       message: error instanceof Error ? error.message : String(error),
@@ -682,7 +706,7 @@ router.get("/dashboard", async (req, res) => {
       dashboard: dashboardData,
     });
   } catch (error) {
-    console.error("Error fetching dashboard data:", error);
+    logger.error("Error fetching dashboard data", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch dashboard data",
       message: error instanceof Error ? error.message : String(error),

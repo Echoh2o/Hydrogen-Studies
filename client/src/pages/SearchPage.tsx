@@ -357,7 +357,7 @@ export default function SearchPage() {
             <div className="space-y-6">
               {/* Local study results */}
               {studies.map((study) => (
-                <Link key={study.id} href={`/study/${study.id}`}>
+                <Link key={study.id} href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50">
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-4">

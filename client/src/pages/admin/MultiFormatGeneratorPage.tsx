@@ -689,7 +689,7 @@ function ContentPreview({ content }: { content: any }) {
             {content.podcastQA && (
               <div>
                 <h3 className="font-medium mb-2">Q&A Segment</h3>
-                {JSON.parse(content.podcastQA).map((qa: any, index: number) => (
+                {((() => { try { return JSON.parse(content.podcastQA); } catch (e) { console.warn("Failed to parse podcastQA", e); return []; } })()).map((qa: any, index: number) => (
                   <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
                     <p className="font-medium">Q: {qa.question}</p>
                     <p className="mt-1">A: {qa.answer}</p>
@@ -723,7 +723,7 @@ function ContentPreview({ content }: { content: any }) {
               <div>
                 <h3 className="font-medium mb-2">Key Statistics</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {JSON.parse(content.keyStatistics).map(
+                  {((() => { try { return JSON.parse(content.keyStatistics); } catch (e) { console.warn("Failed to parse keyStatistics", e); return []; } })()).map(
                     (stat: any, index: number) => (
                       <div key={index} className="p-3 bg-teal-50 rounded">
                         <p className="text-2xl font-bold text-teal-600">
@@ -746,7 +746,7 @@ function ContentPreview({ content }: { content: any }) {
             {content.threadContent ? (
               <div>
                 <h3 className="font-medium mb-2">Thread</h3>
-                {JSON.parse(content.threadContent).map(
+                {((() => { try { return JSON.parse(content.threadContent); } catch (e) { console.warn("Failed to parse threadContent", e); return []; } })()).map(
                   (tweet: string, index: number) => (
                     <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
                       <p className="text-sm text-gray-500 mb-1">
@@ -765,8 +765,8 @@ function ContentPreview({ content }: { content: any }) {
             )}
             {content.hashtags && (
               <div className="flex flex-wrap gap-2 mt-3">
-                {content.hashtags.map((tag: string, index: number) => (
-                  <Badge key={index} variant="secondary">
+                {content.hashtags.map((tag: string) => (
+                  <Badge key={tag} variant="secondary">
                     #{tag}
                   </Badge>
                 ))}
@@ -788,7 +788,7 @@ function ContentPreview({ content }: { content: any }) {
             {content.videoStoryboard && (
               <div>
                 <h3 className="font-medium mb-2">Storyboard</h3>
-                {JSON.parse(content.videoStoryboard).map(
+                {((() => { try { return JSON.parse(content.videoStoryboard); } catch (e) { console.warn("Failed to parse videoStoryboard", e); return []; } })()).map(
                   (scene: any, index: number) => (
                     <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
                       <p className="font-medium">

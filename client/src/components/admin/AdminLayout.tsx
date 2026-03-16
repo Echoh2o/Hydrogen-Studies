@@ -29,6 +29,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Workflow,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -65,6 +66,7 @@ export default function AdminLayout({
         { href: "/admin/studies", label: "Manage Studies", icon: Database },
         { href: "/admin/research-import", label: "Find New Studies", icon: Search },
         { href: "/admin/research-database", label: "Research Database", icon: BookOpen },
+        { href: "/admin/pipeline", label: "Research Pipeline", icon: Workflow },
       ],
     },
     {
