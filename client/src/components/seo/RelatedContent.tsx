@@ -30,10 +30,13 @@ export default function RelatedContent({ contentType, contentId, className }: Re
     enabled: !!contentId,
   });
 
-  if (isLoading || !links || links.length === 0) return null;
+  // API may return { success: true, data: [...] } or an array directly
+  const linksArray: RelatedLink[] = Array.isArray(links) ? links : Array.isArray((links as any)?.data) ? (links as any).data : [];
 
-  const studyLinks = links.filter((l) => l.type === "study");
-  const blogLinks = links.filter((l) => l.type === "blog");
+  if (isLoading || linksArray.length === 0) return null;
+
+  const studyLinks = linksArray.filter((l) => l.type === "study");
+  const blogLinks = linksArray.filter((l) => l.type === "blog");
 
   return (
     <Card className={className}>

@@ -74,6 +74,7 @@ export default function SEOContentStrategyPage() {
   const queryClient = useQueryClient();
   const [expandedCluster, setExpandedCluster] = useState<number | null>(null);
   const [generatingCluster, setGeneratingCluster] = useState<number | null>(null);
+  const [generatingPillar, setGeneratingPillar] = useState<number | null>(null);
 
   const overviewQuery = useQuery<StrategyOverview>({
     queryKey: ["/api/seo/keyword-strategy/overview"],
@@ -94,14 +95,18 @@ export default function SEOContentStrategyPage() {
   });
 
   const generatePillarMutation = useMutation({
-    mutationFn: (clusterId: number) =>
-      apiRequest("POST", `/api/seo/keyword-strategy/generate-pillar/${clusterId}`),
+    mutationFn: (clusterId: number) => {
+      setGeneratingPillar(clusterId);
+      return apiRequest("POST", `/api/seo/keyword-strategy/generate-pillar/${clusterId}`);
+    },
     onSuccess: (data: any) => {
+      setGeneratingPillar(null);
       queryClient.invalidateQueries({ queryKey: ["/api/seo/keyword-strategy/overview"] });
-      toast({ title: "Pillar Generated", description: data.message });
+      toast({ title: "Pillar Generated", description: data.message || "Pillar page created" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to generate pillar", variant: "destructive" });
+      setGeneratingPillar(null);
+      toast({ title: "Error", description: "Failed to generate pillar page", variant: "destructive" });
     },
   });
 
@@ -206,14 +211,14 @@ export default function SEOContentStrategyPage() {
               <Button
                 size="sm"
                 onClick={() => generatePillarMutation.mutate(cluster.id)}
-                disabled={generatePillarMutation.isPending || isGenerating}
+                disabled={generatingPillar !== null || isGenerating}
               >
-                {generatePillarMutation.isPending ? (
+                {generatingPillar === cluster.id ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <Play className="h-4 w-4 mr-1" />
                 )}
-                Generate Pillar Page
+                {generatingPillar === cluster.id ? "Generating..." : "Generate Pillar Page"}
               </Button>
             ) : (
               <Badge variant="outline" className="bg-green-50">

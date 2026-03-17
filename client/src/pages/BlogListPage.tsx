@@ -260,22 +260,22 @@ export default function BlogListPage() {
                   .map((article: any) => (
                     <Link key={article.id} href={`/blog/${article.slug || article.id}`}>
                       <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                        <div className="aspect-video">
+                        <div className="aspect-video bg-gradient-to-br from-teal-50 to-cyan-50">
                           <img
                             src={article.imageUrl || "/images/fallback-study-image.svg"}
                             alt={article.imageAlt || `${article.title} - Hydrogen therapy research`}
                             className="w-full h-full object-cover rounded-t-lg"
                             loading="lazy"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/images/fallback-study-image.svg";
+                            }}
                           />
                         </div>
                         <CardHeader>
                           <div className="flex items-center justify-between mb-2">
                             <Badge variant="secondary">
-                              {article.articleType || article.category || "Article"}
+                              {(article.articleType || article.category || "Article").replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
                             </Badge>
-                            <span className="text-sm text-gray-500">
-                              {article.readingLevel || "General"}
-                            </span>
                           </div>
                           <CardTitle className="text-lg line-clamp-2">
                             {article.title}
@@ -296,13 +296,13 @@ export default function BlogListPage() {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-1">
-                            {(article.semanticKeywords || article.tags || []).slice(0, 2).map((tag: string, index: number) => (
+                            {(Array.isArray(article.semanticKeywords) ? article.semanticKeywords : []).slice(0, 3).map((tag: string, index: number) => (
                               <Badge
                                 key={index}
                                 variant="outline"
-                                className="text-xs"
+                                className="text-xs capitalize"
                               >
-                                {tag}
+                                {typeof tag === "string" ? tag.replace(/_/g, " ") : ""}
                               </Badge>
                             ))}
                           </div>
