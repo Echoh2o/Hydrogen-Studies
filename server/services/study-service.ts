@@ -104,13 +104,13 @@ export class StudyService {
          // Handle string or number input safely
          const year = parseInt(filters.yearFrom.toString());
          if (!isNaN(year)) {
-           whereConditions.push(sql`EXTRACT(YEAR FROM ${studies.publishDate}::date) >= ${year}`);
+           whereConditions.push(sql`${studies.publishYear} >= ${year}`);
          }
       }
       if (filters.yearTo) {
          const year = parseInt(filters.yearTo.toString());
          if (!isNaN(year)) {
-           whereConditions.push(sql`EXTRACT(YEAR FROM ${studies.publishDate}::date) <= ${year}`);
+           whereConditions.push(sql`${studies.publishYear} <= ${year}`);
          }
       }
 

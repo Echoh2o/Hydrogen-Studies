@@ -88,7 +88,7 @@ router.post("/batch-generate", async (req: Request, res: Response) => {
  */
 router.post("/auto-generate-all", async (req: Request, res: Response) => {
   try {
-    const limit = Math.min(Number(req.body.limit) || 20, 100);
+    const limit = Math.min(Number(req.body?.limit) || 20, 100);
     const rows = await db
       .select({ id: studies.id })
       .from(studies)

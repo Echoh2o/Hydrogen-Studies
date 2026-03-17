@@ -101,11 +101,12 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
           case "pubmed":
             // Search PubMed with an increased limit to account for duplicates later
             logger.info("Searching PubMed", "ResearchUnifiedRoutes");
-            const pubmedData = await searchPubMedWithPagination(
+            const pubmedDataRaw = await searchPubMedWithPagination(
               query,
               pageNum - 1,
               pageSizeNum * 2,
             );
+            const pubmedData = Array.isArray(pubmedDataRaw) ? pubmedDataRaw : [];
             const totalPubmedResults =
               pubmedData.length > 0
                 ? pubmedData[0]?.totalResults || pubmedData.length
@@ -159,7 +160,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
             ) {
               logger.info("Found results from EuropePMC", "ResearchUnifiedRoutes", { count: europepmcResults.results.length, total: europepmcResults.total });
 
-              const formattedEPMCData = europepmcResults.results.map(
+              const formattedEPMCData = (europepmcResults.results || []).map(
                 (item: any) => {
                   // Check if this study is already in our database
                   const isInDatabase = existingStudies.some(
@@ -217,7 +218,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
             ) {
               logger.info("Found results from Semantic Scholar", "ResearchUnifiedRoutes", { count: semanticScholarResults.data.length });
 
-              const formattedSSData = semanticScholarResults.data.map(
+              const formattedSSData = (semanticScholarResults.data || []).map(
                 (item: any) => {
                   // Check if this study is already in our database
                   const isInDatabase = existingStudies.some(
@@ -265,7 +266,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
             ) {
               logger.info("Found results from CrossRef", "ResearchUnifiedRoutes", { count: crossrefResults.items.length });
 
-              const formattedCRData = crossrefResults.items.map((item: any) => {
+              const formattedCRData = (crossrefResults.items || []).map((item: any) => {
                 // Check if this study is already in our database
                 const isInDatabase = existingStudies.some(
                   (study) =>
