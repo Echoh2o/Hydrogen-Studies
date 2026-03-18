@@ -396,12 +396,12 @@ function renderPagination(currentPage: number, totalPages: number, baseUrl: stri
 
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
     const search = (req.query.q as string || "").trim();
     const conditionSlug = (req.query.condition as string || "").trim();
     const studyType = (req.query.type as string || "").trim();
-    const yearFrom = parseInt(req.query.yearFrom as string) || 0;
-    const yearTo = parseInt(req.query.yearTo as string) || 0;
+    const yearFrom = parseInt(req.query.yearFrom as string, 10) || 0;
+    const yearTo = parseInt(req.query.yearTo as string, 10) || 0;
 
     // Build WHERE clauses
     const conditions: string[] = [];
@@ -448,7 +448,7 @@ router.get("/", async (req: Request, res: Response) => {
     // Count total
     const countQuery = `SELECT COUNT(*) as total FROM studies s ${whereClause}`;
     const countRows = await executeRawQuery(countQuery, params);
-    const totalStudies = parseInt(countRows[0]?.total || "0");
+    const totalStudies = parseInt(countRows[0]?.total || "0", 10);
     const totalPages = Math.ceil(totalStudies / ITEMS_PER_PAGE);
 
     // Fetch studies
@@ -821,7 +821,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
 router.get("/condition/:slug", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
 
     // Fetch condition
     const condRows = await executeRawQuery(`
@@ -855,7 +855,7 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
       FROM study_health_conditions shc
       WHERE shc.health_condition_id = $1
     `, [condition.id]);
-    const totalStudies = parseInt(totalCountRows[0]?.total || "0");
+    const totalStudies = parseInt(totalCountRows[0]?.total || "0", 10);
     const totalPages = Math.ceil(totalStudies / ITEMS_PER_PAGE);
     const offset = (page - 1) * ITEMS_PER_PAGE;
 

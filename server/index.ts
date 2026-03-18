@@ -63,12 +63,9 @@ async function setupServer() {
       }),
     );
 
-    // Other static files — cache for 1 hour, revalidate
-    app.use(express.static(staticPath, { maxAge: "1h" }));
-    // Serve static assets with long-term caching (Vite adds content hashes to filenames)
+    // Serve remaining static files (favicon, manifest, etc.) — short cache, revalidate
     app.use(express.static(staticPath, {
-      maxAge: "1y",
-      immutable: true,
+      maxAge: "1h",
       index: false, // Don't serve index.html for directory requests — SPA fallback handles that
     }));
 

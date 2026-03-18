@@ -298,17 +298,20 @@ export async function seedHealthConditions() {
       const conditionId = conditionMap.get(condition.slug);
       if (!conditionId) continue;
 
-      // Build keyword matching WHERE clause
-      // Match against title and abstract using ILIKE
-      const keywordClauses = condition.keywords
-        .map((kw) => `(LOWER(title) LIKE '%${kw.toLowerCase().replace(/'/g, "''")}%' OR LOWER(abstract) LIKE '%${kw.toLowerCase().replace(/'/g, "''")}%')`)
-        .join(" OR ");
-
-      // Find matching studies
-      const matchResult = await db.execute(
-        sql.raw(`SELECT id FROM studies WHERE ${keywordClauses}`)
-      );
-      const matchedStudies = (matchResult.rows || []) as any[];
+      // Match studies by keyword using parameterized ILIKE queries
+      // Collect all matching study IDs across all keywords for this condition
+      const matchedStudyIds = new Set<number>();
+      for (const kw of condition.keywords) {
+        const term = `%${kw.toLowerCase()}%`;
+        const kwResult = await db.execute(sql`
+          SELECT id FROM studies
+          WHERE LOWER(title) LIKE ${term} OR LOWER(abstract) LIKE ${term}
+        `);
+        for (const row of (kwResult.rows || []) as any[]) {
+          matchedStudyIds.add(row.id);
+        }
+      }
+      const matchedStudies = Array.from(matchedStudyIds).map(id => ({ id }));
 
       // Insert mappings
       let conditionMappings = 0;
