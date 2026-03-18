@@ -355,6 +355,14 @@ export const studies = pgTable(
     tldr: text("tldr"), // AI-generated super-simplified summary
     howToApply: text("how_to_apply"), // Study-specific practical application guidance (JSON)
 
+    // H2-specific research metadata (for Shopify App Proxy research database)
+    h2DeliveryMethod: text("h2_delivery_method"), // drinking, inhalation, bathing, injection
+    h2Concentration: varchar("h2_concentration", { length: 100 }),
+    dosageProtocol: text("dosage_protocol"),
+    methodologySummary: text("methodology_summary"),
+    limitations: text("limitations"),
+    isHumanTrial: boolean("is_human_trial").default(false),
+
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => {
@@ -424,6 +432,12 @@ export const healthConditions = pgTable("health_conditions", {
   slug: text("slug").notNull().unique(),
   displayOrder: integer("display_order").notNull().default(0),
   studyCount: integer("study_count").notNull().default(0),
+  // Shopify App Proxy research database fields
+  mechanismSummary: text("mechanism_summary"),
+  primaryProduct: varchar("primary_product", { length: 50 }),
+  confidenceLevel: varchar("confidence_level", { length: 20 }),
+  humanTrialCount: integer("human_trial_count").default(0),
+  searchVolumeEstimate: integer("search_volume_estimate"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

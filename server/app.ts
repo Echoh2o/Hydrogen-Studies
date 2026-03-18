@@ -116,7 +116,7 @@ app.use(
           "https://www.google-analytics.com",
           "https://api.anthropic.com",
         ],
-        frameSrc: ["'none'"],
+        frameSrc: ["'self'"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests:
           process.env.NODE_ENV === "production" ? [] : null,
@@ -157,6 +157,11 @@ app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 // Dynamic SEO routes (sitemaps, robots.txt) — must be before CSRF and session
 app.use(seoRoutes);
+
+// Shopify App Proxy SSR routes — public HTML pages, no CSRF/session needed
+// Mounted at /proxy — Shopify App Proxy forwards echowater.com/tools/hydrogen-research/* → /proxy/*
+import proxyRoutes from "./routes/proxy-routes";
+app.use("/proxy", proxyRoutes);
 
 // Secure session middleware with PostgreSQL store
 app.use(getSessionMiddleware());
@@ -210,6 +215,7 @@ const csrf = csrfProtection({
     "/api/content-optimization", // Content optimization (protected by admin auth)
     "/api/consumer-categories", // Consumer categories (protected by admin auth)
     "/api/doi", // DOI enhancer (protected by admin auth)
+    "/proxy", // Shopify App Proxy SSR routes (public HTML, no CSRF needed)
   ],
 });
 
@@ -594,6 +600,8 @@ pool.query("SELECT 1").then(async () => {
     const { createBlogGenerationJobsTable } = await import("./migrations/blog-generation-jobs-migration");
     const { fixUntitledStudies } = await import("./migrations/fix-untitled-studies");
     const { addTldrAndHowToApply } = await import("./migrations/add-tldr-how-to-apply");
+    const { addProxyResearchFields } = await import("./migrations/add-proxy-research-fields");
+    const { seedHealthConditions } = await import("./migrations/seed-health-conditions");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -601,6 +609,8 @@ pool.query("SELECT 1").then(async () => {
       { name: "003_create_blog_generation_jobs", up: createBlogGenerationJobsTable },
       { name: "004_fix_untitled_studies", up: fixUntitledStudies },
       { name: "005_add_tldr_how_to_apply", up: addTldrAndHowToApply },
+      { name: "006_add_proxy_research_fields", up: addProxyResearchFields },
+      { name: "007_seed_health_conditions", up: seedHealthConditions },
     ]);
   } catch (err: any) {
     console.warn("Migration runner error:", err.message);
