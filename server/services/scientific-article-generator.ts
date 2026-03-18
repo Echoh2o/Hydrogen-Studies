@@ -515,20 +515,29 @@ async function generateScientificImage(
   articleType: string,
 ): Promise<{ imageUrl: string; imageAlt: string }> {
   try {
+    const xaiClient = ai.getXAIClient();
     const openaiClient = ai.getOpenAIClient();
-    if (!openaiClient) {
+    if (!xaiClient && !openaiClient) {
       return getDefaultScientificImage(study.category);
     }
 
+    const imageClient = xaiClient || openaiClient!;
+    const provider = xaiClient ? "xai" : "openai";
+
     const prompt = `Scientific diagram for hydrogen therapy research article: ${title}. Medical illustration with molecular structures, clinical data visualization, professional academic style.`;
 
-    const response = await openaiClient.images.generate({
-      model: "dall-e-3",
+    const generateParams: any = {
+      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
       prompt: prompt.substring(0, 1000),
       n: 1,
       size: "1024x1024",
-      quality: "standard",
-    });
+      response_format: "url",
+    };
+    if (provider === "openai") {
+      generateParams.quality = "standard";
+    }
+
+    const response = await imageClient.images.generate(generateParams);
 
     const imageUrl = response.data?.[0]?.url;
 

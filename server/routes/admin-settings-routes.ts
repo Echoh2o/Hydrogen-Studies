@@ -62,7 +62,9 @@ router.get("/", requireAdmin, async (_req: Request, res: Response) => {
     const integrations = {
       klaviyo: !!process.env.KLAVIYO_API_KEY,
       shopify: !!process.env.SHOPIFY_WEBHOOK_SECRET,
+      xai: !!process.env.XAI_API_KEY,
       openai: !!process.env.OPENAI_API_KEY,
+      imageGeneration: !!process.env.XAI_API_KEY || !!process.env.OPENAI_API_KEY,
       sendgrid: !!process.env.SENDGRID_API_KEY,
       googleAnalytics: !!process.env.VITE_GA_MEASUREMENT_ID,
       database: !!process.env.DATABASE_URL,

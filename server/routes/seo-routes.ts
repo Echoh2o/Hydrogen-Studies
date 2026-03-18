@@ -970,7 +970,7 @@ seoAdminRouter.post("/blogs/generate-missing-images", requireAdmin, async (req: 
     let failed = 0;
     const errors: Array<{ blogId: number; error: string }> = [];
 
-    // Process sequentially with delays for DALL-E rate limits
+    // Process sequentially with delays for image generation rate limits
     for (let i = 0; i < blogsWithoutImages.length; i++) {
       const blog = blogsWithoutImages[i];
 
@@ -991,7 +991,7 @@ seoAdminRouter.post("/blogs/generate-missing-images", requireAdmin, async (req: 
         });
       }
 
-      // 2-second delay between requests to respect DALL-E rate limits (skip after last)
+      // 2-second delay between requests to respect image generation rate limits (skip after last)
       if (i < blogsWithoutImages.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }

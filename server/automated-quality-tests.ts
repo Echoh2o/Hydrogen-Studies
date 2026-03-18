@@ -139,8 +139,8 @@ export class AutomatedQualityTests {
 
   private async testImageGeneration(): Promise<void> {
     // Test that image generation system is working
-    if (!process.env.OPENAI_API_KEY) {
-      console.warn("Image generation test skipped - no OpenAI API key");
+    if (!process.env.XAI_API_KEY && !process.env.OPENAI_API_KEY) {
+      console.warn("Image generation test skipped - no image generation API key (XAI_API_KEY or OPENAI_API_KEY)");
       return;
     }
 

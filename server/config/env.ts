@@ -67,7 +67,8 @@ export function validateEnvironment() {
   // Warn about missing optional service keys
   const optionalServiceKeys = [
     { key: "ANTHROPIC_API_KEY", feature: "AI content enrichment" },
-    { key: "OPENAI_API_KEY", feature: "image generation" },
+    { key: "XAI_API_KEY", feature: "Grok image generation (primary)" },
+    { key: "OPENAI_API_KEY", feature: "DALL-E image generation (fallback)" },
     { key: "SENDGRID_API_KEY", feature: "email delivery (password resets)" },
     { key: "SENTRY_DSN", feature: "server error tracking" },
     { key: "VITE_SENTRY_DSN", feature: "client error tracking" },

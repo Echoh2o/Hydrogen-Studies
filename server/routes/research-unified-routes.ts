@@ -1312,7 +1312,7 @@ router.put(
               },
             );
 
-          // 5. Generate study image using DALL-E
+          // 5. Generate study image using Grok (xAI) or DALL-E fallback
           logger.info("Generating study image", "ResearchUnifiedRoutes");
           const imageGenerationPromise = generateStudyImage(createdStudy.id);
 
