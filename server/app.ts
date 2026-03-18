@@ -602,6 +602,7 @@ pool.query("SELECT 1").then(async () => {
     const { addTldrAndHowToApply } = await import("./migrations/add-tldr-how-to-apply");
     const { addProxyResearchFields } = await import("./migrations/add-proxy-research-fields");
     const { seedHealthConditions } = await import("./migrations/seed-health-conditions");
+    const { backfillSlugsAndHumanTrials } = await import("./migrations/backfill-slugs-and-human-trials");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -611,6 +612,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "005_add_tldr_how_to_apply", up: addTldrAndHowToApply },
       { name: "006_add_proxy_research_fields", up: addProxyResearchFields },
       { name: "007_seed_health_conditions", up: seedHealthConditions },
+      { name: "008_backfill_slugs_and_human_trials", up: backfillSlugsAndHumanTrials },
     ]);
   } catch (err: any) {
     console.warn("Migration runner error:", err.message);

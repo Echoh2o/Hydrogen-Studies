@@ -1297,7 +1297,10 @@ router.get("/embed/:conditionSlug", async (req: Request, res: Response) => {
 </body>
 </html>`;
 
+    // Allow embedding from any domain (the whole point of this widget)
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Content-Security-Policy", "frame-ancestors *");
+    res.removeHeader("X-Frame-Options");
     res.send(html);
   } catch (error) {
     console.error("Proxy embed error:", error);

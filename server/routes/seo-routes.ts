@@ -117,6 +117,10 @@ router.get("/sitemap-index.xml", (req: Request, res: Response) => {
     <loc>${SITE_URL}/sitemap-explore.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${SITE_URL}/proxy/sitemap.xml</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
   res.set("Content-Type", "application/xml");
