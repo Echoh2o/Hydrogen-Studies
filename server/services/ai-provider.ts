@@ -2,7 +2,8 @@
  * AI Provider Abstraction Layer
  *
  * Central service for all AI text generation.
- * Uses Anthropic (Claude) by default, with OpenAI available for image generation.
+ * Uses Anthropic (Claude) by default, with xAI (Grok) for image generation
+ * and OpenAI as fallback.
  *
  * Usage:
  *   import { ai } from "../services/ai-provider";
@@ -28,7 +29,21 @@ function getAnthropic(): Anthropic | null {
   return anthropicClient;
 }
 
-// --- OpenAI fallback for text, primary for images ---
+// --- xAI (Grok) for image generation ---
+
+let xaiClient: OpenAI | null = null;
+
+function getXAI(): OpenAI | null {
+  if (xaiClient) return xaiClient;
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+  xaiClient = new OpenAI({ apiKey, baseURL: "https://api.x.ai/v1", timeout: 60000, maxRetries: 2 });
+  return xaiClient;
+}
+
+// --- OpenAI fallback for text and images ---
 
 let openaiClient: OpenAI | null = null;
 
@@ -36,7 +51,7 @@ function getOpenAI(): OpenAI | null {
   if (openaiClient) return openaiClient;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.warn("⚠️ OPENAI_API_KEY not configured — image generation unavailable");
+    console.warn("⚠️ OPENAI_API_KEY not configured — OpenAI fallback unavailable");
     return null;
   }
   openaiClient = new OpenAI({ apiKey, timeout: 30000, maxRetries: 2 });
@@ -126,11 +141,19 @@ async function generateJSON<T = any>(
 }
 
 /**
- * Get the OpenAI client directly (for image generation with DALL-E).
+ * Get the OpenAI client directly (for fallback image generation with DALL-E).
  * Returns null if not configured.
  */
 function getOpenAIClient(): OpenAI | null {
   return getOpenAI();
+}
+
+/**
+ * Get the xAI client directly (for image generation with Grok).
+ * Returns null if XAI_API_KEY is not configured.
+ */
+function getXAIClient(): OpenAI | null {
+  return getXAI();
 }
 
 /**
@@ -140,7 +163,9 @@ function getProviderStatus() {
   return {
     anthropic: !!process.env.ANTHROPIC_API_KEY,
     openai: !!process.env.OPENAI_API_KEY,
+    xai: !!process.env.XAI_API_KEY,
     primary: process.env.ANTHROPIC_API_KEY ? "anthropic" : process.env.OPENAI_API_KEY ? "openai" : "none",
+    imageProvider: process.env.XAI_API_KEY ? "xai" : process.env.OPENAI_API_KEY ? "openai" : "none",
   };
 }
 
@@ -148,5 +173,6 @@ export const ai = {
   generateText,
   generateJSON,
   getOpenAIClient,
+  getXAIClient,
   getProviderStatus,
 };

@@ -480,32 +480,41 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Generate an image for a blog article during bulk generation.
- * Uses DALL-E (OpenAI) if available, otherwise returns a category-based default.
+ * Uses xAI (Grok) if available, falls back to DALL-E (OpenAI), otherwise returns a category-based default.
  */
 async function generateBlogImageForWorker(
   study: any,
   title: string,
   articleType: string,
 ): Promise<{ imageUrl: string | null; imageAlt: string | null }> {
+  const xaiClient = ai.getXAIClient();
   const openaiClient = ai.getOpenAIClient();
-  if (!openaiClient) {
-    // No OpenAI key — return a default placeholder based on category
+  if (!xaiClient && !openaiClient) {
+    // No image generation key — return a default placeholder based on category
     return getDefaultCategoryImage(study.category);
   }
+
+  const imageClient = xaiClient || openaiClient!;
+  const provider = xaiClient ? "xai" : "openai";
 
   const prompt = `Scientific illustration for a hydrogen therapy article titled "${title}".
 Clean, professional medical illustration style. No text or labels. Neutral background.`.substring(0, 1000);
 
-  const response = await openaiClient.images.generate({
-    model: "dall-e-3",
+  const generateParams: any = {
+    model: provider === "xai" ? "grok-2-image" : "dall-e-3",
     prompt,
     n: 1,
     size: "1024x1024",
-    quality: "standard",
-  });
+    response_format: "url",
+  };
+  if (provider === "openai") {
+    generateParams.quality = "standard";
+  }
 
-  const dalleUrl = response.data?.[0]?.url;
-  if (!dalleUrl) {
+  const response = await imageClient.images.generate(generateParams);
+
+  const generatedUrl = response.data?.[0]?.url;
+  if (!generatedUrl) {
     return getDefaultCategoryImage(study.category);
   }
 
@@ -524,7 +533,7 @@ Clean, professional medical illustration style. No text or labels. Neutral backg
   const filename = `blog-${safeType}-${study.id}-${Date.now()}.png`;
   const filepath = pathMod.join(uploadDir, filename);
 
-  const imgResponse = await axiosClient.get(dalleUrl, { responseType: "arraybuffer", timeout: 15000 });
+  const imgResponse = await axiosClient.get(generatedUrl, { responseType: "arraybuffer", timeout: 15000 });
 
   fs.writeFileSync(filepath, Buffer.from(imgResponse.data));
 

@@ -11,10 +11,16 @@ import path from "path";
 import sharp from "sharp";
 import { ai } from "./ai-provider";
 
-function getOpenAI() {
-  const client = ai.getOpenAIClient();
-  if (!client) throw new Error("OpenAI API key not configured for image generation");
-  return client;
+/**
+ * Get the image generation client.
+ * Prefers xAI (Grok) if XAI_API_KEY is set, falls back to OpenAI (DALL-E).
+ */
+function getImageClient(): { client: NonNullable<ReturnType<typeof ai.getXAIClient>>; provider: "xai" | "openai" } {
+  const xaiClient = ai.getXAIClient();
+  if (xaiClient) return { client: xaiClient, provider: "xai" };
+  const openaiClient = ai.getOpenAIClient();
+  if (openaiClient) return { client: openaiClient, provider: "openai" };
+  throw new Error("No image generation API key configured (set XAI_API_KEY or OPENAI_API_KEY)");
 }
 
 interface ImageOptimizationResult {
@@ -158,11 +164,11 @@ async function processAllMissingImages(): Promise<void> {
 async function generateAndOptimizeStudyImage(
   study: any,
 ): Promise<ImageOptimizationResult> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.XAI_API_KEY && !process.env.OPENAI_API_KEY) {
     return {
       studyId: study.id,
       success: false,
-      error: "OpenAI API key not available",
+      error: "No image generation API key available (XAI_API_KEY or OPENAI_API_KEY)",
     };
   }
 
@@ -170,19 +176,27 @@ async function generateAndOptimizeStudyImage(
     // Generate SEO-optimized prompt
     const prompt = await createSEOOptimizedPrompt(study);
 
-    // Generate image with DALL-E
-    const response = await getOpenAI().images.generate({
-      model: "dall-e-3",
+    const { client, provider } = getImageClient();
+
+    // Generate image with Grok or DALL-E
+    const generateParams: any = {
+      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
       prompt: prompt.substring(0, 1000),
       n: 1,
       size: "1024x1024",
-      quality: "standard",
-      style: "natural",
-    });
+      response_format: "url",
+    };
+
+    if (provider === "openai") {
+      generateParams.quality = "standard";
+      generateParams.style = "natural";
+    }
+
+    const response = await client.images.generate(generateParams);
 
     const imageUrl = response.data?.[0]?.url;
     if (!imageUrl) {
-      throw new Error("No image URL returned from OpenAI");
+      throw new Error("No image URL returned from image generation API");
     }
 
     // Download and optimize the image

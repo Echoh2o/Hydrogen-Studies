@@ -230,7 +230,7 @@ function renderPage(title: string, metaDescription: string, content: string, can
 /**
  * Renders a page with JSON-LD structured data injected into the head.
  */
-function renderPageWithSchema(title: string, metaDescription: string, content: string, canonicalPath: string, jsonLd: object): string {
+function renderPageWithSchema(title: string, metaDescription: string, content: string, canonicalPath: string, jsonLd: object, ogImage?: string): string {
   const canonicalUrl = `${BASE_URL}${canonicalPath}`;
   return `<!DOCTYPE html>
 <html lang="en">
@@ -244,6 +244,7 @@ function renderPageWithSchema(title: string, metaDescription: string, content: s
   <meta property="og:description" content="${escapeAttr(metaDescription)}">
   <meta property="og:url" content="${escapeAttr(canonicalUrl)}">
   <meta property="og:type" content="article">
+  ${ogImage ? `<meta property="og:image" content="${escapeAttr(ogImage)}">` : ""}
   <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
   <style>${CSS}</style>
 </head>
@@ -319,19 +320,23 @@ function renderStudyCard(study: any, conditionNames?: string[]): string {
   const displayTitle = study.plain_language_title || study.title;
   const slug = study.slug || study.id;
   const finding = study.results_short || study.conclusion_short || "";
+  const imgSrc = study.image_url ? (study.image_url.startsWith("/") ? study.image_url : "/" + study.image_url) : "";
 
-  return `<div class="h2r-card">
-    <a href="/tools/hydrogen-research/study/${escapeAttr(slug)}" class="h2r-link" style="text-decoration:none">
-      <div class="h2r-card-title" style="color:#0f0f23">${escapeHtml(displayTitle)}</div>
-    </a>
-    <div class="h2r-card-meta">
-      ${study.authors ? escapeHtml(truncate(study.authors, 80)) + " &middot; " : ""}
-      ${study.publish_year ? study.publish_year + " &middot; " : ""}
-      ${study.journal ? `<em>${escapeHtml(truncate(study.journal, 50))}</em>` : ""}
-      ${study.study_type ? ` &middot; <span class="${getStudyTypeBadgeClass(study.study_type)}">${escapeHtml(formatStudyType(study.study_type))}</span>` : ""}
+  return `<div class="h2r-card"${imgSrc ? ' style="display:flex;gap:16px;align-items:flex-start"' : ""}>
+    ${imgSrc ? `<a href="/tools/hydrogen-research/study/${escapeAttr(slug)}" style="flex-shrink:0"><img src="${escapeAttr(imgSrc)}" alt="" loading="lazy" width="120" height="80" style="width:120px;height:80px;object-fit:cover;border-radius:6px"></a>` : ""}
+    <div style="flex:1;min-width:0">
+      <a href="/tools/hydrogen-research/study/${escapeAttr(slug)}" class="h2r-link" style="text-decoration:none">
+        <div class="h2r-card-title" style="color:#0f0f23">${escapeHtml(displayTitle)}</div>
+      </a>
+      <div class="h2r-card-meta">
+        ${study.authors ? escapeHtml(truncate(study.authors, 80)) + " &middot; " : ""}
+        ${study.publish_year ? study.publish_year + " &middot; " : ""}
+        ${study.journal ? `<em>${escapeHtml(truncate(study.journal, 50))}</em>` : ""}
+        ${study.study_type ? ` &middot; <span class="${getStudyTypeBadgeClass(study.study_type)}">${escapeHtml(formatStudyType(study.study_type))}</span>` : ""}
+      </div>
+      ${finding ? `<div class="h2r-card-finding">${escapeHtml(truncate(finding, 250))}</div>` : ""}
+      ${conditionNames && conditionNames.length > 0 ? `<div class="h2r-card-tags">${conditionNames.map((c) => `<span class="h2r-tag">${escapeHtml(c)}</span>`).join("")}</div>` : ""}
     </div>
-    ${finding ? `<div class="h2r-card-finding">${escapeHtml(truncate(finding, 250))}</div>` : ""}
-    ${conditionNames && conditionNames.length > 0 ? `<div class="h2r-card-tags">${conditionNames.map((c) => `<span class="h2r-tag">${escapeHtml(c)}</span>`).join("")}</div>` : ""}
   </div>`;
 }
 
@@ -450,7 +455,7 @@ router.get("/", async (req: Request, res: Response) => {
     const studiesQuery = `
       SELECT s.id, s.title, s.plain_language_title, s.slug, s.authors, s.journal,
              s.publish_year, s.study_type, s.results_short, s.conclusion_short,
-             s.is_human_trial, s.peer_reviewed, s.sample_size
+             s.is_human_trial, s.peer_reviewed, s.sample_size, s.image_url
       FROM studies s
       ${whereClause}
       ORDER BY s.publish_year DESC NULLS LAST, s.id DESC
@@ -651,6 +656,9 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     if (study.peer_reviewed) {
       jsonLd.creativeWorkStatus = "Peer-reviewed";
     }
+    if (study.image_url) {
+      jsonLd.image = study.image_url.startsWith("http") ? study.image_url : `${BASE_URL.replace("/tools/hydrogen-research", "")}${study.image_url.startsWith("/") ? "" : "/"}${study.image_url}`;
+    }
 
     // Build metadata grid
     const metadataItems: Array<{ label: string; value: string }> = [];
@@ -694,6 +702,15 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
         </div>
         ${condRows.length > 0 ? `<div class="h2r-card-tags" style="margin-top:12px">${condRows.map((c: any) => `<a href="/tools/hydrogen-research/condition/${escapeAttr(c.slug)}" class="h2r-tag" style="text-decoration:none">${escapeHtml(c.name)}</a>`).join("")}</div>` : ""}
       </div>
+
+      ${study.image_url ? `
+        <div class="h2r-study-image">
+          <img src="${escapeAttr(study.image_url.startsWith('/') ? study.image_url : '/' + study.image_url)}"
+               alt="${escapeAttr(study.image_alt || `Research visualization: ${displayTitle}`)}"
+               loading="lazy" width="800" height="450"
+               style="width:100%;height:auto;border-radius:8px;margin:20px 0;object-fit:cover;max-height:400px">
+        </div>
+      ` : ""}
 
       ${study.results_short || study.conclusion_short ? `
         <div class="h2r-key-finding">
@@ -773,12 +790,18 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
 
     const metaDesc = study.meta_description || truncate(study.conclusion_short || study.abstract || displayTitle, 155);
 
+    // Build absolute OG image URL if study has an image
+    const ogImageUrl = study.image_url
+      ? (study.image_url.startsWith("http") ? study.image_url : `${BASE_URL.replace("/tools/hydrogen-research", "")}${study.image_url.startsWith("/") ? "" : "/"}${study.image_url}`)
+      : undefined;
+
     const html = renderPageWithSchema(
       `${displayTitle} — Hydrogen Research | Echo Water`,
       metaDesc,
       content,
       `/study/${slug}`,
-      jsonLd
+      jsonLd,
+      ogImageUrl
     );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -839,7 +862,7 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
     // Fetch studies for this condition
     const studyRows = await executeRawQuery(`
       SELECT s.id, s.title, s.plain_language_title, s.slug, s.authors, s.journal,
-             s.publish_year, s.study_type, s.results_short, s.conclusion_short
+             s.publish_year, s.study_type, s.results_short, s.conclusion_short, s.image_url
       FROM studies s
       JOIN study_health_conditions shc ON shc.study_id = s.id
       WHERE shc.health_condition_id = $1

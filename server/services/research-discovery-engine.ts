@@ -1,9 +1,10 @@
 /**
  * Research Discovery Engine
  *
- * Autonomously discovers new hydrogen research papers from CrossRef and Europe PMC.
- * Deduplicates by DOI (exact) and title similarity (normalized Levenshtein >90%).
- * Queues new discoveries for AI processing via the pipeline_queue table.
+ * Autonomously discovers new hydrogen research papers from CrossRef, Europe PMC,
+ * and PubMed. Deduplicates by DOI (exact) and title similarity (normalized
+ * Levenshtein >90%). Queues new discoveries for AI processing via the
+ * pipeline_queue table.
  */
 
 import { db } from "../db";
@@ -15,6 +16,7 @@ import {
 import { eq, sql, or, ilike } from "drizzle-orm";
 import { searchCrossRef } from "./crossref-api";
 import { searchEuropePMC } from "./europepmc-api";
+import axios from "axios";
 import { logger } from "../utils/logger";
 
 // Rotating query set — covers the breadth of hydrogen research
@@ -90,6 +92,7 @@ interface DiscoveryResult {
   abstract?: string;
   sourceUrl?: string;
   sourcePlatform: string;
+  externalId?: string;
 }
 
 /**
@@ -197,10 +200,83 @@ async function searchEPMCForHydrogen(query: string): Promise<DiscoveryResult[]> 
 }
 
 /**
- * Run an autonomous discovery cycle.
- * Searches both APIs with rotating queries, deduplicates, and queues new studies.
+ * Search PubMed via E-Utilities and extract relevant results
  */
-export async function runDiscovery(): Promise<{
+async function searchPubMedForHydrogen(query: string): Promise<DiscoveryResult[]> {
+  try {
+    const apiKey = process.env.PUBMED_API_KEY;
+
+    // Step 1: Search for matching PubMed IDs
+    let searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&term=${encodeURIComponent(query)}&retmax=${MAX_RESULTS_PER_QUERY}`;
+    if (apiKey) {
+      searchUrl += `&api_key=${apiKey}`;
+    }
+
+    const searchResponse = await axios.get(searchUrl);
+    const idList: string[] = searchResponse.data?.esearchresult?.idlist || [];
+
+    if (idList.length === 0) {
+      return [];
+    }
+
+    // Step 2: Fetch summaries for all returned IDs
+    let summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=${idList.join(",")}`;
+    if (apiKey) {
+      summaryUrl += `&api_key=${apiKey}`;
+    }
+
+    const summaryResponse = await axios.get(summaryUrl);
+    const summaryResult = summaryResponse.data?.result || {};
+
+    const results: DiscoveryResult[] = [];
+
+    for (const uid of idList) {
+      const article = summaryResult[uid];
+      if (!article || !article.title) continue;
+
+      // Extract DOI from articleids array
+      const doiEntry = article.articleids?.find(
+        (aid: any) => aid.idtype === "doi"
+      );
+      const doi = doiEntry?.value || undefined;
+
+      // Extract authors from authors array
+      const authors = article.authors
+        ?.map((a: any) => a.name)
+        .filter(Boolean)
+        .join(", ") || undefined;
+
+      // Parse sortpubdate (format: "YYYY/MM/DD HH:MM" or "YYYY/MM/DD")
+      const publishDate = article.sortpubdate
+        ? article.sortpubdate.split(" ")[0].replace(/\//g, "-")
+        : undefined;
+
+      results.push({
+        doi,
+        title: article.title,
+        authors,
+        journal: article.fulljournalname || undefined,
+        publishDate,
+        sourceUrl: doi
+          ? `https://doi.org/${doi}`
+          : `https://pubmed.ncbi.nlm.nih.gov/${uid}/`,
+        sourcePlatform: "pubmed",
+        externalId: uid,
+      });
+    }
+
+    return results;
+  } catch (error) {
+    logger.error(`PubMed search failed for "${query}"`, error, "DiscoveryEngine");
+    return [];
+  }
+}
+
+/**
+ * Run an autonomous discovery cycle.
+ * Searches all three APIs with rotating queries, deduplicates, and queues new studies.
+ */
+export async function runDiscovery(customQuery?: string): Promise<{
   runId: number;
   found: number;
   new: number;
@@ -213,7 +289,7 @@ export async function runDiscovery(): Promise<{
   const [run] = await db
     .insert(discoveryRuns)
     .values({
-      source: "both",
+      source: "all",
       queries: "[]",
       status: "running",
     })
@@ -226,20 +302,30 @@ export async function runDiscovery(): Promise<{
   let totalQueued = 0;
 
   try {
-    // Pick next N queries from the rotation
-    for (let i = 0; i < MAX_QUERIES_PER_RUN; i++) {
-      const queryIdx = (queryRotationIndex + i) % DISCOVERY_QUERIES.length;
-      const query = DISCOVERY_QUERIES[queryIdx];
+    // If a custom query is provided, run just that one; otherwise use the rotation
+    const queriesToRun: string[] = [];
+    if (customQuery) {
+      queriesToRun.push(customQuery);
+    } else {
+      for (let i = 0; i < MAX_QUERIES_PER_RUN; i++) {
+        const queryIdx = (queryRotationIndex + i) % DISCOVERY_QUERIES.length;
+        queriesToRun.push(DISCOVERY_QUERIES[queryIdx]);
+      }
+    }
+
+    for (let i = 0; i < queriesToRun.length; i++) {
+      const query = queriesToRun[i];
       queriesUsed.push(query);
 
-      // Search both APIs
-      const [crossRefResults, epmcResults] = await Promise.all([
+      // Search all three APIs
+      const [crossRefResults, epmcResults, pubmedResults] = await Promise.all([
         searchCrossRefForHydrogen(query),
         searchEPMCForHydrogen(query),
+        searchPubMedForHydrogen(query),
       ]);
 
       // Merge results, preferring CrossRef entries (they have DOIs more consistently)
-      const allResults = [...crossRefResults, ...epmcResults];
+      const allResults = [...crossRefResults, ...epmcResults, ...pubmedResults];
       totalFound += allResults.length;
 
       // Deduplicate within this batch
@@ -294,13 +380,15 @@ export async function runDiscovery(): Promise<{
       }
 
       // Rate limiting between queries
-      if (i < MAX_QUERIES_PER_RUN - 1) {
+      if (i < queriesToRun.length - 1) {
         await delay(RATE_LIMIT_DELAY_MS);
       }
     }
 
-    // Advance rotation for next run
-    queryRotationIndex = (queryRotationIndex + MAX_QUERIES_PER_RUN) % DISCOVERY_QUERIES.length;
+    // Advance rotation for next run (only when using the default query rotation)
+    if (!customQuery) {
+      queryRotationIndex = (queryRotationIndex + MAX_QUERIES_PER_RUN) % DISCOVERY_QUERIES.length;
+    }
 
     const durationMs = Date.now() - startTime;
 

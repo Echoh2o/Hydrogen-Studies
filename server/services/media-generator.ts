@@ -7,10 +7,16 @@ import https from "https";
 import { pipeline } from "stream/promises";
 import { ai } from "./ai-provider";
 
-function getOpenAI() {
-  const client = ai.getOpenAIClient();
-  if (!client) throw new Error("OpenAI API key not configured for image generation");
-  return client;
+/**
+ * Get the image generation client.
+ * Prefers xAI (Grok) if XAI_API_KEY is set, falls back to OpenAI (DALL-E).
+ */
+function getImageClient(): { client: NonNullable<ReturnType<typeof ai.getXAIClient>>; provider: "xai" | "openai" } {
+  const xaiClient = ai.getXAIClient();
+  if (xaiClient) return { client: xaiClient, provider: "xai" };
+  const openaiClient = ai.getOpenAIClient();
+  if (openaiClient) return { client: openaiClient, provider: "openai" };
+  throw new Error("No image generation API key configured (set XAI_API_KEY or OPENAI_API_KEY)");
 }
 
 export class MediaGenerator {
@@ -48,14 +54,18 @@ export class MediaGenerator {
     `;
 
     try {
-      const response = await getOpenAI().images.generate({
-        model: "dall-e-3",
+      const { client, provider } = getImageClient();
+      const generateParams: any = {
+        model: provider === "xai" ? "grok-2-image" : "dall-e-3",
         prompt: prompt,
         n: 1,
         size: "1024x1024",
-        quality: "standard",
-        response_format: "url"
-      });
+        response_format: "url",
+      };
+      if (provider === "openai") {
+        generateParams.quality = "standard";
+      }
+      const response = await client.images.generate(generateParams);
 
       const imageUrl = response.data?.[0]?.url;
       if (!imageUrl) throw new Error("No image URL returned");

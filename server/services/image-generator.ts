@@ -14,10 +14,20 @@ import { eq, isNull, or } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
 
-function getOpenAI() {
-  const client = ai.getOpenAIClient();
-  if (!client) throw new Error("OpenAI API key not configured for image generation");
-  return client;
+/**
+ * Get the image generation client.
+ * Prefers xAI (Grok) if XAI_API_KEY is set, falls back to OpenAI (DALL-E).
+ */
+function getImageClient(): { client: ReturnType<typeof ai.getXAIClient>; provider: "xai" | "openai" } {
+  const xaiClient = ai.getXAIClient();
+  if (xaiClient) {
+    return { client: xaiClient, provider: "xai" };
+  }
+  const openaiClient = ai.getOpenAIClient();
+  if (openaiClient) {
+    return { client: openaiClient, provider: "openai" };
+  }
+  throw new Error("No image generation API key configured (set XAI_API_KEY or OPENAI_API_KEY)");
 }
 
 /**
@@ -30,25 +40,34 @@ export async function generateScientificImage(
   content: string,
 ): Promise<{ success: boolean; imageUrl?: string; message?: string }> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.XAI_API_KEY && !process.env.OPENAI_API_KEY) {
       return {
         success: false,
-        message: "OPENAI_API_KEY not set, unable to generate image",
+        message: "No image generation API key set (XAI_API_KEY or OPENAI_API_KEY), unable to generate image",
       };
     }
 
     // Create a simplified prompt for artistic health images
     const prompt = `Beautiful, artistic editorial photo representing ${content}. Simple, clean, modern health magazine style with soft natural lighting. No text, labels, or scientific diagrams.`;
 
-    // Generate the image using DALL-E 3
-    const response = await getOpenAI().images.generate({
-      model: "dall-e-3",
+    const { client, provider } = getImageClient();
+
+    // Generate the image using Grok or DALL-E
+    const generateParams: any = {
+      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
       prompt: prompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard",
-      style: "natural",
-    });
+      response_format: "url",
+    };
+
+    // DALL-E supports style/quality params, xAI does not
+    if (provider === "openai") {
+      generateParams.quality = "standard";
+      generateParams.style = "natural";
+    }
+
+    const response = await client!.images.generate(generateParams);
 
     const imageUrl = response.data?.[0]?.url;
 
@@ -83,10 +102,10 @@ export async function generateBlogImage(blogId: number): Promise<{
   message?: string;
 }> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.XAI_API_KEY && !process.env.OPENAI_API_KEY) {
       return {
         success: false,
-        message: "OPENAI_API_KEY not set, unable to generate image",
+        message: "No image generation API key set (XAI_API_KEY or OPENAI_API_KEY), unable to generate image",
       };
     }
 
@@ -112,15 +131,23 @@ export async function generateBlogImage(blogId: number): Promise<{
     // Create a simplified prompt for blog image
     const prompt = `Create a modern, engaging image to represent a blog article titled "${title}" about ${summary}. The image should be appropriate for a health and wellness website focused on hydrogen research. Use a clean, professional style with subtle medical/scientific elements. No text in the image.`;
 
-    // Generate the image using DALL-E 3
-    const response = await getOpenAI().images.generate({
-      model: "dall-e-3",
+    const { client, provider } = getImageClient();
+
+    // Generate the image using Grok or DALL-E
+    const generateParams: any = {
+      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
       prompt: prompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard",
-      style: "natural",
-    });
+      response_format: "url",
+    };
+
+    if (provider === "openai") {
+      generateParams.quality = "standard";
+      generateParams.style = "natural";
+    }
+
+    const response = await client!.images.generate(generateParams);
 
     const imageUrl = response.data?.[0]?.url;
 
@@ -183,10 +210,10 @@ export async function generateImageForStudy(studyId: number): Promise<{
   imagePath?: string;
 }> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.XAI_API_KEY && !process.env.OPENAI_API_KEY) {
       return {
         success: false,
-        message: "OPENAI_API_KEY not set, unable to generate image",
+        message: "No image generation API key set (XAI_API_KEY or OPENAI_API_KEY), unable to generate image",
       };
     }
 
@@ -241,15 +268,23 @@ export async function generateImageForStudy(studyId: number): Promise<{
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // Generate the image using DALL-E 3
-    const response = await getOpenAI().images.generate({
-      model: "dall-e-3",
+    const { client, provider } = getImageClient();
+
+    // Generate the image using Grok or DALL-E
+    const generateParams: any = {
+      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
       prompt: prompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard",
-      style: "natural",
-    });
+      response_format: "url",
+    };
+
+    if (provider === "openai") {
+      generateParams.quality = "standard";
+      generateParams.style = "natural";
+    }
+
+    const response = await client!.images.generate(generateParams);
 
     // Safely access response data
     const imageUrl = response.data?.[0]?.url;
@@ -361,7 +396,7 @@ async function createImagePrompt(
       return createGenericPrompt(title, category, detectedDeliveryMethod);
     }
 
-    // Ensure the prompt is suitable for DALL-E by adding some guardrails
+    // Ensure the prompt is suitable for image generation by adding some guardrails
     const enhancedPrompt = `${generatedPrompt}. Simple, artistic, editorial health photography style. Soft natural lighting. Clean composition. No text, labels, or scientific diagrams.`;
 
     return enhancedPrompt;
@@ -513,12 +548,12 @@ export async function batchGenerateImagesForStudies(
       return results;
     }
 
-    // Check if API key is set
-    if (!process.env.OPENAI_API_KEY) {
-      logger.error("OPENAI_API_KEY not set, batch processing aborted", undefined, "ImageGenerator");
+    // Check if an image generation API key is set
+    if (!process.env.XAI_API_KEY && !process.env.OPENAI_API_KEY) {
+      logger.error("No image generation API key set (XAI_API_KEY or OPENAI_API_KEY), batch processing aborted", undefined, "ImageGenerator");
       results.errors.push({
         studyId: 0,
-        error: "OPENAI_API_KEY not set in environment variables",
+        error: "No image generation API key set (XAI_API_KEY or OPENAI_API_KEY)",
       });
       return results;
     }
