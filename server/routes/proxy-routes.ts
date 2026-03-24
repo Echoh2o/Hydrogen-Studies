@@ -926,54 +926,38 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
 
 router.get("/stats", async (_req: Request, res: Response) => {
   try {
-    // Studies by year
-    const byYear = await executeRawQuery(`
-      SELECT publish_year, COUNT(*) as cnt
-      FROM studies
-      WHERE publish_year IS NOT NULL
-      GROUP BY publish_year
-      ORDER BY publish_year DESC
-    `, []);
-
-    // Studies by type
-    const byType = await executeRawQuery(`
-      SELECT study_type, COUNT(*) as cnt
-      FROM studies
-      WHERE study_type IS NOT NULL
-      GROUP BY study_type
-      ORDER BY cnt DESC
-    `, []);
-
-    // Studies by condition (top 20)
-    const byCondition = await executeRawQuery(`
-      SELECT hc.name, hc.slug, COUNT(*) as cnt
-      FROM study_health_conditions shc
-      JOIN health_conditions hc ON hc.id = shc.health_condition_id
-      GROUP BY hc.id, hc.name, hc.slug
-      ORDER BY cnt DESC
-      LIMIT 20
-    `, []);
-
-    // Studies by country (top 20)
-    const byCountry = await executeRawQuery(`
-      SELECT country, COUNT(*) as cnt
-      FROM studies
-      WHERE country IS NOT NULL AND country != ''
-      GROUP BY country
-      ORDER BY cnt DESC
-      LIMIT 20
-    `, []);
-
-    // Overall stats
-    const overallRows = await executeRawQuery(`
-      SELECT
-        COUNT(*) as total,
-        COUNT(*) FILTER (WHERE is_human_trial = true) as human_trials,
-        COUNT(*) FILTER (WHERE peer_reviewed = true) as peer_reviewed,
-        MIN(publish_year) FILTER (WHERE publish_year IS NOT NULL) as earliest_year,
-        MAX(publish_year) FILTER (WHERE publish_year IS NOT NULL) as latest_year
-      FROM studies
-    `, []);
+    // Run all stats queries in parallel to avoid sequential DB round-trips
+    const [byYear, byType, byCondition, byCountry, overallRows] = await Promise.all([
+      executeRawQuery(`
+        SELECT publish_year, COUNT(*) as cnt
+        FROM studies WHERE publish_year IS NOT NULL
+        GROUP BY publish_year ORDER BY publish_year DESC
+      `, []),
+      executeRawQuery(`
+        SELECT study_type, COUNT(*) as cnt
+        FROM studies WHERE study_type IS NOT NULL
+        GROUP BY study_type ORDER BY cnt DESC
+      `, []),
+      executeRawQuery(`
+        SELECT hc.name, hc.slug, COUNT(*) as cnt
+        FROM study_health_conditions shc
+        JOIN health_conditions hc ON hc.id = shc.health_condition_id
+        GROUP BY hc.id, hc.name, hc.slug ORDER BY cnt DESC LIMIT 20
+      `, []),
+      executeRawQuery(`
+        SELECT country, COUNT(*) as cnt
+        FROM studies WHERE country IS NOT NULL AND country != ''
+        GROUP BY country ORDER BY cnt DESC LIMIT 20
+      `, []),
+      executeRawQuery(`
+        SELECT COUNT(*) as total,
+          COUNT(*) FILTER (WHERE is_human_trial = true) as human_trials,
+          COUNT(*) FILTER (WHERE peer_reviewed = true) as peer_reviewed,
+          MIN(publish_year) FILTER (WHERE publish_year IS NOT NULL) as earliest_year,
+          MAX(publish_year) FILTER (WHERE publish_year IS NOT NULL) as latest_year
+        FROM studies
+      `, []),
+    ]);
     const overall = overallRows[0] || {};
 
     const renderTable = (headers: string[], rows: string[][]) => `
@@ -1356,6 +1340,7 @@ router.get("/export", async (req: Request, res: Response) => {
         JOIN health_conditions hc ON hc.id = shc.health_condition_id
         WHERE hc.slug = $1
         ORDER BY s.publish_year DESC NULLS LAST
+        LIMIT 2000
       `;
       params = [conditionSlug];
     } else {
@@ -1367,6 +1352,7 @@ router.get("/export", async (req: Request, res: Response) => {
                s.results_short, s.conclusion_short, s.slug
         FROM studies s
         ORDER BY s.publish_year DESC NULLS LAST
+        LIMIT 2000
       `;
       params = [];
     }

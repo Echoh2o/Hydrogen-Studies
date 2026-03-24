@@ -111,9 +111,9 @@ async function setupServer() {
 
       // Give in-flight requests time to complete before force exit
       setTimeout(() => {
-        console.error("Forced shutdown after 15s timeout.");
+        console.error("Forced shutdown after 30s timeout.");
         process.exit(1);
-      }, 15000).unref();
+      }, 30000).unref();
     };
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));

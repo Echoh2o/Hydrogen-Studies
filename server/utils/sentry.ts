@@ -11,7 +11,8 @@ export function initSentry() {
     Sentry.init({
       dsn,
       environment: process.env.NODE_ENV,
-      tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+      tracesSampleRate: 0.3, // 30% of transactions for performance monitoring
+      sampleRate: 1.0, // Capture 100% of errors (never drop errors)
       beforeSend(event) {
         // Strip sensitive data
         if (event.request?.cookies) delete event.request.cookies;

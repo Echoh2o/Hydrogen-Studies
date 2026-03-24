@@ -14,10 +14,12 @@ if (!process.env.DATABASE_URL) {
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 15,
-  min: 3,
-  idleTimeoutMillis: 60000,
-  connectionTimeoutMillis: 8000,
+  min: 2,
+  idleTimeoutMillis: 120000, // 2 min — well below Neon's 5 min idle disconnect
+  connectionTimeoutMillis: 10000, // 10s to acquire from pool
   application_name: "hydrogen-studies-app",
+  // statement_timeout prevents runaway queries from holding connections forever
+  options: "-c statement_timeout=30000", // 30 second max per query
 });
 
 // Prevent unhandled pool errors from crashing the process
