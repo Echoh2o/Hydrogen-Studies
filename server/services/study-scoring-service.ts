@@ -337,6 +337,7 @@ export class StudyScoringService {
       const result = await ai.generateJSON(systemPrompt, userPrompt, {
         temperature: 0.3,
         maxTokens: 500,
+        model: "claude-haiku-4-5-20251001",
       });
 
       return result.redFlags || [];

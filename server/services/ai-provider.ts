@@ -63,8 +63,16 @@ function getOpenAI(): OpenAI | null {
 export interface AIGenerateOptions {
   maxTokens?: number;
   temperature?: number;
-  model?: string; // override model (e.g. "claude-sonnet-4-20250514" for cheaper tasks)
+  model?: string; // override model — use MODELS.HAIKU for cheap tasks
 }
+
+// Model constants for cost optimization
+export const MODELS = {
+  /** Full-power model for complex generation (blog content, detailed analysis) */
+  SONNET: "claude-sonnet-4-20250514",
+  /** Fast, cheap model (~90% cheaper) for extraction, parsing, short summaries */
+  HAIKU: "claude-haiku-4-5-20251001",
+} as const;
 
 /**
  * Generate a text response from AI.

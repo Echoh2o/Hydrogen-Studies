@@ -526,6 +526,7 @@ export class ContentOptimizationService {
       const result = await ai.generateJSON(systemPrompt, userPrompt, {
         maxTokens: 200,
         temperature: 0.3,
+        model: "claude-haiku-4-5-20251001",
       });
 
       return result;
@@ -579,6 +580,7 @@ export class ContentOptimizationService {
       const result = await ai.generateJSON(systemPrompt, userPrompt, {
         maxTokens: 500,
         temperature: 0.3,
+        model: "claude-haiku-4-5-20251001",
       });
 
       return result.updateNeeded ? result : null;

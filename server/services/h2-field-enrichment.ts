@@ -162,7 +162,7 @@ Methods: ${study.methods || study.methodsShort || "Not available"}`;
   const result = await ai.generateJSON<H2ExtractionResult>(
     SYSTEM_PROMPT,
     userPrompt,
-    { maxTokens: 1000, temperature: 0.3 },
+    { maxTokens: 1000, temperature: 0.3, model: "claude-haiku-4-5-20251001" },
   );
 
   // Build update object with only non-null fields

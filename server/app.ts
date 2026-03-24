@@ -82,6 +82,7 @@ import {
   searchRateLimiter,
   generalApiRateLimiter,
   aiGenerationRateLimiter,
+  skipForAdmin,
 } from "./utils/rate-limiting";
 
 
@@ -330,6 +331,17 @@ app.use("/api/enrichment", aiGenerationRateLimiter, enrichmentRoutes);
 app.use("/api/blog-recommendations", aiGenerationRateLimiter, blogRecommendationRoutes);
 app.use("/api/trends", generalApiRateLimiter, trendsRoutes);
 app.use("/api/analytics", generalApiRateLimiter, contentAnalyticsRoutes);
+// Chat endpoints are the #1 API cost driver — strict rate limit
+const chatRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 20, // 20 chat queries per hour per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Chat rate limit exceeded. Please try again later.",
+  skip: skipForAdmin,
+});
+app.use("/api/chat", chatRateLimiter);
+app.use("/api/advanced-chat", chatRateLimiter);
 app.use("/api", chatRoutes);
 app.use(explorerRoutes);
 app.use("/api/review-assistant", aiGenerationRateLimiter, reviewAssistantRoutes);

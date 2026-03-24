@@ -794,7 +794,7 @@ Only include categories that are clearly relevant. Return valid JSON only.`;
     const result = await ai.generateJSON(
       "You are a medical research categorization assistant. Return valid JSON only.",
       prompt,
-      { temperature: 0.3, maxTokens: 300 },
+      { temperature: 0.3, maxTokens: 300, model: "claude-haiku-4-5-20251001" },
     );
 
     return {

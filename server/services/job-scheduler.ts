@@ -29,6 +29,8 @@ export class JobScheduler {
   private readonly CITATION_BUILD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly DIGEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly FRESHNESS_CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
+  private readonly BLOG_GENERATION_INTERVAL_MS = 6 * 60 * 60 * 1000; // Every 6 hours (not every 15 min!)
+  private lastBlogGenerationCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -313,9 +315,17 @@ export class JobScheduler {
    * produces multiple article types with images and internal links.
    */
   private async runBatchBlogGenerationJob() {
-    const MAX_BLOGS_PER_CYCLE = 5;
+    const MAX_BLOGS_PER_CYCLE = 2; // Reduced from 5 to control API costs
 
     try {
+      // Only run every 6 hours (not every 15-minute cycle)
+      if (this.lastBlogGenerationCheck) {
+        const elapsed = Date.now() - this.lastBlogGenerationCheck.getTime();
+        if (elapsed < this.BLOG_GENERATION_INTERVAL_MS) {
+          return;
+        }
+      }
+      this.lastBlogGenerationCheck = new Date();
       // Find pipeline-processed studies (have plain_language_title and category)
       // that don't have any blog article yet. Use a LEFT JOIN to check for missing blogs.
       const candidateStudies = await db
@@ -563,7 +573,7 @@ export class JobScheduler {
    * Generates 10 TLDRs per cycle using Claude AI.
    */
   private async runTldrGenerationJob() {
-    const MAX_TLDRS_PER_CYCLE = 10;
+    const MAX_TLDRS_PER_CYCLE = 3; // Reduced from 10 to control API costs
 
     try {
       const { isNull } = await import("drizzle-orm");
@@ -589,7 +599,7 @@ export class JobScheduler {
           const prompt = `You are a science communicator. Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.\n\nStudy title: ${study.title}\nAbstract: ${study.abstract}\n${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}\n\nWrite ONLY the TL;DR text, nothing else.`;
 
           const message = await anthropic.messages.create({
-            model: "claude-sonnet-4-20250514",
+            model: "claude-haiku-4-5-20251001", // Haiku is 90% cheaper — TLDRs are simple summaries
             max_tokens: 200,
             messages: [{ role: "user", content: prompt }],
           });

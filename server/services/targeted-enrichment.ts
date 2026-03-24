@@ -187,7 +187,7 @@ async function enrichSingleStudy(study: any): Promise<void> {
     const enrichmentData = await ai.generateJSON(
       "You are a medical research expert specializing in hydrogen therapy studies. Provide accurate, scientific analysis in the requested JSON format.",
       enrichmentPrompt,
-      { maxTokens: 1000, temperature: 0.3 },
+      { maxTokens: 1000, temperature: 0.3, model: "claude-haiku-4-5-20251001" },
     );
 
     // Update the study with enriched data

@@ -462,6 +462,7 @@ Return a JSON object with a "tags" array of tag names, maximum 8 tags.`;
     const result = await ai.generateJSON(systemPrompt, userPrompt, {
       maxTokens: 200,
       temperature: 0.3,
+      model: "claude-haiku-4-5-20251001",
     });
 
     return Array.isArray(result.tags) ? result.tags.slice(0, 8) : [];

@@ -373,7 +373,7 @@ async function createImagePrompt(
       5. More like a magazine cover photo than a textbook illustration
 
       Provide only the image generation prompt with no additional explanation.`,
-      { maxTokens: 200, temperature: 0.7 },
+      { maxTokens: 200, temperature: 0.7, model: "claude-haiku-4-5-20251001" },
     ))?.trim();
 
     if (!generatedPrompt) {

@@ -215,6 +215,7 @@ Published: ${newStudy.journalPublishDate}`;
       const result = await ai.generateJSON(systemPrompt, userPrompt, {
         maxTokens: 400,
         temperature: 0.3,
+        model: "claude-haiku-4-5-20251001",
       });
 
       if (result.needsUpdate) {
@@ -295,6 +296,7 @@ Conclusion: ${study2.conclusion}`;
       const result = await ai.generateJSON(systemPrompt, userPrompt, {
         maxTokens: 200,
         temperature: 0.3,
+        model: "claude-haiku-4-5-20251001",
       });
 
       return result;

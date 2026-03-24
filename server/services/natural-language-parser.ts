@@ -131,6 +131,7 @@ export async function parseNaturalLanguageQuery(
     const parsed = await ai.generateJSON(systemPrompt, userPrompt, {
       temperature: 0.3,
       maxTokens: 1000,
+      model: "claude-haiku-4-5-20251001",
     });
 
     // Map the parsed intent string to enum
@@ -307,6 +308,7 @@ export async function generateSearchSuggestions(
     const result = await ai.generateJSON(systemPrompt, userPrompt, {
       temperature: 0.5,
       maxTokens: 200,
+      model: "claude-haiku-4-5-20251001",
     });
 
     return result.suggestions || [];
@@ -337,6 +339,7 @@ export async function correctAndExpandQuery(query: string): Promise<string> {
     const result = await ai.generateText(systemPrompt, userPrompt, {
       temperature: 0.1,
       maxTokens: 100,
+      model: "claude-haiku-4-5-20251001",
     });
 
     return result?.trim() || query;
