@@ -497,8 +497,9 @@ async function generateBlogImageForWorker(
   const imageClient = xaiClient || openaiClient!;
   const provider = xaiClient ? "xai" : "openai";
 
-  const prompt = `Scientific illustration for a hydrogen therapy article titled "${title}".
-Clean, professional medical illustration style. No text or labels. Neutral background.`.substring(0, 1000);
+  // Build a unique prompt based on study content, not a generic one
+  const { buildWorkerImagePrompt, buildWorkerAltText } = getWorkerImageHelpers();
+  const prompt = buildWorkerImagePrompt(study, title, articleType).substring(0, 1000);
 
   const generateParams: any = {
     model: provider === "xai" ? "grok-2-image" : "dall-e-3",
@@ -518,28 +519,21 @@ Clean, professional medical illustration style. No text or labels. Neutral backg
     return getDefaultCategoryImage(study.category);
   }
 
-  // Download and save locally
-  const fs = await import("fs");
-  const pathMod = await import("path");
+  // Download and save via storage utility (S3 or local fallback)
   const axiosMod = await import("axios");
   const axiosClient = axiosMod.default;
-
-  const uploadDir = pathMod.join(process.cwd(), "public", "uploads", "blog");
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
+  const imgResponse = await axiosClient.get(generatedUrl, { responseType: "arraybuffer", timeout: 15000 });
+  const imageBuffer = Buffer.from(imgResponse.data);
 
   const safeType = articleType.replace(/[^a-z0-9-]/g, "-");
   const filename = `blog-${safeType}-${study.id}-${Date.now()}.png`;
-  const filepath = pathMod.join(uploadDir, filename);
 
-  const imgResponse = await axiosClient.get(generatedUrl, { responseType: "arraybuffer", timeout: 15000 });
-
-  fs.writeFileSync(filepath, Buffer.from(imgResponse.data));
+  const { uploadFile } = await import("../utils/storage");
+  const storedUrl = await uploadFile(imageBuffer, `blog-images/${filename}`, "image/png");
 
   return {
-    imageUrl: `/uploads/blog/${filename}`,
-    imageAlt: `Illustration for ${title}`,
+    imageUrl: storedUrl,
+    imageAlt: buildWorkerAltText(study, title, articleType),
   };
 }
 
@@ -551,6 +545,60 @@ function getDefaultCategoryImage(category?: string): { imageUrl: string | null; 
   return {
     imageUrl: "/images/fallback-study-image.svg",
     imageAlt: `${category || "Hydrogen therapy"} research illustration`,
+  };
+}
+
+/**
+ * Helper functions for unique image prompts in the worker
+ */
+function getWorkerImageHelpers() {
+  return {
+    buildWorkerImagePrompt(study: any, title: string, articleType: string): string {
+      const category = (study.category || "health").toLowerCase();
+      const text = `${study.title || ""} ${study.abstract || ""}`.toLowerCase();
+
+      // Detect topic-specific visuals
+      let topicVisual = "person drinking hydrogen-rich water, wellness setting";
+      if (text.includes("diabetes") || text.includes("glucose")) topicVisual = "blood glucose monitoring, healthy meal, metabolic health";
+      else if (text.includes("brain") || text.includes("cognitive")) topicVisual = "brain visualization, neural pathways";
+      else if (text.includes("exercise") || text.includes("athletic")) topicVisual = "athlete hydrating, fitness recovery";
+      else if (text.includes("skin") || text.includes("aging")) topicVisual = "healthy radiant skin, skincare";
+      else if (text.includes("heart") || text.includes("cardiovascular")) topicVisual = "heart health, cardiovascular wellness";
+      else if (text.includes("gut") || text.includes("microbiome")) topicVisual = "gut health illustration, digestive wellness";
+      else if (text.includes("cancer") || text.includes("radiation")) topicVisual = "hopeful medical care, warm clinical tones";
+      else if (text.includes("arthritis") || text.includes("joint")) topicVisual = "joint mobility, person stretching";
+      else if (text.includes("liver") || text.includes("hepat")) topicVisual = "liver health visualization";
+      else if (text.includes("kidney") || text.includes("renal")) topicVisual = "kidney health illustration";
+      else if (text.includes("fatigue") || text.includes("energy")) topicVisual = "person feeling energized, morning vitality";
+      else if (text.includes("anxiety") || text.includes("stress")) topicVisual = "calm meditation, mental wellness";
+
+      const styleByType: Record<string, string> = {
+        overview: "Scientific editorial style with data elements",
+        practical_application: "Lifestyle photography, person in wellness setting",
+        simplified: "Friendly colorful illustration, approachable",
+        patient_story: "Warm portrait of healthy person",
+        myth_busting: "Split-frame contrast composition",
+        daily_routine: "Morning wellness routine with natural light",
+        side_effects: "Calming clinical setting, reassuring",
+        tips: "Organized wellness flat-lay, top-down editorial",
+      };
+      const style = styleByType[articleType] || "Clean editorial health photography";
+
+      return `${style}. Subject: ${topicVisual}. Category: ${category}. No text, no labels, no formulas. Unique to: ${title.substring(0, 60)}.`;
+    },
+
+    buildWorkerAltText(study: any, title: string, articleType: string): string {
+      const category = study.category || "health";
+      const typeLabel: Record<string, string> = {
+        overview: "research overview", practical_application: "practical guide",
+        simplified: "simple explanation", patient_story: "patient perspective",
+        myth_busting: "myths vs facts", daily_routine: "daily routine",
+        side_effects: "safety guide", tips: "practical tips",
+      };
+      const label = typeLabel[articleType] || "article";
+      const keyTerms = title.replace(/[^a-zA-Z\s]/g, "").split(/\s+/).filter(w => w.length > 4).slice(0, 4).join(", ");
+      return `Hydrogen therapy ${label} — ${category}: ${keyTerms}. ${title.substring(0, 80)}`;
+    },
   };
 }
 

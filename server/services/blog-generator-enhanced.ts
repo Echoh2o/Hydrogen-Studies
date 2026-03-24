@@ -394,7 +394,8 @@ async function generateArticleImageWithFallback(
       return getDefaultImage(study.category);
     }
 
-    const prompt = `Beautiful, artistic editorial photo for health article: ${title}. Simple, clean, modern magazine style with soft natural lighting. No text, labels, or complex diagrams.`;
+    // Build a unique, topic-specific prompt based on study content + article type
+    const prompt = buildUniqueImagePrompt(study, title, articleType);
 
     const imageClient = xaiClient || openaiClient!;
     const provider = xaiClient ? "xai" : "openai";
@@ -417,12 +418,18 @@ async function generateArticleImageWithFallback(
       throw new Error("No image URL in response");
     }
 
-    // Download and save locally with error handling
-    const localPath = await downloadImage(imageUrl, study.id, articleType);
+    // Download and save via storage utility (S3 or local fallback)
+    const imageBuffer = await downloadImageToBuffer(imageUrl);
+    const filename = `blog-${slugify(articleType)}-${study.id}-${Date.now()}.png`;
+    const { uploadFile } = await import("../utils/storage");
+    const storedUrl = await uploadFile(imageBuffer, `blog-images/${filename}`, "image/png");
+
+    // Generate keyword-rich alt text unique to this article
+    const altText = buildUniqueAltText(study, title, articleType);
 
     return {
-      imageUrl: localPath,
-      imageAlt: `${title} - hydrogen ${articleType.replace(/_/g, " ")} research illustration`,
+      imageUrl: storedUrl,
+      imageAlt: altText,
     };
   } catch (error) {
     console.warn("Image generation failed, using default:", error);
@@ -431,30 +438,117 @@ async function generateArticleImageWithFallback(
 }
 
 /**
- * Download and save image locally with error handling
+ * Build a unique image prompt based on study topic, category, and article type.
+ * Each combination produces a visually distinct image.
  */
-async function downloadImage(
-  url: string,
-  studyId: number,
-  articleType: string,
-): Promise<string> {
+function buildUniqueImagePrompt(study: Study, title: string, articleType: string): string {
+  const category = (study.category || "health").toLowerCase();
+  const studyTitle = study.title || title;
+
+  // Detect the specific health topic from title/abstract
+  const topicHints = detectTopicVisuals(studyTitle, study.abstract || "");
+
+  // Article-type-specific visual style
+  const styleByType: Record<string, string> = {
+    overview: "Clean scientific infographic style with data visualization elements",
+    practical_application: "Person in a modern kitchen or wellness space, lifestyle photography",
+    simplified: "Friendly, colorful illustration with simple shapes, approachable and warm",
+    patient_story: "Warm candid portrait-style photo of a person looking healthy and hopeful",
+    myth_busting: "Split-frame composition showing contrast — misconception vs reality",
+    daily_routine: "Morning wellness routine scene with natural sunlight, glass of water",
+    side_effects: "Medical professional in a calming clinical setting, reassuring mood",
+    tips: "Organized flat-lay of health and wellness items, top-down editorial shot",
+  };
+
+  const style = styleByType[articleType] || "Clean editorial health photography";
+
+  return `${style}. Topic: ${topicHints}. Category: ${category}. Modern health magazine aesthetic. No text, no labels, no chemical formulas. Unique composition specific to ${title.substring(0, 60)}.`;
+}
+
+/**
+ * Detect specific visual elements from the study topic
+ */
+function detectTopicVisuals(title: string, abstract: string): string {
+  const text = `${title} ${abstract}`.toLowerCase();
+
+  if (text.includes("diabetes") || text.includes("glucose") || text.includes("insulin"))
+    return "blood glucose monitoring device, healthy meal prep, metabolic health";
+  if (text.includes("brain") || text.includes("cognitive") || text.includes("neuro"))
+    return "artistic brain visualization, neural pathways with warm lighting";
+  if (text.includes("exercise") || text.includes("athletic") || text.includes("sport"))
+    return "athlete hydrating after workout, fitness and recovery";
+  if (text.includes("skin") || text.includes("dermat") || text.includes("aging"))
+    return "radiant healthy skin close-up, skincare and wellness";
+  if (text.includes("heart") || text.includes("cardiovascular") || text.includes("blood pressure"))
+    return "anatomical heart illustration with modern design, cardiovascular wellness";
+  if (text.includes("gut") || text.includes("intestin") || text.includes("microbiome"))
+    return "colorful gut microbiome illustration, digestive health";
+  if (text.includes("cancer") || text.includes("tumor") || text.includes("radiation"))
+    return "hopeful cancer treatment scene, medical care with warm tones";
+  if (text.includes("liver") || text.includes("hepat"))
+    return "liver health visualization, organ health with clean design";
+  if (text.includes("kidney") || text.includes("renal"))
+    return "kidney health illustration, renal care";
+  if (text.includes("arthritis") || text.includes("joint") || text.includes("inflammation"))
+    return "person stretching comfortably, joint health and mobility";
+  if (text.includes("parkinson") || text.includes("alzheimer") || text.includes("dementia"))
+    return "elderly person engaging in activity, neuroprotection and healthy aging";
+  if (text.includes("lung") || text.includes("respiratory") || text.includes("inhalation"))
+    return "clean air and breathing, respiratory wellness";
+  if (text.includes("fatigue") || text.includes("energy") || text.includes("mitochondri"))
+    return "person feeling energized, morning vitality";
+  if (text.includes("anxiety") || text.includes("stress") || text.includes("mood"))
+    return "calm meditation scene, mental wellness and relaxation";
+  if (text.includes("cholesterol") || text.includes("lipid"))
+    return "heart-healthy foods arrangement, cardiovascular nutrition";
+  if (text.includes("weight") || text.includes("obesity") || text.includes("metabol"))
+    return "active lifestyle, healthy body composition";
+  if (text.includes("allergy") || text.includes("immune"))
+    return "immune system visualization, protective health imagery";
+
+  // Generic fallback based on hydrogen water
+  return "person drinking hydrogen-rich water, clean modern wellness setting";
+}
+
+/**
+ * Generate keyword-rich alt text that describes the actual image content
+ * and includes SEO-relevant terms for the article's topic.
+ */
+function buildUniqueAltText(study: Study, title: string, articleType: string): string {
+  const category = study.category || "health";
+  const typeLabel: Record<string, string> = {
+    overview: "research overview",
+    practical_application: "practical guide",
+    simplified: "simplified explanation",
+    patient_story: "patient perspective",
+    myth_busting: "myths vs facts",
+    daily_routine: "daily routine guide",
+    side_effects: "safety and side effects",
+    tips: "practical tips",
+  };
+  const label = typeLabel[articleType] || "research article";
+
+  // Extract key terms from the title for the alt text
+  const keyTerms = title
+    .replace(/[^a-zA-Z\s]/g, "")
+    .split(/\s+/)
+    .filter(w => w.length > 4)
+    .slice(0, 4)
+    .join(", ");
+
+  return `Hydrogen therapy ${label} illustration — ${category}: ${keyTerms}. Visual for: ${title.substring(0, 80)}`;
+}
+
+/**
+ * Download image URL to a Buffer
+ */
+async function downloadImageToBuffer(url: string): Promise<Buffer> {
   try {
     const response = await axios.get(url, {
       responseType: "arraybuffer",
-      timeout: 10000,
+      timeout: 15000,
     });
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "blog");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    const filename = `blog-${slugify(articleType)}-${studyId}-${Date.now()}.png`;
-    const filepath = path.join(uploadDir, filename);
-
-    fs.writeFileSync(filepath, Buffer.from(response.data));
-
-    return `/uploads/blog/${filename}`;
+    return Buffer.from(response.data);
   } catch (error) {
     console.error("Failed to download image:", error);
     throw new AppError(
