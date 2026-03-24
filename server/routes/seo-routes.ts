@@ -17,15 +17,43 @@ const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
 // Cache sitemaps for 1 hour to avoid hammering the DB on every crawl
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const MAX_CACHE_ENTRIES = 20; // Prevent unbounded memory growth
 const sitemapCache: Record<string, { content: string; timestamp: number }> = {};
 
 function getCached(key: string): string | null {
   const entry = sitemapCache[key];
-  if (entry && Date.now() - entry.timestamp < CACHE_TTL) return entry.content;
-  return null;
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    delete sitemapCache[key]; // Evict expired entries on read
+    return null;
+  }
+  return entry.content;
 }
 
 function setCache(key: string, content: string): void {
+  // Evict expired entries and enforce max size
+  const keys = Object.keys(sitemapCache);
+  if (keys.length >= MAX_CACHE_ENTRIES) {
+    const now = Date.now();
+    for (const k of keys) {
+      if (now - sitemapCache[k].timestamp > CACHE_TTL) {
+        delete sitemapCache[k];
+      }
+    }
+    // If still at max, evict oldest
+    const remaining = Object.keys(sitemapCache);
+    if (remaining.length >= MAX_CACHE_ENTRIES) {
+      let oldestKey = remaining[0];
+      let oldestTime = sitemapCache[oldestKey].timestamp;
+      for (const k of remaining) {
+        if (sitemapCache[k].timestamp < oldestTime) {
+          oldestKey = k;
+          oldestTime = sitemapCache[k].timestamp;
+        }
+      }
+      delete sitemapCache[oldestKey];
+    }
+  }
   sitemapCache[key] = { content, timestamp: Date.now() };
 }
 

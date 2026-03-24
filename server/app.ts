@@ -161,7 +161,21 @@ app.use(seoRoutes);
 // Shopify App Proxy SSR routes — public HTML pages, no CSRF/session needed
 // Mounted at /proxy — Shopify App Proxy forwards echowater.com/tools/hydrogen-research/* → /proxy/*
 import proxyRoutes from "./routes/proxy-routes";
-app.use("/proxy", proxyRoutes);
+import rateLimit from "express-rate-limit";
+const proxyRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60, // 60 req/min per IP for HTML pages
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const proxyExportRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5, // 5 CSV downloads per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/proxy/export", proxyExportRateLimiter);
+app.use("/proxy", proxyRateLimiter, proxyRoutes);
 
 // Secure session middleware with PostgreSQL store
 app.use(getSessionMiddleware());
@@ -615,11 +629,14 @@ pool.query("SELECT 1").then(async () => {
       { name: "008_backfill_slugs_and_human_trials", up: backfillSlugsAndHumanTrials },
     ]);
   } catch (err: any) {
-    console.warn("Migration runner error:", err.message);
+    console.error("FATAL: Migration failed:", err.message);
+    console.error("Shutting down — fix the migration and redeploy.");
+    process.exit(1);
   }
 }).catch((err: any) => {
-  console.error("WARNING: Database connection failed on startup:", err.message);
-  console.error("The app will start but DB-dependent features will fail until the connection is restored.");
+  console.error("FATAL: Database connection failed on startup:", err.message);
+  console.error("Shutting down — check DATABASE_URL and database availability.");
+  process.exit(1);
 });
 
 import { jobScheduler } from "./services/job-scheduler";

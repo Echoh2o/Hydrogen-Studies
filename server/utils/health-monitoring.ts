@@ -84,7 +84,10 @@ async function checkDatabase(): Promise<{
 }> {
   try {
     const start = Date.now();
-    await db.execute(sql`SELECT 1`);
+    // Verify both connectivity AND that critical tables exist
+    await db.execute(sql`
+      SELECT 1 FROM studies LIMIT 1
+    `);
     const latency = Date.now() - start;
     return { connected: true, latency };
   } catch (error) {

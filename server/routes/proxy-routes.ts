@@ -396,10 +396,10 @@ function renderPagination(currentPage: number, totalPages: number, baseUrl: stri
 
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-    const search = (req.query.q as string || "").trim();
-    const conditionSlug = (req.query.condition as string || "").trim();
-    const studyType = (req.query.type as string || "").trim();
+    const page = Math.min(500, Math.max(1, parseInt(req.query.page as string, 10) || 1));
+    const search = (req.query.q as string || "").trim().slice(0, 200);
+    const conditionSlug = (req.query.condition as string || "").trim().slice(0, 100);
+    const studyType = (req.query.type as string || "").trim().slice(0, 50);
     const yearFrom = parseInt(req.query.yearFrom as string, 10) || 0;
     const yearTo = parseInt(req.query.yearTo as string, 10) || 0;
 
@@ -820,8 +820,8 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
 
 router.get("/condition/:slug", async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
-    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const slug = (req.params.slug || "").slice(0, 100);
+    const page = Math.min(500, Math.max(1, parseInt(req.query.page as string, 10) || 1));
 
     // Fetch condition
     const condRows = await executeRawQuery(`

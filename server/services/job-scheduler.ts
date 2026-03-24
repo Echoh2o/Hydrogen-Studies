@@ -36,6 +36,27 @@ export class JobScheduler {
 
   private constructor() {}
 
+  /**
+   * Wrap an async function with a timeout. Returns null if the job times out or throws.
+   */
+  private async withTimeout<T>(fn: () => Promise<T>, timeoutMs: number, jobName: string): Promise<T | null> {
+    return new Promise<T | null>((resolve) => {
+      const timer = setTimeout(() => {
+        logger.warn(`Job timed out after ${timeoutMs}ms`, "JobScheduler", { job: jobName });
+        resolve(null);
+      }, timeoutMs);
+
+      fn().then((result) => {
+        clearTimeout(timer);
+        resolve(result);
+      }).catch((error) => {
+        clearTimeout(timer);
+        logger.error(`Job failed: ${jobName}`, error, "JobScheduler");
+        resolve(null);
+      });
+    });
+  }
+
   public static getInstance(): JobScheduler {
     if (!JobScheduler.instance) {
       JobScheduler.instance = new JobScheduler();
@@ -95,44 +116,187 @@ export class JobScheduler {
 
     try {
       // Job 1: Automated Study Discovery
-      const discoveryResult = await checkScheduledSearches();
-      if (discoveryResult.ran) {
-        logger.info("Discovery job completed", "JobScheduler", { result: discoveryResult });
+      try {
+        const start = Date.now();
+        const discoveryResult = await this.withTimeout(
+          () => checkScheduledSearches(),
+          5 * 60 * 1000,
+          "discovery"
+        );
+        const elapsed = Date.now() - start;
+        if (discoveryResult?.ran) {
+          logger.info("Discovery job completed", "JobScheduler", { result: discoveryResult });
+        }
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "discovery" });
+        }
+      } catch (error) {
+        logger.error("Job 1 (discovery) unexpected error", error, "JobScheduler");
       }
 
       // Job 2: Intelligent Content Enrichment
-      const enrichmentStats = await checkAndEnrichStudies();
-      if (enrichmentStats.totalProcessed > 0) {
-        logger.info("Enrichment completed", "JobScheduler", { totalProcessed: enrichmentStats.totalProcessed });
+      try {
+        const start = Date.now();
+        const enrichmentStats = await this.withTimeout(
+          () => checkAndEnrichStudies(),
+          5 * 60 * 1000,
+          "enrichment"
+        );
+        const elapsed = Date.now() - start;
+        if (enrichmentStats && enrichmentStats.totalProcessed > 0) {
+          logger.info("Enrichment completed", "JobScheduler", { totalProcessed: enrichmentStats.totalProcessed });
+        }
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "enrichment" });
+        }
+      } catch (error) {
+        logger.error("Job 2 (enrichment) unexpected error", error, "JobScheduler");
       }
 
       // Job 3: Retraction & Correction Monitoring (runs once per day)
-      await this.runRetractionCheckJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runRetractionCheckJob(),
+          5 * 60 * 1000,
+          "retraction-check"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "retraction-check" });
+        }
+      } catch (error) {
+        logger.error("Job 3 (retraction-check) unexpected error", error, "JobScheduler");
+      }
 
       // Job 4: Internal Link Building (runs once per week)
-      await this.runLinkBuildingJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runLinkBuildingJob(),
+          5 * 60 * 1000,
+          "link-building"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "link-building" });
+        }
+      } catch (error) {
+        logger.error("Job 4 (link-building) unexpected error", error, "JobScheduler");
+      }
 
       // Job 5: Research Discovery (runs every 6 hours)
-      await this.runResearchDiscoveryJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runResearchDiscoveryJob(),
+          5 * 60 * 1000,
+          "research-discovery"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "research-discovery" });
+        }
+      } catch (error) {
+        logger.error("Job 5 (research-discovery) unexpected error", error, "JobScheduler");
+      }
 
       // Job 6: Pipeline Processing (runs every 15 min cycle)
-      await this.runPipelineProcessingJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runPipelineProcessingJob(),
+          3 * 60 * 1000,
+          "pipeline-processing"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "pipeline-processing" });
+        }
+      } catch (error) {
+        logger.error("Job 6 (pipeline-processing) unexpected error", error, "JobScheduler");
+      }
 
       // Job 7: Batch Blog Auto-Generation (runs after pipeline, up to 5 per cycle)
       // Generates blog articles for pipeline-processed studies that don't have one yet.
-      await this.runBatchBlogGenerationJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runBatchBlogGenerationJob(),
+          10 * 60 * 1000,
+          "batch-blog-generation"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "batch-blog-generation" });
+        }
+      } catch (error) {
+        logger.error("Job 7 (batch-blog-generation) unexpected error", error, "JobScheduler");
+      }
 
       // Job 8: Citation Network Building (runs once per week)
-      await this.runCitationBuildJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runCitationBuildJob(),
+          3 * 60 * 1000,
+          "citation-build"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "citation-build" });
+        }
+      } catch (error) {
+        logger.error("Job 8 (citation-build) unexpected error", error, "JobScheduler");
+      }
 
       // Job 9: Weekly Digest Generation (runs once per week)
-      await this.runDigestGenerationJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runDigestGenerationJob(),
+          3 * 60 * 1000,
+          "digest-generation"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "digest-generation" });
+        }
+      } catch (error) {
+        logger.error("Job 9 (digest-generation) unexpected error", error, "JobScheduler");
+      }
 
       // Job 10: Study Metadata Freshness Check (runs once per week on Sundays)
-      await this.runMetadataFreshnessJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runMetadataFreshnessJob(),
+          3 * 60 * 1000,
+          "metadata-freshness"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "metadata-freshness" });
+        }
+      } catch (error) {
+        logger.error("Job 10 (metadata-freshness) unexpected error", error, "JobScheduler");
+      }
 
       // Job 11: Auto-generate TLDRs for studies missing them
-      await this.runTldrGenerationJob();
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runTldrGenerationJob(),
+          3 * 60 * 1000,
+          "tldr-generation"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "tldr-generation" });
+        }
+      } catch (error) {
+        logger.error("Job 11 (tldr-generation) unexpected error", error, "JobScheduler");
+      }
 
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
