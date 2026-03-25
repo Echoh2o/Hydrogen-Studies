@@ -12,6 +12,7 @@ import {
   Activity,
   Target,
   Users,
+  Link2,
   Menu,
   X,
 } from "lucide-react";
@@ -46,6 +47,7 @@ export default function AdminLayout({
         { href: "/admin/research-database", label: "Import Studies", icon: Search },
         { href: "/admin/blogs", label: "Blogs", icon: FileText },
         { href: "/admin/seo-strategy", label: "SEO", icon: Target },
+        { href: "/admin/links", label: "Links", icon: Link2 },
         { href: "/admin/monitoring", label: "System", icon: Activity },
         { href: "/admin/users", label: "Users", icon: Users },
         { href: "/admin/settings", label: "Settings", icon: Settings },

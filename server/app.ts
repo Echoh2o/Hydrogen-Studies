@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import crypto from "crypto";
 // @ts-ignore - no type declarations available
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -62,6 +63,7 @@ import shopifyWebhookRoutes from "./routes/shopify-webhook-routes";
 import newsletterRoutes from "./routes/newsletter-routes";
 import userDashboardRoutes from "./routes/user-dashboard-routes";
 import adminSettingsRoutes from "./routes/admin-settings-routes";
+import adminLinkRoutes from "./routes/admin-link-routes";
 import contactRoutes from "./routes/contact-routes";
 import pipelineRoutes from "./routes/pipeline-routes";
 import imageGenerationRoutes from "./routes/image-generation-routes";
@@ -163,6 +165,58 @@ app.use(seoRoutes);
 // Mounted at /proxy — Shopify App Proxy forwards echowater.com/tools/hydrogen-research/* → /proxy/*
 import proxyRoutes from "./routes/proxy-routes";
 import rateLimit from "express-rate-limit";
+
+/**
+ * Shopify App Proxy HMAC signature verification middleware.
+ * Shopify signs every proxied request with HMAC-SHA256 using the app's shared secret.
+ * If SHOPIFY_APP_SECRET is not set, verification is skipped (local dev).
+ * Embed routes (/proxy/embed/*) are exempt — they are meant for third-party embedding.
+ */
+function shopifyProxyAuth(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) {
+  // Embed routes are public — skip HMAC verification
+  if (req.path.startsWith("/embed")) {
+    return next();
+  }
+
+  const secret = process.env.SHOPIFY_APP_SECRET;
+  if (!secret) {
+    // No secret configured — skip verification (local dev)
+    return next();
+  }
+
+  const { signature, ...params } = req.query as Record<string, string>;
+  if (!signature) {
+    return res.status(401).send("Unauthorized");
+  }
+
+  const sortedMessage = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join("");
+
+  const computed = crypto
+    .createHmac("sha256", secret)
+    .update(sortedMessage)
+    .digest("hex");
+
+  // Timing-safe comparison to prevent timing attacks
+  const sigBuffer = Buffer.from(signature, "utf8");
+  const computedBuffer = Buffer.from(computed, "utf8");
+
+  if (
+    sigBuffer.length === computedBuffer.length &&
+    crypto.timingSafeEqual(sigBuffer, computedBuffer)
+  ) {
+    return next();
+  }
+
+  return res.status(401).send("Unauthorized");
+}
+
 const proxyRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60, // 60 req/min per IP for HTML pages
@@ -176,7 +230,7 @@ const proxyExportRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use("/proxy/export", proxyExportRateLimiter);
-app.use("/proxy", proxyRateLimiter, proxyRoutes);
+app.use("/proxy", shopifyProxyAuth, proxyRateLimiter, proxyRoutes);
 
 // Secure session middleware with PostgreSQL store
 app.use(getSessionMiddleware());
@@ -518,6 +572,9 @@ app.use("/api/me", userDashboardRoutes);
 
 // Admin settings
 app.use("/api/admin/settings", adminSettingsRoutes);
+
+// Admin link management
+app.use("/api/admin/links", adminLinkRoutes);
 
 // Research Intelligence Pipeline (admin-only)
 app.use("/api/pipeline", pipelineRoutes);

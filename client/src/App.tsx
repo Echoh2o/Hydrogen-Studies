@@ -188,6 +188,7 @@ const NaturalLanguageSearchPage = lazy(
 const RecentStudiesPage = lazy(() => import("./pages/RecentStudiesPage"));
 const MyDashboardPage = lazy(() => import("./pages/MyDashboardPage"));
 const PipelineDashboardPage = lazy(() => import("./pages/admin/PipelineDashboardPage"));
+const LinkManagementPage = lazy(() => import("./pages/admin/LinkManagementPage"));
 const ThisWeekPage = lazy(() => import("./pages/ThisWeekPage"));
 
 // Content Hub / Pillar Pages
@@ -472,6 +473,14 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin"]}>
               <PipelineDashboardPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        {/* Admin Link Management - Protected */}
+        <Route path="/admin/links">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <LinkManagementPage />
             </ProtectedRoute>
           )}
         </Route>

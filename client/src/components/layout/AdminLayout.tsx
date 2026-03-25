@@ -16,6 +16,7 @@ import {
   Home,
   KeyRound,
   FolderTree,
+  Link2,
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -80,6 +81,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: "Keyword Monitor",
       path: "/admin/keyword-monitor",
       icon: <KeyRound className="h-5 w-5" />,
+    },
+    {
+      name: "Link Management",
+      path: "/admin/links",
+      icon: <Link2 className="h-5 w-5" />,
     },
     { divider: true },
     {

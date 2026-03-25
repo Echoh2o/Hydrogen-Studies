@@ -7,7 +7,7 @@ const router = Router();
 // CONSTANTS
 // ============================================================
 
-const BASE_URL = "https://echowater.com/tools/hydrogen-research";
+const BASE_URL = process.env.PROXY_BASE_URL || "https://echowater.com/tools/hydrogen-research";
 const ITEMS_PER_PAGE = 20;
 
 // ============================================================
