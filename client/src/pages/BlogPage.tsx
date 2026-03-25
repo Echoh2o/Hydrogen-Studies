@@ -2,11 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import RelatedContent from "@/components/seo/RelatedContent";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDate, formatAuthors } from "@/lib/utils";
-import { ArrowLeft, Calendar, Eye, Share } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Share, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
@@ -272,6 +273,23 @@ function BlogPageContent() {
             { label: blog.title },
           ]} />
 
+          {/* Category link */}
+          {study?.category && (
+            <div className="mb-4">
+              <Link
+                to={`/blog/category/${study.category.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "")}`}
+              >
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-teal-50 hover:border-teal-300 transition-colors"
+                >
+                  <Tag className="h-3 w-3 mr-1" />
+                  {study.category}
+                </Badge>
+              </Link>
+            </div>
+          )}
+
           {/* Article header */}
           <header className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-3">
@@ -342,6 +360,22 @@ function BlogPageContent() {
                   <Button size="sm">View Original Research</Button>
                 </Link>
               </div>
+            </div>
+          )}
+
+          {/* Topic tags as links */}
+          {blog.semanticKeywords && blog.semanticKeywords.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {blog.semanticKeywords.slice(0, 8).map((keyword: string) => {
+                const tagSlug = keyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-");
+                return (
+                  <Link key={keyword} to={`/blog/category/${tagSlug}`}>
+                    <span className="inline-block px-3 py-1 bg-neutral-100 hover:bg-teal-50 text-neutral-700 hover:text-teal-700 text-sm rounded-full border border-neutral-200 hover:border-teal-200 transition-colors cursor-pointer">
+                      {keyword}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           )}
 

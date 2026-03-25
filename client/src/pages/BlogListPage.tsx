@@ -54,6 +54,21 @@ export default function BlogListPage() {
     },
   });
 
+  // Fetch study categories with blog counts
+  const { data: categoriesResponse } = useQuery<{
+    success: boolean;
+    categories: { name: string; slug: string; count: number }[];
+  }>({
+    queryKey: ["/api/blogs/study-categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/blogs/study-categories");
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      return res.json();
+    },
+  });
+
+  const studyCategories = categoriesResponse?.categories || [];
+
   // Fetch blog articles from database
   const { data: response, isLoading } = useQuery({
     queryKey: ["/api/blogs", { search: searchTerm, filterType: selectedCategory }],
@@ -131,6 +146,32 @@ export default function BlogListPage() {
             </Badge>
           </div>
         </section>
+
+        {/* Browse by Research Category */}
+        {studyCategories.length > 0 && (
+          <section className="py-6 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Browse by Research Category
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {studyCategories.map((cat) => (
+                  <Link key={cat.slug} href={`/blog/category/${cat.slug}`}>
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-teal-50 hover:border-teal-300 transition-colors px-3 py-1.5 text-sm"
+                    >
+                      {cat.name}
+                      <span className="ml-1.5 text-xs text-gray-400">
+                        ({cat.count})
+                      </span>
+                    </Badge>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Search and Filter */}
         <section className="py-8 px-4 sm:px-6 lg:px-8 bg-white border-y">

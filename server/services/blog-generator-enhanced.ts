@@ -711,18 +711,40 @@ function createContentPrompt(study: Study, articleType: string): string {
 
   const basePrompt = prompts[articleType] || prompts.overview;
 
+  // Build internal link context for the AI to embed in the content
+  const studySlug = study.slug || `id/${study.id}`;
+  const category = study.category || "General Health";
+  const categorySlug = category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  const conditions = (study.healthConditions || []).slice(0, 3);
+
+  const linkInstructions = `
+INTERNAL LINKS — You MUST include these as markdown links naturally woven into the content:
+1. Link to the source study: [original research study](/study/${studySlug}) — mention it at least once
+2. Link to the category hub: [hydrogen ${category.toLowerCase()} research](/blog/category/${categorySlug}) — include once
+3. Link to the research database: [hydrogen research database](/proxy/) — include once in the conclusion
+${conditions.length > 0 ? `4. Mention these related health conditions and link them: ${conditions.map(c => {
+  const cSlug = c.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return `[${c}](/explore-by-condition/${cSlug})`;
+}).join(", ")}` : ""}
+
+IMPORTANT: Links must feel natural in the sentence. Do NOT list them separately. Weave them into the narrative.
+Example: "According to the [original research study](/study/${studySlug}), hydrogen water showed a 45% reduction..."`;
+
   return `${basePrompt}
 
 Study Title: ${study.title}
 Abstract: ${study.abstract}
-Category: ${study.category || "General Health"}
+Category: ${category}
 
-Requirements:
+${linkInstructions}
+
+Content Requirements:
 - Write at a 4th-6th grade reading level (Flesch-Kincaid score 60-70)
 - Use short sentences and simple words — explain any scientific terms
 - Include specific details from the study (numbers, percentages, outcomes)
 - Structure with clear H2 (##) and H3 (###) headings that include keyword variations of "hydrogen therapy" or "hydrogen water"
 - Include a "Key Takeaways" or "What This Means for You" section
 - End with a brief disclaimer: "Consult your healthcare provider before starting any new health regimen"
-- Aim for 600-900 words`;
+- Aim for 600-900 words
+- The content MUST contain at least 3 internal markdown links as specified above`;
 }

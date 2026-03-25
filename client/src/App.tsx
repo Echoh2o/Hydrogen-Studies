@@ -35,6 +35,7 @@ const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const HydrogenBasicsPage = lazy(() => import("@/pages/HydrogenBasicsPage"));
 const HealthBenefitsPage = lazy(() => import("@/pages/HealthBenefitsPage"));
 const PublicBlogListPage = lazy(() => import("@/pages/BlogListPage"));
+const BlogCategoryPage = lazy(() => import("@/pages/BlogCategoryPage"));
 const ContactUsPage = lazy(() => import("@/pages/ContactUsPage"));
 
 // Legal and Policy Pages
@@ -241,6 +242,7 @@ function Router() {
         <Route path="/learn/basics" component={HydrogenBasicsPage} />
         <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
         <Route path="/blog" component={PublicBlogListPage} />
+        <Route path="/blog/category/:slug" component={BlogCategoryPage} />
         {/* Consolidated Blog Page - handles both /blog/id and /blog/slug via param detection */}
         <Route path="/blog/:id" component={BlogPage} />
         <Route path="/blog/:id/:slug" component={BlogPage} />

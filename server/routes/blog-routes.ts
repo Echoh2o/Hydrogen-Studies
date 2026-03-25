@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "../db";
 import { blogArticles, studies, insertBlogArticleSchema } from "@shared/schema";
-import { sql, count, desc, eq, isNotNull } from "drizzle-orm";
+import { sql, count, desc, eq, isNotNull, and } from "drizzle-orm";
 import { z } from "zod";
 import { isAuthenticated, requireAdmin } from "../auth";
 import {
@@ -132,6 +132,129 @@ router.get("/", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to fetch blog articles",
+    });
+  }
+});
+
+/**
+ * Get blogs filtered by study category (e.g., "cardiovascular", "neurological")
+ * Joins blog_articles with studies to filter by the study's category field
+ */
+router.get("/by-category/:category", async (req, res) => {
+  try {
+    const categorySlug = req.params.category;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const offset = (page - 1) * limit;
+
+    if (!categorySlug) {
+      return res.status(400).json({
+        success: false,
+        error: "Category is required",
+      });
+    }
+
+    // Convert slug back to category name for matching (e.g., "anti-inflammatory" -> "anti-inflammatory")
+    // Categories in the DB may use spaces or underscores; try matching with flexible ILIKE
+    const categoryPattern = categorySlug.replace(/-/g, "%");
+
+    // Fetch blogs joined with studies, filtered by study category
+    const blogs = await db
+      .select({
+        id: blogArticles.id,
+        title: blogArticles.title,
+        slug: blogArticles.slug,
+        summary: blogArticles.summary,
+        imageUrl: blogArticles.imageUrl,
+        imageAlt: blogArticles.imageAlt,
+        articleType: blogArticles.articleType,
+        createdAt: blogArticles.createdAt,
+        viewCount: blogArticles.viewCount,
+        semanticKeywords: blogArticles.semanticKeywords,
+        authorBio: blogArticles.authorBio,
+        studyId: blogArticles.studyId,
+        studyCategory: studies.category,
+      })
+      .from(blogArticles)
+      .innerJoin(studies, eq(blogArticles.studyId, studies.id))
+      .where(
+        and(
+          eq(blogArticles.isPublished, true),
+          sql`LOWER(${studies.category}) ILIKE LOWER(${categoryPattern})`
+        )
+      )
+      .orderBy(desc(blogArticles.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(blogArticles)
+      .innerJoin(studies, eq(blogArticles.studyId, studies.id))
+      .where(
+        and(
+          eq(blogArticles.isPublished, true),
+          sql`LOWER(${studies.category}) ILIKE LOWER(${categoryPattern})`
+        )
+      );
+
+    res.json({
+      data: blogs,
+      total: totalResult.count,
+      page,
+      limit,
+      totalPages: Math.ceil(totalResult.count / limit),
+      category: categorySlug,
+    });
+  } catch (error) {
+    console.error("Error fetching blogs by category:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch blogs by category",
+    });
+  }
+});
+
+/**
+ * Get all study categories that have associated blog articles, with blog counts
+ * Returns [{ name, slug, count }]
+ */
+router.get("/study-categories", async (req, res) => {
+  try {
+    const categories = await db
+      .select({
+        name: studies.category,
+        count: count(),
+      })
+      .from(blogArticles)
+      .innerJoin(studies, eq(blogArticles.studyId, studies.id))
+      .where(
+        and(
+          eq(blogArticles.isPublished, true),
+          isNotNull(studies.category)
+        )
+      )
+      .groupBy(studies.category)
+      .orderBy(desc(count()));
+
+    const formattedCategories = categories
+      .filter((cat) => cat.name && cat.name.trim() !== "")
+      .map((cat) => ({
+        name: cat.name,
+        slug: cat.name.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, ""),
+        count: cat.count,
+      }));
+
+    res.json({
+      success: true,
+      categories: formattedCategories,
+    });
+  } catch (error) {
+    console.error("Error fetching study categories for blogs:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch study categories",
     });
   }
 });

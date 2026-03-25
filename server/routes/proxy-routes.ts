@@ -901,6 +901,28 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
       ${studyCards}
 
       ${renderPagination(page, totalPages, `/tools/hydrogen-research/condition/${slug}`, {})}
+
+      ${await (async () => {
+        // Fetch related blog articles about this condition's studies
+        const blogRows = await executeRawQuery(`
+          SELECT DISTINCT b.title, b.slug, b.summary, b.article_type
+          FROM blog_articles b
+          JOIN studies s ON s.id = b.study_id
+          JOIN study_health_conditions shc ON shc.study_id = s.id
+          WHERE shc.health_condition_id = $1 AND b.is_published = true
+          ORDER BY b.created_at DESC LIMIT 5
+        `, [condition.id]);
+        if (blogRows.length === 0) return "";
+        const blogLinks = blogRows.map((b: any) =>
+          `<li><a href="/blog/${escapeAttr(b.slug)}" class="h2r-link">${escapeHtml(b.title)}</a>
+           <span class="h2r-small h2r-muted"> — ${escapeHtml(b.article_type?.replace(/_/g, " ") || "article")}</span></li>`
+        ).join("");
+        return `
+          <h2 class="h2r-h2">Related Articles</h2>
+          <p class="h2r-text">Read more about hydrogen therapy and ${escapeHtml(condition.name)}:</p>
+          <ul class="h2r-related-list">${blogLinks}</ul>
+        `;
+      })()}
     `;
 
     const html = renderPage(
