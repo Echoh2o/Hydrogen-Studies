@@ -230,6 +230,7 @@ router.get("/sitemap-studies.xml", async (req: Request, res: Response) => {
       return res.send(cached);
     }
 
+    // Only include studies with proper SEO slugs — exclude id-only entries
     const allStudies = await db.select({
       id: studies.id,
       slug: studies.slug,
@@ -238,10 +239,13 @@ router.get("/sitemap-studies.xml", async (req: Request, res: Response) => {
       imageUrl: studies.imageUrl,
       title: studies.title,
       publishYear: studies.publishYear,
-    }).from(studies).orderBy(desc(studies.id));
+    }).from(studies)
+      .where(isNotNull(studies.slug))
+      .orderBy(desc(studies.id));
 
-    const urls = allStudies.map(s => {
-      const slug = s.slug || `id/${s.id}`;
+    const urls = allStudies
+      .filter(s => s.slug && !s.slug.startsWith("id/"))
+      .map(s => {
       const lastmod = formatDate(s.lastModified || s.createdAt);
       const imageTag = s.imageUrl ? `
     <image:image>
@@ -249,7 +253,7 @@ router.get("/sitemap-studies.xml", async (req: Request, res: Response) => {
       <image:title>${escapeXml(s.title)}</image:title>
     </image:image>` : "";
       return `  <url>
-    <loc>${SITE_URL}/study/${encodeURIComponent(slug)}</loc>
+    <loc>${SITE_URL}/study/${encodeURIComponent(s.slug!)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>${imageTag}
@@ -379,26 +383,10 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
       return res.send(cached);
     }
 
-    // Get unique categories from studies
-    const categoryResults = await db.select({ category: studies.category })
-      .from(studies)
-      .groupBy(studies.category);
-
-    // Get unique body systems, conditions, mechanisms from array fields
+    // NOTE: Condition pages are in sitemap-categories.xml — don't duplicate here.
+    // This sitemap covers body systems, mechanisms, delivery methods, and life stages only.
     const urls: string[] = [];
     const today = formatDate(new Date());
-
-    // Category explore pages
-    for (const c of categoryResults) {
-      if (!c.category) continue;
-      const slug = c.category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      urls.push(`  <url>
-    <loc>${SITE_URL}/explore-by-condition/${encodeURIComponent(slug)}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`);
-    }
 
     // Predefined body system explore pages
     const bodySystems = [

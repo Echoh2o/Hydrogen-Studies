@@ -143,6 +143,12 @@ const CSS = `
     background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:14px;
     font-size:0.82rem;color:#92400e;margin:32px 0 0;
   }
+  .h2r-page-footer{
+    margin:48px 0 0;padding:24px 0 0;border-top:1px solid #e5e7eb;
+    font-size:0.82rem;color:#666;text-align:center;
+  }
+  .h2r-page-footer a{color:#1a6bc4;text-decoration:none;margin:0 8px}
+  .h2r-page-footer a:hover{text-decoration:underline}
   .h2r-related-list{list-style:none;padding:0;margin:0}
   .h2r-related-list li{padding:8px 0;border-bottom:1px solid #f3f4f6}
   .h2r-related-list li:last-child{border-bottom:none}
@@ -203,7 +209,7 @@ const CSS = `
 /**
  * Wraps page content in a full HTML document with inline CSS, meta tags, and canonical URL.
  */
-function renderPage(title: string, metaDescription: string, content: string, canonicalPath: string): string {
+function renderPage(title: string, metaDescription: string, content: string, canonicalPath: string, options?: { noIndex?: boolean }): string {
   const canonicalUrl = `${BASE_URL}${canonicalPath}`;
   return `<!DOCTYPE html>
 <html lang="en">
@@ -212,16 +218,24 @@ function renderPage(title: string, metaDescription: string, content: string, can
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeAttr(metaDescription)}">
+  ${options?.noIndex ? '<meta name="robots" content="noindex, follow">' : ""}
   <link rel="canonical" href="${escapeAttr(canonicalUrl)}">
   <meta property="og:title" content="${escapeAttr(title)}">
   <meta property="og:description" content="${escapeAttr(metaDescription)}">
   <meta property="og:url" content="${escapeAttr(canonicalUrl)}">
   <meta property="og:type" content="website">
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="rjIt9UY/qFbTPzCzRK8BRg" async></script>
   <style>${CSS}</style>
 </head>
 <body>
   <div class="h2r-root">
     ${content}
+    <div class="h2r-page-footer">
+      <a href="/tools/hydrogen-research/">Research Database</a>
+      <a href="/tools/hydrogen-research/stats">Statistics</a>
+      <a href="/tools/hydrogen-research/methodology">Methodology</a>
+      <a href="/tools/hydrogen-research/sitemap.xml">Sitemap</a>
+    </div>
   </div>
 </body>
 </html>`;
@@ -246,11 +260,18 @@ function renderPageWithSchema(title: string, metaDescription: string, content: s
   <meta property="og:type" content="article">
   ${ogImage ? `<meta property="og:image" content="${escapeAttr(ogImage)}">` : ""}
   <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="rjIt9UY/qFbTPzCzRK8BRg" async></script>
   <style>${CSS}</style>
 </head>
 <body>
   <div class="h2r-root">
     ${content}
+    <div class="h2r-page-footer">
+      <a href="/tools/hydrogen-research/">Research Database</a>
+      <a href="/tools/hydrogen-research/stats">Statistics</a>
+      <a href="/tools/hydrogen-research/methodology">Methodology</a>
+      <a href="/tools/hydrogen-research/sitemap.xml">Sitemap</a>
+    </div>
   </div>
 </body>
 </html>`;
@@ -269,6 +290,12 @@ function escapeHtml(str: string): string {
 function escapeAttr(str: string): string {
   if (!str) return "";
   return str.replace(/"/g, "&quot;").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Return the string if it has real content, or empty string for sentinels/blanks */
+function realContent(val: string | null | undefined): string {
+  if (!val || val === "__no_content__") return "";
+  return val;
 }
 
 function getStudyTypeBadgeClass(studyType: string | null): string {
@@ -568,11 +595,13 @@ router.get("/", async (req: Request, res: Response) => {
       </div>
     `;
 
+    const hasFilters = !!(search || conditionSlug || studyType || yearFrom || yearTo || page > 1);
     const html = renderPage(
       "Hydrogen Water Research Database — Echo Water",
       "Browse peer-reviewed studies on molecular hydrogen therapy. Filter by condition, study type, and year. Curated by Echo Water.",
       content,
-      "/"
+      "/",
+      { noIndex: hasFilters }
     );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -635,7 +664,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
       "@type": "ScholarlyArticle",
       "headline": study.title,
       "name": displayTitle,
-      "description": study.meta_description || study.conclusion_short || truncate(study.abstract, 200),
+      "description": study.meta_description || realContent(study.key_finding) || study.conclusion_short || truncate(study.abstract, 200),
       "url": `${BASE_URL}/study/${slug}`,
     };
     if (study.authors) {
@@ -712,19 +741,19 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
         </div>
       ` : ""}
 
-      ${study.results_short || study.conclusion_short ? `
+      ${realContent(study.key_finding) || study.results_short || study.conclusion_short ? `
         <div class="h2r-key-finding">
           <div class="h2r-key-finding-label">Key Finding</div>
-          <p class="h2r-text" style="margin:0">${escapeHtml(study.results_short || study.conclusion_short)}</p>
+          <p class="h2r-text" style="margin:0">${escapeHtml(realContent(study.key_finding) || study.results_short || study.conclusion_short)}</p>
         </div>
       ` : ""}
 
       ${metadataGrid}
 
-      ${study.tldr || study.summary_markdown || study.conclusion_short ? `
+      ${study.plain_summary || study.tldr || study.summary_markdown || study.conclusion_short ? `
         <div class="h2r-section">
           <h2 class="h2r-section-title">What This Study Found</h2>
-          <p class="h2r-text">${escapeHtml(study.tldr || study.summary_markdown || study.conclusion_short)}</p>
+          <p class="h2r-text">${escapeHtml(study.plain_summary || study.tldr || study.summary_markdown || study.conclusion_short)}</p>
         </div>
       ` : ""}
 
@@ -743,10 +772,10 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
         </div>
       ` : ""}
 
-      ${study.how_to_apply ? `
+      ${realContent(study.practical_takeaway) || study.how_to_apply ? `
         <div class="h2r-section">
           <h2 class="h2r-section-title">What This Means for You</h2>
-          <p class="h2r-text">${escapeHtml(study.how_to_apply)}</p>
+          <p class="h2r-text">${escapeHtml(realContent(study.practical_takeaway) || study.how_to_apply)}</p>
         </div>
       ` : ""}
 
@@ -788,7 +817,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
       </div>
     `;
 
-    const metaDesc = study.meta_description || truncate(study.conclusion_short || study.abstract || displayTitle, 155);
+    const metaDesc = study.meta_description || truncate(realContent(study.key_finding) || study.conclusion_short || study.abstract || displayTitle, 155);
 
     // Build absolute OG image URL if study has an image
     const ogImageUrl = study.image_url

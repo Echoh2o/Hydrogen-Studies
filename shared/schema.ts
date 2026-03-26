@@ -355,6 +355,11 @@ export const studies = pgTable(
     tldr: text("tldr"), // AI-generated super-simplified summary
     howToApply: text("how_to_apply"), // Study-specific practical application guidance (JSON)
 
+    // Consumer-facing study content (for Shopify App Proxy research database)
+    plainSummary: text("plain_summary"), // Plain-language summary for non-scientists
+    keyFinding: text("key_finding"), // 1-2 sentence headline result
+    practicalTakeaway: text("practical_takeaway"), // What this means for the reader
+
     // H2-specific research metadata (for Shopify App Proxy research database)
     h2DeliveryMethod: text("h2_delivery_method"), // drinking, inhalation, bathing, injection
     h2Concentration: varchar("h2_concentration", { length: 100 }),
@@ -2327,3 +2332,58 @@ export const insertResearchDigestSchema = createInsertSchema(researchDigests).om
 });
 export type ResearchDigest = typeof researchDigests.$inferSelect;
 export type InsertResearchDigest = z.infer<typeof insertResearchDigestSchema>;
+
+// ── Redirect System ──────────────────────────────────────────
+
+export const redirects = pgTable(
+  "redirects",
+  {
+    id: serial("id").primaryKey(),
+    fromPath: text("from_path").notNull(), // the old/broken path (lowercase, no query string)
+    toPath: text("to_path").notNull(), // where to send the user
+    statusCode: integer("status_code").notNull().default(301), // 301 permanent or 302 temporary
+    hitCount: integer("hit_count").notNull().default(0),
+    lastHitAt: timestamp("last_hit_at"),
+    isActive: boolean("is_active").notNull().default(true),
+    note: text("note"), // optional admin note
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      fromPathIdx: unique("redirects_from_path_uniq").on(table.fromPath),
+    };
+  },
+);
+
+export const insertRedirectSchema = createInsertSchema(redirects).omit({
+  id: true,
+  hitCount: true,
+  lastHitAt: true,
+  createdAt: true,
+});
+export type Redirect = typeof redirects.$inferSelect;
+export type InsertRedirect = z.infer<typeof insertRedirectSchema>;
+
+export const notFoundLog = pgTable(
+  "not_found_log",
+  {
+    id: serial("id").primaryKey(),
+    path: text("path").notNull(), // the 404 path (lowercase, no query string)
+    referrer: text("referrer"), // HTTP Referer header
+    hitCount: integer("hit_count").notNull().default(1),
+    firstSeenAt: timestamp("first_seen_at").notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+    resolved: boolean("resolved").notNull().default(false), // true once a redirect is created
+    suggestedTarget: text("suggested_target"), // best-guess redirect target
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      pathIdx: unique("not_found_log_path_uniq").on(table.path),
+      hitCountIdx: index("not_found_log_hit_count_idx").on(table.hitCount),
+      resolvedIdx: index("not_found_log_resolved_idx").on(table.resolved),
+    };
+  },
+);
+
+export type NotFoundLogEntry = typeof notFoundLog.$inferSelect;

@@ -13,6 +13,7 @@ import {
   Target,
   Users,
   Link2,
+  ArrowRightLeft,
   Menu,
   X,
 } from "lucide-react";
@@ -48,6 +49,7 @@ export default function AdminLayout({
         { href: "/admin/blogs", label: "Blogs", icon: FileText },
         { href: "/admin/seo-strategy", label: "SEO", icon: Target },
         { href: "/admin/links", label: "Links", icon: Link2 },
+        { href: "/admin/redirects", label: "Redirects", icon: ArrowRightLeft },
         { href: "/admin/monitoring", label: "System", icon: Activity },
         { href: "/admin/users", label: "Users", icon: Users },
         { href: "/admin/settings", label: "Settings", icon: Settings },

@@ -300,6 +300,22 @@ export class JobScheduler {
         logger.error("Job 11 (tldr-generation) unexpected error", error, "JobScheduler");
       }
 
+      // Job 12: Generate consumer-facing summaries (plain_summary, key_finding, practical_takeaway)
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runSummaryEnrichmentJob(),
+          3 * 60 * 1000,
+          "summary-enrichment"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "summary-enrichment" });
+        }
+      } catch (error) {
+        logger.error("Job 12 (summary-enrichment) unexpected error", error, "JobScheduler");
+      }
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
@@ -864,6 +880,27 @@ export class JobScheduler {
       else break;
     }
     return (prefixMatches + suffixMatches) / maxLen;
+  }
+
+  /**
+   * Job 12: Consumer-Facing Summary Enrichment
+   * Generates plain_summary, key_finding, and practical_takeaway for studies.
+   * Processes 5 studies per cycle using Claude Haiku.
+   */
+  private async runSummaryEnrichmentJob() {
+    try {
+      const { enrichStudySummaries } = await import("./study-summary-enrichment");
+      const result = await enrichStudySummaries(5);
+      if (result.totalProcessed > 0) {
+        logger.info("Summary enrichment complete", "JobScheduler", {
+          enriched: result.enriched,
+          skipped: result.skipped,
+          errors: result.errors,
+        });
+      }
+    } catch (error) {
+      logger.error("Summary enrichment job error", error, "JobScheduler");
+    }
   }
 }
 

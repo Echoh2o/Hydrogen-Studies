@@ -452,9 +452,46 @@ function injectMeta(html: string, meta: PageMeta): string {
   return html.replace(/<head>[\s\S]*?(?=<\/head>)/, newHead);
 }
 
+/** Inject rendered body content into the empty #root div */
+function injectBody(html: string, body: string): string {
+  return html.replace(/<div id="root">\s*<\/div>/, `<div id="root">${body}</div>`);
+}
+
+// ── LRU Cache for bot-rendered HTML ───────────────────────────
+
+const botHtmlCache = new Map<string, { html: string; expiry: number }>();
+const BOT_CACHE_MAX = 500;
+const BOT_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+function getCachedBotHtml(key: string): string | null {
+  const entry = botHtmlCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    botHtmlCache.delete(key);
+    return null;
+  }
+  // Move to end (most recently used)
+  botHtmlCache.delete(key);
+  botHtmlCache.set(key, entry);
+  return entry.html;
+}
+
+function setCachedBotHtml(key: string, html: string): void {
+  botHtmlCache.delete(key);
+  if (botHtmlCache.size >= BOT_CACHE_MAX) {
+    const firstKey = botHtmlCache.keys().next().value;
+    if (firstKey) botHtmlCache.delete(firstKey);
+  }
+  botHtmlCache.set(key, { html, expiry: Date.now() + BOT_CACHE_TTL });
+}
+
+// ── Middleware ─────────────────────────────────────────────────
+
+import { renderPageBody } from "./seo-body-renderer";
+
 /**
  * Express middleware: intercepts requests from bots, injects correct
- * meta tags, serves enhanced HTML. Human visitors pass through to SPA.
+ * meta tags AND body content, serves enhanced HTML. Human visitors pass through to SPA.
  */
 export function seoBotMiddleware(staticPath: string) {
   let htmlTemplate: string | null = null;
@@ -464,10 +501,20 @@ export function seoBotMiddleware(staticPath: string) {
     if (req.method !== "GET") return next();
     if (req.path.startsWith("/api/")) return next();
     if (req.path.startsWith("/assets/")) return next();
+    if (req.path.startsWith("/proxy/")) return next();
     if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map|webp)$/)) return next();
 
     const ua = req.headers["user-agent"] || "";
     if (!isBot(ua)) return next();
+
+    // Check LRU cache first
+    const cached = getCachedBotHtml(req.path);
+    if (cached) {
+      res.set("Content-Type", "text/html");
+      res.set("Cache-Control", "public, max-age=3600");
+      res.set("X-Bot-Cache", "HIT");
+      return res.send(cached);
+    }
 
     // Load HTML template once
     if (!htmlTemplate) {
@@ -481,20 +528,25 @@ export function seoBotMiddleware(staticPath: string) {
 
     try {
       const meta = await resolvePageMeta(req.path);
-      if (!meta) {
-        // Fall back to homepage meta for unknown pages
-        const fallbackMeta = resolveStaticPageMeta("/");
-        if (fallbackMeta) {
-          res.send(injectMeta(htmlTemplate, { ...fallbackMeta, canonical: `${SITE_URL}${req.path}` }));
-        } else {
-          return next();
-        }
-        return;
+      const fallbackMeta = meta || resolveStaticPageMeta("/");
+      if (!fallbackMeta) return next();
+
+      const effectiveMeta = meta || { ...fallbackMeta, canonical: `${SITE_URL}${req.path}` };
+
+      // Inject meta tags into <head>
+      let enhancedHtml = injectMeta(htmlTemplate, effectiveMeta);
+
+      // Inject body content into <div id="root">
+      const body = await renderPageBody(req.path);
+      if (body) {
+        enhancedHtml = injectBody(enhancedHtml, body);
       }
 
-      const enhancedHtml = injectMeta(htmlTemplate, meta);
+      // Cache and serve
+      setCachedBotHtml(req.path, enhancedHtml);
       res.set("Content-Type", "text/html");
-      res.set("Cache-Control", "public, max-age=3600"); // Cache bot responses for 1 hour
+      res.set("Cache-Control", "public, max-age=3600");
+      res.set("X-Bot-Cache", "MISS");
       res.send(enhancedHtml);
     } catch (err) {
       console.error("[SEO Bot] Middleware error:", err);

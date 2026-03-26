@@ -64,6 +64,7 @@ import newsletterRoutes from "./routes/newsletter-routes";
 import userDashboardRoutes from "./routes/user-dashboard-routes";
 import adminSettingsRoutes from "./routes/admin-settings-routes";
 import adminLinkRoutes from "./routes/admin-link-routes";
+import adminRedirectRoutes from "./routes/admin-redirect-routes";
 import contactRoutes from "./routes/contact-routes";
 import pipelineRoutes from "./routes/pipeline-routes";
 import imageGenerationRoutes from "./routes/image-generation-routes";
@@ -133,6 +134,34 @@ app.use(
     },
   }),
 );
+
+// Redirect middleware — must be very early (before routes) to intercept 301/302s
+import { redirectMiddleware, log404 } from "./services/redirect-service";
+app.use(redirectMiddleware());
+
+// Dynamic redirect: /study/id/{number} or /study/id%2F{number} → /study/{slug}
+// These legacy URLs cause slow TTFB and duplicate content — redirect to slug versions
+app.use((req, res, next) => {
+  // Match /study/id%2F{number} (Express doesn't decode %2F in paths)
+  const match = req.path.match(/^\/study\/id%2[Ff](\d+)$/);
+  if (match && req.method === "GET") {
+    return res.redirect(301, `/study/id/${match[1]}`);
+  }
+  next();
+});
+app.get("/study/id/:id(\\d+)", async (req, res, next) => {
+  try {
+    const studyId = parseInt(req.params.id);
+    const { db: database } = await import("./db");
+    const { studies: studiesTable } = await import("@shared/schema");
+    const { eq } = await import("drizzle-orm");
+    const [study] = await database.select({ slug: studiesTable.slug }).from(studiesTable).where(eq(studiesTable.id, studyId)).limit(1);
+    if (study?.slug && !study.slug.startsWith("id/")) {
+      return res.redirect(301, `/study/${study.slug}`);
+    }
+    next();
+  } catch { next(); }
+});
 
 // Request tracking, error reporting, and recovery middleware
 app.use(requestIdMiddleware);
@@ -576,6 +605,9 @@ app.use("/api/admin/settings", adminSettingsRoutes);
 // Admin link management
 app.use("/api/admin/links", adminLinkRoutes);
 
+// Admin redirect & 404 management
+app.use("/api/admin/redirects", adminRedirectRoutes);
+
 // Research Intelligence Pipeline (admin-only)
 app.use("/api/pipeline", pipelineRoutes);
 
@@ -658,6 +690,15 @@ app.use("/api/*", (req, res, next) => {
   next(new NotFoundError("API endpoint"));
 });
 
+// 404 logging for non-API routes (log before SPA fallback serves index.html)
+app.use((req, res, next) => {
+  // Only log GET requests that look like real page navigations (not assets)
+  if (req.method === "GET" && req.accepts("html")) {
+    log404(req.path, req.get("referer")).catch(() => {});
+  }
+  next();
+});
+
 // Error reporting handler — captures unexpected errors before responding
 app.use(errorReportingHandler());
 // Sentry error handler - captures errors before globalErrorHandler
@@ -686,6 +727,8 @@ pool.query("SELECT 1").then(async () => {
     const { addProxyResearchFields } = await import("./migrations/add-proxy-research-fields");
     const { seedHealthConditions } = await import("./migrations/seed-health-conditions");
     const { backfillSlugsAndHumanTrials } = await import("./migrations/backfill-slugs-and-human-trials");
+    const { addStudySummaryFields } = await import("./migrations/add-study-summary-fields");
+    const { addRedirectSystem } = await import("./migrations/add-redirect-system");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -696,6 +739,8 @@ pool.query("SELECT 1").then(async () => {
       { name: "006_add_proxy_research_fields", up: addProxyResearchFields },
       { name: "007_seed_health_conditions", up: seedHealthConditions },
       { name: "008_backfill_slugs_and_human_trials", up: backfillSlugsAndHumanTrials },
+      { name: "009_add_study_summary_fields", up: addStudySummaryFields },
+      { name: "010_add_redirect_system", up: addRedirectSystem },
     ]);
   } catch (err: any) {
     console.error("FATAL: Migration failed:", err.message);

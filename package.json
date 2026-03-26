@@ -20,6 +20,7 @@
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:headed": "npx playwright test --headed",
     "enrich-h2": "npx tsx server/scripts/enrich-h2-fields.ts",
+    "enrich-summaries": "npx tsx server/scripts/enrich-study-summaries.ts",
     "check-pubmed": "npx tsx server/scripts/check-pubmed.ts",
     "regenerate-blogs": "npx tsx server/scripts/regenerate-blogs.ts"
   },
