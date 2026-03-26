@@ -446,7 +446,10 @@ function injectMeta(html: string, meta: PageMeta): string {
     <!-- Canonical URL -->
     <link rel="canonical" href="${canonical}" />
 
-    ${jsonLdScript}`;
+    ${jsonLdScript}
+
+    <!-- Ahrefs Analytics -->
+    <script src="https://analytics.ahrefs.com/analytics.js" data-key="rjIt9UY/qFbTPzCzRK8BRg" async></script>`;
 
   // Replace existing <head> tag content up to the closing </head> — but keep scripts/styles
   return html.replace(/<head>[\s\S]*?(?=<\/head>)/, newHead);
