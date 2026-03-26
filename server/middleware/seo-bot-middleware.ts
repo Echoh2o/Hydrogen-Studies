@@ -460,8 +460,8 @@ function injectBody(html: string, body: string): string {
 // ── LRU Cache for bot-rendered HTML ───────────────────────────
 
 const botHtmlCache = new Map<string, { html: string; expiry: number }>();
-const BOT_CACHE_MAX = 500;
-const BOT_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const BOT_CACHE_MAX = 6000; // enough for all study + blog + explore pages
+const BOT_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
 
 function getCachedBotHtml(key: string): string | null {
   const entry = botHtmlCache.get(key);
@@ -553,4 +553,73 @@ export function seoBotMiddleware(staticPath: string) {
       next(); // Fall through to normal SPA on error
     }
   };
+}
+
+// ── Cache pre-warmer ──────────────────────────────────────────
+
+/**
+ * Pre-render and cache the most important pages so bot requests
+ * never hit cold DB queries. Call after migrations complete.
+ */
+export async function prewarmBotCache(staticPath: string): Promise<void> {
+  const indexPath = path.join(staticPath, "index.html");
+  if (!fs.existsSync(indexPath)) return;
+  const template = fs.readFileSync(indexPath, "utf-8");
+
+  console.log("[SEO Bot] Pre-warming bot cache...");
+  const start = Date.now();
+
+  // Collect paths to pre-warm
+  const paths: string[] = ["/", "/studies", "/blog", "/explore-by-condition", "/explore-by-body-system"];
+
+  try {
+    const { db: database } = await import("../db");
+    const { sql } = await import("drizzle-orm");
+
+    // All study slugs
+    const studyRows = await database.execute(sql`SELECT slug FROM studies WHERE slug IS NOT NULL`);
+    for (const row of (studyRows.rows || []) as any[]) {
+      if (row.slug && !row.slug.startsWith("id/")) paths.push(`/study/${row.slug}`);
+    }
+
+    // All blog slugs
+    const blogRows = await database.execute(sql`SELECT slug FROM blog_articles WHERE slug IS NOT NULL AND is_published = true`);
+    for (const row of (blogRows.rows || []) as any[]) {
+      if (row.slug) paths.push(`/blog/${row.slug}`);
+    }
+
+    // All condition slugs
+    const condRows = await database.execute(sql`SELECT slug FROM health_conditions WHERE slug IS NOT NULL`);
+    for (const row of (condRows.rows || []) as any[]) {
+      if (row.slug) paths.push(`/explore-by-condition/${row.slug}`);
+    }
+  } catch (err) {
+    console.error("[SEO Bot] Failed to fetch paths for pre-warm:", err);
+  }
+
+  let warmed = 0;
+  let errors = 0;
+
+  for (const pagePath of paths) {
+    try {
+      const meta = await resolvePageMeta(pagePath);
+      const effectiveMeta = meta || resolveStaticPageMeta("/");
+      if (!effectiveMeta) continue;
+
+      let html = injectMeta(template, meta || { ...effectiveMeta, canonical: `${SITE_URL}${pagePath}` });
+      const body = await renderPageBody(pagePath);
+      if (body) html = injectBody(html, body);
+
+      setCachedBotHtml(pagePath, html);
+      warmed++;
+    } catch {
+      errors++;
+    }
+
+    // Yield to event loop every 50 pages to avoid blocking
+    if (warmed % 50 === 0) await new Promise((r) => setTimeout(r, 1));
+  }
+
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  console.log(`[SEO Bot] Cache pre-warmed: ${warmed} pages in ${elapsed}s (${errors} errors, ${paths.length} total)`);
 }

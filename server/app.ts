@@ -142,25 +142,35 @@ app.use(
 import { redirectMiddleware, log404 } from "./services/redirect-service";
 app.use(redirectMiddleware());
 
-// Dynamic redirect: /study/id/{number} or /study/id%2F{number} → /study/{slug}
-// These legacy URLs cause slow TTFB and duplicate content — redirect to slug versions
-app.use((req, res, next) => {
+// Dynamic redirect: /study/id%2F{number} or /study/id/{number} → /study/{slug}
+// Single-hop 301 — resolves slug from DB to avoid redirect chains
+const idSlugCache = new Map<number, string>(); // tiny cache: id → slug
+async function resolveStudySlug(studyId: number): Promise<string | null> {
+  const cached = idSlugCache.get(studyId);
+  if (cached) return cached;
+  try {
+    const [study] = await db.select({ slug: studies.slug }).from(studies).where(eq(studies.id, studyId)).limit(1);
+    if (study?.slug && !study.slug.startsWith("id/")) {
+      idSlugCache.set(studyId, study.slug);
+      return study.slug;
+    }
+  } catch {}
+  return null;
+}
+app.use(async (req, res, next) => {
+  if (req.method !== "GET") return next();
   // Match /study/id%2F{number} (Express doesn't decode %2F in paths)
-  const match = req.path.match(/^\/study\/id%2[Ff](\d+)$/);
-  if (match && req.method === "GET") {
-    return res.redirect(301, `/study/id/${match[1]}`);
+  const encodedMatch = req.path.match(/^\/study\/id%2[Ff](\d+)$/);
+  if (encodedMatch) {
+    const slug = await resolveStudySlug(parseInt(encodedMatch[1]));
+    return res.redirect(301, slug ? `/study/${slug}` : `/study/id/${encodedMatch[1]}`);
   }
   next();
 });
 app.get("/study/id/:id(\\d+)", async (req, res, next) => {
-  try {
-    const studyId = parseInt(req.params.id);
-    const [study] = await db.select({ slug: studies.slug }).from(studies).where(eq(studies.id, studyId)).limit(1);
-    if (study?.slug && !study.slug.startsWith("id/")) {
-      return res.redirect(301, `/study/${study.slug}`);
-    }
-    next();
-  } catch { next(); }
+  const slug = await resolveStudySlug(parseInt(req.params.id));
+  if (slug) return res.redirect(301, `/study/${slug}`);
+  next();
 });
 
 // Request tracking, error reporting, and recovery middleware

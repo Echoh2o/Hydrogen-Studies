@@ -20,7 +20,7 @@ import { log } from "./vite";
 import { pool } from "./db";
 import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
-import { seoBotMiddleware } from "./middleware/seo-bot-middleware";
+import { seoBotMiddleware, prewarmBotCache } from "./middleware/seo-bot-middleware";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -97,6 +97,11 @@ async function setupServer() {
       });
       console.log(`${formattedTime} [express] Server running on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/health`);
+
+      // Pre-warm bot cache after server is ready (non-blocking)
+      prewarmBotCache(staticPath).catch((err) =>
+        console.error("[SEO Bot] Pre-warm failed:", err)
+      );
     });
 
     // Graceful shutdown for container deployments (Railway, Docker, etc.)
