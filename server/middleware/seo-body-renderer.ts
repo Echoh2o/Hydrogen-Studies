@@ -128,7 +128,7 @@ async function getRelatedStudies(studyId: number, condition: string | null, limi
     const r = await db.execute(sql`
       SELECT slug, COALESCE(plain_language_title, title) as title, publish_year as year
       FROM studies
-      WHERE health_condition ILIKE ${"%" + condition + "%"}
+      WHERE array_to_string(health_conditions, ' ') ILIKE ${"%" + condition + "%"}
         AND id != ${studyId} AND slug IS NOT NULL
       ORDER BY publish_year DESC NULLS LAST
       LIMIT ${limit}
@@ -143,7 +143,7 @@ async function getRelatedBlogs(keyword: string, limit = 5): Promise<{ slug: stri
     const r = await db.execute(sql`
       SELECT slug, title FROM blog_articles
       WHERE is_published = true AND slug IS NOT NULL
-        AND (title ILIKE ${"%" + keyword + "%"} OR category ILIKE ${"%" + keyword + "%"})
+        AND title ILIKE ${"%" + keyword + "%"}
       ORDER BY created_at DESC LIMIT ${limit}
     `);
     return (r.rows || []).map((row: any) => ({ slug: row.slug, title: row.title }));
@@ -155,7 +155,7 @@ async function getRelatedBlogsForBlog(blogId: number, category: string | null, l
     const r = await db.execute(sql`
       SELECT slug, title FROM blog_articles
       WHERE is_published = true AND slug IS NOT NULL AND id != ${blogId}
-        ${category ? sql`AND category ILIKE ${"%" + category + "%"}` : sql``}
+        ${category ? sql`AND title ILIKE ${"%" + category + "%"}` : sql``}
       ORDER BY created_at DESC LIMIT ${limit}
     `);
     return (r.rows || []).map((row: any) => ({ slug: row.slug, title: row.title }));
@@ -188,15 +188,24 @@ async function getRecentBlogs(limit = 10): Promise<{ slug: string; title: string
 
 async function renderStudy(slugOrId: string): Promise<string | null> {
   try {
+    const studyCols = sql`id, title, plain_language_title, slug, authors, journal, publish_year,
+      doi, study_type, outcome, peer_reviewed, country, category,
+      health_conditions, body_systems,
+      tldr, key_finding, plain_summary, summary_100_words, summary_50_words,
+      practical_takeaway, how_to_apply, abstract`;
     const isNumeric = /^\d+$/.test(slugOrId);
     const r = isNumeric
-      ? await db.execute(sql`SELECT * FROM studies WHERE id = ${parseInt(slugOrId)} LIMIT 1`)
-      : await db.execute(sql`SELECT * FROM studies WHERE slug = ${slugOrId} LIMIT 1`);
+      ? await db.execute(sql`SELECT ${studyCols} FROM studies WHERE id = ${parseInt(slugOrId)} LIMIT 1`)
+      : await db.execute(sql`SELECT ${studyCols} FROM studies WHERE slug = ${slugOrId} LIMIT 1`);
     const s: any = r.rows?.[0];
     if (!s) return null;
 
     const title = s.plain_language_title || s.title;
-    const condition = s.health_condition;
+    // health_conditions is a text array — use first element for display
+    const conditionsArr: string[] = s.health_conditions || [];
+    const condition = conditionsArr[0] || s.category || null;
+    const bodySystemsArr: string[] = s.body_systems || [];
+    const bodySystem = bodySystemsArr[0] || null;
     const [related, relatedBlogs, conditions] = await Promise.all([
       getRelatedStudies(s.id, condition),
       getRelatedBlogs(condition || ""),
@@ -227,7 +236,7 @@ async function renderStudy(slugOrId: string): Promise<string | null> {
     if (s.peer_reviewed) h += `<dt>Peer Reviewed</dt><dd>Yes</dd>`;
     if (s.country) h += `<dt>Country</dt><dd>${esc(s.country)}</dd>`;
     if (condition) h += `<dt>Health Condition</dt><dd><a href="/explore-by-condition/${slugify(condition)}">${esc(condition)}</a></dd>`;
-    if (s.body_system) h += `<dt>Body System</dt><dd><a href="/explore-by-body-system/${slugify(s.body_system)}">${esc(s.body_system)}</a></dd>`;
+    if (bodySystem) h += `<dt>Body System</dt><dd><a href="/explore-by-body-system/${slugify(bodySystem)}">${esc(bodySystem)}</a></dd>`;
     h += `</dl>\n`;
 
     // Content sections
@@ -272,13 +281,13 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
   try {
     const isNumeric = /^\d+$/.test(slugOrId);
     const r = isNumeric
-      ? await db.execute(sql`SELECT * FROM blog_articles WHERE id = ${parseInt(slugOrId)} LIMIT 1`)
-      : await db.execute(sql`SELECT * FROM blog_articles WHERE slug = ${slugOrId} LIMIT 1`);
+      ? await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE id = ${parseInt(slugOrId)} LIMIT 1`)
+      : await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE slug = ${slugOrId} LIMIT 1`);
     const b: any = r.rows?.[0];
     if (!b) return null;
 
     const [relatedBlogs, conditions] = await Promise.all([
-      getRelatedBlogsForBlog(b.id, b.category),
+      getRelatedBlogsForBlog(b.id, null),
       getTopConditions(),
     ]);
 
@@ -292,11 +301,14 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
     h += `<article itemscope itemtype="https://schema.org/Article">\n`;
     h += `<h1 itemprop="headline">${esc(b.title)}</h1>\n`;
     if (b.created_at) h += `<time itemprop="datePublished" datetime="${new Date(b.created_at).toISOString()}">${fmtDate(b.created_at)}</time>\n`;
-    if (b.category) h += `<p>Category: <strong>${esc(b.category)}</strong></p>\n`;
 
-    // Full article content (already HTML from AI generation)
+    // Blog content — strip script/event-handler tags for safety, keep structural HTML
     if (b.content) {
-      h += `<div itemprop="articleBody">${b.content}</div>\n`;
+      const safeContent = (b.content as string)
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/\s+on\w+\s*=\s*"[^"]*"/gi, "")
+        .replace(/\s+on\w+\s*=\s*'[^']*'/gi, "");
+      h += `<div itemprop="articleBody">${safeContent}</div>\n`;
     } else if (b.summary) {
       h += `<div itemprop="articleBody"><p>${esc(b.summary)}</p></div>\n`;
     }
@@ -442,7 +454,7 @@ async function renderConditionPage(slug: string): Promise<string | null> {
       db.execute(sql`
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal, study_type
         FROM studies
-        WHERE health_condition ILIKE ${"%" + cond.name + "%"} AND slug IS NOT NULL
+        WHERE array_to_string(health_conditions, ' ') ILIKE ${"%" + cond.name + "%"} AND slug IS NOT NULL
         ORDER BY publish_year DESC NULLS LAST LIMIT 100
       `),
       getRelatedBlogs(cond.name),
@@ -498,8 +510,8 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
       db.execute(sql`
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
         FROM studies
-        WHERE (LOWER(body_system) LIKE LOWER(${"%" + searchTerm + "%"})
-            OR LOWER(body_system) LIKE LOWER(${"%" + slug + "%"}))
+        WHERE (LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
+            OR LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + slug + "%"}))
           AND slug IS NOT NULL
         ORDER BY publish_year DESC NULLS LAST LIMIT 100
       `),
@@ -566,8 +578,8 @@ async function renderExploreIndex(type: string): Promise<string> {
   } else if (type === "body-system") {
     try {
       const r = await db.execute(sql`
-        SELECT DISTINCT body_system FROM studies
-        WHERE body_system IS NOT NULL AND body_system != '' ORDER BY body_system
+        SELECT DISTINCT unnest(body_systems) as body_system FROM studies
+        WHERE body_systems IS NOT NULL ORDER BY 1
       `);
       h += `<ul>`;
       for (const row of (r.rows || []) as any[]) {
@@ -604,8 +616,8 @@ async function renderExploreDetail(type: string, slug: string): Promise<string |
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
         FROM studies WHERE slug IS NOT NULL AND (
           LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
-          OR LOWER(health_condition) LIKE LOWER(${"%" + searchTerm + "%"})
-          OR LOWER(body_system) LIKE LOWER(${"%" + searchTerm + "%"})
+          OR LOWER(array_to_string(health_conditions, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
+          OR LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
           OR LOWER(COALESCE(h2_delivery_method, '')) LIKE LOWER(${"%" + searchTerm + "%"})
         )
         ORDER BY publish_year DESC NULLS LAST LIMIT 100
@@ -653,7 +665,7 @@ async function renderHydrogenForPage(slug: string): Promise<string | null> {
       db.execute(sql`
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, outcome
         FROM studies WHERE slug IS NOT NULL AND (
-          LOWER(health_condition) LIKE LOWER(${"%" + searchTerm + "%"})
+          LOWER(array_to_string(health_conditions, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
           OR LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
         )
         ORDER BY publish_year DESC NULLS LAST LIMIT 30
@@ -703,7 +715,7 @@ function renderStaticPage(pathname: string): string | null {
     "/search": { title: "Search Research Studies", desc: "Search our database of hydrogen therapy research studies by keyword, condition, body system, or mechanism of action." },
     "/advanced-search": { title: "Advanced Research Search", desc: "Advanced search with filters for study type, outcome, date range, body system, and health condition." },
     "/hydrogen-therapy-guide": { title: "Hydrogen Therapy Guide", desc: "The complete evidence-based guide to hydrogen therapy — methods, research, safety, and practical guidance." },
-    "/insights": { title: "Research Insights", desc: "Data-driven insights and trends from hydrogen therapy research." },
+    "/insights": { title: "Research Insights", desc: "Data-driven insights and trends from the hydrogen therapy research landscape." },
     "/research-analytics": { title: "Research Analytics", desc: "Analytics and statistics about the hydrogen therapy research landscape." },
   };
 

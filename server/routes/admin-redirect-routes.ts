@@ -43,6 +43,9 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
     if (error.code === "23505") {
       return res.status(409).json({ error: "A redirect for this path already exists" });
     }
+    if (error.message?.includes("loop") || error.message?.includes("itself") || error.message?.includes("relative path")) {
+      return res.status(400).json({ error: error.message });
+    }
     console.error("Failed to create redirect:", error);
     res.status(500).json({ error: "Failed to create redirect" });
   }

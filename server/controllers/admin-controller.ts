@@ -11,6 +11,7 @@ import {
   processAllStudiesForTagging,
   getTaggingStats,
 } from "../automated-tagging-system";
+import { requireAdmin } from "../auth";
 
 export class AdminController {
   public router: Router;
@@ -21,12 +22,15 @@ export class AdminController {
   }
 
   private initializeRoutes() {
+    // All admin controller routes require admin auth
+    this.router.use(requireAdmin);
+
     // System status
     this.router.get("/status", asyncHandler(this.getSystemStatus));
     this.router.get("/database-stats", asyncHandler(this.getDatabaseStats));
-    
+
     // Dashboard stats (migrated from index.ts)
-    // Note: The original route was /api/stats/dashboard. 
+    // Note: The original route was /api/stats/dashboard.
     // If we mount this controller at /api/admin, it becomes /api/admin/dashboard-stats
     // We might need to handle the route mounting carefully.
     this.router.get("/dashboard-stats", asyncHandler(this.getDashboardStats));

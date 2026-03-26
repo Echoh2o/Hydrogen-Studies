@@ -28,6 +28,9 @@ import {
 } from "./utils/error-reporting";
 import { NotFoundError } from "./utils/app-errors";
 import { DatabaseCircuitBreaker } from "./utils/database-wrapper";
+import { db } from "./db";
+import { studies } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 // Route imports
 import authRoutes from "./routes/auth-routes";
@@ -152,10 +155,7 @@ app.use((req, res, next) => {
 app.get("/study/id/:id(\\d+)", async (req, res, next) => {
   try {
     const studyId = parseInt(req.params.id);
-    const { db: database } = await import("./db");
-    const { studies: studiesTable } = await import("@shared/schema");
-    const { eq } = await import("drizzle-orm");
-    const [study] = await database.select({ slug: studiesTable.slug }).from(studiesTable).where(eq(studiesTable.id, studyId)).limit(1);
+    const [study] = await db.select({ slug: studies.slug }).from(studies).where(eq(studies.id, studyId)).limit(1);
     if (study?.slug && !study.slug.startsWith("id/")) {
       return res.redirect(301, `/study/${study.slug}`);
     }
@@ -690,14 +690,7 @@ app.use("/api/*", (req, res, next) => {
   next(new NotFoundError("API endpoint"));
 });
 
-// 404 logging for non-API routes (log before SPA fallback serves index.html)
-app.use((req, res, next) => {
-  // Only log GET requests that look like real page navigations (not assets)
-  if (req.method === "GET" && req.accepts("html")) {
-    log404(req.path, req.get("referer")).catch(() => {});
-  }
-  next();
-});
+// 404 logging — moved to index.ts SPA catch-all so only truly unmatched paths are logged
 
 // Error reporting handler — captures unexpected errors before responding
 app.use(errorReportingHandler());

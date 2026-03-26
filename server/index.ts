@@ -70,7 +70,16 @@ async function setupServer() {
     }));
 
     // SPA fallback — serve index.html for all non-API GET requests
+    // Log 404s only for paths that don't match known SPA routes
+    const knownSpaRoutes = /^\/(study|studies|blog|explore-by-|hydrogen-for|learn|admin|search|advanced-search|about|benefits|contact|products|recommendations|privacy|terms|insights|research-analytics|login|register|my-dashboard|this-week|recent)\b/;
     app.get("*", (req, res) => {
+      // Log paths that aren't known SPA routes — these are likely real 404s
+      if (!knownSpaRoutes.test(req.path) && req.path !== "/") {
+        import("./services/redirect-service").then(({ log404 }) => {
+          log404(req.path, req.get("referer")).catch(() => {});
+        }).catch(() => {});
+      }
+
       const indexPath = path.join(staticPath, "index.html");
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);

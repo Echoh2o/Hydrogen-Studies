@@ -126,6 +126,9 @@ export function redirectMiddleware() {
 export async function log404(path: string, referrer?: string): Promise<void> {
   const normalizedPath = path.toLowerCase().replace(/\/+$/, "") || "/";
 
+  // Skip paths that are too long (prevent storage abuse) or the homepage
+  if (normalizedPath.length > 500 || normalizedPath === "/") return;
+
   // Skip noise: assets, source maps, bots probing common paths
   if (
     normalizedPath.match(/\.(js|css|map|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$/) ||
@@ -133,7 +136,7 @@ export async function log404(path: string, referrer?: string): Promise<void> {
     normalizedPath.startsWith("/.env") ||
     normalizedPath.startsWith("/wp-") ||
     normalizedPath.startsWith("/phpmy") ||
-    normalizedPath.startsWith("/admin") && !normalizedPath.startsWith("/admin-")
+    (normalizedPath.startsWith("/admin") && !normalizedPath.startsWith("/admin-"))
   ) {
     return;
   }
@@ -273,6 +276,29 @@ export async function listRedirects() {
 
 export async function createRedirect(fromPath: string, toPath: string, statusCode = 301, note?: string) {
   const normalized = fromPath.toLowerCase().replace(/\/+$/, "") || "/";
+  const normalizedTo = toPath.replace(/\/+$/, "") || "/";
+
+  // Prevent self-redirects
+  if (normalized === normalizedTo.toLowerCase()) {
+    throw new Error("Cannot redirect a path to itself");
+  }
+
+  // Prevent redirect loops (check up to 10 hops)
+  let current = normalizedTo.toLowerCase();
+  for (let i = 0; i < 10; i++) {
+    const match = redirectCache.get(current);
+    if (!match) break;
+    if (match.toPath.toLowerCase().replace(/\/+$/, "") === normalized) {
+      throw new Error("This redirect would create a loop");
+    }
+    current = match.toPath.toLowerCase().replace(/\/+$/, "");
+  }
+
+  // Validate toPath is a relative path (prevent open redirects)
+  if (!toPath.startsWith("/")) {
+    throw new Error("Redirect target must be a relative path starting with /");
+  }
+
   const [row] = await db
     .insert(redirects)
     .values({ fromPath: normalized, toPath, statusCode, note })
