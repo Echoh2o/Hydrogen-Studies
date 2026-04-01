@@ -392,6 +392,30 @@ export const studies = pgTable(
   },
 );
 
+// Deleted studies ledger — tracks studies that were intentionally removed
+// so they are not accidentally re-imported and admins can see deletion history
+export const deletedStudies = pgTable(
+  "deleted_studies",
+  {
+    id: serial("id").primaryKey(),
+    originalStudyId: integer("original_study_id").notNull(),
+    title: text("title").notNull(),
+    doi: text("doi"),
+    authors: text("authors"),
+    journal: text("journal"),
+    publishYear: integer("publish_year"),
+    deletedBy: text("deleted_by"),
+    reason: text("reason"),
+    deletedAt: timestamp("deleted_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      doiIdx: index("deleted_studies_doi_idx").on(table.doi),
+      titleIdx: index("deleted_studies_title_idx").on(table.title),
+    };
+  },
+);
+
 // Categories table schema
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),

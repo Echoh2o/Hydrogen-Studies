@@ -28,6 +28,7 @@ export class StudiesController {
     this.router.get("/overview", this.getOverview);
 
     // Study deletion routes (must come before /:id param routes)
+    this.router.post("/check-deleted", requireAdmin, this.checkPreviouslyDeleted);
     this.router.delete("/bulk", requireAdmin, this.bulkDeleteStudies);
     this.router.get("/:id/deletion-preview", requireAdmin, this.getDeletionPreview);
     this.router.delete("/:id", requireAdmin, this.deleteStudy);
@@ -471,6 +472,30 @@ export class StudiesController {
       } catch (error) {
           logger.error("Error updating study", error, "StudiesController");
           res.status(500).json({ error: "Failed to update study" });
+      }
+  }
+
+  private checkPreviouslyDeleted = async (req: Request, res: Response) => {
+      try {
+          const { title, doi } = req.body;
+          if (!title && !doi) return res.status(400).json({ error: "title or doi is required" });
+
+          const deletion = await studyService.checkPreviouslyDeleted(title || "", doi);
+          if (!deletion) return res.json({ previouslyDeleted: false });
+
+          res.json({
+            previouslyDeleted: true,
+            deletion: {
+              title: deletion.title,
+              doi: deletion.doi,
+              deletedBy: deletion.deletedBy,
+              deletedAt: deletion.deletedAt,
+              reason: deletion.reason,
+            },
+          });
+      } catch (error) {
+          logger.error("Error checking deleted studies", error, "StudiesController");
+          res.status(500).json({ error: "Failed to check deleted studies" });
       }
   }
 

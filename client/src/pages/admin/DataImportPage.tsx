@@ -34,6 +34,8 @@ interface ImportStats {
   total: number;
   imported: number;
   failed?: number;
+  skippedDeleted?: number;
+  skippedStudies?: { title: string; deletedBy: string | null; deletedAt: string }[];
   error?: string;
 }
 
@@ -149,10 +151,15 @@ export default function DataImportPage() {
         total: data.total || 0,
         imported: data.imported ?? 0,
         failed: data.failed || 0,
+        skippedDeleted: data.skippedDeleted || 0,
+        skippedStudies: data.skippedStudies,
       });
+      const parts = [`Imported ${data.imported ?? 0} of ${data.total || 0} studies.`];
+      if (data.failed) parts.push(`${data.failed} failed.`);
+      if (data.skippedDeleted) parts.push(`${data.skippedDeleted} skipped (previously deleted).`);
       toast({
-        title: "Import successful",
-        description: `Imported ${data.imported ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
+        title: "Import complete",
+        description: parts.join(" "),
       });
     } else {
       setPhase("error");
@@ -204,11 +211,16 @@ export default function DataImportPage() {
         total: data.total || 0,
         imported: data.imported ?? 0,
         failed: data.failed || 0,
+        skippedDeleted: data.skippedDeleted || 0,
+        skippedStudies: data.skippedStudies,
       });
 
+      const parts = [`Imported ${data.imported ?? 0} of ${data.total || 0} studies.`];
+      if (data.failed) parts.push(`${data.failed} failed.`);
+      if (data.skippedDeleted) parts.push(`${data.skippedDeleted} skipped (previously deleted).`);
       toast({
-        title: "Import successful",
-        description: `Imported ${data.imported ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
+        title: "Import complete",
+        description: parts.join(" "),
       });
     } catch (error) {
       console.error("Google Sheet import error:", error);
@@ -267,24 +279,53 @@ export default function DataImportPage() {
 
         {/* Result alert */}
         {importStats && (phase === "done" || phase === "error") && (
-          <Alert variant={importStats.error ? "destructive" : "default"}>
-            {importStats.error ? (
-              <>
+          <>
+            <Alert variant={importStats.error ? "destructive" : "default"}>
+              {importStats.error ? (
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Import Failed</AlertTitle>
+                  <AlertDescription>{importStats.error}</AlertDescription>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>Import Complete</AlertTitle>
+                  <AlertDescription>
+                    Imported {importStats.imported} of {importStats.total} studies.
+                    {importStats.failed ? ` ${importStats.failed} failed.` : ""}
+                    {importStats.skippedDeleted ? ` ${importStats.skippedDeleted} skipped (previously deleted).` : ""}
+                  </AlertDescription>
+                </>
+              )}
+            </Alert>
+
+            {/* Show which studies were skipped due to prior deletion */}
+            {importStats.skippedStudies && importStats.skippedStudies.length > 0 && (
+              <Alert>
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Import Failed</AlertTitle>
-                <AlertDescription>{importStats.error}</AlertDescription>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                <AlertTitle>Import Complete</AlertTitle>
+                <AlertTitle>Previously Deleted Studies Skipped</AlertTitle>
                 <AlertDescription>
-                  Imported {importStats.imported} of {importStats.total} studies.
-                  {importStats.failed ? ` ${importStats.failed} failed.` : ""}
+                  <p className="mb-2">
+                    The following studies were not imported because they were previously
+                    deleted by an admin:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-xs">
+                    {importStats.skippedStudies.map((s, i) => (
+                      <li key={i}>
+                        {s.title}
+                        {s.deletedBy && (
+                          <span className="text-muted-foreground">
+                            {" "}— deleted by {s.deletedBy}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </AlertDescription>
-              </>
+              </Alert>
             )}
-          </Alert>
+          </>
         )}
       </div>
     );

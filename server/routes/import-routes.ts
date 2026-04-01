@@ -202,13 +202,21 @@ function processWorkbookData(data: Record<string, any>[]): InsertStudy[] {
   });
 }
 
-// Shared response builder — avoids the old `...results, success: true` field collision
-function buildResponse(total: number, results: { imported: number; failed: number; errors?: string[] }) {
+// Shared response builder
+function buildResponse(total: number, results: {
+  imported: number;
+  failed: number;
+  skippedDeleted: number;
+  skippedStudies?: { title: string; deletedBy: string | null; deletedAt: Date }[];
+  errors?: string[];
+}) {
   return {
     success: true,
     total,
     imported: results.imported,
     failed: results.failed,
+    skippedDeleted: results.skippedDeleted,
+    skippedStudies: results.skippedStudies,
     errors: results.errors,
   };
 }
@@ -370,7 +378,9 @@ router.post("/googlesheet", async (req: Request, res: Response) => {
 async function importStudiesToDatabase(studies: InsertStudy[]) {
   let imported = 0;
   let failed = 0;
+  let skippedDeleted = 0;
   const errors: string[] = [];
+  const skippedStudies: { title: string; deletedBy: string | null; deletedAt: Date }[] = [];
 
   for (const study of studies) {
     try {
@@ -378,6 +388,18 @@ async function importStudiesToDatabase(studies: InsertStudy[]) {
       if (!study.title.trim()) {
         failed++;
         errors.push("Skipped study with empty title");
+        continue;
+      }
+
+      // Check if this study was previously deleted
+      const deletion = await studyService.checkPreviouslyDeleted(study.title, study.doi);
+      if (deletion) {
+        skippedDeleted++;
+        skippedStudies.push({
+          title: study.title.substring(0, 80),
+          deletedBy: deletion.deletedBy,
+          deletedAt: deletion.deletedAt,
+        });
         continue;
       }
 
@@ -396,6 +418,8 @@ async function importStudiesToDatabase(studies: InsertStudy[]) {
   return {
     imported,
     failed,
+    skippedDeleted,
+    skippedStudies: skippedStudies.length > 0 ? skippedStudies : undefined,
     errors: errors.length > 0 ? errors : undefined,
   };
 }

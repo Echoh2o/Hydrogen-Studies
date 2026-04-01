@@ -3,6 +3,7 @@ import {
   studies, seoMetadata, contentAnalytics, userEngagement, contentInsights,
   contentVersions, updateNotifications, updateHistory, contentRelationships,
   smartLinks, contentDependencies, blogGenerationJobs, reviewRecommendations,
+  deletedStudies,
   type Study, type InsertStudy,
 } from "@shared/schema";
 import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray } from "drizzle-orm";
@@ -402,11 +403,28 @@ export class StudyService {
     return warnings;
   }
 
-  async deleteStudy(id: number, deletedBy?: string): Promise<{ success: boolean; studyId: number; studyTitle: string; warnings: string[] } | null> {
+  async deleteStudy(id: number, deletedBy?: string, reason?: string): Promise<{ success: boolean; studyId: number; studyTitle: string; warnings: string[] } | null> {
     const study = await this.getStudyById(id);
     if (!study) return null;
 
     const warnings = await this.cleanupSoftReferences(id);
+
+    // Record in deleted_studies ledger before removing the row
+    try {
+      await db.insert(deletedStudies).values({
+        originalStudyId: id,
+        title: study.title || "",
+        doi: study.doi || null,
+        authors: study.authors || null,
+        journal: study.journal || null,
+        publishYear: study.publishYear ?? null,
+        deletedBy: deletedBy || null,
+        reason: reason || null,
+      });
+    } catch (err: any) {
+      warnings.push(`Failed to record deletion in ledger: ${err.message}`);
+    }
+
     await db.delete(studies).where(eq(studies.id, id));
 
     logger.info(`Study deleted: ${study.title}`, "StudyService", {
@@ -573,6 +591,42 @@ export class StudyService {
     }
 
     return { exists: false };
+  }
+
+  /**
+   * Check if a study was previously deleted, by DOI or exact title match.
+   * Returns the deletion record if found, null otherwise.
+   */
+  async checkPreviouslyDeleted(title: string, doi?: string | null): Promise<{
+    id: number;
+    originalStudyId: number;
+    title: string;
+    doi: string | null;
+    deletedBy: string | null;
+    deletedAt: Date;
+    reason: string | null;
+  } | null> {
+    // Check by DOI first (strongest identifier)
+    if (doi) {
+      const byDoi = await db
+        .select()
+        .from(deletedStudies)
+        .where(eq(deletedStudies.doi, doi))
+        .limit(1);
+      if (byDoi.length > 0) return byDoi[0];
+    }
+
+    // Fallback: exact title match (case-insensitive)
+    if (title) {
+      const byTitle = await db
+        .select()
+        .from(deletedStudies)
+        .where(sql`LOWER(${deletedStudies.title}) = ${title.toLowerCase().trim()}`)
+        .limit(1);
+      if (byTitle.length > 0) return byTitle[0];
+    }
+
+    return null;
   }
 
   // Enhanced Search Methods
