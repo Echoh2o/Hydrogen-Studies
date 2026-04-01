@@ -1,6 +1,12 @@
 import { db } from "../db";
-import { studies, seoMetadata, type Study, type InsertStudy } from "@shared/schema";
+import {
+  studies, seoMetadata, contentAnalytics, userEngagement, contentInsights,
+  contentVersions, updateNotifications, updateHistory, contentRelationships,
+  smartLinks, contentDependencies, blogGenerationJobs, reviewRecommendations,
+  type Study, type InsertStudy,
+} from "@shared/schema";
 import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray } from "drizzle-orm";
+import { logger } from "../utils/logger";
 
 // Track whether full-text search is available (set after first successful/failed query)
 let ftsAvailable: boolean | null = null;
@@ -42,6 +48,13 @@ export interface PaginatedResults<T> {
   page: number;
   pageSize: number;
   pageCount: number;
+}
+
+export interface DeletionPreview {
+  studyId: number;
+  studyTitle: string;
+  relatedCounts: Record<string, number>;
+  totalRelatedRecords: number;
 }
 
 export class StudyService {
@@ -277,8 +290,159 @@ export class StudyService {
     return updatedStudy;
   }
 
-  async deleteStudy(id: number): Promise<void> {
+  async getDeletionPreview(studyId: number): Promise<DeletionPreview | null> {
+    const study = await this.getStudyById(studyId);
+    if (!study) return null;
+
+    const results = await Promise.allSettled([
+      db.select({ value: count() }).from(seoMetadata).where(and(eq(seoMetadata.entityType, "study"), eq(seoMetadata.entityId, studyId))),
+      db.select({ value: count() }).from(contentAnalytics).where(and(eq(contentAnalytics.contentType, "study"), eq(contentAnalytics.contentId, studyId))),
+      db.select({ value: count() }).from(userEngagement).where(and(eq(userEngagement.contentType, "study"), eq(userEngagement.contentId, studyId))),
+      db.select({ value: count() }).from(contentInsights).where(and(eq(contentInsights.contentType, "study"), eq(contentInsights.contentId, studyId))),
+      db.select({ value: count() }).from(contentVersions).where(and(eq(contentVersions.contentType, "study"), eq(contentVersions.contentId, studyId))),
+      db.select({ value: count() }).from(contentRelationships).where(
+        or(
+          and(eq(contentRelationships.sourceType, "study"), eq(contentRelationships.sourceId, studyId)),
+          and(eq(contentRelationships.targetType, "study"), eq(contentRelationships.targetId, studyId)),
+        ),
+      ),
+      db.select({ value: count() }).from(smartLinks).where(
+        or(
+          and(eq(smartLinks.fromType, "study"), eq(smartLinks.fromId, studyId)),
+          and(eq(smartLinks.toType, "study"), eq(smartLinks.toId, studyId)),
+        ),
+      ),
+      db.select({ value: count() }).from(updateNotifications).where(and(eq(updateNotifications.contentType, "study"), eq(updateNotifications.contentId, studyId))),
+      db.select({ value: count() }).from(updateHistory).where(and(eq(updateHistory.contentType, "study"), eq(updateHistory.contentId, studyId))),
+      db.select({ value: count() }).from(contentDependencies).where(and(eq(contentDependencies.dependencyType, "study"), eq(contentDependencies.dependencyId, studyId))),
+    ]);
+
+    const extractCount = (r: PromiseSettledResult<{ value: number }[]>) =>
+      r.status === "fulfilled" ? (r.value[0]?.value ?? 0) : 0;
+
+    const relatedCounts = {
+      seoMetadata: extractCount(results[0]),
+      contentAnalytics: extractCount(results[1]),
+      userEngagement: extractCount(results[2]),
+      contentInsights: extractCount(results[3]),
+      contentVersions: extractCount(results[4]),
+      contentRelationships: extractCount(results[5]),
+      smartLinks: extractCount(results[6]),
+      updateNotifications: extractCount(results[7]),
+      updateHistory: extractCount(results[8]),
+      contentDependencies: extractCount(results[9]),
+    };
+
+    const totalRelatedRecords = Object.values(relatedCounts).reduce((a, b) => a + b, 0);
+
+    return {
+      studyId,
+      studyTitle: study.title || `Study #${studyId}`,
+      relatedCounts,
+      totalRelatedRecords,
+    };
+  }
+
+  private async cleanupSoftReferences(studyId: number): Promise<string[]> {
+    const warnings: string[] = [];
+
+    // Direct deletes for contentType/entityType pattern tables
+    const deleteOps: { name: string; fn: () => Promise<unknown> }[] = [
+      { name: "seoMetadata", fn: () => db.delete(seoMetadata).where(and(eq(seoMetadata.entityType, "study"), eq(seoMetadata.entityId, studyId))) },
+      { name: "contentAnalytics", fn: () => db.delete(contentAnalytics).where(and(eq(contentAnalytics.contentType, "study"), eq(contentAnalytics.contentId, studyId))) },
+      { name: "userEngagement", fn: () => db.delete(userEngagement).where(and(eq(userEngagement.contentType, "study"), eq(userEngagement.contentId, studyId))) },
+      { name: "contentInsights", fn: () => db.delete(contentInsights).where(and(eq(contentInsights.contentType, "study"), eq(contentInsights.contentId, studyId))) },
+      { name: "contentVersions", fn: () => db.delete(contentVersions).where(and(eq(contentVersions.contentType, "study"), eq(contentVersions.contentId, studyId))) },
+      { name: "updateNotifications", fn: () => db.delete(updateNotifications).where(and(eq(updateNotifications.contentType, "study"), eq(updateNotifications.contentId, studyId))) },
+      { name: "updateHistory", fn: () => db.delete(updateHistory).where(and(eq(updateHistory.contentType, "study"), eq(updateHistory.contentId, studyId))) },
+      {
+        name: "contentRelationships",
+        fn: () => db.delete(contentRelationships).where(
+          or(
+            and(eq(contentRelationships.sourceType, "study"), eq(contentRelationships.sourceId, studyId)),
+            and(eq(contentRelationships.targetType, "study"), eq(contentRelationships.targetId, studyId)),
+          ),
+        ),
+      },
+      {
+        name: "smartLinks",
+        fn: () => db.delete(smartLinks).where(
+          or(
+            and(eq(smartLinks.fromType, "study"), eq(smartLinks.fromId, studyId)),
+            and(eq(smartLinks.toType, "study"), eq(smartLinks.toId, studyId)),
+          ),
+        ),
+      },
+      { name: "contentDependencies", fn: () => db.delete(contentDependencies).where(and(eq(contentDependencies.dependencyType, "study"), eq(contentDependencies.dependencyId, studyId))) },
+    ];
+
+    for (const op of deleteOps) {
+      try {
+        await op.fn();
+      } catch (err: any) {
+        warnings.push(`Failed to clean ${op.name}: ${err.message}`);
+      }
+    }
+
+    // Array scrubbing — remove studyId from integer[] columns
+    const arrayOps: { name: string; query: ReturnType<typeof sql> }[] = [
+      { name: "blogGenerationJobs.studyIds", query: sql`UPDATE blog_generation_jobs SET study_ids = array_remove(study_ids, ${studyId}) WHERE ${studyId} = ANY(study_ids)` },
+      { name: "reviewRecommendations.relatedStudyIds", query: sql`UPDATE review_recommendations SET related_study_ids = array_remove(related_study_ids, ${studyId}) WHERE ${studyId} = ANY(related_study_ids)` },
+      { name: "reviewRecommendations.contradictsStudyIds", query: sql`UPDATE review_recommendations SET contradicts_study_ids = array_remove(contradicts_study_ids, ${studyId}) WHERE ${studyId} = ANY(contradicts_study_ids)` },
+    ];
+
+    for (const op of arrayOps) {
+      try {
+        await db.execute(op.query);
+      } catch (err: any) {
+        warnings.push(`Failed to scrub ${op.name}: ${err.message}`);
+      }
+    }
+
+    return warnings;
+  }
+
+  async deleteStudy(id: number, deletedBy?: string): Promise<{ success: boolean; studyId: number; studyTitle: string; warnings: string[] } | null> {
+    const study = await this.getStudyById(id);
+    if (!study) return null;
+
+    const warnings = await this.cleanupSoftReferences(id);
     await db.delete(studies).where(eq(studies.id, id));
+
+    logger.info(`Study deleted: ${study.title}`, "StudyService", {
+      studyId: id,
+      studyTitle: study.title || "",
+      deletedBy: deletedBy || "unknown",
+      warnings: warnings.length > 0 ? warnings.join("; ") : undefined,
+    } as Record<string, unknown>);
+
+    return { success: true, studyId: id, studyTitle: study.title || `Study #${id}`, warnings };
+  }
+
+  async bulkDeleteStudies(studyIds: number[], deletedBy?: string): Promise<{ deleted: number[]; failed: { id: number; error: string }[]; warnings: string[] }> {
+    if (studyIds.length > 100) {
+      throw new Error("Cannot delete more than 100 studies at once");
+    }
+
+    const deleted: number[] = [];
+    const failed: { id: number; error: string }[] = [];
+    const allWarnings: string[] = [];
+
+    for (const id of studyIds) {
+      try {
+        const result = await this.deleteStudy(id, deletedBy);
+        if (result) {
+          deleted.push(id);
+          allWarnings.push(...result.warnings);
+        } else {
+          failed.push({ id, error: "Study not found" });
+        }
+      } catch (err: any) {
+        failed.push({ id, error: err.message });
+      }
+    }
+
+    return { deleted, failed, warnings: allWarnings };
   }
   
   // Analytics / Trends Methods

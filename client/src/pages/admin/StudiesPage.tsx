@@ -1,7 +1,10 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { formatAuthors } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { DeletionConfirmDialog } from "@/components/admin/DeletionConfirmDialog";
 
 import {
   PlusCircle,
@@ -18,10 +21,12 @@ import {
   Edit,
   Eye,
   MoreHorizontal,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -60,6 +65,13 @@ export default function StudiesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState("desc");
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+
+  const { toast } = useToast();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,6 +114,63 @@ export default function StudiesPage() {
   const categoriesQuery = useQuery({
     queryKey: ["/api/categories"],
   });
+
+  // Clear selection when filters/page change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, searchQuery, selectedCategory, sortBy, sortOrder]);
+
+  // Single delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/studies/${id}`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
+      toast({ title: "Study deleted", description: data.studyTitle || "Study has been removed." });
+      setDeleteTarget(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (studyIds: number[]) => {
+      const res = await apiRequest("DELETE", "/api/studies/bulk", { studyIds });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
+      const msg = `Deleted ${data.deleted?.length ?? 0} studies.${data.failed?.length ? ` ${data.failed.length} failed.` : ""}`;
+      toast({ title: "Bulk delete complete", description: msg });
+      setSelectedIds(new Set());
+      setShowBulkDelete(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Bulk delete failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Selection helpers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === studies.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(studies.map((s: any) => s.id)));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Loading state
   if (studiesQuery.isLoading && !studiesQuery.data) {
@@ -324,6 +393,24 @@ export default function StudiesPage() {
           </div>
         </div>
 
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 mb-4 p-3 bg-muted rounded-md">
+            <Badge variant="secondary">{selectedIds.size} selected</Badge>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+              Deselect All
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowBulkDelete(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected
+            </Button>
+          </div>
+        )}
+
         {/* Studies table */}
         {studies.length === 0 ? (
           <div className="text-center py-8">
@@ -351,6 +438,13 @@ export default function StudiesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={studies.length > 0 && selectedIds.size === studies.length}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead className="w-[350px]">Title</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Authors</TableHead>
@@ -365,6 +459,13 @@ export default function StudiesPage() {
                     className="cursor-pointer hover:bg-accent/50"
                     onClick={() => window.location.href = `/admin/studies/edit/${study.id}`}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(study.id)}
+                        onCheckedChange={() => toggleSelect(study.id)}
+                        aria-label={`Select study ${study.id}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="max-w-[350px]">
                         <p className="font-medium truncate">{study.title}</p>
@@ -409,6 +510,16 @@ export default function StudiesPage() {
                             <Link href={`/admin/studies/edit/${study.id}`}>
                               <Edit className="h-4 w-4 mr-2" /> Edit
                             </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget(study.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -485,6 +596,25 @@ export default function StudiesPage() {
           </p>
         </CardFooter>
       )}
+      {/* Single delete dialog */}
+      <DeletionConfirmDialog
+        mode="single"
+        studyId={deleteTarget ?? undefined}
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+        isDeleting={deleteMutation.isPending}
+      />
+
+      {/* Bulk delete dialog */}
+      <DeletionConfirmDialog
+        mode="bulk"
+        studyIds={Array.from(selectedIds)}
+        open={showBulkDelete}
+        onClose={() => setShowBulkDelete(false)}
+        onConfirm={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+        isDeleting={bulkDeleteMutation.isPending}
+      />
     </Card>
   );
 }

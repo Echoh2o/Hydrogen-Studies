@@ -37,7 +37,8 @@ export default function DataImportPage() {
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState<{
     total: number;
-    success: number;
+    imported: number;
+    failed?: number;
     error?: string;
   } | null>(null);
 
@@ -113,18 +114,19 @@ export default function DataImportPage() {
 
       setImportStats({
         total: data.total || 0,
-        success: data.success || 0,
+        imported: data.imported ?? data.success ?? 0,
+        failed: data.failed || 0,
       });
 
       toast({
         title: "Import successful",
-        description: `Successfully imported ${data.success} out of ${data.total} studies.`,
+        description: `Imported ${data.imported ?? data.success ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
       });
     } catch (error) {
       console.error("Import error:", error);
       setImportStats({
         total: 0,
-        success: 0,
+        imported: 0,
         error:
           error instanceof Error ? error.message : "Unknown error occurred",
       });
@@ -173,18 +175,19 @@ export default function DataImportPage() {
 
       setImportStats({
         total: data.total || 0,
-        success: data.success || 0,
+        imported: data.imported ?? data.success ?? 0,
+        failed: data.failed || 0,
       });
 
       toast({
         title: "Import successful",
-        description: `Successfully imported ${data.success} out of ${data.total} studies.`,
+        description: `Imported ${data.imported ?? data.success ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
       });
     } catch (error) {
       console.error("Google Sheet import error:", error);
       setImportStats({
         total: 0,
-        success: 0,
+        imported: 0,
         error:
           error instanceof Error ? error.message : "Unknown error occurred",
       });
@@ -341,8 +344,8 @@ export default function DataImportPage() {
                           <CheckCircle2 className="h-4 w-4" />
                           <AlertTitle>Import Successful</AlertTitle>
                           <AlertDescription>
-                            Successfully imported {importStats.success} out of{" "}
-                            {importStats.total} studies.
+                            Imported {importStats.imported} of{" "}
+                            {importStats.total} studies.{importStats.failed ? ` ${importStats.failed} failed.` : ""}
                           </AlertDescription>
                         </>
                       )}
@@ -411,8 +414,8 @@ export default function DataImportPage() {
                           <CheckCircle2 className="h-4 w-4" />
                           <AlertTitle>Import Successful</AlertTitle>
                           <AlertDescription>
-                            Successfully imported {importStats.success} out of{" "}
-                            {importStats.total} studies.
+                            Imported {importStats.imported} of{" "}
+                            {importStats.total} studies.{importStats.failed ? ` ${importStats.failed} failed.` : ""}
                           </AlertDescription>
                         </>
                       )}
@@ -479,8 +482,8 @@ export default function DataImportPage() {
                           <CheckCircle2 className="h-4 w-4" />
                           <AlertTitle>Import Successful</AlertTitle>
                           <AlertDescription>
-                            Successfully imported {importStats.success} out of{" "}
-                            {importStats.total} studies.
+                            Imported {importStats.imported} of{" "}
+                            {importStats.total} studies.{importStats.failed ? ` ${importStats.failed} failed.` : ""}
                           </AlertDescription>
                         </>
                       )}

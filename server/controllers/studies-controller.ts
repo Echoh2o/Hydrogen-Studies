@@ -27,6 +27,11 @@ export class StudiesController {
     this.router.get("/health-outcomes", this.getHealthOutcomes);
     this.router.get("/overview", this.getOverview);
 
+    // Study deletion routes (must come before /:id param routes)
+    this.router.delete("/bulk", requireAdmin, this.bulkDeleteStudies);
+    this.router.get("/:id/deletion-preview", requireAdmin, this.getDeletionPreview);
+    this.router.delete("/:id", requireAdmin, this.deleteStudy);
+
     this.router.get("/by-consumer-category", this.getStudiesByConsumerCategoryRoot);
     this.router.get("/by-consumer-category/:model/:category", this.getStudiesByConsumerCategory);
     this.router.get("/latest", this.getLatestStudies);
@@ -466,6 +471,64 @@ export class StudiesController {
       } catch (error) {
           logger.error("Error updating study", error, "StudiesController");
           res.status(500).json({ error: "Failed to update study" });
+      }
+  }
+
+  private getDeletionPreview = async (req: Request, res: Response) => {
+      try {
+          const id = parseInt(req.params.id);
+          if (isNaN(id)) return res.status(400).json({ error: "Invalid study ID" });
+
+          const preview = await studyService.getDeletionPreview(id);
+          if (!preview) return res.status(404).json({ error: "Study not found" });
+
+          res.json(preview);
+      } catch (error) {
+          logger.error("Error fetching deletion preview", error, "StudiesController");
+          res.status(500).json({ error: "Failed to fetch deletion preview" });
+      }
+  }
+
+  private deleteStudy = async (req: Request, res: Response) => {
+      try {
+          const id = parseInt(req.params.id);
+          if (isNaN(id)) return res.status(400).json({ error: "Invalid study ID" });
+
+          const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
+          const result = await studyService.deleteStudy(id, deletedBy);
+          if (!result) return res.status(404).json({ error: "Study not found" });
+
+          res.json(result);
+      } catch (error) {
+          logger.error("Error deleting study", error, "StudiesController");
+          res.status(500).json({ error: "Failed to delete study" });
+      }
+  }
+
+  private bulkDeleteStudies = async (req: Request, res: Response) => {
+      try {
+          const { studyIds } = req.body;
+          if (!Array.isArray(studyIds) || studyIds.length === 0) {
+            return res.status(400).json({ error: "studyIds must be a non-empty array" });
+          }
+          if (studyIds.length > 100) {
+            return res.status(400).json({ error: "Cannot delete more than 100 studies at once" });
+          }
+
+          const ids = studyIds.map((id: any) => parseInt(id)).filter((id: number) => !isNaN(id));
+          if (ids.length === 0) {
+            return res.status(400).json({ error: "No valid study IDs provided" });
+          }
+
+          const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
+          const result = await studyService.bulkDeleteStudies(ids, deletedBy);
+          res.json(result);
+      } catch (error: any) {
+          logger.error("Error bulk deleting studies", error, "StudiesController");
+          if (error.message?.includes("more than 100")) {
+            return res.status(400).json({ error: error.message });
+          }
+          res.status(500).json({ error: "Failed to bulk delete studies" });
       }
   }
 
