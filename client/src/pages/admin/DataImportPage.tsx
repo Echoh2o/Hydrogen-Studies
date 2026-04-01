@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -26,33 +26,35 @@ import {
   Loader2,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Progress } from "@/components/ui/progress";
+
+type ImportPhase = "idle" | "uploading" | "processing" | "done" | "error";
+
+interface ImportStats {
+  total: number;
+  imported: number;
+  failed?: number;
+  error?: string;
+}
 
 export default function DataImportPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("excel");
   const [file, setFile] = useState<File | null>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState("");
-  const [importing, setImporting] = useState(false);
-  const [importStats, setImportStats] = useState<{
-    total: number;
-    imported: number;
-    failed?: number;
-    error?: string;
-  } | null>(null);
+  const [phase, setPhase] = useState<ImportPhase>("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [importStats, setImportStats] = useState<ImportStats | null>(null);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
 
-  // Recent imports query
-  const { data: recentImports, isLoading } = useQuery<any>({
-    queryKey: ["/api/imports/recent"],
-    retry: false,
-    refetchInterval: false,
-  });
+  const importing = phase === "uploading" || phase === "processing";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (selectedFiles && selectedFiles.length > 0) {
       setFile(selectedFiles[0]);
+      setImportStats(null);
+      setPhase("idle");
     }
   };
 
@@ -66,79 +68,104 @@ export default function DataImportPage() {
       return;
     }
 
-    setImporting(true);
     setImportStats(null);
+    setUploadProgress(0);
+    setPhase("uploading");
 
     const formData = new FormData();
+    let endpoint: string;
 
-    // Use the correct field name based on file type
+    // Determine endpoint and field name based on file type
     if (file.name.endsWith(".csv")) {
       formData.append("csvFile", file);
+      endpoint = "/api/import/csv";
     } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-      formData.append("file", file); // Default field name for Excel
-    } else if (file.name.endsWith(".json")) {
-      formData.append("jsonFile", file);
-    } else {
       formData.append("file", file);
-    }
-
-    try {
-      let endpoint = "/api/import/excel";
-
-      // Determine file type and use appropriate endpoint
-      if (file.name.endsWith(".csv")) {
-        endpoint = "/api/import/csv";
-      } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-        endpoint = "/api/import/excel";
-      } else if (file.name.endsWith(".json")) {
-        endpoint = "/api/import/json";
-      } else {
-        throw new Error(
-          "Unsupported file format. Please use .xlsx, .csv, or .json files.",
-        );
-      }
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Import failed: ${response.status} ${errorText || response.statusText}`,
-        );
-      }
-
-      const data = await response.json();
-
-      setImportStats({
-        total: data.total || 0,
-        imported: data.imported ?? data.success ?? 0,
-        failed: data.failed || 0,
-      });
-
-      toast({
-        title: "Import successful",
-        description: `Imported ${data.imported ?? data.success ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
-      });
-    } catch (error) {
-      console.error("Import error:", error);
+      endpoint = "/api/import/excel";
+    } else {
+      setPhase("error");
       setImportStats({
         total: 0,
         imported: 0,
-        error:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        error: "Unsupported file format. Please use .xlsx, .xls, or .csv files.",
       });
-
       toast({
-        title: "Import failed",
-        description:
-          error instanceof Error ? error.message : "Failed to import data",
+        title: "Unsupported format",
+        description: "Please use .xlsx, .xls, or .csv files.",
         variant: "destructive",
       });
-    } finally {
-      setImporting(false);
+      return;
+    }
+
+    // Use XMLHttpRequest for upload progress tracking
+    const xhr = new XMLHttpRequest();
+    xhrRef.current = xhr;
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+
+    xhr.upload.addEventListener("load", () => {
+      // Upload finished, now server is processing
+      setUploadProgress(100);
+      setPhase("processing");
+    });
+
+    const result = await new Promise<{ ok: boolean; data?: any; error?: string }>((resolve) => {
+      xhr.addEventListener("load", () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve({ ok: true, data });
+          } else {
+            resolve({ ok: false, error: data.message || data.error || `Server error ${xhr.status}` });
+          }
+        } catch {
+          resolve({ ok: false, error: `Server error ${xhr.status}: ${xhr.statusText}` });
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        resolve({ ok: false, error: "Network error — could not reach the server" });
+      });
+
+      xhr.addEventListener("abort", () => {
+        resolve({ ok: false, error: "Upload cancelled" });
+      });
+
+      xhr.open("POST", endpoint);
+      xhr.withCredentials = true; // Send session cookie for requireAdmin auth
+      xhr.send(formData);
+    });
+
+    xhrRef.current = null;
+
+    if (result.ok && result.data) {
+      const data = result.data;
+      setPhase("done");
+      setImportStats({
+        total: data.total || 0,
+        imported: data.imported ?? 0,
+        failed: data.failed || 0,
+      });
+      toast({
+        title: "Import successful",
+        description: `Imported ${data.imported ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
+      });
+    } else {
+      setPhase("error");
+      setImportStats({
+        total: 0,
+        imported: 0,
+        error: result.error || "Unknown error occurred",
+      });
+      toast({
+        title: "Import failed",
+        description: result.error || "Failed to import data",
+        variant: "destructive",
+      });
     }
   };
 
@@ -152,44 +179,44 @@ export default function DataImportPage() {
       return;
     }
 
-    setImporting(true);
+    setPhase("processing");
     setImportStats(null);
 
     try {
       const response = await fetch("/api/import/googlesheet", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: googleSheetUrl }),
+        credentials: "include", // Send session cookie for requireAdmin auth
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorData = await response.json().catch(() => null);
         throw new Error(
-          `Import failed: ${response.status} ${errorText || response.statusText}`,
+          errorData?.message || errorData?.error || `Import failed: ${response.status} ${response.statusText}`,
         );
       }
 
       const data = await response.json();
 
+      setPhase("done");
       setImportStats({
         total: data.total || 0,
-        imported: data.imported ?? data.success ?? 0,
+        imported: data.imported ?? 0,
         failed: data.failed || 0,
       });
 
       toast({
         title: "Import successful",
-        description: `Imported ${data.imported ?? data.success ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
+        description: `Imported ${data.imported ?? 0} of ${data.total || 0} studies.${data.failed ? ` ${data.failed} failed.` : ""}`,
       });
     } catch (error) {
       console.error("Google Sheet import error:", error);
+      setPhase("error");
       setImportStats({
         total: 0,
         imported: 0,
-        error:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        error: error instanceof Error ? error.message : "Unknown error occurred",
       });
 
       toast({
@@ -200,18 +227,67 @@ export default function DataImportPage() {
             : "Failed to import data from Google Sheet",
         variant: "destructive",
       });
-    } finally {
-      setImporting(false);
     }
   };
 
   const downloadTemplate = () => {
-    // In a real app, this would download a template file
-    // For this example, we're just showing a toast
     toast({
       title: "Template downloaded",
       description: "Import template has been downloaded.",
     });
+  };
+
+  // Shared progress + result display component
+  const ImportProgress = () => {
+    if (phase === "idle") return null;
+
+    return (
+      <div className="space-y-3">
+        {/* Upload progress bar */}
+        {phase === "uploading" && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Uploading file... {uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} className="h-2" />
+          </div>
+        )}
+
+        {/* Processing indicator */}
+        {phase === "processing" && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Processing studies — this may take a moment for large files...</span>
+            </div>
+            <Progress value={100} className="h-2 animate-pulse" />
+          </div>
+        )}
+
+        {/* Result alert */}
+        {importStats && (phase === "done" || phase === "error") && (
+          <Alert variant={importStats.error ? "destructive" : "default"}>
+            {importStats.error ? (
+              <>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Import Failed</AlertTitle>
+                <AlertDescription>{importStats.error}</AlertDescription>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>Import Complete</AlertTitle>
+                <AlertDescription>
+                  Imported {importStats.imported} of {importStats.total} studies.
+                  {importStats.failed ? ` ${importStats.failed} failed.` : ""}
+                </AlertDescription>
+              </>
+            )}
+          </Alert>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -235,19 +311,24 @@ export default function DataImportPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Importing data</AlertTitle>
           <AlertDescription>
-            Use this tool to bulk import research data from Excel, CSV, Google
-            Sheets, or JSON files. Make sure your data follows the expected
-            format or use the template.
+            Use this tool to bulk import research data from Excel, CSV, or Google
+            Sheets. Make sure your data follows the expected format or use the
+            template.
           </AlertDescription>
         </Alert>
 
         <Tabs
           defaultValue="excel"
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={(tab) => {
+            setActiveTab(tab);
+            // Reset state when switching tabs
+            setPhase("idle");
+            setImportStats(null);
+          }}
           className="space-y-4"
         >
-          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:w-auto">
+          <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:w-auto">
             <TabsTrigger value="excel" className="flex items-center gap-2">
               <FileSpreadsheet className="h-4 w-4" />
               <span>Excel/CSV</span>
@@ -255,10 +336,6 @@ export default function DataImportPage() {
             <TabsTrigger value="google" className="flex items-center gap-2">
               <Table className="h-4 w-4" />
               <span>Google Sheets</span>
-            </TabsTrigger>
-            <TabsTrigger value="json" className="flex items-center gap-2">
-              <FileJson className="h-4 w-4" />
-              <span>JSON</span>
             </TabsTrigger>
             <TabsTrigger value="export" className="flex items-center gap-2">
               <Download className="h-4 w-4" />
@@ -271,7 +348,6 @@ export default function DataImportPage() {
               <CardTitle>
                 {activeTab === "excel" && "Import from Excel or CSV"}
                 {activeTab === "google" && "Import from Google Sheets"}
-                {activeTab === "json" && "Import from JSON"}
                 {activeTab === "export" && "Export Data"}
               </CardTitle>
               <CardDescription>
@@ -279,8 +355,6 @@ export default function DataImportPage() {
                   "Upload Excel (.xlsx) or CSV files containing research data"}
                 {activeTab === "google" &&
                   "Import data directly from a published Google Sheet"}
-                {activeTab === "json" &&
-                  "Upload JSON files with research study data"}
                 {activeTab === "export" &&
                   "Export your research database in various formats"}
               </CardDescription>
@@ -298,9 +372,16 @@ export default function DataImportPage() {
                       disabled={importing}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Accepted formats: .xlsx, .xls, .csv
+                      Accepted formats: .xlsx, .xls, .csv (max 10 MB)
                     </p>
                   </div>
+
+                  {file && phase === "idle" && (
+                    <div className="text-sm text-muted-foreground">
+                      Selected: <span className="font-medium text-foreground">{file.name}</span>{" "}
+                      ({(file.size / 1024).toFixed(0)} KB)
+                    </div>
+                  )}
 
                   <div className="flex items-center space-x-4">
                     <Button
@@ -311,7 +392,9 @@ export default function DataImportPage() {
                       {importing ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Importing...</span>
+                          <span>
+                            {phase === "uploading" ? "Uploading..." : "Processing..."}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -327,30 +410,7 @@ export default function DataImportPage() {
                     </Button>
                   </div>
 
-                  {importStats && (
-                    <Alert
-                      variant={importStats.error ? "destructive" : "default"}
-                    >
-                      {importStats.error ? (
-                        <>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertTitle>Import Failed</AlertTitle>
-                          <AlertDescription>
-                            {importStats.error}
-                          </AlertDescription>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4" />
-                          <AlertTitle>Import Successful</AlertTitle>
-                          <AlertDescription>
-                            Imported {importStats.imported} of{" "}
-                            {importStats.total} studies.{importStats.failed ? ` ${importStats.failed} failed.` : ""}
-                          </AlertDescription>
-                        </>
-                      )}
-                    </Alert>
-                  )}
+                  <ImportProgress />
                 </div>
               </TabsContent>
 
@@ -397,98 +457,7 @@ export default function DataImportPage() {
                     </Button>
                   </div>
 
-                  {importStats && (
-                    <Alert
-                      variant={importStats.error ? "destructive" : "default"}
-                    >
-                      {importStats.error ? (
-                        <>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertTitle>Import Failed</AlertTitle>
-                          <AlertDescription>
-                            {importStats.error}
-                          </AlertDescription>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4" />
-                          <AlertTitle>Import Successful</AlertTitle>
-                          <AlertDescription>
-                            Imported {importStats.imported} of{" "}
-                            {importStats.total} studies.{importStats.failed ? ` ${importStats.failed} failed.` : ""}
-                          </AlertDescription>
-                        </>
-                      )}
-                    </Alert>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="json" className="mt-0">
-                <div className="space-y-4">
-                  <div className="flex flex-col space-y-2">
-                    <Label htmlFor="json-file">Upload JSON File</Label>
-                    <Input
-                      id="json-file"
-                      type="file"
-                      accept=".json"
-                      onChange={handleFileChange}
-                      disabled={importing}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      JSON file should contain an array of study objects
-                    </p>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      onClick={handleUpload}
-                      disabled={!file || importing}
-                      className="flex items-center space-x-2"
-                    >
-                      {importing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Importing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileUp className="h-4 w-4" />
-                          <span>Upload and Import</span>
-                        </>
-                      )}
-                    </Button>
-
-                    <Button variant="outline" onClick={downloadTemplate}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Schema
-                    </Button>
-                  </div>
-
-                  {importStats && (
-                    <Alert
-                      variant={importStats.error ? "destructive" : "default"}
-                    >
-                      {importStats.error ? (
-                        <>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertTitle>Import Failed</AlertTitle>
-                          <AlertDescription>
-                            {importStats.error}
-                          </AlertDescription>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4" />
-                          <AlertTitle>Import Successful</AlertTitle>
-                          <AlertDescription>
-                            Imported {importStats.imported} of{" "}
-                            {importStats.total} studies.{importStats.failed ? ` ${importStats.failed} failed.` : ""}
-                          </AlertDescription>
-                        </>
-                      )}
-                    </Alert>
-                  )}
+                  <ImportProgress />
                 </div>
               </TabsContent>
 
@@ -557,78 +526,6 @@ export default function DataImportPage() {
             </CardContent>
           </Card>
         </Tabs>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Imports</CardTitle>
-            <CardDescription>History of recent data imports</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : !recentImports || recentImports.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <AlertCircle className="h-8 w-8 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-medium">No recent imports</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Import data to see history here
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="pb-2 font-medium">Date</th>
-                      <th className="pb-2 font-medium">File</th>
-                      <th className="pb-2 font-medium">Type</th>
-                      <th className="pb-2 font-medium">Status</th>
-                      <th className="pb-2 font-medium text-right">Studies</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Placeholder for recent imports - in reality, this would map over recentImports */}
-                    <tr className="border-b">
-                      <td className="py-3 text-sm">May 14, 2024</td>
-                      <td className="py-3 text-sm">hydrogen_studies.xlsx</td>
-                      <td className="py-3 text-sm">Excel</td>
-                      <td className="py-3 text-sm">
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                          <CheckCircle2 className="mr-1 h-3 w-3" /> Success
-                        </span>
-                      </td>
-                      <td className="py-3 text-sm text-right">42</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-3 text-sm">May 12, 2024</td>
-                      <td className="py-3 text-sm">pubmed_export.csv</td>
-                      <td className="py-3 text-sm">CSV</td>
-                      <td className="py-3 text-sm">
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                          <CheckCircle2 className="mr-1 h-3 w-3" /> Success
-                        </span>
-                      </td>
-                      <td className="py-3 text-sm text-right">18</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 text-sm">May 10, 2024</td>
-                      <td className="py-3 text-sm">research_data.json</td>
-                      <td className="py-3 text-sm">JSON</td>
-                      <td className="py-3 text-sm">
-                        <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700">
-                          <AlertCircle className="mr-1 h-3 w-3" /> Failed
-                        </span>
-                      </td>
-                      <td className="py-3 text-sm text-right">0</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   );
