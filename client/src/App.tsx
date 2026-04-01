@@ -143,6 +143,7 @@ const ResearchImportPage = lazy(
   () => import("./pages/admin/ResearchImportPage"),
 );
 const DataImportPage = lazy(() => import("./pages/admin/DataImportPage"));
+const DeletionLedgerPage = lazy(() => import("./pages/admin/DeletionLedgerPage"));
 const ResearchDatabasePage = lazy(
   () => import("./pages/admin/ResearchDatabasePage"),
 );
@@ -353,6 +354,13 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin", "editor"]}>
               <DataImportPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/admin/deletion-ledger">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <DeletionLedgerPage />
             </ProtectedRoute>
           )}
         </Route>

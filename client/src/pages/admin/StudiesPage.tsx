@@ -122,8 +122,8 @@ export default function StudiesPage() {
 
   // Single delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/studies/${id}`);
+    mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
+      const res = await apiRequest("DELETE", `/api/studies/${id}`, { reason });
       return res.json();
     },
     onSuccess: (data) => {
@@ -138,8 +138,8 @@ export default function StudiesPage() {
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
-    mutationFn: async (studyIds: number[]) => {
-      const res = await apiRequest("DELETE", "/api/studies/bulk", { studyIds });
+    mutationFn: async ({ studyIds, reason }: { studyIds: number[]; reason?: string }) => {
+      const res = await apiRequest("DELETE", "/api/studies/bulk", { studyIds, reason });
       return res.json();
     },
     onSuccess: (data) => {
@@ -602,7 +602,7 @@ export default function StudiesPage() {
         studyId={deleteTarget ?? undefined}
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+        onConfirm={(reason) => deleteTarget && deleteMutation.mutate({ id: deleteTarget, reason })}
         isDeleting={deleteMutation.isPending}
       />
 
@@ -612,7 +612,7 @@ export default function StudiesPage() {
         studyIds={Array.from(selectedIds)}
         open={showBulkDelete}
         onClose={() => setShowBulkDelete(false)}
-        onConfirm={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+        onConfirm={(reason) => bulkDeleteMutation.mutate({ studyIds: Array.from(selectedIds), reason })}
         isDeleting={bulkDeleteMutation.isPending}
       />
     </Card>

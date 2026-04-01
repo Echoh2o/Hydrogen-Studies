@@ -202,12 +202,120 @@ function processWorkbookData(data: Record<string, any>[]): InsertStudy[] {
   });
 }
 
+// Types for analysis results
+interface StudyAnalysis {
+  study: InsertStudy;
+  status: "new" | "duplicate_doi" | "duplicate_title" | "deleted" | "empty" | "batch_duplicate";
+  existingId?: number;
+  deletedBy?: string | null;
+}
+
+interface AnalysisResult {
+  totalRows: number;
+  readyToImport: number;
+  duplicatesByDoi: number;
+  duplicatesByTitle: number;
+  batchDuplicates: number;
+  previouslyDeleted: number;
+  emptyTitles: number;
+  studies: StudyAnalysis[];
+}
+
+// Analyze studies for duplicates and deletions without inserting
+async function analyzeStudies(studies: InsertStudy[]): Promise<AnalysisResult> {
+  // Phase 1: Intra-batch dedup
+  const seenDois = new Map<string, number>(); // doi -> first index
+  const seenTitles = new Map<string, number>(); // lowercase title -> first index
+  const analyses: StudyAnalysis[] = studies.map((study, idx) => {
+    if (!study.title.trim()) return { study, status: "empty" as const };
+
+    const lowerTitle = study.title.toLowerCase().trim();
+    const doi = study.doi?.trim() || null;
+
+    // Check intra-batch DOI duplicate
+    if (doi && seenDois.has(doi)) {
+      return { study, status: "batch_duplicate" as const };
+    }
+    // Check intra-batch title duplicate
+    if (seenTitles.has(lowerTitle)) {
+      return { study, status: "batch_duplicate" as const };
+    }
+
+    if (doi) seenDois.set(doi, idx);
+    seenTitles.set(lowerTitle, idx);
+
+    return { study, status: "new" as const };
+  });
+
+  // Collect DOIs and titles from non-batch-duplicate, non-empty studies
+  const candidateDois: string[] = [];
+  const candidateTitles: string[] = [];
+  for (const a of analyses) {
+    if (a.status !== "new") continue;
+    if (a.study.doi) candidateDois.push(a.study.doi);
+    candidateTitles.push(a.study.title.toLowerCase().trim());
+  }
+
+  // Phase 2: Batch DB checks (4 queries total instead of N)
+  const [existing, deleted] = await Promise.all([
+    studyService.batchCheckExistingStudies(candidateDois, candidateTitles),
+    studyService.batchCheckDeletedStudies(candidateDois, candidateTitles),
+  ]);
+
+  // Phase 3: Classify each candidate
+  for (const a of analyses) {
+    if (a.status !== "new") continue;
+
+    const doi = a.study.doi?.trim() || null;
+    const lowerTitle = a.study.title.toLowerCase().trim();
+
+    // Check deleted first (takes priority — user intentionally removed it)
+    if (doi && deleted.doiMap.has(doi)) {
+      a.status = "deleted";
+      a.deletedBy = deleted.doiMap.get(doi)!.deletedBy;
+      continue;
+    }
+    if (deleted.titleMap.has(lowerTitle)) {
+      a.status = "deleted";
+      a.deletedBy = deleted.titleMap.get(lowerTitle)!.deletedBy;
+      continue;
+    }
+
+    // Check existing duplicates
+    if (doi && existing.doiMap.has(doi)) {
+      a.status = "duplicate_doi";
+      a.existingId = existing.doiMap.get(doi);
+      continue;
+    }
+    if (existing.titleMap.has(lowerTitle)) {
+      a.status = "duplicate_title";
+      a.existingId = existing.titleMap.get(lowerTitle);
+      continue;
+    }
+  }
+
+  const counts = {
+    totalRows: studies.length,
+    readyToImport: analyses.filter(a => a.status === "new").length,
+    duplicatesByDoi: analyses.filter(a => a.status === "duplicate_doi").length,
+    duplicatesByTitle: analyses.filter(a => a.status === "duplicate_title").length,
+    batchDuplicates: analyses.filter(a => a.status === "batch_duplicate").length,
+    previouslyDeleted: analyses.filter(a => a.status === "deleted").length,
+    emptyTitles: analyses.filter(a => a.status === "empty").length,
+  };
+
+  return { ...counts, studies: analyses };
+}
+
 // Shared response builder
 function buildResponse(total: number, results: {
   imported: number;
   failed: number;
+  skippedDuplicate: number;
   skippedDeleted: number;
-  skippedStudies?: { title: string; deletedBy: string | null; deletedAt: Date }[];
+  importedStudyIds: number[];
+  skippedStudies?: { title: string; deletedBy: string | null }[];
+  duplicateStudies?: { title: string; reason: string; existingId?: number }[];
   errors?: string[];
 }) {
   return {
@@ -215,11 +323,129 @@ function buildResponse(total: number, results: {
     total,
     imported: results.imported,
     failed: results.failed,
+    skippedDuplicate: results.skippedDuplicate,
     skippedDeleted: results.skippedDeleted,
+    importedStudyIds: results.importedStudyIds,
     skippedStudies: results.skippedStudies,
+    duplicateStudies: results.duplicateStudies,
     errors: results.errors,
   };
 }
+
+// Helper: parse file into studies array (shared between endpoints)
+async function parseFile(filePath: string, format: "xlsx" | "csv"): Promise<InsertStudy[]> {
+  const workbook = new ExcelJS.Workbook();
+  if (format === "xlsx") {
+    await workbook.xlsx.readFile(filePath);
+  } else {
+    await workbook.csv.readFile(filePath);
+  }
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) throw new Error("No worksheet found in file");
+  const data = worksheetToJson(worksheet);
+  return processWorkbookData(data);
+}
+
+// Import studies using pre-computed analysis
+async function importWithAnalysis(
+  analysis: AnalysisResult,
+  onProgress?: (processed: number, total: number, imported: number) => void,
+) {
+  let imported = 0;
+  let failed = 0;
+  const importedStudyIds: number[] = [];
+  const errors: string[] = [];
+  const skippedStudies: { title: string; deletedBy: string | null }[] = [];
+  const duplicateStudies: { title: string; reason: string; existingId?: number }[] = [];
+
+  const newStudies = analysis.studies.filter(a => a.status === "new");
+  let processed = 0;
+
+  // Collect skipped info
+  for (const a of analysis.studies) {
+    if (a.status === "deleted") {
+      skippedStudies.push({ title: a.study.title.substring(0, 80), deletedBy: a.deletedBy || null });
+    } else if (a.status === "duplicate_doi" || a.status === "duplicate_title") {
+      duplicateStudies.push({
+        title: a.study.title.substring(0, 80),
+        reason: a.status === "duplicate_doi" ? `Duplicate DOI: ${a.study.doi}` : "Duplicate title",
+        existingId: a.existingId,
+      });
+    }
+  }
+
+  // Insert only "new" studies
+  for (const a of newStudies) {
+    try {
+      const created = await studyService.createStudy(a.study);
+      importedStudyIds.push(created.id);
+      imported++;
+    } catch (error) {
+      failed++;
+      errors.push(`"${a.study.title.substring(0, 60)}": ${error instanceof Error ? error.message : "Unknown error"}`);
+      logger.error(`Failed to import study: ${a.study.title}`, error, "ImportRoutes");
+    }
+    processed++;
+    if (onProgress) onProgress(processed, newStudies.length, imported);
+  }
+
+  return {
+    imported,
+    failed,
+    skippedDuplicate: analysis.duplicatesByDoi + analysis.duplicatesByTitle + analysis.batchDuplicates,
+    skippedDeleted: analysis.previouslyDeleted,
+    importedStudyIds,
+    skippedStudies: skippedStudies.length > 0 ? skippedStudies : undefined,
+    duplicateStudies: duplicateStudies.length > 0 ? duplicateStudies : undefined,
+    errors: errors.length > 0 ? errors : undefined,
+  };
+}
+
+// Analyze endpoint — dry run, no inserts
+router.post(
+  "/analyze",
+  upload.single("file"),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+    const filePath = req.file.path;
+    try {
+      const format = req.file.originalname.endsWith(".csv") ? "csv" : "xlsx";
+      const studies = await parseFile(filePath, format as "xlsx" | "csv");
+      const analysis = await analyzeStudies(studies);
+      cleanupTempFile(filePath);
+
+      // Return summary + first 50 sample rows for preview
+      const sampleStudies = analysis.studies.slice(0, 50).map(a => ({
+        title: a.study.title.substring(0, 100),
+        doi: a.study.doi,
+        category: a.study.category,
+        status: a.status,
+        existingId: a.existingId,
+      }));
+
+      return res.json({
+        success: true,
+        totalRows: analysis.totalRows,
+        readyToImport: analysis.readyToImport,
+        duplicatesByDoi: analysis.duplicatesByDoi,
+        duplicatesByTitle: analysis.duplicatesByTitle,
+        batchDuplicates: analysis.batchDuplicates,
+        previouslyDeleted: analysis.previouslyDeleted,
+        emptyTitles: analysis.emptyTitles,
+        sampleStudies,
+      });
+    } catch (error) {
+      logger.error("File analysis error", error, "ImportRoutes");
+      cleanupTempFile(filePath);
+      return res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to analyze file",
+      });
+    }
+  },
+);
 
 // Excel import route
 router.post(
@@ -227,36 +453,21 @@ router.post(
   upload.single("file"),
   async (req: Request, res: Response) => {
     if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No file uploaded" });
+      return res.status(400).json({ success: false, message: "No file uploaded" });
     }
-
     const filePath = req.file.path;
-
     try {
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.readFile(filePath);
-      const worksheet = workbook.worksheets[0];
-      if (!worksheet) throw new Error("No worksheet found in file");
-
-      const data = worksheetToJson(worksheet);
-      const studies = processWorkbookData(data);
-      const results = await importStudiesToDatabase(studies);
-
+      const studies = await parseFile(filePath, "xlsx");
+      const analysis = await analyzeStudies(studies);
+      const results = await importWithAnalysis(analysis);
       cleanupTempFile(filePath);
-
       return res.json(buildResponse(studies.length, results));
     } catch (error) {
       logger.error("Excel import error", error, "ImportRoutes");
       cleanupTempFile(filePath);
-
       return res.status(500).json({
         success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to import Excel file",
+        message: error instanceof Error ? error.message : "Failed to import Excel file",
       });
     }
   },
@@ -268,36 +479,82 @@ router.post(
   upload.single("csvFile"),
   async (req: Request, res: Response) => {
     if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No file uploaded" });
+      return res.status(400).json({ success: false, message: "No file uploaded" });
     }
-
     const filePath = req.file.path;
-
     try {
-      const workbook = new ExcelJS.Workbook();
-      await workbook.csv.readFile(filePath);
-      const worksheet = workbook.worksheets[0];
-      if (!worksheet) throw new Error("No worksheet found in CSV");
-
-      const data = worksheetToJson(worksheet);
-      const studies = processWorkbookData(data);
-      const results = await importStudiesToDatabase(studies);
-
+      const studies = await parseFile(filePath, "csv");
+      const analysis = await analyzeStudies(studies);
+      const results = await importWithAnalysis(analysis);
       cleanupTempFile(filePath);
-
       return res.json(buildResponse(studies.length, results));
     } catch (error) {
       logger.error("CSV import error", error, "ImportRoutes");
       cleanupTempFile(filePath);
-
       return res.status(500).json({
         success: false,
-        message:
-          error instanceof Error ? error.message : "Failed to import CSV file",
+        message: error instanceof Error ? error.message : "Failed to import CSV file",
       });
     }
+  },
+);
+
+// SSE streaming import for real-time progress
+router.post(
+  "/excel/stream",
+  upload.single("file"),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+    const filePath = req.file.path;
+
+    // Set SSE headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const send = (data: any) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+    try {
+      const format = req.file.originalname.endsWith(".csv") ? "csv" : "xlsx";
+      const studies = await parseFile(filePath, format as "xlsx" | "csv");
+
+      send({ type: "parsed", totalRows: studies.length });
+
+      const analysis = await analyzeStudies(studies);
+      send({
+        type: "analyzed",
+        readyToImport: analysis.readyToImport,
+        duplicates: analysis.duplicatesByDoi + analysis.duplicatesByTitle + analysis.batchDuplicates,
+        deleted: analysis.previouslyDeleted,
+        empty: analysis.emptyTitles,
+      });
+
+      const results = await importWithAnalysis(analysis, (processed, total, imported) => {
+        // Send progress every 25 rows or on the last row
+        if (processed % 25 === 0 || processed === total) {
+          send({ type: "progress", processed, total, imported });
+        }
+      });
+
+      cleanupTempFile(filePath);
+
+      send({
+        type: "complete",
+        ...buildResponse(studies.length, results),
+      });
+    } catch (error) {
+      logger.error("Streaming import error", error, "ImportRoutes");
+      cleanupTempFile(filePath);
+      send({
+        type: "error",
+        message: error instanceof Error ? error.message : "Import failed",
+      });
+    }
+
+    res.end();
   },
 );
 
@@ -305,54 +562,35 @@ router.post(
 router.post("/googlesheet", async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
-
     if (!url) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No Google Sheet URL provided" });
+      return res.status(400).json({ success: false, message: "No Google Sheet URL provided" });
     }
 
-    // Extract the sheet ID from the URL
-    const urlPattern =
-      /https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)\/edit/;
+    const urlPattern = /https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)\/edit/;
     const match = url.match(urlPattern);
-
     if (!match || !match[1]) {
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid Google Sheet URL. Please use a URL in the format: https://docs.google.com/spreadsheets/d/SHEET_ID/edit",
+        message: "Invalid Google Sheet URL. Please use a URL in the format: https://docs.google.com/spreadsheets/d/SHEET_ID/edit",
       });
     }
 
     const sheetId = match[1];
-
-    // Get the Google Sheet as CSV
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
-
     const response = await axios.get(csvUrl, { responseType: "arraybuffer" });
 
-    // Write response to a temporary file
     const uploadDir = path.join(process.cwd(), "temp_files");
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-
     const tempFilePath = path.join(uploadDir, `gsheet-${Date.now()}.csv`);
 
     try {
       fs.writeFileSync(tempFilePath, Buffer.from(response.data));
-      const workbook = new ExcelJS.Workbook();
-      await workbook.csv.readFile(tempFilePath);
-      const worksheet = workbook.worksheets[0];
-      if (!worksheet) throw new Error("No worksheet found in Google Sheet CSV");
-
-      const data = worksheetToJson(worksheet);
-      const studies = processWorkbookData(data);
-      const results = await importStudiesToDatabase(studies);
-
+      const studies = await parseFile(tempFilePath, "csv");
+      const analysis = await analyzeStudies(studies);
+      const results = await importWithAnalysis(analysis);
       cleanupTempFile(tempFilePath);
-
       return res.json(buildResponse(studies.length, results));
     } catch (fileErr) {
       cleanupTempFile(tempFilePath);
@@ -363,66 +601,11 @@ router.post("/googlesheet", async (req: Request, res: Response) => {
     }
   } catch (error) {
     logger.error("Google Sheet import error", error, "ImportRoutes");
-
     return res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to import from Google Sheet",
+      message: error instanceof Error ? error.message : "Failed to import from Google Sheet",
     });
   }
 });
 
-// Helper function to import studies to database
-async function importStudiesToDatabase(studies: InsertStudy[]) {
-  let imported = 0;
-  let failed = 0;
-  let skippedDeleted = 0;
-  const errors: string[] = [];
-  const skippedStudies: { title: string; deletedBy: string | null; deletedAt: Date }[] = [];
-
-  for (const study of studies) {
-    try {
-      // Skip empty titles
-      if (!study.title.trim()) {
-        failed++;
-        errors.push("Skipped study with empty title");
-        continue;
-      }
-
-      // Check if this study was previously deleted
-      const deletion = await studyService.checkPreviouslyDeleted(study.title, study.doi);
-      if (deletion) {
-        skippedDeleted++;
-        skippedStudies.push({
-          title: study.title.substring(0, 80),
-          deletedBy: deletion.deletedBy,
-          deletedAt: deletion.deletedAt,
-        });
-        continue;
-      }
-
-      // Insert study to database
-      await studyService.createStudy(study);
-      imported++;
-    } catch (error) {
-      failed++;
-      errors.push(
-        `"${study.title.substring(0, 60)}": ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-      logger.error(`Failed to import study: ${study.title}`, error, "ImportRoutes");
-    }
-  }
-
-  return {
-    imported,
-    failed,
-    skippedDeleted,
-    skippedStudies: skippedStudies.length > 0 ? skippedStudies : undefined,
-    errors: errors.length > 0 ? errors : undefined,
-  };
-}
-
-// Export import routes
 export default router;

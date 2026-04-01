@@ -28,6 +28,9 @@ export class StudiesController {
     this.router.get("/overview", this.getOverview);
 
     // Study deletion routes (must come before /:id param routes)
+    this.router.get("/deleted-ledger", requireAdmin, this.getDeletedLedger);
+    this.router.delete("/deleted-ledger/:ledgerId", requireAdmin, this.removeFromLedger);
+    this.router.post("/deleted-ledger/bulk-remove", requireAdmin, this.bulkRemoveFromLedger);
     this.router.post("/check-deleted", requireAdmin, this.checkPreviouslyDeleted);
     this.router.delete("/bulk", requireAdmin, this.bulkDeleteStudies);
     this.router.get("/:id/deletion-preview", requireAdmin, this.getDeletionPreview);
@@ -499,6 +502,46 @@ export class StudiesController {
       }
   }
 
+  private getDeletedLedger = async (req: Request, res: Response) => {
+      try {
+          const page = parseInt(req.query.page as string) || 1;
+          const pageSize = parseInt(req.query.pageSize as string) || 20;
+          const result = await studyService.getDeletedStudies(page, pageSize);
+          res.json(result);
+      } catch (error) {
+          logger.error("Error fetching deletion ledger", error, "StudiesController");
+          res.status(500).json({ error: "Failed to fetch deletion ledger" });
+      }
+  }
+
+  private removeFromLedger = async (req: Request, res: Response) => {
+      try {
+          const id = parseInt(req.params.ledgerId);
+          if (isNaN(id)) return res.status(400).json({ error: "Invalid ledger entry ID" });
+          const removed = await studyService.removeFromDeletionLedger(id);
+          if (!removed) return res.status(404).json({ error: "Ledger entry not found" });
+          res.json({ success: true });
+      } catch (error) {
+          logger.error("Error removing from deletion ledger", error, "StudiesController");
+          res.status(500).json({ error: "Failed to remove from deletion ledger" });
+      }
+  }
+
+  private bulkRemoveFromLedger = async (req: Request, res: Response) => {
+      try {
+          const { ids } = req.body;
+          if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: "ids must be a non-empty array" });
+          }
+          const parsedIds = ids.map((id: any) => parseInt(id)).filter((id: number) => !isNaN(id));
+          const result = await studyService.bulkRemoveFromDeletionLedger(parsedIds);
+          res.json(result);
+      } catch (error) {
+          logger.error("Error bulk removing from deletion ledger", error, "StudiesController");
+          res.status(500).json({ error: "Failed to bulk remove from deletion ledger" });
+      }
+  }
+
   private getDeletionPreview = async (req: Request, res: Response) => {
       try {
           const id = parseInt(req.params.id);
@@ -520,7 +563,8 @@ export class StudiesController {
           if (isNaN(id)) return res.status(400).json({ error: "Invalid study ID" });
 
           const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
-          const result = await studyService.deleteStudy(id, deletedBy);
+          const reason = req.body?.reason || null;
+          const result = await studyService.deleteStudy(id, deletedBy, reason);
           if (!result) return res.status(404).json({ error: "Study not found" });
 
           res.json(result);
@@ -546,7 +590,8 @@ export class StudiesController {
           }
 
           const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
-          const result = await studyService.bulkDeleteStudies(ids, deletedBy);
+          const reason = req.body?.reason || null;
+          const result = await studyService.bulkDeleteStudies(ids, deletedBy, reason);
           res.json(result);
       } catch (error: any) {
           logger.error("Error bulk deleting studies", error, "StudiesController");

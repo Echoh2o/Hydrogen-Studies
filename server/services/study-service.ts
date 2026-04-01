@@ -437,7 +437,7 @@ export class StudyService {
     return { success: true, studyId: id, studyTitle: study.title || `Study #${id}`, warnings };
   }
 
-  async bulkDeleteStudies(studyIds: number[], deletedBy?: string): Promise<{ deleted: number[]; failed: { id: number; error: string }[]; warnings: string[] }> {
+  async bulkDeleteStudies(studyIds: number[], deletedBy?: string, reason?: string): Promise<{ deleted: number[]; failed: { id: number; error: string }[]; warnings: string[] }> {
     if (studyIds.length > 100) {
       throw new Error("Cannot delete more than 100 studies at once");
     }
@@ -448,7 +448,7 @@ export class StudyService {
 
     for (const id of studyIds) {
       try {
-        const result = await this.deleteStudy(id, deletedBy);
+        const result = await this.deleteStudy(id, deletedBy, reason);
         if (result) {
           deleted.push(id);
           allWarnings.push(...result.warnings);
@@ -627,6 +627,70 @@ export class StudyService {
     }
 
     return null;
+  }
+
+  async batchCheckExistingStudies(dois: string[], titles: string[]): Promise<{ doiMap: Map<string, number>; titleMap: Map<string, number> }> {
+    const doiMap = new Map<string, number>();
+    const titleMap = new Map<string, number>();
+
+    // Batch DOI check
+    if (dois.length > 0) {
+      const doiResults = await db.select({ id: studies.id, doi: studies.doi }).from(studies).where(inArray(studies.doi, dois));
+      for (const r of doiResults) {
+        if (r.doi) doiMap.set(r.doi, r.id);
+      }
+    }
+
+    // Batch title check - use ANY for case-insensitive matching
+    if (titles.length > 0) {
+      const lowerTitles = titles.map(t => t.toLowerCase().trim());
+      const titleResults = await db.execute(sql`SELECT id, title FROM studies WHERE LOWER(title) = ANY(${lowerTitles})`);
+      for (const r of titleResults.rows as any[]) {
+        titleMap.set(String(r.title).toLowerCase().trim(), r.id);
+      }
+    }
+
+    return { doiMap, titleMap };
+  }
+
+  async batchCheckDeletedStudies(dois: string[], titles: string[]): Promise<{ doiMap: Map<string, { deletedBy: string | null; deletedAt: Date }>; titleMap: Map<string, { deletedBy: string | null; deletedAt: Date }> }> {
+    const doiMap = new Map<string, { deletedBy: string | null; deletedAt: Date }>();
+    const titleMap = new Map<string, { deletedBy: string | null; deletedAt: Date }>();
+
+    if (dois.length > 0) {
+      const doiResults = await db.select().from(deletedStudies).where(inArray(deletedStudies.doi, dois));
+      for (const r of doiResults) {
+        if (r.doi) doiMap.set(r.doi, { deletedBy: r.deletedBy, deletedAt: r.deletedAt });
+      }
+    }
+
+    if (titles.length > 0) {
+      const lowerTitles = titles.map(t => t.toLowerCase().trim());
+      const titleResults = await db.execute(sql`SELECT title, deleted_by, deleted_at FROM deleted_studies WHERE LOWER(title) = ANY(${lowerTitles})`);
+      for (const r of titleResults.rows as any[]) {
+        titleMap.set(String(r.title).toLowerCase().trim(), { deletedBy: r.deleted_by, deletedAt: r.deleted_at });
+      }
+    }
+
+    return { doiMap, titleMap };
+  }
+
+  async getDeletedStudies(page: number = 1, pageSize: number = 20): Promise<PaginatedResults<any>> {
+    const offset = (page - 1) * pageSize;
+    const countResult = await db.select({ value: count() }).from(deletedStudies);
+    const total = countResult[0]?.value || 0;
+    const data = await db.select().from(deletedStudies).orderBy(desc(deletedStudies.deletedAt)).limit(pageSize).offset(offset);
+    return { data, total, page, pageSize, pageCount: Math.ceil(total / pageSize) };
+  }
+
+  async removeFromDeletionLedger(id: number): Promise<boolean> {
+    const result = await db.delete(deletedStudies).where(eq(deletedStudies.id, id));
+    return (result as any).rowCount > 0;
+  }
+
+  async bulkRemoveFromDeletionLedger(ids: number[]): Promise<{ removed: number }> {
+    const result = await db.delete(deletedStudies).where(inArray(deletedStudies.id, ids));
+    return { removed: (result as any).rowCount || 0 };
   }
 
   // Enhanced Search Methods

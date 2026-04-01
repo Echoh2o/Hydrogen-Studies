@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, AlertTriangle } from "lucide-react";
 import {
@@ -11,6 +12,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface DeletionConfirmDialogProps {
   mode: "single" | "bulk";
@@ -18,7 +21,7 @@ interface DeletionConfirmDialogProps {
   studyIds?: number[];
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (reason?: string) => void;
   isDeleting: boolean;
 }
 
@@ -44,6 +47,8 @@ export function DeletionConfirmDialog({
   onConfirm,
   isDeleting,
 }: DeletionConfirmDialogProps) {
+  const [reason, setReason] = useState("");
+
   const previewQuery = useQuery<{
     studyId: number;
     studyTitle: string;
@@ -59,8 +64,13 @@ export function DeletionConfirmDialog({
     ? Object.entries(preview.relatedCounts).filter(([, v]) => v > 0)
     : [];
 
+  const handleClose = () => {
+    setReason("");
+    onClose();
+  };
+
   return (
-    <AlertDialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <AlertDialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
@@ -111,6 +121,21 @@ export function DeletionConfirmDialog({
                   related content.
                 </p>
               )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="deletion-reason" className="text-sm font-medium text-foreground">
+                  Reason for deletion (optional)
+                </Label>
+                <Textarea
+                  id="deletion-reason"
+                  placeholder="e.g., Duplicate entry, Retracted study, Not relevant to H2 research..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={2}
+                  className="text-sm"
+                />
+              </div>
+
               <p className="text-destructive font-medium text-sm">
                 This action cannot be undone.
               </p>
@@ -118,10 +143,12 @@ export function DeletionConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting} onClick={handleClose}>
+            Cancel
+          </AlertDialogCancel>
           <Button
             variant="destructive"
-            onClick={onConfirm}
+            onClick={() => onConfirm(reason || undefined)}
             disabled={isDeleting || (mode === "single" && previewQuery.isLoading)}
           >
             {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

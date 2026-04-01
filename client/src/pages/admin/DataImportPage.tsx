@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Helmet } from "react-helmet";
+import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
@@ -18,25 +20,49 @@ import {
   FileUp,
   Download,
   Table,
-  FileJson,
   Database,
   UploadCloud,
   AlertCircle,
   CheckCircle2,
   Loader2,
+  Search,
+  ExternalLink,
+  Ban,
+  Copy,
+  Trash2,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 
-type ImportPhase = "idle" | "uploading" | "processing" | "done" | "error";
+type ImportPhase = "idle" | "uploading" | "analyzing" | "previewing" | "importing" | "done" | "error";
+
+interface AnalysisResult {
+  totalRows: number;
+  readyToImport: number;
+  duplicatesByDoi: number;
+  duplicatesByTitle: number;
+  batchDuplicates: number;
+  previouslyDeleted: number;
+  emptyTitles: number;
+  sampleStudies?: { title: string; doi: string | null; category: string; status: string; existingId?: number }[];
+}
 
 interface ImportStats {
   total: number;
   imported: number;
   failed?: number;
+  skippedDuplicate?: number;
   skippedDeleted?: number;
-  skippedStudies?: { title: string; deletedBy: string | null; deletedAt: string }[];
+  importedStudyIds?: number[];
+  skippedStudies?: { title: string; deletedBy: string | null }[];
+  duplicateStudies?: { title: string; reason: string; existingId?: number }[];
   error?: string;
+}
+
+interface StreamProgress {
+  processed: number;
+  total: number;
+  imported: number;
 }
 
 export default function DataImportPage() {
@@ -46,60 +72,39 @@ export default function DataImportPage() {
   const [googleSheetUrl, setGoogleSheetUrl] = useState("");
   const [phase, setPhase] = useState<ImportPhase>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [importStats, setImportStats] = useState<ImportStats | null>(null);
+  const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
 
-  const importing = phase === "uploading" || phase === "processing";
+  const busy = phase === "uploading" || phase === "analyzing" || phase === "importing";
+
+  const resetState = () => {
+    setPhase("idle");
+    setAnalysis(null);
+    setImportStats(null);
+    setStreamProgress(null);
+    setUploadProgress(0);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (selectedFiles && selectedFiles.length > 0) {
       setFile(selectedFiles[0]);
-      setImportStats(null);
-      setPhase("idle");
+      resetState();
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      toast({
-        title: "No file selected",
-        description: "Please select a file to import",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Step 1: Analyze file (dry run)
+  const handleAnalyze = async () => {
+    if (!file) return;
 
-    setImportStats(null);
-    setUploadProgress(0);
+    resetState();
     setPhase("uploading");
 
     const formData = new FormData();
-    let endpoint: string;
+    formData.append("file", file);
 
-    // Determine endpoint and field name based on file type
-    if (file.name.endsWith(".csv")) {
-      formData.append("csvFile", file);
-      endpoint = "/api/import/csv";
-    } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-      formData.append("file", file);
-      endpoint = "/api/import/excel";
-    } else {
-      setPhase("error");
-      setImportStats({
-        total: 0,
-        imported: 0,
-        error: "Unsupported file format. Please use .xlsx, .xls, or .csv files.",
-      });
-      toast({
-        title: "Unsupported format",
-        description: "Please use .xlsx, .xls, or .csv files.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Use XMLHttpRequest for upload progress tracking
     const xhr = new XMLHttpRequest();
     xhrRef.current = xhr;
 
@@ -110,9 +115,8 @@ export default function DataImportPage() {
     });
 
     xhr.upload.addEventListener("load", () => {
-      // Upload finished, now server is processing
       setUploadProgress(100);
-      setPhase("processing");
+      setPhase("analyzing");
     });
 
     const result = await new Promise<{ ok: boolean; data?: any; error?: string }>((resolve) => {
@@ -128,65 +132,103 @@ export default function DataImportPage() {
           resolve({ ok: false, error: `Server error ${xhr.status}: ${xhr.statusText}` });
         }
       });
+      xhr.addEventListener("error", () => resolve({ ok: false, error: "Network error" }));
+      xhr.addEventListener("abort", () => resolve({ ok: false, error: "Cancelled" }));
 
-      xhr.addEventListener("error", () => {
-        resolve({ ok: false, error: "Network error — could not reach the server" });
-      });
-
-      xhr.addEventListener("abort", () => {
-        resolve({ ok: false, error: "Upload cancelled" });
-      });
-
-      xhr.open("POST", endpoint);
-      xhr.withCredentials = true; // Send session cookie for requireAdmin auth
+      xhr.open("POST", "/api/import/analyze");
+      xhr.withCredentials = true;
       xhr.send(formData);
     });
 
     xhrRef.current = null;
 
     if (result.ok && result.data) {
-      const data = result.data;
-      setPhase("done");
-      setImportStats({
-        total: data.total || 0,
-        imported: data.imported ?? 0,
-        failed: data.failed || 0,
-        skippedDeleted: data.skippedDeleted || 0,
-        skippedStudies: data.skippedStudies,
-      });
-      const parts = [`Imported ${data.imported ?? 0} of ${data.total || 0} studies.`];
-      if (data.failed) parts.push(`${data.failed} failed.`);
-      if (data.skippedDeleted) parts.push(`${data.skippedDeleted} skipped (previously deleted).`);
-      toast({
-        title: "Import complete",
-        description: parts.join(" "),
-      });
+      setAnalysis(result.data);
+      setPhase("previewing");
     } else {
       setPhase("error");
-      setImportStats({
-        total: 0,
-        imported: 0,
-        error: result.error || "Unknown error occurred",
+      setImportStats({ total: 0, imported: 0, error: result.error });
+      toast({ title: "Analysis failed", description: result.error, variant: "destructive" });
+    }
+  };
+
+  // Step 2: Confirm import with SSE streaming
+  const handleConfirmImport = async () => {
+    if (!file) return;
+
+    setPhase("importing");
+    setStreamProgress(null);
+    setImportStats(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/import/excel/stream", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
       });
-      toast({
-        title: "Import failed",
-        description: result.error || "Failed to import data",
-        variant: "destructive",
-      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.message || `Server error ${response.status}`);
+      }
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+
+            if (event.type === "progress") {
+              setStreamProgress({ processed: event.processed, total: event.total, imported: event.imported });
+            } else if (event.type === "complete") {
+              setPhase("done");
+              setStreamProgress(null);
+              setImportStats({
+                total: event.total || 0,
+                imported: event.imported || 0,
+                failed: event.failed || 0,
+                skippedDuplicate: event.skippedDuplicate || 0,
+                skippedDeleted: event.skippedDeleted || 0,
+                importedStudyIds: event.importedStudyIds,
+                skippedStudies: event.skippedStudies,
+                duplicateStudies: event.duplicateStudies,
+              });
+            } else if (event.type === "error") {
+              throw new Error(event.message);
+            }
+          } catch (parseErr) {
+            // Skip malformed SSE lines
+          }
+        }
+      }
+
+      if (phase !== "done") setPhase("done");
+    } catch (error) {
+      setPhase("error");
+      const msg = error instanceof Error ? error.message : "Import failed";
+      setImportStats({ total: 0, imported: 0, error: msg });
+      toast({ title: "Import failed", description: msg, variant: "destructive" });
     }
   };
 
   const handleGoogleSheetImport = async () => {
-    if (!googleSheetUrl) {
-      toast({
-        title: "No URL provided",
-        description: "Please enter a Google Sheet URL",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!googleSheetUrl) return;
 
-    setPhase("processing");
+    setPhase("importing");
     setImportStats(null);
 
     try {
@@ -194,14 +236,12 @@ export default function DataImportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: googleSheetUrl }),
-        credentials: "include", // Send session cookie for requireAdmin auth
+        credentials: "include",
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || errorData?.error || `Import failed: ${response.status} ${response.statusText}`,
-        );
+        throw new Error(errorData?.message || errorData?.error || `Import failed: ${response.status}`);
       }
 
       const data = await response.json();
@@ -211,47 +251,139 @@ export default function DataImportPage() {
         total: data.total || 0,
         imported: data.imported ?? 0,
         failed: data.failed || 0,
+        skippedDuplicate: data.skippedDuplicate || 0,
         skippedDeleted: data.skippedDeleted || 0,
+        importedStudyIds: data.importedStudyIds,
         skippedStudies: data.skippedStudies,
-      });
-
-      const parts = [`Imported ${data.imported ?? 0} of ${data.total || 0} studies.`];
-      if (data.failed) parts.push(`${data.failed} failed.`);
-      if (data.skippedDeleted) parts.push(`${data.skippedDeleted} skipped (previously deleted).`);
-      toast({
-        title: "Import complete",
-        description: parts.join(" "),
+        duplicateStudies: data.duplicateStudies,
       });
     } catch (error) {
-      console.error("Google Sheet import error:", error);
       setPhase("error");
       setImportStats({
         total: 0,
         imported: 0,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
+        error: error instanceof Error ? error.message : "Unknown error",
       });
-
       toast({
         title: "Import failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to import data from Google Sheet",
+        description: error instanceof Error ? error.message : "Failed to import",
         variant: "destructive",
       });
     }
   };
 
-  const downloadTemplate = () => {
-    toast({
-      title: "Template downloaded",
-      description: "Import template has been downloaded.",
-    });
+  // Analysis preview card
+  const AnalysisPreview = () => {
+    if (!analysis) return null;
+
+    return (
+      <div className="space-y-4">
+        <Alert>
+          <Search className="h-4 w-4" />
+          <AlertTitle>File Analysis Complete</AlertTitle>
+          <AlertDescription>
+            Review the breakdown below, then click "Confirm Import" to proceed.
+          </AlertDescription>
+        </Alert>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-md border p-3 text-center">
+            <p className="text-2xl font-bold">{analysis.totalRows}</p>
+            <p className="text-xs text-muted-foreground">Total Rows</p>
+          </div>
+          <div className="rounded-md border p-3 text-center border-green-200 bg-green-50 dark:bg-green-950/20">
+            <p className="text-2xl font-bold text-green-700 dark:text-green-400">{analysis.readyToImport}</p>
+            <p className="text-xs text-muted-foreground">Ready to Import</p>
+          </div>
+          <div className="rounded-md border p-3 text-center border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+            <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
+              {analysis.duplicatesByDoi + analysis.duplicatesByTitle + analysis.batchDuplicates}
+            </p>
+            <p className="text-xs text-muted-foreground">Duplicates (skip)</p>
+          </div>
+          <div className="rounded-md border p-3 text-center border-red-200 bg-red-50 dark:bg-red-950/20">
+            <p className="text-2xl font-bold text-red-700 dark:text-red-400">{analysis.previouslyDeleted}</p>
+            <p className="text-xs text-muted-foreground">Deleted (skip)</p>
+          </div>
+        </div>
+
+        {(analysis.duplicatesByDoi > 0 || analysis.duplicatesByTitle > 0 || analysis.batchDuplicates > 0) && (
+          <div className="text-xs text-muted-foreground space-x-3">
+            {analysis.duplicatesByDoi > 0 && (
+              <span><Copy className="inline h-3 w-3 mr-1" />{analysis.duplicatesByDoi} by DOI</span>
+            )}
+            {analysis.duplicatesByTitle > 0 && (
+              <span><Copy className="inline h-3 w-3 mr-1" />{analysis.duplicatesByTitle} by title</span>
+            )}
+            {analysis.batchDuplicates > 0 && (
+              <span><Copy className="inline h-3 w-3 mr-1" />{analysis.batchDuplicates} within file</span>
+            )}
+            {analysis.emptyTitles > 0 && (
+              <span><Ban className="inline h-3 w-3 mr-1" />{analysis.emptyTitles} empty titles</span>
+            )}
+          </div>
+        )}
+
+        {/* Sample preview table */}
+        {analysis.sampleStudies && analysis.sampleStudies.length > 0 && (
+          <details className="text-sm">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+              Preview first {analysis.sampleStudies.length} rows
+            </summary>
+            <div className="mt-2 max-h-60 overflow-y-auto border rounded-md">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-muted">
+                  <tr>
+                    <th className="text-left p-2">Title</th>
+                    <th className="text-left p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysis.sampleStudies.map((s, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="p-2 truncate max-w-[300px]">{s.title}</td>
+                      <td className="p-2">
+                        <Badge
+                          variant={s.status === "new" ? "default" : "secondary"}
+                          className={
+                            s.status === "new" ? "bg-green-100 text-green-800" :
+                            s.status.includes("duplicate") ? "bg-yellow-100 text-yellow-800" :
+                            s.status === "deleted" ? "bg-red-100 text-red-800" :
+                            ""
+                          }
+                        >
+                          {s.status === "new" ? "New" :
+                           s.status === "duplicate_doi" ? "Dup (DOI)" :
+                           s.status === "duplicate_title" ? "Dup (Title)" :
+                           s.status === "batch_duplicate" ? "Dup (Batch)" :
+                           s.status === "deleted" ? "Deleted" :
+                           s.status === "empty" ? "Empty" : s.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
+
+        <div className="flex items-center gap-3">
+          <Button onClick={handleConfirmImport} disabled={analysis.readyToImport === 0}>
+            <FileUp className="h-4 w-4 mr-2" />
+            Confirm Import ({analysis.readyToImport} studies)
+          </Button>
+          <Button variant="outline" onClick={resetState}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
   };
 
-  // Shared progress + result display component
+  // Progress + results display
   const ImportProgress = () => {
-    if (phase === "idle") return null;
+    if (phase === "idle" || phase === "previewing") return null;
 
     return (
       <div className="space-y-3">
@@ -266,18 +398,39 @@ export default function DataImportPage() {
           </div>
         )}
 
-        {/* Processing indicator */}
-        {phase === "processing" && (
+        {/* Analyzing indicator */}
+        {phase === "analyzing" && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Processing studies — this may take a moment for large files...</span>
+              <span>Analyzing file for duplicates and conflicts...</span>
             </div>
             <Progress value={100} className="h-2 animate-pulse" />
           </div>
         )}
 
-        {/* Result alert */}
+        {/* Import progress with row counts */}
+        {phase === "importing" && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {streamProgress ? (
+                <span>
+                  Importing... {streamProgress.processed} / {streamProgress.total} rows
+                  ({streamProgress.imported} imported)
+                </span>
+              ) : (
+                <span>Starting import...</span>
+              )}
+            </div>
+            <Progress
+              value={streamProgress ? (streamProgress.processed / streamProgress.total) * 100 : 0}
+              className="h-2"
+            />
+          </div>
+        )}
+
+        {/* Results */}
         {importStats && (phase === "done" || phase === "error") && (
           <>
             <Alert variant={importStats.error ? "destructive" : "default"}>
@@ -292,36 +445,65 @@ export default function DataImportPage() {
                   <CheckCircle2 className="h-4 w-4" />
                   <AlertTitle>Import Complete</AlertTitle>
                   <AlertDescription>
-                    Imported {importStats.imported} of {importStats.total} studies.
+                    <span className="font-medium">{importStats.imported}</span> of {importStats.total} studies imported.
+                    {importStats.skippedDuplicate ? ` ${importStats.skippedDuplicate} duplicates skipped.` : ""}
+                    {importStats.skippedDeleted ? ` ${importStats.skippedDeleted} previously deleted skipped.` : ""}
                     {importStats.failed ? ` ${importStats.failed} failed.` : ""}
-                    {importStats.skippedDeleted ? ` ${importStats.skippedDeleted} skipped (previously deleted).` : ""}
                   </AlertDescription>
                 </>
               )}
             </Alert>
 
-            {/* Show which studies were skipped due to prior deletion */}
-            {importStats.skippedStudies && importStats.skippedStudies.length > 0 && (
+            {/* Post-import navigation */}
+            {!importStats.error && importStats.imported > 0 && (
+              <div className="flex items-center gap-3">
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/admin/studies">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View All Studies
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => { setFile(null); resetState(); }}>
+                  Import More
+                </Button>
+              </div>
+            )}
+
+            {/* Duplicate details */}
+            {importStats.duplicateStudies && importStats.duplicateStudies.length > 0 && (
               <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Previously Deleted Studies Skipped</AlertTitle>
+                <Copy className="h-4 w-4" />
+                <AlertTitle>Duplicate Studies Skipped ({importStats.duplicateStudies.length})</AlertTitle>
                 <AlertDescription>
-                  <p className="mb-2">
-                    The following studies were not imported because they were previously
-                    deleted by an admin:
-                  </p>
-                  <ul className="list-disc pl-5 space-y-1 text-xs">
-                    {importStats.skippedStudies.map((s, i) => (
+                  <ul className="list-disc pl-5 space-y-1 text-xs mt-2 max-h-40 overflow-y-auto">
+                    {importStats.duplicateStudies.map((s, i) => (
                       <li key={i}>
                         {s.title}
-                        {s.deletedBy && (
-                          <span className="text-muted-foreground">
-                            {" "}— deleted by {s.deletedBy}
-                          </span>
-                        )}
+                        <span className="text-muted-foreground"> — {s.reason}</span>
                       </li>
                     ))}
                   </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Previously deleted details */}
+            {importStats.skippedStudies && importStats.skippedStudies.length > 0 && (
+              <Alert>
+                <Trash2 className="h-4 w-4" />
+                <AlertTitle>Previously Deleted Studies Skipped ({importStats.skippedStudies.length})</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-5 space-y-1 text-xs mt-2 max-h-40 overflow-y-auto">
+                    {importStats.skippedStudies.map((s, i) => (
+                      <li key={i}>
+                        {s.title}
+                        {s.deletedBy && <span className="text-muted-foreground"> — deleted by {s.deletedBy}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/admin/deletion-ledger" className="text-xs underline mt-2 inline-block">
+                    Manage deletion ledger
+                  </Link>
                 </AlertDescription>
               </Alert>
             )}
@@ -332,10 +514,7 @@ export default function DataImportPage() {
   };
 
   return (
-    <AdminLayout
-      title="Data Import"
-      description="Import research data from various file formats"
-    >
+    <AdminLayout title="Data Import" description="Import research data from various file formats">
       <Helmet>
         <title>Data Import | HydrogenStudies Admin</title>
       </Helmet>
@@ -348,24 +527,12 @@ export default function DataImportPage() {
           </p>
         </div>
 
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Importing data</AlertTitle>
-          <AlertDescription>
-            Use this tool to bulk import research data from Excel, CSV, or Google
-            Sheets. Make sure your data follows the expected format or use the
-            template.
-          </AlertDescription>
-        </Alert>
-
         <Tabs
           defaultValue="excel"
           value={activeTab}
           onValueChange={(tab) => {
             setActiveTab(tab);
-            // Reset state when switching tabs
-            setPhase("idle");
-            setImportStats(null);
+            resetState();
           }}
           className="space-y-4"
         >
@@ -392,12 +559,9 @@ export default function DataImportPage() {
                 {activeTab === "export" && "Export Data"}
               </CardTitle>
               <CardDescription>
-                {activeTab === "excel" &&
-                  "Upload Excel (.xlsx) or CSV files containing research data"}
-                {activeTab === "google" &&
-                  "Import data directly from a published Google Sheet"}
-                {activeTab === "export" &&
-                  "Export your research database in various formats"}
+                {activeTab === "excel" && "Upload a file to analyze, then review and confirm the import"}
+                {activeTab === "google" && "Import data directly from a published Google Sheet"}
+                {activeTab === "export" && "Export your research database in various formats"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -410,7 +574,7 @@ export default function DataImportPage() {
                       type="file"
                       accept=".xlsx,.xls,.csv"
                       onChange={handleFileChange}
-                      disabled={importing}
+                      disabled={busy}
                     />
                     <p className="text-xs text-muted-foreground">
                       Accepted formats: .xlsx, .xls, .csv (max 10 MB)
@@ -418,40 +582,23 @@ export default function DataImportPage() {
                   </div>
 
                   {file && phase === "idle" && (
-                    <div className="text-sm text-muted-foreground">
-                      Selected: <span className="font-medium text-foreground">{file.name}</span>{" "}
-                      ({(file.size / 1024).toFixed(0)} KB)
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm text-muted-foreground">
+                        Selected: <span className="font-medium text-foreground">{file.name}</span>{" "}
+                        ({(file.size / 1024).toFixed(0)} KB)
+                      </div>
+                      <Button onClick={handleAnalyze} className="flex items-center gap-2">
+                        <Search className="h-4 w-4" />
+                        Analyze File
+                      </Button>
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      onClick={handleUpload}
-                      disabled={!file || importing}
-                      className="flex items-center space-x-2"
-                    >
-                      {importing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>
-                            {phase === "uploading" ? "Uploading..." : "Processing..."}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <FileUp className="h-4 w-4" />
-                          <span>Upload and Import</span>
-                        </>
-                      )}
-                    </Button>
+                  {/* Step 1 result: Analysis preview */}
+                  {phase === "previewing" && <AnalysisPreview />}
 
-                    <Button variant="outline" onClick={downloadTemplate}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Template
-                    </Button>
-                  </div>
-
-                  <ImportProgress />
+                  {/* Progress / results for all other phases */}
+                  {phase !== "idle" && phase !== "previewing" && <ImportProgress />}
                 </div>
               </TabsContent>
 
@@ -465,38 +612,24 @@ export default function DataImportPage() {
                       placeholder="https://docs.google.com/spreadsheets/d/..."
                       value={googleSheetUrl}
                       onChange={(e) => setGoogleSheetUrl(e.target.value)}
-                      disabled={importing}
+                      disabled={busy}
                     />
                     <p className="text-xs text-muted-foreground">
-                      The Google Sheet must be published to the web and
-                      accessible to anyone with the link
+                      The Google Sheet must be published to the web and accessible to anyone with the link
                     </p>
                   </div>
 
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      onClick={handleGoogleSheetImport}
-                      disabled={!googleSheetUrl || importing}
-                      className="flex items-center space-x-2"
-                    >
-                      {importing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Importing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <UploadCloud className="h-4 w-4" />
-                          <span>Import from Google Sheets</span>
-                        </>
-                      )}
-                    </Button>
-
-                    <Button variant="outline" onClick={downloadTemplate}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Template
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={handleGoogleSheetImport}
+                    disabled={!googleSheetUrl || busy}
+                    className="flex items-center gap-2"
+                  >
+                    {busy ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Importing...</>
+                    ) : (
+                      <><UploadCloud className="h-4 w-4" /> Import from Google Sheets</>
+                    )}
+                  </Button>
 
                   <ImportProgress />
                 </div>
@@ -504,61 +637,27 @@ export default function DataImportPage() {
 
               <TabsContent value="export" className="mt-0">
                 <div className="space-y-4">
-                  <p className="text-sm">
-                    Export your research database to use elsewhere or create
-                    backups.
-                  </p>
-
+                  <p className="text-sm">Export your research database to use elsewhere or create backups.</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button
-                      variant="outline"
-                      className="flex items-center space-x-2 justify-start h-auto py-4"
-                    >
+                    <Button variant="outline" className="flex items-center space-x-2 justify-start h-auto py-4">
                       <FileSpreadsheet className="h-5 w-5" />
                       <div className="flex flex-col items-start">
                         <span>Export to Excel</span>
-                        <span className="text-xs text-muted-foreground">
-                          Download as .xlsx file
-                        </span>
+                        <span className="text-xs text-muted-foreground">Download as .xlsx file</span>
                       </div>
                     </Button>
-
-                    <Button
-                      variant="outline"
-                      className="flex items-center space-x-2 justify-start h-auto py-4"
-                    >
+                    <Button variant="outline" className="flex items-center space-x-2 justify-start h-auto py-4">
                       <FileUp className="h-5 w-5" />
                       <div className="flex flex-col items-start">
                         <span>Export to CSV</span>
-                        <span className="text-xs text-muted-foreground">
-                          Download as .csv file
-                        </span>
+                        <span className="text-xs text-muted-foreground">Download as .csv file</span>
                       </div>
                     </Button>
-
-                    <Button
-                      variant="outline"
-                      className="flex items-center space-x-2 justify-start h-auto py-4"
-                    >
-                      <FileJson className="h-5 w-5" />
-                      <div className="flex flex-col items-start">
-                        <span>Export to JSON</span>
-                        <span className="text-xs text-muted-foreground">
-                          Download as .json file
-                        </span>
-                      </div>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="flex items-center space-x-2 justify-start h-auto py-4"
-                    >
+                    <Button variant="outline" className="flex items-center space-x-2 justify-start h-auto py-4">
                       <Database className="h-5 w-5" />
                       <div className="flex flex-col items-start">
                         <span>Full Database Backup</span>
-                        <span className="text-xs text-muted-foreground">
-                          Complete database export
-                        </span>
+                        <span className="text-xs text-muted-foreground">Complete database export</span>
                       </div>
                     </Button>
                   </div>
