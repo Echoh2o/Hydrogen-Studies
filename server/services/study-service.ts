@@ -277,6 +277,17 @@ export class StudyService {
       .insert(studies)
       .values({ ...study, createdAt: new Date() })
       .returning();
+
+    // Fire-and-forget: enqueue for content generation pipeline
+    try {
+      const { enqueueStudy } = await import("./content-generation-worker");
+      enqueueStudy(insertedStudy.id).catch((err) => {
+        logger.warn(`Failed to enqueue study ${insertedStudy.id} for content generation: ${err.message}`, "StudyService");
+      });
+    } catch (err: any) {
+      logger.warn(`Failed to import content-generation-worker: ${err.message}`, "StudyService");
+    }
+
     return insertedStudy;
   }
 

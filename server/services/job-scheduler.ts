@@ -31,6 +31,8 @@ export class JobScheduler {
   private readonly FRESHNESS_CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly BLOG_GENERATION_INTERVAL_MS = 6 * 60 * 60 * 1000; // Every 6 hours (not every 15 min!)
   private lastBlogGenerationCheck: Date | null = null;
+  private readonly CONTENT_QUEUE_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
+  private lastContentQueueCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -314,6 +316,22 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 12 (summary-enrichment) unexpected error", error, "JobScheduler");
+      }
+
+      // Job 13: Content Generation Queue (runs every 5 minutes)
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runContentQueueJob(),
+          10 * 60 * 1000,
+          "content-queue"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "content-queue" });
+        }
+      } catch (error) {
+        logger.error("Job 13 (content-queue) unexpected error", error, "JobScheduler");
       }
 
     } catch (error) {
@@ -843,6 +861,33 @@ export class JobScheduler {
       });
     } catch (error) {
       logger.error("Metadata freshness check error", error, "JobScheduler");
+    }
+  }
+
+  /**
+   * Job 13: Content Generation Queue
+   * Processes pending items from the unified content generation queue.
+   * Runs every 5 minutes, processes 2 studies per cycle to respect API rate limits.
+   */
+  private async runContentQueueJob() {
+    try {
+      if (this.lastContentQueueCheck) {
+        const elapsed = Date.now() - this.lastContentQueueCheck.getTime();
+        if (elapsed < this.CONTENT_QUEUE_INTERVAL_MS) return;
+      }
+
+      const { processContentQueue } = await import("./content-generation-worker");
+      const result = await processContentQueue(2);
+      this.lastContentQueueCheck = new Date();
+
+      if (result.processed > 0 || result.failed > 0) {
+        logger.info("Content queue processed", "JobScheduler", {
+          processed: result.processed,
+          failed: result.failed,
+        });
+      }
+    } catch (error) {
+      logger.error("Content queue job error", error, "JobScheduler");
     }
   }
 

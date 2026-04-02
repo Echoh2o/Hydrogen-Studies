@@ -19,6 +19,7 @@ export class StudiesController {
     this.router.use("/", analyticsRoutes);
 
     // Named routes MUST come before /:id to avoid being caught by the param route
+    this.router.get("/content-queue/status", requireAdmin, this.getContentQueueStatus);
     this.router.get("/stats", this.getStats);
     this.router.get("/analytics", this.getAnalytics);
     this.router.get("/timeline", this.getTimeline);
@@ -104,6 +105,17 @@ export class StudiesController {
           res.status(500).json({ error: "Failed to fetch filters" });
       }
   }
+
+  private getContentQueueStatus = async (req: Request, res: Response) => {
+    try {
+      const { getQueueStatus } = await import("../services/content-generation-worker");
+      const status = await getQueueStatus();
+      res.json({ success: true, ...status });
+    } catch (error) {
+      logger.error("Error fetching content queue status", error, "StudiesController");
+      res.status(500).json({ error: "Failed to fetch content queue status" });
+    }
+  };
 
   private getStats = async (req: Request, res: Response) => {
     try {

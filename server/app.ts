@@ -735,6 +735,7 @@ pool.query("SELECT 1").then(async () => {
     const { addStudySummaryFields } = await import("./migrations/add-study-summary-fields");
     const { addRedirectSystem } = await import("./migrations/add-redirect-system");
     const { addDeletedStudiesLedger } = await import("./migrations/add-deleted-studies-ledger");
+    const { addContentGenerationQueue } = await import("./migrations/add-content-generation-queue");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -748,6 +749,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "009_add_study_summary_fields", up: addStudySummaryFields },
       { name: "010_add_redirect_system", up: addRedirectSystem },
       { name: "011_add_deleted_studies_ledger", up: addDeletedStudiesLedger },
+      { name: "012_add_content_generation_queue", up: addContentGenerationQueue },
     ]);
   } catch (err: any) {
     console.error("FATAL: Migration failed:", err.message);

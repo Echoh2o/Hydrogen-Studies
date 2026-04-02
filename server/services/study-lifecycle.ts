@@ -152,11 +152,9 @@ export async function runStudyLifecyclePipeline(studyId: number): Promise<Pipeli
       const [study] = await db.select().from(studies).where(eq(studies.id, studyId)).limit(1);
       if (study) {
         const { generateBlogArticlesForStudy } = await import("./blog-generator-enhanced");
+        // generateBlogArticlesForStudy already inserts articles into the DB — do NOT re-insert
         const result = await generateBlogArticlesForStudy(study, { count: 1, fallbackToBasic: true });
         if (result.articles.length > 0) {
-          for (const article of result.articles) {
-            await db.insert(blogArticles).values(article);
-          }
           steps.blogGeneration = { success: true, message: `Generated ${result.articles.length} article(s)` };
         } else {
           steps.blogGeneration = { success: false, message: result.errors?.[0]?.error || "No articles generated" };

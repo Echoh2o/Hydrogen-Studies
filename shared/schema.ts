@@ -416,6 +416,24 @@ export const deletedStudies = pgTable(
   },
 );
 
+// Content generation queue — unified pipeline for post-import enrichment
+export const contentGenerationQueue = pgTable("content_generation_queue", {
+  id: serial("id").primaryKey(),
+  studyId: integer("study_id").notNull(),
+  status: text("status").notNull().default("pending"), // pending, processing, completed, failed
+  currentStep: text("current_step"), // seo, tags, blogs, image, links
+  completedSteps: text("completed_steps").array().default([]),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").notNull().default(0),
+  priority: integer("priority").notNull().default(0), // higher = sooner
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  statusIdx: index("cgq_status_idx").on(table.status),
+  studyIdIdx: index("cgq_study_id_idx").on(table.studyId),
+}));
+
 // Categories table schema
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),

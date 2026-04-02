@@ -392,6 +392,17 @@ async function importWithAnalysis(
     processed++;
   }
 
+  // Bulk enqueue imported studies for content generation pipeline
+  // (idempotent — skips any already enqueued by createStudy)
+  if (importedStudyIds.length > 0) {
+    try {
+      const { enqueueStudies } = await import("../services/content-generation-worker");
+      await enqueueStudies(importedStudyIds);
+    } catch (enqueueError) {
+      logger.warn("Failed to bulk enqueue studies for content generation", "ImportRoutes");
+    }
+  }
+
   return {
     imported,
     failed,
