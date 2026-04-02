@@ -1,0 +1,11 @@
+node_modules
+dist
+uploads
+temp_files
+.git
+*.log
+.env
+.env.*
+e2e
+coverage
+.claude
