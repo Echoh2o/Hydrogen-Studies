@@ -59,11 +59,6 @@ interface ImportStats {
   error?: string;
 }
 
-interface StreamProgress {
-  processed: number;
-  total: number;
-  imported: number;
-}
 
 export default function DataImportPage() {
   const { toast } = useToast();
@@ -73,7 +68,6 @@ export default function DataImportPage() {
   const [phase, setPhase] = useState<ImportPhase>("idle");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [importStats, setImportStats] = useState<ImportStats | null>(null);
-  const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
 
   const busy = phase === "analyzing" || phase === "importing";
 
@@ -81,7 +75,6 @@ export default function DataImportPage() {
     setPhase("idle");
     setAnalysis(null);
     setImportStats(null);
-    setStreamProgress(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,19 +121,26 @@ export default function DataImportPage() {
     }
   };
 
-  // Step 2: Confirm import with SSE streaming
+  // Step 2: Confirm import
   const handleConfirmImport = async () => {
     if (!file) return;
 
     setPhase("importing");
-    setStreamProgress(null);
     setImportStats(null);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const response = await fetch("/api/import/excel/stream", {
+      const formData = new FormData();
+      // Determine correct field name and endpoint based on file type
+      let endpoint: string;
+      if (file.name.endsWith(".csv")) {
+        formData.append("csvFile", file);
+        endpoint = "/api/import/csv";
+      } else {
+        formData.append("file", file);
+        endpoint = "/api/import/excel";
+      }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -148,54 +148,26 @@ export default function DataImportPage() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => null);
-        throw new Error(errData?.message || `Server error ${response.status}`);
+        throw new Error(errData?.message || errData?.error || `Server error ${response.status}`);
       }
 
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+      const data = await response.json();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-
-            if (event.type === "progress") {
-              setStreamProgress({ processed: event.processed, total: event.total, imported: event.imported });
-            } else if (event.type === "complete") {
-              setPhase("done");
-              setStreamProgress(null);
-              setImportStats({
-                total: event.total || 0,
-                imported: event.imported || 0,
-                failed: event.failed || 0,
-                skippedDuplicate: event.skippedDuplicate || 0,
-                skippedDeleted: event.skippedDeleted || 0,
-                importedStudyIds: event.importedStudyIds,
-                skippedStudies: event.skippedStudies,
-                duplicateStudies: event.duplicateStudies,
-              });
-            } else if (event.type === "error") {
-              throw new Error(event.message);
-            }
-          } catch (parseErr) {
-            // Skip malformed SSE lines
-          }
-        }
-      }
-
-      if (phase !== "done") setPhase("done");
+      setPhase("done");
+      setImportStats({
+        total: data.total || 0,
+        imported: data.imported || 0,
+        failed: data.failed || 0,
+        skippedDuplicate: data.skippedDuplicate || 0,
+        skippedDeleted: data.skippedDeleted || 0,
+        importedStudyIds: data.importedStudyIds,
+        skippedStudies: data.skippedStudies,
+        duplicateStudies: data.duplicateStudies,
+      });
     } catch (error) {
       setPhase("error");
       const msg = error instanceof Error ? error.message : "Import failed";
+      console.error("Import error:", error);
       setImportStats({ total: 0, imported: 0, error: msg });
       toast({ title: "Import failed", description: msg, variant: "destructive" });
     }
@@ -374,24 +346,14 @@ export default function DataImportPage() {
           </div>
         )}
 
-        {/* Import progress with row counts */}
+        {/* Import progress */}
         {phase === "importing" && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              {streamProgress ? (
-                <span>
-                  Importing... {streamProgress.processed} / {streamProgress.total} rows
-                  ({streamProgress.imported} imported)
-                </span>
-              ) : (
-                <span>Starting import...</span>
-              )}
+              <span>Importing studies — this may take a moment for large files...</span>
             </div>
-            <Progress
-              value={streamProgress ? (streamProgress.processed / streamProgress.total) * 100 : 0}
-              className="h-2"
-            />
+            <Progress value={100} className="h-2 animate-pulse" />
           </div>
         )}
 
