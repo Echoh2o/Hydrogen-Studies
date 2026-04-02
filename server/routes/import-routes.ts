@@ -103,8 +103,13 @@ function worksheetToJson(worksheet: ExcelJS.Worksheet): Record<string, any>[] {
         if (!header) continue;
         const cell = row.getCell(col);
         // cell.value is null for empty cells — preserve that instead of skipping
-        obj[header] = cell.value ?? null;
-        if (cell.value !== null && cell.value !== undefined) hasData = true;
+        // Hyperlink cells return {text, hyperlink} objects — extract the text
+        let val = cell.value ?? null;
+        if (val !== null && typeof val === "object" && "text" in val) {
+          val = (val as any).text;
+        }
+        obj[header] = val;
+        if (val !== null && val !== undefined) hasData = true;
       }
       if (hasData) {
         rows.push(obj);
