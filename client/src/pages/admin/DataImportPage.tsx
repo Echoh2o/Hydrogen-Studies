@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Helmet } from "react-helmet";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,7 +34,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 
-type ImportPhase = "idle" | "uploading" | "analyzing" | "previewing" | "importing" | "done" | "error";
+type ImportPhase = "idle" | "analyzing" | "previewing" | "importing" | "done" | "error";
 
 interface AnalysisResult {
   totalRows: number;
@@ -71,20 +71,17 @@ export default function DataImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState("");
   const [phase, setPhase] = useState<ImportPhase>("idle");
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [importStats, setImportStats] = useState<ImportStats | null>(null);
   const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(null);
-  const xhrRef = useRef<XMLHttpRequest | null>(null);
 
-  const busy = phase === "uploading" || phase === "analyzing" || phase === "importing";
+  const busy = phase === "analyzing" || phase === "importing";
 
   const resetState = () => {
     setPhase("idle");
     setAnalysis(null);
     setImportStats(null);
     setStreamProgress(null);
-    setUploadProgress(0);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,55 +97,34 @@ export default function DataImportPage() {
     if (!file) return;
 
     resetState();
-    setPhase("uploading");
+    setPhase("analyzing");
 
-    const formData = new FormData();
-    formData.append("file", file);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    const xhr = new XMLHttpRequest();
-    xhrRef.current = xhr;
-
-    xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable) {
-        setUploadProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    });
-
-    xhr.upload.addEventListener("load", () => {
-      setUploadProgress(100);
-      setPhase("analyzing");
-    });
-
-    const result = await new Promise<{ ok: boolean; data?: any; error?: string }>((resolve) => {
-      xhr.addEventListener("load", () => {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve({ ok: true, data });
-          } else {
-            resolve({ ok: false, error: data.message || data.error || `Server error ${xhr.status}` });
-          }
-        } catch {
-          resolve({ ok: false, error: `Server error ${xhr.status}: ${xhr.statusText}` });
-        }
+      const response = await fetch("/api/import/analyze", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
       });
-      xhr.addEventListener("error", () => resolve({ ok: false, error: "Network error" }));
-      xhr.addEventListener("abort", () => resolve({ ok: false, error: "Cancelled" }));
 
-      xhr.open("POST", "/api/import/analyze");
-      xhr.withCredentials = true;
-      xhr.send(formData);
-    });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(
+          errData?.message || errData?.error || `Server error ${response.status}`,
+        );
+      }
 
-    xhrRef.current = null;
-
-    if (result.ok && result.data) {
-      setAnalysis(result.data);
+      const data = await response.json();
+      setAnalysis(data);
       setPhase("previewing");
-    } else {
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Analysis failed";
+      console.error("Analysis error:", error);
       setPhase("error");
-      setImportStats({ total: 0, imported: 0, error: result.error });
-      toast({ title: "Analysis failed", description: result.error, variant: "destructive" });
+      setImportStats({ total: 0, imported: 0, error: msg });
+      toast({ title: "Analysis failed", description: msg, variant: "destructive" });
     }
   };
 
@@ -387,23 +363,12 @@ export default function DataImportPage() {
 
     return (
       <div className="space-y-3">
-        {/* Upload progress bar */}
-        {phase === "uploading" && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Uploading file... {uploadProgress}%</span>
-            </div>
-            <Progress value={uploadProgress} className="h-2" />
-          </div>
-        )}
-
         {/* Analyzing indicator */}
         {phase === "analyzing" && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Analyzing file for duplicates and conflicts...</span>
+              <span>Uploading and analyzing file for duplicates and conflicts...</span>
             </div>
             <Progress value={100} className="h-2 animate-pulse" />
           </div>
