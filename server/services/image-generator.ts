@@ -477,11 +477,17 @@ export async function findStudiesNeedingImages(
   limit: number = 20,
 ): Promise<number[]> {
   try {
-    // Find studies that have no images (both NULL and empty string values)
+    // Find studies that have no real images (NULL, empty, placeholder, or fallback SVG)
+    const { sql } = await import("drizzle-orm");
     const studiesWithoutImages = await db
       ?.select({ id: studiesTable.id })
       .from(studiesTable)
-      .where(or(isNull(studiesTable.imageUrl), eq(studiesTable.imageUrl, "")))
+      .where(or(
+        isNull(studiesTable.imageUrl),
+        eq(studiesTable.imageUrl, ""),
+        sql`${studiesTable.imageUrl} LIKE '%placehold%'`,
+        sql`${studiesTable.imageUrl} LIKE '%fallback%'`,
+      ))
       .limit(limit);
 
     if (!studiesWithoutImages || studiesWithoutImages.length === 0) {

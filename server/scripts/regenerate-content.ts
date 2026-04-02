@@ -27,6 +27,7 @@ const dryRun = args.includes("--dry-run");
 const blogOnly = args.includes("--blogs-only");
 const seoOnly = args.includes("--seo-only");
 const linksOnly = args.includes("--links-only");
+const imagesOnly = args.includes("--images-only");
 
 function log(msg: string) {
   console.log(`[${new Date().toISOString()}] ${msg}`);
@@ -209,6 +210,49 @@ async function phase4_keywordStrategy() {
 }
 
 // ============================================================
+// PHASE 5: Study Image Generation
+// ============================================================
+async function phase5_studyImages() {
+  log("═══ PHASE 5: Study Image Generation (Grok/xAI) ═══");
+
+  const { batchGenerateImagesForStudies, findStudiesNeedingImages } = await import("../services/image-generator");
+
+  // Find how many need images
+  const needImages = await findStudiesNeedingImages(9999);
+  log(`  Studies needing images: ${needImages.length}`);
+
+  if (needImages.length === 0) {
+    log(`✓ Phase 5 complete: all studies have images`);
+    return { generated: 0, failed: 0 };
+  }
+
+  let totalSuccess = 0;
+  let totalFailed = 0;
+
+  // Process in batches of 10 to avoid rate limits
+  const batchSize = 10;
+  for (let i = 0; i < needImages.length; i += batchSize) {
+    const batch = needImages.slice(i, i + batchSize);
+    log(`  Batch ${Math.floor(i / batchSize) + 1}: studies ${batch[0]}-${batch[batch.length - 1]}`);
+
+    if (dryRun) {
+      log(`    [DRY RUN] Would generate ${batch.length} images`);
+      continue;
+    }
+
+    const result = await batchGenerateImagesForStudies(batch);
+    totalSuccess += result.success;
+    totalFailed += result.failed;
+
+    log(`    Generated: ${result.success}, Failed: ${result.failed}`);
+    await sleep(3000); // Rate limit between batches
+  }
+
+  log(`✓ Phase 5 complete: ${totalSuccess} images generated, ${totalFailed} failed`);
+  return { generated: totalSuccess, failed: totalFailed };
+}
+
+// ============================================================
 // MAIN
 // ============================================================
 async function main() {
@@ -221,28 +265,35 @@ async function main() {
   if (blogOnly) log("  Mode: blogs only");
   if (seoOnly) log("  Mode: SEO enrichment only");
   if (linksOnly) log("  Mode: link building only");
+  if (imagesOnly) log("  Mode: study images only");
 
   const results: Record<string, any> = {};
+  const runAll = !blogOnly && !seoOnly && !linksOnly && !imagesOnly;
 
   try {
     // Phase 1: SEO Enrichment
-    if (!blogOnly && !linksOnly && startPhase <= 1) {
+    if ((runAll || seoOnly) && startPhase <= 1) {
       results.phase1 = await phase1_seoEnrichment();
     }
 
-    // Phase 2: Blog Generation
-    if (!seoOnly && !linksOnly && startPhase <= 2) {
+    // Phase 2: Blog Generation (includes blog images via Grok)
+    if ((runAll || blogOnly) && startPhase <= 2) {
       results.phase2 = await phase2_blogGeneration();
     }
 
     // Phase 3: Link Building
-    if (!seoOnly && !blogOnly && startPhase <= 3) {
+    if ((runAll || linksOnly) && startPhase <= 3) {
       results.phase3 = await phase3_linkBuilding();
     }
 
     // Phase 4: Keyword Strategy
-    if (!seoOnly && !blogOnly && !linksOnly && startPhase <= 4) {
+    if (runAll && startPhase <= 4) {
       results.phase4 = await phase4_keywordStrategy();
+    }
+
+    // Phase 5: Study Images
+    if ((runAll || imagesOnly) && startPhase <= 5) {
+      results.phase5 = await phase5_studyImages();
     }
 
   } catch (err: any) {

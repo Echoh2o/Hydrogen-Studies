@@ -237,11 +237,9 @@ export class StudyService {
       .limit(1);
     const study = result[0];
     
-    // Ensure image URL
-    if (study && !study.imageUrl) {
-        const topic = study.title?.split(" ").slice(0, 3).join("+") || "hydrogen+research";
-        study.imageUrl = `https://placehold.co/800x400/e2f3ff/003366?text=${encodeURIComponent(topic)}`;
-    }
+    // Note: imageUrl stays null if no image exists.
+    // Frontend handles placeholder display. Injecting placehold.co URLs
+    // here would prevent the image generator from detecting missing images.
     
     return study;
   }
