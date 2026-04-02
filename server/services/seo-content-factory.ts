@@ -417,7 +417,7 @@ export async function saveGeneratedArticle(
         quickInsights: article.quickInsights,
         readingLevel: article.readingLevel,
         articleType: article.articleType,
-        isPublished: true, // Auto-publish generated content
+        isPublished: false, // Draft until human review
         metaTitle: article.metaTitle,
         metaDescription: article.metaDescription,
         ogTitle: article.ogTitle,
@@ -445,7 +445,7 @@ export async function saveGeneratedArticle(
           quickInsights: article.quickInsights,
           readingLevel: article.readingLevel,
           articleType: article.articleType,
-          isPublished: true,
+          isPublished: false,
           metaTitle: article.metaTitle,
           metaDescription: article.metaDescription,
           ogTitle: article.ogTitle,
