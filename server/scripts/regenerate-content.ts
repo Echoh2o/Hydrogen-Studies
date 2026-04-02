@@ -32,6 +32,7 @@ const seoOnly = args.includes("--seo-only");
 const linksOnly = args.includes("--links-only");
 const imagesOnly = args.includes("--images-only");
 const tagsOnly = args.includes("--tags-only");
+const fast = args.includes("--fast"); // Minimal delays for bulk initial push
 
 function log(msg: string) {
   console.log(`[${new Date().toISOString()}] ${msg}`);
@@ -58,8 +59,8 @@ async function phase1_seoEnrichment() {
     log(`  Batch ${batch}...`);
 
     const result = await batchEnrichStudies({
-      batchSize: 5,
-      delayMs: 1500,
+      batchSize: fast ? 20 : 5,
+      delayMs: fast ? 300 : 1500,
       onProgress: (done, total, studyId) => {
         if (done % 5 === 0 || done === total) {
           log(`    Progress: ${done}/${total} (study #${studyId})`);
@@ -76,7 +77,7 @@ async function phase1_seoEnrichment() {
     if (result.total === 0) break;
 
     batch++;
-    await sleep(2000); // Pause between batches
+    await sleep(fast ? 500 : 2000); // Pause between batches
   }
 
   log(`✓ Phase 1 complete: ${totalSuccess} studies enriched, ${totalFailed} failed`);
@@ -167,7 +168,7 @@ Example: ["gut health","hydrogen water benefits","inflammation relief","digestiv
           }
         }
 
-        await sleep(500); // Light rate limiting — Haiku is fast + cheap
+        await sleep(fast ? 100 : 500); // Light rate limiting — Haiku is fast + cheap
       } catch (err: any) {
         log(`    ⚠ Failed to tag study #${row.id}: ${err.message?.substring(0, 60)}`);
       }
@@ -196,7 +197,7 @@ async function phase2_blogGeneration() {
   let totalErrors = 0;
   let totalSkipped = 0;
   let page = 1;
-  const pageSize = 20;
+  const pageSize = fast ? 50 : 20;
 
   while (true) {
     const batch = await studyService.getStudies({
@@ -234,7 +235,7 @@ async function phase2_blogGeneration() {
         }
 
         // Rate limit: wait between studies to avoid API throttling
-        await sleep(3000);
+        await sleep(fast ? 500 : 3000);
 
       } catch (err: any) {
         totalErrors++;
@@ -329,7 +330,7 @@ async function phase5_studyImages() {
   let totalFailed = 0;
 
   // Process in batches of 10 to avoid rate limits
-  const batchSize = 10;
+  const batchSize = fast ? 25 : 10;
   for (let i = 0; i < needImages.length; i += batchSize) {
     const batch = needImages.slice(i, i + batchSize);
     log(`  Batch ${Math.floor(i / batchSize) + 1}: studies ${batch[0]}-${batch[batch.length - 1]}`);
@@ -360,6 +361,7 @@ async function main() {
   log("╚══════════════════════════════════════════════════╝");
 
   if (dryRun) log("⚠ DRY RUN MODE — no content will be generated");
+  if (fast) log("⚡ FAST MODE — minimal delays for bulk initial push");
   if (startId > 0) log(`  Starting from study ID: ${startId}`);
   if (blogOnly) log("  Mode: blogs only");
   if (seoOnly) log("  Mode: SEO enrichment only");
