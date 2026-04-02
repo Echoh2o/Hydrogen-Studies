@@ -450,59 +450,20 @@ function ExcelImportPanel({ toast }: { toast: any }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="flex flex-col space-y-4 border rounded-lg p-4">
-            <div className="flex items-center space-x-2">
-              <FileSpreadsheet className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium">Upload Excel File</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Upload Excel (.xlsx) or CSV files containing research data
+        <div className="rounded-lg border p-6 text-center space-y-4">
+          <FileSpreadsheet className="h-10 w-10 mx-auto text-primary" />
+          <div>
+            <h3 className="text-lg font-medium">Spreadsheet Import Tool</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Upload Excel or CSV files with duplicate detection, preview, and progress tracking
             </p>
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="file-upload">File</Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".xlsx,.csv"
-                className="cursor-pointer"
-              />
-              <p className="text-xs text-muted-foreground">
-                Max file size: 10MB
-              </p>
-            </div>
-            <Button className="w-full mt-2">
+          </div>
+          <Button asChild>
+            <Link href="/admin/data-import">
               <Upload className="mr-2 h-4 w-4" />
-              Upload & Analyze
-            </Button>
-          </div>
-
-          <div className="flex flex-col space-y-4 border rounded-lg p-4">
-            <div className="flex items-center space-x-2">
-              <TableIcon className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium">
-                Google Sheets Import
-              </h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Import studies directly from a Google Sheets document
-            </p>
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="sheets-url">Google Sheets URL</Label>
-              <Input
-                id="sheets-url"
-                type="url"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
-              />
-              <p className="text-xs text-muted-foreground">
-                Spreadsheet must be publicly accessible or shared
-              </p>
-            </div>
-            <Button className="w-full mt-2">
-              <TableIcon className="mr-2 h-4 w-4" />
-              Connect & Import
-            </Button>
-          </div>
+              Go to Data Import
+            </Link>
+          </Button>
         </div>
 
         <div className="border rounded-lg p-4 space-y-4">
