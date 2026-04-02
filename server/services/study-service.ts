@@ -641,16 +641,16 @@ export class StudyService {
       }
     }
 
-    // Batch title check - use inArray with lowercase comparison
+    // Batch title check — fetch all existing titles and compare in JS
+    // This avoids problematic large IN clauses with 1000+ params
     if (titles.length > 0) {
-      const lowerTitles = titles.map(t => t.toLowerCase().trim());
-      // Use Drizzle's inArray with sql lower() for proper parameterized query
-      const titleResults = await db
-        .select({ id: studies.id, title: studies.title })
-        .from(studies)
-        .where(inArray(sql`LOWER(${studies.title})`, lowerTitles));
-      for (const r of titleResults) {
-        titleMap.set(String(r.title).toLowerCase().trim(), r.id);
+      const lowerTitles = new Set(titles.map(t => t.toLowerCase().trim()));
+      const allStudies = await db.select({ id: studies.id, title: studies.title }).from(studies);
+      for (const r of allStudies) {
+        const lower = String(r.title).toLowerCase().trim();
+        if (lowerTitles.has(lower)) {
+          titleMap.set(lower, r.id);
+        }
       }
     }
 
@@ -661,6 +661,12 @@ export class StudyService {
     const doiMap = new Map<string, { deletedBy: string | null; deletedAt: Date }>();
     const titleMap = new Map<string, { deletedBy: string | null; deletedAt: Date }>();
 
+    // Fast path: if deleted_studies table is empty, skip entirely
+    const countResult = await db.select({ value: count() }).from(deletedStudies);
+    if ((countResult[0]?.value ?? 0) === 0) {
+      return { doiMap, titleMap };
+    }
+
     if (dois.length > 0) {
       const doiResults = await db.select().from(deletedStudies).where(inArray(deletedStudies.doi, dois));
       for (const r of doiResults) {
@@ -669,13 +675,14 @@ export class StudyService {
     }
 
     if (titles.length > 0) {
-      const lowerTitles = titles.map(t => t.toLowerCase().trim());
-      const titleResults = await db
-        .select({ title: deletedStudies.title, deletedBy: deletedStudies.deletedBy, deletedAt: deletedStudies.deletedAt })
-        .from(deletedStudies)
-        .where(inArray(sql`LOWER(${deletedStudies.title})`, lowerTitles));
-      for (const r of titleResults) {
-        titleMap.set(String(r.title).toLowerCase().trim(), { deletedBy: r.deletedBy, deletedAt: r.deletedAt });
+      // Fetch all deleted entries and compare in JS — table is small
+      const lowerTitles = new Set(titles.map(t => t.toLowerCase().trim()));
+      const allDeleted = await db.select().from(deletedStudies);
+      for (const r of allDeleted) {
+        const lower = String(r.title).toLowerCase().trim();
+        if (lowerTitles.has(lower)) {
+          titleMap.set(lower, { deletedBy: r.deletedBy, deletedAt: r.deletedAt });
+        }
       }
     }
 

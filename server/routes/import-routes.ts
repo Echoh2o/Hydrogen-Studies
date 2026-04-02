@@ -41,7 +41,7 @@ function cleanupTempFile(filePath: string) {
       fs.unlinkSync(filePath);
     }
   } catch (error) {
-    console.error(`Error cleaning up temporary file ${filePath}:`, error);
+    logger.error(`Error cleaning up temporary file ${filePath}`, error, "ImportRoutes");
   }
 }
 
@@ -349,7 +349,6 @@ async function parseFile(filePath: string, format: "xlsx" | "csv"): Promise<Inse
 // Import studies using pre-computed analysis
 async function importWithAnalysis(
   analysis: AnalysisResult,
-  onProgress?: (processed: number, total: number, imported: number) => void,
 ) {
   let imported = 0;
   let failed = 0;
@@ -386,7 +385,6 @@ async function importWithAnalysis(
       logger.error(`Failed to import study: ${a.study.title}`, error, "ImportRoutes");
     }
     processed++;
-    if (onProgress) onProgress(processed, newStudies.length, imported);
   }
 
   return {
@@ -496,65 +494,6 @@ router.post(
         message: error instanceof Error ? error.message : "Failed to import CSV file",
       });
     }
-  },
-);
-
-// SSE streaming import for real-time progress
-router.post(
-  "/excel/stream",
-  upload.single("file"),
-  async (req: Request, res: Response) => {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
-    }
-    const filePath = req.file.path;
-
-    // Set SSE headers
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
-
-    const send = (data: any) => res.write(`data: ${JSON.stringify(data)}\n\n`);
-
-    try {
-      const format = req.file.originalname.endsWith(".csv") ? "csv" : "xlsx";
-      const studies = await parseFile(filePath, format as "xlsx" | "csv");
-
-      send({ type: "parsed", totalRows: studies.length });
-
-      const analysis = await analyzeStudies(studies);
-      send({
-        type: "analyzed",
-        readyToImport: analysis.readyToImport,
-        duplicates: analysis.duplicatesByDoi + analysis.duplicatesByTitle + analysis.batchDuplicates,
-        deleted: analysis.previouslyDeleted,
-        empty: analysis.emptyTitles,
-      });
-
-      const results = await importWithAnalysis(analysis, (processed, total, imported) => {
-        // Send progress every 25 rows or on the last row
-        if (processed % 25 === 0 || processed === total) {
-          send({ type: "progress", processed, total, imported });
-        }
-      });
-
-      cleanupTempFile(filePath);
-
-      send({
-        type: "complete",
-        ...buildResponse(studies.length, results),
-      });
-    } catch (error) {
-      logger.error("Streaming import error", error, "ImportRoutes");
-      cleanupTempFile(filePath);
-      send({
-        type: "error",
-        message: error instanceof Error ? error.message : "Import failed",
-      });
-    }
-
-    res.end();
   },
 );
 
