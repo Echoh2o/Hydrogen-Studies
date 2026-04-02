@@ -239,13 +239,21 @@ export async function generateImageForStudy(studyId: number): Promise<{
     }
 
     // Extract relevant information for image generation
+    // Prefer TLDR/plain summary over raw abstract for better visual cues
     const title = study.title || "";
-    const abstract = study.abstract || "";
-    const methods = study.methods || "";
     const category = study.category || "";
-    // Use category as focus since we don't have a separate focus field
+
+    // Fetch TLDR for richer, more human-readable image context
+    let plainText = "";
+    try {
+      const [fullStudy] = await db!.select({ tldr: studiesTable.tldr, plainSummary: studiesTable.plainSummary })
+        .from(studiesTable).where(eq(studiesTable.id, studyId)).limit(1);
+      plainText = fullStudy?.tldr || fullStudy?.plainSummary || "";
+    } catch { /* non-fatal */ }
+
+    const abstract = plainText || study.abstract || "";
+    const methods = study.methods || "";
     const focus = category;
-    // Default empty array for health benefits
     const healthBenefits: string[] = [];
 
     // Create a detailed prompt for image generation

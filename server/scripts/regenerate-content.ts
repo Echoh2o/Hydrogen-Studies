@@ -7,17 +7,20 @@
  * Usage: railway run npx tsx server/scripts/regenerate-content.ts [--phase N] [--start-id N] [--dry-run]
  *
  * Phases:
- *   1. SEO enrichment (meta titles, descriptions, schema.org, health conditions, keywords)
- *   2. Blog generation (3 articles per study: science_explainer, practical_guide, faq)
- *   3. Internal link building (study-to-study and blog-to-blog cross-links)
- *   4. Keyword strategy seeding (generate monitoring keywords from study topics)
+ *   1.  SEO enrichment (meta titles, descriptions, schema.org, health conditions, keywords)
+ *   1b. Tag generation (consumer-friendly search tags via Haiku — cheap + fast)
+ *   2.  Blog generation (3 articles per study: science_explainer, practical_guide, fq)
+ *   3.  Internal link building (study-to-study and blog-to-blog cross-links)
+ *   4.  Keyword strategy seeding (generate monitoring keywords from study topics)
+ *   5.  Study image generation (Grok/xAI hero images)
  *
  * Cost estimate: ~$60-90 for 1,700 studies (Sonnet pricing)
  */
 
 import { db } from "../db";
 import { studies } from "@shared/schema";
-import { desc, gt, count, isNull } from "drizzle-orm";
+import { desc, gt, count, isNull, sql } from "drizzle-orm";
+import { ai } from "../services/ai-provider";
 
 // Parse CLI args
 const args = process.argv.slice(2);
@@ -28,6 +31,7 @@ const blogOnly = args.includes("--blogs-only");
 const seoOnly = args.includes("--seo-only");
 const linksOnly = args.includes("--links-only");
 const imagesOnly = args.includes("--images-only");
+const tagsOnly = args.includes("--tags-only");
 
 function log(msg: string) {
   console.log(`[${new Date().toISOString()}] ${msg}`);
@@ -77,6 +81,101 @@ async function phase1_seoEnrichment() {
 
   log(`✓ Phase 1 complete: ${totalSuccess} studies enriched, ${totalFailed} failed`);
   return { enriched: totalSuccess, errors: totalFailed };
+}
+
+// ============================================================
+// ============================================================
+// PHASE 1b: Tag Generation (consumer-friendly tags for search + images)
+// ============================================================
+async function phase1b_tagGeneration() {
+  log("═══ PHASE 1b: AI Tag Generation ═══");
+
+  const { studyService } = await import("../services/study-service");
+
+  // Count studies missing tags
+  const countResult = await db.select({ value: count() }).from(studies);
+  const totalStudies = countResult[0]?.value || 0;
+
+  const missingTags = await db.execute(
+    sql`SELECT COUNT(*) as c FROM studies WHERE tags IS NULL OR array_length(tags, 1) IS NULL OR array_length(tags, 1) = 0`
+  );
+  const needsTags = parseInt((missingTags.rows[0] as any)?.c || "0");
+  log(`  ${needsTags}/${totalStudies} studies need tags`);
+
+  if (needsTags === 0 || dryRun) {
+    log(`✓ Phase 1b complete${dryRun ? " (dry run)" : ""}`);
+    return { tagged: 0 };
+  }
+
+  let tagged = 0;
+  let page = 1;
+  const pageSize = 10;
+
+  while (true) {
+    // Get studies without tags
+    const batch = await db.execute(
+      sql`SELECT id, title, category, tldr, plain_summary, abstract, h2_delivery_method, keywords
+          FROM studies
+          WHERE tags IS NULL OR array_length(tags, 1) IS NULL OR array_length(tags, 1) = 0
+          ORDER BY id
+          LIMIT ${pageSize}`
+    );
+
+    if (batch.rows.length === 0) break;
+
+    // Generate tags for each study using AI
+    for (const row of batch.rows as any[]) {
+      try {
+        const context = row.tldr || row.plain_summary || row.abstract || row.title;
+        const category = row.category || "";
+        const delivery = row.h2_delivery_method || "";
+        const existingKeywords = (row.keywords || []).join(", ");
+
+        const tagPrompt = `Generate 5-8 consumer-friendly search tags for this hydrogen research study.
+
+Study: ${context.substring(0, 300)}
+Category: ${category}
+Delivery method: ${delivery}
+Existing keywords: ${existingKeywords}
+
+Rules:
+- Tags should be plain English phrases that health-conscious consumers would search for
+- Include the body system or condition (e.g., "gut health", "brain fog", "joint pain relief")
+- Include the benefit (e.g., "anti-aging", "muscle recovery", "better sleep")
+- Include the delivery method if relevant (e.g., "hydrogen water", "hydrogen inhalation")
+- NO scientific jargon — think "what would someone Google?"
+- Return ONLY a JSON array of strings, nothing else
+
+Example: ["gut health","hydrogen water benefits","inflammation relief","digestive wellness","antioxidant"]`;
+
+        const result = await ai.generateText(
+          "You generate consumer-friendly search tags for health research. Return only a JSON array of strings.",
+          tagPrompt,
+          { maxTokens: 150, temperature: 0.3, model: "claude-haiku-4-5-20251001" },
+        );
+
+        if (result) {
+          // Parse the JSON array from the response
+          const cleaned = result.trim().replace(/```json\n?/g, "").replace(/```/g, "").trim();
+          const parsedTags = JSON.parse(cleaned) as string[];
+          if (Array.isArray(parsedTags) && parsedTags.length > 0) {
+            await db.execute(
+              sql`UPDATE studies SET tags = ${parsedTags} WHERE id = ${row.id}`
+            );
+            tagged++;
+            if (tagged % 20 === 0) log(`    Tagged ${tagged} studies...`);
+          }
+        }
+
+        await sleep(500); // Light rate limiting — Haiku is fast + cheap
+      } catch (err: any) {
+        log(`    ⚠ Failed to tag study #${row.id}: ${err.message?.substring(0, 60)}`);
+      }
+    }
+  }
+
+  log(`✓ Phase 1b complete: ${tagged} studies tagged`);
+  return { tagged };
 }
 
 // ============================================================
@@ -266,14 +365,20 @@ async function main() {
   if (seoOnly) log("  Mode: SEO enrichment only");
   if (linksOnly) log("  Mode: link building only");
   if (imagesOnly) log("  Mode: study images only");
+  if (tagsOnly) log("  Mode: tag generation only");
 
   const results: Record<string, any> = {};
-  const runAll = !blogOnly && !seoOnly && !linksOnly && !imagesOnly;
+  const runAll = !blogOnly && !seoOnly && !linksOnly && !imagesOnly && !tagsOnly;
 
   try {
     // Phase 1: SEO Enrichment
     if ((runAll || seoOnly) && startPhase <= 1) {
       results.phase1 = await phase1_seoEnrichment();
+    }
+
+    // Phase 1b: Tag Generation (before blogs so tags are available as context)
+    if (runAll || tagsOnly || seoOnly) {
+      results.phase1b = await phase1b_tagGeneration();
     }
 
     // Phase 2: Blog Generation (includes blog images via Grok)

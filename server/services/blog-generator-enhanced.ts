@@ -745,11 +745,23 @@ ${conditions.length > 0 ? `4. Mention these related health conditions and link t
 IMPORTANT: Links must feel natural in the sentence. Do NOT list them separately. Weave them into the narrative.
 Example: "According to the [original research study](/study/${studySlug}), hydrogen water showed a 45% reduction..."`;
 
+  // Prefer plain language fields over raw scientific abstract
+  const plainSummary = study.tldr || (study as any).plainSummary || null;
+  const studyContext = plainSummary
+    ? `Plain Language Summary: ${plainSummary}\n\nStudy Title: ${study.title}\nCategory: ${category}${study.abstract ? `\n\nScientific Abstract (for reference — do NOT copy this tone, use the plain language summary above as your primary source):\n${study.abstract.substring(0, 500)}` : ""}`
+    : `Study Title: ${study.title}\nAbstract: ${study.abstract}\nCategory: ${category}`;
+
+  // Include tags/keywords if available for richer context
+  const tags = [
+    ...(study.tags || []),
+    ...(study.keywords || []),
+    ...(study.healthConditions || []),
+  ].filter(Boolean).slice(0, 10);
+  const tagContext = tags.length > 0 ? `\nTopic Tags: ${tags.join(", ")}` : "";
+
   return `${basePrompt}
 
-Study Title: ${study.title}
-Abstract: ${study.abstract}
-Category: ${category}
+${studyContext}${tagContext}
 
 ${linkInstructions}
 
