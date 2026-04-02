@@ -24,21 +24,14 @@ import { ai } from "./ai-provider";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Blog article types - expanded set for comprehensive coverage
+// 3-article strategy: each study gets exactly 3 articles with distinct search intents
+// 1. science_explainer  — Informational intent: ranks for "[condition] + hydrogen" queries
+// 2. practical_guide    — Commercial intent: connects research to Echo Water products
+// 3. faq                — Featured snippet intent: captures Q&A searches, builds trust
 const BLOG_TYPES = [
-  "overview",
-  "practical_application",
-  "comparison",
-  "simplified",
-  "benefits_focused",
-  "future_implications",
-  "faq_style",
-  "how_to_guide",
-  "tips", // New: Practical tips for patients
-  "patient_story", // New: Relatable patient perspective
-  "myth_busting", // New: Common misconceptions
-  "daily_routine", // New: Daily implementation guide
-  "side_effects", // New: What to expect, safety considerations
+  "science_explainer",
+  "practical_guide",
+  "faq",
 ];
 
 /**
@@ -72,7 +65,7 @@ export async function generateBlogArticlesForStudy(
       );
     }
 
-    const count = Math.min(options.count || 7, BLOG_TYPES.length);
+    const count = Math.min(options.count || 3, BLOG_TYPES.length);
     const fallbackToBasic = options.fallbackToBasic ?? true;
 
     // Check AI provider availability
@@ -93,11 +86,8 @@ export async function generateBlogArticlesForStudy(
       );
     }
 
-    // Select random types
-    const selectedTypes = BLOG_TYPES.sort(() => 0.5 - Math.random()).slice(
-      0,
-      count,
-    );
+    // Always generate all 3 strategic article types (or fewer if count is specified)
+    const selectedTypes = BLOG_TYPES.slice(0, count);
 
     // Generate articles with batch error handling
     const batchResults = await handleBatchOperation(
@@ -297,7 +287,7 @@ async function generateArticleContent(
   const prompt = createContentPrompt(study, articleType);
 
   const content = await ai.generateText(
-    "You are a scientific writer specializing in hydrogen therapy research. Write engaging, accurate content at a 6th grade reading level (Flesch-Kincaid score 60-70). Use simple words, short sentences, and clear explanations. Avoid medical jargon unless necessary, and always explain complex terms in simple language.",
+    "You are a science writer for HydrogenStudies.com, the research arm of Echo Water (echowater.com). You translate peer-reviewed hydrogen research into clear, trustworthy content that helps people understand the science behind molecular hydrogen (H2) therapy. Write at a 6th grade reading level (Flesch-Kincaid 60-70). Use short sentences and simple words. Always explain scientific terms. Be accurate — never overstate findings. Distinguish between human trials and animal/in-vitro studies. Include specific numbers from studies when available.",
     prompt,
     { maxTokens: 2000, temperature: 0.7 },
   );
@@ -341,31 +331,46 @@ async function generateArticleTitle(
 ): Promise<string> {
   const category = study.category || "health";
 
-  // Map study categories to target SEO keywords for better search visibility
+  // Map study categories (body-part-based from the spreadsheet) to target SEO keywords
   const seoKeywords: Record<string, string> = {
-    cardiovascular: "hydrogen water heart health",
-    neurological: "hydrogen therapy brain health",
-    metabolic: "hydrogen water diabetes",
-    inflammation: "hydrogen water inflammation",
-    respiratory: "hydrogen therapy lungs",
-    gastrointestinal: "hydrogen water gut health",
-    cancer: "hydrogen therapy cancer research",
-    exercise: "hydrogen water athletic performance",
+    "whole body": "hydrogen water health benefits",
+    brain: "hydrogen water brain health",
+    lung: "hydrogen therapy lung health",
+    heart: "hydrogen water heart health",
+    intestine: "hydrogen water gut health",
+    liver: "hydrogen water liver health",
     skin: "hydrogen water skin benefits",
+    kidney: "hydrogen water kidney health",
+    bone: "hydrogen therapy bone health",
+    eye: "hydrogen water eye health",
+    mouth: "hydrogen water oral health",
+    pregnancy: "hydrogen water pregnancy safety",
+    ear: "hydrogen therapy hearing health",
+    muscle: "hydrogen water muscle recovery",
+    blood: "hydrogen water blood health",
+    cancer: "hydrogen therapy cancer research",
+    diabetes: "hydrogen water diabetes",
+    exercise: "hydrogen water athletic performance",
+    inflammation: "hydrogen water inflammation",
     aging: "hydrogen water anti-aging",
   };
-  const targetKeyword = seoKeywords[category.toLowerCase()] || `hydrogen water ${category}`;
+  const targetKeyword = seoKeywords[category.toLowerCase()] || `hydrogen water ${category.toLowerCase()}`;
+
+  const typeHint: Record<string, string> = {
+    science_explainer: "Focus on the research finding. Pattern: 'Hydrogen Water and [Condition]: What [Year] Research Shows'",
+    practical_guide: "Focus on application. Pattern: 'How to Use Hydrogen Water for [Benefit]: A Science-Backed Guide'",
+    faq: "Focus on questions people ask. Pattern: 'Hydrogen Water for [Condition]: Your Questions Answered'",
+  };
 
   const title = await ai.generateText(
-    `You write SEO-optimized blog titles about hydrogen therapy and ${category}. Rules:
+    `You write SEO-optimized blog titles about hydrogen water and ${category}. Rules:
 1. Under 60 characters
 2. 4th-6th grade reading level — no medical jargon
-3. Include one of these target keywords (or a close variation): "${targetKeyword}"
-4. Make it compelling for someone who knows nothing about hydrogen therapy
-5. Use power words like "surprising", "proven", "new research shows", "what science says"
-6. Respond with ONLY the title text, nothing else`,
+3. Include this keyword (or a close variation): "${targetKeyword}"
+4. ${typeHint[articleType] || "Make it compelling and specific"}
+5. Respond with ONLY the title text, nothing else`,
     `Create a title for a ${articleType} blog post.\n\nStudy topic: ${summary.substring(0, 200)}\nCategory: ${category}\nTarget SEO keyword: ${targetKeyword}`,
-    { maxTokens: 50, temperature: 0.8 },
+    { maxTokens: 50, temperature: 0.7 },
   );
 
   if (!title?.trim()) {
@@ -448,16 +453,11 @@ function buildUniqueImagePrompt(study: Study, title: string, articleType: string
   // Detect the specific health topic from title/abstract
   const topicHints = detectTopicVisuals(studyTitle, study.abstract || "");
 
-  // Article-type-specific visual style
+  // Article-type-specific visual style for the 3 strategic types
   const styleByType: Record<string, string> = {
-    overview: "Clean scientific infographic style with data visualization elements",
-    practical_application: "Person in a modern kitchen or wellness space, lifestyle photography",
-    simplified: "Friendly, colorful illustration with simple shapes, approachable and warm",
-    patient_story: "Warm candid portrait-style photo of a person looking healthy and hopeful",
-    myth_busting: "Split-frame composition showing contrast — misconception vs reality",
-    daily_routine: "Morning wellness routine scene with natural sunlight, glass of water",
-    side_effects: "Medical professional in a calming clinical setting, reassuring mood",
-    tips: "Organized flat-lay of health and wellness items, top-down editorial shot",
+    science_explainer: "Clean scientific editorial illustration with subtle data visualization elements, modern medical journal aesthetic",
+    practical_guide: "Person in a bright modern kitchen or wellness space drinking water, lifestyle photography with natural light",
+    faq: "Friendly approachable illustration with question marks and clean design, warm inviting health education style",
   };
 
   const style = styleByType[articleType] || "Clean editorial health photography";
@@ -517,14 +517,9 @@ function detectTopicVisuals(title: string, abstract: string): string {
 function buildUniqueAltText(study: Study, title: string, articleType: string): string {
   const category = study.category || "health";
   const typeLabel: Record<string, string> = {
-    overview: "research overview",
-    practical_application: "practical guide",
-    simplified: "simplified explanation",
-    patient_story: "patient perspective",
-    myth_busting: "myths vs facts",
-    daily_routine: "daily routine guide",
-    side_effects: "safety and side effects",
-    tips: "practical tips",
+    science_explainer: "research explainer",
+    practical_guide: "practical guide",
+    faq: "frequently asked questions",
   };
   const label = typeLabel[articleType] || "research article";
 
@@ -591,24 +586,14 @@ This is a simplified summary generated from available study data. For complete i
 }
 
 function generateFallbackTitle(study: Study, articleType: string): string {
-  const baseTitle = study.title || "Hydrogen Therapy Research";
+  const baseTitle = study.title || "Hydrogen Water Research";
   const typeLabels: Record<string, string> = {
-    overview: "Overview",
-    practical_application: "Practical Guide",
-    comparison: "Comparative Analysis",
-    simplified: "Simple Explanation",
-    benefits_focused: "Health Benefits",
-    future_implications: "Future Impact",
-    faq_style: "Common Questions",
-    how_to_guide: "How-To Guide",
-    tips: "Practical Tips",
-    patient_story: "Patient Perspective",
-    myth_busting: "Myths vs Facts",
-    daily_routine: "Daily Guide",
-    side_effects: "What to Expect",
+    science_explainer: "What the Research Shows",
+    practical_guide: "A Practical Guide",
+    faq: "Your Questions Answered",
   };
 
-  const typeLabel = typeLabels[articleType] || "Analysis";
+  const typeLabel = typeLabels[articleType] || "Research Summary";
   return `${baseTitle.substring(0, 40)}: ${typeLabel}`;
 }
 
@@ -693,20 +678,50 @@ function extractKeywords(study: Study, summary: string): string[] {
 }
 
 function createContentPrompt(study: Study, articleType: string): string {
+  const deliveryMethod = study.h2DeliveryMethod || "hydrogen-rich water";
+
   const prompts: Record<string, string> = {
-    overview: `Write a comprehensive overview article about this hydrogen therapy study. Include background, key findings, and implications. Use 6th grade reading level.`,
-    practical_application: `Write a practical guide on how the findings from this study could be applied in real-world health scenarios. Use 6th grade reading level.`,
-    comparison: `Compare this hydrogen therapy study with other treatments or approaches for similar conditions. Use 6th grade reading level.`,
-    simplified: `Explain this hydrogen therapy study in very simple terms that anyone can understand. Target 6th grade reading level.`,
-    benefits_focused: `Focus on the specific health benefits discovered in this hydrogen therapy study. Use 6th grade reading level.`,
-    future_implications: `Discuss the future implications and potential developments based on this hydrogen therapy research. Use 6th grade reading level.`,
-    faq_style: `Create an FAQ-style article answering common questions about this hydrogen therapy study. Use 6th grade reading level.`,
-    how_to_guide: `Create a how-to guide based on the practical applications of this hydrogen therapy research. Use 6th grade reading level.`,
-    tips: `Write an article with 7-10 practical tips for patients who want to benefit from the hydrogen therapy findings in this study. Make it actionable and easy to follow. Use 6th grade reading level.`,
-    patient_story: `Write an article from a patient's perspective about how hydrogen therapy could impact their daily life based on this study. Make it relatable and hopeful. Use 6th grade reading level.`,
-    myth_busting: `Write a myth-busting article addressing common misconceptions about hydrogen therapy based on what this study reveals. Format as 'Myth vs Fact'. Use 6th grade reading level.`,
-    daily_routine: `Create a daily routine guide showing how someone could incorporate hydrogen therapy into their life based on this study's findings. Include morning, afternoon, and evening suggestions. Use 6th grade reading level.`,
-    side_effects: `Write an informative article about what to expect from hydrogen therapy based on this study, including any side effects, safety considerations, and when to consult a healthcare provider. Be reassuring but honest. Use 6th grade reading level.`,
+    science_explainer: `Write a science explainer article about this hydrogen research study.
+
+STRUCTURE:
+1. Open with why this matters for the reader's health (1-2 sentences)
+2. "What the Researchers Did" — brief methods in plain language
+3. "What They Found" — key results with specific numbers from the study
+4. "Why This Matters" — connect findings to real health outcomes
+5. "The Bigger Picture" — how this fits into the growing body of hydrogen research
+6. "Key Takeaways" — 3-4 bullet points summarizing the findings
+
+TONE: Authoritative but accessible. You are a science journalist explaining a study to a curious reader. Write at a 6th grade reading level.`,
+
+    practical_guide: `Write a practical guide connecting this study's findings to real-world hydrogen water use.
+
+STRUCTURE:
+1. Open with the health benefit this study supports (1-2 sentences)
+2. "What the Research Shows" — summarize the key finding in 2-3 sentences
+3. "How Hydrogen Water Delivery Works" — explain that molecular hydrogen (H2) can be delivered through drinking hydrogen-rich water produced by water ionizers and hydrogen water machines like those from Echo Water™. Briefly note the study used ${deliveryMethod}.
+4. "How to Apply This" — practical guidance on incorporating hydrogen water, including how much, how often, and when (based on the study protocol if available)
+5. "What to Look For" — what makes a quality hydrogen water machine (dissolved H2 concentration above 1.0 ppm, ORP levels, third-party testing)
+6. "Key Takeaways" — 3-4 actionable bullet points
+
+TONE: Helpful and practical, like a knowledgeable friend. NOT salesy — mention Echo Water naturally as one example, not as an advertisement. Write at a 6th grade reading level.`,
+
+    faq: `Write a FAQ article answering the questions people would have after hearing about this study.
+
+STRUCTURE — Use this EXACT format for each Q&A (important for schema.org FAQ markup):
+## [Question in natural language?]
+[2-4 sentence answer citing the study]
+
+Generate 6-8 questions covering:
+- "What did this study find?" (the core result)
+- "Is hydrogen water safe for [the condition studied]?"
+- "How does hydrogen water help with [condition]?"
+- "How much hydrogen water should I drink?"
+- "What type of hydrogen water was used in this study?" (mention the delivery method: ${deliveryMethod})
+- "Where can I get hydrogen water?" (mention hydrogen water machines/ionizers as a reliable source of therapeutic-concentration H2, with Echo Water™ as one option)
+- "Are there any side effects?"
+- A skeptic question like "Is hydrogen water just a fad?" or "Does hydrogen water actually work?"
+
+TONE: Direct and trustworthy. Answer each question honestly, cite the study, and acknowledge limitations. Write at a 6th grade reading level.`,
   };
 
   const basePrompt = prompts[articleType] || prompts.overview;
