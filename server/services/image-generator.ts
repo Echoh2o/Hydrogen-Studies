@@ -341,82 +341,90 @@ async function createImagePrompt(
   focus: string,
   healthBenefits: string[],
 ): Promise<string> {
-  // Use AI to generate a more creative prompt based on study content
-  try {
-    // Prepare context from available study data
-    const abstractSummary =
-      abstract.length > 300 ? abstract.substring(0, 300) + "..." : abstract;
+  // Extract study-specific visual cues from the title and abstract
+  const text = `${title} ${abstract}`.toLowerCase();
+  const deliveryMethod = determineHydrogenDeliveryMethod(title + " " + abstract + " " + methods);
 
-    // Determine the hydrogen delivery method from the content
-    const deliveryMethod = determineHydrogenDeliveryMethod(
-      title + " " + abstract + " " + methods,
-    );
+  // Detect the specific subject matter for unique imagery
+  const subjectVisual = detectSubjectVisual(text);
 
-    // Use AI to generate a detailed image prompt
-    const generatedPrompt = (await ai.generateText(
-      `You are an art director creating simple, beautiful editorial images for a health and wellness website.
-      Your images should be artistic and visually appealing, NOT complex scientific diagrams.
-      Think editorial photography or clean illustration style — like what you'd see in a modern health magazine.
-      Do not include text, labels, molecules, chemical formulas, or complex scientific diagrams.
-      Avoid references to specific people, brands, or copyrighted concepts.`,
-      `Create a simple, artistic image prompt for a health study about:
+  // Detect the delivery method visual
+  const deliveryVisual = deliveryMethod === "inhalation"
+    ? "hydrogen gas inhalation therapy equipment"
+    : deliveryMethod === "injection"
+      ? "medical saline IV setup in clinical setting"
+      : deliveryMethod === "bath"
+        ? "therapeutic hydrogen spa bath"
+        : "clear glass of hydrogen-rich water with tiny bubbles";
 
-      TOPIC: ${title}
+  // Extract 2-3 specific terms from the title for uniqueness
+  const specificTerms = title
+    .replace(/[^a-zA-Z\s]/g, "")
+    .split(/\s+/)
+    .filter(w => w.length > 5 && !["study", "effect", "effects", "hydrogen", "molecular", "research", "treatment", "therapy", "induced", "against"].includes(w.toLowerCase()))
+    .slice(0, 3)
+    .join(", ");
 
-      CATEGORY: ${category}
+  // Build a unique prompt that combines subject + delivery + study specifics
+  const prompt = [
+    `Editorial health magazine photograph.`,
+    subjectVisual,
+    specificTerms ? `Visual elements related to: ${specificTerms}.` : "",
+    `Subtle reference to ${deliveryVisual}.`,
+    `Category: ${category.toLowerCase()} health.`,
+    `Modern, clean composition. Soft natural lighting. Warm, hopeful mood.`,
+    `Photorealistic editorial style — NOT a diagram, NOT a textbook illustration.`,
+    `No text, no labels, no chemical formulas, no molecules, no watermarks.`,
+  ].filter(Boolean).join(" ");
 
-      The image should be:
-      1. Simple, clean, and artistic — like editorial health photography
-      2. Related to the study topic (e.g., cancer study = artistic cancer ribbon or cells, eye study = close-up of an eye or eye drops, gut health = stomach/digestive imagery)
-      3. Beautiful and calming with soft, natural colors
-      4. WITHOUT any text, labels, molecules, chemical structures, or complex scientific diagrams
-      5. More like a magazine cover photo than a textbook illustration
-
-      Provide only the image generation prompt with no additional explanation.`,
-      { maxTokens: 200, temperature: 0.7, model: "claude-haiku-4-5-20251001" },
-    ))?.trim();
-
-    if (!generatedPrompt) {
-      // Fallback to a generic prompt if AI generation fails
-      const detectedDeliveryMethod = determineHydrogenDeliveryMethod(
-        title + " " + abstract + " " + methods,
-      );
-      return createGenericPrompt(title, category, detectedDeliveryMethod);
-    }
-
-    // Ensure the prompt is suitable for image generation by adding some guardrails
-    const enhancedPrompt = `${generatedPrompt}. Simple, artistic, editorial health photography style. Soft natural lighting. Clean composition. No text, labels, or scientific diagrams.`;
-
-    return enhancedPrompt;
-  } catch (error) {
-    logger.error("Error creating image prompt with AI", error, "ImageGenerator");
-    // Fallback to a generic prompt
-    const detectedDeliveryMethod = determineHydrogenDeliveryMethod(
-      title + " " + abstract + " " + methods,
-    );
-    return createGenericPrompt(title, category, detectedDeliveryMethod);
-  }
+  return prompt;
 }
 
 /**
- * Create a generic image prompt if AI-based generation fails
- * @param title Study title
- * @param category Study category
- * @param deliveryMethod Hydrogen delivery method
- * @returns Generic image prompt
+ * Detect specific visual subject matter from study content.
+ * Returns a detailed visual description unique to the study topic.
  */
-function createGenericPrompt(
-  title: string,
-  category: string,
-  deliveryMethod?: string,
-): string {
-  // Format the category for better prompting
-  const formattedCategory = category.toLowerCase();
+function detectSubjectVisual(text: string): string {
+  // Specific conditions/topics (checked first for more precise matching)
+  if (text.includes("parkinson")) return "Elderly person walking confidently in a sunlit garden, movement and vitality.";
+  if (text.includes("alzheimer") || text.includes("dementia")) return "Warm scene of person doing a puzzle or reading, cognitive clarity.";
+  if (text.includes("diabetes") || text.includes("glucose") || text.includes("insulin")) return "Fresh colorful meal prep with a glucose monitor nearby, metabolic wellness.";
+  if (text.includes("arthritis") || text.includes("joint")) return "Person stretching outdoors at sunrise, joint mobility and comfort.";
+  if (text.includes("sepsis")) return "ICU recovery scene with warm morning light, medical hope.";
+  if (text.includes("wound") || text.includes("burn") || text.includes("skin injury")) return "Clean wound care in modern clinical setting, healing process.";
+  if (text.includes("retina") || text.includes("eye") || text.includes("vision") || text.includes("cornea")) return "Macro close-up of a healthy human eye with natural lighting, vibrant iris detail.";
+  if (text.includes("hearing") || text.includes("ear") || text.includes("cochlea") || text.includes("auditory")) return "Person enjoying music in peaceful setting, auditory wellness.";
+  if (text.includes("pregnancy") || text.includes("fetal") || text.includes("maternal")) return "Serene pregnant woman in natural light, maternal wellness.";
+  if (text.includes("exercise") || text.includes("athletic") || text.includes("sport") || text.includes("fatigue")) return "Athlete recovering after workout, drinking water, fitness recovery.";
+  if (text.includes("obesity") || text.includes("weight") || text.includes("fat diet")) return "Active person on morning walk in nature, healthy lifestyle.";
+  if (text.includes("sleep") || text.includes("circadian")) return "Peaceful bedroom scene with soft morning light, restful sleep.";
+  if (text.includes("anxiety") || text.includes("stress") || text.includes("depress")) return "Person meditating by water, calm and mental clarity.";
+  if (text.includes("asthma") || text.includes("copd") || text.includes("airway")) return "Person breathing freely outdoors in clean mountain air, respiratory freedom.";
+  if (text.includes("cancer") || text.includes("tumor")) return "Hopeful medical scene with warm sunlight through hospital window, cancer care.";
+  if (text.includes("colitis") || text.includes("ibd") || text.includes("bowel")) return "Colorful probiotic foods and healthy gut illustration, digestive wellness.";
+  if (text.includes("periodont") || text.includes("dental") || text.includes("oral")) return "Bright confident smile, modern dental wellness.";
+  if (text.includes("osteoporosis") || text.includes("bone density") || text.includes("fracture")) return "Active older person doing tai chi, bone strength and balance.";
+  if (text.includes("ischemia") || text.includes("stroke") || text.includes("cerebral")) return "Brain health visualization with warm colors, neuroprotection.";
+  if (text.includes("myocard") || text.includes("cardiac") || text.includes("heart attack")) return "Anatomical heart illustration in modern art style, cardiac resilience.";
+  if (text.includes("kidney") || text.includes("renal") || text.includes("nephro")) return "Abstract kidney illustration in watercolor style, renal health.";
+  if (text.includes("liver") || text.includes("hepat") || text.includes("cirrhosis")) return "Liver health visualization with clean medical illustration style.";
+  if (text.includes("lung") || text.includes("pulmonary") || text.includes("respiratory")) return "Healthy lungs breathing clean air, respiratory vitality illustration.";
+  if (text.includes("skin") || text.includes("dermat") || text.includes("wrinkle") || text.includes("aging")) return "Radiant healthy skin in natural light, skincare and rejuvenation.";
+  if (text.includes("cholesterol") || text.includes("lipid") || text.includes("atherosclerosis")) return "Heart-healthy Mediterranean meal arrangement, cardiovascular nutrition.";
+  if (text.includes("microbiome") || text.includes("gut bacteria") || text.includes("flora")) return "Colorful artistic microbiome illustration, beneficial bacteria.";
+  if (text.includes("radiation") || text.includes("radiotherapy")) return "Modern radiotherapy room with hopeful lighting, radiation protection.";
+  if (text.includes("neonatal") || text.includes("newborn") || text.includes("infant")) return "Tender newborn care scene in soft pastel light, neonatal health.";
 
-  // Create a simple, artistic image prompt based on the study topic
-  const basePrompt = `Beautiful, artistic editorial photo representing ${formattedCategory} health and wellness. Simple, clean composition with soft natural lighting.`;
+  // Body system fallbacks
+  if (text.includes("brain") || text.includes("neuro") || text.includes("cognitive")) return "Artistic brain visualization with neural pathways in warm colors.";
+  if (text.includes("heart") || text.includes("cardiovascular") || text.includes("blood pressure")) return "Modern heart health illustration with clean editorial style.";
+  if (text.includes("intestin") || text.includes("gut") || text.includes("digest")) return "Colorful digestive wellness illustration, gut health.";
+  if (text.includes("muscle") || text.includes("skeletal")) return "Athletic person stretching, muscular health and recovery.";
+  if (text.includes("immune") || text.includes("inflamma")) return "Abstract immune system shield visualization, body defense.";
+  if (text.includes("blood") || text.includes("hematol")) return "Artistic blood cell illustration in warm tones, circulatory health.";
 
-  return `${basePrompt} Modern health magazine style. No text, labels, or scientific diagrams.`;
+  // Generic fallback — still unique per study via the specificTerms in the parent function
+  return "Person drinking a glass of clear water in a bright modern wellness space.";
 }
 
 /**
