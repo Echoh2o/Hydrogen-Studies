@@ -31,7 +31,9 @@ router.get("/status", async (req, res) => {
   try {
     const [pending] = await db.select({ value: count() }).from(pipelineQueue).where(eq(pipelineQueue.status, "pending"));
     const [processing] = await db.select({ value: count() }).from(pipelineQueue).where(eq(pipelineQueue.status, "processing"));
+    const [awaitingApproval] = await db.select({ value: count() }).from(pipelineQueue).where(eq(pipelineQueue.status, "awaiting_approval"));
     const [completed] = await db.select({ value: count() }).from(pipelineQueue).where(eq(pipelineQueue.status, "completed"));
+    const [rejected] = await db.select({ value: count() }).from(pipelineQueue).where(eq(pipelineQueue.status, "rejected"));
     const [failed] = await db.select({ value: count() }).from(pipelineQueue).where(eq(pipelineQueue.status, "failed"));
     const [totalCitations] = await db.select({ value: count() }).from(studyCitations);
     const [totalDigests] = await db.select({ value: count() }).from(researchDigests).where(eq(researchDigests.isPublished, true));
@@ -44,7 +46,9 @@ router.get("/status", async (req, res) => {
       queue: {
         pending: Number(pending.value),
         processing: Number(processing.value),
+        awaitingApproval: Number(awaitingApproval.value),
         completed: Number(completed.value),
+        rejected: Number(rejected.value),
         failed: Number(failed.value),
       },
       citations: Number(totalCitations.value),
@@ -122,6 +126,79 @@ router.get("/runs", async (req, res) => {
   } catch (error) {
     logger.error("Discovery runs fetch failed", error, "PipelineRoutes");
     res.status(500).json({ error: "Failed to get discovery runs" });
+  }
+});
+
+// ─── Study Approval ─────────────────────────────────────────────
+
+// Approve a discovered study: creates it in the studies table and triggers content waterfall
+router.post("/approve/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    // Get the pipeline item
+    const [item] = await db.select().from(pipelineQueue).where(eq(pipelineQueue.id, id)).limit(1);
+    if (!item) return res.status(404).json({ error: "Pipeline item not found" });
+
+    if (item.status === "completed") {
+      return res.status(400).json({ error: "Already approved and created" });
+    }
+
+    // Create the study from the pipeline results
+    const { createStudyFromPipelineItem } = await import("../services/study-analysis-pipeline");
+    const studyId = await createStudyFromPipelineItem(id);
+
+    res.json({ success: true, studyId, message: "Study approved and content waterfall triggered" });
+  } catch (error) {
+    logger.error("Study approval failed", error, "PipelineRoutes");
+    res.status(500).json({ error: "Approval failed" });
+  }
+});
+
+// Reject a discovered study: removes it from the queue
+router.post("/reject/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    await db.update(pipelineQueue).set({
+      status: "rejected",
+      updatedAt: new Date(),
+    }).where(eq(pipelineQueue.id, id));
+
+    res.json({ success: true, message: "Study rejected" });
+  } catch (error) {
+    logger.error("Study rejection failed", error, "PipelineRoutes");
+    res.status(500).json({ error: "Rejection failed" });
+  }
+});
+
+// Bulk approve multiple studies
+router.post("/approve-bulk", async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "ids must be a non-empty array" });
+    }
+
+    const { createStudyFromPipelineItem } = await import("../services/study-analysis-pipeline");
+    const results = { approved: 0, failed: 0, studyIds: [] as number[] };
+
+    for (const id of ids) {
+      try {
+        const studyId = await createStudyFromPipelineItem(id);
+        results.approved++;
+        results.studyIds.push(studyId);
+      } catch {
+        results.failed++;
+      }
+    }
+
+    res.json({ success: true, ...results });
+  } catch (error) {
+    logger.error("Bulk approval failed", error, "PipelineRoutes");
+    res.status(500).json({ error: "Bulk approval failed" });
   }
 });
 

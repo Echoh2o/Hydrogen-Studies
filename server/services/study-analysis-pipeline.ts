@@ -338,22 +338,19 @@ async function processItem(item: PipelineQueueItem): Promise<void> {
         .where(eq(pipelineQueue.id, item.id));
     }
 
-    // All steps complete — create the study record
-    const studyId = await createStudyFromResults(item, results);
-
+    // All AI analysis steps complete — mark as ready for human review
+    // Do NOT auto-create the study. An admin must approve it first.
     await db
       .update(pipelineQueue)
       .set({
-        status: "completed",
-        createdStudyId: studyId,
+        status: "awaiting_approval",
         processedAt: new Date(),
         updatedAt: new Date(),
       })
       .where(eq(pipelineQueue.id, item.id));
 
-    logger.info("Pipeline item completed", "StudyAnalysisPipeline", {
+    logger.info("Pipeline item ready for approval", "StudyAnalysisPipeline", {
       queueId: item.id,
-      studyId,
       title: item.title.substring(0, 80),
     });
   } catch (error) {
@@ -378,6 +375,36 @@ async function processItem(item: PipelineQueueItem): Promise<void> {
       retryCount,
     });
   }
+}
+
+/**
+ * Approve a pipeline item: create the study from its accumulated AI results.
+ * Called by admin when they approve a discovered study.
+ * Returns the new study ID.
+ */
+export async function createStudyFromPipelineItem(pipelineItemId: number): Promise<number> {
+  const [item] = await db
+    .select()
+    .from(pipelineQueue)
+    .where(eq(pipelineQueue.id, pipelineItemId))
+    .limit(1);
+
+  if (!item) throw new Error(`Pipeline item ${pipelineItemId} not found`);
+
+  const results = parseStepResults(item.stepResults);
+  const studyId = await createStudyFromResults(item, results);
+
+  // Mark as completed with the created study ID
+  await db
+    .update(pipelineQueue)
+    .set({
+      status: "completed",
+      createdStudyId: studyId,
+      processedAt: new Date(),
+    })
+    .where(eq(pipelineQueue.id, pipelineItemId));
+
+  return studyId;
 }
 
 /**

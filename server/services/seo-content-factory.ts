@@ -417,7 +417,7 @@ export async function saveGeneratedArticle(
         quickInsights: article.quickInsights,
         readingLevel: article.readingLevel,
         articleType: article.articleType,
-        isPublished: false, // Draft until human review
+        isPublished: true,
         metaTitle: article.metaTitle,
         metaDescription: article.metaDescription,
         ogTitle: article.ogTitle,

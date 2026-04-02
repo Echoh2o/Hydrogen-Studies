@@ -212,7 +212,7 @@ async function generateSingleBlogArticle(
       summary: blogContent.summary,
       imageUrl: imageData.imageUrl,
       imageAlt: imageData.imageUrl ? `Illustration for: ${blogTitle.substring(0, 110)}` : imageData.imageAlt,
-      isPublished: false,
+      isPublished: true,
       articleType,
       metaDescription: blogContent.summary.substring(0, 160),
       semanticKeywords: extractKeywords(study, blogContent.summary),
