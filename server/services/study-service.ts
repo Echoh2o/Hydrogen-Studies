@@ -641,11 +641,15 @@ export class StudyService {
       }
     }
 
-    // Batch title check - use ANY for case-insensitive matching
+    // Batch title check - use inArray with lowercase comparison
     if (titles.length > 0) {
       const lowerTitles = titles.map(t => t.toLowerCase().trim());
-      const titleResults = await db.execute(sql`SELECT id, title FROM studies WHERE LOWER(title) = ANY(${lowerTitles})`);
-      for (const r of titleResults.rows as any[]) {
+      // Use Drizzle's inArray with sql lower() for proper parameterized query
+      const titleResults = await db
+        .select({ id: studies.id, title: studies.title })
+        .from(studies)
+        .where(inArray(sql`LOWER(${studies.title})`, lowerTitles));
+      for (const r of titleResults) {
         titleMap.set(String(r.title).toLowerCase().trim(), r.id);
       }
     }
@@ -666,9 +670,12 @@ export class StudyService {
 
     if (titles.length > 0) {
       const lowerTitles = titles.map(t => t.toLowerCase().trim());
-      const titleResults = await db.execute(sql`SELECT title, deleted_by, deleted_at FROM deleted_studies WHERE LOWER(title) = ANY(${lowerTitles})`);
-      for (const r of titleResults.rows as any[]) {
-        titleMap.set(String(r.title).toLowerCase().trim(), { deletedBy: r.deleted_by, deletedAt: r.deleted_at });
+      const titleResults = await db
+        .select({ title: deletedStudies.title, deletedBy: deletedStudies.deletedBy, deletedAt: deletedStudies.deletedAt })
+        .from(deletedStudies)
+        .where(inArray(sql`LOWER(${deletedStudies.title})`, lowerTitles));
+      for (const r of titleResults) {
+        titleMap.set(String(r.title).toLowerCase().trim(), { deletedBy: r.deletedBy, deletedAt: r.deletedAt });
       }
     }
 
