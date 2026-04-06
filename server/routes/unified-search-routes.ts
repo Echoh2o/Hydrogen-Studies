@@ -22,6 +22,12 @@ router.get("/", searchRateLimiter, async (req: Request, res: Response) => {
     const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || "20"))));
     const category = String(req.query.category || "").trim();
     const country = String(req.query.country || "").trim();
+    const sortBy = String(req.query.sortBy || "").trim();
+    const sortOrder = String(req.query.sortOrder || "").trim();
+    const yearFrom = String(req.query.yearFrom || "").trim();
+    const yearTo = String(req.query.yearTo || "").trim();
+    const studyType = String(req.query.studyType || "").trim();
+    const peerReviewed = String(req.query.peerReviewed || "").trim();
     const includeExternal = req.query.includeExternal === "true";
     const offset = (page - 1) * limit;
 
@@ -33,6 +39,19 @@ router.get("/", searchRateLimiter, async (req: Request, res: Response) => {
     if (query) filters.search = query;
     if (category && category !== "all") filters.category = category;
     if (country && country !== "all") filters.country = country;
+    if (sortBy) filters.sortBy = sortBy;
+    if (sortOrder) filters.sortOrder = sortOrder;
+    if (yearFrom) filters.yearFrom = yearFrom;
+    if (yearTo) filters.yearTo = yearTo;
+    if (studyType && studyType !== "all") {
+      if (studyType === "human") {
+        filters.search = filters.search ? `${filters.search}` : undefined;
+        // Use SQL-level filtering for study type
+        filters.studyType = studyType;
+      }
+    }
+    if (peerReviewed === "true") filters.peerReviewed = true;
+    if (peerReviewed === "false") filters.peerReviewed = false;
 
     const localResults = await studyService.getStudies(filters);
 

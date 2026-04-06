@@ -138,6 +138,14 @@ export class StudyService {
         whereConditions.push(sql`LOWER(${studies.country}) LIKE ${`%${filters.country.toLowerCase()}%`}`);
       }
 
+      // Study type filter (human/clinical)
+      if (filters.studyType) {
+        const st = filters.studyType.toLowerCase();
+        if (st === "human") {
+          whereConditions.push(sql`(LOWER(${studies.studyType}) LIKE '%human%' OR LOWER(${studies.studyType}) LIKE '%clinical%')`);
+        }
+      }
+
       // Peer review filter
       if (filters.isPeerReviewed === true || filters.peerReviewed === true || filters.isPeerReviewed === 'true') {
         whereConditions.push(eq(studies.peerReviewed, true));

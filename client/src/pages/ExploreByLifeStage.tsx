@@ -6,10 +6,11 @@ import {
   User,
   CalendarClock,
   Users,
-  Ruler,
   ArrowRight,
   Loader2,
-  School,
+  Dumbbell,
+  Heart,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -58,11 +59,8 @@ const ExploreByLifeStage = () => {
           let icon;
 
           switch (cat.name) {
-            case "Infants & Newborns":
+            case "Adolescents":
               icon = <Baby className="h-12 w-12 text-teal-400" />;
-              break;
-            case "Children & Adolescents":
-              icon = <School className="h-12 w-12 text-green-500" />;
               break;
             case "Adults":
               icon = <User className="h-12 w-12 text-purple-500" />;
@@ -70,20 +68,22 @@ const ExploreByLifeStage = () => {
             case "Older Adults":
               icon = <CalendarClock className="h-12 w-12 text-amber-600" />;
               break;
-            case "Pregnant Women":
-              icon = <Users className="h-12 w-12 text-pink-500" />;
+            case "Men's Health":
+              icon = <Users className="h-12 w-12 text-blue-600" />;
+              break;
+            case "Women's Health":
+              icon = <Heart className="h-12 w-12 text-pink-500" />;
               break;
             case "Athletes":
-              icon = <Ruler className="h-12 w-12 text-teal-600" />;
+              icon = <Dumbbell className="h-12 w-12 text-teal-600" />;
               break;
             default:
-              icon = <User className="h-12 w-12 text-teal-500" />;
+              icon = <Sparkles className="h-12 w-12 text-teal-500" />;
           }
 
           return {
             ...cat,
             icon,
-            description: getLifeStageDescription(cat.name),
           };
         },
       );
@@ -183,9 +183,6 @@ const ExploreByLifeStage = () => {
                 <div className="flex justify-center pt-8">{category.icon}</div>
                 <CardContent className="pt-6 text-center">
                   <h2 className="text-xl font-bold mb-2">{category.name}</h2>
-                  <p className="text-neutral-600 text-sm mb-4">
-                    {category.description}
-                  </p>
                   <div className="flex items-center justify-center">
                     <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full">
                       {category.count}{" "}
@@ -195,7 +192,7 @@ const ExploreByLifeStage = () => {
                 </CardContent>
                 <CardFooter className="flex justify-center pb-6">
                   <Link
-                    href={`/search?q=${encodeURIComponent(category.name)}`}
+                    href={`/explore-by-life-stage/${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, "-"))}`}
                   >
                     <Button className="mt-2">
                       Browse Studies <ArrowRight className="h-4 w-4 ml-2" />
@@ -207,23 +204,6 @@ const ExploreByLifeStage = () => {
           </div>
         )}
 
-        <div className="mt-16 bg-neutral-50 rounded-lg p-6 max-w-4xl mx-auto">
-          <h2 className="text-xl font-bold mb-4">
-            About Life Stage Categorization
-          </h2>
-          <p className="text-neutral-600 mb-4">
-            Our life stage categorization organizes hydrogen research based on
-            how it affects people at different stages of life and in specific
-            demographic groups. This approach recognizes that molecular hydrogen
-            may have varying effects depending on age, development stage, and
-            other demographic factors.
-          </p>
-          <p className="text-neutral-600">
-            Understanding these differences is crucial for healthcare providers
-            and individuals looking to make informed decisions about hydrogen
-            therapy for themselves or their loved ones in specific life stages.
-          </p>
-        </div>
       </div>
       <Footer />
     </>

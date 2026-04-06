@@ -427,7 +427,7 @@ export default function SEOStudyPage() {
                     {study.conclusion && (
                       <section className="mb-8">
                         <h3 className="text-xl font-semibold mb-4 text-primary">
-                          Conclusion
+                          Plain-Language Summary
                         </h3>
                         <div className="text-neutral-700 leading-relaxed bg-neutral-50 p-4 rounded-lg border-l-4 border-primary">
                           <p>{study.conclusion}</p>

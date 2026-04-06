@@ -309,15 +309,16 @@ function BlogPageContent() {
             </div>
 
             {/* Featured image */}
-            {blog.imageUrl && (
-              <div className="mb-6">
-                <img
-                  src={blog.imageUrl}
-                  alt={blog.imageAlt || "Article illustration"}
-                  className="w-full h-auto max-h-[400px] object-cover rounded-lg shadow-md"
-                />
-              </div>
-            )}
+            <div className="mb-6">
+              <img
+                src={blog.imageUrl || "/images/fallback-study-image.svg"}
+                alt={blog.imageAlt || "Article illustration"}
+                className="w-full h-auto max-h-[400px] object-cover rounded-lg shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/images/fallback-study-image.svg";
+                }}
+              />
+            </div>
 
             {/* Article summary */}
             {blog.summary && (

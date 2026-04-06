@@ -42,6 +42,10 @@ const BodySystemCategoryPage = () => {
     "musculoskeletal-system": "Musculoskeletal System",
     "renal-system": "Renal System",
     "integumentary-system": "Integumentary System",
+    "endocrine-system": "Endocrine System",
+    "reproductive-system": "Reproductive System",
+    "hematological-system": "Hematological System",
+    "whole-body": "Whole Body",
   };
 
   const exactCategoryName = categoryMap[decodedName] || decodedName;

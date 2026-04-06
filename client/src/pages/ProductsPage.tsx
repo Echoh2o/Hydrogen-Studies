@@ -178,8 +178,8 @@ export default function ProductsPage() {
         "Safe & effective design",
       ],
       image:
-        "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
-      badge: "Smart Tech",
+        "https://echowater.com/cdn/shop/files/echo-flask-hydrogen-water-bottle.png?v=1722526066&width=600",
+      badge: "Hydrogen Water",
       url: "https://echowater.com/products/echo-flask",
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 8 PPM",
@@ -193,7 +193,7 @@ export default function ProductsPage() {
       rating: 4.7,
       reviews: 189,
       description:
-        "Boost energy, clarity, and gut health with Echo Hydrogen Prebiotic Stick Packs—instant hydration + probiotics in one.",
+        "Boost energy, clarity, and gut health with Echo Hydrogen Prebiotic Stick Packs — instant hydration + prebiotics in one convenient packet.",
       features: [
         "Instant hydrogen hydration",
         "Prebiotic formula",
@@ -201,8 +201,8 @@ export default function ProductsPage() {
         "Gut health support",
       ],
       image:
-        "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
-      badge: "Energy",
+        "https://echowater.com/cdn/shop/files/hydrogen-prebiotic-stick-pack.png?v=1722526066&width=600",
+      badge: "Powdered Drink Mix",
       url: "https://echowater.com/products/hydrogen-prebiotic-stick-pack-30-pack",
       deliveryMethod: "drinking-water",
       h2Concentration: "Variable",
@@ -216,7 +216,7 @@ export default function ProductsPage() {
       rating: 4.9,
       reviews: 143,
       description:
-        "Echo Ultimate Hydrogen Water Machine offers a versatile solution for your water needs, producing four types of water: hydrogen, alkaline, acidic, and filtered. Ideal for health, cleaning, and skincare.",
+        "Echo Ultimate Hydrogen Water Machine offers a versatile solution for your water needs, producing four types of water: hydrogen, alkaline, acidic, and filtered.",
       features: [
         "4 types of water",
         "Hydrogen + alkaline production",
@@ -224,8 +224,8 @@ export default function ProductsPage() {
         "10-year warranty",
       ],
       image:
-        "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
-      badge: "Premium",
+        "https://echowater.com/cdn/shop/files/echo-ultimate-hydrogen-water-machine.png?v=1722526066&width=600",
+      badge: "Hydrogen Water",
       url: "https://echowater.com/products/echo-ultimate-hydrogen-water",
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 4.5 PPM",
@@ -239,7 +239,7 @@ export default function ProductsPage() {
       rating: 4.8,
       reviews: 97,
       description:
-        "Introducing the Echo Refresh\u00ae hydrogen inhalation machine. The Refresh enables you to inhale hydrogen gas. It goes from your lungs into your bloodstream in a matter of seconds.",
+        "The Echo Refresh enables you to inhale hydrogen gas directly. It goes from your lungs into your bloodstream in a matter of seconds.",
       features: [
         "Direct hydrogen inhalation",
         "Rapid bloodstream absorption",
@@ -247,7 +247,7 @@ export default function ProductsPage() {
         "Professional grade",
       ],
       image:
-        "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
+        "https://echowater.com/cdn/shop/files/echo-refresh-hydrogen-inhalation-machine.png?v=1722526066&width=600",
       badge: "Inhalation",
       url: "https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine",
       deliveryMethod: "inhalation",
@@ -262,16 +262,16 @@ export default function ProductsPage() {
       rating: 4.6,
       reviews: 78,
       description:
-        "Upgrade your bath routine with the Echo Revive. Enjoy the benefits of hydrogen-rich water, including reduced inflammation, improved skin health, and relief from muscle soreness.",
+        "Upgrade your bath routine with the Echo Revive. Enjoy the benefits of hydrogen-rich bath water through skin absorption.",
       features: [
         "Hydrogen-rich bath water",
-        "Reduced inflammation",
+        "Skin absorption delivery",
         "Improved skin health",
         "Muscle soreness relief",
       ],
       image:
-        "https://echowater.com/cdn/shop/files/Frame_1321315742.png?v=1722526066",
-      badge: "Bath",
+        "https://echowater.com/cdn/shop/files/echo-revive-hydrogen-bath-machine.png?v=1722526066&width=600",
+      badge: "Bathing",
       url: "https://echowater.com/products/echo-revive",
       deliveryMethod: "bathing",
       h2Concentration: "Up to 1.5 PPM",
@@ -356,9 +356,9 @@ export default function ProductsPage() {
     <>
       <SiteHeader />
       <Helmet>
-        <title>Research-Backed Hydrogen Water Products - Hydrogen Studies</title>
+        <title>Molecular Hydrogen Products - Hydrogen Studies</title>
         <meta name="description" content="Carefully selected hydrogen water products backed by scientific research. Explore Echo Water hydrogen generators, bottles, and inhalation machines." />
-        <meta property="og:title" content="Research-Backed Hydrogen Water Products - Hydrogen Studies" />
+        <meta property="og:title" content="Molecular Hydrogen Products - Hydrogen Studies" />
         <meta property="og:description" content="Carefully selected hydrogen water products backed by scientific research. Explore Echo Water hydrogen generators, bottles, and inhalation machines." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://hydrogenstudies.com/products" />
@@ -390,12 +390,12 @@ export default function ProductsPage() {
             ]} />
             <div className="text-center">
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                Research-Backed Hydrogen Water Products
+                Interested In Molecular Hydrogen Products?
               </h1>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Carefully selected products based on scientific studies and
-                quality standards. Hydrogen water is the most-studied delivery
-                method in molecular hydrogen research.
+                There are several ways to get molecular hydrogen into your body.
+                Explore products for hydrogen-rich water, hydrogen bathing,
+                hydrogen gas inhalation, skin absorption, and powdered drink mix supplements.
               </p>
             </div>
           </div>

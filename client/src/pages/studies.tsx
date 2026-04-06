@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import StudyCard from "@/components/studies/study-card";
@@ -43,21 +42,8 @@ export default function Studies() {
     yearFrom: urlParams.get("yearFrom") || "",
     yearTo: urlParams.get("yearTo") || "",
     category: urlParams.get("category") || "",
-    peerReviewed: urlParams.get("peerReviewed") === "true",
-    sortBy: "date",
-    // Advanced search features
-    useFuzzyMatch: urlParams.get("useFuzzyMatch") === "true",
-    searchInMethods: urlParams.get("searchInMethods") !== "false",
-    searchInResults: urlParams.get("searchInResults") !== "false",
-    searchInConclusion: urlParams.get("searchInConclusion") !== "false",
-    searchInSimplified: urlParams.get("searchInSimplified") !== "false",
-    enrichmentStatus:
-      (urlParams.get("enrichmentStatus") as
-        | "basic"
-        | "partial"
-        | "complete"
-        | "") || "",
-    tags: urlParams.get("tags")?.split(",") || [],
+    sortBy: urlParams.get("sortBy") || "publishYear",
+    sortOrder: urlParams.get("sortOrder") || "desc",
   });
 
   // Create query parameters for API request
@@ -127,15 +113,8 @@ export default function Studies() {
       yearFrom: "",
       yearTo: "",
       category: "",
-      peerReviewed: false,
-      sortBy: "date",
-      useFuzzyMatch: false,
-      searchInMethods: true,
-      searchInResults: true,
-      searchInConclusion: true,
-      searchInSimplified: true,
-      enrichmentStatus: "",
-      tags: [],
+      sortBy: "publishYear",
+      sortOrder: "desc",
     });
     setCurrentPage(1);
   };
@@ -151,22 +130,20 @@ export default function Studies() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Categories for filter dropdown
+  // Categories matching actual DB categories, ordered by study count
   const categories = [
-    { id: "neurodegenerative", name: "Neurodegenerative Diseases" },
-    { id: "cardiovascular", name: "Cardiovascular Health" },
-    { id: "metabolism", name: "Metabolism & Diabetes" },
-    { id: "inflammation", name: "Inflammation" },
-    { id: "cancer", name: "Cancer Research" },
-    { id: "aging", name: "Anti-Aging" },
-    { id: "neurological", name: "Neurological" },
     { id: "respiratory", name: "Respiratory" },
-    { id: "renal", name: "Renal / Kidney" },
-    { id: "hepatic", name: "Hepatic / Liver" },
-    { id: "dermatological", name: "Dermatological / Skin" },
+    { id: "inflammation", name: "Inflammation" },
+    { id: "neurological", name: "Neurological" },
+    { id: "metabolic", name: "Metabolic" },
+    { id: "liver", name: "Liver" },
+    { id: "cardiovascular", name: "Cardiovascular" },
     { id: "gastrointestinal", name: "Gastrointestinal" },
-    { id: "exercise", name: "Exercise & Performance" },
-    { id: "oncology", name: "Oncology" },
+    { id: "cancer", name: "Cancer Research" },
+    { id: "dermatology", name: "Dermatology" },
+    { id: "fitness", name: "Fitness & Exercise" },
+    { id: "kidney", name: "Kidney" },
+    { id: "aging", name: "Aging" },
   ];
 
   // Generate page numbers to show
@@ -220,7 +197,7 @@ export default function Studies() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Filters sidebar */}
               <div className="bg-white rounded-xl p-6 shadow-sm h-fit">
-                <h2 className="font-bold text-lg mb-4">Filters</h2>
+                <h2 className="font-bold text-lg mb-4">Sort & Filter</h2>
                 <form onSubmit={handleSearch}>
                   <div className="space-y-6">
                     <div>
@@ -235,6 +212,57 @@ export default function Studies() {
                         }
                       />
                     </div>
+
+                    <Separator />
+
+                    <div>
+                      <Label htmlFor="sort-by">Sort By</Label>
+                      <Select
+                        value={filters.sortBy}
+                        onValueChange={(value) =>
+                          handleFilterChange("sortBy", value)
+                        }
+                      >
+                        <SelectTrigger id="sort-by" className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="publishYear">Publish Year</SelectItem>
+                          <SelectItem value="title">Title</SelectItem>
+                          <SelectItem value="journal">Journal</SelectItem>
+                          <SelectItem value="viewCount">Most Viewed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="sort-order">Order</Label>
+                      <Select
+                        value={filters.sortOrder}
+                        onValueChange={(value) =>
+                          handleFilterChange("sortOrder", value)
+                        }
+                      >
+                        <SelectTrigger id="sort-order" className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filters.sortBy === "title" || filters.sortBy === "journal" ? (
+                            <>
+                              <SelectItem value="asc">A → Z</SelectItem>
+                              <SelectItem value="desc">Z → A</SelectItem>
+                            </>
+                          ) : (
+                            <>
+                              <SelectItem value="desc">Newest First</SelectItem>
+                              <SelectItem value="asc">Oldest First</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Separator />
 
                     <div>
                       <Label htmlFor="category">Category</Label>
@@ -272,7 +300,7 @@ export default function Studies() {
                     </div>
 
                     <div>
-                      <p className="text-sm font-medium mb-2">Year Range</p>
+                      <p className="text-sm font-medium mb-2">Publish Year</p>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label htmlFor="yearFrom" className="sr-only">
@@ -305,40 +333,9 @@ export default function Studies() {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="peer-reviewed"
-                        checked={filters.peerReviewed}
-                        onCheckedChange={(checked) =>
-                          handleFilterChange("peerReviewed", Boolean(checked))
-                        }
-                      />
-                      <Label htmlFor="peer-reviewed">Peer-reviewed only</Label>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <Label htmlFor="sort-by">Sort By</Label>
-                      <Select
-                        value={filters.sortBy}
-                        onValueChange={(value) =>
-                          handleFilterChange("sortBy", value)
-                        }
-                      >
-                        <SelectTrigger id="sort-by" className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="date">Most Recent</SelectItem>
-                          <SelectItem value="title">Title (A-Z)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
                     <div className="flex space-x-2">
                       <Button type="submit" className="flex-1">
-                        Apply Filters
+                        Apply
                       </Button>
                       <Button
                         type="button"

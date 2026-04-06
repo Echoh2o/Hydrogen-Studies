@@ -1,20 +1,16 @@
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import {
-  ArrowLeft,
   Heart,
   Brain,
   Shield,
   Zap,
-  Users,
-  Microscope,
   Activity,
   Sparkles,
-  BookOpen,
   FlaskConical,
   CheckCircle,
   ChevronRight,
+  Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,15 +28,111 @@ import Footer from "@/components/layout/Footer";
 import JsonLd, { generateFaqSchema } from "@/components/seo/JsonLd";
 
 export default function BenefitsPage() {
-  const { data: siteStats } = useQuery<{
-    totalStudies: number;
-    countries: number;
-    humanTrials: number;
-    yearsOfResearch: number;
-  }>({
-    queryKey: ["/api/public-stats"],
-    staleTime: 5 * 60 * 1000,
-  });
+  const didYouKnow = [
+    {
+      emoji: "🫧",
+      title: "Natural Production",
+      fact: "A healthy adult human gut produces approximately 1-12 liters of hydrogen gas per day through bacterial fermentation of dietary fiber.",
+    },
+    {
+      emoji: "⚡",
+      title: "Smallest Molecule",
+      fact: "Molecular hydrogen (H\u2082) is the smallest and lightest molecule in existence, allowing it to rapidly diffuse across cell membranes and reach virtually every compartment of the body.",
+    },
+    {
+      emoji: "🛡️",
+      title: "Selective Antioxidant",
+      fact: "Unlike conventional antioxidants, hydrogen selectively targets the hydroxyl radical (\u00B7OH) \u2014 the most cytotoxic reactive oxygen species \u2014 while leaving beneficial signaling molecules like H\u2082O\u2082 and NO\u00B7 intact.",
+    },
+    {
+      emoji: "🔬",
+      title: "Research Milestone",
+      fact: "Modern biomedical interest in hydrogen exploded after Ohsawa et al. published a landmark paper in Nature Medicine in 2007 demonstrating hydrogen's therapeutic potential.",
+    },
+    {
+      emoji: "🌍",
+      title: "Global Research",
+      fact: "Molecular hydrogen has been studied in over 40 countries, with Japan, China, and the United States leading in published research volume.",
+    },
+    {
+      emoji: "✅",
+      title: "Strong Safety Profile",
+      fact: "Hydrogen has demonstrated a robust safety profile in human studies, with no reported toxic effects even at concentrations well above therapeutic levels.",
+    },
+  ];
+
+  const benefitCategories = [
+    {
+      id: "cardiovascular",
+      title: "Heart Health",
+      icon: <Heart className="h-8 w-8 text-red-500" />,
+      description:
+        "Research suggests molecular hydrogen may support vascular function and overall cardiometabolic health.",
+      benefits: [
+        "Supports healthy blood vessel function",
+        "Helps maintain balanced glucose and lipid levels",
+        "Reduces markers associated with inflammation",
+        "Supports healthy blood pressure regulation",
+      ],
+      keywords: ["cardiac", "heart", "myocardial", "ischemia", "reperfusion", "infarction", "endothelial", "vascular", "artery", "atherosclerosis", "hypertension", "blood pressure", "glucose", "lipid", "cholesterol", "triglyceride"],
+      link: "/explore-by-body-system/cardiovascular-system",
+    },
+    {
+      id: "neurological",
+      title: "Brain Function",
+      icon: <Brain className="h-8 w-8 text-teal-500" />,
+      description:
+        "Molecular hydrogen is being studied for its role in supporting brain health and cognitive function.",
+      benefits: [
+        "Supports cognitive performance",
+        "Helps protect brain cells from oxidative stress",
+        "Supports healthy inflammatory balance in the brain",
+        "Contributes to overall neurological resilience",
+      ],
+      keywords: ["brain", "cerebral", "neural", "neuron", "neurological", "cognitive", "memory", "learning", "Alzheimer", "Parkinson", "stroke", "ischemia", "reperfusion", "brain injury"],
+      link: "/explore-by-body-system/nervous-system",
+    },
+    {
+      id: "antioxidant",
+      title: "Oxidative Stress & Inflammation",
+      icon: <Shield className="h-8 w-8 text-green-500" />,
+      description:
+        "Molecular hydrogen plays a role in maintaining oxidative balance and supporting the body's response to inflammation.",
+      benefits: [
+        "Helps reduce oxidative stress",
+        "Supports the body's natural antioxidant defenses",
+        "Promotes balanced inflammatory signaling",
+        "Supports cellular protection under stress",
+      ],
+      keywords: ["oxidative stress", "ROS", "reactive oxygen species", "antioxidant", "redox", "Nrf2", "inflammation", "inflammatory", "cytokine", "NF-\u03BAB", "apoptosis", "cell death"],
+      link: "/explore-by-body-system/immune-system",
+    },
+    {
+      id: "exercise",
+      title: "Athletic Performance",
+      icon: <Zap className="h-8 w-8 text-yellow-500" />,
+      description:
+        "Molecular hydrogen is studied for its effects on physical performance and recovery.",
+      benefits: [
+        "Helps reduce exercise-related fatigue",
+        "Supports recovery after physical activity",
+        "Reduces markers of muscle stress",
+        "Supports endurance and performance capacity",
+      ],
+      keywords: ["exercise", "fatigue", "endurance", "performance", "training", "lactate", "creatine kinase", "CK", "muscle", "muscle damage"],
+      link: "/explore-by-body-system/musculoskeletal-system",
+    },
+  ];
+
+  const quickFacts = [
+    "Hydrogen is the smallest and lightest molecule, allowing it to diffuse rapidly throughout the body",
+    "It can cross biological membranes and distribute widely, including into cells",
+    "Studied for its role in supporting oxidative balance and cellular signaling",
+    "Modern biomedical interest accelerated following a landmark 2007 paper in Nature Medicine",
+    "Demonstrated a strong safety profile across a wide range of studied concentrations",
+    "Investigated through multiple delivery methods, including dissolved in water, inhaled gas, and topical applications",
+  ];
+
   const learningTopics = [
     {
       id: "basics",
@@ -53,7 +145,7 @@ export default function BenefitsPage() {
         "How does it work in the body?",
         "Safety and dosage",
       ],
-      link: "/search?q=molecular+hydrogen+therapy",
+      link: "/hydrogen-basics",
       difficulty: "Beginner",
     },
     {
@@ -81,7 +173,7 @@ export default function BenefitsPage() {
         "Cellular signaling",
         "Gene expression",
       ],
-      link: "/search?q=antioxidant+oxidative+stress",
+      link: "/explore-by-mechanism",
       difficulty: "Advanced",
     },
     {
@@ -96,129 +188,18 @@ export default function BenefitsPage() {
     },
   ];
 
-  const quickFacts = [
-    "Hydrogen is the smallest and lightest molecule in the universe",
-    "It can easily penetrate cell membranes and reach mitochondria",
-    "Acts as a selective antioxidant targeting harmful free radicals",
-    "Molecular hydrogen research began with a landmark 2007 paper in Nature Medicine",
-    "Safe with no known toxic effects at therapeutic concentrations",
-    "Multiple delivery methods available including water, inhalation, and baths",
-  ];
-
-  const benefitCategories = [
-    {
-      id: "cardiovascular",
-      title: "Heart Health",
-      searchQuery: "cardiovascular heart",
-      icon: <Heart className="h-8 w-8 text-red-500" />,
-      description:
-        "Research shows hydrogen water may support cardiovascular function and reduce oxidative stress.",
-      benefits: [
-        "May reduce blood pressure in hypertensive individuals",
-        "Potential improvement in arterial flexibility",
-        "Reduction in markers of cardiovascular inflammation",
-        "Support for healthy cholesterol levels",
-      ],
-      keyStudies: [
-        "Effects on metabolic syndrome patients (2020)",
-        "Hypertension reduction study (2018)",
-        "Cardiovascular risk factors analysis (2019)",
-      ],
-    },
-    {
-      id: "neurological",
-      title: "Brain Function",
-      searchQuery: "brain cognitive",
-      icon: <Brain className="h-8 w-8 text-teal-500" />,
-      description:
-        "Studies indicate potential cognitive benefits and neuroprotective effects.",
-      benefits: [
-        "May improve cognitive function in elderly adults",
-        "Potential neuroprotective effects against oxidative damage",
-        "Support for mental clarity and focus",
-        "Possible benefits for neurodegenerative conditions",
-      ],
-      keyStudies: [
-        "Cognitive improvement in mild cognitive impairment (2021)",
-        "Neuroprotective effects study (2019)",
-        "Memory and attention enhancement (2020)",
-      ],
-    },
-    {
-      id: "antioxidant",
-      title: "Antioxidant Power",
-      searchQuery: "antioxidant oxidative",
-      icon: <Shield className="h-8 w-8 text-green-500" />,
-      description:
-        "Hydrogen acts as a selective antioxidant, targeting harmful free radicals.",
-      benefits: [
-        "Selective neutralization of hydroxyl radicals",
-        "Reduction in oxidative stress markers",
-        "Support for cellular protection",
-        "May help reduce inflammation",
-      ],
-      keyStudies: [
-        "Selective antioxidant properties (2017)",
-        "Oxidative stress reduction in athletes (2019)",
-        "Cellular protection mechanisms (2020)",
-      ],
-    },
-    {
-      id: "exercise",
-      title: "Athletic Performance",
-      searchQuery: "exercise athlete",
-      icon: <Zap className="h-8 w-8 text-yellow-500" />,
-      description:
-        "Athletes report improved performance and faster recovery times.",
-      benefits: [
-        "Reduced exercise-induced fatigue",
-        "Faster recovery between training sessions",
-        "Decreased muscle damage markers",
-        "Improved endurance capacity",
-      ],
-      keyStudies: [
-        "Exercise performance in soccer players (2018)",
-        "Recovery enhancement in cyclists (2019)",
-        "Muscle damage reduction study (2020)",
-      ],
-    },
-  ];
-
-  const researchHighlights = [
-    {
-      stat: "2007",
-      label: "First Major Study",
-      description: "Published in Nature Medicine",
-    },
-    {
-      stat: siteStats ? `${siteStats.countries}+` : "25+",
-      label: "Countries",
-      description: "Conducting hydrogen research",
-    },
-    {
-      stat: siteStats ? `${siteStats.humanTrials.toLocaleString()}+` : "300+",
-      label: "Human Trials",
-      description: "Clinical studies on real patients",
-    },
-    {
-      stat: siteStats ? `${siteStats.yearsOfResearch}+` : "15+",
-      label: "Years of Research",
-      description: "And growing every year",
-    },
-  ];
-
   return (
     <>
       <Helmet>
         <title>
-          Hydrogen Benefits & Education - Complete Guide to Hydrogen Therapy
+          Learn the Basics of Molecular Hydrogen and Health
         </title>
         <meta
           name="description"
-          content="Learn how molecular hydrogen may improve health. Explore benefits backed by peer-reviewed research covering heart health, brain function, antioxidant effects, and athletic performance."
+          content="Learn how molecular hydrogen interacts with the body. Explore research-backed insights on heart health, brain function, oxidative stress, and athletic performance."
         />
-        <meta property="og:title" content="Hydrogen Benefits & Education - Complete Guide to Hydrogen Therapy" />
-        <meta property="og:description" content="Learn how molecular hydrogen may improve health. Explore benefits backed by peer-reviewed research." />
+        <meta property="og:title" content="Learn the Basics of Molecular Hydrogen and Health" />
+        <meta property="og:description" content="Learn how molecular hydrogen interacts with the body. Explore research-backed insights." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://hydrogenstudies.com/benefits" />
         <link rel="canonical" href="https://hydrogenstudies.com/benefits" />
@@ -226,11 +207,10 @@ export default function BenefitsPage() {
       <JsonLd
         type="FAQPage"
         data={generateFaqSchema([
-          { question: "What is molecular hydrogen?", answer: "Molecular hydrogen (H2) is the smallest and lightest molecule in the universe. It can easily penetrate cell membranes and reach mitochondria, acting as a selective antioxidant that targets harmful free radicals while preserving beneficial reactive oxygen species." },
-          { question: "How does hydrogen therapy work in the body?", answer: "Hydrogen works through three key mechanisms: it acts as a selective antioxidant neutralizing harmful hydroxyl radicals, it provides cellular protection by penetrating cell membranes, and it has anti-inflammatory properties that help modulate inflammatory responses in various body systems." },
-          { question: "Is hydrogen therapy safe?", answer: "Molecular hydrogen has no known toxic effects at therapeutic concentrations. It is considered safe for consumption. Multiple delivery methods are available including hydrogen water, inhalation therapy, and hydrogen baths." },
-          { question: "What are the health benefits of hydrogen water?", answer: "Research suggests hydrogen water may support cardiovascular health, brain function, athletic performance and recovery, and provide antioxidant protection. Studies show potential benefits for reducing blood pressure, improving cognitive function, decreasing muscle damage, and reducing oxidative stress." },
-          { question: "How can I consume molecular hydrogen?", answer: "There are several delivery methods: hydrogen water (the most-studied method), hydrogen inhalation therapy, hydrogen baths, and hydrogen tablets. Each method has different absorption rates and applications." },
+          { question: "What is molecular hydrogen?", answer: "Molecular hydrogen (H2) is the smallest and lightest molecule in existence. It can cross biological membranes and distribute widely throughout the body, where it has been studied for its role in supporting oxidative balance and cellular signaling." },
+          { question: "How does molecular hydrogen interact with the body?", answer: "Hydrogen works through multiple mechanisms: it interacts with reactive species to help regulate oxidative balance, acts as a signaling molecule influencing stress response and inflammation pathways, and helps modulate inflammatory signaling to support a balanced immune response." },
+          { question: "Is molecular hydrogen safe?", answer: "Molecular hydrogen has demonstrated a strong safety profile across a wide range of studied concentrations, with no reported toxic effects in human studies." },
+          { question: "What are the delivery methods for molecular hydrogen?", answer: "Molecular hydrogen can be delivered through multiple methods including hydrogen-rich water (the most widely studied), hydrogen gas inhalation, hydrogen bathing, and hydrogen-releasing compounds like magnesium tablets." },
         ])}
       />
 
@@ -242,34 +222,35 @@ export default function BenefitsPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <PageBreadcrumb items={[
               { label: "Home", href: "/" },
-              { label: "Benefits & Education" },
+              { label: "Learn" },
             ]} />
             <div className="text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                Hydrogen Benefits & Education
+                Learn the Basics of Molecular Hydrogen and Health
               </h1>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                Learn about hydrogen therapy and discover what thousands of
-                peer-reviewed studies reveal about hydrogen's potential to
-                support your health and wellness goals.
+                Discover what peer-reviewed research reveals about how molecular
+                hydrogen interacts with the body and its potential biological effects.
               </p>
 
-              {/* Research Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                {researchHighlights.map((stat, index) => (
+              {/* Did You Know Facts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 text-left">
+                {didYouKnow.map((item, index) => (
                   <Card
                     key={index}
-                    className="text-center border-none shadow-lg"
+                    className="border-none shadow-md hover:shadow-lg transition-shadow"
                   >
-                    <CardContent className="p-4">
-                      <div className="text-2xl md:text-3xl font-bold text-teal-600 mb-1">
-                        {stat.stat}
-                      </div>
-                      <div className="text-sm font-medium text-gray-900 mb-1">
-                        {stat.label}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {stat.description}
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl flex-shrink-0">{item.emoji}</span>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm mb-1">
+                            Did you know? {item.title}
+                          </p>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {item.fact}
+                          </p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -332,28 +313,23 @@ export default function BenefitsPage() {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <Microscope className="h-5 w-5 text-green-500" />
-                          Key Research Studies
+                          <Lightbulb className="h-5 w-5 text-amber-500" />
+                          Keywords
                         </h3>
-                        <ul className="space-y-3">
-                          {category.keyStudies.map((study, index) => (
-                            <li key={index} className="flex items-start gap-3">
-                              <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                              <span className="text-gray-700">{study}</span>
-                            </li>
+                        <div className="flex flex-wrap gap-2">
+                          {category.keywords.map((keyword, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {keyword}
+                            </Badge>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     </div>
                     <div className="mt-8 pt-6 border-t">
-                      <Link href={`/search?q=${encodeURIComponent(category.searchQuery)}`}>
-                        <Button className="mr-4">
-                          Search {category.title} Studies
-                        </Button>
-                      </Link>
-                      <Link href={`/search?q=${encodeURIComponent(category.searchQuery)}&category=${category.id}`}>
-                        <Button variant="outline">
-                          Browse {category.title} Research
+                      <Link href={category.link}>
+                        <Button>
+                          Browse {category.title} Studies
+                          <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
                       </Link>
                     </div>
@@ -367,11 +343,10 @@ export default function BenefitsPage() {
           <Card className="mb-16">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl mb-4">
-                Quick Facts About Hydrogen
+                Quick Facts About Molecular Hydrogen
               </CardTitle>
               <CardDescription className="text-lg max-w-3xl mx-auto">
-                Essential facts about molecular hydrogen therapy based on
-                scientific research.
+                Key insights from scientific research on molecular hydrogen.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -385,6 +360,60 @@ export default function BenefitsPage() {
                     <p className="text-gray-700">{fact}</p>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* How It Works Section */}
+          <Card className="mb-16">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl mb-4">
+                How Molecular Hydrogen Interacts with the Body
+              </CardTitle>
+              <CardDescription className="text-lg max-w-3xl mx-auto">
+                Key mechanisms identified across peer-reviewed research.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="mx-auto mb-4 p-4 rounded-full bg-teal-100 w-fit">
+                    <Activity className="h-8 w-8 text-teal-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Redox Modulation
+                  </h3>
+                  <p className="text-gray-600">
+                    Molecular hydrogen interacts with reactive species and helps
+                    regulate oxidative balance, both through direct reactions and
+                    by influencing the body's own antioxidant systems.
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="mx-auto mb-4 p-4 rounded-full bg-green-100 w-fit">
+                    <Shield className="h-8 w-8 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Cellular Signaling & Gene Expression
+                  </h3>
+                  <p className="text-gray-600">
+                    Hydrogen acts as a signaling molecule, influencing pathways
+                    involved in stress response, inflammation, and cellular
+                    protection.
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="mx-auto mb-4 p-4 rounded-full bg-purple-100 w-fit">
+                    <Zap className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Inflammatory Regulation
+                  </h3>
+                  <p className="text-gray-600">
+                    Hydrogen has been shown to help modulate inflammatory signaling,
+                    supporting a balanced immune response across different tissues.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -455,58 +484,6 @@ export default function BenefitsPage() {
             </CardContent>
           </Card>
 
-          {/* How It Works Section */}
-          <Card className="mb-16">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl mb-4">
-                How Molecular Hydrogen Improves Health
-              </CardTitle>
-              <CardDescription className="text-lg max-w-3xl mx-auto">
-                Three key mechanisms researchers have identified in peer-reviewed studies.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="text-center">
-                  <div className="mx-auto mb-4 p-4 rounded-full bg-teal-100 w-fit">
-                    <Activity className="h-8 w-8 text-teal-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    Selective Antioxidant
-                  </h3>
-                  <p className="text-gray-600">
-                    Hydrogen selectively neutralizes harmful hydroxyl radicals
-                    while preserving beneficial reactive oxygen species.
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="mx-auto mb-4 p-4 rounded-full bg-green-100 w-fit">
-                    <Shield className="h-8 w-8 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    Cellular Protection
-                  </h3>
-                  <p className="text-gray-600">
-                    Small molecular size allows hydrogen to penetrate cell
-                    membranes and protect cellular structures.
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="mx-auto mb-4 p-4 rounded-full bg-purple-100 w-fit">
-                    <Zap className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    Anti-Inflammatory
-                  </h3>
-                  <p className="text-gray-600">
-                    Research suggests hydrogen may help modulate inflammatory
-                    responses in various body systems.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* CTA Section */}
           <Card className="bg-gradient-to-r from-teal-600 to-teal-500 text-white">
             <CardContent className="p-12 text-center">
@@ -517,22 +494,12 @@ export default function BenefitsPage() {
                 Search our database of peer-reviewed hydrogen studies by health condition,
                 delivery method, or keyword.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/studies">
-                  <Button variant="secondary" size="lg">
-                    Browse All Studies
-                  </Button>
-                </Link>
-                <Link href="/explore-by-benefit">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="text-white border-white hover:bg-white hover:text-teal-600"
-                  >
-                    Explore by Health Benefit
-                  </Button>
-                </Link>
-              </div>
+              <Link href="/studies">
+                <Button variant="secondary" size="lg">
+                  Browse All Studies
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 

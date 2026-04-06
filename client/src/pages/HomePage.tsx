@@ -47,10 +47,10 @@ export default function HomePage() {
 
   // Derive dynamic study counts from API data
   const getStudyCount = (systemName: string, fallback: string) => {
-    const count = categoryStats?.data?.body_system?.find(
+    const count = Number(categoryStats?.data?.body_system?.find(
       (s: any) => s.name === systemName
-    )?.count;
-    return count ? `${count} studies` : fallback;
+    )?.count || 0);
+    return count > 0 ? `${count} studies` : fallback;
   };
 
   const benefits = [
@@ -58,28 +58,28 @@ export default function HomePage() {
       icon: <Heart className="h-8 w-8 text-red-500" />,
       title: "Heart Health",
       description:
-        "Studies show hydrogen water may support cardiovascular function and reduce oxidative stress on heart tissue.",
+        "Research suggests molecular hydrogen may support vascular function and overall cardiometabolic health.",
       studyCount: getStudyCount("Cardiovascular System", "47 studies"),
     },
     {
       icon: <Brain className="h-8 w-8 text-teal-500" />,
       title: "Brain Function",
       description:
-        "Research indicates potential cognitive benefits and neuroprotective effects from molecular hydrogen.",
+        "Molecular hydrogen is being studied for its role in supporting brain health and cognitive function.",
       studyCount: getStudyCount("Nervous System", "32 studies"),
     },
     {
       icon: <Shield className="h-8 w-8 text-green-500" />,
-      title: "Antioxidant Power",
+      title: "Oxidative Stress & Inflammation",
       description:
-        "Hydrogen acts as a selective antioxidant, targeting harmful free radicals while preserving beneficial ones.",
+        "Molecular hydrogen plays a role in maintaining oxidative balance and supporting the body's response to inflammation.",
       studyCount: getStudyCount("Immune System", "89 studies"),
     },
     {
       icon: <Zap className="h-8 w-8 text-yellow-500" />,
-      title: "Energy & Recovery",
+      title: "Athletic Performance",
       description:
-        "Athletes report improved performance and faster recovery times with hydrogen water supplementation.",
+        "Molecular hydrogen is studied for its effects on physical performance and recovery.",
       studyCount: getStudyCount("Musculoskeletal System", "23 studies"),
     },
   ];
@@ -144,12 +144,16 @@ export default function HomePage() {
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               Discover the Science Behind
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 block">
-                Hydrogen Water
+                Molecular Hydrogen
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Molecular hydrogen has been studied in {siteStats ? `over ${siteStats.totalStudies.toLocaleString()} peer-reviewed papers across ${siteStats.countries}+ countries` : "over 1,000 peer-reviewed papers across 25+ countries"}.
-              {" "}Here's what the science actually says.
+              Molecular Hydrogen is being studied for the health benefits it provides.
+              Delivered through Hydrogen Water, Hydrogen Inhalation, Hydrogen Bathing,
+              and Hydrogen Drink Mix Supplements. There are currently{" "}
+              {siteStats ? siteStats.totalStudies.toLocaleString() : "..."} peer-reviewed
+              studies across more than {siteStats ? siteStats.countries : "..."} countries.
+              Explore what the research shows by searching below.
             </p>
 
             {/* Search Bar */}
@@ -174,7 +178,7 @@ export default function HomePage() {
 
             <div className="flex flex-wrap justify-center gap-4 mb-12">
               <Badge variant="outline" className="px-4 py-2">
-                {siteStats ? `${siteStats.peerReviewedPct}% Peer-Reviewed` : "Peer-Reviewed Research"}
+                100% Peer-Reviewed
               </Badge>
               <Badge variant="outline" className="px-4 py-2">
                 Updated Weekly
@@ -213,8 +217,7 @@ export default function HomePage() {
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Discover what thousands of peer-reviewed studies reveal about
-              hydrogen water's potential to support your health and wellness
-              goals.
+              molecular hydrogen and its biological effects.
             </p>
           </div>
 
@@ -223,40 +226,40 @@ export default function HomePage() {
               type BenefitTitle =
                 | "Heart Health"
                 | "Brain Function"
-                | "Antioxidant Power"
-                | "Energy & Recovery";
+                | "Oxidative Stress & Inflammation"
+                | "Athletic Performance";
 
-              const searchQueries: Record<BenefitTitle, string> = {
-                "Heart Health": "cardiovascular heart",
-                "Brain Function": "brain cognitive",
-                "Antioxidant Power": "antioxidant oxidative",
-                "Energy & Recovery": "exercise athlete",
+              const categoryLinks: Record<BenefitTitle, string> = {
+                "Heart Health": "/explore-by-body-system/cardiovascular-system",
+                "Brain Function": "/explore-by-body-system/nervous-system",
+                "Oxidative Stress & Inflammation": "/explore-by-body-system/immune-system",
+                "Athletic Performance": "/explore-by-body-system/musculoskeletal-system",
               };
 
               const detailedBenefits: Record<BenefitTitle, string[]> = {
                 "Heart Health": [
-                  "May reduce blood pressure in hypertensive individuals",
-                  "Potential improvement in arterial flexibility",
-                  "Reduction in markers of cardiovascular inflammation",
-                  "Support for healthy cholesterol levels",
+                  "Supports healthy blood vessel function",
+                  "Helps maintain balanced glucose and lipid levels",
+                  "Reduces markers associated with inflammation",
+                  "Supports healthy blood pressure regulation",
                 ],
                 "Brain Function": [
-                  "May improve cognitive function in elderly adults",
-                  "Potential neuroprotective effects against oxidative damage",
-                  "Support for mental clarity and focus",
-                  "Possible benefits for neurodegenerative conditions",
+                  "Supports cognitive performance",
+                  "Helps protect brain cells from oxidative stress",
+                  "Supports healthy inflammatory balance in the brain",
+                  "Contributes to overall neurological resilience",
                 ],
-                "Antioxidant Power": [
-                  "Selective neutralization of hydroxyl radicals",
-                  "Reduction in oxidative stress markers",
-                  "Support for cellular protection",
-                  "May help reduce inflammation",
+                "Oxidative Stress & Inflammation": [
+                  "Helps reduce oxidative stress",
+                  "Supports the body's natural antioxidant defenses",
+                  "Promotes balanced inflammatory signaling",
+                  "Supports cellular protection under stress",
                 ],
-                "Energy & Recovery": [
-                  "Reduced exercise-induced fatigue",
-                  "Faster recovery between training sessions",
-                  "Decreased muscle damage markers",
-                  "Improved endurance capacity",
+                "Athletic Performance": [
+                  "Helps reduce exercise-related fatigue",
+                  "Supports recovery after physical activity",
+                  "Reduces markers of muscle stress",
+                  "Supports endurance and performance capacity",
                 ],
               };
 
@@ -264,7 +267,7 @@ export default function HomePage() {
               return (
                 <Link
                   key={index}
-                  href={`/search?q=${encodeURIComponent(searchQueries[benefitTitle] || "")}`}
+                  href={categoryLinks[benefitTitle]}
                   className="block h-full"
                 >
                   <Card className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full cursor-pointer hover:scale-105">
@@ -334,57 +337,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Research Credibility */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-teal-600 to-cyan-600 text-white">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Trusted by Leading Research Institutions
-          </h2>
-          <p className="text-xl mb-12 opacity-90 max-w-3xl mx-auto">
-            Our database includes studies from Harvard, Mayo Clinic, Tokyo
-            Medical University, and hundreds of other prestigious institutions
-            worldwide.
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
-              <CardContent className="p-8 text-center">
-                <div className="text-3xl font-bold mb-2">{siteStats ? `${siteStats.countries}+` : "25+"}</div>
-                <div className="text-lg opacity-90">Countries</div>
-                <div className="text-sm opacity-70 mt-2">
-                  Conducting hydrogen research
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
-              <CardContent className="p-8 text-center">
-                <div className="text-3xl font-bold mb-2">{siteStats ? siteStats.humanTrials.toLocaleString() : "300+"}</div>
-                <div className="text-lg opacity-90">Human Clinical Trials</div>
-                <div className="text-sm opacity-70 mt-2">
-                  Testing hydrogen on real patients
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
-              <CardContent className="p-8 text-center">
-                <div className="text-3xl font-bold mb-2">{siteStats ? `${siteStats.peerReviewedPct}%` : "95%+"}</div>
-                <div className="text-lg opacity-90">Peer-Reviewed</div>
-                <div className="text-sm opacity-70 mt-2">
-                  Studies in our database
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Link href="/studies">
-            <button className="btn-secondary btn-lg btn-rounded-full btn-icon-right bg-white/20 hover:bg-white/30 border-white text-white hover:text-white">
-              Browse Research Database
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </button>
-          </Link>
-        </div>
-      </section>
-
       {/* Browse by Topic Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
@@ -440,9 +392,6 @@ export default function HomePage() {
             <Link href="/explore-by-benefit">
               <Button variant="outline" className="rounded-full px-6">By Health Benefit</Button>
             </Link>
-            <Link href="/explore-by-mechanism">
-              <Button variant="outline" className="rounded-full px-6">By Mechanism</Button>
-            </Link>
           </div>
         </div>
       </section>
@@ -461,16 +410,6 @@ export default function HomePage() {
               <Button size="lg" className="rounded-full px-8">
                 Browse All Studies
                 <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/hydrogen-therapy-guide">
-              <Button variant="outline" size="lg" className="rounded-full px-8">
-                Complete Science Guide
-              </Button>
-            </Link>
-            <Link href="/products">
-              <Button variant="outline" size="lg" className="rounded-full px-8">
-                Shop Hydrogen Products
               </Button>
             </Link>
           </div>

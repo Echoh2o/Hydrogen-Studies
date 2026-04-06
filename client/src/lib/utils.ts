@@ -6,7 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(dateString: string): string {
+  if (!dateString) return "";
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  if (year < 1900 || year > 2100) return "";
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",

@@ -57,7 +57,10 @@ const ConditionCategoryPage = () => {
     "inflammation-support": "Inflammation Support",
   };
 
-  const exactCategoryName = categoryMap[decodedName] || decodedName;
+  // If not in the map, convert slug back to Title Case (e.g., "allergic-rhinitis" → "Allergic Rhinitis")
+  const slugToTitle = (slug: string) =>
+    slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const exactCategoryName = categoryMap[decodedName] || slugToTitle(decodedName);
   const displayName = exactCategoryName;
 
   const [studies, setStudies] = useState<Study[]>([]);
@@ -233,71 +236,65 @@ const ConditionCategoryPage = () => {
         ) : (
           <>
             {studies.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {studies.map((study) => (
-                  <Card
-                    key={study.id}
-                    className="overflow-hidden hover:shadow-md transition-shadow duration-200"
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-xl">{study.title}</CardTitle>
-                      <div className="flex items-center text-sm text-neutral-500 mt-2">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        <span>{formatDate(study.publishDate)}</span>
-                        {study.journal && (
-                          <>
-                            <span className="mx-2">•</span>
-                            <Book className="h-4 w-4 mr-1" />
-                            <span>{study.journal}</span>
-                          </>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-neutral-700">
-                        {truncateText(study.abstract)}
-                      </p>
-                    </CardContent>
-                    <CardFooter>
-                      <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
-                        <Button>View Full Study</Button>
-                      </Link>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {studies.map((study) => (
+                    <Card
+                      key={study.id}
+                      className="overflow-hidden hover:shadow-md transition-shadow duration-200"
+                    >
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-xl">{study.title}</CardTitle>
+                        <div className="flex items-center text-sm text-neutral-500 mt-2">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          <span>{formatDate(study.publishDate)}</span>
+                          {study.journal && (
+                            <>
+                              <span className="mx-2">•</span>
+                              <Book className="h-4 w-4 mr-1" />
+                              <span>{study.journal}</span>
+                            </>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-neutral-700">
+                          {truncateText(study.abstract)}
+                        </p>
+                      </CardContent>
+                      <CardFooter>
+                        <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
+                          <Button>View Full Study</Button>
+                        </Link>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+                <div className="mt-8 text-center">
+                  <Link href={`/search?q=${encodeURIComponent(displayName)}`}>
+                    <Button size="lg" className="rounded-full px-8">
+                      See All Hydrogen Research for {displayName}
+                    </Button>
+                  </Link>
+                </div>
+              </>
             ) : (
               <div className="text-center py-16 bg-neutral-50 rounded-lg border border-neutral-200">
                 <Heart className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-neutral-700 mb-2">
                   No Studies Found
                 </h2>
-                <p className="text-neutral-600 max-w-md mx-auto">
-                  We don't have any studies categorized for {displayName} yet.
-                  Check back later as we're continually updating our research
-                  database.
+                <p className="text-neutral-600 max-w-md mx-auto mb-6">
+                  We don't have any studies specifically categorized for {displayName} yet.
+                  Try searching our full database for related research.
                 </p>
+                <Link href={`/search?q=${encodeURIComponent(displayName)}`}>
+                  <Button size="lg" className="rounded-full px-8">
+                    Search All Studies for {displayName}
+                  </Button>
+                </Link>
               </div>
             )}
-
-            <div className="mt-16 p-6 bg-neutral-50 rounded-lg border border-neutral-200">
-              <h2 className="text-xl font-semibold text-primary mb-4">
-                About {displayName} Studies
-              </h2>
-              <p className="text-neutral-600 mb-4">
-                Research on hydrogen therapy for {displayName.toLowerCase()} is
-                an evolving field. Studies explore how molecular hydrogen may
-                influence various biological pathways related to{" "}
-                {displayName.toLowerCase()}
-                conditions through its antioxidant, anti-inflammatory, and
-                signaling properties.
-              </p>
-              <p className="text-neutral-600">
-                Our database is regularly updated with new research as it
-                becomes available. If you're a researcher in this field, please
-                contact us to contribute your work to our database.
-              </p>
-            </div>
           </>
         )}
       </div>

@@ -142,10 +142,47 @@ export class StudiesController {
          FROM studies ORDER BY view_count DESC NULLS LAST LIMIT 5`
       );
 
+      // Real stats from database
+      const [countryResult, journalResult, humanResult, categoryResult, peakYearResult, recentAvgResult, oldestResult, countryBreakdown, categoryBreakdown, count2015, count2023] = await Promise.all([
+        pool.query("SELECT COUNT(DISTINCT country) as count FROM studies WHERE country IS NOT NULL"),
+        pool.query("SELECT COUNT(DISTINCT journal) as count FROM studies WHERE journal IS NOT NULL"),
+        pool.query("SELECT COUNT(*) as count FROM studies WHERE LOWER(study_type) LIKE '%human%' OR LOWER(study_type) LIKE '%clinical%'"),
+        pool.query("SELECT COUNT(DISTINCT category) as count FROM studies WHERE category IS NOT NULL"),
+        pool.query("SELECT publish_year, COUNT(*) as cnt FROM studies WHERE publish_year IS NOT NULL GROUP BY publish_year ORDER BY cnt DESC LIMIT 1"),
+        pool.query("SELECT ROUND(AVG(cnt)) as avg FROM (SELECT COUNT(*) as cnt FROM studies WHERE publish_year >= 2019 AND publish_year IS NOT NULL GROUP BY publish_year) t"),
+        pool.query("SELECT MIN(publish_year) as min_year FROM studies WHERE publish_year IS NOT NULL AND publish_year > 1900"),
+        pool.query("SELECT country, COUNT(*) as count FROM studies WHERE country IS NOT NULL GROUP BY country ORDER BY count DESC"),
+        pool.query("SELECT category, COUNT(*) as count FROM studies WHERE category IS NOT NULL GROUP BY category ORDER BY count DESC"),
+        pool.query("SELECT COUNT(*) as count FROM studies WHERE publish_year = 2015"),
+        pool.query("SELECT COUNT(*) as count FROM studies WHERE publish_year = 2023"),
+      ]);
+
+      const totalCountries = parseInt(countryResult.rows[0]?.count || "0");
+      const totalJournals = parseInt(journalResult.rows[0]?.count || "0");
+      const humanTrials = parseInt(humanResult.rows[0]?.count || "0");
+      const categories = parseInt(categoryResult.rows[0]?.count || "0");
+      const peakYear = peakYearResult.rows[0]?.publish_year || 2020;
+      const peakYearCount = parseInt(peakYearResult.rows[0]?.cnt || "0");
+      const avgPerYear = parseInt(recentAvgResult.rows[0]?.avg || "0");
+      const oldestYear = parseInt(oldestResult.rows[0]?.min_year || "2000");
+      const yearsOfResearch = new Date().getFullYear() - oldestYear;
+      const studies2015 = parseInt(count2015.rows[0]?.count || "1");
+      const studies2023 = parseInt(count2023.rows[0]?.count || "1");
+      const growthPct = studies2015 > 0 ? `${Math.round(((studies2023 - studies2015) / studies2015) * 100)}%` : "N/A";
+
       res.json({
         totalStudies,
-        totalCitations: `${Math.round(totalStudies * 11.5 / 1000)}K+`,
-        connectedStudies: `${Math.round(totalStudies * 0.65)}+`,
+        totalCountries,
+        totalJournals,
+        humanTrials,
+        categories,
+        peakYear,
+        peakYearCount,
+        avgPerYear,
+        yearsOfResearch,
+        growthPct,
+        countryBreakdown: countryBreakdown.rows,
+        categoryBreakdown: categoryBreakdown.rows,
         highImpactStudies: topStudies.rows.map((s: any) => ({
           title: s.title,
           citations: parseInt(s.citations) || 0,

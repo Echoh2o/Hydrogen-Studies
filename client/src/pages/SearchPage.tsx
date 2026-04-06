@@ -10,6 +10,7 @@ import {
   Award,
   ChevronDown,
   ArrowLeft,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -73,6 +74,12 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [country, setCountry] = useState("all");
+  const [sortBy, setSortBy] = useState("relevance");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [yearFrom, setYearFrom] = useState("");
+  const [yearTo, setYearTo] = useState("");
+  const [studyType, setStudyType] = useState("all");
+  const [peerReviewed, setPeerReviewed] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const pageSize = 20;
 
@@ -99,9 +106,22 @@ export default function SearchPage() {
 
       const categoryValue = filters.category || category;
       const countryValue = filters.country || country;
+      const sortByValue = filters.sortBy || sortBy;
+      const sortOrderValue = filters.sortOrder || sortOrder;
+      const yearFromValue = filters.yearFrom ?? yearFrom;
+      const yearToValue = filters.yearTo ?? yearTo;
+      const studyTypeValue = filters.studyType || studyType;
+      const peerReviewedValue = filters.peerReviewed ?? peerReviewed;
 
       if (categoryValue !== "all") params.set("category", categoryValue);
       if (countryValue !== "all") params.set("country", countryValue);
+      if (sortByValue && sortByValue !== "relevance") params.set("sortBy", sortByValue);
+      if (sortOrderValue) params.set("sortOrder", sortOrderValue);
+      if (yearFromValue) params.set("yearFrom", yearFromValue);
+      if (yearToValue) params.set("yearTo", yearToValue);
+      if (studyTypeValue !== "all") params.set("studyType", studyTypeValue);
+      if (peerReviewedValue === "true") params.set("peerReviewed", "true");
+      if (peerReviewedValue === "false") params.set("peerReviewed", "false");
 
       const response = await fetch(`/api/unified-search?${params}`);
       if (!response.ok) throw new Error(`Search failed (${response.status})`);
@@ -122,19 +142,23 @@ export default function SearchPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    performSearch(searchQuery, { category, country }, 1);
+    performSearch(searchQuery, getAllFilters(), 1);
   };
+
+  const getAllFilters = () => ({
+    category, country, sortBy, sortOrder, yearFrom, yearTo, studyType, peerReviewed,
+  });
 
   const handleFilterChange = () => {
     setCurrentPage(1);
-    performSearch(searchQuery, { category, country }, 1);
+    performSearch(searchQuery, getAllFilters(), 1);
   };
 
   const goToPage = (page: number) => {
     const totalPages = Math.ceil(total / pageSize);
     const newPage = Math.max(1, Math.min(page, totalPages));
     setCurrentPage(newPage);
-    performSearch(searchQuery, { category, country }, newPage);
+    performSearch(searchQuery, getAllFilters(), newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -229,7 +253,7 @@ export default function SearchPage() {
                     onClick={() => {
                       setSearchQuery(term);
                       setCurrentPage(1);
-                      performSearch(term, { category, country }, 1);
+                      performSearch(term, getAllFilters(), 1);
                     }}
                     className="text-xs px-2 py-1 bg-teal-50 text-teal-700 rounded-full hover:bg-teal-100 transition-colors"
                   >
@@ -247,88 +271,242 @@ export default function SearchPage() {
             <CollapsibleContent className="mb-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Filter Results</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <ArrowUpDown className="h-5 w-5" />
+                    Sort & Filter Results
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Category
-                      </label>
-                      <Select
-                        value={category}
-                        onValueChange={(value) => {
-                          setCategory(value);
-                          setTimeout(handleFilterChange, 100);
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="All categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All categories</SelectItem>
-                          <SelectItem value="cardiovascular">
-                            Cardiovascular
-                          </SelectItem>
-                          <SelectItem value="diabetes">Diabetes</SelectItem>
-                          <SelectItem value="neurological">
-                            Neurological
-                          </SelectItem>
-                          <SelectItem value="cancer">Cancer</SelectItem>
-                          <SelectItem value="kidney">Kidney</SelectItem>
-                          <SelectItem value="exercise">Exercise</SelectItem>
-                          <SelectItem value="inflammation">
-                            Inflammation
-                          </SelectItem>
-                          <SelectItem value="general">General</SelectItem>
-                        </SelectContent>
-                      </Select>
+                <CardContent className="space-y-6">
+                  {/* Sort controls */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Sort By</h4>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Sort Field</label>
+                        <Select
+                          value={sortBy}
+                          onValueChange={(value) => {
+                            setSortBy(value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sort by..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="relevance">Relevance</SelectItem>
+                            <SelectItem value="publishYear">Year Published</SelectItem>
+                            <SelectItem value="title">Title (A-Z)</SelectItem>
+                            <SelectItem value="journal">Journal</SelectItem>
+                            <SelectItem value="viewCount">Most Viewed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Order</label>
+                        <Select
+                          value={sortOrder}
+                          onValueChange={(value) => {
+                            setSortOrder(value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="desc">Newest / Highest First</SelectItem>
+                            <SelectItem value="asc">Oldest / Lowest First</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Country
-                      </label>
-                      <Select
-                        value={country}
-                        onValueChange={(value) => {
-                          setCountry(value);
-                          setTimeout(handleFilterChange, 100);
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="All countries" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All countries</SelectItem>
-                          <SelectItem value="Japan">Japan</SelectItem>
-                          <SelectItem value="China">China</SelectItem>
-                          <SelectItem value="United States">
-                            United States
-                          </SelectItem>
-                          <SelectItem value="South Korea">
-                            South Korea
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                  {/* Filter controls */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Filters</h4>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Category</label>
+                        <Select
+                          value={category}
+                          onValueChange={(value) => {
+                            setCategory(value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All categories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            <SelectItem value="cardiovascular">Cardiovascular</SelectItem>
+                            <SelectItem value="neurological">Neurological</SelectItem>
+                            <SelectItem value="respiratory">Respiratory</SelectItem>
+                            <SelectItem value="inflammation">Inflammation</SelectItem>
+                            <SelectItem value="metabolic">Metabolic</SelectItem>
+                            <SelectItem value="gastrointestinal">Gastrointestinal</SelectItem>
+                            <SelectItem value="cancer">Cancer Research</SelectItem>
+                            <SelectItem value="kidney">Kidney</SelectItem>
+                            <SelectItem value="liver">Liver</SelectItem>
+                            <SelectItem value="dermatology">Dermatology</SelectItem>
+                            <SelectItem value="fitness">Fitness</SelectItem>
+                            <SelectItem value="aging">Aging</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Country</label>
+                        <Select
+                          value={country}
+                          onValueChange={(value) => {
+                            setCountry(value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All countries" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Countries</SelectItem>
+                            <SelectItem value="China">China (215)</SelectItem>
+                            <SelectItem value="Japan">Japan (174)</SelectItem>
+                            <SelectItem value="United States">United States (64)</SelectItem>
+                            <SelectItem value="Serbia">Serbia (46)</SelectItem>
+                            <SelectItem value="South Korea">South Korea (23)</SelectItem>
+                            <SelectItem value="Taiwan">Taiwan (17)</SelectItem>
+                            <SelectItem value="United Kingdom">United Kingdom (16)</SelectItem>
+                            <SelectItem value="Germany">Germany (15)</SelectItem>
+                            <SelectItem value="Russia">Russia (11)</SelectItem>
+                            <SelectItem value="France">France (11)</SelectItem>
+                            <SelectItem value="Spain">Spain (9)</SelectItem>
+                            <SelectItem value="Czech Republic">Czech Republic (9)</SelectItem>
+                            <SelectItem value="Iran">Iran (9)</SelectItem>
+                            <SelectItem value="Poland">Poland (9)</SelectItem>
+                            <SelectItem value="India">India (6)</SelectItem>
+                            <SelectItem value="Slovakia">Slovakia (6)</SelectItem>
+                            <SelectItem value="Turkey">Turkey (5)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Study Type</label>
+                        <Select
+                          value={studyType}
+                          onValueChange={(value) => {
+                            setStudyType(value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All types" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Study Types</SelectItem>
+                            <SelectItem value="human">Human / Clinical Trials</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Peer Reviewed</label>
+                        <Select
+                          value={peerReviewed}
+                          onValueChange={(value) => {
+                            setPeerReviewed(value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Studies</SelectItem>
+                            <SelectItem value="true">Peer Reviewed Only</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
+                  </div>
 
-                    <div className="flex items-end">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setCategory("all");
-                          setCountry("all");
-                          setCurrentPage(1);
-                          setTimeout(
-                            () => performSearch(searchQuery, {}, 1),
-                            100,
-                          );
-                        }}
-                        className="w-full"
-                      >
-                        Clear Filters
-                      </Button>
+                  {/* Year range */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Publication Year</h4>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">From</label>
+                        <Select
+                          value={yearFrom || "any"}
+                          onValueChange={(value) => {
+                            setYearFrom(value === "any" ? "" : value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Any year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any Year</SelectItem>
+                            <SelectItem value="2024">2024</SelectItem>
+                            <SelectItem value="2023">2023</SelectItem>
+                            <SelectItem value="2022">2022</SelectItem>
+                            <SelectItem value="2020">2020</SelectItem>
+                            <SelectItem value="2015">2015</SelectItem>
+                            <SelectItem value="2010">2010</SelectItem>
+                            <SelectItem value="2005">2005</SelectItem>
+                            <SelectItem value="2000">2000</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">To</label>
+                        <Select
+                          value={yearTo || "any"}
+                          onValueChange={(value) => {
+                            setYearTo(value === "any" ? "" : value);
+                            setTimeout(handleFilterChange, 100);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Any year" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any Year</SelectItem>
+                            <SelectItem value="2024">2024</SelectItem>
+                            <SelectItem value="2023">2023</SelectItem>
+                            <SelectItem value="2022">2022</SelectItem>
+                            <SelectItem value="2020">2020</SelectItem>
+                            <SelectItem value="2015">2015</SelectItem>
+                            <SelectItem value="2010">2010</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setCategory("all");
+                            setCountry("all");
+                            setSortBy("relevance");
+                            setSortOrder("desc");
+                            setYearFrom("");
+                            setYearTo("");
+                            setStudyType("all");
+                            setPeerReviewed("all");
+                            setCurrentPage(1);
+                            setTimeout(
+                              () => performSearch(searchQuery, {}, 1),
+                              100,
+                            );
+                          }}
+                          className="w-full"
+                        >
+                          Clear All Filters
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

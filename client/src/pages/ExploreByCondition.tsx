@@ -127,7 +127,9 @@ const ExploreByCondition = () => {
               Top Health Conditions
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {topConditions.map((condition) => (
+              {topConditions.map((condition) => {
+                const slug = condition.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                return (
                 <Card
                   key={condition.name}
                   className="shadow-md hover:shadow-lg transition-shadow duration-200"
@@ -147,7 +149,7 @@ const ExploreByCondition = () => {
                   </CardContent>
                   <CardFooter>
                     <Link
-                      href={`/search?q=${encodeURIComponent(condition.name)}`}
+                      href={`/explore-by-condition/${slug}`}
                     >
                       <Button className="w-full">
                         Search Studies
@@ -156,7 +158,8 @@ const ExploreByCondition = () => {
                     </Link>
                   </CardFooter>
                 </Card>
-              ))}
+                );
+              })}
             </div>
 
             {/* All health conditions */}
@@ -164,10 +167,12 @@ const ExploreByCondition = () => {
               All Health Conditions
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {conditions.map((condition) => (
+              {conditions.map((condition) => {
+                const slug = condition.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                return (
                 <Link
                   key={condition.name}
-                  href={`/search?q=${encodeURIComponent(condition.name)}`}
+                  href={`/explore-by-condition/${slug}`}
                   className="block"
                 >
                   <div className="bg-white p-4 rounded-lg border border-neutral-200 hover:border-primary hover:bg-primary/5 transition-colors duration-200">
@@ -181,28 +186,10 @@ const ExploreByCondition = () => {
                     </div>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Related information */}
-            <div className="mt-16 p-6 bg-neutral-50 rounded-lg border border-neutral-200">
-              <h2 className="text-xl font-semibold text-primary mb-4">
-                About Condition-Based Research
-              </h2>
-              <p className="text-neutral-600 mb-4">
-                Research into hydrogen's effects on various health conditions is
-                a growing field. Molecular hydrogen (H₂) has been studied for
-                its potential therapeutic effects across a range of conditions
-                due to its antioxidant properties, anti-inflammatory effects,
-                and ability to modulate cell signaling pathways.
-              </p>
-              <p className="text-neutral-600">
-                Our database categorizes studies based on the conditions they
-                address, making it easier for you to find relevant research.
-                We're constantly updating our collection as new studies are
-                published.
-              </p>
-            </div>
           </>
         )}
       </div>

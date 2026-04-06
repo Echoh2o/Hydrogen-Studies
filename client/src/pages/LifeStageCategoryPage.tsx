@@ -43,11 +43,18 @@ const LifeStageCategoryPage = () => {
 
   // Map URL slugs to exact database category names
   const categoryMap: Record<string, string> = {
-    "infants-newborns": "Infants & Newborns",
-    "children-adolescents": "Children & Adolescents",
-    adults: "Adults",
+    "adolescents": "Adolescents",
+    "adults": "Adults",
     "older-adults": "Older Adults",
-    "athletes-fitness": "Athletes & Fitness",
+    "men-s-health": "Men's Health",
+    "men's-health": "Men's Health",
+    "women-s-health": "Women's Health",
+    "women's-health": "Women's Health",
+    "athletes": "Athletes",
+    // Legacy slugs
+    "infants-newborns": "Adolescents",
+    "children-adolescents": "Adolescents",
+    "athletes-fitness": "Athletes",
   };
 
   const exactCategoryName = categoryMap[decodedName] || decodedName;

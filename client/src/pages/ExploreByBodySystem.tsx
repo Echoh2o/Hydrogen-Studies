@@ -11,6 +11,10 @@ import {
   Loader2,
   Pill,
   Wind,
+  Activity,
+  Baby,
+  Droplets,
+  Sparkles,
 } from "lucide-react";
 import { ConsumerCategoriesResponse } from "@/types/consumer-categories";
 import { Button } from "@/components/ui/button";
@@ -63,11 +67,26 @@ const ExploreByBodySystem = () => {
             case "Immune System":
               icon = <Pill className="h-12 w-12 text-purple-500" />;
               break;
-            case "Muscular System":
+            case "Musculoskeletal System":
               icon = <Dumbbell className="h-12 w-12 text-gray-600" />;
               break;
-            case "Skeletal System":
-              icon = <Bone className="h-12 w-12 text-amber-700" />;
+            case "Renal System":
+              icon = <Droplets className="h-12 w-12 text-blue-500" />;
+              break;
+            case "Integumentary System":
+              icon = <Sparkles className="h-12 w-12 text-pink-500" />;
+              break;
+            case "Endocrine System":
+              icon = <Activity className="h-12 w-12 text-orange-500" />;
+              break;
+            case "Reproductive System":
+              icon = <Baby className="h-12 w-12 text-rose-400" />;
+              break;
+            case "Hematological System":
+              icon = <Heart className="h-12 w-12 text-red-700" />;
+              break;
+            case "Whole Body":
+              icon = <Sparkles className="h-12 w-12 text-indigo-500" />;
               break;
             default:
               icon = <Microscope className="h-12 w-12 text-teal-500" />;
@@ -102,12 +121,20 @@ const ExploreByBodySystem = () => {
         "Studies on hydrogen's effects on gut health, digestive disorders, and the microbiome.",
       "Immune System":
         "Research on how hydrogen therapy influences inflammation, immune response, and autoimmune conditions.",
+      "Musculoskeletal System":
+        "Research on hydrogen's effects on muscle recovery, strength, bone health, and exercise performance.",
+      "Renal System":
+        "Studies examining hydrogen's impact on kidney function, nephropathy, and renal protection.",
+      "Integumentary System":
+        "Research on hydrogen's effects on skin health, wound healing, burns, and dermal conditions.",
       "Endocrine System":
-        "Studies investigating how hydrogen affects hormonal balance, metabolism, and endocrine disorders.",
-      "Muscular System":
-        "Research on hydrogen's effects on muscle recovery, strength, performance, and muscular disorders.",
-      "Skeletal System":
-        "Studies examining hydrogen's impact on bone health, density, and skeletal disorders.",
+        "Studies investigating how hydrogen affects metabolism, diabetes, insulin sensitivity, and metabolic syndrome.",
+      "Reproductive System":
+        "Research on hydrogen's effects on fertility, reproductive health, and pregnancy outcomes.",
+      "Hematological System":
+        "Studies examining hydrogen's impact on blood cells, platelet function, hemoglobin, and coagulation.",
+      "Whole Body":
+        "Research on systemic effects of hydrogen including aging, oxidative stress, and multi-organ protection.",
     };
 
     return (
@@ -181,7 +208,7 @@ const ExploreByBodySystem = () => {
                 </CardContent>
                 <CardFooter className="flex justify-center pb-6">
                   <Link
-                    href={`/search?q=${encodeURIComponent(category.name)}`}
+                    href={`/explore-by-body-system/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     <Button className="mt-2">
                       Browse Studies <ArrowRight className="h-4 w-4 ml-2" />
@@ -193,23 +220,6 @@ const ExploreByBodySystem = () => {
           </div>
         )}
 
-        <div className="mt-16 bg-neutral-50 rounded-lg p-6 max-w-4xl mx-auto">
-          <h2 className="text-xl font-bold mb-4">
-            About Body System Categorization
-          </h2>
-          <p className="text-neutral-600 mb-4">
-            Our body system categorization groups hydrogen research based on how
-            it affects specific physiological systems. This approach helps
-            researchers and healthcare professionals understand how molecular
-            hydrogen may influence different parts of the body.
-          </p>
-          <p className="text-neutral-600">
-            Molecular hydrogen (H₂) has demonstrated various biological effects
-            across multiple body systems, with proposed mechanisms including
-            selective antioxidant properties, cell signaling modulation, and
-            anti-inflammatory effects.
-          </p>
-        </div>
       </div>
       <Footer />
     </>

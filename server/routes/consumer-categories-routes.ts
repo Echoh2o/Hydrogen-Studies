@@ -37,15 +37,20 @@ router.get("/list", async (req, res) => {
       "Musculoskeletal System",
       "Renal System",
       "Integumentary System",
+      "Endocrine System",
+      "Reproductive System",
+      "Hematological System",
+      "Whole Body",
     ];
 
     // Life stage categories
     const lifeStageCategories = [
-      "Infants & Newborns",
-      "Children & Adolescents",
+      "Adolescents",
       "Adults",
       "Older Adults",
-      "Athletes & Fitness",
+      "Men's Health",
+      "Women's Health",
+      "Athletes",
     ];
 
     return res.json({
@@ -101,12 +106,19 @@ router.get("/counts", async (req, res) => {
       "Respiratory System": "Respiratory",
       "Digestive System": "Gastrointestinal",
       "Immune System": "Inflammation",
-      "Musculoskeletal System": "Inflammation",
+      "Musculoskeletal System": "Fitness",
       "Renal System": "Kidney",
       "Integumentary System": "Dermatology",
-      Adults: "Aging",
-      "Older Adults": "Aging",
-      "Athletes & Fitness": "Fitness",
+      "Endocrine System": "Metabolic",
+      "Reproductive System": "__keyword_search__",
+      "Hematological System": "__keyword_search__",
+      "Whole Body": "__keyword_search__",
+      "Adolescents": "__keyword_search__",
+      Adults: "__keyword_search__",
+      "Older Adults": "__keyword_search__",
+      "Men's Health": "__keyword_search__",
+      "Women's Health": "__keyword_search__",
+      "Athletes": "__keyword_search__",
     };
 
     const conditionCategories = [
@@ -128,12 +140,19 @@ router.get("/counts", async (req, res) => {
       "Musculoskeletal System",
       "Renal System",
       "Integumentary System",
+      "Endocrine System",
+      "Reproductive System",
+      "Hematological System",
+      "Whole Body",
     ];
 
     const lifeStageCategories = [
+      "Adolescents",
       "Adults",
       "Older Adults",
-      "Athletes & Fitness",
+      "Men's Health",
+      "Women's Health",
+      "Athletes",
     ];
 
     // Try join table first, then fall back to consumer_categories JSON + keyword search
@@ -148,7 +167,7 @@ router.get("/counts", async (req, res) => {
         WHERE c.name IN (
           'Cardiovascular', 'Neurological', 'Metabolic', 'Inflammation',
           'Respiratory', 'Gastrointestinal', 'Cancer Research', 'Kidney',
-          'Dermatology', 'Aging', 'Fitness'
+          'Dermatology', 'Aging', 'Fitness', 'Liver'
         )
         GROUP BY c.name
       `);
@@ -176,6 +195,7 @@ router.get("/counts", async (req, res) => {
         "Dermatology": ["dermatology"],
         "Aging": ["review", "antioxidant"],
         "Fitness": ["exercise"],
+        "Liver": ["liver"],
       };
 
       for (const [consumerName, dbCategories] of Object.entries(fallbackMapping)) {
@@ -188,16 +208,46 @@ router.get("/counts", async (req, res) => {
       }
     }
 
+    // Keyword-based counts for categories without a direct DB category
+    const keywordCountMap: Record<string, string[]> = {
+      "Reproductive System": ["testis", "testicular", "sperm", "ovary", "ovarian", "fertility", "reproductive", "pregnancy", "placenta", "estrogen", "testosterone"],
+      "Hematological System": ["hematologic", "erythrocyte", "red blood cell", "platelet", "hemoglobin", "coagulation"],
+      "Whole Body": ["systemic", "whole-body", "multi-organ", "sepsis", "frailty", "mitochondrial dysfunction"],
+      "Adolescents": ["neonatal", "newborn", "perinatal", "offspring", "fetal", "embryo", "pediatric", "paediatric", "child", "children", "infant", "adolescent", "juvenile"],
+      "Adults": ["oxidative stress", "inflammation", "metabolic", "exercise", "endothelial"],
+      "Older Adults": ["elderly", "aged", "aging", "ageing", "postmenopausal", "senior", "cognitive", "memory", "alzheimer", "frailty"],
+      "Men's Health": ["male", "males", "testicular", "sperm", "testosterone", "reproductive"],
+      "Women's Health": ["female", "females", "pregnan", "gestation", "prenatal", "placenta", "placental", "uterine", "maternal", "ovarian", "menopause", "estrogen"],
+      "Athletes": ["athlete", "athletes", "physically active", "exercise", "training", "endurance", "resistance training", "fatigue", "lactate", "recovery", "muscle damage"],
+    };
+
+    for (const [systemName, keywords] of Object.entries(keywordCountMap)) {
+      const likeClauses = keywords.map((_, i) => `LOWER(title) LIKE $${i * 2 + 1} OR LOWER(abstract) LIKE $${i * 2 + 2}`).join(" OR ");
+      const params = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+      try {
+        const result = await pool.query(
+          `SELECT COUNT(DISTINCT id) as count FROM studies WHERE ${likeClauses}`,
+          params
+        );
+        countMap[`__kw_${systemName}`] = parseInt(result.rows[0]?.count || '0');
+      } catch {
+        countMap[`__kw_${systemName}`] = 0;
+      }
+    }
+
     // Map to consumer-friendly names with authentic counts
     const healthConditionCounts = conditionCategories.map((name) => ({
       name,
       count: (countMap[categoryMapping[name]] || 0).toString(),
     }));
 
-    const bodySystemCounts = bodySystemCategories.map((name) => ({
-      name,
-      count: (countMap[categoryMapping[name]] || 0).toString(),
-    }));
+    const bodySystemCounts = bodySystemCategories.map((name) => {
+      const mapped = categoryMapping[name];
+      if (mapped === "__keyword_search__") {
+        return { name, count: (countMap[`__kw_${name}`] || 0).toString() };
+      }
+      return { name, count: (countMap[mapped] || 0).toString() };
+    });
 
     const lifeStageCount = lifeStageCategories.map((name) => ({
       name,
@@ -341,77 +391,43 @@ router.get("/studies", async (req, res) => {
         }
       } else if (model === "body_system") {
         if (categoryName.includes("Cardiovascular")) {
-          keywords = [
-            "heart",
-            "cardiovascular",
-            "blood pressure",
-            "vascular",
-            "circulation",
-          ];
+          keywords = ["heart", "cardiac", "myocardial", "ischemia", "reperfusion", "hypertension", "blood pressure", "endothelial", "vascular", "atherosclerosis", "stroke"];
         } else if (categoryName.includes("Nervous")) {
-          keywords = ["brain", "nerve", "neural", "cognitive", "neurological"];
+          keywords = ["brain", "neural", "neuron", "neuro", "cognitive", "memory", "alzheimer", "parkinson", "stroke", "cerebral", "spinal cord", "neuropathy"];
         } else if (categoryName.includes("Immune")) {
-          keywords = [
-            "immune",
-            "inflammation",
-            "autoimmune",
-            "cytokine",
-            "antibody",
-          ];
+          keywords = ["immune", "immunity", "inflammation", "inflammatory", "cytokine", "macrophage", "t cell", "b cell", "immunomodulation", "sepsis"];
         } else if (categoryName.includes("Respiratory")) {
-          keywords = ["lung", "breath", "respiratory", "oxygen", "pulmonary"];
+          keywords = ["lung", "pulmonary", "respiratory", "airway", "alveolar", "copd", "asthma", "ards", "pneumonia", "hypoxia"];
         } else if (categoryName.includes("Digestive")) {
-          keywords = [
-            "digestive",
-            "gut",
-            "intestine",
-            "gastro",
-            "liver",
-            "hepatic",
-          ];
+          keywords = ["liver", "hepatic", "intestine", "intestinal", "gut", "colon", "gastric", "stomach", "pancreas", "microbiome", "microbiota"];
         } else if (categoryName.includes("Musculoskeletal")) {
-          keywords = [
-            "muscle",
-            "strength",
-            "bone",
-            "joint",
-            "skeletal",
-            "exercise",
-          ];
+          keywords = ["muscle", "skeletal", "exercise", "fatigue", "performance", "strength", "endurance", "bone", "osteo", "arthritis", "tendon"];
         } else if (categoryName.includes("Renal")) {
-          keywords = ["kidney", "renal", "nephro", "urinary"];
+          keywords = ["kidney", "renal", "nephro", "nephropathy", "nephritis", "dialysis", "acute kidney injury", "chronic kidney disease"];
         } else if (categoryName.includes("Integumentary")) {
-          keywords = ["skin", "dermal", "dermatology", "epithelial", "wound"];
+          keywords = ["skin", "dermal", "epidermal", "wound", "healing", "burn", "ulcer", "fibrosis", "keratinocyte"];
+        } else if (categoryName.includes("Endocrine")) {
+          keywords = ["metabolic", "metabolism", "diabetes", "insulin", "glucose", "lipid", "cholesterol", "obesity", "adipose", "metabolic syndrome"];
+        } else if (categoryName.includes("Reproductive")) {
+          keywords = ["testis", "testicular", "sperm", "ovary", "ovarian", "fertility", "reproductive", "pregnancy", "placenta", "estrogen", "testosterone"];
+        } else if (categoryName.includes("Hematological")) {
+          keywords = ["blood", "hematologic", "erythrocyte", "red blood cell", "platelet", "hemoglobin", "coagulation", "plasma"];
+        } else if (categoryName.includes("Whole Body")) {
+          keywords = ["systemic", "whole-body", "multi-organ", "sepsis", "aging", "frailty", "oxidative stress", "mitochondrial dysfunction"];
         }
       } else if (model === "life_stage") {
-        // Life stage categories
-        if (categoryName.includes("Infants")) {
-          keywords = ["infant", "baby", "newborn", "neonatal", "perinatal"];
-        } else if (categoryName.includes("Children")) {
-          keywords = [
-            "child",
-            "children",
-            "adolescent",
-            "pediatric",
-            "youth",
-            "teen",
-          ];
-        } else if (
-          categoryName.includes("Adults") &&
-          !categoryName.includes("Older")
-        ) {
-          keywords = ["adult", "middle-aged", "working", "man", "woman"];
+        if (categoryName.includes("Adolescents")) {
+          keywords = ["neonatal", "newborn", "perinatal", "offspring", "fetal", "foetal", "embryo", "embryonic", "pediatric", "paediatric", "child", "children", "infant", "adolescent", "juvenile", "young", "development"];
+        } else if (categoryName === "Adults") {
+          keywords = ["adult", "adults", "healthy", "oxidative stress", "inflammation", "metabolic", "exercise", "endothelial"];
         } else if (categoryName.includes("Older Adults")) {
-          keywords = ["elderly", "aging", "senior", "older adult", "geriatric"];
+          keywords = ["middle-aged", "elderly", "older", "aged", "aging", "ageing", "postmenopausal", "senior", "cognitive", "memory", "alzheimer", "frailty", "muscle", "oxidative stress"];
+        } else if (categoryName.includes("Men")) {
+          keywords = ["male", "males", "men", "testicular", "sperm", "testosterone", "reproductive"];
+        } else if (categoryName.includes("Women")) {
+          keywords = ["female", "females", "women", "pregnan", "gestation", "prenatal", "placenta", "placental", "uterine", "maternal", "ovarian", "menopause", "estrogen", "reproductive"];
         } else if (categoryName.includes("Athletes")) {
-          keywords = [
-            "athlete",
-            "exercise",
-            "fitness",
-            "performance",
-            "sport",
-            "training",
-          ];
+          keywords = ["athlete", "athletes", "physically active", "exercise", "training", "endurance", "resistance training", "fatigue", "lactate", "recovery", "muscle damage"];
         }
       }
 
@@ -460,31 +476,104 @@ router.get("/studies", async (req, res) => {
         "Respiratory System": "Respiratory",
         "Digestive System": "Gastrointestinal",
         "Immune System": "Inflammation",
-        "Musculoskeletal System": "Inflammation",
+        "Musculoskeletal System": "Fitness",
         "Renal System": "Kidney",
         "Integumentary System": "Dermatology",
-        Adults: "Aging",
-        "Older Adults": "Aging",
-        "Athletes & Fitness": "Fitness",
+        "Endocrine System": "Metabolic",
+        "Adolescents": "__keyword_search__",
+        Adults: "__keyword_search__",
+        "Older Adults": "__keyword_search__",
+        "Men's Health": "__keyword_search__",
+        "Women's Health": "__keyword_search__",
+        "Athletes": "__keyword_search__",
       };
+
+      // Categories that need keyword search (no direct DB category)
+      const keywordOnlySystems = [
+        "Reproductive System", "Hematological System", "Whole Body",
+        "Adolescents", "Adults", "Older Adults", "Men's Health", "Women's Health", "Athletes",
+      ];
 
       const dbCategoryName = categoryMapping[categoryName] || categoryName;
 
-      // Query for studies using authentic relational data
-      const query = `
-        SELECT DISTINCT s.id, s.title, s.abstract, s.authors, s.journal, 
-               s.publish_date as "publishDate", s.category, s.doi, 
-               s.image_url as "imageUrl", s.slug, s.consumer_categories
-        FROM studies s
-        INNER JOIN study_categories sc ON s.id = sc.study_id
-        INNER JOIN categories c ON sc.category_id = c.id
-        WHERE c.name = $1
-        ORDER BY s.id DESC
-        LIMIT 50
-      `;
+      let studyResults: any[];
 
-      const result = await pool.query(query, [dbCategoryName]);
-      const studyResults = result.rows;
+      if (keywordOnlySystems.includes(categoryName)) {
+        // Use keyword search for systems without a DB category
+        const likeTerms = categoryKeywords.map((keyword) => `%${keyword}%`);
+        const likeClauses = likeTerms.map((_, i) => `LOWER(title) LIKE $${i + 1} OR LOWER(abstract) LIKE $${i + 1}`).join(" OR ");
+        const kwQuery = `
+          SELECT DISTINCT id, title, abstract, authors, journal,
+                 publish_date as "publishDate", category, doi,
+                 image_url as "imageUrl", slug, consumer_categories
+          FROM studies
+          WHERE ${likeClauses}
+          ORDER BY publish_year DESC NULLS LAST, id DESC
+          LIMIT 50
+        `;
+        const result = await pool.query(kwQuery, likeTerms);
+        studyResults = result.rows;
+      } else {
+        // Query for studies using authentic relational data
+        const query = `
+          SELECT DISTINCT s.id, s.title, s.abstract, s.authors, s.journal,
+                 s.publish_date as "publishDate", s.category, s.doi,
+                 s.image_url as "imageUrl", s.slug, s.consumer_categories
+          FROM studies s
+          INNER JOIN study_categories sc ON s.id = sc.study_id
+          INNER JOIN categories c ON sc.category_id = c.id
+          WHERE c.name = $1
+          ORDER BY s.publish_year DESC NULLS LAST, s.id DESC
+          LIMIT 50
+        `;
+        const result = await pool.query(query, [dbCategoryName]);
+        studyResults = result.rows;
+      }
+
+      // If no results from primary query, try health_conditions column + keyword fallback
+      if (studyResults.length === 0) {
+        console.log(`No results from primary query for ${categoryName}, trying health_conditions + keyword fallback`);
+
+        // First try exact match on health_conditions column
+        const hcQuery = `
+          SELECT DISTINCT id, title, abstract, authors, journal,
+                 publish_date as "publishDate", category, doi,
+                 image_url as "imageUrl", slug, consumer_categories
+          FROM studies
+          WHERE LOWER(health_conditions) = LOWER($1)
+          ORDER BY publish_year DESC NULLS LAST, id DESC
+          LIMIT 50
+        `;
+        const hcResult = await pool.query(hcQuery, [categoryName]);
+
+        if (hcResult.rows.length > 0) {
+          studyResults = hcResult.rows;
+        } else {
+          // Fall back to keyword search in title and abstract
+          const searchTerms = categoryKeywords.length > 0
+            ? categoryKeywords
+            : categoryName.split(/[\s&,]+/).filter((w: string) => w.length > 2);
+
+          if (searchTerms.length > 0) {
+            const likeTerms = searchTerms.map((keyword: string) => `%${keyword.toLowerCase()}%`);
+            const likeClauses = likeTerms.map((_: string, i: number) =>
+              `LOWER(title) LIKE $${i + 1} OR LOWER(abstract) LIKE $${i + 1}`
+            ).join(" OR ");
+
+            const kwQuery = `
+              SELECT DISTINCT id, title, abstract, authors, journal,
+                     publish_date as "publishDate", category, doi,
+                     image_url as "imageUrl", slug, consumer_categories
+              FROM studies
+              WHERE ${likeClauses}
+              ORDER BY publish_year DESC NULLS LAST, id DESC
+              LIMIT 50
+            `;
+            const kwResult = await pool.query(kwQuery, likeTerms);
+            studyResults = kwResult.rows;
+          }
+        }
+      }
 
       console.log(
         `Found ${studyResults.length} studies for ${model} category: ${categoryName}`,
@@ -498,23 +587,24 @@ router.get("/studies", async (req, res) => {
     } catch (error) {
       console.error("Error fetching studies by category:", error);
 
-      // Fallback to keyword search if JSON query fails
+      // Last resort fallback
       try {
         const { pool } = await import("../db");
-        const likeTerms = categoryKeywords.map((keyword) => `%${keyword}%`);
+        const searchTerms = categoryKeywords.length > 0
+          ? categoryKeywords
+          : categoryName.split(/[\s&,]+/).filter((w: string) => w.length > 2);
+        const likeTerms = searchTerms.map((keyword: string) => `%${keyword.toLowerCase()}%`);
+
         const fallbackQuery = `
-          SELECT id, title, abstract, authors, journal, publish_date as "publishDate", 
+          SELECT id, title, abstract, authors, journal, publish_date as "publishDate",
                  category, doi, image_url as "imageUrl", slug
-          FROM studies 
+          FROM studies
           WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($2)
-          ORDER BY id DESC
-          LIMIT 20
+          ORDER BY publish_year DESC NULLS LAST, id DESC
+          LIMIT 50
         `;
 
         const result = await pool.query(fallbackQuery, [likeTerms, likeTerms]);
-        console.log(
-          `Fallback keyword search returned ${result.rows.length} studies`,
-        );
 
         return res.json({
           success: true,

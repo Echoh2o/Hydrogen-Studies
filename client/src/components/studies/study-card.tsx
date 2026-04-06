@@ -41,12 +41,12 @@ const StudyCard = memo(function StudyCard({ study }: StudyCardProps) {
     }
   }
 
-  // Safe date formatting
-  const displayDate = study.publishDate
-    ? formatDate(study.publishDate)
-    : study.journalPublishDate
-      ? formatDate(study.journalPublishDate)
-      : "No date";
+  // Safe date formatting — prefer publishYear, then formatted date
+  const displayDate = (study as any).publishYear
+    ? String((study as any).publishYear)
+    : (study.publishDate ? formatDate(study.publishDate) : null)
+      || (study.journalPublishDate ? formatDate(study.journalPublishDate) : null)
+      || "";
 
   return (
     <motion.div

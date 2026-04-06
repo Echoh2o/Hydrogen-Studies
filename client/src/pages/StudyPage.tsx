@@ -339,12 +339,25 @@ const StudyPageContent = () => {
   });
 
 
-  // Get related studies (same category, exclude current) — limited query
+  // Get related studies — use keywords + category for better relevance
+  const relatedSearchQuery = (() => {
+    if (!study) return "";
+    const keywords = (study as any).keywords?.slice(0, 2)?.join(" ") || "";
+    return keywords || study.category || "";
+  })();
   const { data: relatedData } = useQuery<any>({
-    queryKey: ["/api/studies", { category: study?.category, limit: "4" }],
-    enabled: !!study?.category,
+    queryKey: ["/api/unified-search", { q: relatedSearchQuery, category: study?.category, limit: "6" }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (relatedSearchQuery) params.set("q", relatedSearchQuery);
+      if (study?.category) params.set("category", study.category);
+      params.set("limit", "6");
+      const res = await fetch(`/api/unified-search?${params}`);
+      return res.json();
+    },
+    enabled: !!study?.category || !!relatedSearchQuery,
   });
-  const relatedArray = Array.isArray(relatedData?.data) ? relatedData.data : Array.isArray(relatedData) ? relatedData : [];
+  const relatedArray = Array.isArray(relatedData?.studies) ? relatedData.studies : Array.isArray(relatedData?.data) ? relatedData.data : [];
   const relatedStudies = relatedArray
     .filter((s: any) => s.id !== studyId)
     .slice(0, 3);
@@ -603,18 +616,13 @@ const StudyPageContent = () => {
                   {study.category}
                 </Badge>
                 )}
-                {study.year && (
+                {(study.year || (study as any).publishYear) && (
                   <time
-                    dateTime={study.year.toString()}
+                    dateTime={(study.year || (study as any).publishYear).toString()}
                     className="text-neutral-500 flex items-center text-sm"
                   >
                     <HiCalendar className="mr-1 w-4 h-4" aria-hidden="true" />
-                    {study.publishDate
-                      ? new Date(study.publishDate).toLocaleDateString(
-                          "en-GB",
-                          { day: "2-digit", month: "2-digit", year: "numeric" },
-                        )
-                      : study.year}
+                    {study.year || (study as any).publishYear}
                   </time>
                 )}
               </div>
@@ -661,12 +669,7 @@ const StudyPageContent = () => {
                     aria-hidden="true"
                   />
                   <span>
-                    {study.publishDate
-                      ? new Date(study.publishDate).toLocaleDateString(
-                          "en-GB",
-                          { day: "2-digit", month: "2-digit", year: "numeric" },
-                        )
-                      : study.year || "Date not available"}
+                    {study.year || (study as any).publishYear || "Year not available"}
                   </span>
                 </div>
               </div>
@@ -770,7 +773,7 @@ const StudyPageContent = () => {
                         id="benefits-heading"
                         className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-green-600"
                       >
-                        Key Health Benefits Found
+                        Keywords
                       </h2>
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4 md:p-6">
                         <div className="flex flex-wrap gap-2">
@@ -901,7 +904,7 @@ const StudyPageContent = () => {
                       id="conclusion-heading"
                       className="text-xl font-semibold mb-4"
                     >
-                      Research Conclusion
+                      Plain-Language Summary
                     </h2>
                     <div
                       className="prose max-w-none prose-neutral mb-6"
@@ -1027,6 +1030,18 @@ const StudyPageContent = () => {
                       </Card>
                     </Link>
                   ))}
+                </div>
+                <div className="mt-6 text-center">
+                  <Link
+                    href={`/search?q=${encodeURIComponent(
+                      ((study as any).keywords?.slice(0, 3)?.join(" ") || "") +
+                      (study.category ? " " + study.category : "")
+                    ).trim()}&category=${encodeURIComponent(study.category || "")}`}
+                  >
+                    <Button variant="outline" className="rounded-full px-6">
+                      Explore More Related Studies
+                    </Button>
+                  </Link>
                 </div>
               </section>
             )}
