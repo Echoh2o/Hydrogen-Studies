@@ -55,15 +55,9 @@ export default function Studies() {
 
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
-        if (Array.isArray(value) && value.length > 0) {
-          params.append(key, value.join(","));
-        } else if (typeof value === "boolean") {
-          if (value) params.append(key, value.toString());
-        } else if (value) {
-          const stringValue = value.toString().trim();
-          if (stringValue && stringValue !== "all" && stringValue !== "any") {
-            params.append(key, stringValue);
-          }
+        const stringValue = String(value).trim();
+        if (stringValue && stringValue !== "all" && stringValue !== "any") {
+          params.append(key, stringValue);
         }
       }
     });
