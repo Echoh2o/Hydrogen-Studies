@@ -166,7 +166,7 @@ ${JSON.stringify(studySummaries, null, 2)}`,
       studyIds: JSON.stringify(weekStudies.map((s) => s.id)),
       metaTitle: digestContent.metaTitle,
       metaDescription: digestContent.metaDescription,
-      isPublished: true,
+      isPublished: false,
       publishedAt: new Date(),
     })
     .returning();

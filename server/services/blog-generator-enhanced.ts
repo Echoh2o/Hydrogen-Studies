@@ -212,7 +212,7 @@ async function generateSingleBlogArticle(
       summary: blogContent.summary,
       imageUrl: imageData.imageUrl,
       imageAlt: imageData.imageUrl ? `Illustration for: ${blogTitle.substring(0, 110)}` : imageData.imageAlt,
-      isPublished: true,
+      isPublished: false,
       articleType,
       metaDescription: blogContent.summary.substring(0, 160),
       semanticKeywords: extractKeywords(study, blogContent.summary),
@@ -408,10 +408,10 @@ async function generateArticleImageWithFallback(
       model: provider === "xai" ? "grok-2-image" : "dall-e-3",
       prompt: prompt.substring(0, 1000),
       n: 1,
-      size: "1024x1024",
       response_format: "url",
     };
     if (provider === "openai") {
+      generateParams.size = "1024x1024";
       generateParams.quality = "standard";
     }
 
@@ -614,7 +614,7 @@ function generateBasicArticle(
     summary: content.summary,
     imageUrl: image.imageUrl,
     imageAlt: image.imageUrl ? `Illustration for: ${title.substring(0, 110)}` : image.imageAlt,
-    isPublished: true,
+    isPublished: false,
     articleType,
     metaDescription: content.summary.substring(0, 160),
     semanticKeywords: extractKeywords(study, content.summary),
