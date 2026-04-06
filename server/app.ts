@@ -146,13 +146,19 @@ app.use(redirectMiddleware());
 
 // Dynamic redirect: /study/id%2F{number} or /study/id/{number} → /study/{slug}
 // Single-hop 301 — resolves slug from DB to avoid redirect chains
-const idSlugCache = new Map<number, string>(); // tiny cache: id → slug
+const idSlugCache = new Map<number, string>(); // bounded cache: id → slug (max 2000 entries)
+const ID_SLUG_CACHE_MAX = 2000;
 async function resolveStudySlug(studyId: number): Promise<string | null> {
   const cached = idSlugCache.get(studyId);
   if (cached) return cached;
   try {
     const [study] = await db.select({ slug: studies.slug }).from(studies).where(eq(studies.id, studyId)).limit(1);
     if (study?.slug && !study.slug.startsWith("id/")) {
+      if (idSlugCache.size >= ID_SLUG_CACHE_MAX) {
+        // Evict oldest entry
+        const firstKey = idSlugCache.keys().next().value;
+        if (firstKey !== undefined) idSlugCache.delete(firstKey);
+      }
       idSlugCache.set(studyId, study.slug);
       return study.slug;
     }

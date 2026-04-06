@@ -545,7 +545,7 @@ export default function SearchPage() {
                             {study.plain_language_title || study.title}
                           </h3>
                           <p className="text-gray-600 mb-3 line-clamp-3">
-                            {study.abstract}
+                            {study.abstract || "No abstract available."}
                           </p>
                         </div>
                         {study.image_url && (
@@ -554,6 +554,7 @@ export default function SearchPage() {
                             alt="Study illustration"
                             className="w-24 h-24 object-cover rounded-lg ml-4 flex-shrink-0"
                             loading="lazy"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                           />
                         )}
                       </div>

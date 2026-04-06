@@ -3,6 +3,8 @@ import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { sql, eq, isNull, or } from "drizzle-orm";
 import { ai } from "../services/ai-provider";
+import { requireAdmin } from "../auth";
+import { aiGenerationRateLimiter } from "../utils/rate-limiting";
 
 const router = express.Router();
 
@@ -748,7 +750,7 @@ router.get("/anchor-content/:type/:category", async (req, res) => {
  * POST /api/consumer-categories/categorize/:studyId
  * Categorize a single study using AI
  */
-router.post("/categorize/:studyId", async (req, res) => {
+router.post("/categorize/:studyId", requireAdmin, aiGenerationRateLimiter, async (req, res) => {
   try {
     const studyId = parseInt(req.params.studyId);
     if (isNaN(studyId)) {
@@ -791,7 +793,7 @@ router.post("/categorize/:studyId", async (req, res) => {
  * POST /api/consumer-categories/batch-categorize
  * Batch categorize uncategorized studies
  */
-router.post("/batch-categorize", async (req, res) => {
+router.post("/batch-categorize", requireAdmin, aiGenerationRateLimiter, async (req, res) => {
   try {
     const limit = Math.min(Number(req.body.limit) || 10, 50);
 
