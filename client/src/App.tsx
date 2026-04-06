@@ -31,6 +31,7 @@ const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 // Lazy load all non-critical pages for better performance
 const SearchPage = lazy(() => import("@/pages/SearchPage"));
 const BenefitsPage = lazy(() => import("@/pages/BenefitsPage"));
+const LearnPage = lazy(() => import("@/pages/LearnPage"));
 const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const HydrogenBasicsPage = lazy(() => import("@/pages/HydrogenBasicsPage"));
 const HealthBenefitsPage = lazy(() => import("@/pages/HealthBenefitsPage"));
@@ -232,7 +233,8 @@ function Router() {
           component={NaturalLanguageSearchPage}
         />
         <Route path="/advanced-search" component={EnhancedSearchPage} />
-        <Route path="/benefits" component={BenefitsPage} />
+        <Route path="/benefits">{() => <Redirect to="/learn" />}</Route>
+        <Route path="/learn" component={LearnPage} />
         <Route path="/products" component={ProductsPage} />
         <Route path="/about" component={About} />
         <Route path="/contact" component={ContactPage} />
@@ -545,7 +547,7 @@ function Router() {
         <Route path="/categories">{() => <Redirect to="/explore-by-condition" />}</Route>
         <Route path="/category/:id">{() => <Redirect to="/explore-by-condition" />}</Route>
         <Route path="/resources">{() => <Redirect to="/recommendations" />}</Route>
-        <Route path="/learn">{() => <Redirect to="/about" />}</Route>
+        {/* /learn is now a real page — old redirect removed */}
         <Route path="/improved-search">{() => <Redirect to="/search" />}</Route>
 
         {/* 404 - Must be last */}

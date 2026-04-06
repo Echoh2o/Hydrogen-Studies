@@ -327,7 +327,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-center">
-            <Link href="/benefits">
+            <Link href="/learn">
               <button className="btn-primary btn-lg btn-rounded-full btn-icon-right">
                 Explore All Benefits
                 <ChevronRight className="ml-2 h-4 w-4" />

@@ -180,3 +180,55 @@
     @apply text-gray-400 hover:text-gray-100 hover:bg-gray-800 focus-visible:ring-gray-600;
   }
 }
+
+/* ── Learn Page Scoped Design System ── */
+.learn-page {
+  --lp-bg: #F8FAFB;
+  --lp-surface: #FFFFFF;
+  --lp-primary: #0A4B7C;
+  --lp-accent: #1A7FA8;
+  --lp-accent-lt: #E3F2FA;
+  --lp-text: #1A1A2E;
+  --lp-muted: #6B7280;
+  --lp-border: #E2E8F0;
+  --lp-danger-lt: #FEF2F2;
+  --lp-font-display: 'Fraunces', Georgia, serif;
+  --lp-font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --lp-max-width: 1100px;
+  --lp-section-pad: 88px 24px;
+  --lp-section-pad-mobile: 56px 20px;
+  --lp-radius-sm: 8px;
+  --lp-radius-md: 12px;
+  --lp-radius-lg: 20px;
+  --lp-shadow-card: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+
+  font-family: var(--lp-font-body);
+  color: var(--lp-text);
+  background-color: var(--lp-bg);
+}
+
+.learn-page h1,
+.learn-page h2,
+.learn-page h3,
+.learn-page h4 {
+  font-family: var(--lp-font-display);
+}
+
+.learn-page .lp-section-label {
+  font-family: var(--lp-font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-accent);
+}
+
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes lp-pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.7; }
+}

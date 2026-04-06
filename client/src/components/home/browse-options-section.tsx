@@ -15,7 +15,7 @@ const browseOptions = [
     description:
       "Explore research by specific health benefits like improved cognitive function, reduced inflammation, enhanced athletic performance, and more.",
     icon: <Heart className="h-8 w-8 text-primary" />,
-    href: "/benefits",
+    href: "/learn",
     color: "bg-red-50",
   },
   {

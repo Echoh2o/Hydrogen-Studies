@@ -14,7 +14,7 @@ export const studyLinks: NavLink[] = [
 
 export const mainLinks: NavLink[] = [
   { href: "/blog", label: "Blog" },
-  { href: "/benefits", label: "Learn" },
+  { href: "/learn", label: "Learn" },
   { href: "/research-analytics", label: "Analytics" },
   { href: "/products", label: "Products" },
 ];
