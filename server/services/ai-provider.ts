@@ -83,6 +83,15 @@ export function getImageModel(provider: "xai" | "openai"): string {
   return provider === "xai" ? MODELS.XAI_IMAGE : MODELS.OPENAI_IMAGE;
 }
 
+/** Get the preferred image client + provider. Prefers OpenAI (more reliable). */
+export function getPreferredImageClient(): { client: OpenAI; provider: "xai" | "openai" } | null {
+  const openai = getOpenAI();
+  if (openai) return { client: openai, provider: "openai" };
+  const xai = getXAI();
+  if (xai) return { client: xai, provider: "xai" };
+  return null;
+}
+
 /**
  * Generate a text response from AI.
  * Tries Anthropic first, falls back to OpenAI if not configured.

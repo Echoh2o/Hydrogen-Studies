@@ -402,8 +402,9 @@ async function generateArticleImageWithFallback(
     // Build a unique, topic-specific prompt based on study content + article type
     const prompt = buildUniqueImagePrompt(study, title, articleType);
 
-    const imageClient = xaiClient || openaiClient!;
-    const provider = xaiClient ? "xai" : "openai";
+    // Prefer OpenAI for images — xAI image model access is unreliable
+    const imageClient = openaiClient || xaiClient!;
+    const provider = openaiClient ? "openai" : "xai";
     const generateParams: any = {
       model: getImageModel(provider),
       prompt: prompt.substring(0, 1000),
