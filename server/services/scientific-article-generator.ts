@@ -3,7 +3,7 @@
  * Generates in-depth, longer-form scientific articles about hydrogen therapy studies
  */
 
-import { ai } from "./ai-provider";
+import { ai, getImageModel } from "./ai-provider";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
@@ -527,7 +527,7 @@ async function generateScientificImage(
     const prompt = `Scientific diagram for hydrogen therapy research article: ${title}. Medical illustration with molecular structures, clinical data visualization, professional academic style.`;
 
     const generateParams: any = {
-      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+      model: getImageModel(provider),
       prompt: prompt.substring(0, 1000),
       n: 1,
       size: "1024x1024",

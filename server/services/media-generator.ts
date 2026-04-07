@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import https from "https";
 import { pipeline } from "stream/promises";
-import { ai } from "./ai-provider";
+import { ai, getImageModel } from "./ai-provider";
 
 /**
  * Get the image generation client.
@@ -56,7 +56,7 @@ export class MediaGenerator {
     try {
       const { client, provider } = getImageClient();
       const generateParams: any = {
-        model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+        model: getImageModel(provider),
         prompt: prompt,
         n: 1,
         size: "1024x1024",

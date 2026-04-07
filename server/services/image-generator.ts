@@ -14,7 +14,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../db";
 import { studies as studiesTable, blogArticles } from "../../shared/schema";
 import { eq, isNull, or } from "drizzle-orm";
-import { ai } from "./ai-provider";
+import { ai, getImageModel } from "./ai-provider";
 import { logger } from "../utils/logger";
 import { uploadFile, isCloudStorageConfigured } from "../utils/storage";
 
@@ -58,7 +58,7 @@ export async function generateScientificImage(
 
     // Generate the image using Grok or DALL-E
     const generateParams: any = {
-      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+      model: getImageModel(provider),
       prompt: prompt,
       n: 1,
       size: "1024x1024",
@@ -139,7 +139,7 @@ export async function generateBlogImage(blogId: number): Promise<{
 
     // Generate the image using Grok or DALL-E
     const generateParams: any = {
-      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+      model: getImageModel(provider),
       prompt: prompt,
       n: 1,
       size: "1024x1024",
@@ -270,7 +270,7 @@ export async function generateImageForStudy(studyId: number): Promise<{
 
     // Generate the image using Grok or DALL-E
     const generateParams: any = {
-      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+      model: getImageModel(provider),
       prompt: prompt,
       n: 1,
       size: "1024x1024",

@@ -9,7 +9,7 @@ import { sql, isNull, or, eq } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
-import { ai } from "./ai-provider";
+import { ai, getImageModel } from "./ai-provider";
 
 /**
  * Get the image generation client.
@@ -180,7 +180,7 @@ async function generateAndOptimizeStudyImage(
 
     // Generate image with Grok or DALL-E
     const generateParams: any = {
-      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+      model: getImageModel(provider),
       prompt: prompt.substring(0, 1000),
       n: 1,
       size: "1024x1024",

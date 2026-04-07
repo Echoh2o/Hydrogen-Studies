@@ -18,7 +18,7 @@ import {
 } from "../utils/service-error-handlers";
 import { AppError, ErrorCode } from "../utils/app-errors";
 import { withRetry } from "../utils/database-wrapper";
-import { ai } from "./ai-provider";
+import { ai, getImageModel } from "./ai-provider";
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -405,7 +405,7 @@ async function generateArticleImageWithFallback(
     const imageClient = xaiClient || openaiClient!;
     const provider = xaiClient ? "xai" : "openai";
     const generateParams: any = {
-      model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+      model: getImageModel(provider),
       prompt: prompt.substring(0, 1000),
       n: 1,
       response_format: "url",
@@ -437,7 +437,43 @@ async function generateArticleImageWithFallback(
       imageAlt: altText,
     };
   } catch (error) {
-    console.warn("Image generation failed, using default:", error);
+    // If xAI was used and failed, try OpenAI as fallback before giving up
+    const xaiClient = ai.getXAIClient();
+    const openaiClient = ai.getOpenAIClient();
+    if (xaiClient && openaiClient) {
+      console.warn("xAI image generation failed, trying OpenAI fallback:", error);
+      try {
+        const prompt = buildUniqueImagePrompt(study, title, articleType);
+        const response = await openaiClient.images.generate({
+          model: "dall-e-3",
+          prompt: prompt.substring(0, 1000),
+          n: 1,
+          response_format: "url",
+          size: "1024x1024",
+          quality: "standard",
+        });
+
+        const imageUrl = response.data?.[0]?.url;
+        if (!imageUrl) {
+          throw new Error("No image URL in OpenAI fallback response");
+        }
+
+        const imageBuffer = await downloadImageToBuffer(imageUrl);
+        const filename = `blog-${slugify(articleType)}-${study.id}-${Date.now()}.png`;
+        const { uploadFile } = await import("../utils/storage");
+        const storedUrl = await uploadFile(imageBuffer, `blog-images/${filename}`, "image/png");
+        const altText = buildUniqueAltText(study, title, articleType);
+
+        return {
+          imageUrl: storedUrl,
+          imageAlt: altText,
+        };
+      } catch (fallbackError) {
+        console.warn("OpenAI fallback image generation also failed, using default:", fallbackError);
+      }
+    } else {
+      console.warn("Image generation failed, using default:", error);
+    }
     return getDefaultImage(study.category);
   }
 }

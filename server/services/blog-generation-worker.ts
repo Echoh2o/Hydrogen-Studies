@@ -8,7 +8,7 @@
 import { db } from "../db";
 import { blogGenerationJobs, blogArticles, studies } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { ai } from "./ai-provider";
+import { ai, getImageModel } from "./ai-provider";
 
 // Worker state
 let isProcessing = false;
@@ -502,7 +502,7 @@ async function generateBlogImageForWorker(
   const prompt = buildWorkerImagePrompt(study, title, articleType).substring(0, 1000);
 
   const generateParams: any = {
-    model: provider === "xai" ? "grok-2-image" : "dall-e-3",
+    model: getImageModel(provider),
     prompt,
     n: 1,
     size: "1024x1024",

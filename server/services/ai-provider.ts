@@ -72,7 +72,16 @@ export const MODELS = {
   SONNET: "claude-sonnet-4-20250514",
   /** Fast, cheap model (~90% cheaper) for extraction, parsing, short summaries */
   HAIKU: "claude-haiku-4-5-20251001",
+  /** xAI image model — configurable via XAI_IMAGE_MODEL env var */
+  XAI_IMAGE: process.env.XAI_IMAGE_MODEL || "grok-2-image",
+  /** OpenAI image model */
+  OPENAI_IMAGE: "dall-e-3",
 } as const;
+
+/** Get the correct image model name for the given provider */
+export function getImageModel(provider: "xai" | "openai"): string {
+  return provider === "xai" ? MODELS.XAI_IMAGE : MODELS.OPENAI_IMAGE;
+}
 
 /**
  * Generate a text response from AI.

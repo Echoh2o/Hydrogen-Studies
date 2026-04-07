@@ -243,13 +243,45 @@ router.get("/counts", async (req, res) => {
       count: (countMap[categoryMapping[name]] || 0).toString(),
     }));
 
-    const bodySystemCounts = bodySystemCategories.map((name) => {
-      const mapped = categoryMapping[name];
-      if (mapped === "__keyword_search__") {
-        return { name, count: (countMap[`__kw_${name}`] || 0).toString() };
-      }
-      return { name, count: (countMap[mapped] || 0).toString() };
-    });
+    // Body systems: use the body_systems array column directly (most accurate)
+    // Falls back to category mapping + keyword counts if array query fails
+    let bodySystemCounts: { name: string; count: string }[];
+    try {
+      const bsResults = await pool.query(`
+        SELECT unnest(body_systems) as body_system, COUNT(DISTINCT id) as count
+        FROM studies
+        WHERE body_systems IS NOT NULL AND array_length(body_systems, 1) > 0
+        GROUP BY body_system
+        ORDER BY count DESC
+      `);
+      const bsMap: Record<string, number> = {};
+      bsResults.rows.forEach((row: any) => {
+        bsMap[row.body_system] = parseInt(row.count);
+      });
+
+      bodySystemCounts = bodySystemCategories.map((name) => {
+        // Direct match from body_systems array
+        if (bsMap[name] && bsMap[name] > 0) {
+          return { name, count: bsMap[name].toString() };
+        }
+        // Keyword search fallback
+        const mapped = categoryMapping[name];
+        if (mapped === "__keyword_search__") {
+          return { name, count: (countMap[`__kw_${name}`] || 0).toString() };
+        }
+        // Category column fallback
+        return { name, count: (countMap[mapped] || 0).toString() };
+      });
+    } catch {
+      // If body_systems query fails, use original fallback logic
+      bodySystemCounts = bodySystemCategories.map((name) => {
+        const mapped = categoryMapping[name];
+        if (mapped === "__keyword_search__") {
+          return { name, count: (countMap[`__kw_${name}`] || 0).toString() };
+        }
+        return { name, count: (countMap[mapped] || 0).toString() };
+      });
+    }
 
     const lifeStageCount = lifeStageCategories.map((name) => ({
       name,
