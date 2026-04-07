@@ -214,6 +214,18 @@ export default function WhyH2DifferentSection() {
           }}
         >
           <MembraneSvg />
+          <p
+            style={{
+              fontFamily: "var(--lp-font-body)",
+              fontSize: 13,
+              color: "var(--lp-muted)",
+              textAlign: "center",
+              marginTop: 12,
+            }}
+          >
+            Most antioxidants are stopped at the cell wall. H&#x2082; reaches
+            mitochondria and even the brain.
+          </p>
         </div>
       </div>
     </section>

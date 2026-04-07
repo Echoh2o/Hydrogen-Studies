@@ -1,7 +1,7 @@
 export default function MembraneSvg() {
   return (
     <svg
-      viewBox="0 0 500 250"
+      viewBox="0 0 500 220"
       width="100%"
       height="auto"
       xmlns="http://www.w3.org/2000/svg"
@@ -200,17 +200,6 @@ export default function MembraneSvg() {
         </text>
       </g>
 
-      {/* --- Caption --- */}
-      <text
-        x="250"
-        y="238"
-        textAnchor="middle"
-        fill="#6B7280"
-        fontSize="13"
-        fontFamily="sans-serif"
-      >
-        {"Most antioxidants are stopped at the cell wall. H\u2082 reaches mitochondria and even the brain."}
-      </text>
     </svg>
   );
 }

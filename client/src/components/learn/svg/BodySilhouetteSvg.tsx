@@ -4,12 +4,12 @@ interface BodySilhouetteSvgProps {
 }
 
 const hotspots = [
-  { cx: 150, cy: 45, label: "Brain" },
-  { cx: 135, cy: 145, label: "Heart" },
-  { cx: 150, cy: 130, label: "Lungs" },
-  { cx: 120, cy: 175, label: "Liver" },
-  { cx: 150, cy: 210, label: "Gut" },
-  { cx: 150, cy: 300, label: "Muscles" },
+  { cx: 200, cy: 60, label: "Brain" },
+  { cx: 185, cy: 195, label: "Heart" },
+  { cx: 210, cy: 175, label: "Lungs" },
+  { cx: 170, cy: 230, label: "Liver" },
+  { cx: 200, cy: 275, label: "Gut" },
+  { cx: 200, cy: 420, label: "Muscles" },
 ];
 
 export default function BodySilhouetteSvg({
@@ -18,89 +18,114 @@ export default function BodySilhouetteSvg({
 }: BodySilhouetteSvgProps) {
   return (
     <svg
-      viewBox="0 0 300 400"
+      viewBox="0 0 400 560"
       width="100%"
       height="auto"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Genderless body silhouette outline */}
+      {/* Anatomical body silhouette — genderless standing figure */}
+      {/* Head */}
+      <ellipse
+        cx="200"
+        cy="52"
+        rx="32"
+        ry="38"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+      />
+      {/* Neck */}
       <path
-        d={[
-          // Head
-          "M 150 15",
-          "C 125 15, 115 30, 115 50",
-          "C 115 70, 130 82, 150 82",
-          "C 170 82, 185 70, 185 50",
-          "C 185 30, 175 15, 150 15 Z",
-          // Neck
-          "M 140 82 L 140 95 L 160 95 L 160 82",
-          // Torso + shoulders + arms
-          "M 140 95",
-          "L 100 105",   // left shoulder
-          "L 80 110",    // outer shoulder
-          "L 65 155",    // upper left arm
-          "L 55 200",    // forearm
-          "L 50 230",    // wrist
-          "L 45 245",    // hand
-          "L 55 248",    // hand bottom
-          "L 62 235",    // hand return
-          "L 70 200",    // inner forearm
-          "L 82 155",    // inner upper arm
-          "L 95 120",    // armpit
-          "L 95 240",    // left torso
-          "L 100 260",   // left hip
-          "L 105 310",   // left thigh
-          "L 108 340",   // left knee
-          "L 110 370",   // left shin
-          "L 105 390",   // left ankle
-          "L 95 395",    // left foot
-          "L 120 395",   // left foot front
-          "L 125 388",   // left foot arch
-          "L 128 370",   // inner left shin
-          "L 130 340",   // inner left knee
-          "L 135 310",   // inner left thigh
-          "L 140 270",   // inner left hip
-          "L 150 260",   // crotch center
-          "L 160 270",   // inner right hip
-          "L 165 310",   // inner right thigh
-          "L 170 340",   // inner right knee
-          "L 172 370",   // inner right shin
-          "L 175 388",   // right foot arch
-          "L 180 395",   // right foot front
-          "L 205 395",   // right foot
-          "L 195 390",   // right ankle
-          "L 190 370",   // right shin
-          "L 192 340",   // right knee
-          "L 195 310",   // right thigh
-          "L 200 260",   // right hip
-          "L 205 240",   // right torso
-          "L 205 120",   // armpit right
-          "L 218 155",   // inner right upper arm
-          "L 230 200",   // inner right forearm
-          "L 238 235",   // right hand return
-          "L 245 248",   // right hand bottom
-          "L 250 245",   // right hand
-          "L 245 230",   // right wrist
-          "L 235 200",   // right forearm
-          "L 220 155",   // right upper arm
-          "L 200 105",   // right shoulder
-          "L 160 95",    // back to neck
-        ].join(" ")}
-        fill="transparent"
-        stroke="#E2E8F0"
-        strokeWidth="1.5"
+        d="M188 89 L188 105 L212 105 L212 89"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
         strokeLinejoin="round"
+      />
+      {/* Torso */}
+      <path
+        d="M188 105 Q155 112 130 118 Q115 122 108 135 L108 140 Q112 148 118 155 L128 190 L132 220 Q133 235 135 250 L138 270 Q140 280 145 290 L148 300"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M212 105 Q245 112 270 118 Q285 122 292 135 L292 140 Q288 148 282 155 L272 190 L268 220 Q267 235 265 250 L262 270 Q260 280 255 290 L252 300"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Waist connection */}
+      <path
+        d="M148 300 Q155 310 165 315 Q180 320 200 322 Q220 320 235 315 Q245 310 252 300"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      {/* Left arm */}
+      <path
+        d="M130 118 Q115 125 105 138 L88 180 Q78 210 72 240 L65 270 Q62 282 58 290 Q55 298 60 302 Q65 305 70 300 L78 280 Q85 255 92 235 L105 195"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Right arm */}
+      <path
+        d="M270 118 Q285 125 295 138 L312 180 Q322 210 328 240 L335 270 Q338 282 342 290 Q345 298 340 302 Q335 305 330 300 L322 280 Q315 255 308 235 L295 195"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Left leg */}
+      <path
+        d="M165 315 Q160 330 155 350 L148 390 Q145 410 142 430 L138 460 Q136 475 135 490 L132 510 Q130 525 128 535 Q126 542 130 545 Q138 548 145 545 L155 540 Q158 535 158 525 L160 490 Q162 470 165 450 L170 420 Q175 395 180 370 L185 350"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Right leg */}
+      <path
+        d="M235 315 Q240 330 245 350 L252 390 Q255 410 258 430 L262 460 Q264 475 265 490 L268 510 Q270 525 272 535 Q274 542 270 545 Q262 548 255 545 L245 540 Q242 535 242 525 L240 490 Q238 470 235 450 L230 420 Q225 395 220 370 L215 350"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Chest line */}
+      <path
+        d="M148 160 Q175 175 200 178 Q225 175 252 160"
+        fill="none"
+        stroke="#CBD5E1"
+        strokeWidth="0.8"
+        strokeDasharray="4 4"
+        opacity="0.5"
       />
 
       {/* Hotspot dots */}
       {hotspots.map((spot, i) => {
         const isActive = activeHotspot === i;
         return (
-          <g key={i} style={{ cursor: "pointer" }} onClick={() => onHotspotClick(i)}>
+          <g
+            key={i}
+            style={{ cursor: "pointer" }}
+            onClick={() => onHotspotClick(i)}
+          >
             <circle
               cx={spot.cx}
               cy={spot.cy}
-              r={isActive ? 11 : 8}
+              r={isActive ? 12 : 9}
               fill={isActive ? "#0E6B8D" : "#1A7FA8"}
               opacity={isActive ? 1 : 0.85}
               style={{

@@ -31,24 +31,6 @@ export default function LearnHero() {
       >
         {/* Text column */}
         <div>
-          {/* Trust badge */}
-          <span
-            style={{
-              display: "inline-block",
-              background: "rgba(255,255,255,0.1)",
-              color: "#FFFFFF",
-              fontSize: 12,
-              border: "1px solid rgba(255,255,255,0.2)",
-              borderRadius: 20,
-              padding: "4px 14px",
-              fontFamily: "var(--lp-font-body)",
-              marginBottom: 24,
-            }}
-          >
-            hydrogenstudies.com — peer-reviewed science only. No products. No
-            ads.
-          </span>
-
           {/* Headline */}
           <h1
             style={{
