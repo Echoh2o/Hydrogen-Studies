@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQuery } from "@tanstack/react-query";
 import { useCountUp } from "./useCountUp";
 
 const tiers = [
@@ -26,10 +27,13 @@ const tiers = [
 
 export default function EvidenceSection() {
   const isMobile = useIsMobile();
+  const { data: stats } = useQuery<{ totalStudies: number; humanTrials: number; healthConditions: number }>({
+    queryKey: ["/api/learn-stats"],
+  });
 
-  const counter1 = useCountUp(1335, 2000);
-  const counter2 = useCountUp(200, 2000);
-  const counter3 = useCountUp(170, 2000);
+  const counter1 = useCountUp(stats?.totalStudies || 1335, 2000);
+  const counter2 = useCountUp(stats?.humanTrials || 200, 2000);
+  const counter3 = useCountUp(stats?.healthConditions || 170, 2000);
 
   // Intersection observer for bar animation
   const barsRef = useRef<HTMLDivElement>(null);

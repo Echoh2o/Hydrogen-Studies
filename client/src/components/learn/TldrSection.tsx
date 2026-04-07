@@ -1,6 +1,10 @@
 import { FadeInOnScroll } from "@/components/animations/ScrollAnimations";
+import { useQuery } from "@tanstack/react-query";
 
 export default function TldrSection() {
+  const { data: stats } = useQuery<{ totalStudies: number; humanTrials: number; healthConditions: number }>({
+    queryKey: ["/api/learn-stats"],
+  });
   return (
     <section
       style={{
@@ -74,7 +78,7 @@ export default function TldrSection() {
             </p>
 
             <p style={{ marginBottom: 24 }}>
-              Over 1,335 peer-reviewed studies across 170+ health conditions
+              Over {stats?.totalStudies?.toLocaleString() || "1,335"} peer-reviewed studies across {stats?.healthConditions || "170"}+ health conditions
               have been published since the first major H₂ paper appeared in{" "}
               <em>Nature Medicine</em> in 2007. The most studied benefits
               include energy, brain health, heart health, inflammation,

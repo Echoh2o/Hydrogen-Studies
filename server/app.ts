@@ -72,6 +72,7 @@ import contactRoutes from "./routes/contact-routes";
 import pipelineRoutes from "./routes/pipeline-routes";
 import imageGenerationRoutes from "./routes/image-generation-routes";
 import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
+import learnStatsRoutes from "./routes/learn-stats-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -430,6 +431,7 @@ app.use(researchUnifiedRoutes);
 app.use("/api/content-enrichment", aiGenerationRateLimiter, contentEnrichmentRoutes);
 app.use("/api/enrichment", aiGenerationRateLimiter, enrichmentRoutes);
 app.use("/api/blog-recommendations", aiGenerationRateLimiter, blogRecommendationRoutes);
+app.use("/api/learn-stats", generalApiRateLimiter, learnStatsRoutes);
 app.use("/api/trends", generalApiRateLimiter, trendsRoutes);
 app.use("/api/analytics", generalApiRateLimiter, contentAnalyticsRoutes);
 // Chat endpoints are the #1 API cost driver — strict rate limit

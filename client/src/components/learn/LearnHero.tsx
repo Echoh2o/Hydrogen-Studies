@@ -1,8 +1,12 @@
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQuery } from "@tanstack/react-query";
 import H2MoleculeSvg from "./svg/H2MoleculeSvg";
 
 export default function LearnHero() {
   const isMobile = useIsMobile();
+  const { data: stats } = useQuery<{ totalStudies: number; humanTrials: number; healthConditions: number }>({
+    queryKey: ["/api/learn-stats"],
+  });
 
   return (
     <section
@@ -71,8 +75,7 @@ export default function LearnHero() {
               marginBottom: 32,
             }}
           >
-            Molecular hydrogen (H&#x2082;) is being studied in 1,335+
-            peer-reviewed trials across 170+ health conditions. Here's what
+            Molecular hydrogen (H&#x2082;) is being studied in {stats?.totalStudies?.toLocaleString() || "1,335"}+ peer-reviewed trials across {stats?.healthConditions || "170"}+ health conditions. Here's what
             scientists are finding — in plain English.
           </p>
 
@@ -115,7 +118,7 @@ export default function LearnHero() {
                 (e.currentTarget.style.textDecoration = "none")
               }
             >
-              Browse all 1,335+ Studies →
+              Browse all {stats?.totalStudies?.toLocaleString() || "1,335"}+ Studies →
             </a>
           </div>
         </div>

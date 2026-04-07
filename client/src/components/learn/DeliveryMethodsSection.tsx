@@ -3,12 +3,12 @@ import { FadeInOnScroll } from "@/components/animations/ScrollAnimations";
 const deliveryMethods = [
   {
     name: "Hydrogen Water Machines",
-    badge: "Highest concentration \u2014 most studied",
+    badge: "Most studied delivery method",
     howItWorks:
       "An electrolysis chamber infuses water with H\u2082 gas as it flows through. No electrodes contact the drinking water directly.",
-    concentration: "1.5 \u2013 3.0+ ppm",
+    concentration: "1.0 \u2013 1.5 ppm",
     bestFor: "Daily home use, consistent high-dose intake.",
-    note: "Most closely matches the concentrations used in human clinical trials.",
+    note: "The delivery method used in the majority of human clinical trials. Provides consistent daily intake at therapeutic concentrations.",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <rect
@@ -42,13 +42,91 @@ const deliveryMethods = [
     ),
   },
   {
+    name: "Hydrogen Water Bottles",
+    badge: "Portable high concentration",
+    howItWorks:
+      "Portable electrolysis devices that generate H\u2082 directly in a sealed bottle. SPE/PEM technology separates hydrogen from oxygen for higher purity.",
+    concentration: "3.0 \u2013 8.0 ppm",
+    bestFor: "On-the-go use, travel, personal high-concentration intake.",
+    note: "Higher concentrations than countertop machines due to pressurized sealed design. The Echo Go+ achieves up to 4.5 ppm.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M9 2H15V5C15 5 17 6 17 8V19C17 20.1 16.1 21 15 21H9C7.9 21 7 20.1 7 19V8C7 6 9 5 9 5V2Z"
+          stroke="var(--lp-accent)"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <line
+          x1="7"
+          y1="13"
+          x2="17"
+          y2="13"
+          stroke="var(--lp-accent)"
+          strokeWidth="1"
+          strokeDasharray="2 2"
+        />
+        <path
+          d="M10 3H14"
+          stroke="var(--lp-accent)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "Powdered Drink Mixes",
+    badge: "Highest concentration available",
+    howItWorks:
+      "Magnesium-based hydrogen-generating powder dissolved in water. The chemical reaction produces extremely high dissolved H\u2082 levels in a sealed container.",
+    concentration: "10.0 \u2013 16.0+ ppm",
+    bestFor:
+      "Maximum therapeutic concentration, targeted use, stacking with hydrogen water.",
+    note: "Produces the highest dissolved H\u2082 of any consumer method. Echo Hydrogen Enriched Water achieves up to 16 ppm.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M7 3H17L15 21H9L7 3Z"
+          stroke="var(--lp-accent)"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <path
+          d="M7 3H17"
+          stroke="var(--lp-accent)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M10 10L11 8L12 10L13 8L14 10"
+          stroke="var(--lp-accent)"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <line
+          x1="9.5"
+          y1="14"
+          x2="14.5"
+          y2="14"
+          stroke="var(--lp-accent)"
+          strokeWidth="1"
+          strokeDasharray="1.5 1.5"
+        />
+      </svg>
+    ),
+  },
+  {
     name: "Tablets & Stick Packs",
-    badge: "Most portable",
+    badge: "Most accessible",
     howItWorks:
       "Magnesium-based tablets react with water to produce H\u2082 gas when dissolved. Drop in a glass, wait, drink.",
     concentration: "0.5 \u2013 1.5 ppm",
     bestFor: "Travel, on-the-go use, getting started.",
-    note: "Concentration varies by brand and tablet quality. Check for independent lab verification.",
+    note: "Concentration varies significantly by brand. Most tablets produce lower concentrations than electrolysis devices or powdered mixes.",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <circle
@@ -175,11 +253,11 @@ const deliveryMethods = [
 
 const comparisonRows = [
   {
-    method: "Water Machines",
-    concentration: "1.5\u20133.0+ ppm",
-    absorption: "Moderate (digestive)",
-    accessibility: "Home device",
-    use: "Daily drinking",
+    method: "Topical",
+    concentration: "Low",
+    absorption: "Slow (dermal)",
+    accessibility: "Accessible",
+    use: "Skin / localized",
   },
   {
     method: "Tablets",
@@ -187,6 +265,27 @@ const comparisonRows = [
     absorption: "Moderate (digestive)",
     accessibility: "Very accessible",
     use: "Travel / on-the-go",
+  },
+  {
+    method: "Water Machines",
+    concentration: "1.0\u20131.5 ppm",
+    absorption: "Moderate (digestive)",
+    accessibility: "Home device",
+    use: "Daily drinking",
+  },
+  {
+    method: "Bottles",
+    concentration: "3.0\u20138.0 ppm",
+    absorption: "Moderate (digestive)",
+    accessibility: "Portable device",
+    use: "Travel / personal",
+  },
+  {
+    method: "Powdered Mixes",
+    concentration: "10.0\u201316.0+ ppm",
+    absorption: "Moderate (digestive)",
+    accessibility: "Very accessible",
+    use: "Max concentration",
   },
   {
     method: "Inhalation",
@@ -201,13 +300,6 @@ const comparisonRows = [
     absorption: "Immediate (IV)",
     accessibility: "Hospital only",
     use: "Acute care research",
-  },
-  {
-    method: "Topical",
-    concentration: "Low",
-    absorption: "Slow (dermal)",
-    accessibility: "Accessible",
-    use: "Skin / localized",
   },
 ];
 
@@ -233,7 +325,7 @@ export default function DeliveryMethodsSection() {
               marginBottom: 8,
             }}
           >
-            Five ways to get molecular hydrogen — and how they compare
+            Seven ways to get molecular hydrogen — and how they compare
           </h2>
 
           <p
@@ -457,9 +549,10 @@ export default function DeliveryMethodsSection() {
               lineHeight: 1.7,
             }}
           >
-            For daily use at home, hydrogen water machines deliver the most
-            consistent and highest concentrations — matching what most human
-            studies have used. Ready to explore hydrogen water products?{" "}
+            Echo Water offers hydrogen solutions across the full concentration
+            spectrum — from the Echo hydrogen water machines for daily use, to
+            the Echo Go+ portable bottle, to Echo Hydrogen Enriched Water powder
+            at up to 16 ppm. Ready to explore?{" "}
             <a
               href="https://echowater.com"
               target="_blank"

@@ -1,4 +1,5 @@
 import { FadeInOnScroll } from "@/components/animations/ScrollAnimations";
+import { useQuery } from "@tanstack/react-query";
 
 const categoryChips = [
   "Brain",
@@ -12,6 +13,10 @@ const categoryChips = [
 ];
 
 export default function DualCtaSection() {
+  const { data: stats } = useQuery<{ totalStudies: number; humanTrials: number; healthConditions: number }>({
+    queryKey: ["/api/learn-stats"],
+  });
+
   return (
     <section style={{ background: "var(--lp-bg)", padding: "80px 24px" }}>
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
@@ -131,7 +136,7 @@ export default function DualCtaSection() {
                   marginBottom: 16,
                 }}
               >
-                1,335+ peer-reviewed studies. Filter by health condition,
+                {stats?.totalStudies?.toLocaleString() || "1,335"}+ peer-reviewed studies. Filter by health condition,
                 delivery method, or study type.
               </p>
 
