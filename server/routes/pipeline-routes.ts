@@ -16,9 +16,42 @@ import {
   discoveryRuns,
   studyCitations,
   researchDigests,
+  studies,
 } from "@shared/schema";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { logger } from "../utils/logger";
+
+/**
+ * Trigger content generation waterfall for an approved study.
+ * Runs async (fire-and-forget) — generates blog articles + images immediately
+ * instead of waiting for the 6-hour batch timer.
+ */
+async function triggerContentWaterfall(studyId: number) {
+  const study = await db.query.studies.findFirst({
+    where: eq(studies.id, studyId),
+  });
+
+  if (!study || !study.plainLanguageTitle || !study.category) {
+    logger.info("Skipping content waterfall — study not enriched yet", "PipelineRoutes", { studyId });
+    return;
+  }
+
+  logger.info("Triggering content waterfall for approved study", "PipelineRoutes", {
+    studyId,
+    title: study.plainLanguageTitle,
+  });
+
+  const { generateBlogArticlesForStudy } = await import("../services/blog-generator-enhanced");
+  const result = await generateBlogArticlesForStudy(study, {
+    count: 1,
+    fallbackToBasic: true,
+  });
+
+  logger.info("Content waterfall complete", "PipelineRoutes", {
+    studyId,
+    articlesGenerated: result.articles.length,
+  });
+}
 
 const router = Router();
 
@@ -149,6 +182,11 @@ router.post("/approve/:id", async (req, res) => {
     const { createStudyFromPipelineItem } = await import("../services/study-analysis-pipeline");
     const studyId = await createStudyFromPipelineItem(id);
 
+    // Trigger content generation immediately (blog, images) — don't wait for 6-hour batch timer
+    triggerContentWaterfall(studyId).catch((err) =>
+      logger.error("Content waterfall failed for approved study", err, "PipelineRoutes", { studyId })
+    );
+
     res.json({ success: true, studyId, message: "Study approved and content waterfall triggered" });
   } catch (error) {
     logger.error("Study approval failed", error, "PipelineRoutes");
@@ -190,6 +228,10 @@ router.post("/approve-bulk", async (req, res) => {
         const studyId = await createStudyFromPipelineItem(id);
         results.approved++;
         results.studyIds.push(studyId);
+        // Trigger content generation for each approved study
+        triggerContentWaterfall(studyId).catch((err) =>
+          logger.error("Content waterfall failed for bulk-approved study", err, "PipelineRoutes", { studyId })
+        );
       } catch {
         results.failed++;
       }

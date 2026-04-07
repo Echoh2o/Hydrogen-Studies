@@ -360,8 +360,8 @@ export class JobScheduler {
         }
       }
       this.lastBlogGenerationCheck = new Date();
-      // Find pipeline-processed studies (have plain_language_title and category)
-      // that don't have any blog article yet. Use a LEFT JOIN to check for missing blogs.
+      // Find studies that have been enriched (have plain_language_title and category)
+      // but don't have any blog article yet. Use a LEFT JOIN to check for missing blogs.
       const candidateStudies = await db
         .select({
           id: studies.id,

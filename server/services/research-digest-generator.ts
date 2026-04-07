@@ -94,7 +94,7 @@ export async function generateWeeklyDigest(): Promise<ResearchDigest> {
         notableFindings: "[]",
         studyCount: 0,
         studyIds: "[]",
-        isPublished: false,
+        isPublished: true,
       })
       .returning();
     return digest;
@@ -166,7 +166,7 @@ ${JSON.stringify(studySummaries, null, 2)}`,
       studyIds: JSON.stringify(weekStudies.map((s) => s.id)),
       metaTitle: digestContent.metaTitle,
       metaDescription: digestContent.metaDescription,
-      isPublished: false,
+      isPublished: true,
       publishedAt: new Date(),
     })
     .returning();
