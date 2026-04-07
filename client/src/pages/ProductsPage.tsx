@@ -274,6 +274,28 @@ export default function ProductsPage() {
     },
     {
       id: 6,
+      name: "Echo Refresh\u2122 Hydrogen Inhalation Machine",
+      price: "Visit Store",
+      originalPrice: null,
+      rating: 4.8,
+      reviews: 97,
+      description:
+        "The Echo Refresh enables you to inhale hydrogen gas directly. It goes from your lungs into your bloodstream in a matter of seconds for rapid systemic delivery.",
+      features: [
+        "Direct hydrogen inhalation",
+        "Rapid bloodstream absorption",
+        "Touchscreen display with timer",
+        "Professional grade",
+      ],
+      image: "/images/products/echo-refresh.webp",
+      badge: "Inhalation",
+      url: "https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine",
+      deliveryMethod: "inhalation",
+      h2Concentration: "2% H2 gas",
+      bestFor: "Respiratory support, rapid absorption",
+    },
+    {
+      id: 7,
       name: "Echo Revive\u2122 Hydrogen Bath Machine",
       price: "Visit Store",
       originalPrice: null,
