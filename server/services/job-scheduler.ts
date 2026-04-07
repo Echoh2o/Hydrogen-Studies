@@ -29,7 +29,7 @@ export class JobScheduler {
   private readonly CITATION_BUILD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly DIGEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly FRESHNESS_CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
-  private readonly BLOG_GENERATION_INTERVAL_MS = 30 * 60 * 1000; // Every 30 minutes
+  private readonly BLOG_GENERATION_INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes — aggressive rebuild
   private lastBlogGenerationCheck: Date | null = null;
   private readonly CONTENT_QUEUE_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
   private lastContentQueueCheck: Date | null = null;
@@ -227,7 +227,7 @@ export class JobScheduler {
         const start = Date.now();
         await this.withTimeout(
           () => this.runBatchBlogGenerationJob(),
-          10 * 60 * 1000,
+          30 * 60 * 1000,
           "batch-blog-generation"
         );
         const elapsed = Date.now() - start;
@@ -349,10 +349,10 @@ export class JobScheduler {
    * produces multiple article types with images and internal links.
    */
   private async runBatchBlogGenerationJob() {
-    const MAX_BLOGS_PER_CYCLE = 20; // Increased for faster content generation
+    const MAX_BLOGS_PER_CYCLE = 50; // Aggressive rebuild — baseline content recovery
 
     try {
-      // Only run every 6 hours (not every 15-minute cycle)
+      // Throttle: only run every BLOG_GENERATION_INTERVAL_MS (not every scheduler tick)
       if (this.lastBlogGenerationCheck) {
         const elapsed = Date.now() - this.lastBlogGenerationCheck.getTime();
         if (elapsed < this.BLOG_GENERATION_INTERVAL_MS) {
