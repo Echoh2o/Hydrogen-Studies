@@ -402,9 +402,9 @@ async function generateArticleImageWithFallback(
     // Build a unique, topic-specific prompt based on study content + article type
     const prompt = buildUniqueImagePrompt(study, title, articleType);
 
-    // Prefer OpenAI for images — xAI image model access is unreliable
-    const imageClient = openaiClient || xaiClient!;
-    const provider = openaiClient ? "openai" : "xai";
+    // Prefer xAI ($0.02/image) with OpenAI DALL-E as fallback
+    const imageClient = xaiClient || openaiClient!;
+    const provider = xaiClient ? "xai" : "openai";
     const generateParams: any = {
       model: getImageModel(provider),
       prompt: prompt.substring(0, 1000),

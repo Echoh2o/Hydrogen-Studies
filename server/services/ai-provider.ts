@@ -73,7 +73,7 @@ export const MODELS = {
   /** Fast, cheap model (~90% cheaper) for extraction, parsing, short summaries */
   HAIKU: "claude-haiku-4-5-20251001",
   /** xAI image model — configurable via XAI_IMAGE_MODEL env var */
-  XAI_IMAGE: process.env.XAI_IMAGE_MODEL || "grok-2-image",
+  XAI_IMAGE: process.env.XAI_IMAGE_MODEL || "grok-imagine-image",
   /** OpenAI image model */
   OPENAI_IMAGE: "dall-e-3",
 } as const;
