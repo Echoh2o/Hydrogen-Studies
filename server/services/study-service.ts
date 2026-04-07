@@ -442,6 +442,21 @@ export class StudyService {
       warnings.push(`Failed to record deletion in ledger: ${err.message}`);
     }
 
+    // Explicitly clean FK tables that may not have CASCADE in the actual DB
+    try {
+      await db.execute(sql`DELETE FROM blog_articles WHERE study_id = ${id}`);
+      await db.execute(sql`DELETE FROM multi_format_content WHERE study_id = ${id}`);
+      await db.execute(sql`DELETE FROM study_citations WHERE study_id = ${id} OR cited_study_id = ${id}`);
+      await db.execute(sql`DELETE FROM study_tags WHERE study_id = ${id}`);
+      await db.execute(sql`DELETE FROM study_health_conditions WHERE study_id = ${id}`);
+      await db.execute(sql`DELETE FROM study_categories WHERE study_id = ${id}`);
+      await db.execute(sql`DELETE FROM review_queue WHERE study_id = ${id}`);
+      await db.execute(sql`DELETE FROM user_study_interactions WHERE study_id = ${id}`);
+    } catch (fkErr: any) {
+      // Some tables may not exist — that's OK
+      warnings.push(`FK cleanup note: ${fkErr.message}`);
+    }
+
     await db.delete(studies).where(eq(studies.id, id));
 
     logger.info(`Study deleted: ${study.title}`, "StudyService", {
