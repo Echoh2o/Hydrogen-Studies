@@ -658,6 +658,23 @@ app.use(
   "/images",
   express.static(path.join(__dirname, "..", "public", "images")),
 );
+// Serve uploaded images from database (with filesystem fallback for legacy)
+app.use("/uploads", async (req, res, next) => {
+  const key = req.path.replace(/^\//, ""); // strip leading slash
+  try {
+    const { getStoredImage } = await import("./utils/storage");
+    const image = await getStoredImage(key);
+    if (image) {
+      res.setHeader("Content-Type", image.contentType);
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      return res.send(image.data);
+    }
+  } catch {
+    // DB not ready or table doesn't exist yet — fall through
+  }
+  // Fallback to filesystem for legacy images
+  next();
+});
 app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "uploads")),
@@ -744,6 +761,7 @@ pool.query("SELECT 1").then(async () => {
     const { addRedirectSystem } = await import("./migrations/add-redirect-system");
     const { addDeletedStudiesLedger } = await import("./migrations/add-deleted-studies-ledger");
     const { addContentGenerationQueue } = await import("./migrations/add-content-generation-queue");
+    const { runStoredImagesMigration } = await import("./migrations/add-stored-images");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -758,6 +776,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "010_add_redirect_system", up: addRedirectSystem },
       { name: "011_add_deleted_studies_ledger", up: addDeletedStudiesLedger },
       { name: "012_add_content_generation_queue", up: addContentGenerationQueue },
+      { name: "013_add_stored_images", up: runStoredImagesMigration },
     ]);
   } catch (err: any) {
     console.error("FATAL: Migration failed:", err.message);

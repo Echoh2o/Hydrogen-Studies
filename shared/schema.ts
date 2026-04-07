@@ -2429,3 +2429,22 @@ export const notFoundLog = pgTable(
 );
 
 export type NotFoundLogEntry = typeof notFoundLog.$inferSelect;
+
+// ── Stored Images (database-backed image storage) ──────────────────────
+export const storedImages = pgTable(
+  "stored_images",
+  {
+    id: serial("id").primaryKey(),
+    key: text("key").notNull(), // e.g. "blog-images/blog-science-123-1234567890.png"
+    contentType: text("content_type").notNull().default("image/png"),
+    size: integer("size").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      keyIdx: unique("stored_images_key_uniq").on(table.key),
+    };
+  },
+);
+
+export type StoredImage = typeof storedImages.$inferSelect;

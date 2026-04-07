@@ -123,7 +123,8 @@ export async function uploadFile(
   if (isCloudStorageConfigured()) {
     return uploadToS3(buffer, key, contentType);
   }
-  return saveToLocal(buffer, key);
+  // Database storage — no filesystem dependency, enables zero-downtime deploys
+  return saveToDatabase(buffer, key, contentType);
 }
 
 /**
@@ -136,7 +137,7 @@ export async function deleteFile(key: string): Promise<void> {
   if (isCloudStorageConfigured()) {
     return deleteFromS3(key);
   }
-  return deleteFromLocal(key);
+  return deleteFromDatabase(key);
 }
 
 // ---------------------------------------------------------------------------
@@ -180,24 +181,67 @@ async function deleteFromS3(key: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Local filesystem operations (fallback)
+// Database storage (default — no volume dependency)
+// ---------------------------------------------------------------------------
+
+async function saveToDatabase(
+  buffer: Buffer,
+  key: string,
+  contentType: string,
+): Promise<string> {
+  const { pool } = await import("../db");
+
+  // Upsert: replace if key already exists
+  await pool.query(
+    `INSERT INTO stored_images (key, data, content_type, size)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (key) DO UPDATE SET data = $2, content_type = $3, size = $4`,
+    [key, buffer, contentType, buffer.length],
+  );
+
+  const relativePath = `/uploads/${key.replace(/\\/g, "/")}`;
+  logger.info("File saved to database", "Storage", { path: relativePath, size: buffer.length });
+  return relativePath;
+}
+
+async function deleteFromDatabase(key: string): Promise<void> {
+  const { pool } = await import("../db");
+  await pool.query(`DELETE FROM stored_images WHERE key = $1`, [key]);
+  logger.info("File deleted from database", "Storage", { key });
+}
+
+/**
+ * Serve an image from the database by key.
+ * Returns { data: Buffer, contentType: string } or null if not found.
+ */
+export async function getStoredImage(
+  key: string,
+): Promise<{ data: Buffer; contentType: string } | null> {
+  const { pool } = await import("../db");
+  const result = await pool.query(
+    `SELECT data, content_type FROM stored_images WHERE key = $1 LIMIT 1`,
+    [key],
+  );
+  if (result.rows.length === 0) return null;
+  return {
+    data: result.rows[0].data,
+    contentType: result.rows[0].content_type,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Local filesystem operations (legacy fallback)
 // ---------------------------------------------------------------------------
 
 async function saveToLocal(buffer: Buffer, key: string): Promise<string> {
-  // key is something like "study-images/file.png" or "blog-images/file.png"
   const uploadDir = path.join(process.cwd(), "uploads", path.dirname(key));
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
-
   const filePath = path.join(process.cwd(), "uploads", key);
   fs.writeFileSync(filePath, buffer);
-
-  // Return web-accessible relative path with forward slashes
   const relativePath = `/uploads/${key.replace(/\\/g, "/")}`;
-  logger.info("File saved to local filesystem", "Storage", {
-    path: relativePath,
-  });
+  logger.info("File saved to local filesystem", "Storage", { path: relativePath });
   return relativePath;
 }
 
@@ -205,8 +249,6 @@ async function deleteFromLocal(key: string): Promise<void> {
   const filePath = path.join(process.cwd(), "uploads", key);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
-    logger.info("File deleted from local filesystem", "Storage", {
-      path: filePath,
-    });
+    logger.info("File deleted from local filesystem", "Storage", { path: filePath });
   }
 }
