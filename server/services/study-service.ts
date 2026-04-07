@@ -443,21 +443,39 @@ export class StudyService {
     }
 
     // Explicitly clean FK tables that may not have CASCADE in the actual DB
-    try {
-      await db.execute(sql`DELETE FROM blog_articles WHERE study_id = ${id}`);
-      await db.execute(sql`DELETE FROM multi_format_content WHERE study_id = ${id}`);
-      await db.execute(sql`DELETE FROM study_citations WHERE study_id = ${id} OR cited_study_id = ${id}`);
-      await db.execute(sql`DELETE FROM study_tags WHERE study_id = ${id}`);
-      await db.execute(sql`DELETE FROM study_health_conditions WHERE study_id = ${id}`);
-      await db.execute(sql`DELETE FROM study_categories WHERE study_id = ${id}`);
-      await db.execute(sql`DELETE FROM review_queue WHERE study_id = ${id}`);
-      await db.execute(sql`DELETE FROM user_study_interactions WHERE study_id = ${id}`);
-    } catch (fkErr: any) {
-      // Some tables may not exist — that's OK
-      warnings.push(`FK cleanup note: ${fkErr.message}`);
+    // Each in its own try/catch so one missing table doesn't block the rest
+    const fkTables = [
+      `DELETE FROM blog_articles WHERE study_id = ${id}`,
+      `DELETE FROM multi_format_content WHERE study_id = ${id}`,
+      `DELETE FROM study_citations WHERE study_id = ${id} OR cited_study_id = ${id}`,
+      `DELETE FROM study_tags WHERE study_id = ${id}`,
+      `DELETE FROM study_health_conditions WHERE study_id = ${id}`,
+      `DELETE FROM study_categories WHERE study_id = ${id}`,
+      `DELETE FROM review_queue WHERE study_id = ${id}`,
+      `DELETE FROM user_study_interactions WHERE study_id = ${id}`,
+      `DELETE FROM pipeline_queue WHERE created_study_id = ${id}`,
+    ];
+    for (const query of fkTables) {
+      try {
+        await db.execute(sql.raw(query));
+      } catch {
+        // Table may not exist — skip
+      }
     }
 
-    await db.delete(studies).where(eq(studies.id, id));
+    // Final delete — catch and log any remaining FK issues
+    try {
+      await db.delete(studies).where(eq(studies.id, id));
+    } catch (deleteErr: any) {
+      logger.error(`Failed to delete study ${id}: ${deleteErr.message}`, deleteErr, "StudyService");
+      // Try raw SQL as last resort to see the actual constraint
+      try {
+        await db.execute(sql.raw(`DELETE FROM studies WHERE id = ${id}`));
+      } catch (rawErr: any) {
+        logger.error(`Raw delete also failed for study ${id}: ${rawErr.message}`, rawErr, "StudyService");
+        throw rawErr;
+      }
+    }
 
     logger.info(`Study deleted: ${study.title}`, "StudyService", {
       studyId: id,
