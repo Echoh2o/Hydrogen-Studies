@@ -192,6 +192,9 @@ export const userStudyInteractions = pgTable(
   (table) => {
     return {
       pk: primaryKey({ columns: [table.userId, table.studyId] }),
+      // PK leads with userId, so studyId-only lookups (e.g. FK cleanup on
+      // study delete, "who saved this study") need a standalone index.
+      studyIdIdx: index("user_study_interactions_study_id_idx").on(table.studyId),
     };
   },
 );
@@ -249,6 +252,8 @@ export const userBlogInteractions = pgTable(
   (table) => {
     return {
       pk: primaryKey({ columns: [table.userId, table.blogId] }),
+      // PK leads with userId; blogId-only lookups need a standalone index.
+      blogIdIdx: index("user_blog_interactions_blog_id_idx").on(table.blogId),
     };
   },
 );
@@ -465,17 +470,28 @@ export const categories = pgTable("categories", {
 });
 
 // Study categories junction table for many-to-many relationships
-export const studyCategories = pgTable("study_categories", {
-  id: serial("id").primaryKey(),
-  studyId: integer("study_id")
-    .notNull()
-    .references(() => studies.id, { onDelete: "cascade" }),
-  categoryId: integer("category_id")
-    .notNull()
-    .references(() => categories.id, { onDelete: "cascade" }),
-  isPrimary: boolean("is_primary").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const studyCategories = pgTable(
+  "study_categories",
+  {
+    id: serial("id").primaryKey(),
+    studyId: integer("study_id")
+      .notNull()
+      .references(() => studies.id, { onDelete: "cascade" }),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      studyIdIdx: index("study_categories_study_id_idx").on(table.studyId),
+      categoryIdIdx: index("study_categories_category_id_idx").on(
+        table.categoryId,
+      ),
+    };
+  },
+);
 
 // Body systems table schema
 export const bodySystems = pgTable("body_systems", {
@@ -522,6 +538,11 @@ export const studyHealthConditions = pgTable(
   (table) => {
     return {
       pk: primaryKey({ columns: [table.studyId, table.healthConditionId] }),
+      // PK leads with studyId; queries filtering only by healthConditionId
+      // (e.g. "studies for this condition") need their own index.
+      healthConditionIdIdx: index(
+        "study_health_conditions_health_condition_id_idx",
+      ).on(table.healthConditionId),
     };
   },
 );
@@ -731,40 +752,58 @@ export const ReviewStatus = {
 } as const;
 
 // Study review queue table for managing the study approval process
-export const studyReviewQueue = pgTable("study_review_queue", {
-  id: serial("id").primaryKey(),
-  // External study ID (from source database like PubMed, CrossRef, etc.)
-  externalId: text("external_id").notNull(),
-  // DOI for duplicate checking
-  doi: text("doi"),
-  title: text("title").notNull(),
-  abstract: text("abstract").notNull(),
-  authors: text("authors").notNull(),
-  journal: text("journal").notNull(),
-  publishDate: text("publish_date"),
-  journalPublishDate: text("journal_publish_date"),
-  category: text("category").notNull(),
-  // Source information
-  sourceUrl: text("source_url"),
-  sourcePlatform: text("source_platform").notNull(),
-  // Review status
-  status: text("status").notNull().default("pending"),
-  // Who saved the study for review and who approved/rejected it
-  savedByUserId: text("saved_by_user_id").references(() => users.id),
-  reviewedByUserId: text("reviewed_by_user_id").references(() => users.id),
-  // Notes added during the review process
-  reviewNotes: text("review_notes"),
-  // Whether this entry is a duplicate of an existing study
-  isDuplicate: boolean("is_duplicate").default(false),
-  // If it's a duplicate, this references the original study
-  duplicateOfStudyId: integer("duplicate_of_study_id").references(
-    () => studies.id,
-  ),
-  // Timestamps
-  savedAt: timestamp("saved_at").notNull().defaultNow(),
-  reviewedAt: timestamp("reviewed_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const studyReviewQueue = pgTable(
+  "study_review_queue",
+  {
+    id: serial("id").primaryKey(),
+    // External study ID (from source database like PubMed, CrossRef, etc.)
+    externalId: text("external_id").notNull(),
+    // DOI for duplicate checking
+    doi: text("doi"),
+    title: text("title").notNull(),
+    abstract: text("abstract").notNull(),
+    authors: text("authors").notNull(),
+    journal: text("journal").notNull(),
+    publishDate: text("publish_date"),
+    journalPublishDate: text("journal_publish_date"),
+    category: text("category").notNull(),
+    // Source information
+    sourceUrl: text("source_url"),
+    sourcePlatform: text("source_platform").notNull(),
+    // Review status
+    status: text("status").notNull().default("pending"),
+    // Who saved the study for review and who approved/rejected it
+    savedByUserId: text("saved_by_user_id").references(() => users.id),
+    reviewedByUserId: text("reviewed_by_user_id").references(() => users.id),
+    // Notes added during the review process
+    reviewNotes: text("review_notes"),
+    // Whether this entry is a duplicate of an existing study
+    isDuplicate: boolean("is_duplicate").default(false),
+    // If it's a duplicate, this references the original study
+    duplicateOfStudyId: integer("duplicate_of_study_id").references(
+      () => studies.id,
+    ),
+    // Timestamps
+    savedAt: timestamp("saved_at").notNull().defaultNow(),
+    reviewedAt: timestamp("reviewed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      statusIdx: index("study_review_queue_status_idx").on(table.status),
+      doiIdx: index("study_review_queue_doi_idx").on(table.doi),
+      savedByIdx: index("study_review_queue_saved_by_idx").on(
+        table.savedByUserId,
+      ),
+      reviewedByIdx: index("study_review_queue_reviewed_by_idx").on(
+        table.reviewedByUserId,
+      ),
+      duplicateOfIdx: index("study_review_queue_duplicate_of_idx").on(
+        table.duplicateOfStudyId,
+      ),
+    };
+  },
+);
 
 // Multi-format content table for generated content in various formats
 export const multiFormatContent = pgTable(
@@ -916,6 +955,8 @@ export const blogArticles = pgTable(
       ),
       publishedIdx: index("blog_articles_published_idx").on(table.isPublished),
       viewCountIdx: index("blog_articles_view_count_idx").on(table.viewCount),
+      // FK index — needed for study-delete cascade and study→blog joins.
+      studyIdIdx: index("blog_articles_study_id_idx").on(table.studyId),
     };
   },
 );

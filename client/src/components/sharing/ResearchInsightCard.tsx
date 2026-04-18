@@ -17,7 +17,9 @@ import { Slider } from "@/components/ui/slider";
 import { Study } from "@/types/hydrogen";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Share2, Copy, Check, FileImage } from "lucide-react";
-import html2canvas from "html2canvas";
+// html2canvas is ~90KB and only used on click — lazy-load on demand.
+const loadHtml2Canvas = () =>
+  import("html2canvas").then((m) => m.default);
 
 interface ResearchInsightCardProps {
   study: Study;
@@ -92,6 +94,7 @@ const ResearchInsightCard: React.FC<ResearchInsightCardProps> = ({ study }) => {
 
     try {
       setDownloading(true);
+      const html2canvas = await loadHtml2Canvas();
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: null,
         scale: 2,
@@ -123,6 +126,7 @@ const ResearchInsightCard: React.FC<ResearchInsightCardProps> = ({ study }) => {
     if (!cardRef.current) return;
 
     try {
+      const html2canvas = await loadHtml2Canvas();
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: null,
         scale: 2,
@@ -167,6 +171,7 @@ const ResearchInsightCard: React.FC<ResearchInsightCardProps> = ({ study }) => {
 
     try {
       setSharing(true);
+      const html2canvas = await loadHtml2Canvas();
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: null,
         scale: 2,
