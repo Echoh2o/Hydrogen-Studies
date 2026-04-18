@@ -152,6 +152,36 @@ function BuyersGuideModal({ open, onClose }: { open: boolean; onClose: () => voi
   );
 }
 
+function ProductImage({ src, alt }: { src: string; alt: string }) {
+  const [errored, setErrored] = useState(false);
+  if (errored) {
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        <svg
+          className="h-16 w-16 text-teal-500"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-full h-full object-contain p-2"
+      loading="lazy"
+      onError={() => setErrored(true)}
+    />
+  );
+}
+
 export default function ProductsPage() {
   const [location] = useLocation();
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -488,16 +518,7 @@ export default function ProductsPage() {
                 <CardHeader>
                   <div className="relative">
                     <div className="aspect-video bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-contain p-2"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                          e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center h-full"><svg class="h-16 w-16 text-teal-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>';
-                        }}
-                      />
+                      <ProductImage src={product.image} alt={product.name} />
                     </div>
                     {product.badge && (
                       <Badge className="absolute top-2 right-2">

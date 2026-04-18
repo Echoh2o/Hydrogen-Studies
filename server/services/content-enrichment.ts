@@ -309,12 +309,63 @@ export async function batchEnhanceStudies(studyIds: number[]): Promise<{
   return results;
 }
 
+const ALLOWED_ENRICHMENT_HOSTS = new Set([
+  "doi.org",
+  "dx.doi.org",
+  "api.crossref.org",
+  "www.crossref.org",
+  "crossref.org",
+  "europepmc.org",
+  "www.europepmc.org",
+  "api.semanticscholar.org",
+  "www.semanticscholar.org",
+  "pubmed.ncbi.nlm.nih.gov",
+  "eutils.ncbi.nlm.nih.gov",
+  "www.ncbi.nlm.nih.gov",
+  "pmc.ncbi.nlm.nih.gov",
+]);
+
+function isPrivateHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (h === "localhost" || h === "0.0.0.0" || h === "::1" || h === "[::1]") return true;
+  // IPv4 private ranges + link-local (cloud metadata)
+  if (/^(10\.|127\.|169\.254\.|192\.168\.)/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  // Basic IPv6 loopback/link-local
+  if (/^(fc|fd)/.test(h) || /^fe8/.test(h)) return true;
+  return false;
+}
+
+function assertSafeEnrichmentUrl(url: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("Invalid URL");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error(`Disallowed protocol: ${parsed.protocol}`);
+  }
+  if (isPrivateHost(parsed.hostname)) {
+    throw new Error(`Disallowed host: ${parsed.hostname}`);
+  }
+  if (!ALLOWED_ENRICHMENT_HOSTS.has(parsed.hostname.toLowerCase())) {
+    throw new Error(`Host not in enrichment allowlist: ${parsed.hostname}`);
+  }
+  return parsed;
+}
+
 /**
  * Fetch HTML content from URL and extract meaningful text
  */
 async function fetchHtmlContent(url: string): Promise<string> {
   try {
-    const response = await axios.get(url);
+    assertSafeEnrichmentUrl(url);
+    const response = await axios.get(url, {
+      timeout: 15000,
+      maxRedirects: 3,
+      maxContentLength: 5 * 1024 * 1024,
+    });
     const html = response.data;
     const $ = load(html);
 
@@ -485,7 +536,20 @@ async function downloadImage(
   studyId: number,
 ): Promise<string | null> {
   try {
-    const response = await axios.get(url, { responseType: "arraybuffer" });
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return null;
+    }
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    if (isPrivateHost(parsed.hostname)) return null;
+    const response = await axios.get(url, {
+      responseType: "arraybuffer",
+      timeout: 15000,
+      maxRedirects: 3,
+      maxContentLength: 10 * 1024 * 1024,
+    });
     const contentType = response.headers["content-type"];
 
     // Ensure it's an image

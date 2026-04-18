@@ -151,7 +151,7 @@ export function Pagination({
         visiblePages.map((page, index) =>
           typeof page === "number" ? (
             <Button
-              key={index}
+              key={`page-${page}`}
               variant={currentPage === page ? "default" : "outline"}
               size="sm"
               onClick={() => onPageChange(page)}
@@ -161,7 +161,7 @@ export function Pagination({
             </Button>
           ) : (
             <Button
-              key={index}
+              key={`ellipsis-${index}`}
               variant="ghost"
               size="sm"
               disabled

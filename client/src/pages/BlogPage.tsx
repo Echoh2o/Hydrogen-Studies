@@ -81,12 +81,10 @@ function MarkdownContent({ content }: { content: string }) {
   try {
     return <Markdown>{content}</Markdown>;
   } catch {
-    // Fallback: render as plain text with line breaks
     return (
-      <div
-        className="prose prose-neutral max-w-none"
-        dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, "<br/>") }}
-      />
+      <div className="prose prose-neutral max-w-none whitespace-pre-wrap">
+        {content}
+      </div>
     );
   }
 }

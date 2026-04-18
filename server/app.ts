@@ -428,8 +428,8 @@ app.get("/api/stats/dashboard", generalApiRateLimiter, (req, res, next) => {
 // Research & Content
 // Mount without prefix — routes define full paths like /api/research/search
 app.use(researchUnifiedRoutes);
-app.use("/api/content-enrichment", aiGenerationRateLimiter, contentEnrichmentRoutes);
-app.use("/api/enrichment", aiGenerationRateLimiter, enrichmentRoutes);
+app.use("/api/content-enrichment", requireAdmin, aiGenerationRateLimiter, contentEnrichmentRoutes);
+app.use("/api/enrichment", requireAdmin, aiGenerationRateLimiter, enrichmentRoutes);
 app.use("/api/blog-recommendations", aiGenerationRateLimiter, blogRecommendationRoutes);
 app.use("/api/learn-stats", generalApiRateLimiter, learnStatsRoutes);
 app.use("/api/trends", generalApiRateLimiter, trendsRoutes);

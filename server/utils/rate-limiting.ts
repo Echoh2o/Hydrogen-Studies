@@ -4,7 +4,6 @@
  */
 
 import { Request, Response } from "express";
-import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 
 // Custom error message handler
@@ -20,24 +19,7 @@ const rateLimitHandler = (req: Request, res: Response) => {
 
 /** @internal Exported for testing. Skip rate limiting for admin users. */
 export const skipForAdmin = (req: Request): boolean => {
-  // Check session-based admin role first
-  if (req.session?.userRole === "admin") {
-    return true;
-  }
-  // Fallback: timing-safe comparison for admin bypass token
-  const adminToken = req.headers["x-admin-token"];
-  const expectedToken = process.env.ADMIN_BYPASS_TOKEN;
-  if (!adminToken || !expectedToken || typeof adminToken !== "string") {
-    return false;
-  }
-  try {
-    return crypto.timingSafeEqual(
-      Buffer.from(adminToken),
-      Buffer.from(expectedToken),
-    );
-  } catch {
-    return false;
-  }
+  return req.session?.userRole === "admin";
 };
 
 /**

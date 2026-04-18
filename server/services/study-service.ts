@@ -426,56 +426,59 @@ export class StudyService {
 
     const warnings = await this.cleanupSoftReferences(id);
 
-    // Record in deleted_studies ledger before removing the row
-    try {
-      await db.insert(deletedStudies).values({
-        originalStudyId: id,
-        title: study.title || "",
-        doi: study.doi || null,
-        authors: study.authors || null,
-        journal: study.journal || null,
-        publishYear: study.publishYear ?? null,
-        deletedBy: deletedBy || null,
-        reason: reason || null,
-      });
-    } catch (err: any) {
-      warnings.push(`Failed to record deletion in ledger: ${err.message}`);
-    }
-
-    // Explicitly clean FK tables that may not have CASCADE in the actual DB
-    // Each in its own try/catch so one missing table doesn't block the rest
-    const fkTables = [
-      `DELETE FROM blog_articles WHERE study_id = ${id}`,
-      `DELETE FROM multi_format_content WHERE study_id = ${id}`,
-      `DELETE FROM study_citations WHERE study_id = ${id} OR cited_study_id = ${id}`,
-      `DELETE FROM study_tags WHERE study_id = ${id}`,
-      `DELETE FROM study_health_conditions WHERE study_id = ${id}`,
-      `DELETE FROM study_categories WHERE study_id = ${id}`,
-      `DELETE FROM review_queue WHERE study_id = ${id}`,
-      `DELETE FROM user_study_interactions WHERE study_id = ${id}`,
-      `DELETE FROM pipeline_queue WHERE created_study_id = ${id}`,
-    ];
-    for (const query of fkTables) {
+    // Run the whole deletion (ledger insert + FK cleanup + parent delete) in a
+    // single transaction. Each FK table DELETE runs in a nested tx (savepoint)
+    // so dev DBs missing a table don't abort the whole operation — but any
+    // failure on the final parent DELETE rolls back the entire transaction.
+    await db.transaction(async (tx) => {
       try {
-        await db.execute(sql.raw(query));
-      } catch {
-        // Table may not exist — skip
+        await tx.insert(deletedStudies).values({
+          originalStudyId: id,
+          title: study.title || "",
+          doi: study.doi || null,
+          authors: study.authors || null,
+          journal: study.journal || null,
+          publishYear: study.publishYear ?? null,
+          deletedBy: deletedBy || null,
+          reason: reason || null,
+        });
+      } catch (err: any) {
+        warnings.push(`Failed to record deletion in ledger: ${err.message}`);
       }
-    }
 
-    // Final delete — catch and log any remaining FK issues
-    try {
-      await db.delete(studies).where(eq(studies.id, id));
-    } catch (deleteErr: any) {
-      logger.error(`Failed to delete study ${id}: ${deleteErr.message}`, deleteErr, "StudyService");
-      // Try raw SQL as last resort to see the actual constraint
-      try {
-        await db.execute(sql.raw(`DELETE FROM studies WHERE id = ${id}`));
-      } catch (rawErr: any) {
-        logger.error(`Raw delete also failed for study ${id}: ${rawErr.message}`, rawErr, "StudyService");
-        throw rawErr;
+      const fkDeletes: Array<{ label: string; run: () => Promise<unknown> }> = [
+        { label: "blog_articles", run: () => tx.execute(sql`DELETE FROM blog_articles WHERE study_id = ${id}`) },
+        { label: "multi_format_content", run: () => tx.execute(sql`DELETE FROM multi_format_content WHERE study_id = ${id}`) },
+        { label: "study_citations", run: () => tx.execute(sql`DELETE FROM study_citations WHERE study_id = ${id} OR cited_study_id = ${id}`) },
+        { label: "study_tags", run: () => tx.execute(sql`DELETE FROM study_tags WHERE study_id = ${id}`) },
+        { label: "study_health_conditions", run: () => tx.execute(sql`DELETE FROM study_health_conditions WHERE study_id = ${id}`) },
+        { label: "study_categories", run: () => tx.execute(sql`DELETE FROM study_categories WHERE study_id = ${id}`) },
+        { label: "review_queue", run: () => tx.execute(sql`DELETE FROM review_queue WHERE study_id = ${id}`) },
+        { label: "user_study_interactions", run: () => tx.execute(sql`DELETE FROM user_study_interactions WHERE study_id = ${id}`) },
+        { label: "pipeline_queue", run: () => tx.execute(sql`DELETE FROM pipeline_queue WHERE created_study_id = ${id}`) },
+      ];
+
+      for (const { label, run } of fkDeletes) {
+        try {
+          // Nested transaction = SAVEPOINT: a missing-table error (e.g. in dev)
+          // rolls back only this statement, not the outer transaction.
+          await tx.transaction(async () => {
+            await run();
+          });
+        } catch (err: any) {
+          // Log but continue — the outer DELETE FROM studies will fail loudly
+          // if one of these cleanups was actually required for FK integrity.
+          logger.warn(
+            `FK cleanup skipped for ${label}: ${err?.message ?? err}`,
+            "StudyService",
+          );
+        }
       }
-    }
+
+      // Final delete — if this fails, the whole transaction rolls back
+      // (including the ledger insert and any FK cleanup).
+      await tx.delete(studies).where(eq(studies.id, id));
+    });
 
     logger.info(`Study deleted: ${study.title}`, "StudyService", {
       studyId: id,

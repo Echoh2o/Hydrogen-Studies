@@ -12,6 +12,20 @@ import { logger } from "../utils/logger";
 const router = express.Router();
 
 // Configure multer for file uploads with 10MB limit
+const ALLOWED_IMPORT_MIMETYPES = new Set([
+  "text/csv",
+  "application/csv",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+
+// Strip directory components and any non-safe chars from user-supplied names
+function sanitizeUploadFilename(original: string): string {
+  const base = path.basename(original);
+  const safe = base.replace(/[^A-Za-z0-9._-]/g, "_");
+  return safe.slice(0, 100) || "upload";
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), "temp_files");
@@ -25,13 +39,20 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniquePrefix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniquePrefix + "-" + file.originalname);
+    cb(null, uniquePrefix + "-" + sanitizeUploadFilename(file.originalname));
   },
 });
 
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_IMPORT_MIMETYPES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported file type: ${file.mimetype}`));
+    }
+  },
 });
 
 // Helper function to clean up temporary files

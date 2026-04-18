@@ -10,9 +10,17 @@ import {
   varchar,
   unique,
   index,
+  customType,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// PostgreSQL bytea (binary) column type
+const bytea = customType<{ data: Buffer; default: false }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 // ============================================================
 // ENUMS & CONSTANTS
@@ -198,18 +206,30 @@ export const userReadingHistory = pgTable("user_reading_history", {
 });
 
 // Notifications table schema
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  type: text("type").notNull(), // "study", "blog", "system"
-  referenceId: integer("reference_id"), // Study or blog ID
-  isRead: boolean("is_read").default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    type: text("type").notNull(), // "study", "blog", "system"
+    referenceId: integer("reference_id"), // Study or blog ID
+    isRead: boolean("is_read").default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => {
+    return {
+      userIdIdx: index("notifications_user_id_idx").on(table.userId),
+      userUnreadIdx: index("notifications_user_unread_idx").on(
+        table.userId,
+        table.isRead,
+      ),
+    };
+  },
+);
 
 // User blog interactions (saved/viewed blogs)
 export const userBlogInteractions = pgTable(
@@ -2436,6 +2456,7 @@ export const storedImages = pgTable(
   {
     id: serial("id").primaryKey(),
     key: text("key").notNull(), // e.g. "blog-images/blog-science-123-1234567890.png"
+    data: bytea("data").notNull(),
     contentType: text("content_type").notNull().default("image/png"),
     size: integer("size").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),

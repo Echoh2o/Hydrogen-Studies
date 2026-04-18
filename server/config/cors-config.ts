@@ -57,44 +57,36 @@ export function getCorsConfig(): cors.CorsOptions {
 
   return {
     origin: (origin, callback) => {
-      if (!isProduction) {
-        // Allow requests with no origin in development
-        if (!origin) {
-          return callback(null, true);
-        }
-
-        // Check if it's localhost
-        if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
-          return callback(null, true);
-        }
-
-        // Check against allowed origins list
-        if (allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-
-        // In development, allow all origins as fallback
-        return callback(null, true);
-      }
-
-      // Production mode - strict checking
-      // Allow same-origin requests (no origin header)
+      // Same-origin requests (no Origin header) are always allowed.
       if (!origin) {
         return callback(null, true);
       }
 
-      // If no ALLOWED_ORIGINS configured, only allow same-origin requests
-      // (same-origin requests already pass the !origin check above)
-      if (allowedOrigins.length === 0) {
-        console.warn(`CORS blocked cross-origin request from: ${origin} (ALLOWED_ORIGINS not configured)`);
-        return callback(new Error("Not allowed by CORS"), false);
+      // In development, allow localhost/127.0.0.1 and the configured allowlist —
+      // but never blanket-allow arbitrary origins. Misconfigured NODE_ENV
+      // shouldn't collapse CORS.
+      if (!isProduction) {
+        try {
+          const host = new URL(origin).hostname;
+          if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") {
+            return callback(null, true);
+          }
+        } catch {
+          // fall through to allowlist check
+        }
       }
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      console.warn(`CORS blocked origin: ${origin}`);
+      if (!isProduction && allowedOrigins.length === 0) {
+        console.warn(
+          `CORS blocked origin: ${origin} (set ALLOWED_ORIGINS to permit non-localhost dev origins)`,
+        );
+      } else {
+        console.warn(`CORS blocked origin: ${origin}`);
+      }
       return callback(new Error("Not allowed by CORS"), false);
     },
 

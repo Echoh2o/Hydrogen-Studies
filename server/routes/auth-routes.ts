@@ -735,7 +735,17 @@ router.post(
         try {
           const sgMail = await import("@sendgrid/mail");
           sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
-          const resetUrl = `${process.env.APP_URL || req.protocol + "://" + req.get("host")}/reset-password?token=${token}`;
+          // APP_URL must be set — never trust Host header for security-critical links
+          const appUrl = process.env.APP_URL;
+          if (!appUrl) {
+            logger.error(
+              "APP_URL not configured — cannot send password reset email safely",
+              null,
+              "AuthRoutes",
+            );
+            return res.json({ message: successMsg });
+          }
+          const resetUrl = `${appUrl.replace(/\/$/, "")}/reset-password?token=${token}`;
           await sgMail.default.send({
             to: email,
             from: process.env.FROM_EMAIL || "noreply@hydrogenstudies.com",

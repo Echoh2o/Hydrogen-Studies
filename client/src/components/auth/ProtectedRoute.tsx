@@ -61,8 +61,10 @@ export default function ProtectedRoute({
     error,
   } = useQuery<SessionData>({
     queryKey: ["/api/auth/check-session"],
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    staleTime: 1 * 60 * 1000, // Consider stale after 1 minute
+    // Refetch on focus (catches session expiry after user returns to tab);
+    // no aggressive background polling.
+    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch user details if authenticated

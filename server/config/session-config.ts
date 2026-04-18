@@ -65,8 +65,15 @@ async function ensureSessionTable(): Promise<void> {
 export async function getSessionConfig() {
   const isProduction = process.env.NODE_ENV === "production";
 
-  // SESSION_SECRET is set by validateEnvironment() (auto-generated if missing)
-  const sessionSecret = process.env.SESSION_SECRET || "dev-secret-change-me";
+  // SESSION_SECRET must be set (validateEnvironment() auto-generates one in dev).
+  // Fail closed in production if missing — never fall back to a hardcoded secret.
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error(
+      "SESSION_SECRET is required and must be at least 32 characters. " +
+        "Generate with: openssl rand -hex 32",
+    );
+  }
 
   // Ensure session table exists before creating the store
   await ensureSessionTable();
