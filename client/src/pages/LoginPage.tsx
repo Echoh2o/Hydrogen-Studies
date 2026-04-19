@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, ApiError } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -121,11 +121,24 @@ export default function LoginPage() {
 
       navigate(redirectTo);
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.error || error.message || "Login failed";
-      setLoginError(errorMessage);
+    onError: (error: unknown) => {
+      let errorMessage = "Login failed. Please try again.";
+      if (error instanceof ApiError) {
+        if (error.status === 429) {
+          errorMessage =
+            "Too many login attempts. Please wait a few minutes and try again.";
+        } else if (error.status >= 500) {
+          errorMessage = "Something went wrong on our end. Please try again.";
+        } else {
+          // 400 (validation), 401 (bad credentials), 403 (deactivated) —
+          // the server's own message is both safe and informative here.
+          errorMessage = error.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
 
+      setLoginError(errorMessage);
       toast({
         title: "Login failed",
         description: errorMessage,
