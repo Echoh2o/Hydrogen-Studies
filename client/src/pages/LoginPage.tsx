@@ -297,6 +297,13 @@ export default function LoginPage() {
                         </FormItem>
                       )}
                     />
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-teal-600 hover:underline"
+                      data-testid="link-forgot-password"
+                    >
+                      Forgot password?
+                    </Link>
                   </div>
 
                   <button
