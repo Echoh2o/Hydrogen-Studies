@@ -1,4 +1,5 @@
 import React from "react";
+import { Helmet } from "react-helmet";
 import {
   Mail,
   Phone,
@@ -139,8 +140,22 @@ export default function ContactUsPage() {
     }
   };
 
+  const title = "Contact Us - Hydrogen Studies";
+  const description =
+    "Get in touch with the Hydrogen Studies team. Ask questions about hydrogen research, report issues, or connect with our research support.";
+  const url = "https://hydrogenstudies.com/contact-us";
+
   return (
     <>
+      <Helmet>
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={url} />
+        <link rel="canonical" href={url} />
+      </Helmet>
       <SiteHeader />
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
         {/* Hero Section */}

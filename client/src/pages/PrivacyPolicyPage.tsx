@@ -1,22 +1,25 @@
-import { useEffect } from "react";
+import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import { Card } from "@/components/ui/card";
 
 export default function PrivacyPolicyPage() {
-  useEffect(() => {
-    document.title = "Privacy Policy - Hydrogen Studies";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Privacy Policy for Hydrogen Studies. Learn how we collect, use, and protect your personal information."
-      );
-    }
-  }, []);
+  const title = "Privacy Policy - Hydrogen Studies";
+  const description =
+    "Privacy Policy for Hydrogen Studies. Learn how we collect, use, and protect your personal information.";
+  const url = "https://hydrogenstudies.com/privacy";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
+      <Helmet>
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={url} />
+        <link rel="canonical" href={url} />
+      </Helmet>
       <SiteHeader />
       
       <main className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">

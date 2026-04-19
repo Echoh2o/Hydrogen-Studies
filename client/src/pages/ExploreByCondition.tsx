@@ -92,6 +92,14 @@ const ExploreByCondition = () => {
             name="description"
             content="Browse hydrogen therapy research studies by health condition. Find the latest research on how molecular hydrogen may benefit specific health conditions and diseases."
           />
+          <meta property="og:title" content="Explore by Health Condition" />
+          <meta
+            property="og:description"
+            content="Browse hydrogen therapy research studies organized by health condition."
+          />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://hydrogenstudies.com/explore-by-condition" />
+          <link rel="canonical" href="https://hydrogenstudies.com/explore-by-condition" />
         </Helmet>
 
         <div className="text-center mb-12">

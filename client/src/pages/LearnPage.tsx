@@ -94,6 +94,13 @@ export default function LearnPage() {
           name="description"
           content="Everything you need to understand molecular hydrogen (H₂) — what it is, how it works, and what 1,335+ peer-reviewed studies have found. Plain English. No hype."
         />
+        <meta property="og:title" content="Learn About Molecular Hydrogen" />
+        <meta
+          property="og:description"
+          content="What molecular hydrogen is, how it works, and what the research shows. Plain English."
+        />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://hydrogenstudies.com/learn" />
         <link rel="canonical" href="https://hydrogenstudies.com/learn" />
       </Helmet>
 

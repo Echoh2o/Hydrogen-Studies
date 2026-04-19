@@ -167,6 +167,14 @@ const ExploreByBodySystem = () => {
           name="description"
           content="Browse hydrogen research organized by body systems. Find studies about how hydrogen therapy affects different systems in the body including cardiovascular, nervous, immune, and more."
         />
+        <meta property="og:title" content="Explore Hydrogen Studies by Body System" />
+        <meta
+          property="og:description"
+          content="Browse hydrogen research organized by body systems — cardiovascular, nervous, immune, and more."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://hydrogenstudies.com/explore-by-body-system" />
+        <link rel="canonical" href="https://hydrogenstudies.com/explore-by-body-system" />
       </Helmet>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto mb-12 text-center">

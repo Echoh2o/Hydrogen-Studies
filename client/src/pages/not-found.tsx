@@ -4,17 +4,18 @@ import { Search, Home, ArrowLeft } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { Helmet } from "react-helmet";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
 
-  useEffect(() => {
-    document.title = "Page Not Found - Hydrogen Studies";
-  }, []);
-
   return (
     <>
+      <Helmet>
+        <title>Page Not Found - Hydrogen Studies</title>
+        <meta name="description" content="The page you're looking for doesn't exist on Hydrogen Studies. Search our hydrogen research database or return to the homepage." />
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
       <SiteHeader />
       <main className="min-h-[70vh] w-full flex items-center justify-center bg-gray-50 px-4 py-16">
         <Card className="w-full max-w-lg text-center">
