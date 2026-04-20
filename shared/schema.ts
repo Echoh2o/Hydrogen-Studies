@@ -80,7 +80,7 @@ export const userSessions = pgTable(
     id: text("id").primaryKey(), // Session ID
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
     data: text("data"), // Session data (JSON)
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
@@ -101,7 +101,7 @@ export const auditLogs = pgTable(
   "audit_logs",
   {
     id: serial("id").primaryKey(),
-    userId: text("user_id").references(() => users.id),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     action: text("action").notNull(), // login, logout, update_profile, etc.
     entityType: text("entity_type"), // user, study, blog, etc.
     entityId: text("entity_id"), // ID of the affected entity
@@ -240,10 +240,10 @@ export const userBlogInteractions = pgTable(
   {
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
     blogId: integer("blog_id")
       .notNull()
-      .references(() => blogArticles.id),
+      .references(() => blogArticles.id, { onDelete: "cascade" }),
     isSaved: boolean("is_saved").default(false),
     viewCount: integer("view_count").default(0),
     lastViewed: timestamp("last_viewed").notNull().defaultNow(),
@@ -511,7 +511,7 @@ export const healthConditions = pgTable("health_conditions", {
   description: text("description").notNull(),
   bodySystemId: integer("body_system_id")
     .notNull()
-    .references(() => bodySystems.id),
+    .references(() => bodySystems.id, { onDelete: "restrict" }),
   slug: text("slug").notNull().unique(),
   displayOrder: integer("display_order").notNull().default(0),
   studyCount: integer("study_count").notNull().default(0),
@@ -533,7 +533,7 @@ export const studyHealthConditions = pgTable(
       .references(() => studies.id, { onDelete: "cascade" }),
     healthConditionId: integer("health_condition_id")
       .notNull()
-      .references(() => healthConditions.id),
+      .references(() => healthConditions.id, { onDelete: "cascade" }),
   },
   (table) => {
     return {
@@ -579,7 +579,7 @@ export const collectionStudies = pgTable(
   {
     collectionId: integer("collection_id")
       .notNull()
-      .references(() => studyCollections.id),
+      .references(() => studyCollections.id, { onDelete: "cascade" }),
     studyId: integer("study_id")
       .notNull()
       .references(() => studies.id, { onDelete: "cascade" }),
@@ -773,8 +773,8 @@ export const studyReviewQueue = pgTable(
     // Review status
     status: text("status").notNull().default("pending"),
     // Who saved the study for review and who approved/rejected it
-    savedByUserId: text("saved_by_user_id").references(() => users.id),
-    reviewedByUserId: text("reviewed_by_user_id").references(() => users.id),
+    savedByUserId: text("saved_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    reviewedByUserId: text("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
     // Notes added during the review process
     reviewNotes: text("review_notes"),
     // Whether this entry is a duplicate of an existing study
@@ -782,6 +782,7 @@ export const studyReviewQueue = pgTable(
     // If it's a duplicate, this references the original study
     duplicateOfStudyId: integer("duplicate_of_study_id").references(
       () => studies.id,
+      { onDelete: "set null" },
     ),
     // Timestamps
     savedAt: timestamp("saved_at").notNull().defaultNow(),
@@ -1103,7 +1104,7 @@ export type SeoMetadata = typeof seoMetadata.$inferSelect;
 // Chat conversations table schema
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
   title: text("title").default("New Conversation"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1114,7 +1115,7 @@ export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id")
     .notNull()
-    .references(() => conversations.id),
+    .references(() => conversations.id, { onDelete: "cascade" }),
   role: varchar("role", { length: 20 }).notNull(), // 'user' or 'assistant'
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
@@ -1125,8 +1126,8 @@ export const chatFeedback = pgTable("chat_feedback", {
   id: serial("id").primaryKey(),
   messageId: integer("message_id")
     .notNull()
-    .references(() => chatMessages.id),
-  userId: text("user_id").references(() => users.id),
+    .references(() => chatMessages.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
   rating: integer("rating").notNull(), // 1 (thumbs down) or 5 (thumbs up)
   comment: text("comment"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1466,7 +1467,7 @@ export const searchQueries = pgTable(
   {
     id: serial("id").primaryKey(),
     query: text("query").notNull(),
-    userId: text("user_id").references(() => users.id),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     resultsCount: integer("results_count").default(0),
     clickedResults: text("clicked_results").array(), // Study IDs that were clicked
     sessionId: text("session_id"),
@@ -1566,6 +1567,7 @@ export const trendAlerts = pgTable(
     id: serial("id").primaryKey(),
     trendAnalysisId: integer("trend_analysis_id").references(
       () => trendAnalysis.id,
+      { onDelete: "cascade" },
     ),
     alertType: text("alert_type").notNull(), // 'breakthrough', 'emerging_topic', 'momentum_shift'
     alertLevel: text("alert_level").notNull(), // 'info', 'warning', 'critical'
@@ -1574,7 +1576,7 @@ export const trendAlerts = pgTable(
     relatedStudies: text("related_studies").array(), // Study IDs
     actionRequired: boolean("action_required").default(false),
     notificationSent: boolean("notification_sent").default(false),
-    acknowledgedBy: text("acknowledged_by").references(() => users.id),
+    acknowledgedBy: text("acknowledged_by").references(() => users.id, { onDelete: "set null" }),
     acknowledgedAt: timestamp("acknowledged_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
@@ -1687,7 +1689,7 @@ export const userEngagement = pgTable(
   "user_engagement",
   {
     id: serial("id").primaryKey(),
-    userId: text("user_id").references(() => users.id),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     sessionId: text("session_id").notNull(), // for anonymous users
     contentType: text("content_type").notNull(), // 'study', 'blog', 'article'
     contentId: integer("content_id").notNull(),
@@ -2104,6 +2106,7 @@ export const updateHistory = pgTable(
     performedBy: text("performed_by"), // User ID or 'system'
     notificationId: integer("notification_id").references(
       () => updateNotifications.id,
+      { onDelete: "set null" },
     ),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },

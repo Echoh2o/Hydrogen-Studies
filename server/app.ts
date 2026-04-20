@@ -762,6 +762,7 @@ pool.query("SELECT 1").then(async () => {
     const { addDeletedStudiesLedger } = await import("./migrations/add-deleted-studies-ledger");
     const { addContentGenerationQueue } = await import("./migrations/add-content-generation-queue");
     const { runStoredImagesMigration } = await import("./migrations/add-stored-images");
+    const { applyFkOnDeletePolicies } = await import("./migrations/add-fk-on-delete-policies");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -777,6 +778,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "011_add_deleted_studies_ledger", up: addDeletedStudiesLedger },
       { name: "012_add_content_generation_queue", up: addContentGenerationQueue },
       { name: "013_add_stored_images", up: runStoredImagesMigration },
+      { name: "014_fk_on_delete_policies", up: applyFkOnDeletePolicies },
     ]);
   } catch (err: any) {
     console.error("FATAL: Migration failed:", err.message);
