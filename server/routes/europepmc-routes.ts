@@ -7,6 +7,7 @@ import {
   extractStudyFromEuropePMC,
 } from "../services/europepmc-api";
 import { studyService } from "../services/study-service";
+import { requireAdmin } from "../auth";
 
 const router = express.Router();
 
@@ -154,7 +155,7 @@ router.get("/api/europepmc/pmcid/:pmcid", async (req, res) => {
 /**
  * Import article from Europe PMC by DOI
  */
-router.post("/api/europepmc/import/doi/:doi", async (req, res) => {
+router.post("/api/europepmc/import/doi/:doi", requireAdmin, async (req, res) => {
   try {
     const { doi } = req.params;
 
@@ -216,7 +217,7 @@ router.post("/api/europepmc/import/doi/:doi", async (req, res) => {
 /**
  * Update journal publication date by DOI using Europe PMC API
  */
-router.put("/api/europepmc/update-journal-date/:doi", async (req, res) => {
+router.put("/api/europepmc/update-journal-date/:doi", requireAdmin, async (req, res) => {
   try {
     const { doi } = req.params;
 
@@ -371,7 +372,7 @@ function getMonthNumber(monthName: string): string {
  * Save a Europe PMC article to the studies database.
  * Accepts { id, source } where id is a PMID/PMCID and source is "MED"/"PMC"/etc.
  */
-router.post("/api/europepmc/save", async (req, res) => {
+router.post("/api/europepmc/save", requireAdmin, async (req, res) => {
   try {
     const { id, source } = req.body;
 

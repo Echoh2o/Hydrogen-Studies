@@ -11,6 +11,7 @@ import { studyService } from "../services/study-service";
 import { reviewService } from "../services/review-service";
 import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
 import { logger } from "../utils/logger";
+import { requireAdmin } from "../auth";
 
 /**
  * Build study data from PubMed search result (client-sent paper data).
@@ -552,6 +553,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
  */
 router.post(
   "/api/research/review-queue",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { source, userId, ...paperData } = req.body;
@@ -700,6 +702,7 @@ router.get(
  */
 router.put(
   "/api/research/review-queue/:id",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -782,6 +785,7 @@ router.put(
  */
 router.delete(
   "/api/research/review-queue/:id",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -808,7 +812,7 @@ router.delete(
 /**
  * Import a paper directly from any of the supported research databases (legacy method)
  */
-router.post("/api/research/import", async (req: Request, res: Response) => {
+router.post("/api/research/import", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { source, ...paperData } = req.body;
 
@@ -885,7 +889,7 @@ router.post("/api/research/import", async (req: Request, res: Response) => {
  * Source-specific import endpoints
  * These wrap the generic /api/research/import with the correct source parameter
  */
-router.post("/api/research/pubmed/import", async (req: Request, res: Response) => {
+router.post("/api/research/pubmed/import", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { pmid, title, abstract, authors, journal, publishDate, doi, url } = req.body;
     if (!pmid && !title) return res.status(400).json({ error: "pmid or title is required" });
@@ -927,7 +931,7 @@ router.post("/api/research/pubmed/import", async (req: Request, res: Response) =
   }
 });
 
-router.post("/api/semantic-scholar/import", async (req: Request, res: Response) => {
+router.post("/api/semantic-scholar/import", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { paperId, ...rest } = req.body;
     if (!paperId) return res.status(400).json({ error: "paperId is required" });
@@ -955,7 +959,7 @@ router.post("/api/semantic-scholar/import", async (req: Request, res: Response) 
   }
 });
 
-router.post("/api/crossref/import", async (req: Request, res: Response) => {
+router.post("/api/crossref/import", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { doi, ...rest } = req.body;
     if (!doi) return res.status(400).json({ error: "doi is required" });
@@ -1004,7 +1008,7 @@ router.get("/api/europepmc/article/:id", async (req: Request, res: Response) => 
   }
 });
 
-router.post("/api/europepmc/save", async (req: Request, res: Response) => {
+router.post("/api/europepmc/save", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id, source, ...rest } = req.body;
     if (!id) return res.status(400).json({ error: "id is required" });
@@ -1192,7 +1196,7 @@ router.get(
 /**
  * Schedule a recurring search
  */
-router.post("/api/research/schedule", async (req: Request, res: Response) => {
+router.post("/api/research/schedule", requireAdmin, async (req: Request, res: Response) => {
   try {
     // This would be implemented in a future version
     res
@@ -1212,6 +1216,7 @@ router.post("/api/research/schedule", async (req: Request, res: Response) => {
  */
 router.put(
   "/api/research/review-queue/:id",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;

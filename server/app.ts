@@ -448,7 +448,7 @@ app.use("/api/advanced-chat", chatRateLimiter);
 app.use("/api", chatRoutes);
 app.use(explorerRoutes);
 app.use("/api/review-assistant", aiGenerationRateLimiter, reviewAssistantRoutes);
-app.use("/api/content-optimization", aiGenerationRateLimiter, contentOptimizationRoutes);
+app.use("/api/content-optimization", requireAdmin, aiGenerationRateLimiter, contentOptimizationRoutes);
 app.use("/api/multi-format", multiFormatRoutes);
 app.use(hydrogenRoutes);
 app.use("/api/consumer-categories", consumerCategoriesRoutes);

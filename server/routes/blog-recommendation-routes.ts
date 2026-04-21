@@ -7,6 +7,7 @@ import {
 } from "../services/blog-recommendation-system";
 import { db } from "../db";
 import { blogArticles } from "@shared/schema";
+import { requireAdmin } from "../auth";
 
 const router = Router();
 
@@ -37,7 +38,7 @@ router.get("/recommendations", async (req, res) => {
 /**
  * Generate bulk blog articles
  */
-router.post("/bulk-generate", async (req, res) => {
+router.post("/bulk-generate", requireAdmin, async (req, res) => {
   try {
     const requestSchema = z.object({
       selectedStudyIds: z
@@ -130,7 +131,7 @@ router.post("/bulk-generate", async (req, res) => {
 /**
  * Preview blog generation for selected studies
  */
-router.post("/preview", async (req, res) => {
+router.post("/preview", requireAdmin, async (req, res) => {
   try {
     const previewSchema = z.object({
       selectedStudyIds: z
@@ -196,7 +197,7 @@ import {
  * Create a new background generation job
  * POST /api/blog-recommendations/jobs
  */
-router.post("/jobs", async (req, res) => {
+router.post("/jobs", requireAdmin, async (req, res) => {
   try {
     const jobSchema = z.object({
       studyIds: z.array(z.number()).min(1, "At least one study required"),
@@ -268,7 +269,7 @@ router.get("/jobs/:id", async (req, res) => {
  * Start/resume a job
  * POST /api/blog-recommendations/jobs/:id/start
  */
-router.post("/jobs/:id/start", async (req, res) => {
+router.post("/jobs/:id/start", requireAdmin, async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
     if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });
@@ -285,7 +286,7 @@ router.post("/jobs/:id/start", async (req, res) => {
  * Pause a running job
  * POST /api/blog-recommendations/jobs/:id/pause
  */
-router.post("/jobs/:id/pause", async (req, res) => {
+router.post("/jobs/:id/pause", requireAdmin, async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
     if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });
@@ -302,7 +303,7 @@ router.post("/jobs/:id/pause", async (req, res) => {
  * Cancel a job
  * POST /api/blog-recommendations/jobs/:id/cancel
  */
-router.post("/jobs/:id/cancel", async (req, res) => {
+router.post("/jobs/:id/cancel", requireAdmin, async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
     if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });

@@ -5,6 +5,7 @@ import {
   extractStudyFromCrossRef,
 } from "../services/crossref-api";
 import { studyService } from "../services/study-service";
+import { requireAdmin } from "../auth";
 
 const router = express.Router();
 
@@ -80,7 +81,7 @@ router.get("/doi/:doi", async (req, res) => {
 /**
  * Import article from CrossRef by DOI
  */
-router.post("/import/:doi", async (req, res) => {
+router.post("/import/:doi", requireAdmin, async (req, res) => {
   try {
     const { doi } = req.params;
 
@@ -135,7 +136,7 @@ router.post("/import/:doi", async (req, res) => {
 /**
  * Update journal publication date by DOI
  */
-router.put("/update-journal-date/:doi", async (req, res) => {
+router.put("/update-journal-date/:doi", requireAdmin, async (req, res) => {
   try {
     const { doi } = req.params;
 

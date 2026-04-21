@@ -15,6 +15,7 @@ import { db } from "../db";
 import { multiFormatContent, studies } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { AppError, ErrorCode } from "../utils/app-errors";
+import { requireAdmin } from "../auth";
 
 const router = Router();
 
@@ -22,7 +23,7 @@ const router = Router();
  * Generate multi-format content for a study
  * POST /api/multi-format/generate
  */
-router.post("/generate", async (req: Request, res: Response) => {
+router.post("/generate", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { studyId, formats, options } = req.body;
 
@@ -144,7 +145,7 @@ router.get("/:id", async (req: Request, res: Response) => {
  * Update multi-format content
  * PUT /api/multi-format/:id
  */
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
     const updates = req.body;
@@ -179,7 +180,7 @@ router.put("/:id", async (req: Request, res: Response) => {
  * Delete multi-format content
  * DELETE /api/multi-format/:id
  */
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
 
@@ -208,7 +209,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
  * Batch generate all formats for a study
  * POST /api/multi-format/batch-generate
  */
-router.post("/batch-generate", async (req: Request, res: Response) => {
+router.post("/batch-generate", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { studyId } = req.body;
 
@@ -303,7 +304,7 @@ router.get("/", async (req: Request, res: Response) => {
  * Publish/unpublish content
  * POST /api/multi-format/:id/publish
  */
-router.post("/:id/publish", async (req: Request, res: Response) => {
+router.post("/:id/publish", requireAdmin, async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
     const { isPublished } = req.body;
@@ -342,7 +343,7 @@ router.post("/:id/publish", async (req: Request, res: Response) => {
  * Schedule content for future publication
  * POST /api/multi-format/:id/schedule
  */
-router.post("/:id/schedule", async (req: Request, res: Response) => {
+router.post("/:id/schedule", requireAdmin, async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
     const { scheduledFor } = req.body;

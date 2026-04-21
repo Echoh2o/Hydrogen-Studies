@@ -65,6 +65,7 @@ router.get("/search", async (req: Request, res: Response) => {
  */
 router.post(
   "/summarize",
+  requireAdmin,
   aiGenerationRateLimiter,
   async (req: Request, res: Response) => {
     try {
@@ -162,6 +163,7 @@ router.get("/topics/:slug", async (req: Request, res: Response) => {
  */
 router.post(
   "/blog-outline",
+  requireAdmin,
   aiGenerationRateLimiter,
   async (req: Request, res: Response) => {
     try {
