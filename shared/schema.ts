@@ -52,7 +52,8 @@ export const users = pgTable(
     id: text("id").primaryKey().notNull(),
     username: varchar("username", { length: 255 }).unique(),
     email: text("email").unique(),
-    password: text("password"), // Added password column to match database
+    // Dropped the legacy `password` column in migration 015 — all 19 users
+    // had NULL there and auth always read from passwordHash.
     passwordHash: text("passwordHash"),
     // firstName and lastName columns don't exist in the database
     // firstName: text("first_name"),

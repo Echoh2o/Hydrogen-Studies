@@ -143,7 +143,7 @@ router.post("/customer-created", async (req: Request, res: Response) => {
       id: userId,
       username,
       email,
-      password: passwordHash,
+      passwordHash,
       role: "customer",
       isActive: true,
     }).returning({ id: users.id });
@@ -260,7 +260,7 @@ router.post("/order-created", async (req: Request, res: Response) => {
         id: orderUserId,
         username,
         email,
-        password: passwordHash,
+        passwordHash,
         role: "customer",
         isActive: true,
       }).returning({ id: users.id });
