@@ -222,6 +222,232 @@ export const DEFAULT_KEYWORD_CLUSTERS: KeywordClusterSeed[] = [
       { keyword: "hydrogen water bottle certifications", title: "Hydrogen Water Bottle Safety Certifications: UL, CE, and FDA Explained", slug: "hydrogen-water-bottle-certifications", articleType: "explainer", searchIntent: "informational" },
     ],
   },
+
+  // ========================
+  // COMPETITOR-SPECIFIC CLUSTERS
+  // One pillar + ~8 cluster posts per competitor brand. Tone: factual
+  // comparisons grounded in the research database, not hit pieces.
+  // ========================
+
+  // 1. Enagic / Kangen — highest-volume MLM ionizer brand
+  {
+    pillarKeyword: "kangen water alternative",
+    pillarTitle: "Kangen Water Alternative: Why Modern Hydrogen Water Bottles Outperform the $4,000 Enagic Machine",
+    slug: "kangen-water-alternative",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 12000,
+    priority: 95,
+    clusterKeywords: [
+      { keyword: "kangen water review", title: "Kangen Water Review: The Real Pros, Cons, and Science Behind Enagic's SD501", slug: "kangen-water-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "is kangen water worth it", title: "Is Kangen Water Worth $4,000? An Honest Cost-vs-Benefit Analysis", slug: "is-kangen-water-worth-it", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "kangen water vs hydrogen water", title: "Kangen Water vs Hydrogen Water: Ionization, Alkalinity, and What Actually Delivers H2", slug: "kangen-vs-hydrogen-water", articleType: "comparison", searchIntent: "informational" },
+      { keyword: "kangen water scam", title: "Is Kangen Water a Scam? Separating MLM Marketing From the Science", slug: "kangen-water-scam-truth", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "kangen water complaints", title: "Common Kangen Water Complaints: What Owners Wish They Knew First", slug: "kangen-water-complaints", articleType: "review", searchIntent: "commercial" },
+      { keyword: "enagic sd501 vs hydrogen bottle", title: "Enagic SD501 vs Portable Hydrogen Bottle: Size, Cost, and H2 Output Compared", slug: "enagic-sd501-vs-hydrogen-bottle", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "kangen water ppm hydrogen", title: "How Much Molecular Hydrogen Is Actually in Kangen Water? Lab Test Results", slug: "kangen-water-ppm-hydrogen-levels", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "cheaper than kangen water", title: "Cheaper Alternatives to Kangen Water That Actually Deliver More Hydrogen", slug: "cheaper-than-kangen-water", articleType: "buying-guide", searchIntent: "commercial" },
+    ],
+  },
+
+  // 2. Tyent USA
+  {
+    pillarKeyword: "tyent water ionizer review",
+    pillarTitle: "Tyent Water Ionizer Review: Price, Performance, and Simpler Alternatives",
+    slug: "tyent-water-ionizer-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 3000,
+    priority: 80,
+    clusterKeywords: [
+      { keyword: "tyent ach-9 review", title: "Tyent ACE-13 and ACH-9 Reviewed: Is the Premium Price Justified?", slug: "tyent-ach-9-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "tyent vs kangen", title: "Tyent vs Kangen: Head-to-Head on Plates, Output, and Real-World Use", slug: "tyent-vs-kangen", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "tyent vs hydrogen water bottle", title: "Tyent Ionizer vs a Portable Hydrogen Bottle: Which Delivers Actual H2?", slug: "tyent-vs-hydrogen-water-bottle", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "tyent water ionizer price", title: "Tyent Water Ionizer Price Breakdown: What You're Really Paying For", slug: "tyent-water-ionizer-price", articleType: "explainer", searchIntent: "commercial" },
+      { keyword: "tyent complaints", title: "Tyent Water Ionizer Complaints: Owner-Reported Issues and Trade-offs", slug: "tyent-complaints", articleType: "review", searchIntent: "commercial" },
+      { keyword: "tyent alternative", title: "Best Tyent Alternatives: Hydrogen Water Without the Countertop Commitment", slug: "tyent-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "tyent hydrogen output", title: "How Much Hydrogen Does Tyent Actually Produce? Measured PPM Results", slug: "tyent-hydrogen-output", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "tyent water ionizer problems", title: "Tyent Ionizer Problems: Maintenance, Plate Degradation, and Long-Term Costs", slug: "tyent-water-ionizer-problems", articleType: "explainer", searchIntent: "informational" },
+    ],
+  },
+
+  // 3. AlkaViva
+  {
+    pillarKeyword: "alkaviva water ionizer review",
+    pillarTitle: "AlkaViva Water Ionizer Review: UltraWater Filtration and the Hydrogen Question",
+    slug: "alkaviva-water-ionizer-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 2500,
+    priority: 75,
+    clusterKeywords: [
+      { keyword: "alkaviva vs kangen", title: "AlkaViva vs Kangen: Ionizers Compared on Price, Filtration, and H2 Output", slug: "alkaviva-vs-kangen", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "alkaviva vamos vs vesta", title: "AlkaViva Vamos vs Vesta H2: Which Model Is Right for You?", slug: "alkaviva-vamos-vs-vesta", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "is alkaviva worth it", title: "Is AlkaViva Worth It? An Honest Review of Price vs Performance", slug: "is-alkaviva-worth-it", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "alkaviva ultrawater review", title: "AlkaViva UltraWater Filtration: What It Removes (and What It Doesn't)", slug: "alkaviva-ultrawater-review", articleType: "review", searchIntent: "informational" },
+      { keyword: "alkaviva vs hydrogen water bottle", title: "AlkaViva Countertop vs Portable Hydrogen Bottle: Real-World Comparison", slug: "alkaviva-vs-hydrogen-water-bottle", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "alkaviva alternative", title: "AlkaViva Alternatives: Hydrogen Water Options That Skip the $2,000 Counter Unit", slug: "alkaviva-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "alkaviva complaints", title: "AlkaViva Complaints and Issues: What Long-Term Owners Report", slug: "alkaviva-complaints", articleType: "review", searchIntent: "commercial" },
+      { keyword: "alkaviva hydrogen water ppm", title: "AlkaViva Hydrogen PPM: How the Ionizer Stacks Up on Measured H2 Output", slug: "alkaviva-hydrogen-water-ppm", articleType: "explainer", searchIntent: "informational" },
+    ],
+  },
+
+  // 4. Evolv
+  {
+    pillarKeyword: "evolv hydrogen water bottle review",
+    pillarTitle: "Evolv Hydrogen Water Bottle Review: PPM, Materials, and How It Compares",
+    slug: "evolv-hydrogen-water-bottle-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 1800,
+    priority: 70,
+    clusterKeywords: [
+      { keyword: "evolv water bottle review", title: "Evolv Hydrogen Water Bottle: Full Review With Lab-Tested PPM Results", slug: "evolv-water-bottle-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "evolv hydrogen water ppm", title: "What's the Real Hydrogen PPM of an Evolv Bottle? Independent Testing", slug: "evolv-hydrogen-water-ppm", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "evolv vs echo water", title: "Evolv vs Echo Water: Hydrogen Output, Materials, and Warranty Side-by-Side", slug: "evolv-vs-echo-water", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "evolv water complaints", title: "Evolv Hydrogen Water Complaints: Common Issues From Verified Users", slug: "evolv-water-complaints", articleType: "review", searchIntent: "commercial" },
+      { keyword: "evolv hydrogen water alternative", title: "Evolv Alternatives: Better-Value Hydrogen Water Bottles Worth Considering", slug: "evolv-hydrogen-water-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "is evolv water worth it", title: "Is Evolv Hydrogen Water Worth the Price? Cost-per-Liter Analysis", slug: "is-evolv-water-worth-it", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "evolv water warranty", title: "Evolv Water Warranty and Customer Service: What Owners Actually Get", slug: "evolv-water-warranty", articleType: "explainer", searchIntent: "commercial" },
+      { keyword: "evolv spe pem technology", title: "Does Evolv Use SPE/PEM Technology? Electrode Quality Compared", slug: "evolv-spe-pem-technology", articleType: "explainer", searchIntent: "informational" },
+    ],
+  },
+
+  // 5. Piurify
+  {
+    pillarKeyword: "piurify hydrogen water bottle review",
+    pillarTitle: "Piurify Hydrogen Water Bottle Review: Quality Test, PPM, and Alternatives",
+    slug: "piurify-hydrogen-water-bottle-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 2200,
+    priority: 70,
+    clusterKeywords: [
+      { keyword: "piurify review", title: "Piurify Hydrogen Water Bottle: Independent Review and PPM Testing", slug: "piurify-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "piurify vs echo water", title: "Piurify vs Echo Water: Side-by-Side Comparison on Quality and H2 Output", slug: "piurify-vs-echo-water", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "piurify complaints", title: "Piurify Complaints: What Long-Term Users Wish They Knew", slug: "piurify-complaints", articleType: "review", searchIntent: "commercial" },
+      { keyword: "piurify hydrogen ppm", title: "How Much Hydrogen Does a Piurify Bottle Actually Produce?", slug: "piurify-hydrogen-ppm", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "piurify warranty", title: "Piurify Hydrogen Water Bottle Warranty: Coverage and Real-World Claims", slug: "piurify-warranty", articleType: "explainer", searchIntent: "commercial" },
+      { keyword: "piurify alternative", title: "Piurify Alternatives: Hydrogen Water Bottles With Stronger Output", slug: "piurify-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "is piurify worth it", title: "Is Piurify Worth It? A Cost-vs-Quality Breakdown", slug: "is-piurify-worth-it", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "piurify materials quality", title: "Piurify Materials Explained: Electrodes, BPA, and Build Quality", slug: "piurify-materials-quality", articleType: "explainer", searchIntent: "informational" },
+    ],
+  },
+
+  // 6. IonBottles
+  {
+    pillarKeyword: "ionbottles hydrogen water bottle review",
+    pillarTitle: "IonBottles Review: Hydrogen Output, Quality, and Better Alternatives",
+    slug: "ionbottles-hydrogen-water-bottle-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 1500,
+    priority: 65,
+    clusterKeywords: [
+      { keyword: "ionbottles review", title: "IonBottles Review: Lab-Tested PPM, Materials, and Long-Term Performance", slug: "ionbottles-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "ionbottles vs echo water", title: "IonBottles vs Echo Water: Quality, Output, and Value Compared", slug: "ionbottles-vs-echo-water", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "ionbottles ppm hydrogen", title: "IonBottles Hydrogen PPM: Does Marketing Match the Output?", slug: "ionbottles-ppm-hydrogen", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "ionbottles quality issues", title: "IonBottles Quality Issues: Common Defects and What Owners Report", slug: "ionbottles-quality-issues", articleType: "review", searchIntent: "commercial" },
+      { keyword: "ionbottles warranty", title: "IonBottles Warranty Coverage: What's Included, What's Not", slug: "ionbottles-warranty", articleType: "explainer", searchIntent: "commercial" },
+      { keyword: "is ionbottles legit", title: "Is IonBottles Legit? Separating Marketing From Real Performance", slug: "is-ionbottles-legit", articleType: "review", searchIntent: "commercial" },
+      { keyword: "ionbottles alternative", title: "IonBottles Alternatives: Better-Built Hydrogen Water Bottles", slug: "ionbottles-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "ionbottles electrode material", title: "IonBottles Electrode Materials: Titanium, Platinum, and Why It Matters", slug: "ionbottles-electrode-material", articleType: "explainer", searchIntent: "informational" },
+    ],
+  },
+
+  // 7. HFactor Water — pre-bottled
+  {
+    pillarKeyword: "hfactor hydrogen water review",
+    pillarTitle: "HFactor Hydrogen Water Review: Does Pre-Bottled H2 Water Actually Work?",
+    slug: "hfactor-hydrogen-water-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 4500,
+    priority: 80,
+    clusterKeywords: [
+      { keyword: "hfactor water review", title: "HFactor Water: Complete Review of the Best-Known Pre-Bottled H2 Brand", slug: "hfactor-water-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "hfactor water ppm", title: "HFactor Hydrogen PPM: What's in the Pouch When You Open It?", slug: "hfactor-water-ppm", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "hfactor vs fresh hydrogen water", title: "HFactor Pouches vs Fresh Hydrogen Water: The Shelf-Life Problem", slug: "hfactor-vs-fresh-hydrogen-water", articleType: "comparison", searchIntent: "informational" },
+      { keyword: "does hfactor water still have hydrogen", title: "How Long Does HFactor Hold Its Hydrogen? The Science of H2 Escape", slug: "does-hfactor-water-still-have-hydrogen", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "hfactor vs hydrogen water bottle", title: "HFactor Pouches vs a Reusable Hydrogen Bottle: Cost and H2 Dose Compared", slug: "hfactor-vs-hydrogen-water-bottle", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "hfactor cost per ounce", title: "HFactor Cost Per Ounce: Why Pre-Bottled Hydrogen Gets Expensive Fast", slug: "hfactor-cost-per-ounce", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "hfactor alternative", title: "HFactor Alternatives: Fresher, Higher-PPM Ways to Drink Hydrogen Water", slug: "hfactor-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "is hfactor water worth it", title: "Is HFactor Water Worth It? A Value + Efficacy Breakdown", slug: "is-hfactor-water-worth-it", articleType: "comparison", searchIntent: "commercial" },
+    ],
+  },
+
+  // 8. Drink HRW
+  {
+    pillarKeyword: "drink hrw tablets review",
+    pillarTitle: "Drink HRW Review: Do Rejuvenation Hydrogen Tablets Live Up to the Research?",
+    slug: "drink-hrw-tablets-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 5500,
+    priority: 85,
+    clusterKeywords: [
+      { keyword: "drink hrw review", title: "Drink HRW Review: The Real Pros and Cons of the Flagship H2 Tablet Brand", slug: "drink-hrw-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "drink hrw rejuvenation review", title: "Drink HRW Rejuvenation Tablets Reviewed: Dissolution Time and Measured PPM", slug: "drink-hrw-rejuvenation-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "drink hrw vs hydrogen water bottle", title: "Drink HRW Tablets vs Hydrogen Water Bottle: Dosing, Cost, and Convenience", slug: "drink-hrw-vs-hydrogen-water-bottle", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "hrw tablets side effects", title: "Drink HRW Tablet Side Effects: What the Research and User Reports Show", slug: "hrw-tablets-side-effects", articleType: "safety", searchIntent: "informational" },
+      { keyword: "drink hrw ppm", title: "Drink HRW PPM: Actual Hydrogen Concentration From the Tablets", slug: "drink-hrw-ppm", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "drink hrw complaints", title: "Drink HRW Complaints: Common Issues, Taste, and Subscription Gotchas", slug: "drink-hrw-complaints", articleType: "review", searchIntent: "commercial" },
+      { keyword: "drink hrw cost per day", title: "Drink HRW Cost Per Day: Is a Tablet Subscription Actually Cheaper Than a Bottle?", slug: "drink-hrw-cost-per-day", articleType: "buying-guide", searchIntent: "commercial" },
+      { keyword: "drink hrw alternative", title: "Drink HRW Alternatives: Hydrogen Options With Higher PPM and No Subscription", slug: "drink-hrw-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+    ],
+  },
+
+  // 9. Vital Reaction
+  {
+    pillarKeyword: "vital reaction tablets review",
+    pillarTitle: "Vital Reaction Review: Hydrogen Tablets Tested for PPM, Dissolution, and Value",
+    slug: "vital-reaction-tablets-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 2800,
+    priority: 75,
+    clusterKeywords: [
+      { keyword: "vital reaction review", title: "Vital Reaction Hydrogen Tablets Review: Independent PPM and Taste Testing", slug: "vital-reaction-review", articleType: "review", searchIntent: "commercial" },
+      { keyword: "vital reaction vs drink hrw", title: "Vital Reaction vs Drink HRW: Tablet Makers Compared on Output and Price", slug: "vital-reaction-vs-drink-hrw", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "vital reaction vs hydrogen water bottle", title: "Vital Reaction Tablets vs a Hydrogen Water Bottle: Real-World Dosing", slug: "vital-reaction-vs-hydrogen-water-bottle", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "vital reaction ppm", title: "Vital Reaction PPM: How Much Hydrogen One Tablet Actually Produces", slug: "vital-reaction-ppm", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "vital reaction side effects", title: "Vital Reaction Side Effects: Dissolution Products and Magnesium Dose", slug: "vital-reaction-side-effects", articleType: "safety", searchIntent: "informational" },
+      { keyword: "vital reaction complaints", title: "Vital Reaction Complaints: User-Reported Issues and Subscription Problems", slug: "vital-reaction-complaints", articleType: "review", searchIntent: "commercial" },
+      { keyword: "is vital reaction worth it", title: "Is Vital Reaction Worth It? Price-per-Dose vs Fresh Hydrogen Water", slug: "is-vital-reaction-worth-it", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "vital reaction alternative", title: "Vital Reaction Alternatives: Fresh Hydrogen Water Without Tablets", slug: "vital-reaction-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+    ],
+  },
+
+  // 10. H2 Tabs
+  {
+    pillarKeyword: "h2 tabs review",
+    pillarTitle: "H2 Tabs Review: Hydrogen Tablets Compared on PPM, Price, and Convenience",
+    slug: "h2-tabs-review",
+    category: "competitor",
+    targetAudience: "consumer",
+    searchIntent: "commercial",
+    estimatedSearchVolume: 2000,
+    priority: 70,
+    clusterKeywords: [
+      { keyword: "h2 tabs review", title: "H2 Tabs Hydrogen Tablets Review: Full Testing and Honest Assessment", slug: "h2-tabs-review-full", articleType: "review", searchIntent: "commercial" },
+      { keyword: "h2 tabs vs drink hrw", title: "H2 Tabs vs Drink HRW: Which Hydrogen Tablet Actually Dissolves Better?", slug: "h2-tabs-vs-drink-hrw", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "h2 tabs vs vital reaction", title: "H2 Tabs vs Vital Reaction: PPM, Ingredients, and Per-Dose Cost", slug: "h2-tabs-vs-vital-reaction", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "h2 tabs vs hydrogen water bottle", title: "H2 Tabs vs Hydrogen Water Bottle: Portability and Real-World Dosing", slug: "h2-tabs-vs-hydrogen-water-bottle", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "h2 tabs ppm", title: "H2 Tabs Hydrogen PPM: Actual Measurements vs Marketing Claims", slug: "h2-tabs-ppm", articleType: "explainer", searchIntent: "informational" },
+      { keyword: "h2 tabs side effects", title: "H2 Tabs Side Effects: Magnesium, Dissolution, and Who Should Be Cautious", slug: "h2-tabs-side-effects", articleType: "safety", searchIntent: "informational" },
+      { keyword: "h2 tabs worth it", title: "Are H2 Tabs Worth It? Cost-per-Dose Compared to Fresh Hydrogen Water", slug: "h2-tabs-worth-it", articleType: "comparison", searchIntent: "commercial" },
+      { keyword: "h2 tabs alternative", title: "Best H2 Tabs Alternatives: Tablets, Bottles, and Fresh Hydrogen Options", slug: "h2-tabs-alternative", articleType: "buying-guide", searchIntent: "commercial" },
+    ],
+  },
 ];
 
 // ============================================================
