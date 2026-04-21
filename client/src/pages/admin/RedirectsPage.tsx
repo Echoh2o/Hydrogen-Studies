@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { errMessage } from "@/lib/utils";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   Card,
@@ -143,8 +144,8 @@ export default function RedirectsPage() {
       setShowCreateDialog(false);
       setNewRedirect({ fromPath: "", toPath: "", statusCode: 301, note: "" });
     },
-    onError: (error: any) => {
-      toast({ title: "Failed to create redirect", description: error.message, variant: "destructive" });
+    onError: (error: unknown) => {
+      toast({ title: "Failed to create redirect", description: errMessage(error), variant: "destructive" });
     },
   });
 
@@ -158,8 +159,8 @@ export default function RedirectsPage() {
       toast({ title: "Redirect updated" });
       setEditingRedirect(null);
     },
-    onError: (error: any) => {
-      toast({ title: "Failed to update redirect", description: error.message, variant: "destructive" });
+    onError: (error: unknown) => {
+      toast({ title: "Failed to update redirect", description: errMessage(error), variant: "destructive" });
     },
   });
 
@@ -171,8 +172,8 @@ export default function RedirectsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects"] });
       toast({ title: "Redirect deleted" });
     },
-    onError: (error: any) => {
-      toast({ title: "Failed to delete redirect", description: error.message, variant: "destructive" });
+    onError: (error: unknown) => {
+      toast({ title: "Failed to delete redirect", description: errMessage(error), variant: "destructive" });
     },
   });
 
@@ -187,8 +188,8 @@ export default function RedirectsPage() {
       toast({ title: "404 resolved with redirect" });
       setResolveEntry(null);
     },
-    onError: (error: any) => {
-      toast({ title: "Failed to resolve 404", description: error.message, variant: "destructive" });
+    onError: (error: unknown) => {
+      toast({ title: "Failed to resolve 404", description: errMessage(error), variant: "destructive" });
     },
   });
 
@@ -201,8 +202,8 @@ export default function RedirectsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
       toast({ title: "Backfill complete", description: `Processed ${data.processed}, suggested ${data.suggested}` });
     },
-    onError: (error: any) => {
-      toast({ title: "Backfill failed", description: error.message, variant: "destructive" });
+    onError: (error: unknown) => {
+      toast({ title: "Backfill failed", description: errMessage(error), variant: "destructive" });
     },
   });
 

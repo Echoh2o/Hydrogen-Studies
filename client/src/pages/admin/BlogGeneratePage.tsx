@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import {
   ArrowLeft,
   Search,
@@ -263,6 +264,12 @@ export default function BlogGeneratePage() {
       </Helmet>
 
       <div className="space-y-6">
+        <AdminBreadcrumbs
+          items={[
+            { label: "Blogs", href: "/admin/blogs" },
+            { label: "Generate" },
+          ]}
+        />
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">
             Generate Blog Articles

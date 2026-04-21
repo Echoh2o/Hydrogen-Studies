@@ -26,6 +26,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
+import { errMessage } from "@/lib/utils";
 import {
   ArrowLeft,
   Loader2,
@@ -166,10 +168,10 @@ export default function BlogAddPage() {
       // Invalidate blogs queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Failed to create blog article",
-        description: error.message || "An error occurred. Please try again.",
+        description: errMessage(error, "An error occurred. Please try again."),
         variant: "destructive",
       });
     },
@@ -187,6 +189,12 @@ export default function BlogAddPage() {
       description="Create a new blog article"
     >
       <div className="space-y-6">
+        <AdminBreadcrumbs
+          items={[
+            { label: "Blogs", href: "/admin/blogs" },
+            { label: "Add Manual Blog" },
+          ]}
+        />
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Add Manual Blog</h1>
           <Button variant="outline" onClick={() => navigate("/admin/blogs")}>

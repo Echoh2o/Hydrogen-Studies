@@ -40,3 +40,22 @@ export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + "...";
 }
+
+/**
+ * Safely extract a human-readable message from an unknown error value.
+ * Prefer this over `catch (error: any)` + `error.message || "..."` — it
+ * type-narrows correctly and handles non-Error throws (strings, objects).
+ *
+ *   try { ... } catch (err) {
+ *     toast({ title: "Save failed", description: errMessage(err) });
+ *   }
+ */
+export function errMessage(err: unknown, fallback = "An unexpected error occurred"): string {
+  if (err instanceof Error) return err.message || fallback;
+  if (typeof err === "string") return err || fallback;
+  if (err && typeof err === "object" && "message" in err) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === "string" && m) return m;
+  }
+  return fallback;
+}

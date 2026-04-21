@@ -105,7 +105,7 @@ export default function AdminMonitoringPage() {
         queryKey: ["/api/admin/monitoring/status"],
       });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to start consumer content generation",
@@ -127,7 +127,7 @@ export default function AdminMonitoringPage() {
         queryKey: ["/api/admin/monitoring/status"],
       });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to start research enrichment",
@@ -149,7 +149,7 @@ export default function AdminMonitoringPage() {
         queryKey: ["/api/admin/monitoring/status"],
       });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to start visual enhancement",
@@ -169,7 +169,7 @@ export default function AdminMonitoringPage() {
         queryKey: ["/api/admin/monitoring/status"],
       });
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to stop processes",

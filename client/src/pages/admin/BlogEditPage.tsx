@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import { ArrowLeft, FileEdit, Image, Loader } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -252,6 +253,12 @@ export default function BlogEditPage() {
       description="Edit blog article"
     >
       <div className="space-y-6">
+        <AdminBreadcrumbs
+          items={[
+            { label: "Blogs", href: "/admin/blogs" },
+            { label: "Edit" },
+          ]}
+        />
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Edit Blog</h1>
           <Button variant="outline" onClick={() => navigate("/admin/blogs")}>

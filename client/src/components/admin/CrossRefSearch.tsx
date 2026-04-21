@@ -1,153 +1,81 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
-import {
-  Loader2,
-  Search,
-  Database,
-  AlertCircle,
-  CheckCircle,
-} from "lucide-react";
+import { Database, Loader2 } from "lucide-react";
+import { SearchInputBar } from "./external-search/SearchInputBar";
+import { SearchPagination } from "./external-search/SearchPagination";
+import { EmptySearchState } from "./external-search/EmptySearchState";
+import { useExternalSearch } from "./external-search/use-external-search";
+
+interface CrossRefAuthor {
+  family?: string;
+  name?: string;
+}
+
+interface CrossRefItem {
+  DOI: string;
+  title?: string;
+  author?: CrossRefAuthor[];
+  container_title?: string;
+  published?: { year?: number };
+}
+
+function formatAuthors(authors?: CrossRefAuthor[]): string {
+  if (!authors || !authors.length) return "Unknown authors";
+  return (
+    authors
+      .slice(0, 3)
+      .map((a) => a.family || a.name || "")
+      .join(", ") + (authors.length > 3 ? " et al." : "")
+  );
+}
 
 export default function CrossRefSearch() {
-  const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [selectedDoi, setSelectedDoi] = useState("");
-  const [page, setPage] = useState(1);
-
-  // Search mutation
-  const searchMutation = useMutation({
-    mutationFn: async ({ query, page }: { query: string; page: number }) => {
-      const response = await apiRequest(
+  const search = useExternalSearch<CrossRefItem, string>({
+    sourceName: "CrossRef",
+    search: async (query, page) => {
+      const res = await apiRequest(
         "GET",
         `/api/research/crossref/search?query=${encodeURIComponent(query)}&page=${page}`,
       );
-      return response.json();
+      const data = await res.json();
+      const items: CrossRefItem[] = data.items ?? [];
+      // CrossRef doesn't return a total — infer totalPages from a full page.
+      // If items < pageSize, this is the last page; otherwise assume there
+      // could be at least one more.
+      return {
+        items,
+        totalResults: items.length < 10 ? (page - 1) * 10 + items.length : page * 10 + 1,
+      };
     },
-    onSuccess: (data) => {
-      setSearchResults(data.items || []);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Search failed",
-        description: error.message || "Failed to search CrossRef",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Import mutation
-  const importMutation = useMutation({
-    mutationFn: async (doi: string) => {
-      const response = await apiRequest("POST", `/api/crossref/import/${encodeURIComponent(doi)}`);
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Study imported",
-          description: `Successfully imported: ${data.study.title}`,
-        });
-      } else {
-        toast({
-          title: "Import failed",
-          description: data.message || "Failed to import study",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Import failed",
-        description: error.message || "Failed to import study",
-        variant: "destructive",
-      });
+    import: async (doi) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/crossref/import/${encodeURIComponent(doi)}`,
+      );
+      return res.json();
     },
   });
-
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      toast({
-        title: "Search query required",
-        description: "Please enter a search term",
-        variant: "destructive",
-      });
-      return;
-    }
-    searchMutation.mutate({ query: searchQuery, page });
-  };
-
-  const handleImport = (doi: string) => {
-    setSelectedDoi(doi);
-    importMutation.mutate(doi);
-  };
-
-  const formatAuthors = (authors: any[]) => {
-    if (!authors || !authors.length) return "Unknown authors";
-    return (
-      authors
-        .slice(0, 3)
-        .map((author: any) => author.family || author.name || "")
-        .join(", ") + (authors.length > 3 ? " et al." : "")
-    );
-  };
 
   return (
     <div className="space-y-6">
-      <div className="flex space-x-2">
-        <div className="flex-1">
-          <Label htmlFor="search-query">Search Term</Label>
-          <div className="flex mt-1.5">
-            <Input
-              id="search-query"
-              placeholder="Search for articles (e.g., hydrogen therapy inflammation)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            />
-            <Button
-              onClick={handleSearch}
-              disabled={searchMutation.isPending || !searchQuery.trim()}
-              className="ml-2"
-            >
-              {searchMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" />
-                  Search
-                </>
-              )}
-            </Button>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Enter keywords to search for research articles in CrossRef
-          </p>
-        </div>
-      </div>
+      <SearchInputBar
+        value={search.query}
+        onChange={search.setQuery}
+        onSubmit={() => search.runSearch(1)}
+        isLoading={search.isSearching}
+        placeholder="Search for articles (e.g., hydrogen therapy inflammation)"
+        helpText="Enter keywords to search for research articles in CrossRef"
+      />
 
-      {searchMutation.isPending ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
-        </div>
-      ) : searchResults.length > 0 ? (
+      {search.results.length > 0 ? (
         <div className="space-y-4">
           <div className="text-sm text-gray-500">
-            Showing {searchResults.length} results
+            Showing {search.results.length} results (page {search.page})
           </div>
 
-          {searchResults.map((item: any, index: number) => (
-            <Card key={index} className="overflow-hidden">
+          {search.results.map((item, index) => (
+            <Card key={item.DOI || index} className="overflow-hidden">
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row md:justify-between">
                   <div className="flex-1 space-y-1">
@@ -171,12 +99,12 @@ export default function CrossRefSearch() {
                   <div className="md:ml-4 mt-3 md:mt-0 flex md:flex-col justify-end md:justify-center">
                     <Button
                       size="sm"
-                      onClick={() => handleImport(item.DOI)}
+                      onClick={() => search.runImport(item.DOI)}
                       disabled={
-                        importMutation.isPending && selectedDoi === item.DOI
+                        search.isImporting && search.selectedImportId === item.DOI
                       }
                     >
-                      {importMutation.isPending && selectedDoi === item.DOI ? (
+                      {search.isImporting && search.selectedImportId === item.DOI ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Importing...
@@ -194,42 +122,19 @@ export default function CrossRefSearch() {
             </Card>
           ))}
 
-          <div className="flex justify-between mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (page > 1) {
-                  const newPage = page - 1;
-                  setPage(newPage);
-                  searchMutation.mutate({ query: searchQuery, page: newPage });
-                }
-              }}
-              disabled={page === 1 || searchMutation.isPending}
-            >
-              Previous
-            </Button>
-            <div className="text-sm py-2">Page {page}</div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const newPage = page + 1;
-                setPage(newPage);
-                searchMutation.mutate({ query: searchQuery, page: newPage });
-              }}
-              disabled={searchResults.length < 10 || searchMutation.isPending}
-            >
-              Next
-            </Button>
-          </div>
+          <SearchPagination
+            page={search.page}
+            totalPages={search.totalPages}
+            isLoading={search.isSearching}
+            onPageChange={(p) => search.runSearch(p)}
+          />
         </div>
-      ) : searchMutation.isSuccess && searchResults.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">
-          <AlertCircle className="h-10 w-10 mx-auto text-gray-300 mb-3" />
-          <p>No results found. Try different search terms.</p>
-        </div>
-      ) : null}
+      ) : (
+        <EmptySearchState
+          isLoading={search.isSearching}
+          hasSearched={search.hasSearched}
+        />
+      )}
     </div>
   );
 }

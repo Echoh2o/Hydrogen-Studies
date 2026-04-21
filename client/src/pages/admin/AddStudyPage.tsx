@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import StudyForm from "@/components/admin/StudyForm";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,12 @@ export default function AddStudyPage() {
       description="Create a new hydrogen research study"
     >
       <div className="space-y-6">
+        <AdminBreadcrumbs
+          items={[
+            { label: "Studies", href: "/admin/studies" },
+            { label: "Add" },
+          ]}
+        />
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Add New Study</h1>
           <Button variant="outline" onClick={() => navigate("/admin/studies")}>

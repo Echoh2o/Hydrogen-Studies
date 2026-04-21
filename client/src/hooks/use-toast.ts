@@ -185,4 +185,23 @@ function useToast() {
   };
 }
 
-export { useToast, toast };
+/**
+ * Convenience wrappers for the common (title, description) + variant shape.
+ * Use these instead of raw `toast({...})` calls so intent is explicit and
+ * the success/error styling is consistent across the app.
+ *
+ *   toastSuccess("Saved", "Your changes are live.");
+ *   toastError("Save failed", err.message);
+ *
+ * For bespoke actions (custom action button, long-duration, etc.), keep
+ * using the lower-level `toast({...})`.
+ */
+function toastSuccess(title: string, description?: string) {
+  return toast({ title, description });
+}
+
+function toastError(title: string, description?: string) {
+  return toast({ title, description, variant: "destructive" });
+}
+
+export { useToast, toast, toastSuccess, toastError };
