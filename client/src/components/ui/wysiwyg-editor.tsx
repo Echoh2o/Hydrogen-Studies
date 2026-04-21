@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
@@ -52,10 +53,12 @@ export function WysiwygEditor({
     setEditorValue(value || "");
   }, [value]);
 
-  // Handle editor changes
+  // Handle editor changes. Sanitize HTML output before persisting to mitigate
+  // XSS via pasted/crafted content (Quill GHSA-4943-9vgg-gr5r).
   const handleChange = (content: string) => {
-    setEditorValue(content);
-    onChange(content);
+    const sanitized = DOMPurify.sanitize(content);
+    setEditorValue(sanitized);
+    onChange(sanitized);
   };
 
   // Quill modules configuration

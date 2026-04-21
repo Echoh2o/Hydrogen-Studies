@@ -19,7 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import WYSIWYGEditor from "./WYSIWYGEditor";
+import { WysiwygEditor as WYSIWYGEditor } from "@/components/ui/wysiwyg-editor";
+import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
 import {
   insertBlogArticleSchema,
   type InsertBlogArticle,
@@ -105,6 +106,9 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
       ...initialData,
     },
   });
+
+  // Warn before tab-close / reload if the user has unsaved edits.
+  useUnsavedChangesWarning(form.formState.isDirty);
 
   const saveMutation = useMutation({
     mutationFn: async (data: BlogFormData) => {
@@ -527,7 +531,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 onChange={(value) => form.setValue("quickInsights", value)}
                 placeholder="Add quick takeaways or key insights from the blog post..."
                 height="300px"
-                toolbar="basic"
               />
             </CardContent>
           </Card>
