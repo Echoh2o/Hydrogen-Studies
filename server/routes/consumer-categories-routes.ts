@@ -536,9 +536,11 @@ router.get("/studies", async (req, res) => {
         // Use keyword search for systems without a DB category
         const likeTerms = categoryKeywords.map((keyword) => `%${keyword}%`);
         const likeClauses = likeTerms.map((_, i) => `LOWER(title) LIKE $${i + 1} OR LOWER(abstract) LIKE $${i + 1}`).join(" OR ");
+        // Postgres requires ORDER BY columns to appear in the SELECT list
+        // when using DISTINCT, so publish_year is included here.
         const kwQuery = `
           SELECT DISTINCT id, title, abstract, authors, journal,
-                 publish_date as "publishDate", category, doi,
+                 publish_date as "publishDate", publish_year, category, doi,
                  image_url as "imageUrl", slug, consumer_categories
           FROM studies
           WHERE ${likeClauses}
@@ -551,7 +553,7 @@ router.get("/studies", async (req, res) => {
         // Query for studies using authentic relational data
         const query = `
           SELECT DISTINCT s.id, s.title, s.abstract, s.authors, s.journal,
-                 s.publish_date as "publishDate", s.category, s.doi,
+                 s.publish_date as "publishDate", s.publish_year, s.category, s.doi,
                  s.image_url as "imageUrl", s.slug, s.consumer_categories
           FROM studies s
           INNER JOIN study_categories sc ON s.id = sc.study_id
@@ -571,7 +573,7 @@ router.get("/studies", async (req, res) => {
         // First try exact match on health_conditions column
         const hcQuery = `
           SELECT DISTINCT id, title, abstract, authors, journal,
-                 publish_date as "publishDate", category, doi,
+                 publish_date as "publishDate", publish_year, category, doi,
                  image_url as "imageUrl", slug, consumer_categories
           FROM studies
           WHERE LOWER(health_conditions) = LOWER($1)
@@ -596,7 +598,7 @@ router.get("/studies", async (req, res) => {
 
             const kwQuery = `
               SELECT DISTINCT id, title, abstract, authors, journal,
-                     publish_date as "publishDate", category, doi,
+                     publish_date as "publishDate", publish_year, category, doi,
                      image_url as "imageUrl", slug, consumer_categories
               FROM studies
               WHERE ${likeClauses}

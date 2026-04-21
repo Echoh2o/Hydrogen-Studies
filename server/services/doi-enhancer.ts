@@ -26,9 +26,6 @@ export const ENHANCEABLE_FIELDS = [
   "citationUrl",
   "keywords",
   "peerReviewed",
-  "firstAuthor",
-  "lastAuthor",
-  "otherAuthors",
   "pmid",
 ];
 
@@ -349,9 +346,6 @@ function determineFieldsToEnhance(study: Study): string[] {
 
   if (!study.authors || study.authors.trim() === "") {
     fieldsToEnhance.push("authors");
-    fieldsToEnhance.push("firstAuthor");
-    fieldsToEnhance.push("lastAuthor");
-    fieldsToEnhance.push("otherAuthors");
   }
 
   if (
@@ -436,31 +430,8 @@ function extractCrossRefData(
       .join(", ");
 
     enhancedData.authors = authors;
-
-    // Also extract first, other, and last authors
-    if (crossrefData.author.length > 0) {
-      const firstAuthor =
-        `${crossrefData.author[0].given || ""} ${crossrefData.author[0].family || ""}`.trim();
-      enhancedData.firstAuthor = firstAuthor;
-
-      if (crossrefData.author.length > 1) {
-        const lastAuthor =
-          `${crossrefData.author[crossrefData.author.length - 1].given || ""} ${crossrefData.author[crossrefData.author.length - 1].family || ""}`.trim();
-        enhancedData.lastAuthor = lastAuthor;
-
-        if (crossrefData.author.length > 2) {
-          const otherAuthors = crossrefData.author
-            .slice(1, -1)
-            .map((author: any) => {
-              return `${author.given || ""} ${author.family || ""}`.trim();
-            })
-            .join(", ");
-          enhancedData.otherAuthors = otherAuthors;
-        } else {
-          enhancedData.otherAuthors = "";
-        }
-      }
-    }
+    // `firstAuthor`/`lastAuthor`/`otherAuthors` columns don't exist in the
+    // studies table — the single `authors` string is authoritative.
   }
 
   // Journal
@@ -571,25 +542,8 @@ function extractSemanticScholarData(
       .map((author: any) => author.name)
       .join(", ");
     enhancedData.authors = authors;
-
-    // Also extract first, other, and last authors
-    if (semanticData.authors.length > 0) {
-      enhancedData.firstAuthor = semanticData.authors[0].name;
-
-      if (semanticData.authors.length > 1) {
-        enhancedData.lastAuthor =
-          semanticData.authors[semanticData.authors.length - 1].name;
-
-        if (semanticData.authors.length > 2) {
-          enhancedData.otherAuthors = semanticData.authors
-            .slice(1, -1)
-            .map((author: any) => author.name)
-            .join(", ");
-        } else {
-          enhancedData.otherAuthors = "";
-        }
-      }
-    }
+    // `firstAuthor`/`lastAuthor`/`otherAuthors` columns don't exist in the
+    // studies table — the single `authors` string is authoritative.
   }
 
   // Journal

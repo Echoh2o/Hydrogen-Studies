@@ -776,20 +776,9 @@ export class JobScheduler {
             ) {
               changes.authors = fetchedAuthors;
               changedFields.push("authors");
-
-              // Update structured author fields too
-              if (crossrefData.author.length > 0) {
-                changes.firstAuthor = `${crossrefData.author[0].given || ""} ${crossrefData.author[0].family || ""}`.trim();
-                if (crossrefData.author.length > 1) {
-                  changes.lastAuthor = `${crossrefData.author[crossrefData.author.length - 1].given || ""} ${crossrefData.author[crossrefData.author.length - 1].family || ""}`.trim();
-                  if (crossrefData.author.length > 2) {
-                    changes.otherAuthors = crossrefData.author
-                      .slice(1, -1)
-                      .map((a: any) => `${a.given || ""} ${a.family || ""}`.trim())
-                      .join(", ");
-                  }
-                }
-              }
+              // Note: `firstAuthor`/`lastAuthor`/`otherAuthors` columns do
+              // not exist in the studies table. The single `authors` string
+              // is the source of truth.
             }
           }
 
