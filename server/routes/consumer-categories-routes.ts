@@ -768,7 +768,14 @@ router.get("/anchor-content/:type/:category", async (req, res) => {
           .where(sql`LOWER(${studies.category}) LIKE ${`%${dbCategory.toLowerCase()}%`}`);
         studyCount = result[0]?.count || 0;
       }
-    } catch {}
+    } catch (err) {
+      // Non-fatal — the response still goes out with studyCount=0.
+      // Log so we notice if it starts failing systematically.
+      console.warn(
+        `Anchor-content study count failed for "${decodedCategory}":`,
+        err instanceof Error ? err.message : String(err),
+      );
+    }
 
     return res.json({
       success: true,
