@@ -441,7 +441,14 @@ Return ONLY a JSON array of strings, nothing else. Example: ["gut health", "infl
 
     case "image": {
       const { generateImageForStudy } = await import("./image-generator");
-      await generateImageForStudy(studyId);
+      const result = await generateImageForStudy(studyId);
+      if (!result.success) {
+        // Surface the failure so the waterfall's retry logic kicks in
+        // (previously this return value was ignored — every failed image
+        // generation was silently marked as a completed step, which is
+        // why studies ended up with zero images despite "complete" status).
+        throw new Error(result.message || "Image generation failed");
+      }
       break;
     }
 
