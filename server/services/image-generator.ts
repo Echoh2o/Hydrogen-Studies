@@ -19,6 +19,29 @@ import { logger } from "../utils/logger";
 import { uploadFile, isCloudStorageConfigured } from "../utils/storage";
 
 /**
+ * Extract the generated image as a Buffer, whichever response shape the
+ * provider returned. OpenAI gives us a `url` when we ask for one; xAI's
+ * grok-imagine-image returns `b64_json` inline (no `url` field). Some
+ * providers also return `url` without being asked.
+ */
+async function extractImageBuffer(response: any): Promise<Buffer | null> {
+  const item = response?.data?.[0];
+  if (!item) return null;
+  if (typeof item.url === "string" && item.url) {
+    const imageResponse = await axios.get(item.url, {
+      responseType: "arraybuffer",
+      timeout: 30_000,
+      maxContentLength: 20 * 1024 * 1024,
+    });
+    return Buffer.from(imageResponse.data);
+  }
+  if (typeof item.b64_json === "string" && item.b64_json) {
+    return Buffer.from(item.b64_json, "base64");
+  }
+  return null;
+}
+
+/**
  * Get the image generation client.
  * Prefers xAI (Grok) if XAI_API_KEY is set, falls back to OpenAI (DALL-E).
  */
@@ -156,20 +179,15 @@ export async function generateBlogImage(blogId: number): Promise<{
 
     const response = await client!.images.generate(generateParams);
 
-    const imageUrl = response.data?.[0]?.url;
+    const imageBuffer = await extractImageBuffer(response);
 
-    if (!imageUrl) {
+    if (!imageBuffer) {
       return {
         success: false,
-        message: "Failed to generate image - no URL returned",
+        message: "Failed to generate image — provider returned no url or b64_json",
       };
     }
 
-    // Download the image to a buffer
-    const imageResponse = await axios.get(imageUrl, {
-      responseType: "arraybuffer",
-    });
-    const imageBuffer = Buffer.from(imageResponse.data);
     const imageName = `blog_${blogId}_${uuidv4()}.png`;
     const storageKey = `blog-images/${imageName}`;
 
@@ -289,21 +307,15 @@ export async function generateImageForStudy(studyId: number): Promise<{
 
     const response = await client!.images.generate(generateParams);
 
-    // Safely access response data
-    const imageUrl = response.data?.[0]?.url;
+    const imageBuffer = await extractImageBuffer(response);
 
-    if (!imageUrl) {
+    if (!imageBuffer) {
       return {
         success: false,
-        message: "Failed to generate image - no URL returned",
+        message: "Failed to generate image — provider returned no url or b64_json",
       };
     }
 
-    // Download the image to a buffer
-    const imageResponse = await axios.get(imageUrl, {
-      responseType: "arraybuffer",
-    });
-    const imageBuffer = Buffer.from(imageResponse.data);
     const imageName = `study_${studyId}_${uuidv4()}.png`;
     const storageKey = `study-images/${imageName}`;
 
