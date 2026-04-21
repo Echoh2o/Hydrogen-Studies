@@ -521,20 +521,56 @@ router.get("/keyword-strategy/clusters", async (req: Request, res: Response) => 
 });
 
 /**
+ * Tracks in-flight async generation jobs so the UI can poll status
+ * and we can reject double-starts for the same cluster.
+ */
+const inFlightClusterJobs = new Map<
+  number,
+  { kind: "pillar" | "full"; startedAt: Date }
+>();
+
+/**
  * POST /api/seo/keyword-strategy/generate-pillar/:id
- * Generate a pillar page for a specific cluster
+ * Kicks off pillar-page generation in the background and returns 202
+ * immediately. Pillar generation can take 30-90s (longer than the 30s
+ * request timeout), so we can't synchronously await it.
+ *
+ * Client polls /api/seo/keyword-strategy/overview — the cluster's
+ * `hasPillar` field flips to true when generation completes.
  */
 router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
-  try {
-    const clusterId = parseInt(req.params.id);
-    if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
+  const clusterId = parseInt(req.params.id);
+  if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
 
-    const result = await generateKeywordPillarPage(clusterId);
-    res.json(result);
-  } catch (error) {
-    logger.error("Generate pillar error", error, "SEO API");
-    res.status(500).json({ error: "Failed to generate pillar page" });
+  if (inFlightClusterJobs.has(clusterId)) {
+    return res.status(409).json({
+      error: "A generation job is already running for this cluster",
+      job: inFlightClusterJobs.get(clusterId),
+    });
   }
+
+  inFlightClusterJobs.set(clusterId, { kind: "pillar", startedAt: new Date() });
+
+  // Fire and forget — don't block the response on generation
+  (async () => {
+    try {
+      const result = await generateKeywordPillarPage(clusterId);
+      logger.info(
+        `Pillar generation finished for cluster ${clusterId}: success=${result.success}`,
+        "SEO API",
+      );
+    } catch (error) {
+      logger.error(`Pillar generation failed for cluster ${clusterId}`, error, "SEO API");
+    } finally {
+      inFlightClusterJobs.delete(clusterId);
+    }
+  })();
+
+  res.status(202).json({
+    started: true,
+    clusterId,
+    message: "Pillar generation started. Poll /overview for progress.",
+  });
 });
 
 /**
@@ -559,21 +595,60 @@ router.post("/keyword-strategy/generate-cluster-post/:id", aiGenerationRateLimit
 
 /**
  * POST /api/seo/keyword-strategy/generate-full-cluster/:id
- * Generate pillar + all cluster posts for a cluster
- * Body: { delayMs?: number }
+ * Kicks off pillar + all cluster-post generation in the background
+ * and returns 202. A full cluster (pillar + 10 posts × ~20s each)
+ * runs 4-6+ minutes, which is far beyond the 30s request timeout.
+ *
+ * Client polls /overview — the cluster's generatedClusterPosts field
+ * increments as each post completes, so the progress bar updates live.
+ *
+ * Body: { delayMs?: number }  (delay between posts to avoid rate limits)
  */
 router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
-  try {
-    const clusterId = parseInt(req.params.id);
-    if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
+  const clusterId = parseInt(req.params.id);
+  if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
 
-    const { delayMs = 3000 } = req.body;
-    const result = await generateFullCluster(clusterId, delayMs);
-    res.json(result);
-  } catch (error) {
-    logger.error("Generate full cluster error", error, "SEO API");
-    res.status(500).json({ error: "Failed to generate full cluster" });
+  if (inFlightClusterJobs.has(clusterId)) {
+    return res.status(409).json({
+      error: "A generation job is already running for this cluster",
+      job: inFlightClusterJobs.get(clusterId),
+    });
   }
+
+  const { delayMs = 3000 } = req.body;
+  inFlightClusterJobs.set(clusterId, { kind: "full", startedAt: new Date() });
+
+  (async () => {
+    try {
+      const result = await generateFullCluster(clusterId, delayMs);
+      logger.info(
+        `Full cluster finished for ${clusterId}: ${result.totalGenerated} generated, ${result.totalFailed} failed`,
+        "SEO API",
+      );
+    } catch (error) {
+      logger.error(`Full cluster generation failed for ${clusterId}`, error, "SEO API");
+    } finally {
+      inFlightClusterJobs.delete(clusterId);
+    }
+  })();
+
+  res.status(202).json({
+    started: true,
+    clusterId,
+    message: "Cluster generation started. Poll /overview for progress.",
+  });
+});
+
+/**
+ * GET /api/seo/keyword-strategy/jobs
+ * List in-flight cluster generation jobs (for client polling UI).
+ */
+router.get("/keyword-strategy/jobs", (_req: Request, res: Response) => {
+  const jobs = Array.from(inFlightClusterJobs.entries()).map(([id, job]) => ({
+    clusterId: id,
+    ...job,
+  }));
+  res.json({ jobs });
 });
 
 // ============================================================

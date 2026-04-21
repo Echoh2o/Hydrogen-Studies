@@ -2,7 +2,7 @@
  * SEO Content Strategy Page
  * Keyword-centric pillar/cluster content generation for Echo Water marketing
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -69,16 +69,57 @@ interface StrategyOverview {
   clusters: ContentCluster[];
 }
 
+interface ActiveJob {
+  clusterId: number;
+  kind: "pillar" | "full";
+  startedAt: string;
+}
+
 export default function SEOContentStrategyPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedCluster, setExpandedCluster] = useState<number | null>(null);
-  const [generatingCluster, setGeneratingCluster] = useState<number | null>(null);
-  const [generatingPillar, setGeneratingPillar] = useState<number | null>(null);
 
+  // Poll the server for in-flight generation jobs. Generation now runs
+  // async on the backend (pillar + full-cluster both take longer than the
+  // 30s request timeout), so the button press kicks off a job and we watch
+  // here for its completion instead of awaiting the API call.
+  const jobsQuery = useQuery<{ jobs: ActiveJob[] }>({
+    queryKey: ["/api/seo/keyword-strategy/jobs"],
+    refetchInterval: 5000,
+  });
+  const activeJobs = jobsQuery.data?.jobs ?? [];
+  const hasActiveJob = activeJobs.length > 0;
+  const jobFor = (clusterId: number) =>
+    activeJobs.find((j) => j.clusterId === clusterId);
+
+  // Re-poll overview often while anything is running, so the progress
+  // bars update as individual cluster posts finish.
   const overviewQuery = useQuery<StrategyOverview>({
     queryKey: ["/api/seo/keyword-strategy/overview"],
+    refetchInterval: hasActiveJob ? 5000 : false,
   });
+
+  // When a job disappears from the active list, its cluster just finished.
+  // Force an overview refresh so the progress bar snaps to its final value.
+  const prevActiveIds = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    const currentIds = new Set(activeJobs.map((j) => j.clusterId));
+    const justFinished: number[] = [];
+    prevActiveIds.current.forEach((id) => {
+      if (!currentIds.has(id)) justFinished.push(id);
+    });
+    if (justFinished.length > 0) {
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/keyword-strategy/overview"] });
+      justFinished.forEach((id) =>
+        toast({
+          title: "Generation finished",
+          description: `Cluster ${id} completed — check progress below.`,
+        }),
+      );
+    }
+    prevActiveIds.current = currentIds;
+  }, [activeJobs, queryClient, toast]);
 
   const seedMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/seo/keyword-strategy/seed"),
@@ -95,18 +136,18 @@ export default function SEOContentStrategyPage() {
   });
 
   const generatePillarMutation = useMutation({
-    mutationFn: (clusterId: number) => {
-      setGeneratingPillar(clusterId);
-      return apiRequest("POST", `/api/seo/keyword-strategy/generate-pillar/${clusterId}`);
-    },
-    onSuccess: (data: any) => {
-      setGeneratingPillar(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/seo/keyword-strategy/overview"] });
-      toast({ title: "Pillar Generated", description: data.message || "Pillar page created" });
+    mutationFn: (clusterId: number) =>
+      apiRequest("POST", `/api/seo/keyword-strategy/generate-pillar/${clusterId}`),
+    onSuccess: () => {
+      // Server returns 202 — actual generation continues in background.
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/keyword-strategy/jobs"] });
+      toast({
+        title: "Pillar generation started",
+        description: "This runs in the background — progress will update below.",
+      });
     },
     onError: () => {
-      setGeneratingPillar(null);
-      toast({ title: "Error", description: "Failed to generate pillar page", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to start pillar generation", variant: "destructive" });
     },
   });
 
@@ -125,20 +166,16 @@ export default function SEOContentStrategyPage() {
   const generateFullClusterMutation = useMutation({
     mutationFn: (clusterId: number) =>
       apiRequest("POST", `/api/seo/keyword-strategy/generate-full-cluster/${clusterId}`, { delayMs: 3000 }),
-    onMutate: (clusterId) => {
-      setGeneratingCluster(clusterId);
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/seo/keyword-strategy/overview"] });
-      setGeneratingCluster(null);
+    onSuccess: () => {
+      // Server returns 202 — generation runs in background; watch /jobs for completion.
+      queryClient.invalidateQueries({ queryKey: ["/api/seo/keyword-strategy/jobs"] });
       toast({
-        title: "Cluster Complete",
-        description: `Generated ${data.totalGenerated} articles (${data.totalFailed} failed)`,
+        title: "Cluster generation started",
+        description: "Pillar + all posts running in the background. Progress will update every few seconds.",
       });
     },
     onError: () => {
-      setGeneratingCluster(null);
-      toast({ title: "Error", description: "Cluster generation failed", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to start cluster generation", variant: "destructive" });
     },
   });
 
@@ -168,7 +205,10 @@ export default function SEOContentStrategyPage() {
     const progress = cluster.totalClusterPosts > 0
       ? Math.round(((cluster.generatedClusterPosts + (cluster.hasPillar ? 1 : 0)) / (cluster.totalClusterPosts + 1)) * 100)
       : 0;
-    const isGenerating = generatingCluster === cluster.id;
+    const activeJob = jobFor(cluster.id);
+    const isGeneratingPillar = activeJob?.kind === "pillar";
+    const isGeneratingFull = activeJob?.kind === "full";
+    const isGenerating = !!activeJob;
 
     return (
       <Card key={cluster.id} className="mb-4">
@@ -211,14 +251,14 @@ export default function SEOContentStrategyPage() {
               <Button
                 size="sm"
                 onClick={() => generatePillarMutation.mutate(cluster.id)}
-                disabled={generatingPillar !== null || isGenerating}
+                disabled={isGenerating}
               >
-                {generatingPillar === cluster.id ? (
+                {isGeneratingPillar ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <Play className="h-4 w-4 mr-1" />
                 )}
-                {generatingPillar === cluster.id ? "Generating..." : "Generate Pillar Page"}
+                {isGeneratingPillar ? "Generating..." : "Generate Pillar Page"}
               </Button>
             ) : (
               <Badge variant="outline" className="bg-green-50">
@@ -228,14 +268,14 @@ export default function SEOContentStrategyPage() {
 
             <Button
               size="sm"
-              variant={isGenerating ? "destructive" : "default"}
+              variant={isGeneratingFull ? "secondary" : "default"}
               onClick={() => generateFullClusterMutation.mutate(cluster.id)}
               disabled={isGenerating || generateFullClusterMutation.isPending}
             >
-              {isGenerating ? (
+              {isGeneratingFull ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Generating All...
+                  Generating in background…
                 </>
               ) : (
                 <>
