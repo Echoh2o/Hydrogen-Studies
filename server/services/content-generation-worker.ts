@@ -152,6 +152,7 @@ export async function processContentQueue(maxItems: number = 3): Promise<{
 
   logger.info(`Processing ${items.length} items from content queue`, "ContentWorker");
 
+  let retrying = 0;
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
 
@@ -163,10 +164,19 @@ export async function processContentQueue(maxItems: number = 3): Promise<{
 
     try {
       await runWaterfall(item.id, item.studyId, (item.completedSteps as string[]) || []);
-      processed++;
+      // runWaterfall handles step failures by storing retry state in the DB
+      // and returning cleanly. Re-read status to categorize correctly.
+      const [after] = await db
+        .select({ status: contentGenerationQueue.status })
+        .from(contentGenerationQueue)
+        .where(eq(contentGenerationQueue.id, item.id))
+        .limit(1);
+      if (after?.status === "completed") processed++;
+      else if (after?.status === "failed") failed++;
+      else retrying++;
     } catch (error) {
       failed++;
-      logger.error(`Content generation failed for study ${item.studyId}`, error, "ContentWorker");
+      logger.error(`Content generation threw unexpectedly for study ${item.studyId}`, error, "ContentWorker");
     }
 
     // Delay between studies to avoid API rate limits
@@ -175,7 +185,10 @@ export async function processContentQueue(maxItems: number = 3): Promise<{
     }
   }
 
-  logger.info(`Content queue processing complete: ${processed} succeeded, ${failed} failed`, "ContentWorker");
+  logger.info(
+    `Content queue processing complete: ${processed} succeeded, ${retrying} pending retry, ${failed} failed`,
+    "ContentWorker",
+  );
   return { processed, failed };
 }
 

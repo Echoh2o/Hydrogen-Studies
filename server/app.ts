@@ -782,6 +782,17 @@ pool.query("SELECT 1").then(async () => {
       { name: "014_fk_on_delete_policies", up: applyFkOnDeletePolicies },
       { name: "015_drop_legacy_password_column", up: dropLegacyPasswordColumn },
     ]);
+
+    // Recover orphaned "processing" jobs — items whose worker crashed/restarted
+    // mid-run. Done after migrations so the relevant tables are guaranteed
+    // to exist. Non-fatal if it fails: background workers will keep running
+    // (they just won't pick up the orphans until a manual reset).
+    try {
+      const { resetStaleProcessingJobs } = await import("./services/stale-job-recovery");
+      await resetStaleProcessingJobs();
+    } catch (err: any) {
+      console.warn("Stale-job recovery skipped:", err?.message ?? err);
+    }
   } catch (err: any) {
     console.error("FATAL: Migration failed:", err.message);
     console.error("Shutting down — fix the migration and redeploy.");
