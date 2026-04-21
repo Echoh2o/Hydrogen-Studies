@@ -57,16 +57,17 @@ export async function generateScientificImage(
     const { client, provider } = getImageClient();
 
     // Generate the image using Grok or DALL-E
+    // xAI's grok-imagine-image doesn't support `size`, `response_format`,
+    // `quality`, or `style` — only DALL-E does. Keep the xAI request minimal.
     const generateParams: any = {
       model: getImageModel(provider),
       prompt: prompt,
       n: 1,
-      size: "1024x1024",
-      response_format: "url",
     };
 
-    // DALL-E supports style/quality params, xAI does not
     if (provider === "openai") {
+      generateParams.size = "1024x1024";
+      generateParams.response_format = "url";
       generateParams.quality = "standard";
       generateParams.style = "natural";
     }
@@ -138,15 +139,17 @@ export async function generateBlogImage(blogId: number): Promise<{
     const { client, provider } = getImageClient();
 
     // Generate the image using Grok or DALL-E
+    // xAI's grok-imagine-image doesn't support `size`, `response_format`,
+    // `quality`, or `style` — only DALL-E does. Keep the xAI request minimal.
     const generateParams: any = {
       model: getImageModel(provider),
       prompt: prompt,
       n: 1,
-      size: "1024x1024",
-      response_format: "url",
     };
 
     if (provider === "openai") {
+      generateParams.size = "1024x1024";
+      generateParams.response_format = "url";
       generateParams.quality = "standard";
       generateParams.style = "natural";
     }
@@ -269,15 +272,17 @@ export async function generateImageForStudy(studyId: number): Promise<{
     const { client, provider } = getImageClient();
 
     // Generate the image using Grok or DALL-E
+    // xAI's grok-imagine-image doesn't support `size`, `response_format`,
+    // `quality`, or `style` — only DALL-E does. Keep the xAI request minimal.
     const generateParams: any = {
       model: getImageModel(provider),
       prompt: prompt,
       n: 1,
-      size: "1024x1024",
-      response_format: "url",
     };
 
     if (provider === "openai") {
+      generateParams.size = "1024x1024";
+      generateParams.response_format = "url";
       generateParams.quality = "standard";
       generateParams.style = "natural";
     }
