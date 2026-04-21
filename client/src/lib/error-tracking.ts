@@ -43,10 +43,11 @@ async function reportError(report: ErrorReport): Promise<void> {
   }
 
   try {
-    navigator.sendBeacon?.(
-      "/api/client-errors",
-      JSON.stringify(report),
-    );
+    // sendBeacon defaults to Content-Type: text/plain. Wrap in a Blob with
+    // application/json so express.json() on the server can parse the body —
+    // without this, the server logs every client error as `{"message":"unknown"}`.
+    const blob = new Blob([JSON.stringify(report)], { type: "application/json" });
+    navigator.sendBeacon?.("/api/client-errors", blob);
   } catch {
     // Swallow — we don't want error reporting to cause errors
   }
