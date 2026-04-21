@@ -436,14 +436,28 @@ export async function processPipelineQueue(): Promise<{
   for (const item of pendingItems) {
     try {
       await processItem(item);
-      // Re-check status after processing
+      // Re-check status after processing. processItem marks items as
+      // "awaiting_approval" after all AI steps finish (admin review is
+      // the next gate) — that's a success, not a failure. Only count as
+      // failed when the item is back in pending/failed/processing,
+      // meaning processItem's catch block ran.
       const updated = await db.query.pipelineQueue.findFirst({
         where: eq(pipelineQueue.id, item.id),
         columns: { status: true },
       });
-      if (updated?.status === "completed") succeeded++;
+      const successStatuses = new Set([
+        "awaiting_approval",
+        "completed",
+        "approved",
+      ]);
+      if (updated?.status && successStatuses.has(updated.status)) succeeded++;
       else failed++;
-    } catch {
+    } catch (err) {
+      // processItem catches its own errors — reaching here means something
+      // outside the step loop threw. Log it so we stop losing the signal.
+      logger.error("Pipeline item threw unexpectedly", err, "StudyAnalysisPipeline", {
+        queueId: item.id,
+      });
       failed++;
     }
   }
