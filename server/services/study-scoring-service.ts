@@ -756,16 +756,21 @@ export class StudyScoringService {
     return study as StudyData | null;
   }
 
+  /**
+   * Concatenates the textual content the scoring helpers match against.
+   * When `fullText` is populated (via DOI enhancement), prefer it over the
+   * abstract — methodology terms like "double-blind", "placebo-controlled",
+   * "p-value" are far more likely to appear in methods/results prose than
+   * in a 250-word abstract. The title + abstract are still included so
+   * short-only-metadata studies still get something.
+   */
   private getFullText(study: StudyData): string {
-    return [
-      study.title,
-      study.abstract,
-      study.methods,
-      study.results,
-      study.conclusion,
-    ]
-      .filter(Boolean)
-      .join(" ");
+    const hasFullText =
+      typeof study.fullText === "string" && study.fullText.trim().length > 200;
+    const parts = hasFullText
+      ? [study.title, study.abstract, study.fullText]
+      : [study.title, study.abstract, study.methods, study.results, study.conclusion];
+    return parts.filter(Boolean).join(" ");
   }
 
   private async getMethodologyBreakdown(study: StudyData) {

@@ -203,6 +203,28 @@ router.get("/queue", async (req, res) => {
             redFlagCount: row.scores.redFlagCount,
             confidence: row.scores.scoreConfidence ?? null,
             rubricVersion: row.scores.rubricVersion ?? null,
+            /**
+             * Full per-component breakdown (JSON-stringified).
+             * Parsed on the client to power the "Why this score?" expandable.
+             */
+            breakdown: row.scores.scoreBreakdown ?? null,
+            componentScores: {
+              sampleSize: row.scores.sampleSizeScore ?? null,
+              studyDesign: row.scores.studyDesignScore ?? null,
+              blinding: row.scores.blindingScore ?? null,
+              controlGroup: row.scores.controlGroupScore ?? null,
+              statisticalRigor: row.scores.statisticalRigorScore ?? null,
+              journalImpact: row.scores.journalImpactScore ?? null,
+              citations: row.scores.citationScore ?? null,
+              authorReputation: row.scores.authorReputationScore ?? null,
+              institution: row.scores.institutionScore ?? null,
+              fundingQuality: row.scores.fundingQualityScore ?? null,
+              hydrogenFocus: row.scores.hydrogenFocusScore ?? null,
+              humanStudy: row.scores.humanStudyScore ?? null,
+              clinicalApplicability: row.scores.clinicalApplicabilityScore ?? null,
+              recency: row.scores.recencyScore ?? null,
+              practicalImplications: row.scores.practicalImplicationsScore ?? null,
+            },
           }
         : null,
       recommendations: row.recommendations

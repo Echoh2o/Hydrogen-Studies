@@ -23,11 +23,13 @@ import {
   Star,
   Calendar,
   ChevronRight,
+  ChevronDown,
   AlertCircle,
   Sparkles,
   Copy,
   Inbox,
   Library,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +47,24 @@ interface QualityScore {
   redFlagCount: number;
   confidence?: "low" | "medium" | "high" | null;
   rubricVersion?: string | null;
+  /** Per-component sub-scores (0-100). Null if this is a legacy score row. */
+  componentScores?: {
+    sampleSize: number | null;
+    studyDesign: number | null;
+    blinding: number | null;
+    controlGroup: number | null;
+    statisticalRigor: number | null;
+    journalImpact: number | null;
+    citations: number | null;
+    authorReputation: number | null;
+    institution: number | null;
+    fundingQuality: number | null;
+    hydrogenFocus: number | null;
+    humanStudy: number | null;
+    clinicalApplicability: number | null;
+    recency: number | null;
+    practicalImplications: number | null;
+  } | null;
 }
 
 interface Recommendation {
@@ -85,6 +105,7 @@ interface PendingQueueItem {
   relevanceScore: number | null;
   redFlags: string[] | null;
   redFlagCount: number | null;
+  scoreBreakdown: any | null; // JSONB from DB — nested component breakdown
   scoreConfidence: "low" | "medium" | "high" | null;
   scoredAt: string | null;
   rubricVersion: string | null;
@@ -226,6 +247,203 @@ function RedFlagList({ flags }: { flags: string[] }) {
   );
 }
 
+/**
+ * Maps a 0-100 sub-score to a colored dot + number, so a row of 15 scores
+ * is scannable. Red for <50, amber for <70, green otherwise.
+ */
+function SubScoreCell({
+  label,
+  score,
+}: {
+  label: string;
+  score: number | null | undefined;
+}) {
+  if (score == null) {
+    return (
+      <div className="flex items-center justify-between py-0.5 text-[11px]">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground">—</span>
+      </div>
+    );
+  }
+  const cls =
+    score >= 70
+      ? "text-green-700"
+      : score >= 50
+      ? "text-amber-700"
+      : "text-red-700";
+  return (
+    <div className="flex items-center justify-between py-0.5 text-[11px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={cn("tabular-nums font-medium", cls)}>{score}</span>
+    </div>
+  );
+}
+
+/**
+ * Expandable score-breakdown panel. Renders three columns (Methodology,
+ * Impact, Relevance) with their sub-scores stacked. Separate `breakdown`
+ * prop is accepted for cases where per-component sub-scores aren't
+ * persisted (the parsed JSON breakdown has the same data).
+ */
+function ScoreBreakdownPanel({
+  component,
+  weights = { methodology: 40, impact: 30, relevance: 30 },
+}: {
+  component: QualityScore["componentScores"];
+  weights?: { methodology: number; impact: number; relevance: number };
+}) {
+  if (!component) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        Component breakdown not available for this score (legacy row).
+      </p>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+      <div>
+        <p className="font-medium mb-1 flex items-center gap-1">
+          <Brain className="h-3 w-3" />
+          Methodology{" "}
+          <span className="text-[10px] text-muted-foreground">({weights.methodology}%)</span>
+        </p>
+        <SubScoreCell label="Sample size" score={component.sampleSize} />
+        <SubScoreCell label="Study design" score={component.studyDesign} />
+        <SubScoreCell label="Blinding" score={component.blinding} />
+        <SubScoreCell label="Control group" score={component.controlGroup} />
+        <SubScoreCell label="Statistical rigor" score={component.statisticalRigor} />
+      </div>
+      <div>
+        <p className="font-medium mb-1 flex items-center gap-1">
+          <TrendingUp className="h-3 w-3" />
+          Impact{" "}
+          <span className="text-[10px] text-muted-foreground">({weights.impact}%)</span>
+        </p>
+        <SubScoreCell label="Journal impact" score={component.journalImpact} />
+        <SubScoreCell label="Citations" score={component.citations} />
+        <SubScoreCell label="Author reputation" score={component.authorReputation} />
+        <SubScoreCell label="Institution" score={component.institution} />
+        <SubScoreCell label="Funding quality" score={component.fundingQuality} />
+      </div>
+      <div>
+        <p className="font-medium mb-1 flex items-center gap-1">
+          <Star className="h-3 w-3" />
+          Relevance{" "}
+          <span className="text-[10px] text-muted-foreground">({weights.relevance}%)</span>
+        </p>
+        <SubScoreCell label="Hydrogen focus" score={component.hydrogenFocus} />
+        <SubScoreCell label="Human study" score={component.humanStudy} />
+        <SubScoreCell label="Clinical applicability" score={component.clinicalApplicability} />
+        <SubScoreCell label="Recency" score={component.recency} />
+        <SubScoreCell label="Practical implications" score={component.practicalImplications} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Builds a `componentScores` object from a parsed JSONB breakdown so the
+ * same ScoreBreakdownPanel can render queue-item scores (which only store
+ * the nested JSON, not the flat column set).
+ */
+function componentScoresFromBreakdown(
+  breakdown: any,
+): QualityScore["componentScores"] {
+  if (!breakdown) return null;
+  const parsed =
+    typeof breakdown === "string" ? safeJSONParse(breakdown) : breakdown;
+  if (!parsed) return null;
+  const m = parsed.methodology?.components ?? {};
+  const i = parsed.impact?.components ?? {};
+  const r = parsed.relevance?.components ?? {};
+  return {
+    sampleSize: m.sampleSize ?? null,
+    studyDesign: m.studyDesign ?? null,
+    blinding: m.blinding ?? null,
+    controlGroup: m.controlGroup ?? null,
+    statisticalRigor: m.statisticalRigor ?? null,
+    journalImpact: i.journalImpact ?? null,
+    citations: i.citations ?? null,
+    authorReputation: i.authorReputation ?? null,
+    institution: i.institution ?? null,
+    fundingQuality: i.fundingQuality ?? null,
+    hydrogenFocus: r.hydrogenFocus ?? null,
+    humanStudy: r.humanStudy ?? null,
+    clinicalApplicability: r.clinicalApplicability ?? null,
+    recency: r.recency ?? null,
+    practicalImplications: r.practicalImplications ?? null,
+  };
+}
+
+function safeJSONParse(s: string): any {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compact topic-balance strip for the Pending Import tab. Shows the mix of
+ * categories in the queue so curators can spot over-concentration ("32
+ * pending: 18 cardio, 8 metabolic — where's the metabolic gap?") and
+ * approve with portfolio balance in mind.
+ */
+function TopicBalance({ items }: { items: PendingQueueItem[] }) {
+  if (items.length === 0) return null;
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const key = (item.category || "Uncategorized").trim() || "Uncategorized";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  const max = sorted[0]?.[1] ?? 1;
+  // Highlight over-concentration: a single category >50% of queue is a flag
+  const topShare = sorted[0] ? sorted[0][1] / items.length : 0;
+  const skewed = topShare > 0.5 && items.length >= 4;
+
+  return (
+    <div className="mb-4 rounded-md border bg-muted/30 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium">
+          Pending by category{" "}
+          <span className="text-muted-foreground font-normal">
+            · {items.length} total
+          </span>
+        </p>
+        {skewed && (
+          <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700">
+            {Math.round(topShare * 100)}% is {sorted[0][0]}
+          </Badge>
+        )}
+      </div>
+      <div className="space-y-1">
+        {sorted.slice(0, 6).map(([cat, n]) => (
+          <div key={cat} className="flex items-center gap-2 text-[11px]">
+            <div className="w-20 truncate" title={cat}>
+              {cat}
+            </div>
+            <div className="flex-1 bg-muted rounded-sm h-1.5 overflow-hidden">
+              <div
+                className="bg-primary/70 h-full"
+                style={{ width: `${(n / max) * 100}%` }}
+              />
+            </div>
+            <div className="w-6 text-right tabular-nums">{n}</div>
+          </div>
+        ))}
+        {sorted.length > 6 && (
+          <div className="text-[10px] text-muted-foreground pt-1">
+            +{sorted.length - 6} more categor
+            {sorted.length - 6 === 1 ? "y" : "ies"}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Component ───────────────────────────────────────────────
 
 const SmartReviewQueue = () => {
@@ -236,6 +454,21 @@ const SmartReviewQueue = () => {
   const [selectedStudy, setSelectedStudy] = useState<StudyQueueItem | null>(null);
   const [selectedStudies, setSelectedStudies] = useState<Set<number>>(new Set());
   const [refreshingId, setRefreshingId] = useState<number | null>(null);
+  /** Set of card ids with their "Why this score?" panel expanded. Keys are
+   *  prefixed "p-<queueId>" or "s-<studyId>" so pending and published ids
+   *  don't collide. */
+  const [expandedBreakdowns, setExpandedBreakdowns] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const toggleBreakdown = (key: string) => {
+    setExpandedBreakdowns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   // ── Queries ──────────────────────────────────────────────
 
@@ -467,6 +700,48 @@ const SmartReviewQueue = () => {
             <>
               <ComponentScoreRow scores={scoreObj} />
               <RedFlagList flags={scoreObj.redFlags} />
+              {/* Why this score? — collapsible sub-score breakdown */}
+              {(() => {
+                const key = `p-${item.id}`;
+                const expanded = expandedBreakdowns.has(key);
+                return (
+                  <div className="border-t pt-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBreakdown(key);
+                      }}
+                      className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      {expanded ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                      Why this score?
+                    </button>
+                    {expanded && (
+                      <div className="mt-2 p-3 bg-muted/40 rounded-md">
+                        <ScoreBreakdownPanel
+                          component={componentScoresFromBreakdown(
+                            item.scoreBreakdown,
+                          )}
+                        />
+                        <div className="mt-2 pt-2 border-t flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <Info className="h-3 w-3" />
+                          {item.scoreConfidence && (
+                            <span>Confidence: {item.scoreConfidence}</span>
+                          )}
+                          {item.rubricVersion && (
+                            <span>Rubric {item.rubricVersion}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <p className="text-xs text-muted-foreground line-clamp-2">
                 {item.abstract}
               </p>
@@ -605,6 +880,46 @@ const SmartReviewQueue = () => {
           <>
             <ComponentScoreRow scores={study.scores} />
             <RedFlagList flags={study.scores.redFlags} />
+            {/* Why this score? — collapsible sub-score breakdown */}
+            {(() => {
+              const key = `s-${study.id}`;
+              const expanded = expandedBreakdowns.has(key);
+              return (
+                <div className="border-t pt-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleBreakdown(key);
+                    }}
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    {expanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                    Why this score?
+                  </button>
+                  {expanded && (
+                    <div className="mt-2 p-3 bg-muted/40 rounded-md">
+                      <ScoreBreakdownPanel
+                        component={study.scores.componentScores ?? null}
+                      />
+                      <div className="mt-2 pt-2 border-t flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <Info className="h-3 w-3" />
+                        {study.scores.confidence && (
+                          <span>Confidence: {study.scores.confidence}</span>
+                        )}
+                        {study.scores.rubricVersion && (
+                          <span>Rubric {study.scores.rubricVersion}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </>
         ) : (
           <Button
@@ -788,6 +1103,7 @@ const SmartReviewQueue = () => {
                 </div>
               ) : pendingItems.length > 0 ? (
                 <div className="space-y-4">
+                  <TopicBalance items={pendingItems} />
                   {pendingItems.map(renderPendingCard)}
                 </div>
               ) : (
