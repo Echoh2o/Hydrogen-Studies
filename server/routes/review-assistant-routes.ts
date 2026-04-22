@@ -9,8 +9,15 @@ import {
 import { eq, desc, gt, and, or, inArray, sql, isNull } from "drizzle-orm";
 import { studyScoringService } from "../services/study-scoring-service";
 import { reviewRecommendationsService } from "../services/review-recommendations-service";
+import { requireAdmin } from "../auth";
 
 const router = Router();
+
+// Every endpoint on this router (scoring, queue listing, recommendations,
+// red-flag details, auto-categorize, similar-studies, refresh) triggers
+// paid AI work on admin-chosen ids OR exposes unpublished editorial data.
+// Router-level requireAdmin is the right default.
+router.use(requireAdmin);
 
 /**
  * Score a review-queue item (pre-publish). Used by admins to retry a failed

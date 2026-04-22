@@ -595,6 +595,34 @@ export async function backfillSuggestions(
 
 // ── CRUD helpers (used by admin routes) ──────────────────────
 
+/**
+ * Assert that a redirect target is a strict same-site absolute path.
+ *
+ * A naïve `startsWith("/")` check accepts protocol-relative URLs like
+ * `//evil.com/phish` — browsers treat those as external, so an admin
+ * mistake (or compromised admin account) could turn the redirect
+ * middleware into an open redirector. Reject those explicitly.
+ */
+function assertSameSitePath(toPath: string): void {
+  if (typeof toPath !== "string" || toPath.length === 0) {
+    throw new Error("Redirect target is required");
+  }
+  if (!toPath.startsWith("/")) {
+    throw new Error("Redirect target must be a same-site absolute path starting with /");
+  }
+  // Protocol-relative (//evil.com) and backslash tricks (/\\evil.com) both
+  // resolve externally in browsers. Block both.
+  if (toPath.startsWith("//") || toPath.startsWith("/\\") || toPath.startsWith("/ ")) {
+    throw new Error("Redirect target must be a same-site absolute path (no //external or /\\ prefixes)");
+  }
+  // Reject anything containing a raw scheme — defense in depth against
+  // values like "/https://evil.com" that some downstream handlers could
+  // mis-parse. Pure paths never contain "://".
+  if (/:\/\//.test(toPath)) {
+    throw new Error("Redirect target must not contain a URL scheme");
+  }
+}
+
 export async function listRedirects() {
   return db
     .select()
@@ -603,6 +631,10 @@ export async function listRedirects() {
 }
 
 export async function createRedirect(fromPath: string, toPath: string, statusCode = 301, note?: string) {
+  // Validate *before* doing any loop/self-redirect work so we never even
+  // consider an external URL as a valid target.
+  assertSameSitePath(toPath);
+
   const normalized = fromPath.toLowerCase().replace(/\/+$/, "") || "/";
   const normalizedTo = toPath.replace(/\/+$/, "") || "/";
 
@@ -622,11 +654,6 @@ export async function createRedirect(fromPath: string, toPath: string, statusCod
     current = match.toPath.toLowerCase().replace(/\/+$/, "");
   }
 
-  // Validate toPath is a relative path (prevent open redirects)
-  if (!toPath.startsWith("/")) {
-    throw new Error("Redirect target must be a relative path starting with /");
-  }
-
   const [row] = await db
     .insert(redirects)
     .values({ fromPath: normalized, toPath, statusCode, note })
@@ -643,6 +670,13 @@ export async function createRedirect(fromPath: string, toPath: string, statusCod
 }
 
 export async function updateRedirect(id: number, data: { toPath?: string; statusCode?: number; isActive?: boolean; note?: string }) {
+  // If the caller is changing the target, re-validate. The old code path
+  // skipped this entirely — an admin could PUT a redirect with toPath
+  // "//evil.com" and bypass the create-time check.
+  if (data.toPath !== undefined) {
+    assertSameSitePath(data.toPath);
+  }
+
   const [row] = await db
     .update(redirects)
     .set(data)

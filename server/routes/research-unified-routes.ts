@@ -717,9 +717,25 @@ router.post(
       // Not a duplicate — proceed to score. Wrapped with a 15s cap so a
       // slow AI provider doesn't block the API response; nightly cron
       // backfills any items whose scoring timed out.
+      //
+      // The `.catch()` on the score promise is critical: when the timeout
+      // wins the race, the score promise is orphaned. If it later rejects
+      // (AI provider errors after the timeout), an unhandled rejection
+      // can crash the process under strict handlers. Attaching a terminal
+      // catch makes it safe to abandon.
       let scoredItem = savedReviewItem;
       try {
-        const scorePromise = studyScoringService.scoreQueueItem(savedReviewItem.id);
+        const scorePromise = studyScoringService
+          .scoreQueueItem(savedReviewItem.id)
+          .catch((err) => {
+            logger.error(
+              "Late queue-scoring failure (post-timeout)",
+              err,
+              "ResearchUnifiedRoutes",
+              { queueItemId: savedReviewItem.id },
+            );
+            return null;
+          });
         const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000));
         const result = await Promise.race([scorePromise, timeout]);
         if (result) {
@@ -753,9 +769,13 @@ router.post(
 
 /**
  * Get items from the study review queue
+ *
+ * Admin-gated: the queue contains unpublished AI scores, red-flag details,
+ * and reviewer-internal notes. Must not be publicly listable.
  */
 router.get(
   "/api/research/review-queue",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { status, userId } = req.query;
