@@ -1877,6 +1877,12 @@ export const studyQualityScores = pgTable(
     // Which rubric version produced this score. When the rubric changes, the
     // nightly cron rescores rows whose version doesn't match the current one.
     rubricVersion: text("rubric_version"),
+    // Poison-row backoff: count consecutive failed scoring attempts and the
+    // timestamp of the last one. The rescoring cron deprioritizes rows with
+    // repeated recent failures so a broken AI provider doesn't cause the same
+    // 20 studies to burn the daily batch forever.
+    scoreAttemptCount: integer("score_attempt_count").notNull().default(0),
+    lastScoreAttemptAt: timestamp("last_score_attempt_at"),
 
     lastUpdated: timestamp("last_updated").notNull().defaultNow(),
     createdAt: timestamp("created_at").notNull().defaultNow(),

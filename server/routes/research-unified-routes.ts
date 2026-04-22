@@ -650,8 +650,27 @@ router.post(
         }),
       };
 
-      // Save to review queue
-      const savedReviewItem = await reviewService.addToQueue(reviewItem);
+      // Save to review queue. The partial unique index on
+      // `study_review_queue (LOWER(normalized_doi)) WHERE status='pending'`
+      // rejects concurrent inserts of the same DOI with SQLSTATE 23505.
+      // Treat that as a clean "already being reviewed" 409 — the race
+      // winner's row is the canonical one.
+      let savedReviewItem;
+      try {
+        savedReviewItem = await reviewService.addToQueue(reviewItem);
+      } catch (err: any) {
+        if (err?.code === "23505") {
+          logger.info(
+            "Queue insert race-lost to a concurrent duplicate",
+            "ResearchUnifiedRoutes",
+            { doi: reviewItem.doi },
+          );
+          return res.status(409).json({
+            error: "This paper is already in the pending review queue",
+          });
+        }
+        throw err;
+      }
 
       // Dedup check *before* scoring — matched duplicates skip the AI
       // entirely (saves cost) and get surfaced in the UI with a prominent
@@ -662,15 +681,37 @@ router.post(
         excludeQueueId: savedReviewItem.id,
       }).catch((err) => {
         logger.error("Dedup check failed", err, "ResearchUnifiedRoutes");
-        return { isDuplicate: false as const };
+        return { isDuplicate: false as const, degraded: true };
       });
+
+      // Surface silent dedup degradation so ops can alert on it. When this
+      // fires, the "not a duplicate" answer below is unreliable.
+      if ("degraded" in dupeResult && dupeResult.degraded) {
+        logger.warn(
+          "Dedup degraded: one or more queries failed; proceeding fail-open",
+          "ResearchUnifiedRoutes",
+          { queueItemId: savedReviewItem.id },
+        );
+      }
 
       if (dupeResult.isDuplicate) {
         // Persist the match metadata inside reviewNotes (the column already
         // holds JSON; appending a `duplicateMatch` key keeps schema static).
+        // Strip prototype-pollution-adjacent keys defensively — reviewNotes
+        // round-trips user-influenced JSON and we don't want `__proto__`
+        // etc. surviving a parse → spread → stringify cycle.
         const existingNotes = (() => {
-          try { return JSON.parse(savedReviewItem.reviewNotes || "{}"); }
-          catch { return {}; }
+          try {
+            const raw = JSON.parse(savedReviewItem.reviewNotes || "{}");
+            if (!raw || typeof raw !== "object") return {};
+            return Object.fromEntries(
+              Object.entries(raw).filter(
+                ([k]) => !/^(__proto__|constructor|prototype)$/.test(k),
+              ),
+            );
+          } catch {
+            return {};
+          }
         })();
         const updatedNotes = {
           ...existingNotes,
@@ -778,14 +819,23 @@ router.get(
   requireAdmin,
   async (req: Request, res: Response) => {
     try {
-      const { status, userId } = req.query;
+      const { status, userId, limit, offset } = req.query;
 
-      const filters: { status?: string; userId?: string } = {};
-      if (status && typeof status === "string") {
-        filters.status = status;
+      const filters: {
+        status?: string;
+        userId?: string;
+        limit?: number;
+        offset?: number;
+      } = {};
+      if (status && typeof status === "string") filters.status = status;
+      if (userId && typeof userId === "string") filters.userId = userId;
+      if (typeof limit === "string") {
+        const parsed = parseInt(limit, 10);
+        if (!isNaN(parsed)) filters.limit = parsed;
       }
-      if (userId && typeof userId === "string") {
-        filters.userId = userId;
+      if (typeof offset === "string") {
+        const parsed = parseInt(offset, 10);
+        if (!isNaN(parsed)) filters.offset = parsed;
       }
 
       const reviewItems = await reviewService.getQueue(filters);

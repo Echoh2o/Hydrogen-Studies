@@ -7,6 +7,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { db } from "../db";
 import { studies, blogArticles, studyQualityScores } from "@shared/schema";
 import { ai } from "./ai-provider";
+import { logger } from "../utils/logger";
 
 export interface BlogRecommendation {
   studyId: number;
@@ -269,7 +270,13 @@ export async function getBlogRecommendations(
     recommendations.sort((a, b) => b.rankScore - a.rankScore);
     return recommendations.slice(0, limit);
   } catch (error) {
-    console.error("Error getting blog recommendations:", error);
+    // Use structured logging (goes to Sentry / log aggregator via logger)
+    // so silent "empty recommendation list" states are actually diagnosable.
+    logger.error(
+      "Error getting blog recommendations",
+      error,
+      "BlogRecommendationSystem",
+    );
     return [];
   }
 }

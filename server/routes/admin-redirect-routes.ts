@@ -151,6 +151,13 @@ router.post("/404s/backfill", requireAdmin, async (req: Request, res: Response) 
 router.get("/suggest", requireAdmin, async (req: Request, res: Response) => {
   try {
     const path = (req.query.path as string) || "";
+    // Length cap protects Postgres: `getRankedSuggestions` runs three
+    // `similarity()` trigram queries against studies/blogs/conditions.
+    // A multi-KB path input would make each query compute trigrams over
+    // a multi-KB pattern per row. 500 chars covers every legitimate URL.
+    if (path.length > 500) {
+      return res.status(400).json({ error: "path too long (max 500 chars)" });
+    }
     if (!path.startsWith("/")) {
       return res.status(400).json({ error: "path query param must start with /" });
     }

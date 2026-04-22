@@ -769,9 +769,12 @@ const SmartReviewQueue = () => {
                 </div>
               )}
               <div className="flex items-center gap-2 pt-1">
-                {duplicateMatch?.duplicateOfStudyId && (
+                {duplicateMatch?.duplicateOfStudyId != null && (
                   <a
-                    href={`/study/id/${duplicateMatch.duplicateOfStudyId}`}
+                    /* Number() coerces any JSON round-trip weirdness to a clean
+                       numeric id so a bad server value can't produce a malformed
+                       URL like "/study/id/../admin". */
+                    href={`/study/id/${Number(duplicateMatch.duplicateOfStudyId) || 0}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs underline text-muted-foreground hover:text-foreground"

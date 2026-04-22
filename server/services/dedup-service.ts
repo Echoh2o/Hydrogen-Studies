@@ -36,6 +36,24 @@ const TAG = "DedupService";
  */
 const TITLE_SIMILARITY_THRESHOLD = 0.75;
 
+/**
+ * Minimum title length for the trigram check. Titles shorter than this
+ * produce unreliable similarity scores — "Long COVID" (10 chars) will
+ * match itself at 1.0 against any other 10-char "Long COVID" paper,
+ * collapsing distinct studies. 20 chars pushes us into territory where
+ * trigram signal is meaningful.
+ */
+const MIN_TITLE_LEN_FOR_TRIGRAM = 20;
+
+/**
+ * Maximum title length the trigram query will consider. Titles longer
+ * than this short-circuit to "not a duplicate" — trigram similarity on
+ * multi-KB strings is a DB DoS vector (Postgres computes trigrams over
+ * every row using the input pattern). 500 chars is generous: the longest
+ * real paper title in PubMed is under 400 chars.
+ */
+const MAX_TITLE_LEN_FOR_TRIGRAM = 500;
+
 export interface DuplicateMatch {
   isDuplicate: boolean;
   /** Existing published study id. */
@@ -47,9 +65,16 @@ export interface DuplicateMatch {
   similarity?: number;
   /** Title of the existing study/queue item, for admin context. */
   existingTitle?: string;
+  /**
+   * True if one or more dedup queries failed. Fail-open semantics mean the
+   * caller still proceeds as if no duplicate was found, but this flag lets
+   * monitoring surface the silent degradation. When `degraded: true` and
+   * `isDuplicate: false`, the negative answer is unreliable.
+   */
+  degraded?: boolean;
 }
 
-/** One-time index setup. Idempotent. */
+/** One-time index setup. Idempotent; reset on failure so a later boot can retry. */
 let ensurePromise: Promise<void> | null = null;
 export function ensureDedupIndexes(): Promise<void> {
   if (ensurePromise) return ensurePromise;
@@ -60,8 +85,26 @@ export function ensureDedupIndexes(): Promise<void> {
       await db.execute(
         sql`CREATE INDEX IF NOT EXISTS studies_doi_idx ON studies (LOWER(doi))`,
       );
+
+      // Partial unique index that enforces: no two *pending* queue rows
+      // can share the same normalized DOI. This is the race-safety net —
+      // two concurrent `addToQueue` calls with the same DOI will race
+      // to INSERT; the loser gets a 23505 unique-violation, which the
+      // caller catches and treats as "detected as concurrent duplicate".
+      // Normalization (lowercase + strip doi.org prefix) mirrors
+      // normalizeDoi() exactly so the app-layer and index-layer agree.
+      await db.execute(sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS study_review_queue_pending_doi_unique
+          ON study_review_queue (
+            LOWER(REGEXP_REPLACE(doi, '^https?://(dx\.)?doi\.org/', '', 'i'))
+          )
+          WHERE status = 'pending' AND doi IS NOT NULL
+      `);
       logger.info("Dedup indexes ensured", TAG);
     } catch (err) {
+      // Reset the cache so a subsequent boot / retry can re-attempt
+      // index creation instead of short-circuiting on the stale promise.
+      ensurePromise = null;
       logger.warn("Failed to create dedup index (non-fatal)", TAG, {
         err: (err as Error).message,
       });
@@ -90,6 +133,7 @@ export async function detectDuplicate(params: {
 }): Promise<DuplicateMatch> {
   await ensureDedupIndexes().catch(() => {});
   const { doi, title, excludeQueueId } = params;
+  let degraded = false;
 
   // ── 1. DOI exact match ────────────────────────────────────────
   if (doi && doi.trim()) {
@@ -113,6 +157,7 @@ export async function detectDuplicate(params: {
         };
       }
     } catch (err) {
+      degraded = true;
       logger.error("DOI dedup query (studies) failed", err, TAG);
     }
 
@@ -142,13 +187,19 @@ export async function detectDuplicate(params: {
         };
       }
     } catch (err) {
+      degraded = true;
       logger.error("DOI dedup query (queue) failed", err, TAG);
     }
   }
 
   // ── 2. Title trigram match ────────────────────────────────────
-  // Skip very short titles — trigram similarity is unreliable under ~10 chars.
-  if (title && title.trim().length >= 10) {
+  // Skip very short titles (unreliable signal) and excessively long ones
+  // (DB DoS risk; see MAX_TITLE_LEN_FOR_TRIGRAM).
+  if (
+    title &&
+    title.trim().length >= MIN_TITLE_LEN_FOR_TRIGRAM &&
+    title.trim().length <= MAX_TITLE_LEN_FOR_TRIGRAM
+  ) {
     const normalizedTitle = title.trim().toLowerCase();
 
     try {
@@ -174,9 +225,10 @@ export async function detectDuplicate(params: {
         };
       }
     } catch (err) {
+      degraded = true;
       logger.error("Title trigram dedup query failed", err, TAG);
     }
   }
 
-  return { isDuplicate: false };
+  return { isDuplicate: false, ...(degraded ? { degraded: true } : {}) };
 }

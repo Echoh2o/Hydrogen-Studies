@@ -174,6 +174,13 @@ async function generateSingleBlogArticle(
   articleType: string,
   readingLevelOverride?: ReadingLevel,
 ): Promise<InsertBlogArticle> {
+  // Normalize to the registry id before doing anything else — if a caller
+  // passes an unknown type, getArticleTypeDef falls back to science_explainer
+  // for prompts but we need the stored article_type to match that fallback
+  // instead of diverging (old bug: DB got the unknown string, content was
+  // science_explainer style).
+  articleType = getArticleTypeDef(articleType).id;
+
   try {
     // Check for duplicate: skip if an article with this studyId + articleType already exists
     const [existing] = await db

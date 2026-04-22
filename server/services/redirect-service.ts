@@ -23,10 +23,12 @@ let ensureTrgmPromise: Promise<void> | null = null;
 export function ensureRedirectIndexes(): Promise<void> {
   if (ensureTrgmPromise) return ensureTrgmPromise;
   ensureTrgmPromise = (async () => {
+    let hadRequiredFailure = false;
     // suggestions column is required — must not be swallowed
     try {
       await db.execute(sql`ALTER TABLE not_found_log ADD COLUMN IF NOT EXISTS suggestions jsonb`);
     } catch (err) {
+      hadRequiredFailure = true;
       logger.error("Failed to add not_found_log.suggestions column", err, TAG);
     }
     // pg_trgm + GIN indexes are a perf optimization; tolerate failure
@@ -43,6 +45,13 @@ export function ensureRedirectIndexes(): Promise<void> {
       logger.info("Redirect trigram indexes ensured", TAG);
     } catch (err) {
       logger.warn("pg_trgm setup failed; falling back to sequential scans", TAG, { err: (err as Error).message });
+    }
+
+    // If the required ALTER failed, reset the cached promise so a later
+    // boot can retry. A transient DB issue on first boot shouldn't
+    // permanently disable the suggestions feature.
+    if (hadRequiredFailure) {
+      ensureTrgmPromise = null;
     }
   })();
   return ensureTrgmPromise;
