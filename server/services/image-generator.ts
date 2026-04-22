@@ -58,6 +58,86 @@ function getImageClient(): { client: ReturnType<typeof ai.getXAIClient>; provide
 }
 
 /**
+ * Build the provider-specific request params. xAI's grok-imagine-image
+ * rejects size/response_format/quality/style; only DALL-E accepts them.
+ */
+function buildGenerateParams(provider: "xai" | "openai", prompt: string): any {
+  const params: any = {
+    model: getImageModel(provider),
+    prompt,
+    n: 1,
+  };
+  if (provider === "openai") {
+    params.size = "1024x1024";
+    params.response_format = "url";
+    params.quality = "standard";
+    params.style = "natural";
+  }
+  return params;
+}
+
+/**
+ * True when a provider error is worth retrying through the other provider.
+ * Covers: 429 (rate limit / credits exhausted), 402 (payment required),
+ * 5xx (provider outage), and specific "credit" / "spending limit" messages.
+ * Excludes 400 (bad request — our bug, won't help) and 401/403 (our key).
+ */
+function shouldFailoverToOtherProvider(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const anyErr = err as { status?: number; code?: string | number; message?: string };
+  const status = typeof anyErr.status === "number" ? anyErr.status : undefined;
+  if (status === 429 || status === 402) return true;
+  if (typeof status === "number" && status >= 500 && status < 600) return true;
+  const msg = typeof anyErr.message === "string" ? anyErr.message.toLowerCase() : "";
+  if (msg.includes("credits") || msg.includes("spending limit") || msg.includes("rate limit")) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Generate an image buffer with automatic provider failover.
+ *
+ * Attempts the primary provider (xAI if configured, else OpenAI). If the
+ * primary returns a transient-ish error (429, 402, 5xx, or a credit /
+ * rate-limit message) AND the OTHER provider is also configured, the same
+ * prompt is retried through it. This keeps image generation working when
+ * xAI hits its monthly cap — which happened in prod on 2026-04-22.
+ */
+async function generateImageBufferWithFailover(
+  prompt: string,
+): Promise<{ buffer: Buffer; provider: "xai" | "openai" } | null> {
+  const primary = getImageClient();
+
+  try {
+    const response = await primary.client!.images.generate(
+      buildGenerateParams(primary.provider, prompt),
+    );
+    const buffer = await extractImageBuffer(response);
+    if (buffer) return { buffer, provider: primary.provider };
+    return null;
+  } catch (err) {
+    // Only try the fallback when primary is xAI and OpenAI is available.
+    if (primary.provider !== "xai" || !shouldFailoverToOtherProvider(err)) {
+      throw err;
+    }
+    const openaiClient = ai.getOpenAIClient();
+    if (!openaiClient) throw err;
+
+    logger.warn(
+      `xAI image generation failed (${err instanceof Error ? err.message : "unknown"}) — retrying via OpenAI`,
+      "ImageGenerator",
+    );
+    const response = await openaiClient.images.generate(
+      buildGenerateParams("openai", prompt),
+    );
+    const buffer = await extractImageBuffer(response);
+    if (buffer) return { buffer, provider: "openai" };
+    return null;
+  }
+}
+
+/**
  * Generate a scientific image based on text content
  * This function is used for generic image generation based on scientific text
  * @param content Text content to generate an image for
@@ -159,35 +239,16 @@ export async function generateBlogImage(blogId: number): Promise<{
     // Create a simplified prompt for blog image
     const prompt = `Create a modern, engaging image to represent a blog article titled "${title}" about ${summary}. The image should be appropriate for a health and wellness website focused on hydrogen research. Use a clean, professional style with subtle medical/scientific elements. No text in the image.`;
 
-    const { client, provider } = getImageClient();
+    const result = await generateImageBufferWithFailover(prompt);
 
-    // Generate the image using Grok or DALL-E
-    // xAI's grok-imagine-image doesn't support `size`, `response_format`,
-    // `quality`, or `style` — only DALL-E does. Keep the xAI request minimal.
-    const generateParams: any = {
-      model: getImageModel(provider),
-      prompt: prompt,
-      n: 1,
-    };
-
-    if (provider === "openai") {
-      generateParams.size = "1024x1024";
-      generateParams.response_format = "url";
-      generateParams.quality = "standard";
-      generateParams.style = "natural";
-    }
-
-    const response = await client!.images.generate(generateParams);
-
-    const imageBuffer = await extractImageBuffer(response);
-
-    if (!imageBuffer) {
+    if (!result) {
       return {
         success: false,
         message: "Failed to generate image — provider returned no url or b64_json",
       };
     }
 
+    const { buffer: imageBuffer } = result;
     const imageName = `blog_${blogId}_${uuidv4()}.png`;
     const storageKey = `blog-images/${imageName}`;
 
@@ -287,35 +348,16 @@ export async function generateImageForStudy(studyId: number): Promise<{
       healthBenefits,
     );
 
-    const { client, provider } = getImageClient();
+    const result = await generateImageBufferWithFailover(prompt);
 
-    // Generate the image using Grok or DALL-E
-    // xAI's grok-imagine-image doesn't support `size`, `response_format`,
-    // `quality`, or `style` — only DALL-E does. Keep the xAI request minimal.
-    const generateParams: any = {
-      model: getImageModel(provider),
-      prompt: prompt,
-      n: 1,
-    };
-
-    if (provider === "openai") {
-      generateParams.size = "1024x1024";
-      generateParams.response_format = "url";
-      generateParams.quality = "standard";
-      generateParams.style = "natural";
-    }
-
-    const response = await client!.images.generate(generateParams);
-
-    const imageBuffer = await extractImageBuffer(response);
-
-    if (!imageBuffer) {
+    if (!result) {
       return {
         success: false,
         message: "Failed to generate image — provider returned no url or b64_json",
       };
     }
 
+    const { buffer: imageBuffer } = result;
     const imageName = `study_${studyId}_${uuidv4()}.png`;
     const storageKey = `study-images/${imageName}`;
 
