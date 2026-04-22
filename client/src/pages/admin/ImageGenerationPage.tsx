@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Image, Check, Zap, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 
 // Define types for API responses
 interface StudyWithoutImage {
@@ -34,13 +35,23 @@ interface BatchImageResponse {
   success: boolean;
   message: string;
   studyIds?: number[];
+  jobId?: string;
+  total?: number;
+}
+
+interface BatchJobStatus {
+  jobId: string;
+  total: number;
+  completed: number;
+  succeeded: number;
+  failed: number;
+  done: boolean;
 }
 
 const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}) => {
   const { toast } = useToast();
   const [batchSize, setBatchSize] = useState<number>(5);
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
-  const [autoGenStarted, setAutoGenStarted] = useState<boolean>(false);
   const [isLoadingStudies, setIsLoadingStudies] = useState<boolean>(true);
   const [studiesNeedingImages, setStudiesNeedingImages] = useState<number[]>(
     [],
@@ -48,6 +59,7 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
   const [isGeneratingSingle, setIsGeneratingSingle] = useState<boolean>(false);
   const [isGeneratingBatch, setIsGeneratingBatch] = useState<boolean>(false);
   const [isGeneratingAll, setIsGeneratingAll] = useState<boolean>(false);
+  const [activeJob, setActiveJob] = useState<BatchJobStatus | null>(null);
 
   // Fetch studies needing images
   const fetchStudiesNeedingImages = async () => {
@@ -159,17 +171,24 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
         body: JSON.stringify({ studyIds: listData.studyIds }),
       });
 
-      const data = await response.json();
+      const data: BatchImageResponse = await response.json();
 
       if (data.success) {
+        if (data.jobId && data.total) {
+          setActiveJob({
+            jobId: data.jobId,
+            total: data.total,
+            completed: 0,
+            succeeded: 0,
+            failed: 0,
+            done: false,
+          });
+        }
         toast({
           title: "Batch Processing Started",
-          description: `Started processing ${listData.studyIds.length} studies. This will run in the background.`,
+          description: `Started processing ${listData.studyIds.length} studies. Progress shown below.`,
           variant: "default",
         });
-
-        // Wait a moment then refresh the list
-        setTimeout(fetchStudiesNeedingImages, 5000);
       } else {
         console.error("Error batch generating images:", data.message);
         toast({
@@ -209,20 +228,26 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
         headers: { "Content-Type": "application/json" },
       });
 
-      const data = await response.json();
+      const data: BatchImageResponse = await response.json();
 
       if (data.success) {
-        setAutoGenStarted(true);
+        if (data.jobId && data.total) {
+          setActiveJob({
+            jobId: data.jobId,
+            total: data.total,
+            completed: 0,
+            succeeded: 0,
+            failed: 0,
+            done: false,
+          });
+        }
         toast({
           title: "Auto-Generation Started",
           description:
             data.message ||
-            "Started generating images for all studies that need them. This process will run in the background.",
+            `Started generating images for ${data.total ?? "all"} studies. Progress shown below.`,
           variant: "default",
         });
-
-        // Wait a moment then refresh the list
-        setTimeout(fetchStudiesNeedingImages, 5000);
       } else {
         console.error("Error auto generating images:", data.message);
         toast({
@@ -247,6 +272,52 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
   useEffect(() => {
     fetchStudiesNeedingImages();
   }, []);
+
+  // While a batch job is active, poll /jobs/:id every 3s so the user sees
+  // live progress instead of just a "started" toast. When the job reports
+  // done, refresh the "studies needing images" list to reflect the new
+  // image_url writes. Finished jobs linger on the server for 10 min; once
+  // the endpoint returns 404 we clear local state.
+  useEffect(() => {
+    if (!activeJob || activeJob.done) return;
+
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`/api/image-generation/jobs/${activeJob.jobId}`);
+        if (res.status === 404) {
+          if (!cancelled) setActiveJob(null);
+          return;
+        }
+        const data = await res.json();
+        if (cancelled || !data.success) return;
+        setActiveJob({
+          jobId: activeJob.jobId,
+          total: data.total,
+          completed: data.completed,
+          succeeded: data.succeeded,
+          failed: data.failed,
+          done: !!data.done,
+        });
+        if (data.done) {
+          toast({
+            title: "Batch finished",
+            description: `${data.succeeded} succeeded, ${data.failed} failed out of ${data.total}.`,
+          });
+          fetchStudiesNeedingImages();
+        }
+      } catch {
+        // Transient — next tick will retry.
+      }
+    };
+
+    tick();
+    const interval = setInterval(tick, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeJob?.jobId, activeJob?.done, toast]);
 
   const content = (
     <>
@@ -323,40 +394,84 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {autoGenStarted ? (
-              <Alert className="bg-green-50 border-green-200 text-green-800">
-                <Activity className="h-4 w-4" />
-                <AlertTitle>Auto-Generation In Progress</AlertTitle>
-                <AlertDescription>
-                  Image generation is running in the background. This process
-                  may take some time to complete.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <>
-                <p className="text-muted-foreground mb-4">
-                  This will find all studies without images and generate AI
-                  visuals for them in the background.
-                </p>
-                <Button
-                  onClick={autoGenerateAllImages}
-                  disabled={isGeneratingAll}
-                  className="w-full bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700"
-                >
-                  {isGeneratingAll ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Starting...
-                    </>
-                  ) : (
-                    <>Auto-Generate All Missing Images</>
-                  )}
-                </Button>
-              </>
-            )}
+            <p className="text-muted-foreground mb-4">
+              This will find all studies without images and generate AI
+              visuals for them in the background.
+            </p>
+            <Button
+              onClick={autoGenerateAllImages}
+              disabled={isGeneratingAll || (activeJob && !activeJob.done) || false}
+              className="w-full bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700"
+            >
+              {isGeneratingAll ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </>
+              ) : activeJob && !activeJob.done ? (
+                <>Batch in progress…</>
+              ) : (
+                <>Auto-Generate All Missing Images</>
+              )}
+            </Button>
           </CardContent>
         </Card>
       </div>
+
+      {/* Live batch progress card */}
+      {activeJob && (
+        <Card className="mb-6 border-teal-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-base">
+              <Activity className="h-4 w-4 mr-2 text-teal-600" />
+              {activeJob.done ? "Batch finished" : "Batch in progress"}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                (job {activeJob.jobId})
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-muted-foreground">
+                {activeJob.completed} of {activeJob.total} processed
+                {" · "}
+                <span className="text-green-600">{activeJob.succeeded} ok</span>
+                {activeJob.failed > 0 && (
+                  <>
+                    {" · "}
+                    <span className="text-red-600">{activeJob.failed} failed</span>
+                  </>
+                )}
+              </span>
+              <span className="font-medium">
+                {activeJob.total > 0
+                  ? Math.round((activeJob.completed / activeJob.total) * 100)
+                  : 0}
+                %
+              </span>
+            </div>
+            <Progress
+              value={
+                activeJob.total > 0
+                  ? (activeJob.completed / activeJob.total) * 100
+                  : 0
+              }
+              className="h-2"
+            />
+            {activeJob.done && (
+              <div className="mt-3 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveJob(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <h2 className="text-xl font-semibold mb-4">Studies Needing Images</h2>
 
