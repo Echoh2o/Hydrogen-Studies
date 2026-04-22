@@ -10,6 +10,10 @@ import { searchCrossRef, extractStudyFromCrossRef } from "../services/crossref-a
 import { studyService } from "../services/study-service";
 import { reviewService } from "../services/review-service";
 import { studyScoringService } from "../services/study-scoring-service";
+import { detectDuplicate } from "../services/dedup-service";
+import { db } from "../db";
+import { studyReviewQueue } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
 import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
@@ -649,12 +653,70 @@ router.post(
       // Save to review queue
       const savedReviewItem = await reviewService.addToQueue(reviewItem);
 
-      // Score the queue item synchronously so admins see quality before
-      // deciding approve/reject. This is the key inversion: scoring now
-      // informs the publish decision instead of following it.
-      //
-      // Wrapped with a 15s cap — if the AI provider is slow or errors,
-      // we continue without a score and the nightly cron picks it up.
+      // Dedup check *before* scoring — matched duplicates skip the AI
+      // entirely (saves cost) and get surfaced in the UI with a prominent
+      // "Duplicate of" badge so the curator can reject in one click.
+      const dupeResult = await detectDuplicate({
+        doi: savedReviewItem.doi,
+        title: savedReviewItem.title,
+        excludeQueueId: savedReviewItem.id,
+      }).catch((err) => {
+        logger.error("Dedup check failed", err, "ResearchUnifiedRoutes");
+        return { isDuplicate: false as const };
+      });
+
+      if (dupeResult.isDuplicate) {
+        // Persist the match metadata inside reviewNotes (the column already
+        // holds JSON; appending a `duplicateMatch` key keeps schema static).
+        const existingNotes = (() => {
+          try { return JSON.parse(savedReviewItem.reviewNotes || "{}"); }
+          catch { return {}; }
+        })();
+        const updatedNotes = {
+          ...existingNotes,
+          duplicateMatch: {
+            matchType: dupeResult.matchType,
+            similarity: dupeResult.similarity,
+            existingTitle: dupeResult.existingTitle,
+            duplicateOfStudyId: dupeResult.duplicateOfStudyId ?? null,
+            duplicateOfQueueId: dupeResult.duplicateOfQueueId ?? null,
+          },
+        };
+        await db
+          .update(studyReviewQueue)
+          .set({
+            isDuplicate: true,
+            duplicateOfStudyId: dupeResult.duplicateOfStudyId ?? null,
+            reviewNotes: JSON.stringify(updatedNotes),
+          })
+          .where(eq(studyReviewQueue.id, savedReviewItem.id));
+
+        logger.info(
+          "Queue item flagged as duplicate; skipping scoring",
+          "ResearchUnifiedRoutes",
+          {
+            queueItemId: savedReviewItem.id,
+            matchType: dupeResult.matchType,
+            similarity: dupeResult.similarity,
+          },
+        );
+
+        return res.json({
+          success: true,
+          message: "Added to queue — detected as duplicate (scoring skipped)",
+          reviewItem: {
+            ...savedReviewItem,
+            isDuplicate: true,
+            duplicateOfStudyId: dupeResult.duplicateOfStudyId ?? null,
+            reviewNotes: JSON.stringify(updatedNotes),
+          },
+          duplicate: dupeResult,
+        });
+      }
+
+      // Not a duplicate — proceed to score. Wrapped with a 15s cap so a
+      // slow AI provider doesn't block the API response; nightly cron
+      // backfills any items whose scoring timed out.
       let scoredItem = savedReviewItem;
       try {
         const scorePromise = studyScoringService.scoreQueueItem(savedReviewItem.id);

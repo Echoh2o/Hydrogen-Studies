@@ -112,6 +112,38 @@ interface PendingQueueItem {
   savedAt: string;
   isDuplicate: boolean | null;
   duplicateOfStudyId: number | null;
+  /** JSON text — the dedup service stores match metadata under `duplicateMatch` */
+  reviewNotes: string | null;
+}
+
+interface DuplicateMatch {
+  matchType: "doi" | "title";
+  similarity: number;
+  existingTitle: string | null;
+  duplicateOfStudyId: number | null;
+  duplicateOfQueueId: number | null;
+}
+
+/** Parse `duplicateMatch` metadata out of a queue item's reviewNotes blob. */
+function extractDuplicateMatch(
+  item: PendingQueueItem,
+): DuplicateMatch | null {
+  if (!item.isDuplicate) return null;
+  try {
+    const parsed = JSON.parse(item.reviewNotes || "{}");
+    const dm = parsed?.duplicateMatch;
+    if (!dm) return null;
+    return {
+      matchType: dm.matchType,
+      similarity: Number(dm.similarity) || 0,
+      existingTitle: dm.existingTitle ?? null,
+      duplicateOfStudyId:
+        dm.duplicateOfStudyId ?? item.duplicateOfStudyId ?? null,
+      duplicateOfQueueId: dm.duplicateOfQueueId ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -651,9 +683,16 @@ const SmartReviewQueue = () => {
           rubricVersion: item.rubricVersion,
         }
       : null;
+    const duplicateMatch = extractDuplicateMatch(item);
 
     return (
-      <Card key={item.id} className="transition-all hover:shadow-lg">
+      <Card
+        key={item.id}
+        className={cn(
+          "transition-all hover:shadow-lg",
+          item.isDuplicate && "border-destructive/40",
+        )}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
@@ -681,21 +720,90 @@ const SmartReviewQueue = () => {
                 <Badge variant="outline" className="text-[10px] h-4 px-1">
                   {item.sourcePlatform}
                 </Badge>
-                {item.isDuplicate && (
-                  <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                    <Copy className="h-2.5 w-2.5 mr-0.5" />
-                    Duplicate
-                  </Badge>
-                )}
               </div>
             </div>
             <div className="flex flex-col gap-2 items-end shrink-0">
-              <ScoreBadge score={item.overallScore} />
-              <ConfidenceBadge confidence={item.scoreConfidence} />
+              {item.isDuplicate ? (
+                <Badge variant="destructive" className="text-[10px]">
+                  <Copy className="h-3 w-3 mr-1" />
+                  Duplicate
+                </Badge>
+              ) : (
+                <>
+                  <ScoreBadge score={item.overallScore} />
+                  <ConfidenceBadge confidence={item.scoreConfidence} />
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Dedup panel — surfaces match metadata + one-click reject.
+              Renders above everything else so curators see the red flag
+              before they look at the score. */}
+          {item.isDuplicate && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Copy className="h-4 w-4 text-destructive" />
+                <span className="text-sm font-semibold text-destructive">
+                  Likely duplicate
+                </span>
+                {duplicateMatch && (
+                  <Badge variant="outline" className="text-[10px] ml-auto">
+                    {duplicateMatch.matchType === "doi"
+                      ? "Exact DOI match"
+                      : `${Math.round(duplicateMatch.similarity * 100)}% title match`}
+                  </Badge>
+                )}
+              </div>
+              {duplicateMatch?.existingTitle && (
+                <div className="text-xs">
+                  <div className="text-muted-foreground mb-0.5">
+                    {duplicateMatch.duplicateOfQueueId
+                      ? "Matches pending queue item:"
+                      : "Matches existing published study:"}
+                  </div>
+                  <div className="font-mono text-[11px] line-clamp-2" title={duplicateMatch.existingTitle}>
+                    {duplicateMatch.existingTitle}
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-2 pt-1">
+                {duplicateMatch?.duplicateOfStudyId && (
+                  <a
+                    href={`/study/id/${duplicateMatch.duplicateOfStudyId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs underline text-muted-foreground hover:text-foreground"
+                  >
+                    View existing study →
+                  </a>
+                )}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="ml-auto h-7 text-xs"
+                  onClick={() => {
+                    const note = duplicateMatch
+                      ? `Rejected as duplicate — ${duplicateMatch.matchType} match (${Math.round(
+                          duplicateMatch.similarity * 100,
+                        )}%)${
+                          duplicateMatch.duplicateOfStudyId
+                            ? `, study #${duplicateMatch.duplicateOfStudyId}`
+                            : ""
+                        }`
+                      : "Rejected as duplicate";
+                    rejectMutation.mutate({ queueId: item.id, notes: note });
+                  }}
+                  disabled={rejectMutation.isPending}
+                >
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Reject as duplicate
+                </Button>
+              </div>
+            </div>
+          )}
+
           {scoreObj ? (
             <>
               <ComponentScoreRow scores={scoreObj} />
@@ -746,6 +854,11 @@ const SmartReviewQueue = () => {
                 {item.abstract}
               </p>
             </>
+          ) : item.isDuplicate ? (
+            // Dedup intentionally skips scoring — don't nudge the admin to retry
+            <p className="text-xs text-muted-foreground line-clamp-2">
+              {item.abstract}
+            </p>
           ) : (
             <div className="flex items-center gap-2">
               <Button
