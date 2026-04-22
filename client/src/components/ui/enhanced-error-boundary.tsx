@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { trackError } from "@/lib/error-tracking";
+import { reloadOnceForStaleChunk } from "@/lib/chunk-reload";
 import { Button } from "./button";
 import { Alert, AlertDescription, AlertTitle } from "./alert";
 import {
@@ -50,6 +51,13 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): Partial<State> {
+    // Stale-chunk errors after a new deploy: reload once to pick up the
+    // new HTML shell + current JS filenames instead of showing the error
+    // UI. When reloadOnceForStaleChunk returns true the page is about to
+    // refresh, so we don't transition to an error state.
+    if (reloadOnceForStaleChunk(error)) {
+      return {};
+    }
     return {
       hasError: true,
       error,
@@ -57,6 +65,9 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Skip logging for stale-chunk errors — the page is already reloading.
+    if (reloadOnceForStaleChunk(error)) return;
+
     // Log to console with full context
     console.error("Error caught by ErrorBoundary:", {
       message: error.message,

@@ -11,6 +11,7 @@
  */
 
 import * as Sentry from "@sentry/react";
+import { reloadOnceForStaleChunk } from "./chunk-reload";
 
 interface ErrorReport {
   message: string;
@@ -76,6 +77,9 @@ export function initErrorTracking(): void {
   }
 
   window.addEventListener("error", (event) => {
+    // Stale JS chunk after a deploy — reload the page once instead of
+    // bubbling up as a user-visible error.
+    if (reloadOnceForStaleChunk(event.error ?? event.message)) return;
     reportError({
       message: event.message,
       source: event.filename,
@@ -89,6 +93,7 @@ export function initErrorTracking(): void {
   });
 
   window.addEventListener("unhandledrejection", (event) => {
+    if (reloadOnceForStaleChunk(event.reason)) return;
     const reason = event.reason;
     reportError({
       message: reason?.message || String(reason),
