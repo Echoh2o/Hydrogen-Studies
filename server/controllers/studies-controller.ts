@@ -681,10 +681,15 @@ export class StudiesController {
           const study = await studyService.getStudyById(studyId);
           if (!study) return res.status(404).json({ error: "Study not found" });
 
+          // Pass through article-type selections and reading-level override.
+          // If `articleTypes` is provided, the generator uses exactly that list;
+          // otherwise it falls back to the default set from the shared registry.
           const options = {
-            count: req.body.count || 3,
+            count: req.body.count,
             includeAllTypes: req.body.includeAllTypes || false,
             fallbackToBasic: true,
+            articleTypes: Array.isArray(req.body.articleTypes) ? req.body.articleTypes : undefined,
+            readingLevel: req.body.readingLevel || undefined,
           };
 
           // Dynamic import to avoid circular dependencies

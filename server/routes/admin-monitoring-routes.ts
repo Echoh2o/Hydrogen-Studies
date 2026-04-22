@@ -5,9 +5,12 @@
 
 import { Router, Request, Response } from "express";
 import { db } from "../db";
-import { studies } from "../../shared/schema";
-import { sql, isNotNull, isNull, count } from "drizzle-orm";
+import { studies, studyQualityScores, studyReviewQueue, redirects, notFoundLog } from "../../shared/schema";
+import { sql, isNotNull, isNull, count, eq, desc, gte } from "drizzle-orm";
 import { requireAdmin } from "../auth";
+import { jobScheduler } from "../services/job-scheduler";
+import { RUBRIC_VERSION } from "../services/study-scoring-service";
+import { ai } from "../services/ai-provider";
 
 const router = Router();
 
@@ -47,6 +50,134 @@ router.get("/status", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Monitoring status error:", error);
     res.status(500).json({ error: "Failed to get monitoring status" });
+  }
+});
+
+/**
+ * GET /api/admin/monitoring/system-health
+ *
+ * Unified snapshot of the newer subsystems that the old /analyze endpoint
+ * doesn't cover: review queue depth, quality-score distribution, cron job
+ * last-run timestamps, and redirect/404 stats. Single round-trip so the
+ * admin page renders 4 cards off one query.
+ */
+router.get("/system-health", async (_req: Request, res: Response) => {
+  try {
+    // 1. Review queue — status breakdown + red-flag count among pending
+    const [queueRow] = await db.execute<{
+      pending: number;
+      approved: number;
+      rejected: number;
+      pending_with_flags: number;
+    }>(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'pending')::int AS pending,
+        COUNT(*) FILTER (WHERE status = 'approved')::int AS approved,
+        COUNT(*) FILTER (WHERE status = 'rejected')::int AS rejected,
+        COUNT(*) FILTER (WHERE status = 'pending' AND COALESCE(red_flag_count, 0) > 0)::int AS pending_with_flags
+      FROM ${studyReviewQueue}
+    `).then((r: any) => r.rows ?? r);
+
+    // 2. Quality score distribution — bands + rubric freshness + red flags
+    const [scoreRow] = await db.execute<{
+      total_studies: number;
+      scored: number;
+      high: number;
+      medium: number;
+      low: number;
+      with_flags: number;
+      stale_rubric: number;
+    }>(sql`
+      SELECT
+        (SELECT COUNT(*) FROM ${studies})::int AS total_studies,
+        COUNT(*)::int AS scored,
+        COUNT(*) FILTER (WHERE overall_score >= 70)::int AS high,
+        COUNT(*) FILTER (WHERE overall_score >= 40 AND overall_score < 70)::int AS medium,
+        COUNT(*) FILTER (WHERE overall_score < 40)::int AS low,
+        COUNT(*) FILTER (WHERE red_flag_count > 0)::int AS with_flags,
+        COUNT(*) FILTER (WHERE rubric_version IS NULL OR rubric_version <> ${RUBRIC_VERSION})::int AS stale_rubric
+      FROM ${studyQualityScores}
+    `).then((r: any) => r.rows ?? r);
+
+    // 3. Cron jobs — last-run times from the scheduler
+    const cron = jobScheduler.getStatus();
+
+    // 4. Redirects + 404s
+    const [redirectRow] = await db.execute<{
+      total: number;
+      active: number;
+      total_hits: number;
+    }>(sql`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE is_active = true)::int AS active,
+        COALESCE(SUM(hit_count), 0)::bigint AS total_hits
+      FROM ${redirects}
+    `).then((r: any) => r.rows ?? r);
+
+    const [notFoundRow] = await db.execute<{
+      unresolved: number;
+      resolved: number;
+      hits_last_7d: number;
+    }>(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE resolved = false)::int AS unresolved,
+        COUNT(*) FILTER (WHERE resolved = true)::int AS resolved,
+        COALESCE(SUM(hit_count) FILTER (WHERE last_seen_at >= NOW() - INTERVAL '7 days'), 0)::bigint AS hits_last_7d
+      FROM ${notFoundLog}
+    `).then((r: any) => r.rows ?? r);
+
+    const topUnresolved = await db
+      .select({
+        path: notFoundLog.path,
+        hitCount: notFoundLog.hitCount,
+        lastSeenAt: notFoundLog.lastSeenAt,
+      })
+      .from(notFoundLog)
+      .where(eq(notFoundLog.resolved, false))
+      .orderBy(desc(notFoundLog.hitCount))
+      .limit(5);
+
+    // 5. AI provider — which providers are configured / primary vs fallback
+    const aiStatus = ai.getProviderStatus();
+
+    res.json({
+      reviewQueue: {
+        pending: Number(queueRow?.pending ?? 0),
+        approved: Number(queueRow?.approved ?? 0),
+        rejected: Number(queueRow?.rejected ?? 0),
+        pendingWithFlags: Number(queueRow?.pending_with_flags ?? 0),
+      },
+      qualityScores: {
+        totalStudies: Number(scoreRow?.total_studies ?? 0),
+        scored: Number(scoreRow?.scored ?? 0),
+        high: Number(scoreRow?.high ?? 0),
+        medium: Number(scoreRow?.medium ?? 0),
+        low: Number(scoreRow?.low ?? 0),
+        withFlags: Number(scoreRow?.with_flags ?? 0),
+        staleRubric: Number(scoreRow?.stale_rubric ?? 0),
+        currentRubric: RUBRIC_VERSION,
+      },
+      cron,
+      redirects: {
+        total: Number(redirectRow?.total ?? 0),
+        active: Number(redirectRow?.active ?? 0),
+        totalHits: Number(redirectRow?.total_hits ?? 0),
+        unresolved404s: Number(notFoundRow?.unresolved ?? 0),
+        resolved404s: Number(notFoundRow?.resolved ?? 0),
+        hitsLast7d: Number(notFoundRow?.hits_last_7d ?? 0),
+        topUnresolved: topUnresolved.map((r) => ({
+          path: r.path,
+          hitCount: r.hitCount,
+          lastSeenAt: r.lastSeenAt,
+        })),
+      },
+      ai: aiStatus,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("System health error:", error);
+    res.status(500).json({ error: "Failed to get system health" });
   }
 });
 

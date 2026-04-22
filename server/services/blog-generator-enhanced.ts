@@ -24,15 +24,19 @@ import { ai, getImageModel } from "./ai-provider";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 3-article strategy: each study gets exactly 3 articles with distinct search intents
-// 1. science_explainer  — Informational intent: ranks for "[condition] + hydrogen" queries
-// 2. practical_guide    — Commercial intent: connects research to Echo Water products
-// 3. faq                — Featured snippet intent: captures Q&A searches, builds trust
-const BLOG_TYPES = [
-  "science_explainer",
-  "practical_guide",
-  "faq",
-];
+// Article types are now defined in shared/blog-article-types.ts — single
+// source of truth between frontend (admin Generate Blog page) and backend.
+// The "default 3" for auto-generation are whichever types have
+// defaultEnabled: true in the registry.
+import {
+  BLOG_ARTICLE_TYPES,
+  DEFAULT_ARTICLE_TYPE_IDS,
+  READING_LEVEL_INSTRUCTIONS,
+  getArticleTypeDef,
+  type ReadingLevel,
+} from "../../shared/blog-article-types";
+
+const BLOG_TYPES = DEFAULT_ARTICLE_TYPE_IDS;
 
 /**
  * Generate multiple blog articles for a study with comprehensive error handling
@@ -43,6 +47,10 @@ export async function generateBlogArticlesForStudy(
     count?: number;
     includeAllTypes?: boolean;
     fallbackToBasic?: boolean;
+    /** Specific article type ids to generate. If omitted, uses the defaults. */
+    articleTypes?: string[];
+    /** Optional override of the per-type default reading level. */
+    readingLevel?: ReadingLevel;
   } = {},
 ): Promise<{
   articles: InsertBlogArticle[];
@@ -65,7 +73,17 @@ export async function generateBlogArticlesForStudy(
       );
     }
 
-    const count = Math.min(options.count || 3, BLOG_TYPES.length);
+    // Resolve which article types to generate. Priority:
+    //   1. Explicit `articleTypes` list (admin-selected on Generate page)
+    //   2. First N defaults where N = `count`
+    //   3. All defaults if nothing specified
+    const requestedTypes = options.articleTypes?.filter((id) =>
+      BLOG_ARTICLE_TYPES.some((t) => t.id === id),
+    );
+    const count = Math.min(
+      options.count ?? (requestedTypes?.length || BLOG_TYPES.length),
+      BLOG_ARTICLE_TYPES.length,
+    );
     const fallbackToBasic = options.fallbackToBasic ?? true;
 
     // Check AI provider availability
@@ -86,15 +104,17 @@ export async function generateBlogArticlesForStudy(
       );
     }
 
-    // Always generate all 3 strategic article types (or fewer if count is specified)
-    const selectedTypes = BLOG_TYPES.slice(0, count);
+    const selectedTypes = (requestedTypes && requestedTypes.length > 0
+      ? requestedTypes
+      : BLOG_TYPES
+    ).slice(0, count);
 
     // Generate articles with batch error handling
     const batchResults = await handleBatchOperation(
       selectedTypes,
       async (type) => {
         return await withTimeout(
-          () => generateSingleBlogArticle(study, type),
+          () => generateSingleBlogArticle(study, type, options.readingLevel),
           45000, // 45 second timeout per article
           `Article generation timeout for type: ${type}`,
         );
@@ -152,6 +172,7 @@ export async function generateBlogArticlesForStudy(
 async function generateSingleBlogArticle(
   study: Study,
   articleType: string,
+  readingLevelOverride?: ReadingLevel,
 ): Promise<InsertBlogArticle> {
   try {
     // Check for duplicate: skip if an article with this studyId + articleType already exists
@@ -176,7 +197,7 @@ async function generateSingleBlogArticle(
 
     // 1. Generate content with fallback
     const blogContent = await handleOpenAIRequest(
-      () => generateArticleContent(study, articleType),
+      () => generateArticleContent(study, articleType, readingLevelOverride),
       generateFallbackContent(study, articleType),
       {
         model: "claude-sonnet",
@@ -283,13 +304,17 @@ async function generateSingleBlogArticle(
 async function generateArticleContent(
   study: Study,
   articleType: string,
+  readingLevelOverride?: ReadingLevel,
 ): Promise<{ fullContent: string; summary: string }> {
-  const prompt = createContentPrompt(study, articleType);
+  const typeDef = getArticleTypeDef(articleType);
+  const readingLevel = readingLevelOverride ?? typeDef.defaultReadingLevel;
+  const readingInstruction = READING_LEVEL_INSTRUCTIONS[readingLevel];
+  const prompt = createContentPrompt(study, articleType, readingLevel);
 
   const content = await ai.generateText(
-    "You are a science writer for HydrogenStudies.com, the research arm of Echo Water (echowater.com). You translate peer-reviewed hydrogen research into clear, trustworthy content that helps people understand the science behind molecular hydrogen (H2) therapy. Write at a 6th grade reading level (Flesch-Kincaid 60-70). Use short sentences and simple words. Always explain scientific terms. Be accurate — never overstate findings. Distinguish between human trials and animal/in-vitro studies. Include specific numbers from studies when available.",
+    `You are a science writer for HydrogenStudies.com, the research arm of Echo Water (echowater.com). You translate peer-reviewed hydrogen research into clear, trustworthy content that helps people understand the science behind molecular hydrogen (H2) therapy. ${readingInstruction} Be accurate — never overstate findings. Distinguish between human trials and animal/in-vitro studies. Include specific numbers from studies when available.`,
     prompt,
-    { maxTokens: 2000, temperature: 0.7 },
+    { maxTokens: Math.max(2000, typeDef.targetWordCount * 2), temperature: 0.7 },
   );
 
   if (!content) {
@@ -360,6 +385,11 @@ async function generateArticleTitle(
     science_explainer: "Focus on the research finding. Pattern: 'Hydrogen Water and [Condition]: What [Year] Research Shows'",
     practical_guide: "Focus on application. Pattern: 'How to Use Hydrogen Water for [Benefit]: A Science-Backed Guide'",
     faq: "Focus on questions people ask. Pattern: 'Hydrogen Water for [Condition]: Your Questions Answered'",
+    condition_deep_dive: "Focus on the condition. Pattern: 'Hydrogen Water for [Condition]: The Complete Evidence Review'",
+    protocol_guide: "Focus on the how. Pattern: 'The [Condition] Hydrogen Protocol: Dosage, Timing, and What to Expect'",
+    myth_buster: "Focus on the claim being examined. Pattern: 'Does Hydrogen Water Really [Claim]? What the Science Actually Says'",
+    listicle: "Focus on number of insights. Pattern: '[N] Things New Research Reveals About Hydrogen Water and [Condition]'",
+    news_post: "Focus on the newness. Pattern: 'New Study: Hydrogen Water Shows [Finding] for [Condition]'",
   };
 
   const title = await ai.generateText(
@@ -714,8 +744,22 @@ function extractKeywords(study: Study, summary: string): string[] {
   return keywords;
 }
 
-function createContentPrompt(study: Study, articleType: string): string {
+function createContentPrompt(
+  study: Study,
+  articleType: string,
+  readingLevel: ReadingLevel = "6th",
+): string {
   const deliveryMethod = study.h2DeliveryMethod || "hydrogen-rich water";
+  const typeDef = getArticleTypeDef(articleType);
+  const targetWords = typeDef.targetWordCount;
+  const readingInstruction = READING_LEVEL_INSTRUCTIONS[readingLevel];
+  const primaryCondition = (study.healthConditions || [])[0] || study.category || "general health";
+  const studyYear = (() => {
+    const d = study.journalPublishDate || study.publishDate;
+    if (!d) return new Date().getFullYear();
+    const parsed = new Date(d);
+    return isNaN(parsed.getTime()) ? new Date().getFullYear() : parsed.getFullYear();
+  })();
 
   const prompts: Record<string, string> = {
     science_explainer: `Write a science explainer article about this hydrogen research study.
@@ -728,7 +772,7 @@ STRUCTURE:
 5. "The Bigger Picture" — how this fits into the growing body of hydrogen research
 6. "Key Takeaways" — 3-4 bullet points summarizing the findings
 
-TONE: Authoritative but accessible. You are a science journalist explaining a study to a curious reader. Write at a 6th grade reading level.`,
+TONE: Authoritative but accessible. You are a science journalist explaining a study to a curious reader. ${readingInstruction}`,
 
     practical_guide: `Write a practical guide connecting this study's findings to real-world hydrogen water use.
 
@@ -740,7 +784,7 @@ STRUCTURE:
 5. "What to Look For" — what makes a quality hydrogen water machine (dissolved H2 concentration above 1.0 ppm, ORP levels, third-party testing)
 6. "Key Takeaways" — 3-4 actionable bullet points
 
-TONE: Helpful and practical, like a knowledgeable friend. NOT salesy — mention Echo Water naturally as one example, not as an advertisement. Write at a 6th grade reading level.`,
+TONE: Helpful and practical, like a knowledgeable friend. NOT salesy — mention Echo Water naturally as one example, not as an advertisement. ${readingInstruction}`,
 
     faq: `Write a FAQ article answering the questions people would have after hearing about this study.
 
@@ -758,10 +802,78 @@ Generate 6-8 questions covering:
 - "Are there any side effects?"
 - A skeptic question like "Is hydrogen water just a fad?" or "Does hydrogen water actually work?"
 
-TONE: Direct and trustworthy. Answer each question honestly, cite the study, and acknowledge limitations. Write at a 6th grade reading level.`,
+TONE: Direct and trustworthy. Answer each question honestly, cite the study, and acknowledge limitations. ${readingInstruction}`,
+
+    condition_deep_dive: `Write a long-form deep dive about hydrogen water for ${primaryCondition}. Use this study as the anchor, but weave in the broader evidence base.
+
+STRUCTURE:
+1. Hook: a one-paragraph overview of what the evidence says today about hydrogen water and ${primaryCondition}
+2. "The Condition" — briefly explain what ${primaryCondition} is, who it affects, and why people are looking for new options
+3. "What the Science Shows" — present the anchor study's findings in detail, with numbers and context
+4. "How Hydrogen Might Help" — the proposed mechanism of action in plain language
+5. "What We Still Don't Know" — honest caveats: sample size limits, missing long-term data, human vs. animal trials
+6. "Practical Considerations" — dosage, delivery, safety, who should and shouldn't try it
+7. "Frequently Asked Questions" — 3-4 Q&A items inline
+8. "Bottom Line" — the one-sentence honest verdict
+
+TONE: Thorough, balanced, skeptic-proof. This is the definitive article for someone researching hydrogen for ${primaryCondition}. ${readingInstruction}`,
+
+    protocol_guide: `Write a protocol/dosage guide based on this hydrogen research study.
+
+STRUCTURE:
+1. "What This Study Tested" — one paragraph summary of the intervention: ${deliveryMethod}, concentration, duration, population
+2. "The Protocol" — a clear table-or-list breakdown:
+   - Delivery method: ${deliveryMethod}
+   - Amount per dose (from the study)
+   - Frequency per day
+   - Duration (days/weeks)
+   - Time of day (with food, etc., if specified)
+3. "What Happened" — the measurable outcomes
+4. "How to Translate This to Daily Use" — a practical adaptation for a healthy adult reader
+5. "What to Watch For" — safety, side effects, interactions
+6. "Equipment Notes" — what kind of hydrogen water machine can produce the concentration used
+7. "Key Takeaways" — 3 bullets
+
+TONE: Concrete and operational. Avoid hedging beyond what the study actually says. ${readingInstruction}`,
+
+    myth_buster: `Write a myth-busting article that addresses a common claim or skepticism about hydrogen water, using this study as primary evidence.
+
+STRUCTURE:
+1. State the myth/claim clearly — one paragraph
+2. "What People Usually Say" — the common arguments on both sides
+3. "What This Study Actually Shows" — the evidence from the anchor study, with specific numbers
+4. "What It Doesn't Show" — honest limitations (the debunk must be honest to be trustworthy)
+5. "The Bottom Line" — a clear verdict in plain English
+6. "What the Broader Research Says" — brief context on the overall evidence base
+
+TONE: Direct, fair, not dismissive. A good myth-buster takes the skeptic seriously. ${readingInstruction}`,
+
+    listicle: `Write a listicle-format article highlighting N key insights from this hydrogen research study.
+
+STRUCTURE:
+1. One-sentence intro explaining what the study tested
+2. "N Things This Study Shows About Hydrogen Water for ${primaryCondition}" — pick 5–7 numbered items. Each item:
+   - Short punchy heading (one concept per item)
+   - 2-3 sentence explanation with a specific number or finding from the study
+   - Connect back to what it means for the reader
+3. "Key Takeaways" — 3 one-liners
+
+TONE: Scannable, shareable, specific. Every item should have a number or concrete finding. ${readingInstruction}`,
+
+    news_post: `Write a short research-news post announcing this study. This is a timely post — assume the reader is hearing about it for the first time.
+
+STRUCTURE:
+1. Lead paragraph: the news. What's new, what was found, who did it (the journal + year ${studyYear})
+2. "The Study at a Glance" — 3-4 bullets: population, intervention, primary outcome, key result
+3. "Why It Matters" — one paragraph on what this adds to the evidence base
+4. "What's Next" — what remains to be tested
+
+TONE: News-desk style — lead with the finding, back it up with data, keep it tight. ${readingInstruction}
+
+IMPORTANT: Target ${targetWords} words — this should be a shorter read than other article types.`,
   };
 
-  const basePrompt = prompts[articleType] || prompts.overview;
+  const basePrompt = prompts[articleType] || prompts.science_explainer;
 
   // Build internal link context for the AI to embed in the content
   const studySlug = study.slug || `id/${study.id}`;
@@ -803,12 +915,11 @@ ${studyContext}${tagContext}
 ${linkInstructions}
 
 Content Requirements:
-- Write at a 4th-6th grade reading level (Flesch-Kincaid score 60-70)
-- Use short sentences and simple words — explain any scientific terms
+- ${readingInstruction}
 - Include specific details from the study (numbers, percentages, outcomes)
 - Structure with clear H2 (##) and H3 (###) headings that include keyword variations of "hydrogen therapy" or "hydrogen water"
 - Include a "Key Takeaways" or "What This Means for You" section
 - End with a brief disclaimer: "Consult your healthcare provider before starting any new health regimen"
-- Aim for 600-900 words
+- Aim for ~${targetWords} words
 - The content MUST contain at least 3 internal markdown links as specified above`;
 }

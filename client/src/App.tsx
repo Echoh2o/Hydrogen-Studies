@@ -167,9 +167,6 @@ const TrendsAnalysisPage = lazy(
 const ReviewAssistantPage = lazy(
   () => import("./pages/admin/ReviewAssistantPage"),
 );
-const ContentOptimizationPage = lazy(
-  () => import("./pages/admin/ContentOptimizationPage"),
-);
 const MultiFormatGeneratorPage = lazy(
   () => import("./pages/admin/MultiFormatGeneratorPage"),
 );
@@ -409,13 +406,6 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin", "editor"]}>
               <ReviewAssistantPage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/content-optimization">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <ContentOptimizationPage />
             </ProtectedRoute>
           )}
         </Route>

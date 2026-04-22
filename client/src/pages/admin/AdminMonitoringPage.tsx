@@ -73,6 +73,55 @@ interface MonitoringStatus {
   lastCheck: string | null;
 }
 
+interface SystemHealth {
+  reviewQueue: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    pendingWithFlags: number;
+  };
+  qualityScores: {
+    totalStudies: number;
+    scored: number;
+    high: number;
+    medium: number;
+    low: number;
+    withFlags: number;
+    staleRubric: number;
+    currentRubric: string;
+  };
+  cron: {
+    running: boolean;
+    checkIntervalMs: number;
+    jobs: Array<{
+      name: string;
+      lastRun: string | null;
+      intervalMs: number;
+    }>;
+  };
+  redirects: {
+    total: number;
+    active: number;
+    totalHits: number;
+    unresolved404s: number;
+    resolved404s: number;
+    hitsLast7d: number;
+    topUnresolved: Array<{
+      path: string;
+      hitCount: number;
+      lastSeenAt: string;
+    }>;
+  };
+  ai: {
+    anthropic: boolean;
+    openai: boolean;
+    xai: boolean;
+    primary: string;
+    imageProvider: string;
+  };
+  generatedAt: string;
+}
+
 export default function AdminMonitoringPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -91,6 +140,12 @@ export default function AdminMonitoringPage() {
       queryKey: ["/api/admin/monitoring/analyze"],
       refetchInterval: autoRefresh ? 60000 : false, // Refresh every minute
     });
+
+  // Query for the new system-health metrics (review queue, scores, cron, redirects, AI)
+  const { data: systemHealth } = useQuery<SystemHealth>({
+    queryKey: ["/api/admin/monitoring/system-health"],
+    refetchInterval: autoRefresh ? 60000 : false,
+  });
 
   // Mutations for triggering processes
   const consumerContentMutation = useMutation({
@@ -284,6 +339,215 @@ export default function AdminMonitoringPage() {
             </Button>
           </div>
         </div>
+
+        {/* System Health — review queue, scores, cron, redirects, AI. The
+            content-pipeline section below is the legacy view; this is the
+            higher-level "is production actually healthy?" snapshot. */}
+        {systemHealth && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">System Health</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Review Queue */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Review Queue
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Pre-publish items pending curator decision
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-2xl font-bold">
+                      {systemHealth.reviewQueue.pending}
+                    </div>
+                    <div className="text-xs text-muted-foreground">pending</div>
+                  </div>
+                  {systemHealth.reviewQueue.pendingWithFlags > 0 && (
+                    <Badge variant="destructive" className="text-[10px]">
+                      {systemHealth.reviewQueue.pendingWithFlags} with red flags
+                    </Badge>
+                  )}
+                  <div className="text-xs text-muted-foreground pt-1">
+                    {systemHealth.reviewQueue.approved} approved ·{" "}
+                    {systemHealth.reviewQueue.rejected} rejected all-time
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Score Distribution */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Quality Score Distribution
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Rubric {systemHealth.qualityScores.currentRubric} ·{" "}
+                    {systemHealth.qualityScores.scored} of{" "}
+                    {systemHealth.qualityScores.totalStudies} scored
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-16 text-green-700 font-medium">High</div>
+                    <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-green-500 h-full"
+                        style={{
+                          width: `${systemHealth.qualityScores.scored > 0 ? (systemHealth.qualityScores.high / systemHealth.qualityScores.scored) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="w-10 text-right tabular-nums">
+                      {systemHealth.qualityScores.high}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-16 text-amber-700 font-medium">Medium</div>
+                    <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-amber-500 h-full"
+                        style={{
+                          width: `${systemHealth.qualityScores.scored > 0 ? (systemHealth.qualityScores.medium / systemHealth.qualityScores.scored) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="w-10 text-right tabular-nums">
+                      {systemHealth.qualityScores.medium}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-16 text-red-700 font-medium">Low</div>
+                    <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-red-500 h-full"
+                        style={{
+                          width: `${systemHealth.qualityScores.scored > 0 ? (systemHealth.qualityScores.low / systemHealth.qualityScores.scored) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="w-10 text-right tabular-nums">
+                      {systemHealth.qualityScores.low}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground pt-1 flex flex-wrap gap-2">
+                    <span>
+                      {systemHealth.qualityScores.withFlags} with red flags
+                    </span>
+                    {systemHealth.qualityScores.staleRubric > 0 && (
+                      <span className="text-amber-700">
+                        {systemHealth.qualityScores.staleRubric} awaiting rescore
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Cron Job Status */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Background Jobs
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {systemHealth.cron.running
+                      ? `Scheduler active · checks every ${Math.round(systemHealth.cron.checkIntervalMs / 60000)}m`
+                      : "Scheduler not running"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1 max-h-40 overflow-y-auto text-xs">
+                    {systemHealth.cron.jobs.map((j) => {
+                      const lastRunMs = j.lastRun ? new Date(j.lastRun).getTime() : 0;
+                      const age = Date.now() - lastRunMs;
+                      const overdue = lastRunMs > 0 && age > j.intervalMs * 2;
+                      const neverRun = lastRunMs === 0;
+                      return (
+                        <div
+                          key={j.name}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="truncate" title={j.name}>
+                            {j.name}
+                          </span>
+                          <span
+                            className={`text-[10px] tabular-nums ${
+                              overdue
+                                ? "text-red-600"
+                                : neverRun
+                                ? "text-muted-foreground"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {neverRun
+                              ? "—"
+                              : age < 60000
+                              ? "just now"
+                              : age < 3600000
+                              ? `${Math.round(age / 60000)}m ago`
+                              : age < 86400000
+                              ? `${Math.round(age / 3600000)}h ago`
+                              : `${Math.round(age / 86400000)}d ago`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Redirects + AI */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Traffic & AI
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {systemHealth.redirects.active} active redirects ·{" "}
+                    {systemHealth.redirects.unresolved404s} unresolved 404s
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-xl font-bold tabular-nums">
+                      {systemHealth.redirects.hitsLast7d.toLocaleString()}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      404 hits last 7d
+                    </div>
+                  </div>
+                  {systemHealth.redirects.topUnresolved.length > 0 && (
+                    <div className="space-y-0.5">
+                      <div className="text-[10px] font-medium text-muted-foreground uppercase">
+                        Top unresolved
+                      </div>
+                      {systemHealth.redirects.topUnresolved.slice(0, 3).map((r) => (
+                        <div
+                          key={r.path}
+                          className="flex items-center justify-between gap-2 text-[11px]"
+                        >
+                          <span
+                            className="truncate font-mono text-muted-foreground"
+                            title={r.path}
+                          >
+                            {r.path}
+                          </span>
+                          <span className="tabular-nums">{r.hitCount}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="pt-1 border-t text-[10px] text-muted-foreground">
+                    AI text: <span className="font-medium">{systemHealth.ai.primary}</span>
+                    {" · "}
+                    Images: <span className="font-medium">{systemHealth.ai.imageProvider}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
 
         {/* Overview Cards */}
         {stats && (

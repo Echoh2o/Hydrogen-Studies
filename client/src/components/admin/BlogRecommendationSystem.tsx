@@ -60,6 +60,9 @@ interface BlogRecommendation {
   potentialTitle: string;
   hasExistingBlogs: boolean;
   existingBlogCount: number;
+  qualityScore: number | null;
+  categoryGapScore: number;
+  rankScore: number;
 }
 
 interface GenerationOptions {
@@ -253,9 +256,14 @@ export function BlogRecommendationSystem() {
         description: `Generated ${totalBlogs} blog posts for ${successfulStudies} studies.`,
       });
 
-      // Clear selections and refresh data
+      // Clear selections and refresh data — invalidate both the blog list
+      // and the recommendations query so newly-generated articles are
+      // reflected in existingBlogCount on next load.
       setSelectedStudies(new Set());
       queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/blog-recommendations/recommendations"],
+      });
       refetch();
     },
     onError: (error: any) => {
@@ -435,7 +443,7 @@ export function BlogRecommendationSystem() {
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <Badge
                             className={getPriorityColor(
                               recommendation.priority,
@@ -443,14 +451,36 @@ export function BlogRecommendationSystem() {
                           >
                             {recommendation.priority.toUpperCase()}
                           </Badge>
-                          <Badge variant="outline">
-                            {recommendation.estimatedReadership} Interest
-                          </Badge>
-                          {recommendation.hasExistingBlogs && (
-                            <Badge variant="secondary">
-                              {recommendation.existingBlogCount} existing
+                          {recommendation.qualityScore != null && (
+                            <Badge
+                              variant="outline"
+                              className={
+                                recommendation.qualityScore >= 75
+                                  ? "border-green-500 text-green-700"
+                                  : recommendation.qualityScore >= 50
+                                  ? "border-amber-500 text-amber-700"
+                                  : "border-red-500 text-red-700"
+                              }
+                              title="Overall study quality score"
+                            >
+                              Quality: {recommendation.qualityScore}
                             </Badge>
                           )}
+                          {recommendation.categoryGapScore >= 0.6 && (
+                            <Badge
+                              variant="outline"
+                              className="border-indigo-500 text-indigo-700"
+                              title={`${recommendation.studyCategory} is underserved — fewer blog articles relative to available studies`}
+                            >
+                              Content gap
+                            </Badge>
+                          )}
+                          <Badge
+                            variant="secondary"
+                            title="Blog articles already generated from this study"
+                          >
+                            {recommendation.existingBlogCount} existing
+                          </Badge>
                         </div>
                         <h3 className="font-semibold text-lg leading-tight mb-2">
                           {recommendation.potentialTitle}

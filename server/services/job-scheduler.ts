@@ -112,6 +112,40 @@ export class JobScheduler {
   }
 
   /**
+   * Report last-run timestamps for each throttled job. Used by the admin
+   * monitoring page to show which jobs are running on schedule vs. silently
+   * broken. Jobs that run every cycle (e.g. discovery, enrichment) don't
+   * carry a timestamp — they're reflected by `running` instead.
+   */
+  public getStatus(): {
+    running: boolean;
+    checkIntervalMs: number;
+    jobs: Array<{
+      name: string;
+      lastRun: string | null;
+      intervalMs: number;
+    }>;
+  } {
+    const toISO = (d: Date | null) => (d ? d.toISOString() : null);
+    return {
+      running: this.checkInterval !== null,
+      checkIntervalMs: this.CHECK_INTERVAL_MS,
+      jobs: [
+        { name: "study-discovery", lastRun: toISO(this.lastDiscoveryCheck), intervalMs: this.DISCOVERY_INTERVAL_MS },
+        { name: "retraction-check", lastRun: toISO(this.lastRetractionCheck), intervalMs: this.RETRACTION_CHECK_INTERVAL_MS },
+        { name: "link-building", lastRun: toISO(this.lastLinkBuildCheck), intervalMs: this.LINK_BUILD_INTERVAL_MS },
+        { name: "citation-build", lastRun: toISO(this.lastCitationBuildCheck), intervalMs: this.CITATION_BUILD_INTERVAL_MS },
+        { name: "digest-generation", lastRun: toISO(this.lastDigestCheck), intervalMs: this.DIGEST_INTERVAL_MS },
+        { name: "metadata-freshness", lastRun: toISO(this.lastFreshnessCheck), intervalMs: this.FRESHNESS_CHECK_INTERVAL_MS },
+        { name: "blog-generation", lastRun: toISO(this.lastBlogGenerationCheck), intervalMs: this.BLOG_GENERATION_INTERVAL_MS },
+        { name: "content-queue", lastRun: toISO(this.lastContentQueueCheck), intervalMs: this.CONTENT_QUEUE_INTERVAL_MS },
+        { name: "journal-date-backfill", lastRun: toISO(this.lastJournalDateCheck), intervalMs: this.JOURNAL_DATE_INTERVAL_MS },
+        { name: "study-scoring", lastRun: toISO(this.lastStudyScoringCheck), intervalMs: this.STUDY_SCORING_INTERVAL_MS },
+      ],
+    };
+  }
+
+  /**
    * Execute all scheduled jobs
    */
   private async runJobs(): Promise<void> {

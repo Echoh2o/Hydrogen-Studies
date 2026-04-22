@@ -22,16 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import {
   ArrowLeft,
   Search,
-  BookOpen,
   FileText,
   Loader2,
   AlertCircle,
@@ -39,6 +36,11 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Study } from "@/types";
+import {
+  BLOG_ARTICLE_TYPES,
+  DEFAULT_ARTICLE_TYPE_IDS,
+  type ReadingLevel,
+} from "@shared/blog-article-types";
 
 export default function BlogGeneratePage() {
   const { toast } = useToast();
@@ -47,16 +49,18 @@ export default function BlogGeneratePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
   const [forceRegeneration, setForceRegeneration] = useState(false);
-  const [blogOptions, setBlogOptions] = useState({
-    standardCount: 2,
-    elonCount: 1,
-    includeElonStyle: true,
-    includeExplainer: true,
-    includeImplications: true,
-    includeHistorical: false,
-    readingLevel: "6th",
-    includeImages: true,
-  });
+
+  // Selected article types — start with whichever types the registry marks
+  // as defaultEnabled. Adding/removing types in shared/blog-article-types.ts
+  // automatically flows into the UI here.
+  const [selectedTypeIds, setSelectedTypeIds] = useState<Set<string>>(
+    new Set(DEFAULT_ARTICLE_TYPE_IDS),
+  );
+
+  // Reading level override. Empty string means "use each article type's
+  // default reading level" — usually the right call. Admins can still force
+  // a consistent level across all types for a campaign if they want.
+  const [readingLevelOverride, setReadingLevelOverride] = useState<string>("");
 
   // Get the 20 most recent studies
   const { data: recentStudies, isLoading: loadingStudies } = useQuery<any>({
@@ -97,13 +101,17 @@ export default function BlogGeneratePage() {
       if (!selectedStudyId) {
         throw new Error("No study selected");
       }
+      const articleTypes = Array.from(selectedTypeIds);
+      if (articleTypes.length === 0) {
+        throw new Error("Select at least one article type");
+      }
 
       // Reset progress
       setGenerationProgress({
-        step: "Starting generation process...",
+        step: "Starting generation...",
         completed: false,
         blogCount: 0,
-        totalSteps: blogOptions.standardCount + blogOptions.elonCount + 1, // +1 for initialization
+        totalSteps: articleTypes.length + 1,
         currentStep: 1,
       });
 
@@ -113,18 +121,8 @@ export default function BlogGeneratePage() {
       // Update progress
       setGenerationProgress((prev) => ({
         ...prev,
-        step: "Analyzing study content...",
+        step: `Generating ${articleTypes.length} article${articleTypes.length > 1 ? "s" : ""}...`,
         currentStep: 2,
-      }));
-
-      // Wait briefly to show analysis step
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      // Update progress for generation
-      setGenerationProgress((prev) => ({
-        ...prev,
-        step: "Generating blog posts...",
-        currentStep: 3,
       }));
 
       // Call API - don't throw on non-2xx responses so we can handle them in the error handler
@@ -133,15 +131,9 @@ export default function BlogGeneratePage() {
           "POST",
           `/api/studies/${selectedStudyId}/generate-blogs`,
           {
-            count: blogOptions.standardCount + blogOptions.elonCount,
-            includeElonStyle: blogOptions.includeElonStyle,
-            standardCount: blogOptions.standardCount,
-            elonCount: blogOptions.elonCount,
-            includeExplainer: blogOptions.includeExplainer,
-            includeImplications: blogOptions.includeImplications,
-            includeHistorical: blogOptions.includeHistorical,
-            readingLevel: blogOptions.readingLevel,
-            includeImages: blogOptions.includeImages,
+            count: articleTypes.length,
+            articleTypes,
+            readingLevel: readingLevelOverride || undefined,
             force: forceRegeneration,
           },
           false,
@@ -491,233 +483,111 @@ export default function BlogGeneratePage() {
           </Card>
         )}
 
-        {/* Blog generation options */}
+        {/* Blog generation options — article types pulled from shared registry */}
         {selectedStudyId && (
           <Card>
             <CardHeader>
-              <CardTitle>Blog Generation Options</CardTitle>
+              <CardTitle>Article Types</CardTitle>
               <CardDescription>
-                Customize the blog posts to be generated
+                Pick the article formats to generate from this study. Each type
+                targets a different search intent and has its own ideal
+                reading level. Images, SEO metadata, and saving to the database
+                all happen automatically.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Article Types</h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
+            <CardContent className="space-y-6">
+              {/* Article type grid — all types from the shared registry */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {BLOG_ARTICLE_TYPES.map((type) => {
+                  const checked = selectedTypeIds.has(type.id);
+                  return (
+                    <label
+                      key={type.id}
+                      className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                        checked
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
                         <Checkbox
-                          id="includeExplainer"
-                          checked={blogOptions.includeExplainer}
-                          onCheckedChange={(checked) =>
-                            setBlogOptions({
-                              ...blogOptions,
-                              includeExplainer: !!checked,
-                            })
-                          }
-                        />
-                        <Label htmlFor="includeExplainer">
-                          Include explainer article
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="includeImplications"
-                          checked={blogOptions.includeImplications}
-                          onCheckedChange={(checked) =>
-                            setBlogOptions({
-                              ...blogOptions,
-                              includeImplications: !!checked,
-                            })
-                          }
-                        />
-                        <Label htmlFor="includeImplications">
-                          Include health implications article
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="includeHistorical"
-                          checked={blogOptions.includeHistorical}
-                          onCheckedChange={(checked) =>
-                            setBlogOptions({
-                              ...blogOptions,
-                              includeHistorical: !!checked,
-                            })
-                          }
-                        />
-                        <Label htmlFor="includeHistorical">
-                          Include historical context article
-                        </Label>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="includeElonStyle"
-                          checked={blogOptions.includeElonStyle}
-                          onCheckedChange={(checked) =>
-                            setBlogOptions({
-                              ...blogOptions,
-                              includeElonStyle: !!checked,
-                            })
-                          }
-                        />
-                        <Label htmlFor="includeElonStyle">
-                          Include Elon Musk style article
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="includeImages"
-                          checked={blogOptions.includeImages}
-                          onCheckedChange={(checked) =>
-                            setBlogOptions({
-                              ...blogOptions,
-                              includeImages: !!checked,
-                            })
-                          }
-                        />
-                        <Label htmlFor="includeImages">
-                          Auto-generate images for articles
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2 mt-4">
-                        <Checkbox
-                          id="forceRegeneration"
-                          checked={forceRegeneration}
-                          onCheckedChange={(checked) =>
-                            setForceRegeneration(!!checked)
-                          }
-                        />
-                        <Label htmlFor="forceRegeneration">
-                          Force regeneration (override existing blog posts)
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Article Counts</h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="flex justify-between">
-                        <Label htmlFor="standardCount">Standard Articles</Label>
-                        <span className="text-sm font-medium">
-                          {blogOptions.standardCount}
-                        </span>
-                      </div>
-                      <Slider
-                        id="standardCount"
-                        min={1}
-                        max={5}
-                        step={1}
-                        value={[blogOptions.standardCount]}
-                        onValueChange={(values) => {
-                          if (values.length > 0) {
-                            const val = values[0];
-                            setBlogOptions((prev) => ({
-                              ...prev,
-                              standardCount: val,
-                            }));
-                          }
-                        }}
-                        aria-label="Standard Article Count"
-                        className="cursor-pointer"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>1</span>
-                        <span>2</span>
-                        <span>3</span>
-                        <span>4</span>
-                        <span>5</span>
-                      </div>
-                    </div>
-
-                    {blogOptions.includeElonStyle && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between">
-                          <Label htmlFor="elonCount">
-                            Elon Musk Style Articles
-                          </Label>
-                          <span className="text-sm font-medium">
-                            {blogOptions.elonCount}
-                          </span>
-                        </div>
-                        <Slider
-                          id="elonCount"
-                          min={0}
-                          max={3}
-                          step={1}
-                          value={[blogOptions.elonCount]}
-                          onValueChange={(values) => {
-                            if (values.length > 0) {
-                              const val = values[0];
-                              setBlogOptions((prev) => ({
-                                ...prev,
-                                elonCount: val,
-                              }));
-                            }
+                          id={`type-${type.id}`}
+                          checked={checked}
+                          onCheckedChange={(isChecked) => {
+                            setSelectedTypeIds((prev) => {
+                              const next = new Set(prev);
+                              if (isChecked) next.add(type.id);
+                              else next.delete(type.id);
+                              return next;
+                            });
                           }}
-                          aria-label="Elon Style Article Count"
-                          className="cursor-pointer"
+                          className="mt-0.5"
                         />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>0</span>
-                          <span>1</span>
-                          <span>2</span>
-                          <span>3</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium">
+                              {type.label}
+                            </span>
+                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-1 py-0.5">
+                              {type.defaultReadingLevel} grade
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              ~{type.targetWordCount} words
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {type.description}
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </label>
+                  );
+                })}
+              </div>
 
-                <Separator />
+              {/* Reading level override — optional, applies to all types */}
+              <div>
+                <Label htmlFor="readingLevelOverride" className="text-sm">
+                  Reading Level Override{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (optional — otherwise each type uses its default)
+                  </span>
+                </Label>
+                <Select
+                  value={readingLevelOverride || "default"}
+                  onValueChange={(v) =>
+                    setReadingLevelOverride(v === "default" ? "" : v)
+                  }
+                >
+                  <SelectTrigger id="readingLevelOverride" className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">
+                      Use each article type's default
+                    </SelectItem>
+                    <SelectItem value="6th">6th Grade (Ages 11–12)</SelectItem>
+                    <SelectItem value="8th">8th Grade (Ages 13–14)</SelectItem>
+                    <SelectItem value="10th">10th Grade (Ages 15–16)</SelectItem>
+                    <SelectItem value="12th">12th Grade (Ages 17–18)</SelectItem>
+                    <SelectItem value="college">College Level</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Reading Level</h3>
-
-                  <Select
-                    value={blogOptions.readingLevel}
-                    onValueChange={(value) =>
-                      setBlogOptions({ ...blogOptions, readingLevel: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select reading level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="6th">
-                        6th Grade (Ages 11-12)
-                      </SelectItem>
-                      <SelectItem value="8th">
-                        8th Grade (Ages 13-14)
-                      </SelectItem>
-                      <SelectItem value="10th">
-                        10th Grade (Ages 15-16)
-                      </SelectItem>
-                      <SelectItem value="12th">
-                        12th Grade (Ages 17-18)
-                      </SelectItem>
-                      <SelectItem value="college">College Level</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Force regeneration — kept; the only legacy toggle that matters */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="forceRegeneration"
+                  checked={forceRegeneration}
+                  onCheckedChange={(checked) => setForceRegeneration(!!checked)}
+                />
+                <Label htmlFor="forceRegeneration" className="text-sm">
+                  Force regeneration (replace existing articles of these types)
+                </Label>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between">
               <Button
                 variant="outline"
                 onClick={() => setSelectedStudyId(null)}
@@ -725,10 +595,10 @@ export default function BlogGeneratePage() {
                 Select Different Study
               </Button>
               {generateMutation.isPending ? (
-                <div className="space-y-3">
+                <div className="flex-1 md:max-w-md space-y-2">
                   <div className="flex items-center space-x-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span className="font-medium">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm font-medium">
                       {generationProgress.step}
                     </span>
                   </div>
@@ -736,23 +606,25 @@ export default function BlogGeneratePage() {
                     <div
                       className="bg-primary h-full transition-all duration-300"
                       style={{
-                        width: `${(generationProgress.currentStep / generationProgress.totalSteps) * 100}%`,
+                        width: `${
+                          (generationProgress.currentStep /
+                            Math.max(generationProgress.totalSteps, 1)) *
+                          100
+                        }%`,
                       }}
                     ></div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    This may take a minute or two. We're generating high-quality
-                    content based on the research study.
-                  </p>
                 </div>
               ) : (
                 <Button
                   onClick={handleGenerateBlogs}
-                  disabled={generateMutation.isPending}
-                  className="w-full md:w-auto"
+                  disabled={
+                    generateMutation.isPending || selectedTypeIds.size === 0
+                  }
                 >
                   <FileText className="mr-2 h-4 w-4" />
-                  Generate Blog Posts
+                  Generate {selectedTypeIds.size || "—"} Article
+                  {selectedTypeIds.size !== 1 && "s"}
                 </Button>
               )}
             </CardFooter>

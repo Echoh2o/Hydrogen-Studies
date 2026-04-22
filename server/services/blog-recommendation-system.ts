@@ -5,7 +5,7 @@
 
 import { eq, desc, sql } from "drizzle-orm";
 import { db } from "../db";
-import { studies, blogArticles } from "@shared/schema";
+import { studies, blogArticles, studyQualityScores } from "@shared/schema";
 import { ai } from "./ai-provider";
 
 export interface BlogRecommendation {
@@ -24,6 +24,12 @@ export interface BlogRecommendation {
   potentialTitle: string;
   hasExistingBlogs: boolean;
   existingBlogCount: number;
+  /** Overall quality score from study_quality_scores (0–100). Null if unscored. */
+  qualityScore: number | null;
+  /** How underserved this study's category is (0–1). Higher = more content-gap opportunity. */
+  categoryGapScore: number;
+  /** Composite rank score — what the sort actually uses. Higher = better candidate. */
+  rankScore: number;
 }
 
 export interface BulkGenerationRequest {
@@ -59,81 +65,209 @@ export interface BulkGenerationResult {
 }
 
 /**
- * Get blog article recommendations based on studies without blogs or with few blogs
+ * Get blog article recommendations, ranked by a composite score that combines:
+ *   • Quality of the study (study_quality_scores.overallScore)
+ *   • Content-gap signal — how underserved this study's category is
+ *   • Existing blog coverage (fewer existing articles → higher priority)
+ *   • Study recency
+ *
+ * The old implementation hardcoded blogCount to 0 and ranked by recency alone,
+ * which meant high-interest determinations were essentially keyword-matching
+ * against the abstract. The new ranker gives real signal and surfaces studies
+ * that are both *high-quality* and *underserved*.
  */
 export async function getBlogRecommendations(
   limit: number = 20,
 ): Promise<BlogRecommendation[]> {
   try {
-    console.log("Fetching blog recommendations...");
+    // Candidate pool: pull more than we'll return so scoring has room to pick.
+    // Cap at 150 to stay fast — re-ranking N>>limit adds almost no value once
+    // we've filtered on blog-count and quality.
+    const POOL_SIZE = Math.max(limit * 5, 80);
 
-    // Simplified approach: get studies first, then check blog counts separately
-    const allStudies = await db
-      .select({
-        id: studies.id,
-        title: studies.title,
-        abstract: studies.abstract,
-        authors: studies.authors,
-        journal: studies.journal,
-        category: studies.category,
-        publishDate: studies.publishDate,
-        journalPublishDate: studies.journalPublishDate,
-      })
-      .from(studies)
-      .orderBy(desc(studies.id))
-      .limit(50);
+    // 1. Fetch candidate studies + their blog count + their quality score in
+    //    a single round-trip. Prefers studies with < 3 existing blogs; within
+    //    that set, orders by quality so we don't waste candidates.
+    const rows = await db.execute<{
+      id: number;
+      title: string;
+      abstract: string;
+      authors: string;
+      journal: string;
+      category: string;
+      publish_date: string | null;
+      journal_publish_date: string | null;
+      view_count: number | null;
+      citation_count: number | null;
+      blog_count: number;
+      overall_score: number | null;
+      red_flag_count: number | null;
+    }>(sql`
+      SELECT
+        s.id, s.title, s.abstract, s.authors, s.journal, s.category,
+        s.publish_date, s.journal_publish_date, s.view_count, s.citation_count,
+        COALESCE(b.cnt, 0)::int AS blog_count,
+        q.overall_score,
+        q.red_flag_count
+      FROM ${studies} s
+      LEFT JOIN (
+        SELECT study_id, COUNT(*)::int AS cnt
+        FROM ${blogArticles}
+        GROUP BY study_id
+      ) b ON b.study_id = s.id
+      LEFT JOIN ${studyQualityScores} q ON q.study_id = s.id
+      WHERE COALESCE(b.cnt, 0) < 3
+      ORDER BY
+        -- studies with no blogs yet first, then by quality, then recency
+        CASE WHEN COALESCE(b.cnt, 0) = 0 THEN 0 ELSE 1 END,
+        q.overall_score DESC NULLS LAST,
+        s.id DESC
+      LIMIT ${POOL_SIZE}
+    `);
 
-    console.log(`Found ${allStudies.length} total studies`);
+    const candidates = ((rows as any).rows ?? rows) as any[];
+    if (candidates.length === 0) return [];
 
-    // For now, assume all studies have 0 blogs to get the system working quickly
-    const studiesWithBlogCounts = allStudies
-      .map((study) => ({
-        ...study,
-        blogCount: 0, // Simplified for initial implementation
-      }))
-      .slice(0, Math.min(limit, 10));
+    // 2. Content-gap analysis — for every category represented in the pool,
+    //    compute a `gap` = 1 - (blog_articles / studies). A category with
+    //    lots of studies but few articles scores high.
+    const categoryStats = await db.execute<{
+      category: string;
+      study_count: number;
+      blog_count: number;
+    }>(sql`
+      SELECT
+        COALESCE(s.category, 'General') AS category,
+        COUNT(DISTINCT s.id)::int AS study_count,
+        COUNT(DISTINCT b.id)::int AS blog_count
+      FROM ${studies} s
+      LEFT JOIN ${blogArticles} b ON b.study_id = s.id
+      GROUP BY COALESCE(s.category, 'General')
+      HAVING COUNT(DISTINCT s.id) >= 2
+    `);
 
-    console.log(`Found ${studiesWithBlogCounts.length} studies with < 3 blogs`);
-
-    if (!studiesWithBlogCounts.length) {
-      return [];
+    const gapByCategory = new Map<string, number>();
+    const statsRows = ((categoryStats as any).rows ?? categoryStats) as any[];
+    for (const r of statsRows) {
+      const studyCount = Number(r.study_count) || 0;
+      const blogCount = Number(r.blog_count) || 0;
+      // Gap: 1 means 0 blogs for N studies (max opportunity). 0 means saturated.
+      const gap = studyCount > 0 ? Math.max(0, 1 - blogCount / (studyCount * 1.5)) : 0;
+      gapByCategory.set(String(r.category), gap);
     }
 
-    // Check if OpenAI API key is available
-    const hasOpenAI = !!process.env.OPENAI_API_KEY;
-    console.log(`OpenAI available: ${hasOpenAI}`);
+    // 3. Score every candidate with a composite rank
+    const recommendations: BlogRecommendation[] = candidates.map((c) => {
+      const blogCount = Number(c.blog_count) || 0;
+      const qualityScore = c.overall_score != null ? Number(c.overall_score) : null;
+      const categoryKey = c.category || "General";
+      const categoryGap = gapByCategory.get(categoryKey) ?? 0.5;
 
-    // Fast processing: create recommendations without AI for speed
-    const recommendations: BlogRecommendation[] = studiesWithBlogCounts.map(
-      (study) => {
-        const ruleBasedRec = createRuleBasedRecommendation(study);
+      // Composite rank — tuneable weights. Each component is 0–1 and summed;
+      // then we reuse the result as both the rank number and the ordered tier.
+      //
+      //   • Quality (40%): good science deserves coverage. Treated as 0.5 if
+      //     the study hasn't been scored yet (neutral prior, not penalised).
+      //   • Category gap (30%): fill editorial blind spots first.
+      //   • Coverage (20%): 1.0 if no existing blogs, 0 if ≥3.
+      //   • Recency (10%): linear decay over 3 years from publish date.
+      //
+      // Red flags are a deliberate quality discount — a 90-score study with 2
+      // red flags is no longer a slam-dunk blog candidate.
+      const qNormalized = qualityScore != null ? qualityScore / 100 : 0.5;
+      const redFlags = Number(c.red_flag_count) || 0;
+      const qComponent = Math.max(0, qNormalized - redFlags * 0.05);
 
-        return {
-          studyId: study.id,
-          studyTitle: study.title || "Untitled Study",
-          studyAbstract: study.abstract || "No abstract available",
-          studyAuthors: study.authors || "Unknown authors",
-          studyJournal: study.journal || "Unknown journal",
-          studyCategory: study.category || "General",
-          studyPublishDate:
-            study.publishDate || study.journalPublishDate || "Unknown date",
-          priority: ruleBasedRec.priority,
-          reasonForRecommendation: ruleBasedRec.reason,
-          suggestedBlogTypes: ruleBasedRec.suggestedTypes,
-          estimatedReadership: ruleBasedRec.estimatedReadership,
-          seoKeywords: ruleBasedRec.seoKeywords,
-          potentialTitle: ruleBasedRec.potentialTitle,
-          hasExistingBlogs: study.blogCount > 0,
-          existingBlogCount: study.blogCount,
-        };
-      },
-    );
+      const coverageComponent = blogCount === 0 ? 1 : blogCount === 1 ? 0.5 : 0;
 
-    console.log(`Generated ${recommendations.length} recommendations`);
-    return recommendations.sort((a, b) => {
-      const priorityOrder = { high: 3, medium: 2, low: 1 };
-      return priorityOrder[b.priority] - priorityOrder[a.priority];
+      const publishYear = (() => {
+        const d = c.journal_publish_date || c.publish_date;
+        if (!d) return null;
+        const parsed = new Date(d);
+        return isNaN(parsed.getTime()) ? null : parsed.getFullYear();
+      })();
+      const currentYear = new Date().getFullYear();
+      const recencyComponent = publishYear
+        ? Math.max(0, 1 - (currentYear - publishYear) / 3)
+        : 0;
+
+      const rankScore =
+        qComponent * 0.4 +
+        categoryGap * 0.3 +
+        coverageComponent * 0.2 +
+        recencyComponent * 0.1;
+
+      // Priority tier — derived from rankScore so "high" actually means
+      // something the algorithm thinks is a strong candidate, not a keyword hit.
+      const priority: "high" | "medium" | "low" =
+        rankScore >= 0.65 ? "high" : rankScore >= 0.4 ? "medium" : "low";
+
+      // Human-readable "why this is a good candidate" blurb — points at the
+      // dominant component so admins trust the recommendation.
+      const reasons: string[] = [];
+      if (qualityScore != null && qualityScore >= 75) {
+        reasons.push(`high quality score (${qualityScore})`);
+      } else if (qualityScore == null) {
+        reasons.push("not yet scored — will score before generating");
+      }
+      if (categoryGap >= 0.6) {
+        reasons.push(`underserved category (${categoryKey})`);
+      }
+      if (blogCount === 0) {
+        reasons.push("no existing blog coverage");
+      } else if (blogCount === 1) {
+        reasons.push("only 1 existing blog");
+      }
+      if (redFlags > 0) {
+        reasons.push(`⚠ ${redFlags} red flag${redFlags > 1 ? "s" : ""}`);
+      }
+      const reason =
+        reasons.length > 0
+          ? reasons.join(" · ")
+          : "General candidate for additional coverage";
+
+      // Article-type suggestions — still rule-of-thumb, will be replaced by
+      // the shared type registry from the blog-generate redesign.
+      const title = String(c.title || "").toLowerCase();
+      const abstract = String(c.abstract || "").toLowerCase();
+      const suggestedTypes: string[] = ["science_explainer"];
+      if (title.includes("clinical") || abstract.includes("patient")) {
+        suggestedTypes.push("practical_guide");
+      }
+      if (abstract.includes("question") || abstract.includes("commonly")) {
+        suggestedTypes.push("faq");
+      }
+
+      return {
+        studyId: c.id,
+        studyTitle: c.title || "Untitled Study",
+        studyAbstract: c.abstract || "No abstract available",
+        studyAuthors: c.authors || "Unknown authors",
+        studyJournal: c.journal || "Unknown journal",
+        studyCategory: categoryKey,
+        studyPublishDate:
+          c.publish_date || c.journal_publish_date || "Unknown date",
+        priority,
+        reasonForRecommendation: reason,
+        suggestedBlogTypes: suggestedTypes,
+        estimatedReadership: priority === "high" ? "High" : "Medium",
+        seoKeywords: [
+          "hydrogen therapy",
+          categoryKey,
+          "research study",
+        ].filter(Boolean),
+        potentialTitle: `${String(c.title || "").split(" ").slice(0, 8).join(" ")}`,
+        hasExistingBlogs: blogCount > 0,
+        existingBlogCount: blogCount,
+        qualityScore,
+        categoryGapScore: Math.round(categoryGap * 100) / 100,
+        rankScore: Math.round(rankScore * 100) / 100,
+      };
     });
+
+    // 4. Sort by rankScore desc and return top `limit`
+    recommendations.sort((a, b) => b.rankScore - a.rankScore);
+    return recommendations.slice(0, limit);
   } catch (error) {
     console.error("Error getting blog recommendations:", error);
     return [];
@@ -296,89 +430,6 @@ async function generateSingleBlogContent(
       readingLevel: readingLevel,
     };
   }
-}
-
-/**
- * Create rule-based recommendation without AI
- */
-function createRuleBasedRecommendation(study: any): {
-  priority: "high" | "medium" | "low";
-  reason: string;
-  suggestedTypes: string[];
-  estimatedReadership: string;
-  seoKeywords: string[];
-  potentialTitle: string;
-} {
-  const title = study.title.toLowerCase();
-  const abstract = (study.abstract || "").toLowerCase();
-  const category = (study.category || "").toLowerCase();
-
-  // Determine priority based on keywords and category
-  let priority: "high" | "medium" | "low" = "medium";
-  let reason =
-    "Study has limited blog coverage and could benefit from consumer-friendly articles";
-
-  const highPriorityKeywords = [
-    "clinical trial",
-    "human study",
-    "therapeutic",
-    "treatment",
-    "therapy",
-    "health benefits",
-  ];
-  const mediumPriorityKeywords = [
-    "research",
-    "study",
-    "analysis",
-    "investigation",
-  ];
-
-  if (
-    highPriorityKeywords.some(
-      (keyword) => title.includes(keyword) || abstract.includes(keyword),
-    )
-  ) {
-    priority = "high";
-    reason =
-      "High-impact clinical research with direct therapeutic applications - excellent for consumer education";
-  } else if (study.blogCount === 0) {
-    priority = "high";
-    reason =
-      "No existing blog coverage - high opportunity for new content creation";
-  }
-
-  // Suggest article types based on content
-  const suggestedTypes = ["explainer"];
-  if (title.includes("clinical") || abstract.includes("patient")) {
-    suggestedTypes.push("implications");
-  }
-  if (title.includes("benefit") || abstract.includes("therapeutic")) {
-    suggestedTypes.push("benefits");
-  }
-
-  // Estimate readership
-  const estimatedReadership = priority === "high" ? "High" : "Medium";
-
-  // Generate SEO keywords
-  const seoKeywords = [
-    "hydrogen therapy",
-    category,
-    "research study",
-    "health benefits",
-    "therapeutic applications",
-  ].filter(Boolean);
-
-  // Create potential title
-  const potentialTitle = `Understanding ${study.title.split(" ").slice(0, 6).join(" ")}: New Research Insights`;
-
-  return {
-    priority,
-    reason,
-    suggestedTypes,
-    estimatedReadership,
-    seoKeywords,
-    potentialTitle,
-  };
 }
 
 /**
