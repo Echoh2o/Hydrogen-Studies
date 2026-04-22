@@ -35,6 +35,8 @@ export class JobScheduler {
   private lastContentQueueCheck: Date | null = null;
   private readonly JOURNAL_DATE_INTERVAL_MS = 24 * 60 * 60 * 1000; // Daily
   private lastJournalDateCheck: Date | null = null;
+  private readonly STUDY_SCORING_INTERVAL_MS = 24 * 60 * 60 * 1000; // Daily
+  private lastStudyScoringCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -352,10 +354,77 @@ export class JobScheduler {
         logger.error("Job 14 (journal-date-backfill) unexpected error", error, "JobScheduler");
       }
 
+      // Job 15: Study quality scoring — rescore unscored, stale-rubric,
+      // and recently-modified studies. Keeps scores current without requiring
+      // admins to click "batch-score" by hand.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runStudyScoringJob(),
+          10 * 60 * 1000,
+          "study-scoring"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "study-scoring" });
+        }
+      } catch (error) {
+        logger.error("Job 15 (study-scoring) unexpected error", error, "JobScheduler");
+      }
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
       this.isJobRunning = false;
+    }
+  }
+
+  /**
+   * Job 15: Study quality scoring
+   *
+   * Runs once per day. Finds studies that need rescoring (never scored,
+   * stale rubric version, content updated since last score, score older
+   * than 180 days, or full text newly available) and batch-scores up to
+   * 20 at a time. Tiered AI means borderline studies take ~2x the cost,
+   * which is why we cap at 20 — single-digit-dollar daily budget.
+   *
+   * Drops the old "admin clicks batch-score manually" pattern; the admin
+   * UI now shows scores on every study within a day of being added.
+   */
+  private async runStudyScoringJob() {
+    const BATCH_SIZE = 20;
+
+    try {
+      if (this.lastStudyScoringCheck) {
+        const elapsed = Date.now() - this.lastStudyScoringCheck.getTime();
+        if (elapsed < this.STUDY_SCORING_INTERVAL_MS) return;
+      }
+
+      const { studyScoringService, ensureScoringColumns } = await import("./study-scoring-service");
+
+      // Make sure the score-related columns exist before we try to write
+      // (idempotent — cheap no-op after the first run).
+      await ensureScoringColumns();
+
+      const targetIds = await studyScoringService.findStudiesNeedingRescore(BATCH_SIZE);
+      if (targetIds.length === 0) {
+        this.lastStudyScoringCheck = new Date();
+        return;
+      }
+
+      logger.info("Starting nightly study scoring", "JobScheduler", {
+        candidates: targetIds.length,
+      });
+
+      const results = await studyScoringService.batchScoreStudies(targetIds);
+      this.lastStudyScoringCheck = new Date();
+
+      logger.info("Study scoring complete", "JobScheduler", {
+        processed: targetIds.length,
+        scored: results.size,
+      });
+    } catch (error) {
+      logger.error("Study scoring job error", error, "JobScheduler");
     }
   }
 

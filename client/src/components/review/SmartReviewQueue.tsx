@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -21,17 +20,21 @@ import {
   RefreshCw,
   TrendingUp,
   Brain,
-  Flag,
   Star,
-  Users,
   Calendar,
-  ExternalLink,
   ChevronRight,
   AlertCircle,
   Sparkles,
+  Copy,
+  Inbox,
+  Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/auth/ProtectedRoute";
 import StudyPreviewAssistant from "./StudyPreviewAssistant";
+
+// ── Types ───────────────────────────────────────────────────
 
 interface QualityScore {
   overall: number;
@@ -40,6 +43,8 @@ interface QualityScore {
   relevance: number;
   redFlags: string[];
   redFlagCount: number;
+  confidence?: "low" | "medium" | "high" | null;
+  rubricVersion?: string | null;
 }
 
 interface Recommendation {
@@ -49,6 +54,7 @@ interface Recommendation {
   suggestedCategories: string[];
 }
 
+/** Post-publish study (from /api/review-assistant/queue) */
 interface StudyQueueItem {
   id: number;
   title: string;
@@ -60,122 +66,122 @@ interface StudyQueueItem {
   recommendations: Recommendation | null;
 }
 
-const SmartReviewQueue = () => {
-  const [selectedStudy, setSelectedStudy] = useState<StudyQueueItem | null>(
-    null,
-  );
-  const [statusFilter, setStatusFilter] = useState("pending");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [selectedStudies, setSelectedStudies] = useState<Set<number>>(
-    new Set(),
-  );
-  const [refreshingId, setRefreshingId] = useState<number | null>(null);
+/** Pre-publish queue item (from /api/research/review-queue) — scored on insert */
+interface PendingQueueItem {
+  id: number;
+  externalId: string;
+  doi: string | null;
+  title: string;
+  abstract: string;
+  authors: string;
+  journal: string;
+  publishDate: string | null;
+  category: string;
+  sourcePlatform: string;
+  status: "pending" | "approved" | "rejected";
+  overallScore: number | null;
+  methodologyScore: number | null;
+  impactScore: number | null;
+  relevanceScore: number | null;
+  redFlags: string[] | null;
+  redFlagCount: number | null;
+  scoreConfidence: "low" | "medium" | "high" | null;
+  scoredAt: string | null;
+  rubricVersion: string | null;
+  savedAt: string;
+  isDuplicate: boolean | null;
+  duplicateOfStudyId: number | null;
+}
 
-  // Fetch review queue
-  const {
-    data: queueData,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["/api/review-assistant/queue", statusFilter, priorityFilter],
-    queryFn: async () => {
-      const res = await apiRequest(
-        "GET",
-        `/api/review-assistant/queue?status=${statusFilter}&priority=${priorityFilter}&limit=50`,
-      );
-      return await res.json() as any;
-    },
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
-  });
+// ── Helpers ─────────────────────────────────────────────────
 
-  // Fetch red-flagged studies
-  const { data: redFlaggedStudies } = useQuery({
-    queryKey: ["/api/review-assistant/red-flags"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/review-assistant/red-flags?minRedFlags=1&limit=10");
-      return await res.json() as any;
-    },
-  });
+function scoreTier(score: number | null | undefined) {
+  if (score == null) return "unscored";
+  if (score >= 80) return "high";
+  if (score >= 60) return "medium";
+  if (score >= 40) return "borderline";
+  return "low";
+}
 
-  // Score single study mutation
-  const scoreStudyMutation = useMutation({
-    mutationFn: async (studyId: number) => {
-      const res = await apiRequest("POST", `/api/review-assistant/score/${studyId}`);
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/review-assistant/queue"],
-      });
-    },
-  });
-
-  // Batch score mutation
-  const batchScoreMutation = useMutation({
-    mutationFn: async (studyIds: number[]) => {
-      const res = await apiRequest("POST", "/api/review-assistant/batch-score", { studyIds });
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/review-assistant/queue"],
-      });
-      setSelectedStudies(new Set());
-    },
-  });
-
-  // Refresh study scores
-  const refreshScores = async (studyId: number) => {
-    setRefreshingId(studyId);
-    try {
-      await apiRequest("PUT", `/api/review-assistant/refresh/${studyId}`);
-      await refetch();
-    } finally {
-      setRefreshingId(null);
-    }
-  };
-
-  // Batch operations
-  const handleBatchScore = () => {
-    if (selectedStudies.size > 0) {
-      batchScoreMutation.mutate(Array.from(selectedStudies));
-    }
-  };
-
-  const toggleStudySelection = (studyId: number) => {
-    const newSelected = new Set(selectedStudies);
-    if (newSelected.has(studyId)) {
-      newSelected.delete(studyId);
-    } else {
-      newSelected.add(studyId);
-    }
-    setSelectedStudies(newSelected);
-  };
-
-  const getScoreBadgeColor = (score: number) => {
-    if (score >= 80) return "bg-green-500";
-    if (score >= 60) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-teal-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-400";
-    }
-  };
-
-  const renderScoreBadges = (scores: QualityScore) => (
-    <div className="flex gap-2 flex-wrap">
-      <Badge className={cn("text-white", getScoreBadgeColor(scores.overall))}>
-        Overall: {scores.overall}
+function ScoreBadge({ score }: { score: number | null | undefined }) {
+  if (score == null) {
+    return (
+      <Badge variant="secondary" className="text-xs">
+        Unscored
       </Badge>
+    );
+  }
+  const tier = scoreTier(score);
+  const cls =
+    tier === "high"
+      ? "bg-green-500 text-white"
+      : tier === "medium"
+      ? "bg-yellow-500 text-white"
+      : tier === "borderline"
+      ? "bg-orange-500 text-white"
+      : "bg-red-500 text-white";
+  return <Badge className={cn(cls)}>Overall: {score}</Badge>;
+}
+
+function ConfidenceBadge({
+  confidence,
+}: {
+  confidence: "low" | "medium" | "high" | null | undefined;
+}) {
+  if (!confidence) return null;
+  const label =
+    confidence === "high"
+      ? "High confidence"
+      : confidence === "medium"
+      ? "Medium confidence"
+      : "Low confidence (abstract only)";
+  const cls =
+    confidence === "high"
+      ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+      : confidence === "medium"
+      ? "bg-sky-100 text-sky-800 border-sky-200"
+      : "bg-muted text-muted-foreground";
+  return (
+    <Badge
+      variant="outline"
+      className={cn("text-[10px] font-medium", cls)}
+      title={
+        confidence === "low"
+          ? "Score is based on abstract only. More accurate scoring happens after the study is published and enriched with methods/results."
+          : undefined
+      }
+    >
+      {label}
+    </Badge>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: string }) {
+  const cls =
+    priority === "high"
+      ? "bg-teal-500"
+      : priority === "medium"
+      ? "bg-yellow-500"
+      : "bg-gray-500";
+  return (
+    <Badge className={cn("text-white", cls)}>
+      {priority.toUpperCase()} Priority
+    </Badge>
+  );
+}
+
+function ComponentScoreRow({
+  scores,
+}: {
+  scores: {
+    methodology: number;
+    impact: number;
+    relevance: number;
+    redFlagCount: number;
+  };
+}) {
+  return (
+    <div className="flex gap-2 flex-wrap">
       <Badge variant="outline" className="text-xs">
         <Brain className="h-3 w-3 mr-1" />
         Method: {scores.methodology}
@@ -189,15 +195,342 @@ const SmartReviewQueue = () => {
         Relevance: {scores.relevance}
       </Badge>
       {scores.redFlagCount > 0 && (
-        <Badge variant="destructive">
+        <Badge variant="destructive" className="text-xs">
           <AlertTriangle className="h-3 w-3 mr-1" />
           {scores.redFlagCount} Red Flag{scores.redFlagCount !== 1 ? "s" : ""}
         </Badge>
       )}
     </div>
   );
+}
 
-  const renderStudyCard = (study: StudyQueueItem) => (
+function RedFlagList({ flags }: { flags: string[] }) {
+  if (!flags || flags.length === 0) return null;
+  return (
+    <div className="mt-3 pt-3 border-t border-destructive/20 bg-destructive/5 -mx-6 px-6 py-2">
+      <p className="text-xs font-medium text-destructive mb-1 flex items-center gap-1">
+        <AlertTriangle className="h-3 w-3" />
+        Red flags
+      </p>
+      <ul className="text-xs text-destructive/90 list-disc list-inside space-y-0.5">
+        {flags.slice(0, 4).map((f, i) => (
+          <li key={i} className="line-clamp-1" title={f}>
+            {f}
+          </li>
+        ))}
+        {flags.length > 4 && (
+          <li className="text-muted-foreground">+{flags.length - 4} more</li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
+// ── Component ───────────────────────────────────────────────
+
+const SmartReviewQueue = () => {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"pending" | "published">("pending");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [selectedStudy, setSelectedStudy] = useState<StudyQueueItem | null>(null);
+  const [selectedStudies, setSelectedStudies] = useState<Set<number>>(new Set());
+  const [refreshingId, setRefreshingId] = useState<number | null>(null);
+
+  // ── Queries ──────────────────────────────────────────────
+
+  /** Pending Import — pre-publish queue with scores baked in on insert */
+  const pendingQuery = useQuery({
+    queryKey: ["/api/research/review-queue", "pending"],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        "/api/research/review-queue?status=pending",
+      );
+      return (await res.json()) as { success: boolean; data: PendingQueueItem[] };
+    },
+    enabled: activeTab === "pending",
+    refetchInterval: 30000,
+  });
+
+  /** Published Studies — post-publish view (cron keeps scores current) */
+  const publishedQuery = useQuery({
+    queryKey: ["/api/review-assistant/queue", "scored", priorityFilter],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        `/api/review-assistant/queue?status=scored&priority=${priorityFilter}&limit=50`,
+      );
+      return (await res.json()) as any;
+    },
+    enabled: activeTab === "published",
+    refetchInterval: 30000,
+  });
+
+  const { data: redFlaggedStudies } = useQuery({
+    queryKey: ["/api/review-assistant/red-flags"],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        "/api/review-assistant/red-flags?minRedFlags=1&limit=10",
+      );
+      return (await res.json()) as any;
+    },
+  });
+
+  // ── Mutations ────────────────────────────────────────────
+
+  const approveMutation = useMutation({
+    mutationFn: async (queueId: number) => {
+      const res = await apiRequest(
+        "PUT",
+        `/api/research/review-queue/${queueId}`,
+        { status: "approved", userId: user?.id ?? "admin" },
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Study approved and imported" });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/research/review-queue", "pending"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/review-assistant/queue"],
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Failed to approve",
+        description: err?.message ?? "Unknown error",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ queueId, notes }: { queueId: number; notes?: string }) => {
+      const res = await apiRequest(
+        "PUT",
+        `/api/research/review-queue/${queueId}`,
+        { status: "rejected", userId: user?.id ?? "admin", notes },
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Study rejected" });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/research/review-queue", "pending"],
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Failed to reject",
+        description: err?.message ?? "Unknown error",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const scoreQueueItemMutation = useMutation({
+    mutationFn: async (queueId: number) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/review-assistant/score-queue/${queueId}`,
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/research/review-queue", "pending"],
+      });
+    },
+  });
+
+  const scoreStudyMutation = useMutation({
+    mutationFn: async (studyId: number) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/review-assistant/score/${studyId}`,
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/review-assistant/queue"],
+      });
+    },
+  });
+
+  const batchScoreMutation = useMutation({
+    mutationFn: async (studyIds: number[]) => {
+      const res = await apiRequest(
+        "POST",
+        "/api/review-assistant/batch-score",
+        { studyIds },
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/review-assistant/queue"],
+      });
+      setSelectedStudies(new Set());
+    },
+  });
+
+  const refreshScores = async (studyId: number) => {
+    setRefreshingId(studyId);
+    try {
+      await apiRequest("PUT", `/api/review-assistant/refresh/${studyId}`);
+      await publishedQuery.refetch();
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
+  const handleBatchScore = () => {
+    if (selectedStudies.size > 0) {
+      batchScoreMutation.mutate(Array.from(selectedStudies));
+    }
+  };
+
+  const toggleStudySelection = (studyId: number) => {
+    const next = new Set(selectedStudies);
+    if (next.has(studyId)) next.delete(studyId);
+    else next.add(studyId);
+    setSelectedStudies(next);
+  };
+
+  // ── Renderers ────────────────────────────────────────────
+
+  /** Pre-publish card — queue item with approve/reject/score actions */
+  const renderPendingCard = (item: PendingQueueItem) => {
+    const hasScore = item.overallScore != null;
+    const scoreObj = hasScore
+      ? {
+          overall: item.overallScore!,
+          methodology: item.methodologyScore ?? 0,
+          impact: item.impactScore ?? 0,
+          relevance: item.relevanceScore ?? 0,
+          redFlags: item.redFlags ?? [],
+          redFlagCount: item.redFlagCount ?? 0,
+          confidence: item.scoreConfidence,
+          rubricVersion: item.rubricVersion,
+        }
+      : null;
+
+    return (
+      <Card key={item.id} className="transition-all hover:shadow-lg">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-2 mb-2">
+                <CardTitle className="text-sm font-medium line-clamp-2">
+                  {item.title}
+                </CardTitle>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">
+                {item.authors.split(",").slice(0, 3).join(", ")}
+                {item.authors.split(",").length > 3 && " et al."}
+              </p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                <span className="truncate max-w-[220px]" title={item.journal}>
+                  {item.journal}
+                </span>
+                {item.publishDate && (
+                  <>
+                    <span>•</span>
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date(item.publishDate).getFullYear() || "—"}</span>
+                  </>
+                )}
+                <span>•</span>
+                <Badge variant="outline" className="text-[10px] h-4 px-1">
+                  {item.sourcePlatform}
+                </Badge>
+                {item.isDuplicate && (
+                  <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                    <Copy className="h-2.5 w-2.5 mr-0.5" />
+                    Duplicate
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 items-end shrink-0">
+              <ScoreBadge score={item.overallScore} />
+              <ConfidenceBadge confidence={item.scoreConfidence} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {scoreObj ? (
+            <>
+              <ComponentScoreRow scores={scoreObj} />
+              <RedFlagList flags={scoreObj.redFlags} />
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {item.abstract}
+              </p>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => scoreQueueItemMutation.mutate(item.id)}
+                disabled={scoreQueueItemMutation.isPending}
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                Score Now
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Scoring was skipped or failed on import — click to retry.
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Button
+              size="sm"
+              onClick={() => approveMutation.mutate(item.id)}
+              disabled={approveMutation.isPending}
+            >
+              <CheckCircle className="h-3.5 w-3.5 mr-1" />
+              Approve & Import
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => rejectMutation.mutate({ queueId: item.id })}
+              disabled={rejectMutation.isPending}
+            >
+              <XCircle className="h-3.5 w-3.5 mr-1" />
+              Reject
+            </Button>
+            {hasScore && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => scoreQueueItemMutation.mutate(item.id)}
+                disabled={scoreQueueItemMutation.isPending}
+                title="Re-score with latest rubric"
+                className="ml-auto"
+              >
+                <RefreshCw
+                  className={cn(
+                    "h-3 w-3",
+                    scoreQueueItemMutation.isPending && "animate-spin",
+                  )}
+                />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  /** Published-study card — score display + refresh */
+  const renderPublishedCard = (study: StudyQueueItem) => (
     <Card
       key={study.id}
       className={cn(
@@ -209,7 +542,7 @@ const SmartReviewQueue = () => {
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <input
                 type="checkbox"
@@ -230,22 +563,23 @@ const SmartReviewQueue = () => {
               {study.authors.split(",").length > 3 && " et al."}
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{study.journal}</span>
+              <span className="truncate max-w-[220px]">{study.journal}</span>
               <span>•</span>
               <Calendar className="h-3 w-3" />
-              <span>{new Date(study.publishDate).getFullYear()}</span>
+              <span>
+                {study.publishDate
+                  ? new Date(study.publishDate).getFullYear()
+                  : "—"}
+              </span>
             </div>
           </div>
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-col gap-2 items-end shrink-0">
+            {study.scores && <ScoreBadge score={study.scores.overall} />}
+            {study.scores && (
+              <ConfidenceBadge confidence={study.scores.confidence} />
+            )}
             {study.recommendations && (
-              <Badge
-                className={cn(
-                  "text-white",
-                  getPriorityBadgeColor(study.recommendations.priority),
-                )}
-              >
-                {study.recommendations.priority.toUpperCase()} Priority
-              </Badge>
+              <PriorityBadge priority={study.recommendations.priority} />
             )}
             <Button
               size="sm"
@@ -266,9 +600,12 @@ const SmartReviewQueue = () => {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         {study.scores ? (
-          renderScoreBadges(study.scores)
+          <>
+            <ComponentScoreRow scores={study.scores} />
+            <RedFlagList flags={study.scores.redFlags} />
+          </>
         ) : (
           <Button
             size="sm"
@@ -285,7 +622,7 @@ const SmartReviewQueue = () => {
         )}
         {study.recommendations &&
           study.recommendations.keyFindings.length > 0 && (
-            <div className="mt-3 pt-3 border-t">
+            <div className="pt-3 border-t">
               <p className="text-xs font-medium mb-1">Key Findings:</p>
               <ul className="text-xs text-muted-foreground list-disc list-inside">
                 {study.recommendations.keyFindings
@@ -300,7 +637,7 @@ const SmartReviewQueue = () => {
           )}
         {study.recommendations &&
           study.recommendations.suggestedActions.length > 0 && (
-            <div className="mt-3 pt-3 border-t">
+            <div className="pt-3 border-t">
               <p className="text-xs font-medium mb-1">Suggested Actions:</p>
               <div className="flex flex-wrap gap-1">
                 {study.recommendations.suggestedActions
@@ -317,59 +654,99 @@ const SmartReviewQueue = () => {
     </Card>
   );
 
+  // ── Render ───────────────────────────────────────────────
+
+  const pendingItems = pendingQuery.data?.data ?? [];
+  const publishedData = publishedQuery.data;
+  const publishedQueue: StudyQueueItem[] = publishedData?.queue ?? [];
+
+  const pendingCount = pendingItems.length;
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Smart Review Queue</h1>
-        <div className="flex items-center gap-4">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Studies</SelectItem>
-              <SelectItem value="pending">Pending Review</SelectItem>
-              <SelectItem value="scored">Already Scored</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High Priority</SelectItem>
-              <SelectItem value="medium">Medium Priority</SelectItem>
-              <SelectItem value="low">Low Priority</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => refetch()} variant="outline">
+        <div>
+          <h1 className="text-2xl font-bold">Smart Review Queue</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Score-first curation. Every item is auto-scored before you decide to
+            publish it, and published studies are rescored nightly.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {activeTab === "published" && (
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          <Button
+            onClick={() =>
+              activeTab === "pending"
+                ? pendingQuery.refetch()
+                : publishedQuery.refetch()
+            }
+            variant="outline"
+            size="sm"
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-4 border-b">
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+            activeTab === "pending"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Inbox className="h-4 w-4" />
+          Pending Import
+          {pendingCount > 0 && (
+            <Badge variant="secondary" className="ml-1">
+              {pendingCount}
+            </Badge>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("published")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+            activeTab === "published"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Library className="h-4 w-4" />
+          Published Studies
+        </button>
+      </div>
+
       {/* Red flags alert */}
-      {redFlaggedStudies?.studies?.length > 0 && (
+      {redFlaggedStudies?.studies?.length > 0 && activeTab === "published" && (
         <Alert className="mb-4 border-destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>{redFlaggedStudies.studies.length} studies</strong> have red
-            flags that need immediate attention.
-            <Button
-              variant="link"
-              className="ml-2 p-0 h-auto"
-              onClick={() => setStatusFilter("scored")}
-            >
-              View flagged studies
-            </Button>
+            <strong>{redFlaggedStudies.studies.length} published studies</strong>{" "}
+            have red flags that need review.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Batch operations */}
-      {selectedStudies.size > 0 && (
+      {activeTab === "published" && selectedStudies.size > 0 && (
         <div className="mb-4 p-4 bg-accent rounded-lg flex items-center justify-between">
           <span className="text-sm">
             {selectedStudies.size}{" "}
@@ -382,7 +759,7 @@ const SmartReviewQueue = () => {
               disabled={batchScoreMutation.isPending}
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              Batch Score
+              Batch Re-score
             </Button>
             <Button
               size="sm"
@@ -395,26 +772,52 @@ const SmartReviewQueue = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Study queue list */}
-        <div className="lg:col-span-2">
-          <ScrollArea className="h-[calc(100vh-250px)]">
-            {isLoading ? (
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-6",
+          activeTab === "published" && "lg:grid-cols-3",
+        )}
+      >
+        {/* Queue list */}
+        <div className={cn(activeTab === "published" && "lg:col-span-2")}>
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            {activeTab === "pending" ? (
+              pendingQuery.isLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : pendingItems.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingItems.map(renderPendingCard)}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center p-8">
+                    <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground text-center">
+                      No studies pending import.
+                    </p>
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Imports from PubMed/CrossRef land here, scored and ready
+                      to review.
+                    </p>
+                  </CardContent>
+                </Card>
+              )
+            ) : publishedQuery.isLoading ? (
               <div className="flex items-center justify-center p-8">
                 <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : queueData?.queue?.length > 0 ? (
+            ) : publishedQueue.length > 0 ? (
               <div className="space-y-4">
-                {queueData.queue.map((study: StudyQueueItem) =>
-                  renderStudyCard(study),
-                )}
+                {publishedQueue.map(renderPublishedCard)}
               </div>
             ) : (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center p-8">
-                  <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground text-center">
-                    No studies in the review queue
+                    No published studies match this filter.
                   </p>
                 </CardContent>
               </Card>
@@ -422,31 +825,33 @@ const SmartReviewQueue = () => {
           </ScrollArea>
         </div>
 
-        {/* Study preview panel */}
-        <div className="lg:col-span-1">
-          {selectedStudy ? (
-            <StudyPreviewAssistant study={selectedStudy} />
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center p-8">
-                <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-center">
-                  Select a study to see detailed preview
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* Study preview panel — only shown on Published tab */}
+        {activeTab === "published" && (
+          <div className="lg:col-span-1">
+            {selectedStudy ? (
+              <StudyPreviewAssistant study={selectedStudy} />
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center p-8">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center">
+                    Select a study to see detailed preview
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Queue stats */}
-      {queueData?.pagination && (
+      {/* Pagination footer (published only) */}
+      {activeTab === "published" && publishedData?.pagination && (
         <div className="mt-6 flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Showing {queueData.queue.length} of {queueData.pagination.total}{" "}
-            studies
+            Showing {publishedQueue.length} of{" "}
+            {publishedData.pagination.total} studies
           </span>
-          {queueData.pagination.hasMore && (
+          {publishedData.pagination.hasMore && (
             <Button variant="outline" size="sm">
               Load More
               <ChevronRight className="h-4 w-4 ml-1" />

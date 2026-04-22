@@ -9,6 +9,7 @@ import {
 import { searchCrossRef, extractStudyFromCrossRef } from "../services/crossref-api";
 import { studyService } from "../services/study-service";
 import { reviewService } from "../services/review-service";
+import { studyScoringService } from "../services/study-scoring-service";
 import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
 import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
@@ -648,10 +649,34 @@ router.post(
       // Save to review queue
       const savedReviewItem = await reviewService.addToQueue(reviewItem);
 
+      // Score the queue item synchronously so admins see quality before
+      // deciding approve/reject. This is the key inversion: scoring now
+      // informs the publish decision instead of following it.
+      //
+      // Wrapped with a 15s cap — if the AI provider is slow or errors,
+      // we continue without a score and the nightly cron picks it up.
+      let scoredItem = savedReviewItem;
+      try {
+        const scorePromise = studyScoringService.scoreQueueItem(savedReviewItem.id);
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000));
+        const result = await Promise.race([scorePromise, timeout]);
+        if (result) {
+          scoredItem = { ...savedReviewItem, ...result, scoredAt: new Date() };
+        } else {
+          logger.warn(
+            "Queue item scoring timed out; cron will backfill",
+            "ResearchUnifiedRoutes",
+            { queueItemId: savedReviewItem.id },
+          );
+        }
+      } catch (err) {
+        logger.error("Failed to score queue item on insert", err, "ResearchUnifiedRoutes");
+      }
+
       res.json({
         success: true,
         message: "Study added to review queue successfully",
-        reviewItem: savedReviewItem,
+        reviewItem: scoredItem,
       });
     } catch (error: unknown) {
       logger.error("Error adding paper to review queue", error, "ResearchUnifiedRoutes");
@@ -749,6 +774,21 @@ router.put(
 
           // Save the study to the database
           const savedStudy = await studyService.createStudy(studyData);
+
+          // Immediately score the promoted study. The published-study scorer
+          // now has access to fields the queue item couldn't score (methods,
+          // results, sample size if enriched), so the post-publish score is
+          // typically more accurate than the pre-publish one. Non-blocking:
+          // scoring failure here shouldn't fail the approval.
+          if (savedStudy?.id) {
+            studyScoringService.scoreStudy(savedStudy.id).catch((err) => {
+              logger.error(
+                "Failed to score approved study",
+                err,
+                "ResearchUnifiedRoutes",
+              );
+            });
+          }
 
           res.json({
             success: true,

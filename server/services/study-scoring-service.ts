@@ -3,17 +3,39 @@ import {
   studies,
   studyQualityScores,
   reviewRecommendations,
+  studyReviewQueue,
 } from "../../shared/schema";
 import { eq, and, or, sql, desc } from "drizzle-orm";
-import { ai } from "./ai-provider";
+import { ai, MODELS } from "./ai-provider";
+import { logger } from "../utils/logger";
 
-interface ScoringResult {
+/**
+ * Rubric version tag stamped onto every score.
+ *
+ * Bump this whenever you change weights, thresholds, or red-flag rules.
+ * The nightly cron rescores any row whose stored version != this value,
+ * so a version bump triggers a gradual site-wide re-score.
+ */
+export const RUBRIC_VERSION = "2.0";
+
+/** Scoring result — returned by computeScore and the public wrappers. */
+export interface ScoringResult {
   methodologyScore: number;
   impactScore: number;
   relevanceScore: number;
   overallScore: number;
   scoreBreakdown: any;
   redFlags: string[];
+  /**
+   * Confidence in the score given the input data available.
+   *   high   — full text / methods / results present
+   *   medium — abstract + a couple structured fields
+   *   low    — abstract only (typical for review-queue items pre-enrichment)
+   */
+  scoreConfidence: "low" | "medium" | "high";
+  rubricVersion: string;
+  /** Whether the tiered-AI second pass (Sonnet) was run. */
+  escalatedToSonnet: boolean;
 }
 
 interface StudyData {
@@ -27,12 +49,44 @@ interface StudyData {
   methods?: string | null;
   results?: string | null;
   conclusion?: string | null;
+  fullText?: string | null;
   sampleSize?: number | null;
   studyType?: string | null;
   citationCount?: number | null;
   fundingSources?: string | null;
   conflictOfInterest?: string | null;
   peerReviewed?: boolean;
+}
+
+// ── Idempotent column setup (runs on boot) ───────────────────────
+//
+// Mirrors the drizzle schema for new columns. Drizzle push will also
+// apply these, but this belt-and-braces ALTER ensures the scorer works
+// even on environments where the push step was skipped.
+let ensureColumnsPromise: Promise<void> | null = null;
+export function ensureScoringColumns(): Promise<void> {
+  if (ensureColumnsPromise) return ensureColumnsPromise;
+  ensureColumnsPromise = (async () => {
+    try {
+      await db.execute(sql`ALTER TABLE study_quality_scores ADD COLUMN IF NOT EXISTS score_confidence text`);
+      await db.execute(sql`ALTER TABLE study_quality_scores ADD COLUMN IF NOT EXISTS rubric_version text`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS study_quality_scores_rubric_idx ON study_quality_scores (rubric_version)`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS overall_score integer`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS methodology_score integer`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS impact_score integer`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS relevance_score integer`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS red_flags text[]`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS red_flag_count integer`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS score_breakdown jsonb`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS score_confidence text`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS scored_at timestamp`);
+      await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS rubric_version text`);
+      logger.info("Scoring columns ensured", "StudyScoringService");
+    } catch (err) {
+      logger.error("Failed to ensure scoring columns", err, "StudyScoringService");
+    }
+  })();
+  return ensureColumnsPromise;
 }
 
 export class StudyScoringService {
@@ -77,74 +131,166 @@ export class StudyScoringService {
   };
 
   /**
-   * Score a single study
+   * Pure scoring: takes raw study data, returns a ScoringResult.
+   *
+   * No DB access. Used by both `scoreStudy` (DB-backed) and `scoreQueueItem`
+   * (operates on staged data before a study row exists).
+   *
+   * Runs a tiered AI pass:
+   *   1. Deterministic rules + Haiku red-flag detection
+   *   2. If base score is borderline (40–70) or Haiku flagged ≥2 issues,
+   *      escalates to Sonnet for a second opinion and unions the flag lists
+   *
+   * The escalation catches the exact cases where a cheap model's judgment
+   * matters most: middle-of-the-pack studies and flag-heavy ones where a
+   * false positive vs. true positive changes the publish decision.
+   */
+  async computeScore(studyData: StudyData): Promise<ScoringResult> {
+    // Calculate individual scores
+    const methodologyScore = await this.calculateMethodologyScore(studyData);
+    const impactScore = await this.calculateImpactScore(studyData);
+    const relevanceScore = await this.calculateRelevanceScore(studyData);
+
+    // First pass: deterministic rules + Haiku
+    let redFlags = await this.detectRedFlags(studyData, MODELS.HAIKU);
+
+    // Tiered escalation: if the result is consequential, get Sonnet's take
+    const baseScore =
+      methodologyScore * 0.4 + impactScore * 0.3 + relevanceScore * 0.3;
+    const isBorderline = baseScore >= 40 && baseScore <= 70;
+    const flagHeavy = redFlags.length >= 2;
+    let escalatedToSonnet = false;
+
+    if (isBorderline || flagHeavy) {
+      try {
+        const sonnetFlags = await this.detectAIRedFlags(studyData, MODELS.SONNET);
+        // Union — we trust Sonnet more but don't drop Haiku's findings
+        redFlags = Array.from(new Set([...redFlags, ...sonnetFlags]));
+        escalatedToSonnet = true;
+      } catch (err) {
+        // Sonnet failure shouldn't invalidate the score — just log and
+        // continue with the Haiku-tier result.
+        console.error("Sonnet escalation failed:", err);
+      }
+    }
+
+    const redFlagPenalty = Math.min(redFlags.length * 5, 30);
+    const overallScore = Math.max(0, Math.round(baseScore - redFlagPenalty));
+
+    const scoreBreakdown = {
+      methodology: {
+        total: methodologyScore,
+        components: await this.getMethodologyBreakdown(studyData),
+      },
+      impact: {
+        total: impactScore,
+        components: await this.getImpactBreakdown(studyData),
+      },
+      relevance: {
+        total: relevanceScore,
+        components: await this.getRelevanceBreakdown(studyData),
+      },
+      penalties: {
+        redFlagCount: redFlags.length,
+        penaltyApplied: redFlagPenalty,
+      },
+    };
+
+    return {
+      methodologyScore,
+      impactScore,
+      relevanceScore,
+      overallScore,
+      scoreBreakdown,
+      redFlags,
+      scoreConfidence: this.computeConfidence(studyData),
+      rubricVersion: RUBRIC_VERSION,
+      escalatedToSonnet,
+    };
+  }
+
+  /**
+   * Score a single published study by ID — fetches from `studies`,
+   * computes, persists to `study_quality_scores`.
    */
   async scoreStudy(studyId: number): Promise<ScoringResult> {
-    try {
-      // Fetch study data
-      const studyData = await this.fetchStudyData(studyId);
-      if (!studyData) {
-        throw new Error(`Study with ID ${studyId} not found`);
-      }
-
-      // Calculate individual scores
-      const methodologyScore = await this.calculateMethodologyScore(studyData);
-      const impactScore = await this.calculateImpactScore(studyData);
-      const relevanceScore = await this.calculateRelevanceScore(studyData);
-
-      // Detect red flags
-      const redFlags = await this.detectRedFlags(studyData);
-
-      // Calculate overall score
-      const baseScore =
-        methodologyScore * 0.4 + impactScore * 0.3 + relevanceScore * 0.3;
-
-      // Apply red flag penalties (5 points per red flag, max 30 points penalty)
-      const redFlagPenalty = Math.min(redFlags.length * 5, 30);
-      const overallScore = Math.max(0, Math.round(baseScore - redFlagPenalty));
-
-      // Create detailed breakdown
-      const scoreBreakdown = {
-        methodology: {
-          total: methodologyScore,
-          components: await this.getMethodologyBreakdown(studyData),
-        },
-        impact: {
-          total: impactScore,
-          components: await this.getImpactBreakdown(studyData),
-        },
-        relevance: {
-          total: relevanceScore,
-          components: await this.getRelevanceBreakdown(studyData),
-        },
-        penalties: {
-          redFlagCount: redFlags.length,
-          penaltyApplied: redFlagPenalty,
-        },
-      };
-
-      // Save scores to database
-      await this.saveScores(studyId, {
-        methodologyScore,
-        impactScore,
-        relevanceScore,
-        overallScore,
-        scoreBreakdown,
-        redFlags,
-      });
-
-      return {
-        methodologyScore,
-        impactScore,
-        relevanceScore,
-        overallScore,
-        scoreBreakdown,
-        redFlags,
-      };
-    } catch (error) {
-      console.error("Error scoring study:", error);
-      throw error;
+    const studyData = await this.fetchStudyData(studyId);
+    if (!studyData) {
+      throw new Error(`Study with ID ${studyId} not found`);
     }
+    const result = await this.computeScore(studyData);
+    await this.saveScores(studyId, result);
+    return result;
+  }
+
+  /**
+   * Score a pre-publish review-queue item — fetches from `study_review_queue`,
+   * computes, persists the score back onto the queue row so admins can see
+   * quality *before* the approve/reject decision.
+   *
+   * Queue items typically only have {title, abstract, authors, journal,
+   * publishDate} — no methods/results/sampleSize yet. The scorer gracefully
+   * degrades and returns `scoreConfidence: "low"` to signal that.
+   */
+  async scoreQueueItem(queueItemId: number): Promise<ScoringResult | null> {
+    const [item] = await db
+      .select()
+      .from(studyReviewQueue)
+      .where(eq(studyReviewQueue.id, queueItemId))
+      .limit(1);
+
+    if (!item) return null;
+
+    const studyData: StudyData = {
+      id: 0, // computed score doesn't rely on id
+      title: item.title,
+      abstract: item.abstract,
+      authors: item.authors,
+      journal: item.journal,
+      publishDate: item.publishDate ?? undefined,
+      journalPublishDate: item.journalPublishDate ?? undefined,
+    };
+
+    const result = await this.computeScore(studyData);
+
+    await db
+      .update(studyReviewQueue)
+      .set({
+        overallScore: result.overallScore,
+        methodologyScore: result.methodologyScore,
+        impactScore: result.impactScore,
+        relevanceScore: result.relevanceScore,
+        redFlags: result.redFlags,
+        redFlagCount: result.redFlags.length,
+        scoreBreakdown: result.scoreBreakdown,
+        scoreConfidence: result.scoreConfidence,
+        scoredAt: new Date(),
+        rubricVersion: result.rubricVersion,
+      })
+      .where(eq(studyReviewQueue.id, queueItemId));
+
+    return result;
+  }
+
+  /**
+   * Estimate how much to trust this score based on how much input we had.
+   * A 50-score on a 100-word abstract is far less reliable than a 50-score
+   * on a study with methods, results, and a known sample size.
+   */
+  private computeConfidence(study: StudyData): "low" | "medium" | "high" {
+    let signals = 0;
+    const hasText = (s?: string | null) => !!s && String(s).trim().length >= 40;
+
+    if (hasText(study.methods)) signals++;
+    if (hasText(study.results) || hasText(study.conclusion)) signals++;
+    if (hasText(study.fullText)) signals += 2; // full text is a big upgrade
+    if (study.sampleSize && study.sampleSize > 0) signals++;
+    if (study.studyType && study.studyType.trim()) signals++;
+    if (study.citationCount != null && study.citationCount >= 0) signals++;
+
+    if (signals >= 4) return "high";
+    if (signals >= 2) return "medium";
+    return "low";
   }
 
   /**
@@ -246,9 +392,16 @@ export class StudyScoringService {
   }
 
   /**
-   * Detect red flags in the study
+   * Detect red flags in the study.
+   *
+   * @param model — which AI model to use for the AI-assisted pass. Default is
+   *   Haiku (cheap, fast, fine for most cases). Callers escalate to Sonnet
+   *   for borderline studies via `computeScore`.
    */
-  private async detectRedFlags(study: StudyData): Promise<string[]> {
+  private async detectRedFlags(
+    study: StudyData,
+    model: string = MODELS.HAIKU,
+  ): Promise<string[]> {
     const redFlags: string[] = [];
     const fullText = this.getFullText(study);
 
@@ -295,17 +448,21 @@ export class StudyScoringService {
       redFlags.push("Possible retraction or correction");
     }
 
-    // Use AI to detect additional red flags
-    const aiRedFlags = await this.detectAIRedFlags(study);
+    // Use AI to detect additional red flags (first-tier model)
+    const aiRedFlags = await this.detectAIRedFlags(study, model);
     redFlags.push(...aiRedFlags);
 
     return Array.from(new Set(redFlags)); // Remove duplicates
   }
 
   /**
-   * Use AI to detect additional red flags
+   * Use AI to detect additional red flags. Model is configurable so the
+   * tiered-AI logic in `computeScore` can escalate Haiku → Sonnet.
    */
-  private async detectAIRedFlags(study: StudyData): Promise<string[]> {
+  private async detectAIRedFlags(
+    study: StudyData,
+    model: string = MODELS.HAIKU,
+  ): Promise<string[]> {
     if (ai.getProviderStatus().primary === "none") {
       return [];
     }
@@ -337,12 +494,12 @@ export class StudyScoringService {
       const result = await ai.generateJSON(systemPrompt, userPrompt, {
         temperature: 0.3,
         maxTokens: 500,
-        model: "claude-haiku-4-5-20251001",
+        model,
       });
 
       return result.redFlags || [];
     } catch (error) {
-      console.error("Error detecting AI red flags:", error);
+      console.error(`Error detecting AI red flags (${model}):`, error);
       return [];
     }
   }
@@ -655,6 +812,8 @@ export class StudyScoringService {
         scoreBreakdown: JSON.stringify(scores.scoreBreakdown),
         redFlags: scores.redFlags,
         redFlagCount: scores.redFlags.length,
+        scoreConfidence: scores.scoreConfidence,
+        rubricVersion: scores.rubricVersion,
         ...breakdown,
       })
       .onConflictDoUpdate({
@@ -667,10 +826,54 @@ export class StudyScoringService {
           scoreBreakdown: JSON.stringify(scores.scoreBreakdown),
           redFlags: scores.redFlags,
           redFlagCount: scores.redFlags.length,
+          scoreConfidence: scores.scoreConfidence,
+          rubricVersion: scores.rubricVersion,
           ...breakdown,
           lastUpdated: sql`NOW()`,
         },
       });
+  }
+
+  /**
+   * Find studies that should be rescored. Called by the nightly cron.
+   *
+   * Triggers, in priority order:
+   *   1. Never scored                    (no studyQualityScores row)
+   *   2. Stale rubric                    (rubric_version != current)
+   *   3. Content updated since last score (studies.last_modified > scores.last_updated)
+   *   4. Score older than 180 days       (rubric may have implicit decay)
+   *   5. Full text newly populated       (can now score methodology much better)
+   *
+   * Returns up to `limit` study IDs. Callers batch-score them.
+   */
+  async findStudiesNeedingRescore(limit: number = 20): Promise<number[]> {
+    const rows = await db.execute<{ id: number }>(sql`
+      SELECT s.id FROM studies s
+      LEFT JOIN study_quality_scores q ON q.study_id = s.id
+      WHERE
+        q.id IS NULL
+        OR q.rubric_version IS NULL
+        OR q.rubric_version <> ${RUBRIC_VERSION}
+        OR (s.last_modified IS NOT NULL AND s.last_modified > q.last_updated)
+        OR q.last_updated < NOW() - INTERVAL '180 days'
+        OR (s.full_text IS NOT NULL AND LENGTH(s.full_text) > 500
+            AND q.score_confidence IS DISTINCT FROM 'high')
+      ORDER BY
+        CASE
+          WHEN q.id IS NULL THEN 0                -- unscored first
+          WHEN q.rubric_version IS NULL
+            OR q.rubric_version <> ${RUBRIC_VERSION} THEN 1
+          WHEN s.last_modified IS NOT NULL
+            AND s.last_modified > q.last_updated THEN 2
+          ELSE 3
+        END,
+        s.citation_count DESC NULLS LAST,         -- high-impact studies first within a tier
+        s.id ASC
+      LIMIT ${limit}
+    `);
+
+    const list = (rows as any).rows ?? rows;
+    return (list as any[]).map((r) => Number(r.id));
   }
 
   private async getDetailedBreakdown(studyId: number, scores: ScoringResult) {

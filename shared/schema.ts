@@ -786,6 +786,20 @@ export const studyReviewQueue = pgTable(
       () => studies.id,
       { onDelete: "set null" },
     ),
+    // Pre-publish quality scoring (computed when the item enters the queue).
+    // Admins see these *before* deciding approve/reject. Scored again after
+    // promotion to `studies`, where the full study fields yield more accurate
+    // methodology detection.
+    overallScore: integer("overall_score"),
+    methodologyScore: integer("methodology_score"),
+    impactScore: integer("impact_score"),
+    relevanceScore: integer("relevance_score"),
+    redFlags: text("red_flags").array(),
+    redFlagCount: integer("red_flag_count"),
+    scoreBreakdown: jsonb("score_breakdown"),
+    scoreConfidence: text("score_confidence"), // "low" | "medium" | "high" — reflects input completeness
+    scoredAt: timestamp("scored_at"),
+    rubricVersion: text("rubric_version"),
     // Timestamps
     savedAt: timestamp("saved_at").notNull().defaultNow(),
     reviewedAt: timestamp("reviewed_at"),
@@ -1857,6 +1871,13 @@ export const studyQualityScores = pgTable(
       0,
     ),
 
+    // Confidence in the score based on input completeness (abstract-only → low,
+    // with methods/results → medium, with full text → high).
+    scoreConfidence: text("score_confidence"),
+    // Which rubric version produced this score. When the rubric changes, the
+    // nightly cron rescores rows whose version doesn't match the current one.
+    rubricVersion: text("rubric_version"),
+
     lastUpdated: timestamp("last_updated").notNull().defaultNow(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
@@ -1868,6 +1889,9 @@ export const studyQualityScores = pgTable(
       ),
       redFlagCountIdx: index("study_quality_scores_red_flags_idx").on(
         table.redFlagCount,
+      ),
+      rubricVersionIdx: index("study_quality_scores_rubric_idx").on(
+        table.rubricVersion,
       ),
     };
   },

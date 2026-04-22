@@ -809,5 +809,9 @@ pool.query("SELECT 1").then(async () => {
 });
 
 import { jobScheduler } from "./services/job-scheduler";
+// Ensure scoring-related columns exist (idempotent) before background jobs
+// or the review-queue-insert path write to them on new deployments.
+import { ensureScoringColumns } from "./services/study-scoring-service";
+ensureScoringColumns().catch(() => {});
 // Start background jobs
 jobScheduler.start();

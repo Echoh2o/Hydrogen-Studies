@@ -13,6 +13,28 @@ import { reviewRecommendationsService } from "../services/review-recommendations
 const router = Router();
 
 /**
+ * Score a review-queue item (pre-publish). Used by admins to retry a failed
+ * scoring, or re-score an item after the rubric has been updated.
+ * POST /api/review-assistant/score-queue/:queueId
+ */
+router.post("/score-queue/:queueId", async (req, res) => {
+  try {
+    const queueId = parseInt(req.params.queueId);
+    if (isNaN(queueId)) {
+      return res.status(400).json({ error: "Invalid queue ID" });
+    }
+    const result = await studyScoringService.scoreQueueItem(queueId);
+    if (!result) {
+      return res.status(404).json({ error: "Queue item not found" });
+    }
+    res.json({ success: true, scores: result });
+  } catch (error) {
+    console.error("Error scoring queue item:", error);
+    res.status(500).json({ error: "Failed to score queue item" });
+  }
+});
+
+/**
  * Generate quality scores for a single study
  * POST /api/review-assistant/score/:studyId
  */
@@ -179,6 +201,8 @@ router.get("/queue", async (req, res) => {
             relevance: row.scores.relevanceScore,
             redFlags: row.scores.redFlags || [],
             redFlagCount: row.scores.redFlagCount,
+            confidence: row.scores.scoreConfidence ?? null,
+            rubricVersion: row.scores.rubricVersion ?? null,
           }
         : null,
       recommendations: row.recommendations
