@@ -12,6 +12,7 @@ import {
   list404s,
   resolve404,
   backfillSuggestions,
+  getRankedSuggestions,
 } from "../services/redirect-service";
 
 const router = Router();
@@ -129,15 +130,35 @@ router.post("/404s/:id/resolve", requireAdmin, async (req: Request, res: Respons
   }
 });
 
-/** POST /api/admin/404s/backfill — Trigger suggestion backfill for unresolved 404s */
+/** POST /api/admin/404s/backfill — Trigger suggestion backfill for unresolved 404s
+ *  Body: { limit?: number, force?: boolean }  force=true re-scores entries that already have suggestions
+ */
 router.post("/404s/backfill", requireAdmin, async (req: Request, res: Response) => {
   try {
     const limit = Math.min(200, parseInt(req.body.limit as string) || 50);
-    const result = await backfillSuggestions(limit);
+    const force = Boolean(req.body?.force);
+    const result = await backfillSuggestions(limit, { force });
     res.json(result);
   } catch (error) {
     console.error("Failed to backfill suggestions:", error);
     res.status(500).json({ error: "Failed to backfill suggestions" });
+  }
+});
+
+/** GET /api/admin/redirects/suggest?path=/foo — Live ranked suggestions for a single path
+ *  Used by the resolve dialog so admins can preview/refresh without a full backfill run.
+ */
+router.get("/suggest", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const path = (req.query.path as string) || "";
+    if (!path.startsWith("/")) {
+      return res.status(400).json({ error: "path query param must start with /" });
+    }
+    const suggestions = await getRankedSuggestions(path);
+    res.json({ data: suggestions });
+  } catch (error) {
+    console.error("Failed to generate suggestions:", error);
+    res.status(500).json({ error: "Failed to generate suggestions" });
   }
 });
 

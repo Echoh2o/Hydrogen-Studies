@@ -11,6 +11,7 @@ import {
   unique,
   index,
   customType,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -2481,7 +2482,8 @@ export const notFoundLog = pgTable(
     firstSeenAt: timestamp("first_seen_at").notNull().defaultNow(),
     lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
     resolved: boolean("resolved").notNull().default(false), // true once a redirect is created
-    suggestedTarget: text("suggested_target"), // best-guess redirect target
+    suggestedTarget: text("suggested_target"), // back-compat: top-ranked target string (mirrors suggestions[0].target)
+    suggestions: jsonb("suggestions").$type<RedirectSuggestion[]>(), // ranked candidates with score + reasons
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => {
@@ -2494,6 +2496,14 @@ export const notFoundLog = pgTable(
 );
 
 export type NotFoundLogEntry = typeof notFoundLog.$inferSelect;
+
+export interface RedirectSuggestion {
+  target: string; // absolute path, e.g. "/studies/foo"
+  contentType: "study" | "blog" | "condition";
+  title: string | null; // human-readable label for admin UI
+  score: number; // 0–1, higher is better
+  reasons: string[]; // short human-readable match explanations
+}
 
 // ── Stored Images (database-backed image storage) ──────────────────────
 export const storedImages = pgTable(

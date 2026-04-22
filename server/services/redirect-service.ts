@@ -7,11 +7,46 @@
 
 import { db } from "../db";
 import { redirects, notFoundLog, studies, blogArticles, healthConditions } from "@shared/schema";
+import type { RedirectSuggestion } from "@shared/schema";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { logger } from "../utils/logger";
 import type { Request, Response, NextFunction } from "express";
 
 const TAG = "RedirectService";
+
+// ── One-time schema / index setup (idempotent, runs on boot) ─────
+//
+// Enables pg_trgm for similarity scoring, adds GIN trigram indexes to
+// the columns we search, and adds the `suggestions` JSONB column
+// that backs the ranked-candidate UI.
+let ensureTrgmPromise: Promise<void> | null = null;
+export function ensureRedirectIndexes(): Promise<void> {
+  if (ensureTrgmPromise) return ensureTrgmPromise;
+  ensureTrgmPromise = (async () => {
+    // suggestions column is required — must not be swallowed
+    try {
+      await db.execute(sql`ALTER TABLE not_found_log ADD COLUMN IF NOT EXISTS suggestions jsonb`);
+    } catch (err) {
+      logger.error("Failed to add not_found_log.suggestions column", err, TAG);
+    }
+    // pg_trgm + GIN indexes are a perf optimization; tolerate failure
+    // (some hosted Postgres roles can't CREATE EXTENSION).
+    try {
+      await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS studies_slug_trgm_idx ON studies USING GIN (slug gin_trgm_ops)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS studies_title_trgm_idx ON studies USING GIN (LOWER(title) gin_trgm_ops)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS studies_plt_trgm_idx ON studies USING GIN (LOWER(plain_language_title) gin_trgm_ops)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS blog_articles_slug_trgm_idx ON blog_articles USING GIN (slug gin_trgm_ops)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS blog_articles_title_trgm_idx ON blog_articles USING GIN (LOWER(title) gin_trgm_ops)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS health_conditions_slug_trgm_idx ON health_conditions USING GIN (slug gin_trgm_ops)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS health_conditions_name_trgm_idx ON health_conditions USING GIN (LOWER(name) gin_trgm_ops)`);
+      logger.info("Redirect trigram indexes ensured", TAG);
+    } catch (err) {
+      logger.warn("pg_trgm setup failed; falling back to sequential scans", TAG, { err: (err as Error).message });
+    }
+  })();
+  return ensureTrgmPromise;
+}
 
 // ── In-memory redirect cache ─────────────────────────────────
 
@@ -158,108 +193,401 @@ export async function log404(path: string, referrer?: string): Promise<void> {
 }
 
 // ── Suggestion engine ────────────────────────────────────────
+//
+// Given a 404 path, return a ranked list of likely-intended targets
+// across studies, blog articles, and health conditions.
+//
+// Signals:
+//   • Exact slug match (score 1.0) — skip all other work
+//   • Trigram similarity on slug / title / plainLanguageTitle (weighted)
+//   • Token overlap with tags[], keywords[], health_conditions[],
+//     body_systems[], semantic_keywords[]
+//   • Path-prefix bias — /blog/* → boost blog candidates, etc.
+//   • Popularity bias — rows with higher view_count break ties
+//
+// Returns up to TOP_N candidates with per-signal reasons so the admin
+// UI can display *why* something matched instead of a black-box guess.
 
-/**
- * For a given 404 path, find the most likely intended destination
- * by fuzzy-matching against study slugs, condition slugs, and blog slugs.
- */
-export async function suggestRedirectTarget(path: string): Promise<string | null> {
-  const normalizedPath = path.toLowerCase().replace(/\/+$/, "") || "/";
+const TOP_N = 5;
+const MIN_TRGM_THRESHOLD = 0.12; // candidate floor; anything below this is noise
+const MIN_OVERALL_SCORE = 0.18; // top candidate must clear this or we return []
 
-  // Extract the last meaningful segment (e.g., "/study/some-slug" → "some-slug")
-  const segments = normalizedPath.split("/").filter(Boolean);
+/** Boilerplate path segments we strip before tokenizing. */
+const PATH_NOISE_SEGMENTS = new Set([
+  "studies", "study", "blog", "blogs", "article", "articles", "post", "posts",
+  "category", "categories", "tag", "tags", "condition", "conditions",
+  "tools", "hydrogen-research", "research", "page", "pages", "index",
+]);
+
+/** Extremely common English words we don't want dominating similarity. */
+const STOPWORDS = new Set([
+  "a", "an", "the", "of", "and", "or", "for", "to", "in", "on", "at",
+  "with", "without", "by", "from", "is", "are", "was", "were", "be",
+]);
+
+function reconstructQuery(path: string): {
+  query: string;
+  tokens: string[];
+  pathHint: "study" | "blog" | "condition" | null;
+  lastSegment: string;
+} {
+  const normalized = path.toLowerCase().replace(/\/+$/, "") || "/";
+  const segments = normalized.split("/").filter(Boolean);
+
+  // Detect intent from URL prefix before we strip noise segments
+  let pathHint: "study" | "blog" | "condition" | null = null;
+  const joined = "/" + segments.join("/");
+  if (/^\/(studies|study)(\/|$)/.test(joined)) pathHint = "study";
+  else if (/^\/(blog|blogs|article|articles|post|posts)(\/|$)/.test(joined)) pathHint = "blog";
+  else if (/(^|\/)(condition|conditions)(\/|$)/.test(joined)) pathHint = "condition";
+
   const lastSegment = segments[segments.length - 1] || "";
-  if (!lastSegment || lastSegment.length < 3) return null;
 
-  // Try exact slug match first (fastest)
-  const exactStudy = await db
-    .select({ slug: studies.slug })
-    .from(studies)
-    .where(eq(studies.slug, lastSegment))
-    .limit(1);
+  // Keep only segments that carry meaning; drop noise + numeric IDs + dates
+  const meaningful = segments.filter((s) => {
+    if (PATH_NOISE_SEGMENTS.has(s)) return false;
+    if (/^\d+$/.test(s)) return false; // pure numeric (IDs, years)
+    if (/^\d{4}-\d{2}(-\d{2})?$/.test(s)) return false; // dates
+    return true;
+  });
 
-  if (exactStudy.length > 0 && exactStudy[0].slug) {
-    return `/studies/${exactStudy[0].slug}`;
+  // Tokenize: split on - _ . and whitespace, strip file extensions, drop stopwords
+  const raw = meaningful.join(" ").replace(/\.(html|htm|php|aspx?)$/g, "");
+  const tokens = raw
+    .split(/[-_\s./]+/)
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t.length >= 3 && !STOPWORDS.has(t) && !/^\d+$/.test(t));
+
+  const query = tokens.join(" ");
+  return { query, tokens, pathHint, lastSegment };
+}
+
+/** Count how many query tokens appear anywhere in a set of array-ish fields. */
+function tokenOverlap(tokens: string[], fields: Array<string[] | null | undefined>): number {
+  if (tokens.length === 0) return 0;
+  const haystack = new Set<string>();
+  for (const field of fields) {
+    if (!field) continue;
+    for (const val of field) {
+      if (!val) continue;
+      for (const w of String(val).toLowerCase().split(/[-_\s./]+/)) {
+        if (w.length >= 3) haystack.add(w);
+      }
+    }
+  }
+  let hits = 0;
+  for (const t of tokens) if (haystack.has(t)) hits++;
+  return hits;
+}
+
+function popularityBonus(viewCount: number | null | undefined): number {
+  const v = viewCount ?? 0;
+  if (v <= 0) return 0;
+  return Math.min(0.05, Math.log10(v + 1) / 60); // ~0.02 at 10 views, capped at 0.05
+}
+
+/** Public entry point — returns ranked candidates for a 404 path. */
+export async function getRankedSuggestions(path: string): Promise<RedirectSuggestion[]> {
+  const { query, tokens, pathHint, lastSegment } = reconstructQuery(path);
+
+  // ── 1. Exact slug match short-circuit ───────────────────────
+  if (lastSegment.length >= 3) {
+    const [s] = await db.select({ slug: studies.slug, title: studies.title, plt: studies.plainLanguageTitle })
+      .from(studies).where(eq(studies.slug, lastSegment)).limit(1);
+    if (s?.slug) {
+      return [{
+        target: `/studies/${s.slug}`,
+        contentType: "study",
+        title: s.plt ?? s.title ?? null,
+        score: 1,
+        reasons: ["exact slug match"],
+      }];
+    }
+    const [c] = await db.select({ slug: healthConditions.slug, name: healthConditions.name })
+      .from(healthConditions).where(eq(healthConditions.slug, lastSegment)).limit(1);
+    if (c?.slug) {
+      return [{
+        target: `/tools/hydrogen-research/condition/${c.slug}`,
+        contentType: "condition",
+        title: c.name ?? null,
+        score: 1,
+        reasons: ["exact slug match"],
+      }];
+    }
+    const [b] = await db.select({ slug: blogArticles.slug, title: blogArticles.title })
+      .from(blogArticles).where(eq(blogArticles.slug, lastSegment)).limit(1);
+    if (b?.slug) {
+      return [{
+        target: `/blog/${b.slug}`,
+        contentType: "blog",
+        title: b.title ?? null,
+        score: 1,
+        reasons: ["exact slug match"],
+      }];
+    }
   }
 
-  const exactCondition = await db
-    .select({ slug: healthConditions.slug })
-    .from(healthConditions)
-    .where(eq(healthConditions.slug, lastSegment))
-    .limit(1);
+  if (!query || tokens.length === 0) return [];
 
-  if (exactCondition.length > 0 && exactCondition[0].slug) {
-    return `/tools/hydrogen-research/condition/${exactCondition[0].slug}`;
+  // ── 2. Trigram candidate pools ──────────────────────────────
+  //
+  // We deliberately score multiple fields and keep the max — a bad slug
+  // shouldn't blacklist a row whose title is a near-perfect match.
+  await ensureRedirectIndexes().catch(() => {});
+
+  const candidates: RedirectSuggestion[] = [];
+
+  // -- Studies
+  try {
+    const studyRows = await db.execute<{
+      slug: string | null;
+      title: string | null;
+      plt: string | null;
+      tags: string[] | null;
+      keywords: string[] | null;
+      health_conditions: string[] | null;
+      body_systems: string[] | null;
+      semantic_keywords: string[] | null;
+      view_count: number | null;
+      slug_sim: number;
+      title_sim: number;
+      plt_sim: number;
+    }>(sql`
+      SELECT slug, title, plain_language_title AS plt,
+             tags, keywords, health_conditions, body_systems, semantic_keywords, view_count,
+             similarity(COALESCE(slug, ''), ${query}) AS slug_sim,
+             similarity(LOWER(COALESCE(title, '')), ${query}) AS title_sim,
+             similarity(LOWER(COALESCE(plain_language_title, '')), ${query}) AS plt_sim
+      FROM studies
+      WHERE slug IS NOT NULL
+        AND (
+          similarity(COALESCE(slug, ''), ${query}) > ${MIN_TRGM_THRESHOLD}
+          OR similarity(LOWER(COALESCE(title, '')), ${query}) > ${MIN_TRGM_THRESHOLD}
+          OR similarity(LOWER(COALESCE(plain_language_title, '')), ${query}) > ${MIN_TRGM_THRESHOLD}
+        )
+      ORDER BY GREATEST(
+        similarity(COALESCE(slug, ''), ${query}),
+        similarity(LOWER(COALESCE(title, '')), ${query}),
+        similarity(LOWER(COALESCE(plain_language_title, '')), ${query})
+      ) DESC
+      LIMIT 15
+    `);
+
+    const rows = (studyRows as any).rows ?? studyRows;
+    for (const r of rows as any[]) {
+      const slugSim = Number(r.slug_sim) || 0;
+      const titleSim = Number(r.title_sim) || 0;
+      const pltSim = Number(r.plt_sim) || 0;
+      const overlap = tokenOverlap(tokens, [r.tags, r.keywords, r.health_conditions, r.body_systems, r.semantic_keywords]);
+      const overlapBonus = Math.min(0.20, overlap * 0.05);
+      const prefixBonus = pathHint === "study" ? 0.12 : 0;
+      const popBonus = popularityBonus(r.view_count);
+
+      // Weighted trigram: slug > plain-language-title > academic title
+      const trgm = Math.max(slugSim * 0.45, pltSim * 0.42, titleSim * 0.35);
+      const score = Math.min(1, trgm + overlapBonus + prefixBonus + popBonus);
+
+      const reasons: string[] = [];
+      const bestSim = Math.max(slugSim, titleSim, pltSim);
+      if (slugSim === bestSim && slugSim > 0.15) reasons.push(`${Math.round(slugSim * 100)}% slug match`);
+      else if (pltSim === bestSim && pltSim > 0.15) reasons.push(`${Math.round(pltSim * 100)}% plain-title match`);
+      else if (titleSim > 0.15) reasons.push(`${Math.round(titleSim * 100)}% title match`);
+      if (overlap > 0) reasons.push(`${overlap} tag/keyword hit${overlap === 1 ? "" : "s"}`);
+      if (prefixBonus > 0) reasons.push("URL path hint: /studies");
+
+      candidates.push({
+        target: `/studies/${r.slug}`,
+        contentType: "study",
+        title: r.plt || r.title || null,
+        score,
+        reasons,
+      });
+    }
+  } catch (err) {
+    logger.error("Study trigram query failed", err, TAG);
   }
 
-  const exactBlog = await db
-    .select({ slug: blogArticles.slug })
-    .from(blogArticles)
-    .where(eq(blogArticles.slug, lastSegment))
-    .limit(1);
+  // -- Blog articles
+  try {
+    const blogRows = await db.execute<{
+      slug: string;
+      title: string;
+      summary: string | null;
+      semantic_keywords: string[] | null;
+      view_count: number | null;
+      slug_sim: number;
+      title_sim: number;
+      summary_sim: number;
+    }>(sql`
+      SELECT slug, title, summary, semantic_keywords, view_count,
+             similarity(slug, ${query}) AS slug_sim,
+             similarity(LOWER(title), ${query}) AS title_sim,
+             similarity(LOWER(COALESCE(summary, '')), ${query}) AS summary_sim
+      FROM blog_articles
+      WHERE is_published = true
+        AND (
+          similarity(slug, ${query}) > ${MIN_TRGM_THRESHOLD}
+          OR similarity(LOWER(title), ${query}) > ${MIN_TRGM_THRESHOLD}
+          OR similarity(LOWER(COALESCE(summary, '')), ${query}) > ${MIN_TRGM_THRESHOLD}
+        )
+      ORDER BY GREATEST(
+        similarity(slug, ${query}),
+        similarity(LOWER(title), ${query})
+      ) DESC
+      LIMIT 10
+    `);
 
-  if (exactBlog.length > 0 && exactBlog[0].slug) {
-    return `/blog/${exactBlog[0].slug}`;
+    const rows = (blogRows as any).rows ?? blogRows;
+    for (const r of rows as any[]) {
+      const slugSim = Number(r.slug_sim) || 0;
+      const titleSim = Number(r.title_sim) || 0;
+      const summarySim = Number(r.summary_sim) || 0;
+      const overlap = tokenOverlap(tokens, [r.semantic_keywords]);
+      const overlapBonus = Math.min(0.15, overlap * 0.05);
+      const prefixBonus = pathHint === "blog" ? 0.12 : 0;
+      const popBonus = popularityBonus(r.view_count);
+
+      const trgm = Math.max(slugSim * 0.45, titleSim * 0.42, summarySim * 0.25);
+      const score = Math.min(1, trgm + overlapBonus + prefixBonus + popBonus);
+
+      const reasons: string[] = [];
+      if (slugSim > 0.15) reasons.push(`${Math.round(slugSim * 100)}% slug match`);
+      else if (titleSim > 0.15) reasons.push(`${Math.round(titleSim * 100)}% title match`);
+      if (overlap > 0) reasons.push(`${overlap} keyword hit${overlap === 1 ? "" : "s"}`);
+      if (prefixBonus > 0) reasons.push("URL path hint: /blog");
+
+      candidates.push({
+        target: `/blog/${r.slug}`,
+        contentType: "blog",
+        title: r.title ?? null,
+        score,
+        reasons,
+      });
+    }
+  } catch (err) {
+    logger.error("Blog trigram query failed", err, TAG);
   }
 
-  // Fuzzy match: use trigram similarity via pg_trgm if available,
-  // otherwise fall back to LIKE with the key words from the slug
-  const keywords = lastSegment.split(/[-_]/).filter((w) => w.length > 2);
-  if (keywords.length === 0) return null;
+  // -- Health conditions
+  try {
+    const condRows = await db.execute<{
+      slug: string;
+      name: string;
+      description: string | null;
+      slug_sim: number;
+      name_sim: number;
+      desc_sim: number;
+    }>(sql`
+      SELECT slug, name, description,
+             similarity(slug, ${query}) AS slug_sim,
+             similarity(LOWER(name), ${query}) AS name_sim,
+             similarity(LOWER(COALESCE(description, '')), ${query}) AS desc_sim
+      FROM health_conditions
+      WHERE similarity(slug, ${query}) > ${MIN_TRGM_THRESHOLD}
+         OR similarity(LOWER(name), ${query}) > ${MIN_TRGM_THRESHOLD}
+         OR similarity(LOWER(COALESCE(description, '')), ${query}) > ${MIN_TRGM_THRESHOLD}
+      ORDER BY GREATEST(
+        similarity(slug, ${query}),
+        similarity(LOWER(name), ${query})
+      ) DESC
+      LIMIT 10
+    `);
 
-  // Build a LIKE pattern from the longest keyword
-  const longestKeyword = keywords.sort((a, b) => b.length - a.length)[0];
+    const rows = (condRows as any).rows ?? condRows;
+    for (const r of rows as any[]) {
+      const slugSim = Number(r.slug_sim) || 0;
+      const nameSim = Number(r.name_sim) || 0;
+      const descSim = Number(r.desc_sim) || 0;
+      const prefixBonus = pathHint === "condition" ? 0.15 : 0;
 
-  const fuzzyStudy = await db
-    .select({ slug: studies.slug })
-    .from(studies)
-    .where(sql`${studies.slug} ILIKE ${"%" + longestKeyword + "%"}`)
-    .limit(1);
+      const trgm = Math.max(slugSim * 0.45, nameSim * 0.45, descSim * 0.20);
+      const score = Math.min(1, trgm + prefixBonus);
 
-  if (fuzzyStudy.length > 0 && fuzzyStudy[0].slug) {
-    return `/studies/${fuzzyStudy[0].slug}`;
+      const reasons: string[] = [];
+      if (nameSim > 0.15) reasons.push(`${Math.round(nameSim * 100)}% condition-name match`);
+      else if (slugSim > 0.15) reasons.push(`${Math.round(slugSim * 100)}% slug match`);
+      if (prefixBonus > 0) reasons.push("URL path hint: /condition");
+
+      candidates.push({
+        target: `/tools/hydrogen-research/condition/${r.slug}`,
+        contentType: "condition",
+        title: r.name ?? null,
+        score,
+        reasons,
+      });
+    }
+  } catch (err) {
+    logger.error("Condition trigram query failed", err, TAG);
   }
 
-  const fuzzyBlog = await db
-    .select({ slug: blogArticles.slug })
-    .from(blogArticles)
-    .where(sql`${blogArticles.slug} ILIKE ${"%" + longestKeyword + "%"}`)
-    .limit(1);
+  // ── 3. Rank, de-dup, trim ───────────────────────────────────
+  candidates.sort((a, b) => b.score - a.score);
 
-  if (fuzzyBlog.length > 0 && fuzzyBlog[0].slug) {
-    return `/blog/${fuzzyBlog[0].slug}`;
+  const seen = new Set<string>();
+  const ranked: RedirectSuggestion[] = [];
+  for (const c of candidates) {
+    if (seen.has(c.target)) continue;
+    seen.add(c.target);
+    ranked.push(c);
+    if (ranked.length >= TOP_N) break;
   }
 
-  return null;
+  // If even the best candidate is weak, return nothing — surfacing a low-
+  // confidence suggestion encourages admins to accept garbage. Soft-404 to
+  // homepage is also not the answer.
+  if (ranked.length === 0 || ranked[0].score < MIN_OVERALL_SCORE) return [];
+
+  return ranked;
 }
 
 /**
- * Backfill suggestions for all unresolved 404 entries that don't have one yet.
- * Call periodically or on-demand from admin.
+ * Back-compat shim — returns only the top candidate's path as a string.
+ * New code should prefer `getRankedSuggestions`.
  */
-export async function backfillSuggestions(limit: number = 50): Promise<{ processed: number; suggested: number }> {
+export async function suggestRedirectTarget(path: string): Promise<string | null> {
+  const ranked = await getRankedSuggestions(path);
+  return ranked[0]?.target ?? null;
+}
+
+/**
+ * Backfill ranked suggestions for unresolved 404 entries. Prioritizes
+ * entries that have the most hits, since those cost the most SEO value.
+ *
+ * Re-runs for any entry whose `suggestions` column is null, so calling this
+ * after deploying a new algorithm will refresh the sparse ones without
+ * touching already-curated entries. Pass `force: true` to re-score all
+ * unresolved 404s (e.g. after a content import).
+ */
+export async function backfillSuggestions(
+  limit: number = 50,
+  opts: { force?: boolean } = {},
+): Promise<{ processed: number; suggested: number }> {
+  await ensureRedirectIndexes().catch(() => {});
+
+  const conditions = [eq(notFoundLog.resolved, false)];
+  if (!opts.force) {
+    conditions.push(sql`${notFoundLog.suggestions} IS NULL`);
+  }
+
   const entries = await db
     .select({ id: notFoundLog.id, path: notFoundLog.path })
     .from(notFoundLog)
-    .where(
-      and(
-        eq(notFoundLog.resolved, false),
-        sql`${notFoundLog.suggestedTarget} IS NULL`,
-      ),
-    )
+    .where(and(...conditions))
     .orderBy(desc(notFoundLog.hitCount))
     .limit(limit);
 
   let suggested = 0;
   for (const entry of entries) {
-    const target = await suggestRedirectTarget(entry.path);
-    if (target) {
-      await db
-        .update(notFoundLog)
-        .set({ suggestedTarget: target })
-        .where(eq(notFoundLog.id, entry.id));
-      suggested++;
-    }
+    const ranked = await getRankedSuggestions(entry.path);
+    await db
+      .update(notFoundLog)
+      .set({
+        suggestions: ranked,
+        // keep suggestedTarget in sync with the top pick for back-compat
+        suggestedTarget: ranked[0]?.target ?? null,
+      })
+      .where(eq(notFoundLog.id, entry.id));
+    if (ranked.length > 0) suggested++;
   }
 
   return { processed: entries.length, suggested };

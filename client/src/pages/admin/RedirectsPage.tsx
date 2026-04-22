@@ -62,6 +62,14 @@ interface Redirect {
   createdAt: string;
 }
 
+interface RedirectSuggestion {
+  target: string;
+  contentType: "study" | "blog" | "condition";
+  title: string | null;
+  score: number;
+  reasons: string[];
+}
+
 interface NotFoundEntry {
   id: number;
   path: string;
@@ -71,6 +79,7 @@ interface NotFoundEntry {
   lastSeenAt: string;
   resolved: boolean;
   suggestedTarget: string | null;
+  suggestions: RedirectSuggestion[] | null;
   createdAt: string;
 }
 
@@ -473,11 +482,25 @@ export default function RedirectsPage() {
                       <TableCell className="text-sm text-muted-foreground">
                         {formatRelative(entry.lastSeenAt)}
                       </TableCell>
-                      <TableCell className="font-mono text-sm truncate max-w-[250px]" title={entry.suggestedTarget || ""}>
-                        {entry.suggestedTarget ? (
-                          <span className="text-green-600">{entry.suggestedTarget}</span>
+                      <TableCell className="max-w-[280px]" title={entry.suggestedTarget || ""}>
+                        {entry.suggestions && entry.suggestions.length > 0 ? (
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs truncate text-green-600">
+                                {entry.suggestions[0].target}
+                              </span>
+                              <ConfidenceBadge score={entry.suggestions[0].score} />
+                            </div>
+                            {entry.suggestions.length > 1 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                +{entry.suggestions.length - 1} alternative{entry.suggestions.length > 2 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+                        ) : entry.suggestedTarget ? (
+                          <span className="font-mono text-xs text-green-600 truncate">{entry.suggestedTarget}</span>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <span className="text-muted-foreground text-xs">No confident match</span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground truncate max-w-[150px]" title={entry.referrer || ""}>
@@ -673,6 +696,23 @@ export default function RedirectsPage() {
   );
 }
 
+/** Confidence badge for a suggestion score (0–1). */
+function ConfidenceBadge({ score }: { score: number }) {
+  const pct = Math.round(score * 100);
+  const tier = score >= 0.7 ? "high" : score >= 0.45 ? "med" : "low";
+  const cls =
+    tier === "high"
+      ? "bg-green-100 text-green-800"
+      : tier === "med"
+      ? "bg-amber-100 text-amber-800"
+      : "bg-muted text-muted-foreground";
+  return (
+    <span className={`inline-flex items-center rounded px-1.5 py-0 text-[10px] font-medium tabular-nums ${cls}`}>
+      {pct}%
+    </span>
+  );
+}
+
 /** Small sub-component for the resolve form so we can have local state */
 function ResolveForm({
   entry,
@@ -685,24 +725,117 @@ function ResolveForm({
   onCancel: () => void;
   isPending: boolean;
 }) {
-  const [toPath, setToPath] = useState(entry.suggestedTarget || "");
+  const [suggestions, setSuggestions] = useState<RedirectSuggestion[]>(entry.suggestions ?? []);
+  const [toPath, setToPath] = useState(
+    entry.suggestions?.[0]?.target || entry.suggestedTarget || "",
+  );
   const [statusCode, setStatusCode] = useState(301);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function refreshSuggestions() {
+    setRefreshing(true);
+    try {
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/redirects/suggest?path=${encodeURIComponent(entry.path)}`,
+      );
+      const json = (await res.json()) as { data: RedirectSuggestion[] };
+      setSuggestions(json.data ?? []);
+      if (!toPath && json.data?.[0]?.target) setToPath(json.data[0].target);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const contentTypeLabel = (ct: RedirectSuggestion["contentType"]) =>
+    ct === "study" ? "Study" : ct === "blog" ? "Blog" : "Condition";
 
   return (
     <>
       <div className="space-y-4">
+        {/* Ranked candidates */}
         <div>
-          <Label htmlFor="resolveToPath">Redirect To</Label>
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-sm">Suggested Targets</Label>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={refreshSuggestions}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <Wand2 className="h-3 w-3 mr-1" />
+              )}
+              Refresh
+            </Button>
+          </div>
+          {suggestions.length === 0 ? (
+            <div className="text-xs text-muted-foreground border rounded-md p-3 bg-muted/30">
+              No confident match found. Enter a target manually below, or click Refresh to try again.
+            </div>
+          ) : (
+            <div className="space-y-1 max-h-[260px] overflow-y-auto">
+              {suggestions.map((s, i) => {
+                const selected = toPath === s.target;
+                return (
+                  <button
+                    type="button"
+                    key={s.target}
+                    onClick={() => setToPath(s.target)}
+                    className={`w-full text-left border rounded-md p-2 transition-colors ${
+                      selected
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ConfidenceBadge score={s.score} />
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                        {contentTypeLabel(s.contentType)}
+                      </Badge>
+                      {i === 0 && (
+                        <Badge variant="default" className="text-[10px] h-5 px-1.5">Top pick</Badge>
+                      )}
+                      <span className="ml-auto font-mono text-xs truncate text-muted-foreground" title={s.target}>
+                        {s.target}
+                      </span>
+                    </div>
+                    {s.title && (
+                      <p className="text-xs mt-1 line-clamp-1" title={s.title}>
+                        {s.title}
+                      </p>
+                    )}
+                    {s.reasons.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {s.reasons.join(" · ")}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Manual override / final target */}
+        <div>
+          <Label htmlFor="resolveToPath" className="text-sm">Redirect To</Label>
           <Input
             id="resolveToPath"
             placeholder="/correct-page"
             value={toPath}
             onChange={(e) => setToPath(e.target.value)}
+            className="font-mono text-sm"
           />
-          {entry.suggestedTarget && toPath === entry.suggestedTarget && (
-            <p className="text-xs text-green-600 mt-1">Using auto-suggested target</p>
-          )}
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Click a suggestion above to fill this, or type a custom path.
+          </p>
         </div>
+
         <div>
           <Label htmlFor="resolveStatusCode">Status Code</Label>
           <Select value={String(statusCode)} onValueChange={(v) => setStatusCode(Number(v))}>
@@ -710,7 +843,7 @@ function ResolveForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="301">301 (Permanent)</SelectItem>
+              <SelectItem value="301">301 (Permanent — preferred for SEO)</SelectItem>
               <SelectItem value="302">302 (Temporary)</SelectItem>
             </SelectContent>
           </Select>

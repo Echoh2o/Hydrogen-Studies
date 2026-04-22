@@ -142,8 +142,12 @@ app.use(
 );
 
 // Redirect middleware — must be very early (before routes) to intercept 301/302s
-import { redirectMiddleware, log404 } from "./services/redirect-service";
+import { redirectMiddleware, log404, ensureRedirectIndexes } from "./services/redirect-service";
 app.use(redirectMiddleware());
+// Fire-and-forget: enables pg_trgm, creates GIN trigram indexes, and
+// adds not_found_log.suggestions (idempotent). Safe to swallow — the
+// suggestion engine tolerates missing indexes via fallback seq-scans.
+ensureRedirectIndexes().catch(() => {});
 
 // Dynamic redirect: /study/id%2F{number} or /study/id/{number} → /study/{slug}
 // Single-hop 301 — resolves slug from DB to avoid redirect chains
