@@ -67,14 +67,14 @@ import { format } from "date-fns";
 
 // User role options
 const ROLE_OPTIONS = [
-  { value: "admin", label: "Admin", color: "bg-red-100 text-red-800" },
+  { value: "admin", label: "Admin", color: "bg-destructive/10 text-destructive" },
   { value: "editor", label: "Editor", color: "bg-teal-100 text-teal-800" },
   {
     value: "customer",
     label: "Customer",
     color: "bg-green-100 text-green-800",
   },
-  { value: "visitor", label: "Visitor", color: "bg-gray-100 text-gray-800" },
+  { value: "visitor", label: "Visitor", color: "bg-muted text-foreground" },
 ];
 
 interface User {
@@ -199,7 +199,7 @@ export default function UserManagementPage() {
 
   const getRoleBadge = (role: string) => {
     const roleConfig = ROLE_OPTIONS.find((r) => r.value === role);
-    return roleConfig ? roleConfig.color : "bg-gray-100 text-gray-800";
+    return roleConfig ? roleConfig.color : "bg-muted text-foreground";
   };
 
   const formatDate = (dateString?: string) => {
@@ -246,7 +246,7 @@ export default function UserManagementPage() {
             {/* Search and Filter Bar */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search users by name, username, or email..."
@@ -315,11 +315,11 @@ export default function UserManagementPage() {
                         <TableCell>
                           <div>
                             <div className="font-medium">{user.username}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               {user.email}
                             </div>
                             {(user.firstName || user.lastName) && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-muted-foreground">
                                 {user.firstName} {user.lastName}
                               </div>
                             )}
@@ -337,7 +337,7 @@ export default function UserManagementPage() {
                               Active
                             </Badge>
                           ) : (
-                            <Badge className="bg-red-100 text-red-800">
+                            <Badge className="bg-destructive/10 text-destructive">
                               <UserX className="h-3 w-3 mr-1" />
                               Inactive
                             </Badge>

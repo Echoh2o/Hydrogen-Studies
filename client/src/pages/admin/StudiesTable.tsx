@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { formatAuthors } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -59,7 +59,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function StudiesPage() {
+export default function StudiesTable() {
+  const [, navigate] = useLocation();
   // Filter and search state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -456,8 +457,17 @@ export default function StudiesPage() {
                 {studies.map((study: any) => (
                   <TableRow
                     key={study.id}
-                    className="cursor-pointer hover:bg-accent/50"
-                    onClick={() => window.location.href = `/admin/studies/edit/${study.id}`}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Edit study: ${study.title}`}
+                    className="cursor-pointer hover:bg-accent/50 focus:outline-none focus:bg-accent"
+                    onClick={() => navigate(`/admin/studies/edit/${study.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/admin/studies/edit/${study.id}`);
+                      }
+                    }}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox

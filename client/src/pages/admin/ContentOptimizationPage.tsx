@@ -206,15 +206,15 @@ export default function ContentOptimizationPage() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "critical":
-        return "bg-red-500";
+        return "bg-destructive text-destructive-foreground";
       case "high":
-        return "bg-orange-500";
+        return "bg-orange-500 text-white";
       case "medium":
-        return "bg-yellow-500";
+        return "bg-yellow-500 text-white";
       case "low":
-        return "bg-teal-500";
+        return "bg-teal-500 text-white";
       default:
-        return "bg-gray-500";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -481,7 +481,7 @@ export default function ContentOptimizationPage() {
                   <AlertTitle>Relationship Tracking</AlertTitle>
                   <AlertDescription>
                     The system automatically detects and tracks relationships
-                    between studies, blog articles, and other content. These
+                    between studies, blog posts, and other content. These
                     relationships help identify when content needs updates based
                     on new research.
                   </AlertDescription>

@@ -274,7 +274,7 @@ const BatchCategorizationPage = () => {
                   <div className="text-green-600">
                     Successful: {batchMutation.data.successful}
                   </div>
-                  <div className="text-red-600">
+                  <div className="text-destructive">
                     Failed: {batchMutation.data.failed}
                   </div>
                 </div>
@@ -283,7 +283,7 @@ const BatchCategorizationPage = () => {
                   batchMutation.data.errors.length > 0 && (
                     <div className="mt-2">
                       <h5 className="text-sm font-medium mb-1">Errors:</h5>
-                      <ul className="text-xs text-red-600">
+                      <ul className="text-xs text-destructive">
                         {batchMutation.data.errors
                           .slice(0, 5)
                           .map((error, index) => (

@@ -66,14 +66,14 @@ export default function StudyTable({ searchQuery = "" }: StudyTableProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-12 text-red-500">
+      <div className="text-center py-12 text-destructive">
         Error loading studies. Please try again.
       </div>
     );
@@ -163,7 +163,7 @@ export default function StudyTable({ searchQuery = "" }: StudyTableProps) {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-red-600"
+                          className="text-destructive"
                           onClick={() => {
                             toast({
                               title: "Feature not implemented",
@@ -196,7 +196,7 @@ export default function StudyTable({ searchQuery = "" }: StudyTableProps) {
               <TableRow>
                 <TableCell
                   colSpan={6}
-                  className="text-center py-6 text-gray-500"
+                  className="text-center py-6 text-muted-foreground"
                 >
                   No studies found. Try a different search term.
                 </TableCell>

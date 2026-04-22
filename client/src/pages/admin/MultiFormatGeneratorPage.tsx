@@ -103,7 +103,15 @@ const formatNames = {
 };
 
 export default function MultiFormatGeneratorPage() {
-  const [selectedStudy, setSelectedStudy] = useState<number | null>(null);
+  // Deep-link: honour ?studyId=123 to pre-select the study.
+  const initialStudyId = (() => {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("studyId");
+    const id = raw ? Number(raw) : NaN;
+    return Number.isInteger(id) && id > 0 ? id : null;
+  })();
+
+  const [selectedStudy, setSelectedStudy] = useState<number | null>(initialStudyId);
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [previewContent, setPreviewContent] = useState<any>(null);
   const [editingContent, setEditingContent] = useState<any>(null);
@@ -438,7 +446,7 @@ export default function MultiFormatGeneratorPage() {
                       className={`border rounded-lg p-3 cursor-pointer transition-colors ${
                         selectedFormats.includes(value)
                           ? "border-teal-500 bg-teal-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          : "border-border hover:border-border"
                       }`}
                       onClick={() => handleFormatToggle(value)}
                       data-testid={`format-${value}`}
@@ -448,7 +456,7 @@ export default function MultiFormatGeneratorPage() {
                           className={
                             selectedFormats.includes(value)
                               ? "text-teal-600"
-                              : "text-gray-500"
+                              : "text-muted-foreground"
                           }
                         >
                           {formatIcons[value]}
@@ -550,7 +558,7 @@ export default function MultiFormatGeneratorPage() {
                               <h4 className="font-medium">
                                 {formatNames[content.formatType]}
                               </h4>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-muted-foreground">
                                 Created:{" "}
                                 {new Date(
                                   content.createdAt,
@@ -611,7 +619,7 @@ export default function MultiFormatGeneratorPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => deleteContent.mutate(content.id)}
-                              className="text-red-600"
+                              className="text-destructive"
                               data-testid={`delete-${content.id}`}
                             >
                               <Trash className="h-4 w-4" />
@@ -676,13 +684,13 @@ function ContentPreview({ content }: { content: any }) {
           <div className="space-y-4">
             <div>
               <h3 className="font-medium mb-2">Introduction</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {content.podcastIntro}
               </p>
             </div>
             <div>
               <h3 className="font-medium mb-2">Script</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {content.podcastScript}
               </p>
             </div>
@@ -690,7 +698,7 @@ function ContentPreview({ content }: { content: any }) {
               <div>
                 <h3 className="font-medium mb-2">Q&A Segment</h3>
                 {((() => { try { return JSON.parse(content.podcastQA); } catch (e) { console.warn("Failed to parse podcastQA", e); return []; } })()).map((qa: any, index: number) => (
-                  <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
+                  <div key={index} className="mb-3 p-3 bg-muted/50 rounded">
                     <p className="font-medium">Q: {qa.question}</p>
                     <p className="mt-1">A: {qa.answer}</p>
                   </div>
@@ -699,13 +707,13 @@ function ContentPreview({ content }: { content: any }) {
             )}
             <div>
               <h3 className="font-medium mb-2">Outro</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {content.podcastOutro}
               </p>
             </div>
             <div>
               <h3 className="font-medium mb-2">Show Notes</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {content.podcastShowNotes}
               </p>
             </div>
@@ -730,7 +738,7 @@ function ContentPreview({ content }: { content: any }) {
                           {stat.value}
                         </p>
                         <p className="text-sm font-medium">{stat.label}</p>
-                        <p className="text-xs text-gray-500">{stat.context}</p>
+                        <p className="text-xs text-muted-foreground">{stat.context}</p>
                       </div>
                     ),
                   )}
@@ -748,8 +756,8 @@ function ContentPreview({ content }: { content: any }) {
                 <h3 className="font-medium mb-2">Thread</h3>
                 {((() => { try { return JSON.parse(content.threadContent); } catch (e) { console.warn("Failed to parse threadContent", e); return []; } })()).map(
                   (tweet: string, index: number) => (
-                    <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
-                      <p className="text-sm text-gray-500 mb-1">
+                    <div key={index} className="mb-3 p-3 bg-muted/50 rounded">
+                      <p className="text-sm text-muted-foreground mb-1">
                         Tweet {index + 1}
                       </p>
                       <p>{tweet}</p>
@@ -781,7 +789,7 @@ function ContentPreview({ content }: { content: any }) {
           <div className="space-y-4">
             <div>
               <h3 className="font-medium mb-2">Script</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {content.videoScript}
               </p>
             </div>
@@ -790,7 +798,7 @@ function ContentPreview({ content }: { content: any }) {
                 <h3 className="font-medium mb-2">Storyboard</h3>
                 {((() => { try { return JSON.parse(content.videoStoryboard); } catch (e) { console.warn("Failed to parse videoStoryboard", e); return []; } })()).map(
                   (scene: any, index: number) => (
-                    <div key={index} className="mb-3 p-3 bg-gray-50 rounded">
+                    <div key={index} className="mb-3 p-3 bg-muted/50 rounded">
                       <p className="font-medium">
                         {scene.time} - {scene.scene}
                       </p>
@@ -813,20 +821,20 @@ function ContentPreview({ content }: { content: any }) {
             </div>
             <div>
               <h3 className="font-medium mb-2">Preheader</h3>
-              <p className="text-gray-600">{content.newsletterPreheader}</p>
+              <p className="text-muted-foreground">{content.newsletterPreheader}</p>
             </div>
             {content.newsletterHtml && (
               <div>
                 <h3 className="font-medium mb-2">HTML Preview</h3>
                 <div
-                  className="border p-4 rounded bg-white"
+                  className="border p-4 rounded bg-card"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content.newsletterHtml) }}
                 />
               </div>
             )}
             <div>
               <h3 className="font-medium mb-2">Plain Text</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {content.newsletterPlainText}
               </p>
             </div>
@@ -836,7 +844,7 @@ function ContentPreview({ content }: { content: any }) {
       default:
         return (
           <div>
-            <p className="text-gray-700">
+            <p className="text-foreground">
               {content.socialContent || "No preview available"}
             </p>
           </div>

@@ -20,6 +20,7 @@ import {
   BookOpen,
   Tag,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -132,13 +133,9 @@ export default function BlogCategoriesPage() {
   if (isLoading) {
     return (
       <AdminLayout title="Blog Categories">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">
-              Loading blog categories...
-            </p>
-          </div>
+        <div className="flex items-center justify-center h-64 gap-2 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading categories…</span>
         </div>
       </AdminLayout>
     );
@@ -148,8 +145,8 @@ export default function BlogCategoriesPage() {
     return (
       <AdminLayout title="Blog Categories">
         <div className="text-center py-8">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <p className="text-red-500">
+          <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
+          <p className="text-destructive">
             Error loading blog categories: {error.message}
           </p>
         </div>
@@ -164,7 +161,7 @@ export default function BlogCategoriesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Blog Categories</h1>
           <p className="text-muted-foreground">
-            Manage existing categories used by your blog articles. New
+            Manage existing categories used by your blog posts. New
             categories are automatically created when you assign them to blog
             articles.
           </p>
@@ -182,7 +179,7 @@ export default function BlogCategoriesPage() {
                   </h3>
                   <p className="text-muted-foreground">
                     Categories will appear here automatically when you create
-                    blog articles with article types assigned.
+                    blog posts with article types assigned.
                   </p>
                 </div>
               </CardContent>
@@ -258,7 +255,7 @@ export default function BlogCategoriesPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-600 hover:text-red-700"
+                                className="text-destructive hover:text-destructive"
                                 data-testid={`button-delete-${category.name}`}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -315,7 +312,7 @@ export default function BlogCategoriesPage() {
                 </span>
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
-                  <span>Blog Article Management</span>
+                  <span>Blog Posts</span>
                 </div>
               </div>
             </CardContent>

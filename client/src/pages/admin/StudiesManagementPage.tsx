@@ -18,7 +18,7 @@ import BatchEnrichmentPage from "./BatchEnrichmentPage";
 import ContentEnrichmentPage from "./ContentEnrichmentPage";
 import ResearchImportPage from "./ResearchImportPage";
 import ImageGenerationPage from "./ImageGenerationPage";
-import StudiesPage from "./StudiesPage";
+import StudiesTable from "./StudiesTable";
 
 export default function StudiesManagementPage() {
   const [activeTab, setActiveTab] = useState("manage");
@@ -112,7 +112,7 @@ export default function StudiesManagementPage() {
         {/* Tabs content */}
         <TabsContent value="manage">
           {/* This is the studies management component */}
-          <StudiesPage />
+          <StudiesTable />
         </TabsContent>
 
         <TabsContent value="import">

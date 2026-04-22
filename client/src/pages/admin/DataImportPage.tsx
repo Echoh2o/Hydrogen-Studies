@@ -114,7 +114,6 @@ export default function DataImportPage() {
       setPhase("previewing");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Analysis failed";
-      console.error("Analysis error:", error);
       setPhase("error");
       setImportStats({ total: 0, imported: 0, error: msg });
       toast({ title: "Analysis failed", description: msg, variant: "destructive" });
@@ -167,7 +166,6 @@ export default function DataImportPage() {
     } catch (error) {
       setPhase("error");
       const msg = error instanceof Error ? error.message : "Import failed";
-      console.error("Import error:", error);
       setImportStats({ total: 0, imported: 0, error: msg });
       toast({ title: "Import failed", description: msg, variant: "destructive" });
     }
@@ -249,8 +247,8 @@ export default function DataImportPage() {
             </p>
             <p className="text-xs text-muted-foreground">Duplicates (skip)</p>
           </div>
-          <div className="rounded-md border p-3 text-center border-red-200 bg-red-50 dark:bg-red-950/20">
-            <p className="text-2xl font-bold text-red-700 dark:text-red-400">{analysis.previouslyDeleted}</p>
+          <div className="rounded-md border p-3 text-center border-destructive/30 bg-destructive/10 dark:bg-red-950/20">
+            <p className="text-2xl font-bold text-destructive dark:text-red-400">{analysis.previouslyDeleted}</p>
             <p className="text-xs text-muted-foreground">Deleted (skip)</p>
           </div>
         </div>
@@ -296,7 +294,7 @@ export default function DataImportPage() {
                           className={
                             s.status === "new" ? "bg-green-100 text-green-800" :
                             s.status.includes("duplicate") ? "bg-yellow-100 text-yellow-800" :
-                            s.status === "deleted" ? "bg-red-100 text-red-800" :
+                            s.status === "deleted" ? "bg-destructive/10 text-destructive" :
                             ""
                           }
                         >

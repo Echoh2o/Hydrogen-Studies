@@ -37,15 +37,18 @@ export default function ResearchImportPage({ embedded }: { embedded?: boolean } 
 
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Research Platform Status</AlertTitle>
-          <AlertDescription>
-            ✅ **PubMed** - Fully operational with authentic research data
-            <br />
-            ⚠️ **Europe PMC, CrossRef, Semantic Scholar** - Connected but may
-            need API authentication
-            <br />
-            Start with PubMed to search and import hydrogen studies with
-            complete metadata.
+          <AlertTitle>Research platform status</AlertTitle>
+          <AlertDescription className="space-y-1 mt-2">
+            <div>
+              <strong>PubMed</strong> — fully operational with authentic research data.
+            </div>
+            <div>
+              <strong>Europe PMC, CrossRef, Semantic Scholar</strong> — connected but
+              may need API authentication.
+            </div>
+            <div>
+              Start with PubMed to search and import hydrogen studies with complete metadata.
+            </div>
           </AlertDescription>
         </Alert>
 

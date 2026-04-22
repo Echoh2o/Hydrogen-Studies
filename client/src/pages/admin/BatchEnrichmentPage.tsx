@@ -402,9 +402,9 @@ export default function BatchEnrichmentPage({ embedded }: { embedded?: boolean }
                           batchStatus.status.failed}
                       </div>
                     </div>
-                    <div className="bg-red-50 p-4 rounded-lg">
-                      <div className="text-sm text-red-600">Failed</div>
-                      <div className="text-2xl font-bold text-red-700">
+                    <div className="bg-destructive/10 p-4 rounded-lg">
+                      <div className="text-sm text-destructive">Failed</div>
+                      <div className="text-2xl font-bold text-destructive">
                         {batchStatus.status.failed}
                       </div>
                     </div>

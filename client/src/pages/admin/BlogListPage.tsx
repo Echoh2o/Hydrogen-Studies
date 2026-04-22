@@ -35,6 +35,8 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -124,21 +126,25 @@ export default function BlogListPage() {
 
   // Delete blog mutation
   const deleteBlogMutation = useMutation({
-    mutationFn: (blogId: number) =>
-      fetch(`/api/blogs/${blogId}`, {
-        method: "DELETE",
-      }).then((res) => res.json()),
+    mutationFn: async (blogId: number) => {
+      const res = await fetch(`/api/blogs/${blogId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || `Delete failed (${res.status})`);
+      }
+      return res.json().catch(() => ({}));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
       toast({
         title: "Success",
-        description: "Blog article deleted successfully",
+        description: "Blog post deleted successfully",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete blog article",
+        description: error.message || "Failed to delete blog post",
         variant: "destructive",
       });
     },
@@ -146,29 +152,35 @@ export default function BlogListPage() {
 
   // Toggle publish status mutation
   const togglePublishMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       blogId,
       isPublished,
     }: {
       blogId: number;
       isPublished: boolean;
-    }) =>
-      fetch(`/api/blogs/${blogId}`, {
+    }) => {
+      const res = await fetch(`/api/blogs/${blogId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublished }),
-      }).then((res) => res.json()),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || `Update failed (${res.status})`);
+      }
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
       toast({
         title: "Success",
-        description: "Blog status updated successfully",
+        description: "Blog post status updated",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update blog status",
+        description: error.message || "Failed to update blog post status",
         variant: "destructive",
       });
     },
@@ -251,12 +263,10 @@ export default function BlogListPage() {
 
   if (isLoading && !data) {
     return (
-      <AdminLayout title="Blog Management">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Loading blogs...</p>
-          </div>
+      <AdminLayout title="Blog Posts">
+        <div className="flex items-center justify-center h-64 gap-2 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading blog posts…</span>
         </div>
       </AdminLayout>
     );
@@ -264,39 +274,42 @@ export default function BlogListPage() {
 
   if (error) {
     return (
-      <AdminLayout title="Blog Management">
+      <AdminLayout title="Blog Posts">
         <div className="text-center py-8">
-          <p className="text-red-500">Error loading blogs: {error.message}</p>
+          <p className="text-destructive">Error loading blogs: {error.message}</p>
         </div>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title="Blog Management">
+    <AdminLayout title="Blog Posts">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Blog Management
+              Blog Posts
             </h1>
             <p className="text-muted-foreground">
-              Manage your blog articles and generated content
+              Manage your blog posts and generated content
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/admin/blogs/add">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                New Article
+                New Post
               </Button>
             </Link>
             <Link href="/admin/blogs/generate">
               <Button variant="secondary">
                 <BookOpen className="mr-2 h-4 w-4" />
-                Generate Article
+                Generate Post
               </Button>
+            </Link>
+            <Link href="/admin/blog-categories">
+              <Button variant="outline">Categories</Button>
             </Link>
           </div>
         </div>
@@ -304,7 +317,7 @@ export default function BlogListPage() {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle>Filter Blogs</CardTitle>
+            <CardTitle>Filter Posts</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -369,7 +382,7 @@ export default function BlogListPage() {
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {(currentPage - 1) * pageSize + 1} to{" "}
-            {Math.min(currentPage * pageSize, totalBlogs)} of {totalBlogs} blogs
+            {Math.min(currentPage * pageSize, totalBlogs)} of {totalBlogs} posts
           </p>
         </div>
 
@@ -383,7 +396,7 @@ export default function BlogListPage() {
                 <p className="text-muted-foreground mb-4">
                   {searchTerm || filterType !== "all" || filterStatus !== "all"
                     ? "Try adjusting your filters"
-                    : "Get started by creating your first blog article"}
+                    : "Get started by creating your first blog post"}
                 </p>
                 <div className="flex gap-2 justify-center">
                   {(searchTerm ||
@@ -403,7 +416,7 @@ export default function BlogListPage() {
                   <Link href="/admin/blogs/add">
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
-                      Create Article
+                      Create Post
                     </Button>
                   </Link>
                 </div>
@@ -479,7 +492,7 @@ export default function BlogListPage() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem
-                                className="text-red-600 focus:text-red-600"
+                                className="text-destructive focus:text-destructive"
                                 onSelect={(e) => e.preventDefault()}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -488,19 +501,27 @@ export default function BlogListPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Delete Blog Article
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  Delete blog post
                                 </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{blog.title}
-                                  "? This action cannot be undone.
+                                <AlertDialogDescription asChild>
+                                  <div className="space-y-3">
+                                    <p>
+                                      You are about to delete{" "}
+                                      <strong>{blog.title}</strong>.
+                                    </p>
+                                    <p className="text-destructive font-medium text-sm">
+                                      This action cannot be undone.
+                                    </p>
+                                  </div>
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteBlog(blog.id)}
-                                  className="bg-red-600 hover:bg-red-700"
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Delete
                                 </AlertDialogAction>

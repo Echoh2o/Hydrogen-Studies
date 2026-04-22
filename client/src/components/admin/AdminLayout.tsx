@@ -15,6 +15,7 @@ import {
   X,
   ChevronDown,
   BarChart3,
+  Lightbulb,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -53,12 +54,9 @@ const NAV_GROUPS: NavGroup[] = [
     icon: Database,
     items: [
       { href: "/admin/studies", label: "All Studies" },
-      { href: "/admin/studies/add", label: "Add Study" },
-      { href: "/admin/research-database", label: "Research Database" },
       { href: "/admin/research-import", label: "Import from PubMed / CrossRef" },
       { href: "/admin/data-import", label: "Import from CSV / Excel" },
-      { href: "/admin/pipeline", label: "Analysis Pipeline" },
-      { href: "/admin/journal-date-updater", label: "Journal Date Updater" },
+      { href: "/admin/pipeline", label: "Pipeline Monitor" },
       { href: "/admin/deletion-ledger", label: "Deleted Studies" },
     ],
   },
@@ -67,17 +65,17 @@ const NAV_GROUPS: NavGroup[] = [
     icon: FileText,
     items: [
       { href: "/admin/blogs", label: "Blog Posts" },
-      { href: "/admin/blogs/add", label: "New Blog Post" },
       { href: "/admin/blogs/generate", label: "Generate Blog (AI)" },
-      { href: "/admin/blog-recommendations", label: "Blog Recommendations" },
-      { href: "/admin/blog-categories", label: "Blog Categories" },
-      { href: "/admin/multi-format", label: "Multi-Format Content" },
-      { href: "/admin/image-generation", label: "Image Generation" },
-      { href: "/admin/content-enrichment", label: "Content Enrichment" },
-      { href: "/admin/batch-enrichment", label: "Batch Enrichment" },
-      { href: "/admin/batch-categorization", label: "Batch Categorization" },
+      { href: "/admin/blog-recommendations", label: "Blog Ideas" },
+    ],
+  },
+  {
+    label: "Insights",
+    icon: Lightbulb,
+    items: [
       { href: "/admin/content-optimization", label: "Content Optimization" },
-      { href: "/admin/review-assistant", label: "Review Assistant" },
+      { href: "/admin/review-assistant", label: "Review Queue" },
+      { href: "/admin/trends", label: "Trends" },
     ],
   },
   {
@@ -95,7 +93,6 @@ const NAV_GROUPS: NavGroup[] = [
     icon: BarChart3,
     items: [
       { href: "/admin/analytics", label: "Content Analytics" },
-      { href: "/admin/trends", label: "Trends Analysis" },
       { href: "/admin/monitoring", label: "System Monitoring" },
     ],
   },

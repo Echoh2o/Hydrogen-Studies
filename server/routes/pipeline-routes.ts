@@ -9,7 +9,7 @@
  */
 
 import { Router } from "express";
-import { requireAdmin } from "../auth";
+import { requireAdmin, isAdminOrEditor } from "../auth";
 import { db } from "../db";
 import {
   pipelineQueue,
@@ -55,8 +55,14 @@ async function triggerContentWaterfall(studyId: number) {
 
 const router = Router();
 
-// All pipeline routes require admin authentication
-router.use(requireAdmin);
+// Read endpoints (GET) are available to admins and editors so the dashboard
+// can display pipeline status. Write endpoints (POST/PUT/DELETE) remain admin-only.
+router.use((req, res, next) => {
+  if (req.method === "GET") {
+    return isAdminOrEditor(req, res, next);
+  }
+  return requireAdmin(req, res, next);
+});
 
 // ─── Status Overview ─────────────────────────────────────────────
 

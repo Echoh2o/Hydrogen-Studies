@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -34,6 +34,20 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
     type: "info" | "success" | "error";
     visible: boolean;
   }>({ message: "", type: "info", visible: false });
+
+  // Deep-link: when opened with ?studyId=123, offer a one-click action
+  // that runs enrichment against that specific study.
+  const focusedStudyId = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("studyId");
+    const id = raw ? Number(raw) : NaN;
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }, []);
+
+  const focusedStudyQuery = useQuery<any>({
+    queryKey: [`/api/studies/${focusedStudyId}`],
+    enabled: !!focusedStudyId,
+  });
 
   // Fetch candidates for content enrichment
   const candidatesQuery = useQuery({
@@ -431,6 +445,36 @@ export default function ContentEnrichmentPage({ embedded }: { embedded?: boolean
 
   const content = (
     <>
+      {focusedStudyId && (
+        <Alert className="mb-6">
+          <ArrowRight className="h-4 w-4" />
+          <AlertTitle>
+            Focused on study #{focusedStudyId}
+            {focusedStudyQuery.data?.title ? `: ${focusedStudyQuery.data.title}` : ""}
+          </AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3 mt-2">
+            <span>
+              Run content enrichment just for this study, or use the batch controls
+              below for candidates across the database.
+            </span>
+            <Button
+              size="sm"
+              onClick={() => enhanceStudyMutation.mutate(focusedStudyId)}
+              disabled={enhanceStudyMutation.isPending}
+            >
+              {enhanceStudyMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enriching…
+                </>
+              ) : (
+                "Enrich this study"
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {processingStatus.visible && (
         <Alert
           variant={

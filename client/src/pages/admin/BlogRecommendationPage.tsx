@@ -3,15 +3,13 @@ import { BlogRecommendationSystem } from "@/components/admin/BlogRecommendationS
 
 export default function BlogRecommendationPage() {
   return (
-    <AdminLayout title="AI Blog Recommendations">
+    <AdminLayout title="Blog Ideas">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            AI Blog Recommendations
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Blog Ideas</h1>
           <p className="text-muted-foreground">
-            Get AI-powered recommendations for high-impact blog articles based
-            on your research studies
+            Get AI-powered recommendations for high-impact blog posts based on
+            your research studies.
           </p>
         </div>
 

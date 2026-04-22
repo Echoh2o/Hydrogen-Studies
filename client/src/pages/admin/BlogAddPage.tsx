@@ -56,7 +56,7 @@ export default function BlogAddPage() {
     content: "",
     readingLevel: "6th",
     articleType: "manual",
-    studyId: 1, // Default to first study
+    studyId: 0, // 0 means "not yet selected" — validation requires > 0
     editorNotes: "",
     isPublished: false,
   });
@@ -159,7 +159,7 @@ export default function BlogAddPage() {
       toast({
         title: "Blog article created",
         description:
-          "The blog article was successfully created. You can now add a featured image.",
+          "The blog post was successfully created. You can now add a featured image.",
       });
 
       // Store the created blog ID to enable image upload section
@@ -170,7 +170,7 @@ export default function BlogAddPage() {
     },
     onError: (error: unknown) => {
       toast({
-        title: "Failed to create blog article",
+        title: "Failed to create blog post",
         description: errMessage(error, "An error occurred. Please try again."),
         variant: "destructive",
       });
@@ -186,7 +186,7 @@ export default function BlogAddPage() {
   return (
     <AdminLayout
       title="Add Manual Blog"
-      description="Create a new blog article"
+      description="Create a new blog post"
     >
       <div className="space-y-6">
         <AdminBreadcrumbs
@@ -209,13 +209,13 @@ export default function BlogAddPage() {
               <CardHeader>
                 <CardTitle>Blog Details</CardTitle>
                 <CardDescription>
-                  Enter the basic information for your blog article
+                  Enter the basic information for your blog post
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">
-                    Title <span className="text-red-500">*</span>
+                    Title <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="title"
@@ -229,7 +229,7 @@ export default function BlogAddPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="slug">
-                    URL Slug <span className="text-red-500">*</span>
+                    URL Slug <span className="text-destructive">*</span>
                   </Label>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-muted-foreground">
@@ -245,7 +245,7 @@ export default function BlogAddPage() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    This will be used in the URL of your blog article
+                    This will be used in the URL of your blog post
                   </p>
                 </div>
 
@@ -276,7 +276,7 @@ export default function BlogAddPage() {
                       target: { name: "summary", value },
                     } as React.ChangeEvent<HTMLTextAreaElement>)
                   }
-                  placeholder="Enter a brief summary of the blog article"
+                  placeholder="Enter a brief summary of the blog post"
                   height="150px"
                   required
                   description="A short summary that will appear in blog lists and search results"
@@ -284,7 +284,7 @@ export default function BlogAddPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="studyId">
-                    Related Study <span className="text-red-500">*</span>
+                    Related Study <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={blogData.studyId.toString()}
@@ -310,7 +310,7 @@ export default function BlogAddPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Choose the study this blog article will be about
+                    Choose the study this blog post will be about
                   </p>
                 </div>
 
@@ -365,7 +365,11 @@ export default function BlogAddPage() {
                         <SelectItem value="12th">
                           12th Grade (Ages 17-18)
                         </SelectItem>
-                        <SelectItem value="college">College Level</SelectItem>
+                        <SelectItem value="college">College</SelectItem>
+                        <SelectItem value="general">
+                          General audience
+                        </SelectItem>
+                        <SelectItem value="academic">Academic</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -390,7 +394,7 @@ export default function BlogAddPage() {
               <CardHeader>
                 <CardTitle>Blog Content</CardTitle>
                 <CardDescription>
-                  Write the content for your blog article
+                  Write the content for your blog post
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -603,7 +607,7 @@ export default function BlogAddPage() {
                           target: { name: "content", value },
                         } as React.ChangeEvent<HTMLTextAreaElement>)
                       }
-                      placeholder="Enter the full content of your blog article"
+                      placeholder="Enter the full content of your blog post"
                       height="400px"
                       required
                       description="Use the toolbar above to format your content"
@@ -635,7 +639,7 @@ export default function BlogAddPage() {
                 <CardHeader>
                   <CardTitle>Featured Image</CardTitle>
                   <CardDescription>
-                    Upload or generate a featured image for your blog article
+                    Upload or generate a featured image for your blog post
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -688,16 +692,16 @@ export default function BlogAddPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Save Blog Article</CardTitle>
+                <CardTitle>Save Blog Post</CardTitle>
                 <CardDescription>
-                  Save your blog article as a draft or publish it immediately
+                  Save your blog post as a draft or publish it immediately
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm">
                   {createdBlogId
                     ? "Your blog has been created. You can now upload a featured image."
-                    : "Images can be added after the blog article is created."}
+                    : "Images can be added after the blog post is created."}
                 </p>
               </CardContent>
               <CardFooter className="flex justify-between">
@@ -718,7 +722,7 @@ export default function BlogAddPage() {
                     ) : (
                       <>
                         <FileText className="mr-2 h-4 w-4" />
-                        Save Blog Article
+                        Save Blog Post
                       </>
                     )}
                   </Button>

@@ -1005,7 +1005,7 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
                               key={keyword.id}
                               variant="outline"
                               className={
-                                keyword.isActive ? "bg-green-50" : "bg-gray-50"
+                                keyword.isActive ? "bg-green-50" : "bg-muted/50"
                               }
                             >
                               {keyword.term}

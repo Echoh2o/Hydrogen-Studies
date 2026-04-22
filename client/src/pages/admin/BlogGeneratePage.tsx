@@ -91,7 +91,7 @@ export default function BlogGeneratePage() {
     currentStep: 0,
   });
 
-  // Generate blog articles mutation
+  // Generate blog posts mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
       if (!selectedStudyId) {
@@ -123,7 +123,7 @@ export default function BlogGeneratePage() {
       // Update progress for generation
       setGenerationProgress((prev) => ({
         ...prev,
-        step: "Generating blog articles...",
+        step: "Generating blog posts...",
         currentStep: 3,
       }));
 
@@ -179,7 +179,7 @@ export default function BlogGeneratePage() {
 
       toast({
         title: "Blog articles generated successfully",
-        description: `Created ${data.articles?.length || 0} blog articles based on the selected study.`,
+        description: `Created ${data.articles?.length || 0} blog posts based on the selected study.`,
       });
 
       // Invalidate related queries
@@ -217,7 +217,7 @@ export default function BlogGeneratePage() {
           toast({
             title: "Blog articles already exist",
             description:
-              'This study already has blog articles. Enable "Force regeneration" to replace them.',
+              'This study already has blog posts. Enable "Force regeneration" to replace them.',
             variant: "destructive",
           });
 
@@ -231,7 +231,7 @@ export default function BlogGeneratePage() {
       }
 
       toast({
-        title: "Failed to generate blog articles",
+        title: "Failed to generate blog posts",
         description: error.message || "An error occurred. Please try again.",
         variant: "destructive",
       });
@@ -256,11 +256,11 @@ export default function BlogGeneratePage() {
 
   return (
     <AdminLayout
-      title="Generate Blog Articles"
+      title="Generate Blog Posts"
       description="Create AI-generated blog content from research studies"
     >
       <Helmet>
-        <title>Generate Blog Articles | HydrogenStudies Admin</title>
+        <title>Generate Blog Posts | HydrogenStudies Admin</title>
       </Helmet>
 
       <div className="space-y-6">
@@ -272,7 +272,7 @@ export default function BlogGeneratePage() {
         />
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">
-            Generate Blog Articles
+            Generate Blog Posts
           </h1>
           <Button variant="outline" onClick={() => navigate("/admin/blogs")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -292,7 +292,7 @@ export default function BlogGeneratePage() {
               <CardHeader>
                 <CardTitle>Search for a Research Study</CardTitle>
                 <CardDescription>
-                  Find a study to generate blog articles from
+                  Find a study to generate blog posts from
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -417,7 +417,7 @@ export default function BlogGeneratePage() {
             <CardHeader>
               <CardTitle>Selected Study</CardTitle>
               <CardDescription>
-                The following study will be used to generate blog articles
+                The following study will be used to generate blog posts
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -497,7 +497,7 @@ export default function BlogGeneratePage() {
             <CardHeader>
               <CardTitle>Blog Generation Options</CardTitle>
               <CardDescription>
-                Customize the blog articles to be generated
+                Customize the blog posts to be generated
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -598,7 +598,7 @@ export default function BlogGeneratePage() {
                           }
                         />
                         <Label htmlFor="forceRegeneration">
-                          Force regeneration (override existing blog articles)
+                          Force regeneration (override existing blog posts)
                         </Label>
                       </div>
                     </div>
@@ -752,7 +752,7 @@ export default function BlogGeneratePage() {
                   className="w-full md:w-auto"
                 >
                   <FileText className="mr-2 h-4 w-4" />
-                  Generate Blog Articles
+                  Generate Blog Posts
                 </Button>
               )}
             </CardFooter>

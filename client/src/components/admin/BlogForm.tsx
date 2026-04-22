@@ -137,8 +137,8 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
       toast({
         title: blogId ? "Blog updated" : "Blog created",
         description: blogId
-          ? "The blog article was successfully updated"
-          : "The blog article was successfully created",
+          ? "The blog post was successfully updated"
+          : "The blog post was successfully created",
       });
 
       // Save the created blog ID for the media upload section
@@ -172,7 +172,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to save blog article",
+        description: error.message || "Failed to save blog post",
         variant: "destructive",
       });
     },
@@ -304,7 +304,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                 <FormLabel>Summary</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Brief summary of the blog article"
+                    placeholder="Brief summary of the blog post"
                     className="min-h-[100px]"
                     {...field}
                   />
@@ -323,7 +323,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                 <FormLabel>Content</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Main content of the blog article"
+                    placeholder="Main content of the blog post"
                     className="min-h-[300px]"
                     {...field}
                   />
@@ -450,7 +450,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Upload a featured image for this blog article. This image will be
+              Upload a featured image for this blog post. This image will be
               displayed at the top of the article and in article listings.
             </p>
 
@@ -461,7 +461,7 @@ export default function BlogForm({ blogId, onSuccess }: BlogFormProps) {
                 toast({
                   title: "Image uploaded",
                   description:
-                    "The image has been successfully uploaded and set as the featured image for this blog article.",
+                    "The image has been successfully uploaded and set as the featured image for this blog post.",
                 });
                 queryClient.invalidateQueries({
                   queryKey: [`/api/blogs/${createdBlogId}`],

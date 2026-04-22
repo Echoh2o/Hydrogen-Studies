@@ -148,7 +148,7 @@ export default function StudyForm({
         {/* Basic Information Section */}
         <div>
           <h3 className="text-lg font-medium">Basic Information</h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Enter the core details about the study.
           </p>
 
@@ -312,7 +312,7 @@ export default function StudyForm({
         {/* Study Details Section */}
         <div>
           <h3 className="text-lg font-medium">Study Details</h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Add more detailed information about the study's methodology and
             findings.
           </p>
@@ -388,7 +388,7 @@ export default function StudyForm({
         {/* Links and References Section */}
         <div>
           <h3 className="text-lg font-medium">Links and References</h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Add links to the original study and related resources.
           </p>
 

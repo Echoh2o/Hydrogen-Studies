@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { ArrowRight } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -61,6 +63,20 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
   const [isGeneratingAll, setIsGeneratingAll] = useState<boolean>(false);
   const [activeJob, setActiveJob] = useState<BatchJobStatus | null>(null);
 
+  // Deep-link: when opened with ?studyId=123, offer a one-click action
+  // that generates an image just for that study.
+  const focusedStudyId = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("studyId");
+    const id = raw ? Number(raw) : NaN;
+    return Number.isInteger(id) && id > 0 ? id : null;
+  }, []);
+
+  const focusedStudyQuery = useQuery<any>({
+    queryKey: [`/api/studies/${focusedStudyId}`],
+    enabled: !!focusedStudyId,
+  });
+
   // Fetch studies needing images
   const fetchStudiesNeedingImages = async () => {
     setIsLoadingStudies(true);
@@ -73,7 +89,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
       if (data.success) {
         setStudiesNeedingImages(data.studyIds || []);
       } else {
-        console.error("Error fetching studies needing images:", data.message);
         toast({
           title: "Error",
           description: "Failed to fetch studies needing images",
@@ -81,7 +96,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
         });
       }
     } catch (error) {
-      console.error("Error fetching studies needing images:", error);
       toast({
         title: "Error",
         description: "Failed to fetch studies needing images",
@@ -118,7 +132,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
         // Refresh the list of studies needing images
         fetchStudiesNeedingImages();
       } else {
-        console.error("Error generating image:", data.message);
         toast({
           title: "Error",
           description: `Failed to generate image: ${data.message}`,
@@ -126,7 +139,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
         });
       }
     } catch (error) {
-      console.error("Error generating image:", error);
       toast({
         title: "Error",
         description: "Failed to generate image. Please try again.",
@@ -190,7 +202,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
           variant: "default",
         });
       } else {
-        console.error("Error batch generating images:", data.message);
         toast({
           title: "Error",
           description: `Failed to start batch generation: ${data.message}`,
@@ -198,7 +209,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
         });
       }
     } catch (error) {
-      console.error("Error batch generating images:", error);
       toast({
         title: "Error",
         description:
@@ -249,7 +259,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
           variant: "default",
         });
       } else {
-        console.error("Error auto generating images:", data.message);
         toast({
           title: "Error",
           description: `Failed to start auto generation: ${data.message}`,
@@ -257,7 +266,6 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
         });
       }
     } catch (error) {
-      console.error("Error starting auto image generation:", error);
       toast({
         title: "Error",
         description: "Failed to start auto image generation. Please try again.",
@@ -321,6 +329,33 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
 
   const content = (
     <>
+      {focusedStudyId && (
+        <Alert className="mb-6">
+          <ArrowRight className="h-4 w-4" />
+          <AlertTitle>
+            Focused on study #{focusedStudyId}
+            {focusedStudyQuery.data?.title ? `: ${focusedStudyQuery.data.title}` : ""}
+          </AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3 mt-2">
+            <span>Generate an image just for this study.</span>
+            <Button
+              size="sm"
+              onClick={() => generateSingleImage(focusedStudyId)}
+              disabled={isGeneratingSingle && selectedStudyId === focusedStudyId}
+            >
+              {isGeneratingSingle && selectedStudyId === focusedStudyId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating…
+                </>
+              ) : (
+                "Generate image"
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -439,7 +474,7 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
                 {activeJob.failed > 0 && (
                   <>
                     {" · "}
-                    <span className="text-red-600">{activeJob.failed} failed</span>
+                    <span className="text-destructive">{activeJob.failed} failed</span>
                   </>
                 )}
               </span>

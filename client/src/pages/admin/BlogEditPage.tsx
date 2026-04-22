@@ -162,7 +162,7 @@ export default function BlogEditPage() {
     onSuccess: () => {
       toast({
         title: "Blog article updated",
-        description: "The blog article was successfully updated.",
+        description: "The blog post was successfully updated.",
       });
 
       // Invalidate blogs queries to refresh data
@@ -171,7 +171,7 @@ export default function BlogEditPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to update blog article",
+        title: "Failed to update blog post",
         description: error.message || "An error occurred. Please try again.",
         variant: "destructive",
       });
@@ -201,7 +201,7 @@ export default function BlogEditPage() {
 
   if (isBlogLoading) {
     return (
-      <AdminLayout title="Edit Blog" description="Edit blog article">
+      <AdminLayout title="Edit Blog" description="Edit blog post">
         <div className="flex items-center justify-center h-64">
           <Loader className="h-8 w-8 animate-spin" />
           <span className="ml-2">Loading blog data...</span>
@@ -214,7 +214,7 @@ export default function BlogEditPage() {
     return (
       <AdminLayout
         title="Blog Not Found"
-        description="Could not find the requested blog article"
+        description="Could not find the requested blog post"
       >
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -231,7 +231,7 @@ export default function BlogEditPage() {
             <CardHeader>
               <CardTitle>Error</CardTitle>
               <CardDescription>
-                The blog article you are looking for could not be found or there
+                The blog post you are looking for could not be found or there
                 was an error loading it.
               </CardDescription>
             </CardHeader>
@@ -250,7 +250,7 @@ export default function BlogEditPage() {
   return (
     <AdminLayout
       title={`Edit Blog: ${blog.title}`}
-      description="Edit blog article"
+      description="Edit blog post"
     >
       <div className="space-y-6">
         <AdminBreadcrumbs
@@ -273,7 +273,7 @@ export default function BlogEditPage() {
               <CardHeader>
                 <CardTitle>Blog Details</CardTitle>
                 <CardDescription>
-                  Edit the basic information for your blog article
+                  Edit the basic information for your blog post
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -309,7 +309,7 @@ export default function BlogEditPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="title">
-                    Title <span className="text-red-500">*</span>
+                    Title <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="title"
@@ -323,7 +323,7 @@ export default function BlogEditPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="slug">
-                    URL Slug <span className="text-red-500">*</span>
+                    URL Slug <span className="text-destructive">*</span>
                   </Label>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-muted-foreground">
@@ -339,20 +339,20 @@ export default function BlogEditPage() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    This will be used in the URL of your blog article
+                    This will be used in the URL of your blog post
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="summary">
-                    Summary <span className="text-red-500">*</span>
+                    Summary <span className="text-destructive">*</span>
                   </Label>
                   <WysiwygEditor
                     id="summary"
                     name="summary"
                     value={blogData.summary}
                     onChange={(value) => handleRichTextChange("summary", value)}
-                    placeholder="Enter a brief summary of the blog article"
+                    placeholder="Enter a brief summary of the blog post"
                     height="150px"
                     required
                     description="A short summary that will appear in blog lists and search results"
@@ -420,21 +420,9 @@ export default function BlogEditPage() {
                         <SelectItem value="12th">
                           12th Grade (Ages 17-18)
                         </SelectItem>
-                        <SelectItem value="college">College Level</SelectItem>
-                        <SelectItem value="elementary">
-                          Elementary (Grades 1-5)
-                        </SelectItem>
-                        <SelectItem value="middle">
-                          Middle School (Grades 6-8)
-                        </SelectItem>
-                        <SelectItem value="high">
-                          High School (Grades 9-12)
-                        </SelectItem>
+                        <SelectItem value="college">College</SelectItem>
                         <SelectItem value="general">
-                          General Audience
-                        </SelectItem>
-                        <SelectItem value="professional">
-                          Professional
+                          General audience
                         </SelectItem>
                         <SelectItem value="academic">Academic</SelectItem>
                       </SelectContent>
@@ -466,7 +454,7 @@ export default function BlogEditPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    The study this blog article is related to
+                    The study this blog post is related to
                   </p>
                 </div>
 
@@ -482,7 +470,7 @@ export default function BlogEditPage() {
                     <Label htmlFor="isPublished">Published</Label>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    When enabled, this blog article will be visible to the
+                    When enabled, this blog post will be visible to the
                     public
                   </p>
                 </div>
@@ -493,7 +481,7 @@ export default function BlogEditPage() {
               <CardHeader>
                 <CardTitle>Blog Content</CardTitle>
                 <CardDescription>
-                  Edit the content for your blog article
+                  Edit the content for your blog post
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -516,7 +504,7 @@ export default function BlogEditPage() {
                       onChange={(value) =>
                         handleRichTextChange("content", value)
                       }
-                      placeholder="Enter the full content of your blog article"
+                      placeholder="Enter the full content of your blog post"
                       height="400px"
                       required
                       description="Use the toolbar above to format your content"
@@ -545,7 +533,7 @@ export default function BlogEditPage() {
               <CardHeader>
                 <CardTitle>Featured Image</CardTitle>
                 <CardDescription>
-                  Update or generate a featured image for this blog article
+                  Update or generate a featured image for this blog post
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -565,7 +553,7 @@ export default function BlogEditPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground mb-4">
-                    This blog article doesn't have a featured image yet. Upload
+                    This blog post doesn't have a featured image yet. Upload
                     or generate one below.
                   </p>
                 )}

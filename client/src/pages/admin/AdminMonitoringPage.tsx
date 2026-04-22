@@ -241,7 +241,7 @@ export default function AdminMonitoringPage() {
 
   if (statusLoading || analysisLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-muted/50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <RefreshCw className="w-8 h-8 animate-spin mr-2" />
@@ -258,10 +258,10 @@ export default function AdminMonitoringPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-foreground">
               Database Monitoring Dashboard
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               Monitor and maintain 100% completion across all content types
             </p>
           </div>
@@ -411,7 +411,7 @@ export default function AdminMonitoringPage() {
                       </div>
                       <Progress value={stats.plainLanguageTitles.percentage} />
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       {stats.plainLanguageTitles.missing} studies need plain
                       language titles
                     </div>
@@ -502,7 +502,7 @@ export default function AdminMonitoringPage() {
                       </div>
                       <Progress value={stats.researchEnrichment.percentage} />
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       {stats.researchEnrichment.missing} studies need research
                       links
                     </div>
@@ -533,7 +533,7 @@ export default function AdminMonitoringPage() {
                       </div>
                       <Progress value={stats.visualContent.percentage} />
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       {stats.visualContent.missing} studies need visual content
                     </div>
                   </CardContent>
@@ -698,7 +698,7 @@ export default function AdminMonitoringPage() {
             {/* Emergency Controls */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-red-600">
+                <CardTitle className="text-destructive">
                   Emergency Controls
                 </CardTitle>
                 <CardDescription>
@@ -722,7 +722,7 @@ export default function AdminMonitoringPage() {
 
         {/* Last Updated */}
         {stats && (
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-muted-foreground">
             Last updated: {new Date(stats.lastUpdated).toLocaleString()}
             {autoRefresh && " • Auto-refreshing every 30 seconds"}
           </div>

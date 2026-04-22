@@ -33,6 +33,8 @@ export class JobScheduler {
   private lastBlogGenerationCheck: Date | null = null;
   private readonly CONTENT_QUEUE_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
   private lastContentQueueCheck: Date | null = null;
+  private readonly JOURNAL_DATE_INTERVAL_MS = 24 * 60 * 60 * 1000; // Daily
+  private lastJournalDateCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -334,10 +336,55 @@ export class JobScheduler {
         logger.error("Job 13 (content-queue) unexpected error", error, "JobScheduler");
       }
 
+      // Job 14: Journal publication-date backfill (runs once per day)
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runJournalDateBackfillJob(),
+          10 * 60 * 1000,
+          "journal-date-backfill"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "journal-date-backfill" });
+        }
+      } catch (error) {
+        logger.error("Job 14 (journal-date-backfill) unexpected error", error, "JobScheduler");
+      }
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
       this.isJobRunning = false;
+    }
+  }
+
+  /**
+   * Job 14: Journal publication-date backfill
+   * Runs once per day. Finds studies that have a DOI but no journalPublishDate
+   * and fills it in from CrossRef / Europe PMC / doi.org. Processes up to
+   * 100 studies per run. Replaces the deleted JournalDateUpdater admin page —
+   * admins no longer need to click a button.
+   */
+  private async runJournalDateBackfillJob() {
+    try {
+      if (this.lastJournalDateCheck) {
+        const elapsed = Date.now() - this.lastJournalDateCheck.getTime();
+        if (elapsed < this.JOURNAL_DATE_INTERVAL_MS) return;
+      }
+
+      const { updateJournalPublicationDates } = await import("./journal-date-updater");
+      const result = await updateJournalPublicationDates(100);
+      this.lastJournalDateCheck = new Date();
+
+      if (result.totalUpdated > 0 || result.failedDois.length > 0) {
+        logger.info("Journal date backfill complete", "JobScheduler", {
+          updated: result.totalUpdated,
+          failed: result.failedDois.length,
+        });
+      }
+    } catch (error) {
+      logger.error("Journal date backfill error", error, "JobScheduler");
     }
   }
 

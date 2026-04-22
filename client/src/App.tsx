@@ -145,12 +145,6 @@ const ResearchImportPage = lazy(
 );
 const DataImportPage = lazy(() => import("./pages/admin/DataImportPage"));
 const DeletionLedgerPage = lazy(() => import("./pages/admin/DeletionLedgerPage"));
-const ResearchDatabasePage = lazy(
-  () => import("./pages/admin/ResearchDatabasePage"),
-);
-const JournalDateUpdater = lazy(
-  () => import("./pages/admin/JournalDateUpdater"),
-);
 const ContentEnrichmentPage = lazy(
   () => import("./pages/admin/ContentEnrichmentPage"),
 );
@@ -166,9 +160,7 @@ const ImageGenerationPage = lazy(
 const KeywordMonitorPage = lazy(
   () => import("./pages/admin/KeywordMonitorPage"),
 );
-const EnhancedAdminDashboard = lazy(
-  () => import("./pages/admin/EnhancedAdminDashboard"),
-);
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const TrendsAnalysisPage = lazy(
   () => import("./pages/admin/TrendsAnalysisPage"),
 );
@@ -261,7 +253,7 @@ function Router() {
         <Route path="/admin">
           {() => (
             <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <EnhancedAdminDashboard />
+              <AdminDashboard />
             </ProtectedRoute>
           )}
         </Route>
@@ -366,20 +358,8 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
-        <Route path="/admin/research-database">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <ResearchDatabasePage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/admin/journal-date-updater">
-          {() => (
-            <ProtectedRoute requiredRoles={["admin", "editor"]}>
-              <JournalDateUpdater />
-            </ProtectedRoute>
-          )}
-        </Route>
+        <Route path="/admin/research-database">{() => <Redirect to="/admin/studies" />}</Route>
+        <Route path="/admin/journal-date-updater">{() => <Redirect to="/admin/pipeline" />}</Route>
 
         {/* Admin Enhancement Pages - Protected */}
         <Route path="/admin/content-enrichment">

@@ -250,7 +250,7 @@ export function BlogRecommendationSystem() {
 
       toast({
         title: "Generation Complete",
-        description: `Generated ${totalBlogs} blog articles for ${successfulStudies} studies.`,
+        description: `Generated ${totalBlogs} blog posts for ${successfulStudies} studies.`,
       });
 
       // Clear selections and refresh data
@@ -266,7 +266,7 @@ export function BlogRecommendationSystem() {
 
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate blog articles",
+        description: error.message || "Failed to generate blog posts",
         variant: "destructive",
       });
     },
@@ -335,7 +335,7 @@ export function BlogRecommendationSystem() {
             AI Blog Recommendations
           </h2>
           <p className="text-muted-foreground">
-            AI-powered recommendations for high-impact blog articles
+            AI-powered recommendations for high-impact blog posts
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline">
@@ -359,7 +359,7 @@ export function BlogRecommendationSystem() {
             <CardHeader>
               <CardTitle className="text-lg">Study Selection</CardTitle>
               <CardDescription>
-                Choose studies for blog article generation
+                Choose studies for blog post generation
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -526,7 +526,7 @@ export function BlogRecommendationSystem() {
             <CardHeader>
               <CardTitle>Generation Options</CardTitle>
               <CardDescription>
-                Configure how blog articles will be generated
+                Configure how blog posts will be generated
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -776,7 +776,7 @@ export function BlogRecommendationSystem() {
               <CardHeader>
                 <CardTitle>Generation Progress</CardTitle>
                 <CardDescription>
-                  Generating blog articles for selected studies
+                  Generating blog posts for selected studies
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

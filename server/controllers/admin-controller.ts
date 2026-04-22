@@ -11,7 +11,7 @@ import {
   processAllStudiesForTagging,
   getTaggingStats,
 } from "../automated-tagging-system";
-import { requireAdmin } from "../auth";
+import { requireAdmin, isAdminOrEditor } from "../auth";
 
 export class AdminController {
   public router: Router;
@@ -22,24 +22,16 @@ export class AdminController {
   }
 
   private initializeRoutes() {
-    // All admin controller routes require admin auth
-    this.router.use(requireAdmin);
+    // Read-only endpoints — admins AND editors (dashboard needs these)
+    this.router.get("/status", isAdminOrEditor, asyncHandler(this.getSystemStatus));
+    this.router.get("/database-stats", isAdminOrEditor, asyncHandler(this.getDatabaseStats));
+    this.router.get("/dashboard-stats", isAdminOrEditor, asyncHandler(this.getDashboardStats));
+    this.router.get("/tagging/stats", isAdminOrEditor, asyncHandler(this.getTaggingStats));
 
-    // System status
-    this.router.get("/status", asyncHandler(this.getSystemStatus));
-    this.router.get("/database-stats", asyncHandler(this.getDatabaseStats));
-
-    // Dashboard stats (migrated from index.ts)
-    // Note: The original route was /api/stats/dashboard.
-    // If we mount this controller at /api/admin, it becomes /api/admin/dashboard-stats
-    // We might need to handle the route mounting carefully.
-    this.router.get("/dashboard-stats", asyncHandler(this.getDashboardStats));
-
-    // Tagging routes
-    this.router.post("/tagging/initialize", asyncHandler(this.initializeTagging));
-    this.router.post("/tagging/process-all", asyncHandler(this.processAllTagging));
-    this.router.post("/tagging/tag-study/:id", asyncHandler(this.tagStudy));
-    this.router.get("/tagging/stats", asyncHandler(this.getTaggingStats));
+    // Mutating endpoints — admin-only
+    this.router.post("/tagging/initialize", requireAdmin, asyncHandler(this.initializeTagging));
+    this.router.post("/tagging/process-all", requireAdmin, asyncHandler(this.processAllTagging));
+    this.router.post("/tagging/tag-study/:id", requireAdmin, asyncHandler(this.tagStudy));
   }
 
   private getSystemStatus = async (req: Request, res: Response) => {

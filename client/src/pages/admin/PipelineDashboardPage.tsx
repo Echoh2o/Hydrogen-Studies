@@ -12,6 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Table,
   TableBody,
   TableCell,
@@ -20,7 +25,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Play,
   RefreshCw,
   Search,
   Zap,
@@ -30,7 +34,8 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  AlertCircle,
+  ChevronDown,
+  Wrench,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -159,7 +164,10 @@ export default function PipelineDashboardPage() {
   const anyMutating = discoverMutation.isPending || processMutation.isPending || citationMutation.isPending || digestMutation.isPending;
 
   return (
-    <AdminLayout title="Research Pipeline" description="Autonomous research discovery, analysis, and publishing pipeline">
+    <AdminLayout
+      title="Pipeline Monitor"
+      description="Observe the autonomous research discovery, analysis, and publishing pipeline. Jobs run automatically on a schedule."
+    >
       <div className="space-y-6">
 
         <Tabs defaultValue="overview">
@@ -168,7 +176,6 @@ export default function PipelineDashboardPage() {
             <TabsTrigger value="queue">Pipeline Queue</TabsTrigger>
             <TabsTrigger value="runs">Discovery Runs</TabsTrigger>
             <TabsTrigger value="digests">Weekly Digests</TabsTrigger>
-            <TabsTrigger value="controls">Manual Controls</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -213,7 +220,7 @@ export default function PipelineDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <XCircle className="h-5 w-5 text-red-500" />
+                    <XCircle className="h-5 w-5 text-destructive" />
                     <span className="text-2xl font-bold">{status?.queue?.failed ?? "—"}</span>
                   </div>
                 </CardContent>
@@ -275,7 +282,7 @@ export default function PipelineDashboardPage() {
               ))}
             </div>
 
-            <Card>
+            <Card className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -335,7 +342,7 @@ export default function PipelineDashboardPage() {
 
           {/* Discovery Runs Tab */}
           <TabsContent value="runs" className="space-y-4">
-            <Card>
+            <Card className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -420,111 +427,84 @@ export default function PipelineDashboardPage() {
             )}
           </TabsContent>
 
-          {/* Manual Controls Tab */}
-          <TabsContent value="controls" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Search className="h-5 w-5" />
-                    Research Discovery
-                  </CardTitle>
-                  <CardDescription>
-                    Search CrossRef and Europe PMC for new hydrogen research papers
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+        </Tabs>
+
+        {/* Ops controls — hidden by default. Jobs run automatically on a schedule;
+            force-run buttons are for troubleshooting only. */}
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              <Wrench className="h-4 w-4 mr-2" />
+              Ops controls (advanced)
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardDescription>
+                  These jobs run automatically on a schedule. Force-run only when debugging.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => discoverMutation.mutate()}
                     disabled={anyMutating}
                   >
                     {discoverMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                     ) : (
-                      <Play className="h-4 w-4 mr-2" />
+                      <Search className="h-3 w-3 mr-2" />
                     )}
-                    Run Discovery
+                    Discovery
                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5" />
-                    AI Processing
-                  </CardTitle>
-                  <CardDescription>
-                    Process pending queue items through the 6-step AI pipeline
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
                   <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => processMutation.mutate()}
                     disabled={anyMutating}
                   >
                     {processMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                     ) : (
-                      <Play className="h-4 w-4 mr-2" />
+                      <Zap className="h-3 w-3 mr-2" />
                     )}
-                    Process Queue
+                    Process queue
                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GitBranch className="h-5 w-5" />
-                    Citation Network
-                  </CardTitle>
-                  <CardDescription>
-                    Build citation relationships from CrossRef and Europe PMC
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
                   <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => citationMutation.mutate()}
                     disabled={anyMutating}
                   >
                     {citationMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                     ) : (
-                      <Play className="h-4 w-4 mr-2" />
+                      <GitBranch className="h-3 w-3 mr-2" />
                     )}
-                    Build Citations
+                    Build citations
                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Weekly Digest
-                  </CardTitle>
-                  <CardDescription>
-                    Generate an AI-powered weekly research digest
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
                   <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => digestMutation.mutate()}
                     disabled={anyMutating}
                   >
                     {digestMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                     ) : (
-                      <Play className="h-4 w-4 mr-2" />
+                      <FileText className="h-3 w-3 mr-2" />
                     )}
-                    Generate Digest
+                    Generate digest
                   </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+                </div>
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </AdminLayout>
   );
