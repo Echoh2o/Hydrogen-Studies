@@ -812,6 +812,13 @@ import { jobScheduler } from "./services/job-scheduler";
 // Ensure scoring-related columns exist (idempotent) before background jobs
 // or the review-queue-insert path write to them on new deployments.
 import { ensureScoringColumns } from "./services/study-scoring-service";
+import { ensureBlogLifecycleColumns, recoverStuckBlogJobs } from "./services/blog-lifecycle";
 ensureScoringColumns().catch(() => {});
+// Blog publishing pipeline: ensure schema, then recover any jobs that were
+// running when the server last shut down (set to 'paused' for admin to
+// resume manually — auto-resume would just re-crash on poison input).
+ensureBlogLifecycleColumns()
+  .then(() => recoverStuckBlogJobs())
+  .catch(() => {});
 // Start background jobs
 jobScheduler.start();

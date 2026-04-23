@@ -37,7 +37,14 @@ import {
   ChevronsRight,
   AlertTriangle,
   Loader2,
+  ArrowUpDown,
+  Eye as EyeIcon,
+  Archive,
+  ArchiveRestore,
+  Clock,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,18 +76,37 @@ interface BlogArticle {
   studyId: number;
   studyTitle?: string;
   isPublished: boolean;
+  publishedAt: string | null;
+  scheduledFor: string | null;
+  isArchived: boolean;
+  viewCount: number | null;
   createdAt: string;
   updatedAt: string;
 }
 
+interface StatusCounts {
+  drafts: number;
+  scheduled: number;
+  published: number;
+  archived: number;
+}
+
+type StatusFilter = "all" | "draft" | "scheduled" | "published" | "archived";
+type SortField = "createdAt" | "publishedAt" | "viewCount" | "title" | "articleType";
+
 export default function BlogListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<StatusFilter>("all");
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+
+  // Bulk-select state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -89,18 +115,12 @@ export default function BlogListPage() {
   const queryParams = new URLSearchParams();
   queryParams.set("page", currentPage.toString());
   queryParams.set("limit", pageSize.toString());
+  queryParams.set("sort", sortField);
+  queryParams.set("order", sortOrder);
 
-  if (searchTerm) {
-    queryParams.set("search", searchTerm);
-  }
-
-  if (filterType !== "all") {
-    queryParams.set("filterType", filterType);
-  }
-
-  if (filterStatus !== "all") {
-    queryParams.set("filterStatus", filterStatus);
-  }
+  if (searchTerm) queryParams.set("search", searchTerm);
+  if (filterType !== "all") queryParams.set("filterType", filterType);
+  if (filterStatus !== "all") queryParams.set("filterStatus", filterStatus);
 
   // Fetch blogs with pagination
   const { data, isLoading, error } = useQuery<any>({
@@ -111,11 +131,23 @@ export default function BlogListPage() {
       searchTerm,
       filterType,
       filterStatus,
+      sortField,
+      sortOrder,
     ],
     queryFn: async () => {
       const response = await fetch(`/api/blogs?${queryParams.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch blogs");
       return response.json();
+    },
+  });
+
+  // Status counts for tab badges
+  const { data: statusCounts } = useQuery<StatusCounts>({
+    queryKey: ["/api/blogs/status-counts"],
+    queryFn: async () => {
+      const res = await fetch("/api/blogs/status-counts");
+      if (!res.ok) throw new Error("Failed to fetch status counts");
+      return res.json();
     },
   });
 
@@ -150,7 +182,8 @@ export default function BlogListPage() {
     },
   });
 
-  // Toggle publish status mutation
+  // Toggle publish status mutation — uses the focused PATCH /:id/status
+  // endpoint (was using full PUT /:id which fails on partial body).
   const togglePublishMutation = useMutation({
     mutationFn: async ({
       blogId,
@@ -159,19 +192,20 @@ export default function BlogListPage() {
       blogId: number;
       isPublished: boolean;
     }) => {
-      const res = await fetch(`/api/blogs/${blogId}`, {
-        method: "PUT",
+      const res = await fetch(`/api/blogs/${blogId}/status`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublished }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || `Update failed (${res.status})`);
+        throw new Error(body.error || body.message || `Update failed (${res.status})`);
       }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs/status-counts"] });
       toast({
         title: "Success",
         description: "Blog post status updated",
@@ -181,6 +215,53 @@ export default function BlogListPage() {
       toast({
         title: "Error",
         description: error.message || "Failed to update blog post status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk-update mutation — handles publish/unpublish/archive/unarchive/delete/schedule
+  type BulkAction =
+    | "publish"
+    | "unpublish"
+    | "archive"
+    | "unarchive"
+    | "delete"
+    | "schedule";
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({
+      ids,
+      action,
+      scheduledFor,
+    }: {
+      ids: number[];
+      action: BulkAction;
+      scheduledFor?: string;
+    }) => {
+      const res = await fetch("/api/blogs/bulk-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, action, scheduledFor }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Bulk update failed (${res.status})`);
+      }
+      return res.json() as Promise<{ affected: number }>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs/status-counts"] });
+      setSelectedIds(new Set());
+      toast({
+        title: "Bulk update complete",
+        description: `${data.affected} blog${data.affected === 1 ? "" : "s"} updated`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bulk update failed",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -198,10 +279,8 @@ export default function BlogListPage() {
     setCurrentPage(1); // Reset to first page on filter change
   };
 
-  const handleFilterStatusChange = (value: string) => {
-    setFilterStatus(value);
-    setCurrentPage(1); // Reset to first page on filter change
-  };
+  // (filterStatus changes happen inline via the tab buttons; no longer
+  // need a dedicated handler.)
 
   // Pagination handlers
   const goToFirstPage = () => setCurrentPage(1);
@@ -314,76 +393,231 @@ export default function BlogListPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Filter Posts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search blogs..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+        {/* Status tabs — Drafts / Scheduled / Published / Archived / All
+            with live counts. Replaces the old All/Published/Draft Select. */}
+        <div className="flex items-center gap-1 border-b">
+          {(
+            [
+              { key: "draft", label: "Drafts", count: statusCounts?.drafts },
+              { key: "scheduled", label: "Scheduled", count: statusCounts?.scheduled },
+              { key: "published", label: "Published", count: statusCounts?.published },
+              { key: "archived", label: "Archived", count: statusCounts?.archived },
+              { key: "all", label: "All" },
+            ] as Array<{ key: StatusFilter; label: string; count?: number }>
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setFilterStatus(tab.key);
+                setCurrentPage(1);
+                setSelectedIds(new Set());
+              }}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                filterStatus === tab.key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tab.label}
+              {typeof tab.count === "number" && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {tab.count}
+                </Badge>
+              )}
+            </button>
+          ))}
+        </div>
 
-              {/* Type Filter */}
-              <Select value={filterType} onValueChange={handleFilterTypeChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="manual">Manual</SelectItem>
-                  <SelectItem value="generated">Generated</SelectItem>
-                  <SelectItem value="ai-assisted">AI-Assisted</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Search + secondary filters + sort */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div className="relative md:col-span-5">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search blogs by title or summary..."
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={filterType} onValueChange={handleFilterTypeChange}>
+            <SelectTrigger className="md:col-span-3">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="science_explainer">Science Explainer</SelectItem>
+              <SelectItem value="practical_guide">Practical Guide</SelectItem>
+              <SelectItem value="faq">FAQ</SelectItem>
+              <SelectItem value="condition_deep_dive">Condition Deep Dive</SelectItem>
+              <SelectItem value="protocol_guide">Protocol Guide</SelectItem>
+              <SelectItem value="myth_buster">Myth Buster</SelectItem>
+              <SelectItem value="listicle">Listicle</SelectItem>
+              <SelectItem value="news_post">Research News</SelectItem>
+              <SelectItem value="manual">Manual</SelectItem>
+              <SelectItem value="generated">Legacy: Generated</SelectItem>
+              <SelectItem value="ai-assisted">Legacy: AI-Assisted</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={`${sortField}:${sortOrder}`}
+            onValueChange={(v) => {
+              const [f, o] = v.split(":") as [SortField, "asc" | "desc"];
+              setSortField(f);
+              setSortOrder(o);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="md:col-span-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="createdAt:desc">Newest first</SelectItem>
+              <SelectItem value="createdAt:asc">Oldest first</SelectItem>
+              <SelectItem value="publishedAt:desc">Recently published</SelectItem>
+              <SelectItem value="viewCount:desc">Most views</SelectItem>
+              <SelectItem value="viewCount:asc">Fewest views</SelectItem>
+              <SelectItem value="title:asc">Title A→Z</SelectItem>
+              <SelectItem value="articleType:asc">Type A→Z</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={handlePageSizeChange}
+          >
+            <SelectTrigger className="md:col-span-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="20">20 per page</SelectItem>
+              <SelectItem value="50">50 per page</SelectItem>
+              <SelectItem value="100">100 per page</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-              {/* Status Filter */}
-              <Select
-                value={filterStatus}
-                onValueChange={handleFilterStatusChange}
+        {/* Bulk action bar — appears when at least one row is selected.
+            Single source of action for publish/unpublish/archive/delete
+            across many rows at once. */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between bg-accent/50 rounded-md border p-3">
+            <span className="text-sm font-medium">
+              {selectedIds.size} selected
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  bulkUpdateMutation.mutate({
+                    ids: Array.from(selectedIds),
+                    action: "publish",
+                  })
+                }
+                disabled={bulkUpdateMutation.isPending}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Page Size */}
-              <Select
-                value={pageSize.toString()}
-                onValueChange={handlePageSizeChange}
+                <EyeIcon className="h-3.5 w-3.5 mr-1" />
+                Publish
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  bulkUpdateMutation.mutate({
+                    ids: Array.from(selectedIds),
+                    action: "unpublish",
+                  })
+                }
+                disabled={bulkUpdateMutation.isPending}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="20">20 per page</SelectItem>
-                  <SelectItem value="50">50 per page</SelectItem>
-                  <SelectItem value="100">100 per page</SelectItem>
-                </SelectContent>
-              </Select>
+                Unpublish
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  bulkUpdateMutation.mutate({
+                    ids: Array.from(selectedIds),
+                    action: filterStatus === "archived" ? "unarchive" : "archive",
+                  })
+                }
+                disabled={bulkUpdateMutation.isPending}
+              >
+                {filterStatus === "archived" ? (
+                  <><ArchiveRestore className="h-3.5 w-3.5 mr-1" />Unarchive</>
+                ) : (
+                  <><Archive className="h-3.5 w-3.5 mr-1" />Archive</>
+                )}
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="destructive" disabled={bulkUpdateMutation.isPending}>
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Delete {selectedIds.size} blog{selectedIds.size === 1 ? "" : "s"}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This permanently deletes the selected blog post
+                      {selectedIds.size === 1 ? "" : "s"}. Cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() =>
+                        bulkUpdateMutation.mutate({
+                          ids: Array.from(selectedIds),
+                          action: "delete",
+                        })
+                      }
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete {selectedIds.size}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Results info */}
+        {/* Results info + select-all */}
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(currentPage - 1) * pageSize + 1} to{" "}
-            {Math.min(currentPage * pageSize, totalBlogs)} of {totalBlogs} posts
-          </p>
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={
+                blogs.length > 0 &&
+                blogs.every((b: BlogArticle) => selectedIds.has(b.id))
+              }
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  const next = new Set(selectedIds);
+                  for (const b of blogs as BlogArticle[]) next.add(b.id);
+                  setSelectedIds(next);
+                } else {
+                  const next = new Set(selectedIds);
+                  for (const b of blogs as BlogArticle[]) next.delete(b.id);
+                  setSelectedIds(next);
+                }
+              }}
+            />
+            <p className="text-sm text-muted-foreground">
+              Showing {totalBlogs === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
+              {Math.min(currentPage * pageSize, totalBlogs)} of {totalBlogs} posts
+            </p>
+          </div>
         </div>
 
         {/* Blog List */}
@@ -426,17 +660,44 @@ export default function BlogListPage() {
         ) : (
           <div className="grid gap-4">
             {blogs.map((blog: BlogArticle) => (
-              <Card key={blog.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={blog.id}
+                className={cn(
+                  "hover:shadow-lg transition-shadow",
+                  selectedIds.has(blog.id) && "ring-2 ring-primary",
+                )}
+              >
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                  <div className="flex justify-between items-start gap-4">
+                    {/* Per-row select checkbox — anchors to top of card */}
+                    <Checkbox
+                      checked={selectedIds.has(blog.id)}
+                      onCheckedChange={(checked) => {
+                        const next = new Set(selectedIds);
+                        if (checked) next.add(blog.id);
+                        else next.delete(blog.id);
+                        setSelectedIds(next);
+                      }}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <h3 className="text-xl font-semibold">{blog.title}</h3>
-                        <Badge
-                          variant={blog.isPublished ? "default" : "secondary"}
-                        >
-                          {blog.isPublished ? "Published" : "Draft"}
-                        </Badge>
+                        {blog.isArchived ? (
+                          <Badge variant="secondary">
+                            <Archive className="h-3 w-3 mr-1" />
+                            Archived
+                          </Badge>
+                        ) : blog.isPublished ? (
+                          <Badge variant="default">Published</Badge>
+                        ) : blog.scheduledFor ? (
+                          <Badge variant="outline" className="border-blue-500 text-blue-700">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Scheduled
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Draft</Badge>
+                        )}
                         {blog.articleType && (
                           <Badge variant="outline">{blog.articleType}</Badge>
                         )}
@@ -446,21 +707,35 @@ export default function BlogListPage() {
                         {blog.summary}
                       </p>
 
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          <span>{formatDate(blog.createdAt)}</span>
+                          <span>
+                            {blog.publishedAt
+                              ? `Published ${formatDate(blog.publishedAt)}`
+                              : blog.scheduledFor
+                              ? `Scheduled ${formatDate(blog.scheduledFor)}`
+                              : `Created ${formatDate(blog.createdAt)}`}
+                          </span>
                         </div>
+                        {typeof blog.viewCount === "number" && (
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-4 w-4" />
+                            <span className="tabular-nums">
+                              {blog.viewCount.toLocaleString()} view{blog.viewCount === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        )}
                         {blog.readingLevel && (
                           <div className="flex items-center gap-1">
                             <BookOpen className="h-4 w-4" />
-                            <span>{blog.readingLevel} grade reading level</span>
+                            <span>{blog.readingLevel}</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Link href={`/blog/${blog.slug}`}>
                         <Button size="sm" variant="outline">
                           <Eye className="h-4 w-4 mr-1" />

@@ -32,7 +32,11 @@ import {
   FileText,
   Loader2,
   AlertCircle,
+  TrendingUp,
+  AlertTriangle,
+  Layers,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Study } from "@/types";
@@ -82,6 +86,23 @@ export default function BlogGeneratePage() {
     error: studyError,
   } = useQuery<any>({
     queryKey: [`/api/studies/${selectedStudyId}`],
+    enabled: !!selectedStudyId && !isNaN(selectedStudyId),
+    retry: false,
+  });
+
+  // Decision-grade context for the selected study: quality score, existing
+  // blog count, content-gap signal. Lets the curator see — before clicking
+  // Generate — whether this is a high-quality study in an underserved
+  // category (great candidate) or low-quality + already over-covered (skip).
+  const { data: studyContext } = useQuery<{
+    qualityScore: number | null;
+    redFlagCount: number;
+    scoreConfidence: "low" | "medium" | "high" | null;
+    existingBlogCount: number;
+    categoryGap: number;
+    category: string;
+  }>({
+    queryKey: [`/api/blogs/study-context/${selectedStudyId}`],
     enabled: !!selectedStudyId && !isNaN(selectedStudyId),
     retry: false,
   });
@@ -435,6 +456,64 @@ export default function BlogGeneratePage() {
                         : ""}
                     </p>
                   </div>
+
+                  {/* Decision-grade signal strip — quality, existing
+                      coverage, content gap. Lets the curator confirm
+                      this is the right study before burning AI tokens. */}
+                  {studyContext && (
+                    <div className="flex items-center gap-2 flex-wrap p-3 rounded-md border bg-muted/30">
+                      {studyContext.qualityScore != null ? (
+                        <Badge
+                          className={
+                            studyContext.qualityScore >= 75
+                              ? "bg-green-600 text-white"
+                              : studyContext.qualityScore >= 50
+                              ? "bg-amber-500 text-white"
+                              : "bg-red-500 text-white"
+                          }
+                        >
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          Quality: {studyContext.qualityScore}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          Not yet scored
+                        </Badge>
+                      )}
+                      {studyContext.redFlagCount > 0 && (
+                        <Badge variant="destructive">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {studyContext.redFlagCount} red flag
+                          {studyContext.redFlagCount === 1 ? "" : "s"}
+                        </Badge>
+                      )}
+                      <Badge
+                        variant={
+                          studyContext.existingBlogCount > 0
+                            ? "secondary"
+                            : "default"
+                        }
+                      >
+                        <Layers className="h-3 w-3 mr-1" />
+                        {studyContext.existingBlogCount} existing blog
+                        {studyContext.existingBlogCount === 1 ? "" : "s"}
+                      </Badge>
+                      {studyContext.categoryGap >= 0.6 && (
+                        <Badge
+                          variant="outline"
+                          className="border-indigo-500 text-indigo-700"
+                          title={`${studyContext.category} is underserved — fewer blog articles relative to studies in this category`}
+                        >
+                          Content gap
+                        </Badge>
+                      )}
+                      {studyContext.existingBlogCount >= 3 && (
+                        <span className="text-xs text-amber-700 ml-auto">
+                          ⚠ Saturated — consider regenerating instead
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <h4 className="text-sm font-medium mb-2">Abstract</h4>

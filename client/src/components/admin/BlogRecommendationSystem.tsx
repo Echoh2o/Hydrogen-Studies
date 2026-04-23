@@ -25,6 +25,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
+  BLOG_ARTICLE_TYPES,
+  DEFAULT_ARTICLE_TYPE_IDS,
+  READING_LEVEL_INSTRUCTIONS,
+  type ReadingLevel,
+} from "@shared/blog-article-types";
+import {
   Brain,
   FileText,
   Clock,
@@ -83,51 +89,17 @@ interface GenerationProgress {
   errors: string[];
 }
 
-const ARTICLE_TYPES = [
-  {
-    value: "explainer",
-    label: "Explainer Article",
-    description: "Comprehensive breakdown of the research",
-  },
-  {
-    value: "summary",
-    label: "Research Summary",
-    description: "Concise overview of key findings",
-  },
-  {
-    value: "implications",
-    label: "Health Implications",
-    description: "Real-world applications and benefits",
-  },
-  {
-    value: "benefits",
-    label: "Benefits Guide",
-    description: "Focus on potential health advantages",
-  },
-  {
-    value: "how-to",
-    label: "Practical Guide",
-    description: "How to apply research insights",
-  },
-];
-
-const READING_LEVELS = [
-  {
-    value: "6th",
-    label: "6th Grade (Ages 11-12)",
-    description: "Simple language, short sentences",
-  },
-  {
-    value: "high-school",
-    label: "High School (Ages 14-18)",
-    description: "Moderate complexity",
-  },
-  {
-    value: "general",
-    label: "General Adult",
-    description: "Accessible but comprehensive",
-  },
-];
+// Article types & reading levels are imported from shared/blog-article-types
+// — single source of truth shared with BlogGeneratePage and the backend
+// generator. Adding a new type in shared/blog-article-types.ts automatically
+// surfaces it here.
+const READING_LEVEL_LABELS: Record<ReadingLevel, string> = {
+  "6th": "6th Grade (Ages 11–12)",
+  "8th": "8th Grade (Ages 13–14)",
+  "10th": "10th Grade (Ages 15–16)",
+  "12th": "12th Grade (Ages 17–18)",
+  college: "College Level",
+};
 
 export function BlogRecommendationSystem() {
   const { toast } = useToast();
@@ -138,8 +110,11 @@ export function BlogRecommendationSystem() {
   );
   const [generationOptions, setGenerationOptions] = useState<GenerationOptions>(
     {
-      articleTypes: ["explainer", "summary"],
-      readingLevel: "general",
+      // Default to whatever the registry marks as defaultEnabled. Adding a
+      // new type in shared/blog-article-types.ts changes this defaults set.
+      articleTypes: [...DEFAULT_ARTICLE_TYPE_IDS],
+      // Empty = "use each type's default reading level" (matches Generate page)
+      readingLevel: "",
       includeImages: true,
       includeSEO: true,
       saveToDatabase: false,
@@ -567,33 +542,38 @@ export function BlogRecommendationSystem() {
                   Select which types of articles to generate for each study
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {ARTICLE_TYPES.map((type) => (
+                  {BLOG_ARTICLE_TYPES.map((type) => (
                     <div
-                      key={type.value}
+                      key={type.id}
                       className="flex items-start space-x-3"
                     >
                       <Checkbox
                         checked={generationOptions.articleTypes.includes(
-                          type.value,
+                          type.id,
                         )}
                         onCheckedChange={(checked) => {
                           if (checked) {
                             setGenerationOptions((prev) => ({
                               ...prev,
-                              articleTypes: [...prev.articleTypes, type.value],
+                              articleTypes: [...prev.articleTypes, type.id],
                             }));
                           } else {
                             setGenerationOptions((prev) => ({
                               ...prev,
                               articleTypes: prev.articleTypes.filter(
-                                (t) => t !== type.value,
+                                (t) => t !== type.id,
                               ),
                             }));
                           }
                         }}
                       />
                       <div className="space-y-1">
-                        <p className="text-sm font-medium">{type.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{type.label}</p>
+                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-1 py-0.5">
+                            {type.defaultReadingLevel} grade
+                          </span>
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {type.description}
                         </p>
@@ -605,35 +585,37 @@ export function BlogRecommendationSystem() {
 
               <Separator />
 
-              {/* Reading Level */}
+              {/* Reading Level — optional override; otherwise each article
+                  type uses its own defaultReadingLevel from the registry. */}
               <div>
-                <Label className="text-base font-medium">Reading Level</Label>
+                <Label className="text-base font-medium">Reading Level Override</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Target audience complexity level
+                  Optional — leave on default to use each article type's own
+                  reading level (e.g., FAQ → 6th, Protocol Guide → 8th).
                 </p>
                 <Select
-                  value={generationOptions.readingLevel}
+                  value={generationOptions.readingLevel || "default"}
                   onValueChange={(value) =>
                     setGenerationOptions((prev) => ({
                       ...prev,
-                      readingLevel: value,
+                      readingLevel: value === "default" ? "" : value,
                     }))
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select reading level" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {READING_LEVELS.map((level) => (
-                      <SelectItem key={level.value} value={level.value}>
-                        <div>
-                          <div className="font-medium">{level.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {level.description}
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="default">
+                      Use each article type's default
+                    </SelectItem>
+                    {(Object.keys(READING_LEVEL_LABELS) as ReadingLevel[]).map(
+                      (level) => (
+                        <SelectItem key={level} value={level}>
+                          {READING_LEVEL_LABELS[level]}
+                        </SelectItem>
+                      ),
+                    )}
                   </SelectContent>
                 </Select>
               </div>

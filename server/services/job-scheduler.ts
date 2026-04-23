@@ -37,6 +37,10 @@ export class JobScheduler {
   private lastJournalDateCheck: Date | null = null;
   private readonly STUDY_SCORING_INTERVAL_MS = 24 * 60 * 60 * 1000; // Daily
   private lastStudyScoringCheck: Date | null = null;
+  // Scheduled-publish runs every cycle (15m). If a blog is set to publish
+  // "in 30 minutes," it'll go live within 15m of the target.
+  private readonly SCHEDULED_PUBLISH_INTERVAL_MS = 15 * 60 * 1000;
+  private lastScheduledPublishCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -141,6 +145,7 @@ export class JobScheduler {
         { name: "content-queue", lastRun: toISO(this.lastContentQueueCheck), intervalMs: this.CONTENT_QUEUE_INTERVAL_MS },
         { name: "journal-date-backfill", lastRun: toISO(this.lastJournalDateCheck), intervalMs: this.JOURNAL_DATE_INTERVAL_MS },
         { name: "study-scoring", lastRun: toISO(this.lastStudyScoringCheck), intervalMs: this.STUDY_SCORING_INTERVAL_MS },
+        { name: "scheduled-publish", lastRun: toISO(this.lastScheduledPublishCheck), intervalMs: this.SCHEDULED_PUBLISH_INTERVAL_MS },
       ],
     };
   }
@@ -406,10 +411,49 @@ export class JobScheduler {
         logger.error("Job 15 (study-scoring) unexpected error", error, "JobScheduler");
       }
 
+      // Job 16: Scheduled blog publishing — promotes drafts whose
+      // scheduledFor has passed. Cheap query (indexed on scheduledFor),
+      // runs every cycle, latency = scheduling resolution.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runScheduledPublishJob(),
+          60 * 1000,
+          "scheduled-publish"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "scheduled-publish" });
+        }
+      } catch (error) {
+        logger.error("Job 16 (scheduled-publish) unexpected error", error, "JobScheduler");
+      }
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
       this.isJobRunning = false;
+    }
+  }
+
+  /**
+   * Job 16: Scheduled blog publishing
+   *
+   * Promotes drafts whose scheduledFor timestamp has passed. Uses an indexed
+   * query so the cost is constant in the size of the publish queue, not the
+   * total blog count. Throttled to 15min (matches CHECK_INTERVAL_MS).
+   */
+  private async runScheduledPublishJob() {
+    try {
+      if (this.lastScheduledPublishCheck) {
+        const elapsed = Date.now() - this.lastScheduledPublishCheck.getTime();
+        if (elapsed < this.SCHEDULED_PUBLISH_INTERVAL_MS) return;
+      }
+      const { publishScheduledBlogs } = await import("./blog-lifecycle");
+      await publishScheduledBlogs();
+      this.lastScheduledPublishCheck = new Date();
+    } catch (err) {
+      logger.error("Scheduled-publish job error", err, "JobScheduler");
     }
   }
 

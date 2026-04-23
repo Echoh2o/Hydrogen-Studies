@@ -83,43 +83,66 @@ router.get("/", async (req, res) => {
     const search = req.query.search as string;
     const filterType = req.query.filterType as string;
     const filterStatus = req.query.filterStatus as string;
+    const sortField = (req.query.sort as string) || "createdAt";
+    const sortOrder = ((req.query.order as string) || "desc").toLowerCase() === "asc" ? "asc" : "desc";
+
+    // Whitelist of sortable columns. Anything outside this set silently
+    // falls back to createdAt — prevents SQL injection via the sort param
+    // and accidental sort-on-secret-field requests.
+    const SORT_COLUMNS = {
+      createdAt: blogArticles.createdAt,
+      publishedAt: blogArticles.publishedAt,
+      viewCount: blogArticles.viewCount,
+      title: blogArticles.title,
+      articleType: blogArticles.articleType,
+    } as const;
+    const sortColumn = (SORT_COLUMNS as any)[sortField] ?? blogArticles.createdAt;
 
     // Build query with filters
     let baseQuery = db.select().from(blogArticles).$dynamic();
     let countQuery = db.select({ count: count() }).from(blogArticles).$dynamic();
 
-    // Apply search filter
+    const conditions: any[] = [];
+
+    // Default: hide archived rows unless filterStatus explicitly requests them.
+    if (filterStatus !== "archived" && filterStatus !== "all") {
+      conditions.push(eq(blogArticles.isArchived, false));
+    }
+
     if (search) {
-      const searchCondition = sql`${blogArticles.title} ILIKE ${"%" + search + "%"} OR ${blogArticles.summary} ILIKE ${"%" + search + "%"}`;
-      baseQuery = baseQuery.where(searchCondition);
-      countQuery = countQuery.where(searchCondition);
+      conditions.push(
+        sql`(${blogArticles.title} ILIKE ${"%" + search + "%"} OR ${blogArticles.summary} ILIKE ${"%" + search + "%"})`,
+      );
     }
-
-    // Apply type filter
     if (filterType && filterType !== "all") {
-      baseQuery = baseQuery.where(eq(blogArticles.articleType, filterType));
-      countQuery = countQuery.where(eq(blogArticles.articleType, filterType));
+      conditions.push(eq(blogArticles.articleType, filterType));
     }
-
-    // Apply status filter
     if (filterStatus === "published") {
-      baseQuery = baseQuery.where(eq(blogArticles.isPublished, true));
-      countQuery = countQuery.where(eq(blogArticles.isPublished, true));
+      conditions.push(eq(blogArticles.isPublished, true));
     } else if (filterStatus === "draft") {
-      baseQuery = baseQuery.where(eq(blogArticles.isPublished, false));
-      countQuery = countQuery.where(eq(blogArticles.isPublished, false));
+      // "draft" = unpublished AND not scheduled. Scheduled posts get their own bucket.
+      conditions.push(eq(blogArticles.isPublished, false));
+      conditions.push(sql`${blogArticles.scheduledFor} IS NULL`);
+    } else if (filterStatus === "scheduled") {
+      conditions.push(eq(blogArticles.isPublished, false));
+      conditions.push(sql`${blogArticles.scheduledFor} IS NOT NULL`);
+    } else if (filterStatus === "archived") {
+      conditions.push(eq(blogArticles.isArchived, true));
     }
 
-    // Apply ordering and pagination
+    if (conditions.length > 0) {
+      const combined = conditions.length === 1 ? conditions[0] : sql.join(conditions, sql` AND `);
+      baseQuery = baseQuery.where(combined);
+      countQuery = countQuery.where(combined);
+    }
+
     const blogs = await baseQuery
-      .orderBy(desc(blogArticles.createdAt))
+      .orderBy(sortOrder === "asc" ? sortColumn : desc(sortColumn))
       .limit(limit)
       .offset(offset);
 
-    // Get total count for pagination
     const [totalResult] = await countQuery;
 
-    // Consistent response format with studies endpoint
     res.json({
       data: blogs,
       total: totalResult.count,
@@ -133,6 +156,114 @@ router.get("/", async (req, res) => {
       success: false,
       error: "Failed to fetch blog articles",
     });
+  }
+});
+
+/**
+ * Pre-generation context for a study — used by the admin Generate page so
+ * the curator sees decision-grade signal *before* clicking Generate:
+ *   • Quality score (overall + red-flag count)
+ *   • How many blogs already exist for this study
+ *   • Content gap for this study's category
+ *
+ * Single round-trip; everything joined server-side.
+ */
+router.get("/study-context/:studyId(\\d+)", requireAdmin, async (req, res) => {
+  try {
+    const studyId = parseInt(req.params.studyId);
+    if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
+
+    // Pull the study + score + blog count in one go.
+    const [row] = await db.execute<{
+      title: string;
+      category: string;
+      overall_score: number | null;
+      red_flag_count: number | null;
+      score_confidence: string | null;
+      blog_count: number;
+    }>(sql`
+      SELECT
+        s.title,
+        s.category,
+        q.overall_score,
+        q.red_flag_count,
+        q.score_confidence,
+        (SELECT COUNT(*)::int FROM blog_articles b WHERE b.study_id = s.id) AS blog_count
+      FROM studies s
+      LEFT JOIN study_quality_scores q ON q.study_id = s.id
+      WHERE s.id = ${studyId}
+      LIMIT 1
+    `).then((r: any) => r.rows ?? r);
+
+    if (!row) return res.status(404).json({ error: "Study not found" });
+
+    // Category gap: same formula as blog-recommendation-system. A category
+    // with lots of studies but few blogs scores high. 0.5 is the neutral
+    // prior used when a category has too few studies to compute reliably.
+    const [catRow] = await db.execute<{
+      study_count: number;
+      blog_count: number;
+    }>(sql`
+      SELECT
+        COUNT(DISTINCT s.id)::int AS study_count,
+        COUNT(DISTINCT b.id)::int AS blog_count
+      FROM studies s
+      LEFT JOIN blog_articles b ON b.study_id = s.id
+      WHERE COALESCE(s.category, 'General') = ${row.category || "General"}
+    `).then((r: any) => r.rows ?? r);
+
+    const studyCount = Number(catRow?.study_count ?? 0);
+    const catBlogCount = Number(catRow?.blog_count ?? 0);
+    const categoryGap =
+      studyCount >= 2
+        ? Math.max(0, 1 - catBlogCount / (studyCount * 1.5))
+        : 0.5;
+
+    res.json({
+      studyId,
+      title: row.title,
+      category: row.category,
+      qualityScore: row.overall_score != null ? Number(row.overall_score) : null,
+      redFlagCount: row.red_flag_count != null ? Number(row.red_flag_count) : 0,
+      scoreConfidence: row.score_confidence,
+      existingBlogCount: Number(row.blog_count),
+      categoryGap: Math.round(categoryGap * 100) / 100,
+    });
+  } catch (error) {
+    console.error("Error fetching study context:", error);
+    res.status(500).json({ error: "Failed to fetch study context" });
+  }
+});
+
+/**
+ * Status counts for the admin tab filter. Returns a single object with
+ * counts for each bucket so the UI can render badges next to each tab
+ * without making 4 separate queries.
+ */
+router.get("/status-counts", requireAdmin, async (_req, res) => {
+  try {
+    const [row] = await db.execute<{
+      drafts: number;
+      scheduled: number;
+      published: number;
+      archived: number;
+    }>(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE is_published = false AND scheduled_for IS NULL AND is_archived = false)::int AS drafts,
+        COUNT(*) FILTER (WHERE is_published = false AND scheduled_for IS NOT NULL AND is_archived = false)::int AS scheduled,
+        COUNT(*) FILTER (WHERE is_published = true AND is_archived = false)::int AS published,
+        COUNT(*) FILTER (WHERE is_archived = true)::int AS archived
+      FROM ${blogArticles}
+    `).then((r: any) => r.rows ?? r);
+    res.json({
+      drafts: Number(row?.drafts ?? 0),
+      scheduled: Number(row?.scheduled ?? 0),
+      published: Number(row?.published ?? 0),
+      archived: Number(row?.archived ?? 0),
+    });
+  } catch (error) {
+    console.error("Error fetching status counts:", error);
+    res.status(500).json({ error: "Failed to fetch status counts" });
   }
 });
 
@@ -510,6 +641,167 @@ router.put("/:id(\\d+)", requireAdmin, async (req, res) => {
       success: false,
       error: "Failed to update blog article",
     });
+  }
+});
+
+/**
+ * Delete a single blog by id. Used by the Delete action on the admin
+ * list. Was previously missing — the front-end DELETE call was 404ing
+ * silently.
+ */
+router.delete("/:id(\\d+)", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid blog ID" });
+    const result = await db
+      .delete(blogArticles)
+      .where(eq(blogArticles.id, id))
+      .returning({ id: blogArticles.id });
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Blog not found" });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting blog:", error);
+    res.status(500).json({ error: "Failed to delete blog" });
+  }
+});
+
+/**
+ * Patch a single blog's lifecycle status without resending the whole body.
+ * The big PUT /:id requires title/summary/content all present, which made
+ * the publish toggle on the list page silently fail validation. This is
+ * a small, focused endpoint that just changes status fields.
+ *
+ * Body: { isPublished?, isArchived?, scheduledFor?: ISO string | null }
+ *   • Setting isPublished=true also stamps publishedAt = NOW() if it was null.
+ *   • Setting isPublished=false clears scheduledFor (avoids "schedule to
+ *     a past time" auto-republish).
+ *   • Setting isArchived=true forces isPublished=false.
+ */
+router.patch("/:id(\\d+)/status", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid blog ID" });
+
+    const schema = z.object({
+      isPublished: z.boolean().optional(),
+      isArchived: z.boolean().optional(),
+      scheduledFor: z.string().datetime().nullable().optional(),
+    });
+    const data = schema.parse(req.body);
+
+    const set: any = { updatedAt: new Date() };
+    if (data.isArchived === true) {
+      set.isArchived = true;
+      set.isPublished = false;
+    } else if (data.isArchived === false) {
+      set.isArchived = false;
+    }
+    if (data.isPublished === true) {
+      set.isPublished = true;
+      // Stamp publishedAt only if not already set (preserve original go-live).
+      set.publishedAt = sql`COALESCE(${blogArticles.publishedAt}, NOW())`;
+      set.scheduledFor = null;
+    } else if (data.isPublished === false && data.isArchived !== true) {
+      set.isPublished = false;
+    }
+    if (data.scheduledFor === null) {
+      set.scheduledFor = null;
+    } else if (data.scheduledFor) {
+      set.scheduledFor = new Date(data.scheduledFor);
+    }
+
+    const [row] = await db
+      .update(blogArticles)
+      .set(set)
+      .where(eq(blogArticles.id, id))
+      .returning();
+    if (!row) return res.status(404).json({ error: "Blog not found" });
+    res.json({ success: true, data: row });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    console.error("Error patching blog status:", error);
+    res.status(500).json({ error: "Failed to update blog status" });
+  }
+});
+
+/**
+ * Bulk lifecycle update across many blogs in one round-trip.
+ * Body: { ids: number[], action: 'publish' | 'unpublish' | 'archive' | 'unarchive' | 'delete' | 'schedule', scheduledFor?: ISO string }
+ * Returns: { affected: number }
+ */
+router.post("/bulk-update", requireAdmin, async (req, res) => {
+  try {
+    const schema = z.object({
+      ids: z.array(z.number().int().positive()).min(1).max(500),
+      action: z.enum([
+        "publish",
+        "unpublish",
+        "archive",
+        "unarchive",
+        "delete",
+        "schedule",
+      ]),
+      scheduledFor: z.string().datetime().optional(),
+    });
+    const { ids, action, scheduledFor } = schema.parse(req.body);
+
+    const inIds = sql`${blogArticles.id} IN (${sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    )})`;
+
+    let affected = 0;
+    if (action === "delete") {
+      const result = await db
+        .delete(blogArticles)
+        .where(inIds)
+        .returning({ id: blogArticles.id });
+      affected = result.length;
+    } else {
+      const set: any = { updatedAt: new Date() };
+      if (action === "publish") {
+        set.isPublished = true;
+        set.publishedAt = sql`COALESCE(${blogArticles.publishedAt}, NOW())`;
+        set.scheduledFor = null;
+        set.isArchived = false;
+      } else if (action === "unpublish") {
+        set.isPublished = false;
+      } else if (action === "archive") {
+        set.isArchived = true;
+        set.isPublished = false;
+      } else if (action === "unarchive") {
+        set.isArchived = false;
+      } else if (action === "schedule") {
+        if (!scheduledFor) {
+          return res.status(400).json({ error: "scheduledFor required for action=schedule" });
+        }
+        const when = new Date(scheduledFor);
+        if (when.getTime() <= Date.now()) {
+          return res.status(400).json({ error: "scheduledFor must be a future time" });
+        }
+        set.scheduledFor = when;
+        set.isPublished = false;
+        set.isArchived = false;
+      }
+      const result = await db
+        .update(blogArticles)
+        .set(set)
+        .where(inIds)
+        .returning({ id: blogArticles.id });
+      affected = result.length;
+    }
+
+    res.json({ success: true, affected });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    console.error("Error in bulk-update:", error);
+    res.status(500).json({ error: "Failed to apply bulk update" });
   }
 });
 

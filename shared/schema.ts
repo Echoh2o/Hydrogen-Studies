@@ -932,6 +932,24 @@ export const blogArticles = pgTable(
     readingLevel: text("reading_level").default("general"),
     articleType: text("article_type"),
     isPublished: boolean("is_published").default(false),
+    /**
+     * When this article actually went live. Distinct from createdAt — a draft
+     * may sit unpublished for weeks before going live, and a backdated post
+     * may have publishedAt earlier than createdAt for SEO purposes.
+     * NULL while in draft / scheduled state.
+     */
+    publishedAt: timestamp("published_at"),
+    /**
+     * Future timestamp at which a queued draft should automatically publish.
+     * The blog-publish-scheduler cron job picks up rows where
+     * scheduledFor <= NOW() AND isPublished = false AND isArchived = false.
+     */
+    scheduledFor: timestamp("scheduled_for"),
+    /**
+     * Soft-delete: removed from list views by default, can still be edited
+     * or restored. Hard delete still removes the row.
+     */
+    isArchived: boolean("is_archived").notNull().default(false),
     editorNotes: text("editor_notes"),
     viewCount: integer("view_count").default(0),
 
