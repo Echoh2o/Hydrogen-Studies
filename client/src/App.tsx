@@ -181,6 +181,7 @@ const MyDashboardPage = lazy(() => import("./pages/MyDashboardPage"));
 const PipelineDashboardPage = lazy(() => import("./pages/admin/PipelineDashboardPage"));
 const LinkManagementPage = lazy(() => import("./pages/admin/LinkManagementPage"));
 const RedirectsPage = lazy(() => import("./pages/admin/RedirectsPage"));
+const SearchConsolePage = lazy(() => import("./pages/admin/SearchConsolePage"));
 const ThisWeekPage = lazy(() => import("./pages/ThisWeekPage"));
 
 // Content Hub / Pillar Pages
@@ -470,6 +471,14 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin"]}>
               <RedirectsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        {/* Admin Google Search Console — Phase A integration */}
+        <Route path="/admin/seo/search-console">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <SearchConsolePage />
             </ProtectedRoute>
           )}
         </Route>

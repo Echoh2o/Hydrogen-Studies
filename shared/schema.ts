@@ -2545,6 +2545,79 @@ export const notFoundLog = pgTable(
 
 export type NotFoundLogEntry = typeof notFoundLog.$inferSelect;
 
+// ── Google Search Console integration ────────────────────────
+//
+// `gsc_credentials` stores the encrypted refresh token from the OAuth
+// flow. One row per connected account (typically just one for the site).
+// The `tokenCiphertext` is AES-256-GCM ciphertext; key lives in
+// `system_secrets` and is auto-generated on first boot.
+export const gscCredentials = pgTable("gsc_credentials", {
+  id: serial("id").primaryKey(),
+  /** Google account email that authorized — for display + audit. */
+  accountEmail: text("account_email").notNull(),
+  /** Verified property identifier — usually `sc-domain:hydrogenstudies.com`. */
+  siteUrl: text("site_url").notNull(),
+  /** AES-256-GCM ciphertext: iv (12) || tag (16) || encrypted refresh token. */
+  tokenCiphertext: text("token_ciphertext").notNull(),
+  /** Granted scopes — for sanity checking that we still have what we need. */
+  scopes: text("scopes").array(),
+  connectedAt: timestamp("connected_at").notNull().defaultNow(),
+  lastRefreshedAt: timestamp("last_refreshed_at"),
+  /** When the most recent sync succeeded — surfaced in System Health. */
+  lastSyncAt: timestamp("last_sync_at"),
+});
+
+// `gsc_query_metrics` is the daily fact table. One row per
+// (date, page, query). Indexed on (page, date) for per-page lookups
+// and (query, date) for query-centric opportunity queries.
+export const gscQueryMetrics = pgTable(
+  "gsc_query_metrics",
+  {
+    id: serial("id").primaryKey(),
+    date: text("date").notNull(), // YYYY-MM-DD as returned by GSC
+    page: text("page").notNull(), // full URL
+    query: text("query").notNull(),
+    impressions: integer("impressions").notNull().default(0),
+    clicks: integer("clicks").notNull().default(0),
+    ctr: text("ctr").notNull().default("0"), // stored as text to preserve API precision
+    position: text("position").notNull().default("0"),
+    fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    dpqUnique: unique("gsc_query_metrics_dpq_unique").on(
+      table.date,
+      table.page,
+      table.query,
+    ),
+    pageDateIdx: index("gsc_query_metrics_page_date_idx").on(table.page, table.date),
+    queryDateIdx: index("gsc_query_metrics_query_date_idx").on(table.query, table.date),
+    dateIdx: index("gsc_query_metrics_date_idx").on(table.date),
+  }),
+);
+
+// Audit log of cron pulls so the System Health card can show the last
+// successful sync, and so we can diagnose silent breakage.
+export const gscSyncRuns = pgTable("gsc_sync_runs", {
+  id: serial("id").primaryKey(),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  daysPulled: integer("days_pulled").notNull().default(0),
+  rowsInserted: integer("rows_inserted").notNull().default(0),
+  rowsUpdated: integer("rows_updated").notNull().default(0),
+  status: text("status").notNull().default("running"), // running | success | failed
+  error: text("error"),
+});
+
+// Generic key-value store for system-managed secrets. Currently houses
+// the GSC token-encryption key; designed so future at-rest secrets can
+// share the same boot-time auto-generation pattern without proliferating
+// one-off tables.
+export const systemSecrets = pgTable("system_secrets", {
+  keyName: text("key_name").primaryKey(),
+  value: text("value").notNull(), // base64-encoded
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export interface RedirectSuggestion {
   target: string; // absolute path, e.g. "/studies/foo"
   contentType: "study" | "blog" | "condition";

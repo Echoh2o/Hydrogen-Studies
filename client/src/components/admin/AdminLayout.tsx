@@ -73,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "SEO & Links",
     icon: Target,
     items: [
+      { href: "/admin/seo/search-console", label: "Search Console" },
       { href: "/admin/seo-strategy", label: "SEO Strategy" },
       { href: "/admin/links", label: "Internal Links" },
       { href: "/admin/redirects", label: "Redirects" },

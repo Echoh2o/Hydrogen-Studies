@@ -141,6 +141,31 @@ router.get("/system-health", async (_req: Request, res: Response) => {
     // 5. AI provider — which providers are configured / primary vs fallback
     const aiStatus = ai.getProviderStatus();
 
+    // 6. GSC integration status — connected? last sync? row count?
+    let gsc: {
+      connected: boolean;
+      accountEmail: string | null;
+      lastSyncAt: string | null;
+      rowCount: number;
+    } = { connected: false, accountEmail: null, lastSyncAt: null, rowCount: 0 };
+    try {
+      const { loadCredentials } = await import("../services/gsc-service");
+      const cred = await loadCredentials();
+      const [count] = await db
+        .execute<{ count: number }>(sql`SELECT COUNT(*)::int AS count FROM gsc_query_metrics`)
+        .then((r: any) => r.rows ?? r);
+      gsc = {
+        connected: !!cred,
+        accountEmail: cred?.accountEmail ?? null,
+        lastSyncAt: cred?.lastSyncAt
+          ? cred.lastSyncAt.toISOString()
+          : null,
+        rowCount: Number(count?.count ?? 0),
+      };
+    } catch {
+      // GSC tables may not exist yet on a brand-new deploy. Treat as disconnected.
+    }
+
     res.json({
       reviewQueue: {
         pending: Number(queueRow?.pending ?? 0),
@@ -173,6 +198,7 @@ router.get("/system-health", async (_req: Request, res: Response) => {
         })),
       },
       ai: aiStatus,
+      gsc,
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {

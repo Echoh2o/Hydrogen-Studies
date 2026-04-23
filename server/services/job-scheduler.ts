@@ -41,6 +41,10 @@ export class JobScheduler {
   // "in 30 minutes," it'll go live within 15m of the target.
   private readonly SCHEDULED_PUBLISH_INTERVAL_MS = 15 * 60 * 1000;
   private lastScheduledPublishCheck: Date | null = null;
+  // GSC pulls every 6h — well under the API quota (25k/day), enough to
+  // keep "yesterday's data" fresh within a few hours of GSC publishing it.
+  private readonly GSC_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
+  private lastGscSyncCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -146,6 +150,7 @@ export class JobScheduler {
         { name: "journal-date-backfill", lastRun: toISO(this.lastJournalDateCheck), intervalMs: this.JOURNAL_DATE_INTERVAL_MS },
         { name: "study-scoring", lastRun: toISO(this.lastStudyScoringCheck), intervalMs: this.STUDY_SCORING_INTERVAL_MS },
         { name: "scheduled-publish", lastRun: toISO(this.lastScheduledPublishCheck), intervalMs: this.SCHEDULED_PUBLISH_INTERVAL_MS },
+        { name: "gsc-sync", lastRun: toISO(this.lastGscSyncCheck), intervalMs: this.GSC_SYNC_INTERVAL_MS },
       ],
     };
   }
@@ -429,10 +434,57 @@ export class JobScheduler {
         logger.error("Job 16 (scheduled-publish) unexpected error", error, "JobScheduler");
       }
 
+      // Job 17: Google Search Console sync. Skips when no credentials
+      // are stored (i.e., admin hasn't connected yet). 10-minute timeout
+      // accommodates the first-run 90-day backfill.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runGscSyncJob(),
+          10 * 60 * 1000,
+          "gsc-sync"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "gsc-sync" });
+        }
+      } catch (error) {
+        logger.error("Job 17 (gsc-sync) unexpected error", error, "JobScheduler");
+      }
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
       this.isJobRunning = false;
+    }
+  }
+
+  /**
+   * Job 17: Google Search Console sync.
+   *
+   * Pulls the past 3 days of search-analytics data (90 days on first
+   * run). Skipped silently if no credentials are stored — the admin
+   * hasn't connected yet. Uses a manual elapsed check so the cron only
+   * runs every 6h regardless of the parent scheduler tick rate.
+   */
+  private async runGscSyncJob() {
+    try {
+      if (this.lastGscSyncCheck) {
+        const elapsed = Date.now() - this.lastGscSyncCheck.getTime();
+        if (elapsed < this.GSC_SYNC_INTERVAL_MS) return;
+      }
+      const { syncSearchConsole } = await import("./gsc-service");
+      const result = await syncSearchConsole();
+      this.lastGscSyncCheck = new Date();
+      if (!result.skipped) {
+        logger.info("GSC sync complete", "JobScheduler", {
+          daysPulled: result.daysPulled,
+          inserted: result.rowsInserted,
+          updated: result.rowsUpdated,
+        });
+      }
+    } catch (err) {
+      logger.error("GSC sync error", err, "JobScheduler");
     }
   }
 

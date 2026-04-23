@@ -657,6 +657,12 @@ app.post("/api/images/generate/:studyId", requireAdmin, async (req, res) => {
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
 app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes
 
+// Google Search Console integration. Includes the OAuth callback, which is
+// itself unauthenticated (relies on the signed state cookie); the rest of
+// the routes are gated by requireAdmin per-route.
+import adminGscRoutes from "./routes/admin-gsc-routes";
+app.use("/api/admin/gsc", adminGscRoutes);
+
 // Serve public assets
 app.use(
   "/images",

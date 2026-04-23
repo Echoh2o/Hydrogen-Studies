@@ -119,6 +119,12 @@ interface SystemHealth {
     primary: string;
     imageProvider: string;
   };
+  gsc: {
+    connected: boolean;
+    accountEmail: string | null;
+    lastSyncAt: string | null;
+    rowCount: number;
+  };
   generatedAt: string;
 }
 
@@ -538,10 +544,36 @@ export default function AdminMonitoringPage() {
                       ))}
                     </div>
                   )}
-                  <div className="pt-1 border-t text-[10px] text-muted-foreground">
-                    AI text: <span className="font-medium">{systemHealth.ai.primary}</span>
-                    {" · "}
-                    Images: <span className="font-medium">{systemHealth.ai.imageProvider}</span>
+                  <div className="pt-1 border-t text-[10px] text-muted-foreground space-y-0.5">
+                    <div>
+                      AI text: <span className="font-medium">{systemHealth.ai.primary}</span>
+                      {" · "}
+                      Images: <span className="font-medium">{systemHealth.ai.imageProvider}</span>
+                    </div>
+                    <div>
+                      GSC:{" "}
+                      {systemHealth.gsc.connected ? (
+                        <>
+                          <span className="font-medium text-green-700">connected</span>
+                          {" · "}
+                          {systemHealth.gsc.rowCount.toLocaleString()} rows
+                          {systemHealth.gsc.lastSyncAt && (
+                            <>
+                              {" · "}
+                              synced{" "}
+                              {(() => {
+                                const ms = Date.now() - new Date(systemHealth.gsc.lastSyncAt).getTime();
+                                if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m ago`;
+                                if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h ago`;
+                                return `${Math.round(ms / 86_400_000)}d ago`;
+                              })()}
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-amber-700">not connected</span>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
