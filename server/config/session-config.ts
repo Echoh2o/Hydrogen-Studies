@@ -97,7 +97,18 @@ export async function getSessionConfig() {
   const cookieConfig = {
     secure: isProduction, // HTTPS only in production
     httpOnly: true, // Prevent XSS
-    sameSite: isProduction ? ("strict" as const) : ("lax" as const), // CSRF protection
+    /**
+     * `Lax` (not `Strict`) so cross-site OAuth redirects (Google Search
+     * Console, future SSO) preserve the user's session. Strict blocks the
+     * cookie on top-level navigations from external origins, which causes
+     * the user to appear logged-out the moment they return from any
+     * external auth flow.
+     *
+     * CSRF on mutating endpoints is still enforced by the dedicated
+     * csrf middleware (see csrf-protection.ts) — Lax provides
+     * defense-in-depth rather than primary protection.
+     */
+    sameSite: "lax" as const,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     domain: undefined as string | undefined, // Let browser handle domain automatically
   };
