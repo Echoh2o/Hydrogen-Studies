@@ -257,7 +257,29 @@ function ComponentScoreRow({
   );
 }
 
-function RedFlagList({ flags }: { flags: string[] }) {
+/**
+ * Defensive renderer for red-flag entries. The DB column is supposed to
+ * hold strings only, but earlier scoring runs sometimes wrote AI-returned
+ * objects which stringified to "[object Object]". Until those rows get
+ * rescored, render whatever sensible string we can extract.
+ */
+function renderFlagText(flag: unknown): string {
+  if (flag == null) return "";
+  if (typeof flag === "string") {
+    return flag === "[object Object]" ? "(legacy flag — pending rescore)" : flag;
+  }
+  if (typeof flag === "object") {
+    const o = flag as Record<string, unknown>;
+    for (const key of ["description", "message", "flag", "detail", "reason", "issue", "type", "name"]) {
+      const v = o[key];
+      if (typeof v === "string" && v.trim()) return v;
+    }
+    try { return JSON.stringify(flag); } catch { return "(unparseable flag)"; }
+  }
+  return String(flag);
+}
+
+function RedFlagList({ flags }: { flags: unknown[] }) {
   if (!flags || flags.length === 0) return null;
   return (
     <div className="mt-3 pt-3 border-t border-destructive/20 bg-destructive/5 -mx-6 px-6 py-2">
@@ -266,11 +288,14 @@ function RedFlagList({ flags }: { flags: string[] }) {
         Red flags
       </p>
       <ul className="text-xs text-destructive/90 list-disc list-inside space-y-0.5">
-        {flags.slice(0, 4).map((f, i) => (
-          <li key={i} className="line-clamp-1" title={f}>
-            {f}
-          </li>
-        ))}
+        {flags.slice(0, 4).map((f, i) => {
+          const text = renderFlagText(f);
+          return (
+            <li key={i} className="line-clamp-1" title={text}>
+              {text}
+            </li>
+          );
+        })}
         {flags.length > 4 && (
           <li className="text-muted-foreground">+{flags.length - 4} more</li>
         )}

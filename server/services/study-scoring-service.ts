@@ -77,10 +77,14 @@ interface StudyData {
  * or the admin UI.
  *
  *   • Drops non-array responses
- *   • Coerces each entry to a trimmed string
+ *   • Coerces each entry to a trimmed string. Objects get unpacked via
+ *     known field names (description / message / flag / detail / reason /
+ *     type); falling back to JSON.stringify rather than producing the
+ *     useless "[object Object]" string.
  *   • Caps string length at 200 chars
  *   • Caps total array length at 10 (plenty for legitimate flagging)
- *   • Drops empty entries
+ *   • Drops empty entries and the literal "[object Object]" string (which
+ *     might already be in the DB from earlier writes)
  */
 function sanitizeRedFlags(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -89,11 +93,34 @@ function sanitizeRedFlags(value: unknown): string[] {
   const cleaned: string[] = [];
   for (const raw of value) {
     if (cleaned.length >= MAX_FLAGS) break;
-    const s = String(raw ?? "").trim();
-    if (!s) continue;
+    const s = stringifyFlag(raw).trim();
+    if (!s || s === "[object Object]") continue;
     cleaned.push(s.length > MAX_FLAG_LEN ? s.slice(0, MAX_FLAG_LEN) : s);
   }
   return cleaned;
+}
+
+function stringifyFlag(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+  if (typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    // Try common field names AI models use, in priority order.
+    const candidates = ["description", "message", "flag", "detail", "reason", "issue", "type", "name"];
+    for (const key of candidates) {
+      const v = o[key];
+      if (typeof v === "string" && v.trim()) return v;
+    }
+    // Last resort: JSON-stringify so the admin sees *something* meaningful
+    // rather than "[object Object]".
+    try {
+      return JSON.stringify(raw);
+    } catch {
+      return "";
+    }
+  }
+  return "";
 }
 
 // ── Idempotent column setup (runs on boot) ───────────────────────
@@ -111,6 +138,39 @@ export function ensureScoringColumns(): Promise<void> {
       await db.execute(sql`ALTER TABLE study_quality_scores ADD COLUMN IF NOT EXISTS score_attempt_count integer NOT NULL DEFAULT 0`);
       await db.execute(sql`ALTER TABLE study_quality_scores ADD COLUMN IF NOT EXISTS last_score_attempt_at timestamp`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS study_quality_scores_rubric_idx ON study_quality_scores (rubric_version)`);
+      // One-time cleanup: an earlier sanitizer wrote "[object Object]" into
+      // red_flags when the AI returned objects instead of strings. Strip
+      // those poisoned entries so the admin UI stops showing them. The next
+      // rescore (cron Job 15) writes fresh, properly-stringified flags.
+      await db.execute(sql`
+        UPDATE study_quality_scores
+        SET red_flags = (
+          SELECT COALESCE(array_agg(elem), ARRAY[]::text[])
+          FROM unnest(red_flags) AS elem
+          WHERE elem IS NOT NULL AND elem <> '[object Object]'
+        ),
+        red_flag_count = (
+          SELECT COUNT(*)::int
+          FROM unnest(red_flags) AS elem
+          WHERE elem IS NOT NULL AND elem <> '[object Object]'
+        )
+        WHERE '[object Object]' = ANY(red_flags)
+      `);
+      // Same cleanup for the pre-publish queue, which has its own red_flags column.
+      await db.execute(sql`
+        UPDATE study_review_queue
+        SET red_flags = (
+          SELECT COALESCE(array_agg(elem), ARRAY[]::text[])
+          FROM unnest(red_flags) AS elem
+          WHERE elem IS NOT NULL AND elem <> '[object Object]'
+        ),
+        red_flag_count = (
+          SELECT COUNT(*)::int
+          FROM unnest(red_flags) AS elem
+          WHERE elem IS NOT NULL AND elem <> '[object Object]'
+        )
+        WHERE red_flags IS NOT NULL AND '[object Object]' = ANY(red_flags)
+      `);
       await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS overall_score integer`);
       await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS methodology_score integer`);
       await db.execute(sql`ALTER TABLE study_review_queue ADD COLUMN IF NOT EXISTS impact_score integer`);

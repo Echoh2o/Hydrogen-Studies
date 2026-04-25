@@ -59,6 +59,28 @@ interface StudyPreviewProps {
   };
 }
 
+/**
+ * Defensive renderer for red-flag entries. The DB column is supposed to
+ * contain strings only, but earlier scoring runs sometimes wrote AI-returned
+ * objects that stringified to "[object Object]". Until those rows get
+ * rescored by the cron, render whatever sensible string we can extract.
+ */
+function renderFlag(flag: unknown): string {
+  if (flag == null) return "";
+  if (typeof flag === "string") {
+    return flag === "[object Object]" ? "(legacy flag — pending rescore)" : flag;
+  }
+  if (typeof flag === "object") {
+    const o = flag as Record<string, unknown>;
+    for (const key of ["description", "message", "flag", "detail", "reason", "issue", "type", "name"]) {
+      const v = o[key];
+      if (typeof v === "string" && v.trim()) return v;
+    }
+    try { return JSON.stringify(flag); } catch { return "(unparseable flag)"; }
+  }
+  return String(flag);
+}
+
 const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(
     "summary",
@@ -229,8 +251,8 @@ const StudyPreviewAssistant: React.FC<StudyPreviewProps> = ({ study }) => {
                       {study.scores.redFlags.length} Red Flags Detected:
                     </strong>
                     <ul className="mt-2 list-disc list-inside text-xs">
-                      {study.scores.redFlags.map((flag, idx) => (
-                        <li key={idx}>{flag}</li>
+                      {study.scores.redFlags.map((flag: any, idx: number) => (
+                        <li key={idx}>{renderFlag(flag)}</li>
                       ))}
                     </ul>
                   </AlertDescription>

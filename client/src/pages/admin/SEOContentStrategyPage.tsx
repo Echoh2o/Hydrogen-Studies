@@ -122,12 +122,19 @@ export default function SEOContentStrategyPage() {
   }, [activeJobs, queryClient, toast]);
 
   const seedMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/seo/keyword-strategy/seed"),
-    onSuccess: (data: any) => {
+    // apiRequest resolves to a Response — must call .json() to read the body.
+    // The previous version read data.created / data.existing directly off the
+    // Response object, which gave undefined for both and produced
+    // "Created undefined new clusters (undefined already existed)".
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/seo/keyword-strategy/seed");
+      return res.json() as Promise<{ created: number; existing: number }>;
+    },
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/seo/keyword-strategy/overview"] });
       toast({
         title: "Clusters Seeded",
-        description: `Created ${data.created} new clusters (${data.existing} already existed)`,
+        description: `Created ${data.created ?? 0} new clusters (${data.existing ?? 0} already existed)`,
       });
     },
     onError: () => {
