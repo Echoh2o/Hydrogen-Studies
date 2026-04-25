@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, RefreshCw, ImageOff, FileImage, FileText } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -50,8 +50,14 @@ interface BatchJobStatus {
   done: boolean;
 }
 
+interface BackfillStats {
+  blogs: { total: number; missing: number; complete: number; pct: number };
+  studies: { total: number; missing: number; complete: number; pct: number };
+}
+
 const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [batchSize, setBatchSize] = useState<number>(5);
   const [selectedStudyId, setSelectedStudyId] = useState<number | null>(null);
   const [isLoadingStudies, setIsLoadingStudies] = useState<boolean>(true);
@@ -62,6 +68,69 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
   const [isGeneratingBatch, setIsGeneratingBatch] = useState<boolean>(false);
   const [isGeneratingAll, setIsGeneratingAll] = useState<boolean>(false);
   const [activeJob, setActiveJob] = useState<BatchJobStatus | null>(null);
+
+  // Auto-backfill stats — refreshes every 30s while the page is open so
+  // admins watching the cron drain see live progress.
+  const { data: backfillStats, refetch: refetchStats } = useQuery<BackfillStats>({
+    queryKey: ["/api/image-generation/backfill/stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/image-generation/backfill/stats");
+      if (!res.ok) throw new Error("Failed to fetch backfill stats");
+      return res.json();
+    },
+    refetchInterval: 30_000,
+  });
+
+  // Manual "Run now" — kicks a larger backfill batch synchronously.
+  // Useful when an admin wants to make visible progress without waiting
+  // 30 minutes for the next cron tick.
+  const runBackfillMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/image-generation/backfill/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blogLimit: 10, studyLimit: 10 }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Backfill failed");
+      }
+      return res.json() as Promise<{
+        blogsProcessed: number;
+        blogsSucceeded: number;
+        studiesProcessed: number;
+        studiesSucceeded: number;
+        errors: Array<{ kind: string; id: number; error: string }>;
+      }>;
+    },
+    onSuccess: (data) => {
+      const ok = data.blogsSucceeded + data.studiesSucceeded;
+      const fail = data.errors.length;
+      toast({
+        title:
+          ok > 0
+            ? `Generated ${ok} image${ok === 1 ? "" : "s"}`
+            : "Nothing to backfill",
+        description:
+          fail > 0
+            ? `${fail} failure${fail === 1 ? "" : "s"} — check System Health logs`
+            : data.blogsProcessed + data.studiesProcessed === 0
+            ? "All blogs and studies already have images."
+            : "Cron will keep going every 30 minutes until done.",
+      });
+      refetchStats();
+      queryClient.invalidateQueries({
+        queryKey: ["/api/image-generation/backfill/stats"],
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Backfill failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Deep-link: when opened with ?studyId=123, offer a one-click action
   // that generates an image just for that study.
@@ -329,6 +398,122 @@ const ImageGenerationPage: React.FC<{ embedded?: boolean }> = ({ embedded } = {}
 
   const content = (
     <>
+      {/* Auto-backfill progress card — top of page so admins see system
+          state at a glance. Cron runs every 30 minutes; this card refreshes
+          every 30 seconds. The "Run now" button forces a synchronous batch
+          for impatient admins. */}
+      {backfillStats && (
+        <Card className="mb-6 border-blue-200 bg-blue-50/30">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Auto-Image Backfill
+                </CardTitle>
+                <CardDescription className="text-xs mt-1">
+                  Every 30 minutes, the system finds blogs and studies missing
+                  real images and regenerates a batch (5 blogs + 5 studies).
+                  No babysitting required.
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => runBackfillMutation.mutate()}
+                disabled={runBackfillMutation.isPending}
+              >
+                {runBackfillMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-3 w-3 mr-1" /> Run now
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Blogs */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <FileText className="h-3.5 w-3.5" />
+                    Blogs
+                  </div>
+                  <div className="text-muted-foreground tabular-nums">
+                    {backfillStats.blogs.complete} of {backfillStats.blogs.total} done
+                    {" · "}
+                    <span
+                      className={
+                        backfillStats.blogs.missing > 0
+                          ? "text-amber-700 font-medium"
+                          : "text-green-700 font-medium"
+                      }
+                    >
+                      {backfillStats.blogs.missing} missing
+                    </span>
+                  </div>
+                </div>
+                <Progress value={backfillStats.blogs.pct} />
+                <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+                  {backfillStats.blogs.pct}% complete
+                </div>
+              </div>
+              {/* Studies */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <FileImage className="h-3.5 w-3.5" />
+                    Studies
+                  </div>
+                  <div className="text-muted-foreground tabular-nums">
+                    {backfillStats.studies.complete} of {backfillStats.studies.total} done
+                    {" · "}
+                    <span
+                      className={
+                        backfillStats.studies.missing > 0
+                          ? "text-amber-700 font-medium"
+                          : "text-green-700 font-medium"
+                      }
+                    >
+                      {backfillStats.studies.missing} missing
+                    </span>
+                  </div>
+                </div>
+                <Progress value={backfillStats.studies.pct} />
+                <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+                  {backfillStats.studies.pct}% complete
+                </div>
+              </div>
+            </div>
+            {backfillStats.blogs.missing + backfillStats.studies.missing > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-3">
+                ETA at current cron rate (10/half-hour):{" "}
+                <span className="font-medium">
+                  ~
+                  {Math.ceil(
+                    (backfillStats.blogs.missing + backfillStats.studies.missing) / 10,
+                  )}{" "}
+                  hour{Math.ceil(
+                    (backfillStats.blogs.missing + backfillStats.studies.missing) / 10,
+                  ) === 1 ? "" : "s"}{" "}
+                  unattended
+                </span>
+              </p>
+            )}
+            {backfillStats.blogs.missing + backfillStats.studies.missing === 0 && (
+              <p className="text-[11px] text-green-700 mt-3 flex items-center gap-1">
+                <Check className="h-3 w-3" />
+                All blogs and studies have AI-generated images.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {focusedStudyId && (
         <Alert className="mb-6">
           <ArrowRight className="h-4 w-4" />

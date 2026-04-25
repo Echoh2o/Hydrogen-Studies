@@ -830,5 +830,10 @@ ensureScoringColumns().catch(() => {});
 ensureBlogLifecycleColumns()
   .then(() => recoverStuckBlogJobs())
   .catch(() => {});
+
+// Image backfill: clear placeholder URLs from legacy rows so the
+// auto-backfill cron can find them. Runs once on boot, idempotent.
+import { cleanupPlaceholderImageRows } from "./services/image-backfill";
+cleanupPlaceholderImageRows().catch(() => {});
 // Start background jobs
 jobScheduler.start();

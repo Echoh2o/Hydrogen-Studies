@@ -238,8 +238,14 @@ async function generateSingleBlogArticle(
       studyId: study.id,
       content: blogContent.fullContent,
       summary: blogContent.summary,
-      imageUrl: imageData.imageUrl,
-      imageAlt: imageData.imageUrl ? `Illustration for: ${blogTitle.substring(0, 110)}` : imageData.imageAlt,
+      // Image fields stay null when generation failed, so the auto-backfill
+      // cron can find this row and retry. The frontend renders a placeholder
+      // SVG when imageUrl is null — but the DB no longer pretends the
+      // placeholder is the real image.
+      imageUrl: imageData?.imageUrl ?? null,
+      imageAlt: imageData?.imageUrl
+        ? `Illustration for: ${blogTitle.substring(0, 110)}`
+        : null,
       isPublished: true,
       articleType,
       metaDescription: blogContent.summary.substring(0, 160),
@@ -249,8 +255,8 @@ async function generateSingleBlogArticle(
       canonicalUrl: `https://hydrogenstudies.com/blog/${slug}`,
       ogTitle: blogTitle,
       ogDescription: blogContent.summary.substring(0, 200),
-      ogImage: imageData.imageUrl || null,
-      twitterCard: imageData.imageUrl ? "summary_large_image" : "summary",
+      ogImage: imageData?.imageUrl ?? null,
+      twitterCard: imageData?.imageUrl ? "summary_large_image" : "summary",
       twitterTitle: blogTitle,
       twitterDescription: blogContent.summary.substring(0, 200),
       breadcrumbs: JSON.stringify([
@@ -422,18 +428,24 @@ async function generateArticleTitle(
 }
 
 /**
- * Generate article image with comprehensive fallback
+ * Generate article image. Returns null on any failure so the caller can
+ * persist NULL imageUrl rather than the placeholder SVG path. Persisting
+ * the placeholder makes "needs regeneration" indistinguishable from
+ * "successfully generated but image happens to look generic" — which is
+ * what was bricking image-backfill workflows.
+ *
+ * The auto-backfill cron picks up rows with NULL imageUrl and retries.
  */
 async function generateArticleImageWithFallback(
   study: Study,
   title: string,
   articleType: string,
-): Promise<{ imageUrl: string; imageAlt: string }> {
+): Promise<{ imageUrl: string; imageAlt: string } | null> {
   try {
     const xaiClient = ai.getXAIClient();
     const openaiClient = ai.getOpenAIClient();
     if (!xaiClient && !openaiClient) {
-      return getDefaultImage(study.category);
+      return null;
     }
 
     // Build a unique, topic-specific prompt based on study content + article type
@@ -507,12 +519,15 @@ async function generateArticleImageWithFallback(
           imageAlt: altText,
         };
       } catch (fallbackError) {
-        console.warn("OpenAI fallback image generation also failed, using default:", fallbackError);
+        console.warn("OpenAI fallback image generation also failed:", fallbackError);
       }
     } else {
-      console.warn("Image generation failed, using default:", error);
+      console.warn("Image generation failed:", error);
     }
-    return getDefaultImage(study.category);
+    // Return null instead of the placeholder so the auto-backfill cron
+    // can find this row later and retry. Persisting the placeholder
+    // would tell the cron "this is done, skip it."
+    return null;
   }
 }
 

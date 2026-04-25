@@ -193,4 +193,40 @@ router.get("/jobs", (_req: Request, res: Response) => {
   res.json({ jobs });
 });
 
+/**
+ * GET /backfill/stats — counts of blogs and studies that have a real
+ * image vs. need one. Drives the progress dashboard on the admin page.
+ */
+router.get("/backfill/stats", async (_req: Request, res: Response) => {
+  try {
+    const { getImageBackfillStats } = await import("../services/image-backfill");
+    const stats = await getImageBackfillStats();
+    res.json(stats);
+  } catch (err) {
+    logger.error("Failed to fetch image backfill stats", err, "ImageGen");
+    res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+/**
+ * POST /backfill/run — manual trigger for a backfill batch. Larger
+ * default batch than the cron (10 each) since admin is presumed to be
+ * watching and willing to pay the cost. Runs synchronously and returns
+ * the batch summary.
+ */
+router.post("/backfill/run", async (req: Request, res: Response) => {
+  try {
+    const blogLimit = Math.min(Number(req.body?.blogLimit) || 10, 50);
+    const studyLimit = Math.min(Number(req.body?.studyLimit) || 10, 50);
+    const { runImageBackfillBatch } = await import("../services/image-backfill");
+    const result = await runImageBackfillBatch({ blogLimit, studyLimit });
+    res.json(result);
+  } catch (err) {
+    logger.error("Manual image backfill failed", err, "ImageGen");
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Backfill failed",
+    });
+  }
+});
+
 export default router;

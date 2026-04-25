@@ -45,6 +45,11 @@ export class JobScheduler {
   // keep "yesterday's data" fresh within a few hours of GSC publishing it.
   private readonly GSC_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
   private lastGscSyncCheck: Date | null = null;
+  // Image backfill runs every 30 min. Each cycle handles 5 blogs + 5
+  // studies — keeps AI cost predictable while still draining a backlog
+  // of ~500 missing images in a few days unattended.
+  private readonly IMAGE_BACKFILL_INTERVAL_MS = 30 * 60 * 1000;
+  private lastImageBackfillCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -151,6 +156,7 @@ export class JobScheduler {
         { name: "study-scoring", lastRun: toISO(this.lastStudyScoringCheck), intervalMs: this.STUDY_SCORING_INTERVAL_MS },
         { name: "scheduled-publish", lastRun: toISO(this.lastScheduledPublishCheck), intervalMs: this.SCHEDULED_PUBLISH_INTERVAL_MS },
         { name: "gsc-sync", lastRun: toISO(this.lastGscSyncCheck), intervalMs: this.GSC_SYNC_INTERVAL_MS },
+        { name: "image-backfill", lastRun: toISO(this.lastImageBackfillCheck), intervalMs: this.IMAGE_BACKFILL_INTERVAL_MS },
       ],
     };
   }
@@ -452,10 +458,50 @@ export class JobScheduler {
         logger.error("Job 17 (gsc-sync) unexpected error", error, "JobScheduler");
       }
 
+      // Job 18: Image backfill — auto-regenerates missing/placeholder
+      // images for blogs and studies. Drains the backlog without admin
+      // intervention. 5-minute timeout (each image takes ~10-30s).
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runImageBackfillJob(),
+          5 * 60 * 1000,
+          "image-backfill"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "image-backfill" });
+        }
+      } catch (error) {
+        logger.error("Job 18 (image-backfill) unexpected error", error, "JobScheduler");
+      }
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
       this.isJobRunning = false;
+    }
+  }
+
+  /**
+   * Job 18: Image backfill.
+   *
+   * Auto-regenerates AI images for blogs and studies that have NULL
+   * imageUrl (or had a placeholder SVG that the boot-time cleanup
+   * converted to NULL). Processes a small batch each cycle so the
+   * AI cost stays predictable.
+   */
+  private async runImageBackfillJob() {
+    try {
+      if (this.lastImageBackfillCheck) {
+        const elapsed = Date.now() - this.lastImageBackfillCheck.getTime();
+        if (elapsed < this.IMAGE_BACKFILL_INTERVAL_MS) return;
+      }
+      const { runImageBackfillBatch } = await import("./image-backfill");
+      await runImageBackfillBatch();
+      this.lastImageBackfillCheck = new Date();
+    } catch (err) {
+      logger.error("Image backfill job error", err, "JobScheduler");
     }
   }
 
