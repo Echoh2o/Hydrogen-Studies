@@ -45,6 +45,10 @@ export class JobScheduler {
   // keep "yesterday's data" fresh within a few hours of GSC publishing it.
   private readonly GSC_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
   private lastGscSyncCheck: Date | null = null;
+  // GA4 pulls every 6h. Same cadence as GSC — paired so the two
+  // datasets advance together when admins look at engagement vs impressions.
+  private readonly GA4_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
+  private lastGa4SyncCheck: Date | null = null;
   // Image backfill runs every 30 min. Each cycle handles 5 blogs + 5
   // studies — keeps AI cost predictable while still draining a backlog
   // of ~500 missing images in a few days unattended.
@@ -156,6 +160,7 @@ export class JobScheduler {
         { name: "study-scoring", lastRun: toISO(this.lastStudyScoringCheck), intervalMs: this.STUDY_SCORING_INTERVAL_MS },
         { name: "scheduled-publish", lastRun: toISO(this.lastScheduledPublishCheck), intervalMs: this.SCHEDULED_PUBLISH_INTERVAL_MS },
         { name: "gsc-sync", lastRun: toISO(this.lastGscSyncCheck), intervalMs: this.GSC_SYNC_INTERVAL_MS },
+        { name: "ga4-sync", lastRun: toISO(this.lastGa4SyncCheck), intervalMs: this.GA4_SYNC_INTERVAL_MS },
         { name: "image-backfill", lastRun: toISO(this.lastImageBackfillCheck), intervalMs: this.IMAGE_BACKFILL_INTERVAL_MS },
       ],
     };
@@ -476,6 +481,23 @@ export class JobScheduler {
         logger.error("Job 18 (image-backfill) unexpected error", error, "JobScheduler");
       }
 
+      // Job 19: GA4 sync. Skips silently when no credentials are stored.
+      // 10-minute timeout for the first-run 90-day backfill.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runGa4SyncJob(),
+          10 * 60 * 1000,
+          "ga4-sync"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "ga4-sync" });
+        }
+      } catch (error) {
+        logger.error("Job 19 (ga4-sync) unexpected error", error, "JobScheduler");
+      }
+
     } catch (error) {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
@@ -502,6 +524,34 @@ export class JobScheduler {
       this.lastImageBackfillCheck = new Date();
     } catch (err) {
       logger.error("Image backfill job error", err, "JobScheduler");
+    }
+  }
+
+  /**
+   * Job 19: Google Analytics 4 sync.
+   *
+   * Mirrors GSC: pulls per-page engagement metrics + on-site search
+   * terms. 90-day backfill on first run, 3-day incremental thereafter.
+   * Skipped silently if no credentials are stored.
+   */
+  private async runGa4SyncJob() {
+    try {
+      if (this.lastGa4SyncCheck) {
+        const elapsed = Date.now() - this.lastGa4SyncCheck.getTime();
+        if (elapsed < this.GA4_SYNC_INTERVAL_MS) return;
+      }
+      const { syncGa4 } = await import("./ga4-service");
+      const result = await syncGa4();
+      this.lastGa4SyncCheck = new Date();
+      if (!result.skipped) {
+        logger.info("GA4 sync complete", "JobScheduler", {
+          daysPulled: result.daysPulled,
+          inserted: result.rowsInserted,
+          updated: result.rowsUpdated,
+        });
+      }
+    } catch (err) {
+      logger.error("GA4 sync error", err, "JobScheduler");
     }
   }
 

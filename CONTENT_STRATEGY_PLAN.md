@@ -295,12 +295,17 @@ If we hit those, the system works. If not, we look at what GSC says is happening
 - [x] **Me:** Phase A backend (schema, OAuth, sync service, cron, endpoints, encryption helper).
 - [x] **Me:** Phase A admin UI (Search Console page + System Health card cross-wire).
 - [x] **Me:** Deploy Phase A.
-- [ ] **You:** Complete the 7-step Google Cloud setup above.
-- [ ] **You:** Add `GSC_CLIENT_ID`, `GSC_CLIENT_SECRET`, `GSC_SITE_URL` env vars to Railway.
+- [x] **Me:** Phase B (pillar/cluster workflow).
+- [x] **Me:** Phase D backend (GA4 schema, OAuth, sync service, cron, endpoints — reuses crypto helper + GSC OAuth client).
+- [x] **Me:** Phase D admin UI (`/admin/seo/analytics` — top-engaged + on-site search tabs).
+- [ ] **You:** Add `analytics.readonly` scope to the existing GSC OAuth consent screen in Google Cloud, then re-authorize.
+- [ ] **You:** Add `GA4_PROPERTY_ID` env var in Railway (find under GA4 Admin → Property Settings).
+- [ ] **You:** Click Connect on `/admin/seo/analytics`. First sync runs ~6h later (or click "Sync now").
+- [ ] **You:** Complete the 7-step Google Cloud setup above (if you haven't already).
+- [ ] **You:** Add `GSC_CLIENT_ID`, `GSC_CLIENT_SECRET`, `GSC_SITE_URL` env vars to Railway (if you haven't already).
 - [ ] **You:** Click Connect on `/admin/seo/search-console`, authorize with the GSC-owning Google account.
-- [ ] **You:** Wait for first sync to finish (a few minutes for the 90-day backfill).
-- [ ] **You:** Use it for 1–2 weeks. Note what's surprising.
-- [ ] **You + me:** Phase B kickoff conversation informed by the actual GSC data.
+- [ ] **You:** Use Phase A for 1–2 weeks. Note what's surprising.
+- [ ] **You + me:** Phase B retro + Phase C kickoff (visual depth: Chart.js, hero images).
 
 ---
 

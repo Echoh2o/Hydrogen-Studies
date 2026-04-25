@@ -663,6 +663,11 @@ app.post("/api/images/generate/:studyId", requireAdmin, async (req, res) => {
 import adminGscRoutes from "./routes/admin-gsc-routes";
 app.use("/api/admin/gsc", adminGscRoutes);
 
+// Google Analytics 4 integration. Same OAuth-callback constraint as GSC —
+// must be mounted BEFORE the /api/admin catch-all below.
+import adminGa4Routes from "./routes/admin-ga4-routes";
+app.use("/api/admin/ga4", adminGa4Routes);
+
 // Admin monitoring & process control
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
 app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes

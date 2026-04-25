@@ -2624,6 +2624,79 @@ export const gscSyncRuns = pgTable("gsc_sync_runs", {
   error: text("error"),
 });
 
+// ── Google Analytics 4 integration ───────────────────────────
+//
+// Mirrors GSC: one row of credentials, a daily fact table per page,
+// a separate fact table for on-site search terms, and a sync-runs audit
+// log. GA4 credentials reuse the same Google OAuth client as GSC; the
+// admin only needs to grant the additional `analytics.readonly` scope.
+export const ga4Credentials = pgTable("ga4_credentials", {
+  id: serial("id").primaryKey(),
+  accountEmail: text("account_email").notNull(),
+  /** GA4 property identifier — numeric, no `properties/` prefix here. */
+  propertyId: text("property_id").notNull(),
+  tokenCiphertext: text("token_ciphertext").notNull(),
+  scopes: text("scopes").array(),
+  connectedAt: timestamp("connected_at").notNull().defaultNow(),
+  lastRefreshedAt: timestamp("last_refreshed_at"),
+  lastSyncAt: timestamp("last_sync_at"),
+});
+
+// Per-page daily engagement metrics. One row per (date, page).
+// `page` matches GA4's `pagePath` dimension (path + query string), which
+// joins cleanly to the `path` column of `not_found_log` and the slugs
+// of studies/blog_articles/health_conditions.
+export const ga4PageMetrics = pgTable(
+  "ga4_page_metrics",
+  {
+    id: serial("id").primaryKey(),
+    date: text("date").notNull(), // YYYY-MM-DD as returned by GA4
+    page: text("page").notNull(), // pagePath, e.g. "/studies/foo"
+    sessions: integer("sessions").notNull().default(0),
+    engagedSessions: integer("engaged_sessions").notNull().default(0),
+    /** 0–1 ratio. Stored as text to preserve API precision. */
+    engagementRate: text("engagement_rate").notNull().default("0"),
+    /** Mean seconds on page. Stored as text for API parity. */
+    avgEngagementTime: text("avg_engagement_time").notNull().default("0"),
+    bounces: integer("bounces").notNull().default(0),
+    conversions: integer("conversions").notNull().default(0),
+    fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    dpUnique: unique("ga4_page_metrics_dp_unique").on(table.date, table.page),
+    pageDateIdx: index("ga4_page_metrics_page_date_idx").on(table.page, table.date),
+    dateIdx: index("ga4_page_metrics_date_idx").on(table.date),
+  }),
+);
+
+// On-site search queries (GA4 `search_term` event). Surfaces what users
+// type into the search bar — usually distinct from Google queries.
+export const ga4SearchTerms = pgTable(
+  "ga4_search_terms",
+  {
+    id: serial("id").primaryKey(),
+    date: text("date").notNull(),
+    searchTerm: text("search_term").notNull(),
+    eventCount: integer("event_count").notNull().default(0),
+    fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    dsUnique: unique("ga4_search_terms_ds_unique").on(table.date, table.searchTerm),
+    dateIdx: index("ga4_search_terms_date_idx").on(table.date),
+  }),
+);
+
+export const ga4SyncRuns = pgTable("ga4_sync_runs", {
+  id: serial("id").primaryKey(),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  daysPulled: integer("days_pulled").notNull().default(0),
+  rowsInserted: integer("rows_inserted").notNull().default(0),
+  rowsUpdated: integer("rows_updated").notNull().default(0),
+  status: text("status").notNull().default("running"),
+  error: text("error"),
+});
+
 // Generic key-value store for system-managed secrets. Currently houses
 // the GSC token-encryption key; designed so future at-rest secrets can
 // share the same boot-time auto-generation pattern without proliferating
