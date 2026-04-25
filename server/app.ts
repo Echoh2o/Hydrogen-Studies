@@ -653,15 +653,19 @@ app.post("/api/images/generate/:studyId", requireAdmin, async (req, res) => {
   }
 });
 
-// Admin monitoring & process control
-app.use("/api/admin/monitoring", adminMonitoringRoutes);
-app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes
-
 // Google Search Console integration. Includes the OAuth callback, which is
 // itself unauthenticated (relies on the signed state cookie); the rest of
 // the routes are gated by requireAdmin per-route.
+//
+// MUST be mounted BEFORE the /api/admin catch-all below — adminMonitoringRoutes
+// has router.use(requireAdmin) at the top, so if Express hits that catch-all
+// first, the OAuth redirect from Google gets rejected before it can be handled.
 import adminGscRoutes from "./routes/admin-gsc-routes";
 app.use("/api/admin/gsc", adminGscRoutes);
+
+// Admin monitoring & process control
+app.use("/api/admin/monitoring", adminMonitoringRoutes);
+app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes
 
 // Serve public assets
 app.use(
