@@ -15,6 +15,7 @@
 | **A.5** | Run for 1–2 weeks, observe what GSC actually says | You | passive | Before B |
 | **B** | Anchor / cluster workflow (promote-to-anchor, cluster generation, pillar editor) | Me | ~1 week | After A.5 |
 | **C** | Visual depth (Chart.js diagrams from study data, hero images, video embeds) | Me | ~3-4 days | Lower urgency |
+| **D** | GA4 integration — behavioral data (bounce, time-on-page, internal search, conversions) | Setup: you. Code: me. | ~2 days code + ~30 min setup | After Phase B is live |
 
 The single most important thing in this whole plan: **don't build B until A has been running long enough to surprise you.** GSC reality almost never matches strategy hunches.
 
@@ -215,6 +216,56 @@ Defer until Phase B has proven that we want to invest editorial time in pillar p
    - Text-to-infographic AI generation. Models hallucinate stats and produce ugly typography. Chart.js with real data is strictly better.
 
 ### Effort: ~3-4 days
+
+---
+
+---
+
+## Phase D: GA4 Integration (sketch — after Phase B)
+
+GSC tells you what brought people to the site. **GA4 tells you what they did
+once they got there.** That's the missing half of the analytics picture, and
+it's what tells you whether anchor pages are actually pulling readers vs. just
+impressions.
+
+### Why now (after Phase B, not before)
+
+Promoting blogs to pillars is meaningful when you can measure outcomes per
+URL. With only GSC, "anchor performance" is impressions and clicks. With
+GSC + GA4, it becomes: how long do readers stay, how many scroll past 50%,
+how many click through to a related post or to Echo Water?
+
+### What gets built
+
+1. **OAuth + sync** mirroring the GSC pattern: same encryption helper for
+   the refresh token, same nightly cron, same `gsc_credentials`-style
+   `ga4_credentials` table, same auto-key-on-boot flow. Most of the
+   plumbing is reusable.
+2. **Per-URL metrics table** — `ga4_page_metrics`: date, page, sessions,
+   engagement_rate, avg_time_on_page, scroll_50pct, scroll_75pct, exits,
+   bounces. One row per (date, page).
+3. **Internal search queries** — GA4's `search_term` event. Surfaces what
+   users type into the on-site search bar, separate from Google queries.
+   Often a goldmine for orphan-content opportunities.
+4. **Conversion paths** — for each pillar/cluster URL, which destination
+   URLs (Echo Water product pages) it sent traffic to. Requires the GA4
+   property to have those events configured.
+5. **Cross-wired display**:
+   - Blog list adds "Engagement" column (avg seconds on page, last 30d)
+   - Pillar dashboard adds "Reads / Avg time / Conversion clicks" per pillar
+   - System Health adds GA4 sync status alongside GSC
+   - SEO Search Console page gains an "Internal Search" tab showing on-site search queries
+
+### What you'd need to set up
+
+Same drill as GSC, ~30 minutes:
+1. Enable Google Analytics Data API (GA4) in the same Google Cloud project
+2. Use the existing OAuth Client ID — just add the GA4 scope (`https://www.googleapis.com/auth/analytics.readonly`)
+3. Add `GA4_PROPERTY_ID` env var (find it under GA4 Admin → Property Settings)
+
+### Effort
+
+~2 days code + 30 min setup. Most pieces lift cleanly from the GSC integration.
 
 ---
 

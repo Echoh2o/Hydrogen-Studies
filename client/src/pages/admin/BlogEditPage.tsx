@@ -64,6 +64,27 @@ export default function BlogEditPage() {
     staleTime: 300000, // 5 minutes
   });
 
+  // Pillar cluster cohort — only meaningful when blog.isPillar. Lazy-loaded
+  // by setting `enabled` so non-pillar edits don't pay the round-trip.
+  const { data: cluster } = useQuery<{
+    pillar: { id: number; title: string; isPillar: boolean; promotedToPillarAt: string | null };
+    clusters: Array<{
+      id: number;
+      title: string;
+      slug: string;
+      isPublished: boolean;
+      publishedAt: string | null;
+      scheduledFor: string | null;
+      viewCount: number | null;
+      articleType: string | null;
+      createdAt: string;
+    }>;
+    counts: { total: number; published: number; draft: number; scheduled: number };
+  }>({
+    queryKey: [`/api/blogs/${blogId}/cluster`],
+    enabled: !!blogId && !!blog?.isPillar,
+  });
+
   // Blog data state
   const [blogData, setBlogData] = useState({
     title: "",
@@ -266,6 +287,84 @@ export default function BlogEditPage() {
             Back to Blogs
           </Button>
         </div>
+
+        {/* Pillar cluster cohort panel — visible only when this blog is a
+            promoted pillar. Surfaces all cluster posts that link back to it
+            so the editor can monitor coverage and click through to edit them. */}
+        {blog?.isPillar && cluster && (
+          <Card className="border-amber-200 bg-amber-50/30">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500 text-white">
+                      PILLAR
+                    </span>
+                    Topical-Authority Anchor
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-1">
+                    {cluster.counts.total} cluster post{cluster.counts.total === 1 ? "" : "s"}
+                    {" · "}
+                    {cluster.counts.published} live, {cluster.counts.draft} draft, {cluster.counts.scheduled} scheduled
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {cluster.clusters.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No cluster posts yet. Click "Promote to Pillar" again from
+                  the blog list to seed more cluster drafts based on related
+                  studies in this category.
+                </p>
+              ) : (
+                <ul className="divide-y -mx-2">
+                  {cluster.clusters.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between gap-3 py-2 px-2 text-sm hover:bg-amber-100/40 rounded"
+                    >
+                      <a
+                        href={`/admin/blogs/edit/${c.id}`}
+                        className="flex-1 min-w-0 truncate hover:underline"
+                        title={c.title}
+                      >
+                        {c.title}
+                      </a>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {c.articleType && (
+                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-1 py-0.5">
+                            {c.articleType}
+                          </span>
+                        )}
+                        <span
+                          className={`text-[11px] font-medium ${
+                            c.isPublished
+                              ? "text-green-700"
+                              : c.scheduledFor
+                              ? "text-blue-700"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {c.isPublished
+                            ? "Published"
+                            : c.scheduledFor
+                            ? "Scheduled"
+                            : "Draft"}
+                        </span>
+                        {typeof c.viewCount === "number" && c.viewCount > 0 && (
+                          <span className="text-[11px] text-muted-foreground tabular-nums">
+                            {c.viewCount.toLocaleString()} view{c.viewCount === 1 ? "" : "s"}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6">

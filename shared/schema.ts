@@ -950,6 +950,22 @@ export const blogArticles = pgTable(
      * or restored. Hard delete still removes the row.
      */
     isArchived: boolean("is_archived").notNull().default(false),
+    /**
+     * True for posts deliberately promoted to act as topical-authority anchors.
+     * Pillars get the pillar editor UI, structured-data generation, and a
+     * cluster cohort panel. Cluster posts (non-pillar children) link back via
+     * pillarBlogId.
+     */
+    isPillar: boolean("is_pillar").notNull().default(false),
+    /**
+     * For cluster posts: the id of the pillar this post supports. NULL means
+     * "standalone" (the default). Self-referential FK to blog_articles —
+     * self-cascade-on-delete because a deleted pillar should orphan its
+     * clusters, not delete them. Drizzle expresses this via SQL ALTER below.
+     */
+    pillarBlogId: integer("pillar_blog_id"),
+    /** Stamp set by /promote-to-pillar so we can audit anchor velocity. */
+    promotedToPillarAt: timestamp("promoted_to_pillar_at"),
     editorNotes: text("editor_notes"),
     viewCount: integer("view_count").default(0),
 

@@ -668,6 +668,257 @@ router.delete("/:id(\\d+)", requireAdmin, async (req, res) => {
 });
 
 /**
+ * Promote an existing blog to pillar status and seed cluster drafts.
+ *
+ * Workflow:
+ *   1. Mark this blog isPillar=true, stamp promotedToPillarAt
+ *   2. Find 3-5 related under-served studies in the same category
+ *      (excluding the pillar's own source study) using the existing
+ *      blog-recommendation-system ranking
+ *   3. For each candidate study, generate a single blog draft via the
+ *      existing blog-generator-enhanced. Drafts are unpublished and
+ *      tagged with pillarBlogId so the pillar editor can show them.
+ *   4. Return the pillar + freshly-created cluster IDs.
+ *
+ * Generation runs synchronously with a 60-second cap. Anything that times
+ * out can be retried by clicking Promote again on a still-pillar post —
+ * the function is idempotent on isPillar but additive on cluster count.
+ */
+router.post("/:id(\\d+)/promote-to-pillar", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid blog ID" });
+
+    // Pillar must exist and have a backing study (we use the study's
+    // category to scope cluster candidate selection).
+    const [pillar] = await db
+      .select()
+      .from(blogArticles)
+      .where(eq(blogArticles.id, id))
+      .limit(1);
+    if (!pillar) return res.status(404).json({ error: "Blog not found" });
+
+    const [pillarStudy] = await db
+      .select({ id: studies.id, category: studies.category })
+      .from(studies)
+      .where(eq(studies.id, pillar.studyId))
+      .limit(1);
+    if (!pillarStudy?.category) {
+      return res.status(400).json({
+        error:
+          "Pillar's source study has no category — can't scope cluster generation. Add a category to the study first.",
+      });
+    }
+
+    // Mark pillar (idempotent — re-clicking just refreshes the timestamp).
+    await db
+      .update(blogArticles)
+      .set({
+        isPillar: true,
+        promotedToPillarAt: sql`COALESCE(${blogArticles.promotedToPillarAt}, NOW())`,
+        pillarBlogId: null, // a pillar can't be its own cluster
+        updatedAt: new Date(),
+      })
+      .where(eq(blogArticles.id, id));
+
+    // Find candidate studies in the same category that don't already have
+    // a blog under this pillar. Prefer studies with quality scores; rank by
+    // (quality desc, blog count asc, recency desc) — same idea as the
+    // blog-recommendation-system but scoped to this category.
+    const candidates = await db.execute<{
+      id: number;
+      title: string;
+    }>(sql`
+      SELECT s.id, s.title
+      FROM studies s
+      LEFT JOIN study_quality_scores q ON q.study_id = s.id
+      LEFT JOIN (
+        SELECT study_id, COUNT(*)::int AS cnt
+        FROM blog_articles
+        WHERE pillar_blog_id = ${id} OR study_id = ${pillarStudy.id}
+        GROUP BY study_id
+      ) b ON b.study_id = s.id
+      WHERE s.id <> ${pillarStudy.id}
+        AND LOWER(COALESCE(s.category, '')) = LOWER(${pillarStudy.category})
+        AND COALESCE(b.cnt, 0) = 0
+      ORDER BY
+        q.overall_score DESC NULLS LAST,
+        s.citation_count DESC NULLS LAST,
+        s.id DESC
+      LIMIT 5
+    `).then((r: any) => r.rows ?? r);
+
+    if (candidates.length === 0) {
+      return res.json({
+        success: true,
+        pillarId: id,
+        clusterIds: [],
+        message:
+          "Marked as pillar, but no eligible cluster candidates found in this category. You can still write cluster posts manually.",
+      });
+    }
+
+    // Lazy import to avoid circular deps — and so the response can ship
+    // partial success if generation fails partway through.
+    const { generateBlogArticlesForStudy } = await import("../services/blog-generator-enhanced");
+
+    const clusterIds: number[] = [];
+    const generationErrors: Array<{ studyId: number; error: string }> = [];
+
+    for (const candidate of candidates) {
+      try {
+        // Fetch full study record (generator needs the whole row)
+        const [fullStudy] = await db
+          .select()
+          .from(studies)
+          .where(eq(studies.id, candidate.id))
+          .limit(1);
+        if (!fullStudy) continue;
+
+        // Cap to 60s per cluster — generator usually takes 15-30s.
+        const result = (await Promise.race([
+          generateBlogArticlesForStudy(fullStudy as any, {
+            count: 1,
+            articleTypes: ["science_explainer"], // safe default; admin edits later
+            fallbackToBasic: true,
+          }),
+          new Promise((resolve) => setTimeout(() => resolve(null), 60_000)),
+        ])) as Awaited<ReturnType<typeof generateBlogArticlesForStudy>> | null;
+
+        if (!result || result.articles.length === 0) {
+          generationErrors.push({
+            studyId: candidate.id,
+            error: "Generator returned no articles (timeout or AI error)",
+          });
+          continue;
+        }
+
+        // Persist each generated article as an unpublished cluster post
+        // tagged to this pillar. Generator returns Insert objects, not yet
+        // saved — we add the pillar fields here.
+        for (const article of result.articles) {
+          try {
+            const [saved] = await db
+              .insert(blogArticles)
+              .values({
+                ...article,
+                pillarBlogId: id,
+                isPublished: false,
+                isArchived: false,
+              })
+              .returning({ id: blogArticles.id });
+            clusterIds.push(saved.id);
+          } catch (dbErr: any) {
+            // 23505 = duplicate slug — generator collided. Skip.
+            if (dbErr?.code !== "23505") {
+              generationErrors.push({
+                studyId: candidate.id,
+                error: dbErr?.message ?? "DB insert failed",
+              });
+            }
+          }
+        }
+      } catch (err: any) {
+        generationErrors.push({
+          studyId: candidate.id,
+          error: err?.message ?? String(err),
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      pillarId: id,
+      clusterIds,
+      generated: clusterIds.length,
+      candidates: candidates.length,
+      errors: generationErrors,
+    });
+  } catch (err) {
+    console.error("Promote-to-pillar error:", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Failed to promote to pillar",
+    });
+  }
+});
+
+/**
+ * Demote a pillar back to a regular post. Removes the isPillar flag but
+ * leaves cluster posts intact (they keep their pillarBlogId — admin can
+ * manually unlink or repromote to another pillar).
+ */
+router.post("/:id(\\d+)/demote-from-pillar", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid blog ID" });
+    await db
+      .update(blogArticles)
+      .set({ isPillar: false, updatedAt: new Date() })
+      .where(eq(blogArticles.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Demote-from-pillar error:", err);
+    res.status(500).json({ error: "Failed to demote pillar" });
+  }
+});
+
+/**
+ * Cluster cohort — pillar metadata + the list of cluster posts that
+ * declare this blog as their pillar. Used by the pillar editor side panel
+ * and (later) the pillar dashboard.
+ */
+router.get("/:id(\\d+)/cluster", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid blog ID" });
+
+    const [pillar] = await db
+      .select({
+        id: blogArticles.id,
+        title: blogArticles.title,
+        slug: blogArticles.slug,
+        isPillar: blogArticles.isPillar,
+        promotedToPillarAt: blogArticles.promotedToPillarAt,
+        viewCount: blogArticles.viewCount,
+      })
+      .from(blogArticles)
+      .where(eq(blogArticles.id, id))
+      .limit(1);
+    if (!pillar) return res.status(404).json({ error: "Blog not found" });
+
+    const clusters = await db
+      .select({
+        id: blogArticles.id,
+        title: blogArticles.title,
+        slug: blogArticles.slug,
+        isPublished: blogArticles.isPublished,
+        publishedAt: blogArticles.publishedAt,
+        scheduledFor: blogArticles.scheduledFor,
+        viewCount: blogArticles.viewCount,
+        articleType: blogArticles.articleType,
+        createdAt: blogArticles.createdAt,
+      })
+      .from(blogArticles)
+      .where(eq(blogArticles.pillarBlogId, id))
+      .orderBy(desc(blogArticles.createdAt));
+
+    res.json({
+      pillar,
+      clusters,
+      counts: {
+        total: clusters.length,
+        published: clusters.filter((c) => c.isPublished).length,
+        draft: clusters.filter((c) => !c.isPublished && !c.scheduledFor).length,
+        scheduled: clusters.filter((c) => !c.isPublished && c.scheduledFor).length,
+      },
+    });
+  } catch (err) {
+    console.error("Cluster lookup error:", err);
+    res.status(500).json({ error: "Failed to fetch cluster cohort" });
+  }
+});
+
+/**
  * Patch a single blog's lifecycle status without resending the whole body.
  * The big PUT /:id requires title/summary/content all present, which made
  * the publish toggle on the list page silently fail validation. This is

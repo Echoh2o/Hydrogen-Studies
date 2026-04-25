@@ -30,6 +30,15 @@ export function ensureBlogLifecycleColumns(): Promise<void> {
       await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS published_at timestamp`);
       await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS scheduled_for timestamp`);
       await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS is_archived boolean NOT NULL DEFAULT false`);
+      // Phase B pillar/cluster columns
+      await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS is_pillar boolean NOT NULL DEFAULT false`);
+      await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS pillar_blog_id integer`);
+      await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS promoted_to_pillar_at timestamp`);
+      // Indexed because cluster lookups (`pillarBlogId = X`) are part of the
+      // pillar-edit-page render path. Partial index on the parent flag keeps
+      // the pillar-list query trivial.
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS blog_articles_pillar_blog_id_idx ON blog_articles (pillar_blog_id) WHERE pillar_blog_id IS NOT NULL`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS blog_articles_is_pillar_idx ON blog_articles (is_pillar) WHERE is_pillar = true`);
       // Index for the scheduled-publish cron — scans for due rows every 5 min
       await db.execute(sql`CREATE INDEX IF NOT EXISTS blog_articles_scheduled_for_idx ON blog_articles (scheduled_for) WHERE scheduled_for IS NOT NULL`);
       // Index for status tab filters on the admin list

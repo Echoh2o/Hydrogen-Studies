@@ -42,6 +42,8 @@ import {
   Archive,
   ArchiveRestore,
   Clock,
+  Sparkles,
+  Anchor,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -80,6 +82,9 @@ interface BlogArticle {
   scheduledFor: string | null;
   isArchived: boolean;
   viewCount: number | null;
+  isPillar: boolean;
+  pillarBlogId: number | null;
+  promotedToPillarAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -217,6 +222,58 @@ export default function BlogListPage() {
         description: error.message || "Failed to update blog post status",
         variant: "destructive",
       });
+    },
+  });
+
+  // Promote-to-pillar mutation — turns the blog into a topical-authority
+  // anchor and seeds 3-5 cluster post drafts in the same category.
+  const promotePillarMutation = useMutation({
+    mutationFn: async (blogId: number) => {
+      const res = await fetch(`/api/blogs/${blogId}/promote-to-pillar`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Promote failed (${res.status})`);
+      }
+      return res.json() as Promise<{
+        pillarId: number;
+        clusterIds: number[];
+        generated: number;
+        candidates: number;
+        message?: string;
+      }>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs/status-counts"] });
+      toast({
+        title: data.generated > 0 ? "Promoted to pillar" : "Marked as pillar",
+        description: data.message
+          ? data.message
+          : `${data.generated} cluster draft${data.generated === 1 ? "" : "s"} generated from related studies`,
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Promote failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const demotePillarMutation = useMutation({
+    mutationFn: async (blogId: number) => {
+      const res = await fetch(`/api/blogs/${blogId}/demote-from-pillar`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Demote failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blogs"] });
+      toast({ title: "Pillar status removed" });
     },
   });
 
@@ -698,6 +755,24 @@ export default function BlogListPage() {
                         ) : (
                           <Badge variant="secondary">Draft</Badge>
                         )}
+                        {blog.isPillar && (
+                          <Badge
+                            className="bg-amber-500 text-white"
+                            title="Topical-authority anchor — has cluster posts linking to it"
+                          >
+                            <Anchor className="h-3 w-3 mr-1" />
+                            Pillar
+                          </Badge>
+                        )}
+                        {blog.pillarBlogId && !blog.isPillar && (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500 text-amber-700"
+                            title="This is a cluster post supporting a pillar"
+                          >
+                            Cluster
+                          </Badge>
+                        )}
                         {blog.articleType && (
                           <Badge variant="outline">{blog.articleType}</Badge>
                         )}
@@ -764,6 +839,24 @@ export default function BlogListPage() {
                           >
                             {blog.isPublished ? "Unpublish" : "Publish"}
                           </DropdownMenuItem>
+                          {blog.isPillar ? (
+                            <DropdownMenuItem
+                              onClick={() => demotePillarMutation.mutate(blog.id)}
+                            >
+                              <Anchor className="h-4 w-4 mr-2" />
+                              Demote from Pillar
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => promotePillarMutation.mutate(blog.id)}
+                              disabled={promotePillarMutation.isPending}
+                            >
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              {promotePillarMutation.isPending
+                                ? "Promoting..."
+                                : "Promote to Pillar"}
+                            </DropdownMenuItem>
+                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem
