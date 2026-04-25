@@ -49,6 +49,11 @@ export class JobScheduler {
   // datasets advance together when admins look at engagement vs impressions.
   private readonly GA4_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
   private lastGa4SyncCheck: Date | null = null;
+  // 404 suggestion backfill drains the unresolved-404 queue every 30 min
+  // so admins don't have to click "Auto-Suggest" 167 times to chew through
+  // a 16k backlog. Mirror of the image-backfill pattern (commit df085dc).
+  private readonly REDIRECT_SUGGESTION_INTERVAL_MS = 30 * 60 * 1000;
+  private lastRedirectSuggestionCheck: Date | null = null;
   // Image backfill runs every 30 min. Each cycle handles 5 blogs + 5
   // studies — keeps AI cost predictable while still draining a backlog
   // of ~500 missing images in a few days unattended.
@@ -162,6 +167,7 @@ export class JobScheduler {
         { name: "gsc-sync", lastRun: toISO(this.lastGscSyncCheck), intervalMs: this.GSC_SYNC_INTERVAL_MS },
         { name: "ga4-sync", lastRun: toISO(this.lastGa4SyncCheck), intervalMs: this.GA4_SYNC_INTERVAL_MS },
         { name: "image-backfill", lastRun: toISO(this.lastImageBackfillCheck), intervalMs: this.IMAGE_BACKFILL_INTERVAL_MS },
+        { name: "redirect-suggestion-backfill", lastRun: toISO(this.lastRedirectSuggestionCheck), intervalMs: this.REDIRECT_SUGGESTION_INTERVAL_MS },
       ],
     };
   }
@@ -481,6 +487,24 @@ export class JobScheduler {
         logger.error("Job 18 (image-backfill) unexpected error", error, "JobScheduler");
       }
 
+      // Job 20: Redirect-suggestion backfill — drains unresolved-404
+      // queue so suggestions appear without admin clicks. 5-minute
+      // timeout (per-entry trigram queries are fast).
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runRedirectSuggestionBackfillJob(),
+          5 * 60 * 1000,
+          "redirect-suggestion-backfill"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "redirect-suggestion-backfill" });
+        }
+      } catch (error) {
+        logger.error("Job 20 (redirect-suggestion-backfill) unexpected error", error, "JobScheduler");
+      }
+
       // Job 19: GA4 sync. Skips silently when no credentials are stored.
       // 10-minute timeout for the first-run 90-day backfill.
       try {
@@ -524,6 +548,41 @@ export class JobScheduler {
       this.lastImageBackfillCheck = new Date();
     } catch (err) {
       logger.error("Image backfill job error", err, "JobScheduler");
+    }
+  }
+
+  /**
+   * Job 20: Redirect-suggestion backfill.
+   *
+   * Processes 100 unresolved 404 entries per cycle (~4,800/day at the
+   * 30-min interval). Skips entries that already have a non-null
+   * suggestions column, so a 16k cold-start backlog drains in ~3 days
+   * and steady-state catches new 404s within a single cycle.
+   *
+   * Per-entry try/catch lives inside backfillSuggestions itself —
+   * here we just need to swallow any whole-batch failure so the cron
+   * keeps running.
+   */
+  private async runRedirectSuggestionBackfillJob() {
+    const BATCH_SIZE = 100;
+    try {
+      if (this.lastRedirectSuggestionCheck) {
+        const elapsed = Date.now() - this.lastRedirectSuggestionCheck.getTime();
+        if (elapsed < this.REDIRECT_SUGGESTION_INTERVAL_MS) return;
+      }
+      const { backfillSuggestions } = await import("./redirect-service");
+      const result = await backfillSuggestions(BATCH_SIZE);
+      this.lastRedirectSuggestionCheck = new Date();
+      if (result.processed > 0 || result.errors > 0) {
+        logger.info("Redirect suggestion backfill complete", "JobScheduler", {
+          processed: result.processed,
+          suggested: result.suggested,
+          errors: result.errors,
+          firstError: result.firstError,
+        });
+      }
+    } catch (err) {
+      logger.error("Redirect suggestion backfill error", err, "JobScheduler");
     }
   }
 

@@ -136,13 +136,16 @@ router.post("/404s/:id/resolve", requireAdmin, async (req: Request, res: Respons
  */
 router.post("/404s/backfill", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const limit = Math.min(200, parseInt(req.body.limit as string) || 50);
+    // Bumped from 200→500. With per-entry try/catch the loop won't
+    // abort on a bad row, so larger batches are safe and let the admin
+    // drain a 16k backlog in a few clicks instead of 167.
+    const limit = Math.min(500, parseInt(req.body.limit as string) || 50);
     const force = Boolean(req.body?.force);
     const result = await backfillSuggestions(limit, { force });
     res.json(result);
   } catch (error) {
     console.error("Failed to backfill suggestions:", error);
-    res.status(500).json({ error: "Failed to backfill suggestions" });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to backfill suggestions" });
   }
 });
 

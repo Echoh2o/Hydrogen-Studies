@@ -204,16 +204,21 @@ export default function RedirectsPage() {
 
   const backfillMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/redirects/404s/backfill", { limit: 100 });
+      // Bumped 100→500 to match the new server-side cap. The cron drains
+      // continuously in the background; this button is for admins who
+      // want to chew through the backlog faster.
+      const res = await apiRequest("POST", "/api/admin/redirects/404s/backfill", { limit: 500 });
       return res.json();
     },
     onSuccess: async (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
-      // If we processed entries but generated zero suggestions, fetch
-      // diagnostics so the admin sees the root cause without digging
-      // into server logs (most often: pg_trgm not enabled on the prod
-      // Postgres role, or content tables empty).
-      if (data.processed > 0 && data.suggested === 0) {
+      const errs = Number(data.errors ?? 0);
+      const errSuffix = errs > 0 ? `, ${errs} errored` : "";
+
+      // If we processed entries but generated zero suggestions AND zero
+      // errors, fetch diagnostics so the admin sees the root cause without
+      // digging into server logs.
+      if (data.processed > 0 && data.suggested === 0 && errs === 0) {
         try {
           const diagRes = await apiRequest("GET", "/api/admin/redirects/diagnostics");
           const diag = await diagRes.json();
@@ -237,6 +242,15 @@ export default function RedirectsPage() {
             variant: "destructive",
           });
         }
+      } else if (errs > 0) {
+        // Per-entry errors don't kill the batch any more — surface the
+        // count (and first failure) so the admin can spot patterns.
+        toast({
+          title: `Backfill done with ${errs} error${errs === 1 ? "" : "s"}`,
+          description: `Processed ${data.processed}, suggested ${data.suggested}${errSuffix}.${
+            data.firstError ? ` First: ${data.firstError}` : ""
+          }`,
+        });
       } else {
         toast({ title: "Backfill complete", description: `Processed ${data.processed}, suggested ${data.suggested}` });
       }

@@ -677,7 +677,7 @@ export async function getRedirectDiagnostics(): Promise<{
 export async function backfillSuggestions(
   limit: number = 50,
   opts: { force?: boolean } = {},
-): Promise<{ processed: number; suggested: number }> {
+): Promise<{ processed: number; suggested: number; errors: number; firstError: string | null }> {
   await ensureRedirectIndexes().catch(() => {});
 
   const conditions = [eq(notFoundLog.resolved, false)];
@@ -693,20 +693,38 @@ export async function backfillSuggestions(
     .limit(limit);
 
   let suggested = 0;
+  let errors = 0;
+  let firstError: string | null = null;
   for (const entry of entries) {
-    const ranked = await getRankedSuggestions(entry.path);
-    await db
-      .update(notFoundLog)
-      .set({
-        suggestions: ranked,
-        // keep suggestedTarget in sync with the top pick for back-compat
-        suggestedTarget: ranked[0]?.target ?? null,
-      })
-      .where(eq(notFoundLog.id, entry.id));
-    if (ranked.length > 0) suggested++;
+    // Per-entry try/catch so one bad path (weird unicode, oversized
+    // input, transient db blip) doesn't poison the whole batch. With a
+    // 16k+ backlog the odds of zero bad entries in any given run are low,
+    // and burning the entire run on the first failure is exactly what
+    // made the manual button feel like it stopped "for no reason."
+    try {
+      const ranked = await getRankedSuggestions(entry.path);
+      await db
+        .update(notFoundLog)
+        .set({
+          suggestions: ranked,
+          // keep suggestedTarget in sync with the top pick for back-compat
+          suggestedTarget: ranked[0]?.target ?? null,
+        })
+        .where(eq(notFoundLog.id, entry.id));
+      if (ranked.length > 0) suggested++;
+    } catch (err) {
+      errors++;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!firstError) firstError = `id=${entry.id} path=${entry.path.slice(0, 80)}: ${msg.slice(0, 200)}`;
+      logger.warn("Backfill entry failed", TAG, {
+        id: entry.id,
+        path: entry.path.slice(0, 200),
+        error: msg.slice(0, 300),
+      });
+    }
   }
 
-  return { processed: entries.length, suggested };
+  return { processed: entries.length, suggested, errors, firstError };
 }
 
 // ── CRUD helpers (used by admin routes) ──────────────────────
