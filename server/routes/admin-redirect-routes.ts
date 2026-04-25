@@ -13,6 +13,7 @@ import {
   resolve404,
   backfillSuggestions,
   getRankedSuggestions,
+  getRedirectDiagnostics,
 } from "../services/redirect-service";
 
 const router = Router();
@@ -142,6 +143,20 @@ router.post("/404s/backfill", requireAdmin, async (req: Request, res: Response) 
   } catch (error) {
     console.error("Failed to backfill suggestions:", error);
     res.status(500).json({ error: "Failed to backfill suggestions" });
+  }
+});
+
+/** GET /api/admin/redirects/diagnostics — Why are suggestions empty?
+ *  Returns pg_trgm availability, schema state, and per-table content counts so
+ *  the admin can self-diagnose without server log access.
+ */
+router.get("/diagnostics", requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const diag = await getRedirectDiagnostics();
+    res.json(diag);
+  } catch (error) {
+    console.error("Failed to run redirect diagnostics:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to run diagnostics" });
   }
 });
 

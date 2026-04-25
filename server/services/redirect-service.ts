@@ -559,6 +559,113 @@ export async function suggestRedirectTarget(path: string): Promise<string | null
 }
 
 /**
+ * Diagnostic snapshot: tells the admin UI *why* suggestions are empty.
+ * Probes pg_trgm availability, the suggestions column, runs a sample
+ * similarity, and counts how many entries currently have suggestions.
+ *
+ * Exists because errors inside `getRankedSuggestions` are swallowed by
+ * per-content-type try/catch (we don't want one bad table to nuke the
+ * whole result), which makes a "0 suggested" outcome indistinguishable
+ * from "queries ran fine, scores all below threshold."
+ */
+export async function getRedirectDiagnostics(): Promise<{
+  pgTrgmAvailable: boolean;
+  pgTrgmError: string | null;
+  suggestionsColumnExists: boolean;
+  sampleSimilarity: number | null;
+  sampleSimilarityError: string | null;
+  unresolvedTotal: number;
+  unresolvedWithSuggestions: number;
+  unresolvedWithoutSuggestions: number;
+  studiesIndexed: number;
+  blogsIndexed: number;
+  conditionsIndexed: number;
+  minOverallScore: number;
+  minTrgmThreshold: number;
+}> {
+  await ensureRedirectIndexes().catch(() => {});
+
+  let pgTrgmAvailable = false;
+  let pgTrgmError: string | null = null;
+  let sampleSimilarity: number | null = null;
+  let sampleSimilarityError: string | null = null;
+  try {
+    const r: any = await db.execute(sql`SELECT similarity('hydrogen-water', 'hydrogenwater') AS sim`);
+    const rows = r.rows ?? r;
+    sampleSimilarity = rows?.[0]?.sim != null ? Number(rows[0].sim) : null;
+    pgTrgmAvailable = sampleSimilarity !== null;
+  } catch (err) {
+    pgTrgmError = err instanceof Error ? err.message : String(err);
+    sampleSimilarityError = pgTrgmError;
+  }
+
+  let suggestionsColumnExists = false;
+  try {
+    const r: any = await db.execute(sql`
+      SELECT 1 AS exists FROM information_schema.columns
+      WHERE table_name = 'not_found_log' AND column_name = 'suggestions'
+      LIMIT 1
+    `);
+    const rows = r.rows ?? r;
+    suggestionsColumnExists = rows.length > 0;
+  } catch {
+    suggestionsColumnExists = false;
+  }
+
+  let unresolvedTotal = 0;
+  let unresolvedWithSuggestions = 0;
+  try {
+    const r: any = await db.execute(sql`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(suggestions)::int AS with_sugg
+      FROM not_found_log
+      WHERE resolved = false
+    `);
+    const rows = r.rows ?? r;
+    unresolvedTotal = rows?.[0]?.total ?? 0;
+    unresolvedWithSuggestions = rows?.[0]?.with_sugg ?? 0;
+  } catch {
+    // table missing entirely — leave at zero
+  }
+
+  // Cheap content counts so the admin can spot "no content to match against."
+  let studiesIndexed = 0;
+  let blogsIndexed = 0;
+  let conditionsIndexed = 0;
+  try {
+    const r: any = await db.execute(sql`
+      SELECT
+        (SELECT COUNT(*)::int FROM studies WHERE slug IS NOT NULL) AS studies,
+        (SELECT COUNT(*)::int FROM blog_articles WHERE is_published = true) AS blogs,
+        (SELECT COUNT(*)::int FROM health_conditions) AS conditions
+    `);
+    const rows = r.rows ?? r;
+    studiesIndexed = rows?.[0]?.studies ?? 0;
+    blogsIndexed = rows?.[0]?.blogs ?? 0;
+    conditionsIndexed = rows?.[0]?.conditions ?? 0;
+  } catch {
+    // ignore
+  }
+
+  return {
+    pgTrgmAvailable,
+    pgTrgmError,
+    suggestionsColumnExists,
+    sampleSimilarity,
+    sampleSimilarityError,
+    unresolvedTotal,
+    unresolvedWithSuggestions,
+    unresolvedWithoutSuggestions: Math.max(0, unresolvedTotal - unresolvedWithSuggestions),
+    studiesIndexed,
+    blogsIndexed,
+    conditionsIndexed,
+    minOverallScore: MIN_OVERALL_SCORE,
+    minTrgmThreshold: MIN_TRGM_THRESHOLD,
+  };
+}
+
+/**
  * Backfill ranked suggestions for unresolved 404 entries. Prioritizes
  * entries that have the most hits, since those cost the most SEO value.
  *

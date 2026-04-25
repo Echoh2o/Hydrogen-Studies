@@ -207,12 +207,57 @@ export default function RedirectsPage() {
       const res = await apiRequest("POST", "/api/admin/redirects/404s/backfill", { limit: 100 });
       return res.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
-      toast({ title: "Backfill complete", description: `Processed ${data.processed}, suggested ${data.suggested}` });
+      // If we processed entries but generated zero suggestions, fetch
+      // diagnostics so the admin sees the root cause without digging
+      // into server logs (most often: pg_trgm not enabled on the prod
+      // Postgres role, or content tables empty).
+      if (data.processed > 0 && data.suggested === 0) {
+        try {
+          const diagRes = await apiRequest("GET", "/api/admin/redirects/diagnostics");
+          const diag = await diagRes.json();
+          const causes: string[] = [];
+          if (!diag.pgTrgmAvailable) causes.push("pg_trgm extension unavailable");
+          if (!diag.suggestionsColumnExists) causes.push("suggestions column missing");
+          if (diag.studiesIndexed + diag.blogsIndexed + diag.conditionsIndexed === 0) {
+            causes.push("no indexable content");
+          }
+          const cause = causes.length > 0 ? causes.join("; ") : "all candidates scored below threshold";
+          toast({
+            title: "Processed but no suggestions generated",
+            description: `${data.processed} entries scanned, 0 matched. Likely cause: ${cause}.`,
+            variant: "destructive",
+          });
+          setDiagnostics(diag);
+        } catch {
+          toast({
+            title: "Backfill complete (0 suggestions)",
+            description: `${data.processed} processed, 0 suggested. Diagnostics endpoint failed.`,
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({ title: "Backfill complete", description: `Processed ${data.processed}, suggested ${data.suggested}` });
+      }
     },
     onError: (error: unknown) => {
       toast({ title: "Backfill failed", description: errMessage(error), variant: "destructive" });
+    },
+  });
+
+  const [diagnostics, setDiagnostics] = useState<any | null>(null);
+  const diagnosticsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/redirects/diagnostics");
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setDiagnostics(data);
+      toast({ title: "Diagnostics fetched" });
+    },
+    onError: (error: unknown) => {
+      toast({ title: "Diagnostics failed", description: errMessage(error), variant: "destructive" });
     },
   });
 
@@ -427,20 +472,87 @@ export default function RedirectsPage() {
                 {notFoundList.length} entries
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => backfillMutation.mutate()}
-              disabled={backfillMutation.isPending}
-            >
-              {backfillMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Wand2 className="h-4 w-4 mr-1" />
-              )}
-              Auto-Suggest Targets
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => diagnosticsMutation.mutate()}
+                disabled={diagnosticsMutation.isPending}
+                title="Probe pg_trgm + schema state to see why suggestions might be empty"
+              >
+                {diagnosticsMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                )}
+                Diagnostics
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => backfillMutation.mutate()}
+                disabled={backfillMutation.isPending}
+              >
+                {backfillMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4 mr-1" />
+                )}
+                Auto-Suggest Targets
+              </Button>
+            </div>
           </div>
+
+          {diagnostics && (
+            <div className="mb-4 border rounded-md p-3 bg-muted/30 text-xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium">Diagnostics</span>
+                <button
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => setDiagnostics(null)}
+                >
+                  dismiss
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 font-mono">
+                <div>
+                  pg_trgm:{" "}
+                  <span className={diagnostics.pgTrgmAvailable ? "text-green-600" : "text-red-600"}>
+                    {diagnostics.pgTrgmAvailable ? "available" : "unavailable"}
+                  </span>
+                </div>
+                <div>
+                  suggestions col:{" "}
+                  <span className={diagnostics.suggestionsColumnExists ? "text-green-600" : "text-red-600"}>
+                    {diagnostics.suggestionsColumnExists ? "exists" : "missing"}
+                  </span>
+                </div>
+                <div>
+                  sample sim:{" "}
+                  <span>{diagnostics.sampleSimilarity != null ? diagnostics.sampleSimilarity.toFixed(3) : "—"}</span>
+                </div>
+                <div>studies indexed: {diagnostics.studiesIndexed}</div>
+                <div>blogs indexed: {diagnostics.blogsIndexed}</div>
+                <div>conditions indexed: {diagnostics.conditionsIndexed}</div>
+                <div>unresolved 404s: {diagnostics.unresolvedTotal}</div>
+                <div>with suggestions: {diagnostics.unresolvedWithSuggestions}</div>
+                <div>without: {diagnostics.unresolvedWithoutSuggestions}</div>
+                <div>min trgm threshold: {diagnostics.minTrgmThreshold}</div>
+                <div>min overall score: {diagnostics.minOverallScore}</div>
+              </div>
+              {diagnostics.pgTrgmError && (
+                <div className="mt-2 text-red-600 break-words">
+                  pg_trgm error: {diagnostics.pgTrgmError}
+                </div>
+              )}
+              {!diagnostics.pgTrgmAvailable && (
+                <div className="mt-2 text-muted-foreground">
+                  Fix: run <code>CREATE EXTENSION pg_trgm;</code> on the production Postgres
+                  as a role with the privilege (often the DB owner or superuser).
+                </div>
+              )}
+            </div>
+          )}
 
           {notFoundLoading ? (
             <div className="space-y-2">
