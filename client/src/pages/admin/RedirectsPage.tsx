@@ -204,64 +204,32 @@ export default function RedirectsPage() {
 
   const backfillMutation = useMutation({
     mutationFn: async () => {
-      // Bumped 100→500 to match the new server-side cap. The cron drains
-      // continuously in the background; this button is for admins who
-      // want to chew through the backlog faster.
+      // Server returns 202 immediately; the actual batch runs in the
+      // background. We used to await here and trip the 30s fetch timeout
+      // on a 500-entry batch (~100s of work). Now we just confirm it
+      // started and refetch the lists shortly after.
       const res = await apiRequest("POST", "/api/admin/redirects/404s/backfill", { limit: 500 });
       return res.json();
     },
-    onSuccess: async (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
-      // Auto-promoted entries became real redirects; refresh that list too.
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects"] });
-      const errs = Number(data.errors ?? 0);
-      const auto = Number(data.autoPromoted ?? 0);
-      const autoSuffix = auto > 0 ? `, auto-promoted ${auto}` : "";
-      const errSuffix = errs > 0 ? `, ${errs} errored` : "";
-
-      // If we processed entries but generated zero suggestions AND zero
-      // errors, fetch diagnostics so the admin sees the root cause without
-      // digging into server logs.
-      if (data.processed > 0 && data.suggested === 0 && errs === 0) {
-        try {
-          const diagRes = await apiRequest("GET", "/api/admin/redirects/diagnostics");
-          const diag = await diagRes.json();
-          const causes: string[] = [];
-          if (!diag.pgTrgmAvailable) causes.push("pg_trgm extension unavailable");
-          if (!diag.suggestionsColumnExists) causes.push("suggestions column missing");
-          if (diag.studiesIndexed + diag.blogsIndexed + diag.conditionsIndexed === 0) {
-            causes.push("no indexable content");
-          }
-          const cause = causes.length > 0 ? causes.join("; ") : "all candidates scored below threshold";
-          toast({
-            title: "Processed but no suggestions generated",
-            description: `${data.processed} entries scanned, 0 matched. Likely cause: ${cause}.`,
-            variant: "destructive",
-          });
-          setDiagnostics(diag);
-        } catch {
-          toast({
-            title: "Backfill complete (0 suggestions)",
-            description: `${data.processed} processed, 0 suggested. Diagnostics endpoint failed.`,
-            variant: "destructive",
-          });
-        }
-      } else if (errs > 0) {
-        toast({
-          title: `Backfill done with ${errs} error${errs === 1 ? "" : "s"}`,
-          description: `Processed ${data.processed}, suggested ${data.suggested}${autoSuffix}${errSuffix}.${
-            data.firstError ? ` First: ${data.firstError}` : ""
-          }`,
-        });
-      } else {
-        toast({
-          title: "Backfill complete",
-          description: `Processed ${data.processed}, suggested ${data.suggested}${autoSuffix}`,
-        });
-      }
+    onSuccess: (data: any) => {
+      toast({
+        title: "Backfill started",
+        description:
+          data.message ??
+          `Processing up to ${data.batchSize ?? 500} entries in the background. Lists refresh in a moment.`,
+      });
+      // The batch runs server-side in the background. Refetch a couple
+      // of times so the admin sees results land without a manual reload.
+      // 8s catches small/fast batches; 45s catches the full 500-entry case.
+      const refetch = () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects"] });
+      };
+      setTimeout(refetch, 8_000);
+      setTimeout(refetch, 45_000);
     },
     onError: (error: unknown) => {
-      toast({ title: "Backfill failed", description: errMessage(error), variant: "destructive" });
+      toast({ title: "Backfill failed to start", description: errMessage(error), variant: "destructive" });
     },
   });
 

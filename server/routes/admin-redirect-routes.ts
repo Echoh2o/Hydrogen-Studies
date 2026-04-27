@@ -134,19 +134,34 @@ router.post("/404s/:id/resolve", requireAdmin, async (req: Request, res: Respons
 /** POST /api/admin/404s/backfill — Trigger suggestion backfill for unresolved 404s
  *  Body: { limit?: number, force?: boolean }  force=true re-scores entries that already have suggestions
  */
+// Fire-and-forget so the client doesn't trip its 30s fetch timeout on
+// large batches (500 entries × ~200ms ≈ 100s of work). The actual loop
+// runs to completion in the background; client just gets a 202 with the
+// batch size and learns the outcome by refreshing the 404 list.
 router.post("/404s/backfill", requireAdmin, async (req: Request, res: Response) => {
-  try {
-    // Bumped from 200→500. With per-entry try/catch the loop won't
-    // abort on a bad row, so larger batches are safe and let the admin
-    // drain a 16k backlog in a few clicks instead of 167.
-    const limit = Math.min(500, parseInt(req.body.limit as string) || 50);
-    const force = Boolean(req.body?.force);
-    const result = await backfillSuggestions(limit, { force });
-    res.json(result);
-  } catch (error) {
-    console.error("Failed to backfill suggestions:", error);
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to backfill suggestions" });
-  }
+  const limit = Math.min(500, parseInt(req.body.limit as string) || 50);
+  const force = Boolean(req.body?.force);
+
+  // Kick the work off without awaiting. backfillSuggestions has its own
+  // per-entry try/catch so a bad row can't crash the unhandled-rejection
+  // handler. We attach .catch defensively so a top-level throw still
+  // logs cleanly instead of dying silently.
+  backfillSuggestions(limit, { force })
+    .then((result) => {
+      console.log(
+        `[Backfill] done — processed ${result.processed}, suggested ${result.suggested}, ` +
+        `auto-promoted ${result.autoPromoted}, errors ${result.errors}`
+      );
+    })
+    .catch((err) => {
+      console.error("[Backfill] background batch failed:", err);
+    });
+
+  res.status(202).json({
+    started: true,
+    batchSize: limit,
+    message: `Backfill started for up to ${limit} entries. Cron also drains 100/30min in the background.`,
+  });
 });
 
 /** GET /api/admin/redirects/diagnostics — Why are suggestions empty?
