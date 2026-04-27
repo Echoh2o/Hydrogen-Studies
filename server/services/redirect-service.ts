@@ -221,6 +221,15 @@ const TOP_N = 5;
 const MIN_TRGM_THRESHOLD = 0.12; // candidate floor; anything below this is noise
 const MIN_OVERALL_SCORE = 0.18; // top candidate must clear this or we return []
 
+// Auto-promote: when a suggestion's score is this high, the backfill
+// loop creates an actual 302 redirect rather than just stashing the
+// candidate in the suggestions column for manual review. 0.65 is
+// "strong fuzzy match"; exact slug matches score 1.0 and always promote.
+// 302 (not 301) so a bad auto-promote doesn't poison browser caches —
+// admin can edit the row to 301 once they're happy with it.
+const AUTO_PROMOTE_SCORE_THRESHOLD = 0.65;
+const AUTO_PROMOTE_STATUS = 302;
+
 /** Boilerplate path segments we strip before tokenizing. */
 const PATH_NOISE_SEGMENTS = new Set([
   "studies", "study", "blog", "blogs", "article", "articles", "post", "posts",
@@ -677,7 +686,13 @@ export async function getRedirectDiagnostics(): Promise<{
 export async function backfillSuggestions(
   limit: number = 50,
   opts: { force?: boolean } = {},
-): Promise<{ processed: number; suggested: number; errors: number; firstError: string | null }> {
+): Promise<{
+  processed: number;
+  suggested: number;
+  autoPromoted: number;
+  errors: number;
+  firstError: string | null;
+}> {
   await ensureRedirectIndexes().catch(() => {});
 
   const conditions = [eq(notFoundLog.resolved, false)];
@@ -693,6 +708,7 @@ export async function backfillSuggestions(
     .limit(limit);
 
   let suggested = 0;
+  let autoPromoted = 0;
   let errors = 0;
   let firstError: string | null = null;
   for (const entry of entries) {
@@ -703,6 +719,8 @@ export async function backfillSuggestions(
     // made the manual button feel like it stopped "for no reason."
     try {
       const ranked = await getRankedSuggestions(entry.path);
+      // Always save the suggestions (even when we auto-promote) so the
+      // admin has the audit trail for what the algorithm thought.
       await db
         .update(notFoundLog)
         .set({
@@ -712,6 +730,49 @@ export async function backfillSuggestions(
         })
         .where(eq(notFoundLog.id, entry.id));
       if (ranked.length > 0) suggested++;
+
+      // Auto-promote high-confidence suggestions to actual 302 redirects.
+      // Low-confidence (0.18–0.65) still requires manual admin Resolve.
+      // Inserting directly here (instead of calling createRedirect) lets
+      // us defer the cache invalidation to one batch-wide call below —
+      // otherwise we'd reload the entire redirects table 100x per cycle.
+      const top = ranked[0];
+      if (
+        top &&
+        top.score >= AUTO_PROMOTE_SCORE_THRESHOLD &&
+        top.target.replace(/\/+$/, "") !== entry.path.toLowerCase().replace(/\/+$/, "")
+      ) {
+        const normalized = entry.path.toLowerCase().replace(/\/+$/, "") || "/";
+        try {
+          // Defense in depth — content slugs are admin-editable and could
+          // theoretically resolve to an external-looking string. Reject
+          // anything that doesn't look like a same-site path.
+          assertSameSitePath(top.target);
+          const note = `auto-promoted from 404 (score ${top.score.toFixed(2)}, ${top.contentType})`;
+          await db.insert(redirects).values({
+            fromPath: normalized,
+            toPath: top.target,
+            statusCode: AUTO_PROMOTE_STATUS,
+            note,
+          });
+          await db
+            .update(notFoundLog)
+            .set({ resolved: true })
+            .where(eq(notFoundLog.id, entry.id));
+          autoPromoted++;
+        } catch (err) {
+          // Most common: unique-constraint violation (a redirect for this
+          // path already exists). Less common: validation failure on a
+          // weird slug. Either way, the suggestions row is saved for
+          // manual review — we just skip the auto-promote.
+          logger.warn("Auto-promote skipped", TAG, {
+            path: entry.path.slice(0, 200),
+            target: top.target,
+            score: top.score,
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
     } catch (err) {
       errors++;
       const msg = err instanceof Error ? err.message : String(err);
@@ -724,7 +785,13 @@ export async function backfillSuggestions(
     }
   }
 
-  return { processed: entries.length, suggested, errors, firstError };
+  // One cache reload at the end of the loop so the new redirects start
+  // taking effect for incoming traffic immediately.
+  if (autoPromoted > 0) {
+    await invalidateRedirectCache();
+  }
+
+  return { processed: entries.length, suggested, autoPromoted, errors, firstError };
 }
 
 // ── CRUD helpers (used by admin routes) ──────────────────────

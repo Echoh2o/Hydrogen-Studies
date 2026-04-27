@@ -212,7 +212,11 @@ export default function RedirectsPage() {
     },
     onSuccess: async (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
+      // Auto-promoted entries became real redirects; refresh that list too.
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects"] });
       const errs = Number(data.errors ?? 0);
+      const auto = Number(data.autoPromoted ?? 0);
+      const autoSuffix = auto > 0 ? `, auto-promoted ${auto}` : "";
       const errSuffix = errs > 0 ? `, ${errs} errored` : "";
 
       // If we processed entries but generated zero suggestions AND zero
@@ -243,16 +247,17 @@ export default function RedirectsPage() {
           });
         }
       } else if (errs > 0) {
-        // Per-entry errors don't kill the batch any more — surface the
-        // count (and first failure) so the admin can spot patterns.
         toast({
           title: `Backfill done with ${errs} error${errs === 1 ? "" : "s"}`,
-          description: `Processed ${data.processed}, suggested ${data.suggested}${errSuffix}.${
+          description: `Processed ${data.processed}, suggested ${data.suggested}${autoSuffix}${errSuffix}.${
             data.firstError ? ` First: ${data.firstError}` : ""
           }`,
         });
       } else {
-        toast({ title: "Backfill complete", description: `Processed ${data.processed}, suggested ${data.suggested}` });
+        toast({
+          title: "Backfill complete",
+          description: `Processed ${data.processed}, suggested ${data.suggested}${autoSuffix}`,
+        });
       }
     },
     onError: (error: unknown) => {
@@ -410,10 +415,23 @@ export default function RedirectsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {redirectsList.map((r) => (
+                  {redirectsList.map((r) => {
+                    const isAutoPromoted = r.note?.startsWith("auto-promoted from 404") ?? false;
+                    return (
                     <TableRow key={r.id}>
                       <TableCell className="font-mono text-sm truncate max-w-[250px]" title={r.fromPath}>
-                        {r.fromPath}
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{r.fromPath}</span>
+                          {isAutoPromoted && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1 py-0 h-4 border-amber-400 text-amber-700 bg-amber-50 shrink-0"
+                              title={r.note ?? ""}
+                            >
+                              AUTO
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-mono text-sm truncate max-w-[250px]" title={r.toPath}>
                         {r.toPath}
@@ -460,7 +478,8 @@ export default function RedirectsPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
