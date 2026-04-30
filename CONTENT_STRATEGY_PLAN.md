@@ -294,6 +294,7 @@ If we hit those, the system works. If not, we look at what GSC says is happening
 
 - [x] **Me:** Phase A backend (schema, OAuth, sync service, cron, endpoints, encryption helper).
 - [x] **Me:** Phase A admin UI (Search Console page + System Health card cross-wire).
+- [x] **Me:** Phase A cross-wires (blog list GSC/GA4 columns, blog edit GSC panel, Generate page GSC opportunity, Pillar dashboard metrics, recommendation composite GSC component).
 - [x] **Me:** Deploy Phase A.
 - [x] **Me:** Phase B (pillar/cluster workflow + dashboard at /admin/seo/pillars).
 - [x] **Me:** Phase D backend (GA4 schema, OAuth, sync service, cron, endpoints — reuses crypto helper + GSC OAuth client).
