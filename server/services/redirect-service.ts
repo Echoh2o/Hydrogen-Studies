@@ -6,7 +6,7 @@
  */
 
 import { db } from "../db";
-import { redirects, notFoundLog, studies, blogArticles, healthConditions } from "@shared/schema";
+import { redirects, notFoundLog, studies, blogArticles, healthConditions, redirectActionsLog } from "@shared/schema";
 import type { RedirectSuggestion } from "@shared/schema";
 import { eq, sql, desc, and, inArray } from "drizzle-orm";
 import { logger } from "../utils/logger";
@@ -30,6 +30,28 @@ export function ensureRedirectIndexes(): Promise<void> {
     } catch (err) {
       hadRequiredFailure = true;
       logger.error("Failed to add not_found_log.suggestions column", err, TAG);
+    }
+    // Audit log table — idempotent CREATE so a fresh deploy works without
+    // a separate migration step.
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS redirect_actions_log (
+          id serial PRIMARY KEY,
+          action text NOT NULL,
+          from_path text NOT NULL,
+          to_path text,
+          status_code integer,
+          score text,
+          actor text NOT NULL DEFAULT 'system',
+          note text,
+          created_at timestamp NOT NULL DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS redirect_actions_log_created_at_idx ON redirect_actions_log (created_at)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS redirect_actions_log_from_path_idx ON redirect_actions_log (from_path)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS redirect_actions_log_action_idx ON redirect_actions_log (action)`);
+    } catch (err) {
+      logger.warn("redirect_actions_log setup failed", TAG, { err: (err as Error).message });
     }
     // pg_trgm + GIN indexes are a perf optimization; tolerate failure
     // (some hosted Postgres roles can't CREATE EXTENSION).
@@ -853,6 +875,14 @@ export async function backfillSuggestions(
             .set({ resolved: true })
             .where(eq(notFoundLog.id, entry.id));
           autoPromoted++;
+          await logRedirectAction({
+            action: "auto_promote",
+            fromPath: normalized,
+            toPath: top.target,
+            statusCode: AUTO_PROMOTE_STATUS,
+            score: top.score,
+            note,
+          });
         } catch (err) {
           // Most common: unique-constraint violation (a redirect for this
           // path already exists). Less common: validation failure on a
@@ -943,7 +973,7 @@ export async function listRedirects(opts: {
   return query.where(and(...conditions));
 }
 
-export async function createRedirect(fromPath: string, toPath: string, statusCode = 301, note?: string) {
+export async function createRedirect(fromPath: string, toPath: string, statusCode = 301, note?: string, opts: { actor?: string; action?: string } = {}) {
   // Validate *before* doing any loop/self-redirect work so we never even
   // consider an external URL as a valid target.
   assertSameSitePath(toPath);
@@ -979,10 +1009,22 @@ export async function createRedirect(fromPath: string, toPath: string, statusCod
     .where(eq(notFoundLog.path, normalized));
 
   await invalidateRedirectCache();
+  await logRedirectAction({
+    action: opts.action ?? "created",
+    fromPath: normalized,
+    toPath,
+    statusCode,
+    actor: opts.actor ?? "system",
+    note,
+  });
   return row;
 }
 
-export async function updateRedirect(id: number, data: { toPath?: string; statusCode?: number; isActive?: boolean; note?: string }) {
+export async function updateRedirect(
+  id: number,
+  data: { toPath?: string; statusCode?: number; isActive?: boolean; note?: string },
+  opts: { actor?: string } = {},
+) {
   // If the caller is changing the target, re-validate. The old code path
   // skipped this entirely — an admin could PUT a redirect with toPath
   // "//evil.com" and bypass the create-time check.
@@ -996,12 +1038,36 @@ export async function updateRedirect(id: number, data: { toPath?: string; status
     .where(eq(redirects.id, id))
     .returning();
   await invalidateRedirectCache();
+  if (row) {
+    await logRedirectAction({
+      action: "updated",
+      fromPath: row.fromPath,
+      toPath: row.toPath,
+      statusCode: row.statusCode,
+      actor: opts.actor ?? "system",
+      note: data.note ?? row.note,
+    });
+  }
   return row;
 }
 
-export async function deleteRedirect(id: number) {
+export async function deleteRedirect(id: number, opts: { actor?: string } = {}) {
+  // Read the row first so the audit log captures what was deleted.
+  // Failed delete still ends up logged below if the row never existed,
+  // but that's a no-op the admin can ignore.
+  const [existing] = await db.select().from(redirects).where(eq(redirects.id, id)).limit(1);
   await db.delete(redirects).where(eq(redirects.id, id));
   await invalidateRedirectCache();
+  if (existing) {
+    await logRedirectAction({
+      action: "deleted",
+      fromPath: existing.fromPath,
+      toPath: existing.toPath,
+      statusCode: existing.statusCode,
+      actor: opts.actor ?? "system",
+      note: existing.note,
+    });
+  }
 }
 
 export async function list404s(options: { resolved?: boolean; limit?: number; offset?: number } = {}) {
@@ -1024,7 +1090,7 @@ export async function list404s(options: { resolved?: boolean; limit?: number; of
   return query;
 }
 
-export async function resolve404(notFoundId: number, toPath: string, statusCode = 301) {
+export async function resolve404(notFoundId: number, toPath: string, statusCode = 301, opts: { actor?: string } = {}) {
   // Get the 404 entry
   const [entry] = await db
     .select()
@@ -1033,10 +1099,77 @@ export async function resolve404(notFoundId: number, toPath: string, statusCode 
 
   if (!entry) throw new Error("404 entry not found");
 
-  // Create the redirect
-  const redirect = await createRedirect(entry.path, toPath, statusCode);
+  // Create the redirect — pass action="manual_resolve" so the audit
+  // log distinguishes admin-initiated resolves from generic creates.
+  const redirect = await createRedirect(entry.path, toPath, statusCode, undefined, {
+    actor: opts.actor,
+    action: "manual_resolve",
+  });
 
   return { redirect, notFoundEntry: entry };
+}
+
+/**
+ * Append a row to redirect_actions_log. Best-effort — never throws,
+ * never blocks the calling mutation. The log is observability, not
+ * a system-of-record, so a failed insert shouldn't break the user
+ * action it was meant to describe.
+ */
+async function logRedirectAction(entry: {
+  action: string;
+  fromPath: string;
+  toPath?: string | null;
+  statusCode?: number | null;
+  score?: number | null;
+  actor?: string;
+  note?: string | null;
+}): Promise<void> {
+  try {
+    await db.insert(redirectActionsLog).values({
+      action: entry.action,
+      fromPath: entry.fromPath,
+      toPath: entry.toPath ?? null,
+      statusCode: entry.statusCode ?? null,
+      score: entry.score != null ? entry.score.toFixed(3) : null,
+      actor: entry.actor ?? "system",
+      note: entry.note ?? null,
+    });
+  } catch (err) {
+    logger.warn("Failed to write redirect_actions_log entry", TAG, {
+      action: entry.action,
+      fromPath: entry.fromPath.slice(0, 200),
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
+ * Read recent audit-log entries, newest first. Optional filters by action
+ * type and by fromPath substring for the admin History tab.
+ */
+export async function listRedirectActions(opts: {
+  action?: string;
+  search?: string;
+  limit?: number;
+} = {}): Promise<Array<typeof redirectActionsLog.$inferSelect>> {
+  const limit = Math.min(500, Math.max(1, opts.limit ?? 100));
+  const conditions = [];
+  if (opts.action && opts.action !== "all") {
+    conditions.push(eq(redirectActionsLog.action, opts.action));
+  }
+  if (opts.search) {
+    const pattern = `%${opts.search.toLowerCase()}%`;
+    conditions.push(
+      sql`(LOWER(${redirectActionsLog.fromPath}) LIKE ${pattern} OR LOWER(${redirectActionsLog.toPath}) LIKE ${pattern})`,
+    );
+  }
+  const query = db
+    .select()
+    .from(redirectActionsLog)
+    .orderBy(desc(redirectActionsLog.createdAt))
+    .limit(limit);
+  if (conditions.length === 0) return query;
+  return query.where(and(...conditions));
 }
 
 /**
@@ -1050,7 +1183,7 @@ export async function resolve404(notFoundId: number, toPath: string, statusCode 
  */
 export async function bulkResolve404s(
   ids: number[],
-  opts: { statusCode?: 301 | 302 } = {},
+  opts: { statusCode?: 301 | 302; actor?: string } = {},
 ): Promise<{
   resolved: number;
   skippedNoSuggestion: number;
@@ -1087,7 +1220,10 @@ export async function bulkResolve404s(
       continue;
     }
     try {
-      await createRedirect(entry.path, top.target, statusCode);
+      await createRedirect(entry.path, top.target, statusCode, undefined, {
+        action: "bulk_resolve",
+        actor: opts.actor,
+      });
       resolved++;
     } catch (err) {
       errors++;
@@ -1112,13 +1248,29 @@ export async function bulkResolve404s(
  * The entries stay in the table (admin can find them by toggling to
  * "Resolved" view) but won't bog down the unresolved list.
  */
-export async function bulkIgnore404s(ids: number[]): Promise<{ ignored: number }> {
+export async function bulkIgnore404s(ids: number[], opts: { actor?: string } = {}): Promise<{ ignored: number }> {
   if (!Array.isArray(ids) || ids.length === 0) return { ignored: 0 };
+  // Read paths first so we can record what was ignored in the audit log.
+  const beforeUpdate = await db
+    .select({ id: notFoundLog.id, path: notFoundLog.path })
+    .from(notFoundLog)
+    .where(and(inArray(notFoundLog.id, ids), eq(notFoundLog.resolved, false)));
+
   const result: any = await db
     .update(notFoundLog)
     .set({ resolved: true })
     .where(and(inArray(notFoundLog.id, ids), eq(notFoundLog.resolved, false)))
     .returning({ id: notFoundLog.id });
   const rows = result?.length ?? 0;
+
+  // Best-effort audit trail. One log entry per ignored path.
+  for (const entry of beforeUpdate) {
+    await logRedirectAction({
+      action: "bulk_ignore",
+      fromPath: entry.path,
+      actor: opts.actor,
+      note: "marked resolved without redirect",
+    });
+  }
   return { ignored: rows };
 }

@@ -16,9 +16,17 @@ import {
   getRedirectDiagnostics,
   bulkResolve404s,
   bulkIgnore404s,
+  listRedirectActions,
 } from "../services/redirect-service";
 
 const router = Router();
+
+/** Pull a stable actor string from the session. Used as the audit-log
+ *  actor field so the History tab shows "user 17" not just "system". */
+function actorFrom(req: Request): string {
+  const userId = (req as any).session?.userId;
+  return userId != null ? `user:${userId}` : "system";
+}
 
 // ── Redirects CRUD ────────────────────────────────────────────
 
@@ -48,7 +56,7 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "fromPath and toPath are required" });
     }
     const code = statusCode === 302 ? 302 : 301;
-    const row = await createRedirect(fromPath, toPath, code, note);
+    const row = await createRedirect(fromPath, toPath, code, note, { actor: actorFrom(req) });
     res.status(201).json(row);
   } catch (error: any) {
     if (error.code === "23505") {
@@ -79,7 +87,7 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "No valid update fields provided" });
     }
 
-    const row = await updateRedirect(id, updates);
+    const row = await updateRedirect(id, updates, { actor: actorFrom(req) });
     if (!row) return res.status(404).json({ error: "Redirect not found" });
     res.json(row);
   } catch (error) {
@@ -93,7 +101,7 @@ router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid redirect ID" });
-    await deleteRedirect(id);
+    await deleteRedirect(id, { actor: actorFrom(req) });
     res.json({ success: true });
   } catch (error) {
     console.error("Failed to delete redirect:", error);
@@ -126,7 +134,7 @@ router.post("/404s/:id/resolve", requireAdmin, async (req: Request, res: Respons
     const { toPath, statusCode } = req.body;
     if (!toPath) return res.status(400).json({ error: "toPath is required" });
 
-    const result = await resolve404(id, toPath, statusCode === 302 ? 302 : 301);
+    const result = await resolve404(id, toPath, statusCode === 302 ? 302 : 301, { actor: actorFrom(req) });
     res.status(201).json(result);
   } catch (error: any) {
     if (error.message === "404 entry not found") {
@@ -150,7 +158,7 @@ router.post("/404s/bulk-resolve", requireAdmin, async (req: Request, res: Respon
     if (ids.length === 0) return res.status(400).json({ error: "ids array required" });
     if (ids.length > 500) return res.status(400).json({ error: "max 500 ids per call" });
     const statusCode = req.body?.statusCode === 302 ? 302 : 301;
-    const result = await bulkResolve404s(ids, { statusCode });
+    const result = await bulkResolve404s(ids, { statusCode, actor: actorFrom(req) });
     res.json(result);
   } catch (error) {
     console.error("Bulk resolve failed:", error);
@@ -167,7 +175,7 @@ router.post("/404s/bulk-ignore", requireAdmin, async (req: Request, res: Respons
     const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter((n: any) => typeof n === "number") : [];
     if (ids.length === 0) return res.status(400).json({ error: "ids array required" });
     if (ids.length > 500) return res.status(400).json({ error: "max 500 ids per call" });
-    const result = await bulkIgnore404s(ids);
+    const result = await bulkIgnore404s(ids, { actor: actorFrom(req) });
     res.json(result);
   } catch (error) {
     console.error("Bulk ignore failed:", error);
@@ -206,6 +214,26 @@ router.post("/404s/backfill", requireAdmin, async (req: Request, res: Response) 
     batchSize: limit,
     message: `Backfill started for up to ${limit} entries. Cron also drains 100/30min in the background.`,
   });
+});
+
+/** GET /api/admin/redirects/actions-log — Audit trail of every redirect mutation
+ *  Query params: action (filter by action type), search (LIKE on from/to), limit (max 500).
+ */
+router.get("/actions-log", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const action = typeof req.query.action === "string" ? req.query.action : undefined;
+    const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 200) : undefined;
+    const limit = Math.min(500, parseInt(req.query.limit as string) || 100);
+    const rows = await listRedirectActions({
+      action: action || undefined,
+      search: search || undefined,
+      limit,
+    });
+    res.json({ data: rows });
+  } catch (error) {
+    console.error("Failed to fetch redirect actions log:", error);
+    res.status(500).json({ error: "Failed to fetch actions log" });
+  }
 });
 
 /** GET /api/admin/redirects/diagnostics — Why are suggestions empty?

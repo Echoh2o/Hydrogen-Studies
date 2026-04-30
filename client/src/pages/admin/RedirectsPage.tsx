@@ -73,6 +73,18 @@ interface RedirectSuggestion {
   reasons: string[];
 }
 
+interface RedirectActionLog {
+  id: number;
+  action: string;
+  fromPath: string;
+  toPath: string | null;
+  statusCode: number | null;
+  score: string | null;
+  actor: string;
+  note: string | null;
+  createdAt: string;
+}
+
 interface NotFoundEntry {
   id: number;
   path: string;
@@ -92,7 +104,7 @@ export default function RedirectsPage() {
   const { toast } = useToast();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"redirects" | "404s">("redirects");
+  const [activeTab, setActiveTab] = useState<"redirects" | "404s" | "history">("redirects");
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -114,6 +126,10 @@ export default function RedirectsPage() {
   const [redirectSearch, setRedirectSearch] = useState<string>("");
   const [redirectType, setRedirectType] = useState<"all" | "auto" | "manual">("all");
   const [redirectActive, setRedirectActive] = useState<"all" | "true" | "false">("all");
+
+  // History tab state — filter by action type and a free-text path search.
+  const [historyAction, setHistoryAction] = useState<string>("all");
+  const [historySearch, setHistorySearch] = useState<string>("");
 
   // ── Queries ───────────────────────────────────────────────
 
@@ -148,6 +164,26 @@ export default function RedirectsPage() {
 
   const redirectsList = redirectsData?.data || [];
   const notFoundList = notFoundData?.data || [];
+
+  // History tab — only fetched when the tab is active to avoid a query
+  // on every page load. queryKey includes filters for refetch-on-change.
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+  } = useQuery<{ data: RedirectActionLog[] }>({
+    queryKey: ["/api/admin/redirects/actions-log", historyAction, historySearch],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (historyAction !== "all") params.set("action", historyAction);
+      if (historySearch.trim()) params.set("search", historySearch.trim());
+      params.set("limit", "200");
+      const res = await apiRequest("GET", `/api/admin/redirects/actions-log?${params}`);
+      return res.json();
+    },
+    enabled: activeTab === "history",
+    refetchInterval: activeTab === "history" ? 15_000 : false,
+  });
+  const historyList = historyData?.data ?? [];
 
   const totalRedirects = redirectsList.length;
   const activeRedirects = redirectsList.filter((r) => r.isActive).length;
@@ -401,6 +437,16 @@ export default function RedirectsPage() {
           onClick={() => setActiveTab("404s")}
         >
           404 Log
+        </button>
+        <button
+          className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "history"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-primary"
+          }`}
+          onClick={() => setActiveTab("history")}
+        >
+          History
         </button>
       </div>
 
@@ -832,6 +878,131 @@ export default function RedirectsPage() {
                         {entry.resolved && (
                           <Badge variant="secondary">Resolved</Badge>
                         )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── History Tab ───────────────────────────────────── */}
+      {activeTab === "history" && (
+        <>
+          <div className="flex flex-wrap items-end gap-2 mb-4">
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">Search</Label>
+              <Input
+                placeholder="from or to path…"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                className="h-8 w-[240px] text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">Action</Label>
+              <Select value={historyAction} onValueChange={setHistoryAction}>
+                <SelectTrigger className="h-8 w-[160px] text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All actions</SelectItem>
+                  <SelectItem value="auto_promote">Auto-promote</SelectItem>
+                  <SelectItem value="manual_resolve">Manual resolve</SelectItem>
+                  <SelectItem value="bulk_resolve">Bulk resolve</SelectItem>
+                  <SelectItem value="bulk_ignore">Bulk ignore</SelectItem>
+                  <SelectItem value="created">Created</SelectItem>
+                  <SelectItem value="updated">Updated</SelectItem>
+                  <SelectItem value="deleted">Deleted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(historySearch || historyAction !== "all") && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8"
+                onClick={() => {
+                  setHistorySearch("");
+                  setHistoryAction("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground self-center ml-2">
+              {historyList.length} entr{historyList.length === 1 ? "y" : "ies"} (newest first, refreshes every 15s)
+            </p>
+          </div>
+
+          {historyLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : historyList.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p>No history entries match.</p>
+              <p className="text-sm mt-1">Audit log starts populating from the next redirect mutation.</p>
+            </div>
+          ) : (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[140px]">When</TableHead>
+                    <TableHead className="w-[120px]">Action</TableHead>
+                    <TableHead className="min-w-[220px]">From</TableHead>
+                    <TableHead className="min-w-[220px]">To</TableHead>
+                    <TableHead className="w-[60px]">Code</TableHead>
+                    <TableHead className="w-[70px]">Score</TableHead>
+                    <TableHead className="w-[100px]">Actor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historyList.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">
+                        {formatRelative(row.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-1.5 py-0 h-5 ${
+                            row.action === "auto_promote"
+                              ? "border-amber-400 text-amber-700 bg-amber-50"
+                              : row.action === "deleted"
+                              ? "border-red-400 text-red-700 bg-red-50"
+                              : row.action.startsWith("bulk_")
+                              ? "border-blue-400 text-blue-700 bg-blue-50"
+                              : ""
+                          }`}
+                          title={row.note ?? ""}
+                        >
+                          {row.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs truncate max-w-[260px]" title={row.fromPath}>
+                        {row.fromPath}
+                      </TableCell>
+                      <TableCell
+                        className="font-mono text-xs truncate max-w-[260px] text-muted-foreground"
+                        title={row.toPath ?? ""}
+                      >
+                        {row.toPath ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs tabular-nums">
+                        {row.statusCode ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs tabular-nums">
+                        {row.score ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {row.actor}
                       </TableCell>
                     </TableRow>
                   ))}

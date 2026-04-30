@@ -2707,6 +2707,42 @@ export const systemSecrets = pgTable("system_secrets", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ── Redirect actions log ─────────────────────────────────────
+//
+// Audit trail for every mutation in the redirect system. Lets the
+// admin answer "who changed what / when" without tailing Railway
+// logs. Auto-promotes show actor='system'; manual changes carry the
+// admin user id.
+//
+// Kept narrow on purpose — no joins to the redirects table since
+// the row may have been deleted by the time the admin reviews it.
+// The fromPath + toPath strings are denormalized into this table
+// so the history survives.
+export const redirectActionsLog = pgTable(
+  "redirect_actions_log",
+  {
+    id: serial("id").primaryKey(),
+    /** auto_promote | manual_resolve | bulk_resolve | bulk_ignore | created | updated | deleted */
+    action: text("action").notNull(),
+    fromPath: text("from_path").notNull(),
+    toPath: text("to_path"), // null for ignore/delete actions
+    statusCode: integer("status_code"), // 301 | 302 | null for non-redirect actions
+    /** For auto-promotes — which suggestion score won. 0–1. */
+    score: text("score"),
+    /** "system" for cron, otherwise the admin user_id as text. */
+    actor: text("actor").notNull().default("system"),
+    note: text("note"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    createdAtIdx: index("redirect_actions_log_created_at_idx").on(table.createdAt),
+    fromPathIdx: index("redirect_actions_log_from_path_idx").on(table.fromPath),
+    actionIdx: index("redirect_actions_log_action_idx").on(table.action),
+  }),
+);
+
+export type RedirectActionLogEntry = typeof redirectActionsLog.$inferSelect;
+
 export interface RedirectSuggestion {
   target: string; // absolute path, e.g. "/studies/foo"
   contentType: "study" | "blog" | "condition";
