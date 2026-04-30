@@ -54,6 +54,11 @@ export class JobScheduler {
   // a 16k backlog. Mirror of the image-backfill pattern (commit df085dc).
   private readonly REDIRECT_SUGGESTION_INTERVAL_MS = 30 * 60 * 1000;
   private lastRedirectSuggestionCheck: Date | null = null;
+  // Bot-probe cleanup runs once per day. Deletes single-hit referrer-less
+  // entries older than 7 days from not_found_log so the table stays
+  // useful for actual SEO recovery instead of drowning in scanner noise.
+  private readonly NOT_FOUND_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+  private lastNotFoundCleanupCheck: Date | null = null;
   // Image backfill runs every 30 min. Each cycle handles 5 blogs + 5
   // studies — keeps AI cost predictable while still draining a backlog
   // of ~500 missing images in a few days unattended.
@@ -168,6 +173,7 @@ export class JobScheduler {
         { name: "ga4-sync", lastRun: toISO(this.lastGa4SyncCheck), intervalMs: this.GA4_SYNC_INTERVAL_MS },
         { name: "image-backfill", lastRun: toISO(this.lastImageBackfillCheck), intervalMs: this.IMAGE_BACKFILL_INTERVAL_MS },
         { name: "redirect-suggestion-backfill", lastRun: toISO(this.lastRedirectSuggestionCheck), intervalMs: this.REDIRECT_SUGGESTION_INTERVAL_MS },
+        { name: "not-found-cleanup", lastRun: toISO(this.lastNotFoundCleanupCheck), intervalMs: this.NOT_FOUND_CLEANUP_INTERVAL_MS },
       ],
     };
   }
@@ -505,6 +511,24 @@ export class JobScheduler {
         logger.error("Job 20 (redirect-suggestion-backfill) unexpected error", error, "JobScheduler");
       }
 
+      // Job 21: not_found_log cleanup — once per day, prune obvious
+      // bot-probe detritus so the table stays focused on actionable
+      // 404s. 1-minute timeout (single DELETE).
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runNotFoundCleanupJob(),
+          60 * 1000,
+          "not-found-cleanup"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "not-found-cleanup" });
+        }
+      } catch (error) {
+        logger.error("Job 21 (not-found-cleanup) unexpected error", error, "JobScheduler");
+      }
+
       // Job 19: GA4 sync. Skips silently when no credentials are stored.
       // 10-minute timeout for the first-run 90-day backfill.
       try {
@@ -548,6 +572,33 @@ export class JobScheduler {
       this.lastImageBackfillCheck = new Date();
     } catch (err) {
       logger.error("Image backfill job error", err, "JobScheduler");
+    }
+  }
+
+  /**
+   * Job 21: not_found_log cleanup.
+   *
+   * Daily prune of single-hit referrer-less entries older than 7 days
+   * — the signature of bot/scanner probes that will never repeat. Real
+   * user 404s either get hit more than once or carry a referrer from
+   * the page that linked to them.
+   */
+  private async runNotFoundCleanupJob() {
+    try {
+      if (this.lastNotFoundCleanupCheck) {
+        const elapsed = Date.now() - this.lastNotFoundCleanupCheck.getTime();
+        if (elapsed < this.NOT_FOUND_CLEANUP_INTERVAL_MS) return;
+      }
+      const { cleanupBotProbes } = await import("./redirect-service");
+      const result = await cleanupBotProbes();
+      this.lastNotFoundCleanupCheck = new Date();
+      if (result.deleted > 0) {
+        logger.info("not_found_log cleanup complete", "JobScheduler", {
+          deleted: result.deleted,
+        });
+      }
+    } catch (err) {
+      logger.error("not_found_log cleanup error", err, "JobScheduler");
     }
   }
 

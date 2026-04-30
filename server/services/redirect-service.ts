@@ -167,23 +167,82 @@ export function redirectMiddleware() {
  * Log a 404 occurrence. Call this from your 404 handler.
  * Uses upsert to increment hit_count for repeat paths.
  */
+/**
+ * Bot/scanner probe patterns — paths that will NEVER be real user
+ * traffic. Hits matching any of these get the correct 404 response
+ * but skip the database write so the not_found_log stays useful for
+ * actual SEO recovery work.
+ *
+ * The list isn't trying to block anything (the request still 404s
+ * normally) — it's purely a noise filter for the admin UI.
+ *
+ * SEO note: blocking or redirecting these would be wrong. A 404 is
+ * the correct response for a path that doesn't exist; Googlebot
+ * doesn't generate this traffic, so there's nothing to "save."
+ */
+const BOT_PROBE_PATTERNS: RegExp[] = [
+  // Static assets the SPA fallback may not have served
+  /\.(js|css|map|png|jpg|jpeg|gif|svg|ico|webp|avif|woff2?|ttf|eot|otf|json|xml|txt|html?|pdf)$/i,
+  // Our own API surface — 404s here are bugs, not SEO signal
+  /^\/api\//,
+  // Dotfile / config file probes (.env, .git, .aws, etc.)
+  /^\/\.(env|git|aws|ssh|docker|svn|hg|bzr|htaccess|htpasswd|DS_Store)/i,
+  // WordPress + plugin enumeration
+  /^\/wp[-/]/i,
+  /^\/wordpress/i,
+  /^\/xmlrpc\.php/i,
+  /\/wlwmanifest\.xml/i,
+  // PHP DB admin tools
+  /^\/(phpmy|myadmin|pma|sql|adminer|dbadmin|mysqladmin|websql)/i,
+  // Generic admin probes (legit /admin-* segments still allowed via lookahead)
+  /^\/admin(?!-)/i,
+  /^\/(administrator|webadmin|sysadmin|dashboard\.php)/i,
+  // Other CMS scanners
+  /^\/(joomla|drupal|magento|prestashop|opencart|typo3)/i,
+  // Setup / install / config endpoints
+  /^\/(setup|install|installer|config|configuration)\.(php|aspx?|jsp)/i,
+  // Server status / info
+  /^\/server-(status|info)/i,
+  // CI / CD / Java app server probes
+  /^\/(jenkins|hudson|tomcat|struts|jboss|weblogic|coldfusion)/i,
+  // CGI
+  /^\/cgi(-bin|-sys)?\//i,
+  // Microsoft Exchange / OWA enumeration
+  /^\/(owa|exchange|autodiscover|ews|ecp|aspnet_client)/i,
+  // Spring/Actuator + management consoles
+  /^\/(actuator|management|console|q\/health)/i,
+  // Router / IoT exploit endpoints
+  /\/(boaform|GponForm|HNAP1|NetCfg|currentsetting\.htm)/i,
+  // Old framework / legacy
+  /\.(asp|aspx|jsp|jspx|cgi|do|action)$/i,
+  // Laravel / PHP debug tools
+  /^\/(_(ignition|debugbar|profiler)|telescope|horizon)/i,
+  // Common AWS / GCP key probes
+  /\/(credentials|aws\.yml|gcp-credentials|service-account)/i,
+  // Let's Encrypt — validation requests we never serve directly
+  /^\/\.well-known\/acme-challenge\//i,
+  // Cisco/Fortinet/etc CVE probes
+  /\/(remote|proxy|fortinet|fortigate|vpn|sslvpn)/i,
+  // Vulnerability scanners that ID themselves in the path
+  /\/(nikto|nmap|sqlmap|metasploit|nessus|burp)/i,
+];
+
+function isBotProbe(normalizedPath: string): boolean {
+  for (const pattern of BOT_PROBE_PATTERNS) {
+    if (pattern.test(normalizedPath)) return true;
+  }
+  return false;
+}
+
 export async function log404(path: string, referrer?: string): Promise<void> {
   const normalizedPath = path.toLowerCase().replace(/\/+$/, "") || "/";
 
   // Skip paths that are too long (prevent storage abuse) or the homepage
   if (normalizedPath.length > 500 || normalizedPath === "/") return;
 
-  // Skip noise: assets, source maps, bots probing common paths
-  if (
-    normalizedPath.match(/\.(js|css|map|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$/) ||
-    normalizedPath.startsWith("/api/") ||
-    normalizedPath.startsWith("/.env") ||
-    normalizedPath.startsWith("/wp-") ||
-    normalizedPath.startsWith("/phpmy") ||
-    (normalizedPath.startsWith("/admin") && !normalizedPath.startsWith("/admin-"))
-  ) {
-    return;
-  }
+  // Skip well-known bot/scanner probe patterns. The 404 response is
+  // still returned by the SPA catch-all — we just don't log it.
+  if (isBotProbe(normalizedPath)) return;
 
   try {
     await db.execute(sql`
@@ -565,6 +624,40 @@ export async function getRankedSuggestions(path: string): Promise<RedirectSugges
 export async function suggestRedirectTarget(path: string): Promise<string | null> {
   const ranked = await getRankedSuggestions(path);
   return ranked[0]?.target ?? null;
+}
+
+/**
+ * Periodic cleanup: delete obvious bot detritus from not_found_log.
+ *
+ * Heuristic for "almost certainly scanner noise":
+ *   - hit_count = 1 (no one repeated the request)
+ *   - referrer IS NULL (no real page linked to this 404)
+ *   - last_seen_at older than 7 days (cron has had multiple chances)
+ *   - resolved = false (don't touch admin-curated entries)
+ *
+ * A real user typo on a published URL almost always either gets
+ * repeated (someone shares it, the same user retries) OR carries a
+ * referrer (they clicked a broken link from somewhere). Anything that
+ * fails BOTH tests after a week is safe to drop.
+ *
+ * Returns the count of rows removed so the cron can log progress.
+ */
+export async function cleanupBotProbes(): Promise<{ deleted: number }> {
+  try {
+    const result: any = await db.execute(sql`
+      DELETE FROM not_found_log
+      WHERE hit_count = 1
+        AND referrer IS NULL
+        AND resolved = false
+        AND last_seen_at < NOW() - INTERVAL '7 days'
+    `);
+    // node-postgres / drizzle returns rowCount on the result object.
+    const deleted = Number(result?.rowCount ?? result?.count ?? 0);
+    return { deleted };
+  } catch (err) {
+    logger.error("not_found_log cleanup failed", err, TAG);
+    return { deleted: 0 };
+  }
 }
 
 /**
