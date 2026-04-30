@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -53,6 +52,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   Select,
@@ -99,11 +99,12 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showAddExcludedDialog, setShowAddExcludedDialog] = useState(false);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-  const [processingStatus, setProcessingStatus] = useState<{
-    message: string;
-    type: "info" | "success" | "error";
-    visible: boolean;
-  }>({ message: "", type: "info", visible: false });
+
+  // Match the toast pattern every other admin page uses. Previously
+  // this page rolled its own visible-Alert state, which meant a separate
+  // dismiss-button + auto-stale state to manage. useToast handles
+  // queueing + auto-dismiss + accessibility for free.
+  const { toast } = useToast();
 
   // Query for keywords
   const keywordsQuery = useQuery({
@@ -151,21 +152,13 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
       return response.json();
     },
     onSuccess: () => {
-      setProcessingStatus({
-        message: "Keyword added successfully",
-        type: "success",
-        visible: true,
-      });
+      toast({ title: "Keyword added successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
       setNewKeyword({ term: "", category: "general" });
       setShowAddDialog(false);
     },
     onError: (error) => {
-      setProcessingStatus({
-        message: `Error: ${error.message}`,
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Add keyword failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -184,21 +177,13 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
       return response.json();
     },
     onSuccess: () => {
-      setProcessingStatus({
-        message: "Excluded keyword added successfully",
-        type: "success",
-        visible: true,
-      });
+      toast({ title: "Excluded keyword added successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/keywords/excluded"] });
       setNewExcludedKeyword({ term: "", reason: "" });
       setShowAddExcludedDialog(false);
     },
     onError: (error) => {
-      setProcessingStatus({
-        message: `Error: ${error.message}`,
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Add excluded keyword failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -220,11 +205,7 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
       queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
     },
     onError: (error) => {
-      setProcessingStatus({
-        message: `Error: ${error.message}`,
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Update keyword status failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -239,19 +220,11 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
       return response.json();
     },
     onSuccess: () => {
-      setProcessingStatus({
-        message: "Keyword deleted successfully",
-        type: "success",
-        visible: true,
-      });
+      toast({ title: "Keyword deleted successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
     },
     onError: (error) => {
-      setProcessingStatus({
-        message: `Error: ${error.message}`,
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Delete keyword failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -266,19 +239,14 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
       return response.json();
     },
     onSuccess: (data) => {
-      setProcessingStatus({
-        message: `Monitor ran successfully. Found ${data.found} new studies.`,
-        type: "success",
-        visible: true,
+      toast({
+        title: "Monitor ran successfully",
+        description: `Found ${data.found} new studies.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/keywords/results"] });
     },
     onError: (error) => {
-      setProcessingStatus({
-        message: `Error: ${error.message}`,
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Monitor run failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -301,22 +269,14 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
       setSelectedResults([]);
     },
     onError: (error) => {
-      setProcessingStatus({
-        message: `Error: ${error.message}`,
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Update result status failed", description: error.message, variant: "destructive" });
     },
   });
 
   // Handle adding a new keyword
   const handleAddKeyword = () => {
     if (!newKeyword.term.trim()) {
-      setProcessingStatus({
-        message: "Keyword term cannot be empty",
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Keyword term cannot be empty", variant: "destructive" });
       return;
     }
 
@@ -326,11 +286,7 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
   // Handle adding a new excluded keyword
   const handleAddExcludedKeyword = () => {
     if (!newExcludedKeyword.term.trim()) {
-      setProcessingStatus({
-        message: "Excluded keyword term cannot be empty",
-        type: "error",
-        visible: true,
-      });
+      toast({ title: "Excluded keyword term cannot be empty", variant: "destructive" });
       return;
     }
 
@@ -368,11 +324,7 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
   // Handle batch approving selected results
   const handleBatchApprove = () => {
     if (selectedResults.length === 0) {
-      setProcessingStatus({
-        message: "No results selected",
-        type: "info",
-        visible: true,
-      });
+      toast({ title: "No results selected" });
       return;
     }
 
@@ -391,11 +343,7 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
   // Handle batch rejecting selected results
   const handleBatchReject = () => {
     if (selectedResults.length === 0) {
-      setProcessingStatus({
-        message: "No results selected",
-        type: "info",
-        visible: true,
-      });
+      toast({ title: "No results selected" });
       return;
     }
 
@@ -464,11 +412,6 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
     });
   };
 
-  // Close status alert
-  const closeStatusAlert = () => {
-    setProcessingStatus({ ...processingStatus, visible: false });
-  };
-
   // Handle toggling keyword active status
   const handleToggleKeywordActive = (id: number, isActive: boolean) => {
     updateKeywordStatusMutation.mutate({ id, isActive });
@@ -489,34 +432,6 @@ export default function KeywordMonitorPage({ embedded }: { embedded?: boolean } 
 
   const content = (
     <>
-      {/* Status Alert */}
-      {processingStatus.visible && (
-        <Alert
-          variant={
-            processingStatus.type === "error" ? "destructive" : "default"
-          }
-          className="mb-4"
-        >
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>
-            {processingStatus.type === "success"
-              ? "Success"
-              : processingStatus.type === "error"
-                ? "Error"
-                : "Information"}
-          </AlertTitle>
-          <AlertDescription>{processingStatus.message}</AlertDescription>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-2 right-2"
-            onClick={closeStatusAlert}
-          >
-            ✕
-          </Button>
-        </Alert>
-      )}
-
       {/* Status Monitor */}
       <div className="mb-6">
         <SimpleStatusMonitor

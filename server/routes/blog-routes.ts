@@ -143,8 +143,68 @@ router.get("/", async (req, res) => {
 
     const [totalResult] = await countQuery;
 
+    // Cross-wire GSC clicks + GA4 sessions per blog over the last 30 days.
+    // Two small extra queries — far cheaper than per-row joins because
+    // we only fetch metrics for the rows we're returning. If either
+    // metrics table is empty (admin hasn't connected yet, or no data
+    // landed), the maps stay empty and blogs render with no badges —
+    // never breaks the list.
+    const slugPaths = blogs.map((b: any) => `/blog/${b.slug}`);
+    const ga4Map = new Map<string, number>();
+    const gscMap = new Map<string, { clicks: number; impressions: number }>();
+    if (slugPaths.length > 0) {
+      try {
+        const ga4Rows: any = await db.execute(sql`
+          SELECT page, SUM(sessions)::int AS sessions
+          FROM ga4_page_metrics
+          WHERE page = ANY(${slugPaths})
+            AND date >= TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'YYYY-MM-DD')
+          GROUP BY page
+        `);
+        for (const row of (ga4Rows.rows ?? ga4Rows) as Array<{ page: string; sessions: number }>) {
+          ga4Map.set(row.page, Number(row.sessions) || 0);
+        }
+      } catch (err) {
+        // Most likely cause: ga4_page_metrics table doesn't exist on a
+        // fresh deploy that hasn't run ensureGa4Tables yet. Log and
+        // continue — list shouldn't 500 just because metrics aren't ready.
+        console.warn("blog list: GA4 metrics enrichment failed:", err instanceof Error ? err.message : err);
+      }
+      try {
+        const gscRows: any = await db.execute(sql`
+          SELECT
+            REGEXP_REPLACE(page, '^https?://[^/]+', '') AS slug_path,
+            SUM(clicks)::int AS clicks,
+            SUM(impressions)::int AS impressions
+          FROM gsc_query_metrics
+          WHERE date >= TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'YYYY-MM-DD')
+            AND REGEXP_REPLACE(page, '^https?://[^/]+', '') = ANY(${slugPaths})
+          GROUP BY slug_path
+        `);
+        for (const row of (gscRows.rows ?? gscRows) as Array<{ slug_path: string; clicks: number; impressions: number }>) {
+          gscMap.set(row.slug_path, {
+            clicks: Number(row.clicks) || 0,
+            impressions: Number(row.impressions) || 0,
+          });
+        }
+      } catch (err) {
+        console.warn("blog list: GSC metrics enrichment failed:", err instanceof Error ? err.message : err);
+      }
+    }
+
+    const enriched = blogs.map((b: any) => {
+      const path = `/blog/${b.slug}`;
+      const gsc = gscMap.get(path);
+      return {
+        ...b,
+        ga4Sessions30d: ga4Map.get(path) ?? null,
+        gscClicks30d: gsc?.clicks ?? null,
+        gscImpressions30d: gsc?.impressions ?? null,
+      };
+    });
+
     res.json({
-      data: blogs,
+      data: enriched,
       total: totalResult.count,
       page,
       limit,

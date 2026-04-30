@@ -44,6 +44,8 @@ import {
   Clock,
   Sparkles,
   Anchor,
+  TrendingUp,
+  Activity,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -87,6 +89,12 @@ interface BlogArticle {
   promotedToPillarAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Cross-wired metrics from gsc_query_metrics + ga4_page_metrics.
+  // Null when the corresponding integration has no data for this URL
+  // (most blogs early on; trickles in over the first week or two).
+  gscClicks30d: number | null;
+  gscImpressions30d: number | null;
+  ga4Sessions30d: number | null;
 }
 
 interface StatusCounts {
@@ -798,6 +806,28 @@ export default function BlogListPage() {
                             <Eye className="h-4 w-4" />
                             <span className="tabular-nums">
                               {blog.viewCount.toLocaleString()} view{blog.viewCount === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        )}
+                        {typeof blog.gscClicks30d === "number" && blog.gscClicks30d > 0 && (
+                          <div
+                            className="flex items-center gap-1 text-emerald-700"
+                            title={`Google Search Console: ${blog.gscClicks30d} click${blog.gscClicks30d === 1 ? "" : "s"} from ${blog.gscImpressions30d?.toLocaleString() ?? 0} impressions in the last 30 days`}
+                          >
+                            <TrendingUp className="h-4 w-4" />
+                            <span className="tabular-nums">
+                              {blog.gscClicks30d.toLocaleString()} GSC click{blog.gscClicks30d === 1 ? "" : "s"} 30d
+                            </span>
+                          </div>
+                        )}
+                        {typeof blog.ga4Sessions30d === "number" && blog.ga4Sessions30d > 0 && (
+                          <div
+                            className="flex items-center gap-1 text-blue-700"
+                            title={`GA4: ${blog.ga4Sessions30d} session${blog.ga4Sessions30d === 1 ? "" : "s"} in the last 30 days`}
+                          >
+                            <Activity className="h-4 w-4" />
+                            <span className="tabular-nums">
+                              {blog.ga4Sessions30d.toLocaleString()} GA4 session{blog.ga4Sessions30d === 1 ? "" : "s"} 30d
                             </span>
                           </div>
                         )}
