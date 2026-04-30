@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus,
   Pencil,
@@ -46,6 +47,8 @@ import {
   AlertTriangle,
   Wand2,
   ExternalLink,
+  CheckSquare,
+  XSquare,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -107,15 +110,26 @@ export default function RedirectsPage() {
   // 404 filter
   const [show404Resolved, setShow404Resolved] = useState<string>("false");
 
+  // Redirects table filters. Server applies them via GET /api/admin/redirects?...
+  const [redirectSearch, setRedirectSearch] = useState<string>("");
+  const [redirectType, setRedirectType] = useState<"all" | "auto" | "manual">("all");
+  const [redirectActive, setRedirectActive] = useState<"all" | "true" | "false">("all");
+
   // ── Queries ───────────────────────────────────────────────
 
   const {
     data: redirectsData,
     isLoading: redirectsLoading,
   } = useQuery<{ data: Redirect[] }>({
-    queryKey: ["/api/admin/redirects"],
+    // queryKey includes filter values so changing them refetches.
+    queryKey: ["/api/admin/redirects", redirectSearch, redirectType, redirectActive],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/redirects");
+      const params = new URLSearchParams();
+      if (redirectSearch.trim()) params.set("search", redirectSearch.trim());
+      if (redirectType !== "all") params.set("type", redirectType);
+      if (redirectActive !== "all") params.set("active", redirectActive);
+      const qs = params.toString();
+      const res = await apiRequest("GET", `/api/admin/redirects${qs ? `?${qs}` : ""}`);
       return res.json();
     },
   });
@@ -233,6 +247,53 @@ export default function RedirectsPage() {
     },
   });
 
+  // Selection state for bulk 404 actions. Keyed by id so stable across
+  // re-renders even when row order shifts.
+  const [selected404s, setSelected404s] = useState<Set<number>>(new Set());
+  const clearSelection = () => setSelected404s(new Set());
+  const toggleOne = (id: number) => {
+    setSelected404s((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkResolveMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/redirects/404s/bulk-resolve", { ids });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      const parts = [`Resolved ${data.resolved}`];
+      if (data.skippedNoSuggestion > 0) parts.push(`skipped ${data.skippedNoSuggestion} (no suggestion)`);
+      if (data.errors > 0) parts.push(`${data.errors} errored`);
+      toast({ title: "Bulk resolve complete", description: parts.join(", ") });
+      clearSelection();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
+    },
+    onError: (error: unknown) => {
+      toast({ title: "Bulk resolve failed", description: errMessage(error), variant: "destructive" });
+    },
+  });
+
+  const bulkIgnoreMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/redirects/404s/bulk-ignore", { ids });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "Bulk ignore complete", description: `Marked ${data.ignored} entries as resolved without redirect.` });
+      clearSelection();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/redirects/404s"] });
+    },
+    onError: (error: unknown) => {
+      toast({ title: "Bulk ignore failed", description: errMessage(error), variant: "destructive" });
+    },
+  });
+
   const [diagnostics, setDiagnostics] = useState<any | null>(null);
   const diagnosticsMutation = useMutation({
     mutationFn: async () => {
@@ -346,10 +407,61 @@ export default function RedirectsPage() {
       {/* ── Redirects Tab ─────────────────────────────────── */}
       {activeTab === "redirects" && (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-muted-foreground">
-              {totalRedirects} redirect{totalRedirects !== 1 ? "s" : ""} configured
-            </p>
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">Search</Label>
+                <Input
+                  placeholder="from or to path…"
+                  value={redirectSearch}
+                  onChange={(e) => setRedirectSearch(e.target.value)}
+                  className="h-8 w-[220px] text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">Type</Label>
+                <Select value={redirectType} onValueChange={(v) => setRedirectType(v as typeof redirectType)}>
+                  <SelectTrigger className="h-8 w-[140px] text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="auto">Auto-promoted</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">Active</Label>
+                <Select value={redirectActive} onValueChange={(v) => setRedirectActive(v as typeof redirectActive)}>
+                  <SelectTrigger className="h-8 w-[120px] text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="true">Active</SelectItem>
+                    <SelectItem value="false">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(redirectSearch || redirectType !== "all" || redirectActive !== "all") && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8"
+                  onClick={() => {
+                    setRedirectSearch("");
+                    setRedirectType("all");
+                    setRedirectActive("all");
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground self-center ml-2">
+                {totalRedirects} match{totalRedirects !== 1 ? "es" : ""}
+              </p>
+            </div>
             <Button size="sm" onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Add Redirect
@@ -365,8 +477,17 @@ export default function RedirectsPage() {
           ) : redirectsList.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ArrowRight className="h-10 w-10 mx-auto mb-3 opacity-50" />
-              <p>No redirects configured yet.</p>
-              <p className="text-sm mt-1">Create one to start redirecting old URLs.</p>
+              {redirectSearch || redirectType !== "all" || redirectActive !== "all" ? (
+                <>
+                  <p>No redirects match these filters.</p>
+                  <p className="text-sm mt-1">Try clearing them.</p>
+                </>
+              ) : (
+                <>
+                  <p>No redirects configured yet.</p>
+                  <p className="text-sm mt-1">Create one to start redirecting old URLs.</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="border rounded-md">
@@ -555,6 +676,54 @@ export default function RedirectsPage() {
             </div>
           )}
 
+          {/* Bulk action toolbar — appears when any 404 row is selected.
+              The unresolved view is the only place selections make sense
+              (resolved entries can't be re-resolved). */}
+          {selected404s.size > 0 && show404Resolved === "false" && (
+            <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-sm font-medium">
+                {selected404s.size} selected
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => bulkResolveMutation.mutate(Array.from(selected404s))}
+                  disabled={bulkResolveMutation.isPending || bulkIgnoreMutation.isPending}
+                  title="Create a 301 redirect from each selected entry's path to its top suggestion. Skips entries with no suggestion."
+                >
+                  {bulkResolveMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <CheckSquare className="h-4 w-4 mr-1" />
+                  )}
+                  Resolve to Top Suggestion
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (confirm(`Mark ${selected404s.size} entries as resolved WITHOUT creating redirects? Visitors will continue to get 404 for these URLs.`)) {
+                      bulkIgnoreMutation.mutate(Array.from(selected404s));
+                    }
+                  }}
+                  disabled={bulkResolveMutation.isPending || bulkIgnoreMutation.isPending}
+                  title="Mark as resolved with no redirect — use when no good target exists"
+                >
+                  {bulkIgnoreMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <XSquare className="h-4 w-4 mr-1" />
+                  )}
+                  Ignore
+                </Button>
+                <Button size="sm" variant="ghost" onClick={clearSelection}>
+                  Clear
+                </Button>
+              </div>
+            </div>
+          )}
+
           {notFoundLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -571,6 +740,24 @@ export default function RedirectsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {show404Resolved === "false" && (
+                      <TableHead className="w-[40px]">
+                        <Checkbox
+                          checked={
+                            notFoundList.length > 0 &&
+                            notFoundList.every((e) => e.resolved || selected404s.has(e.id))
+                          }
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelected404s(new Set(notFoundList.filter((e) => !e.resolved).map((e) => e.id)));
+                            } else {
+                              clearSelection();
+                            }
+                          }}
+                          aria-label="Select all visible 404 entries"
+                        />
+                      </TableHead>
+                    )}
                     <TableHead className="min-w-[250px]">Path</TableHead>
                     <TableHead className="w-[80px] text-right">Hits</TableHead>
                     <TableHead className="w-[100px]">First Seen</TableHead>
@@ -582,7 +769,18 @@ export default function RedirectsPage() {
                 </TableHeader>
                 <TableBody>
                   {notFoundList.map((entry) => (
-                    <TableRow key={entry.id}>
+                    <TableRow key={entry.id} data-state={selected404s.has(entry.id) ? "selected" : undefined}>
+                      {show404Resolved === "false" && (
+                        <TableCell className="w-[40px]">
+                          {!entry.resolved && (
+                            <Checkbox
+                              checked={selected404s.has(entry.id)}
+                              onCheckedChange={() => toggleOne(entry.id)}
+                              aria-label={`Select ${entry.path}`}
+                            />
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell className="font-mono text-sm truncate max-w-[300px]" title={entry.path}>
                         {entry.path}
                       </TableCell>

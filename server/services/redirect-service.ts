@@ -8,7 +8,7 @@
 import { db } from "../db";
 import { redirects, notFoundLog, studies, blogArticles, healthConditions } from "@shared/schema";
 import type { RedirectSuggestion } from "@shared/schema";
-import { eq, sql, desc, and } from "drizzle-orm";
+import { eq, sql, desc, and, inArray } from "drizzle-orm";
 import { logger } from "../utils/logger";
 import type { Request, Response, NextFunction } from "express";
 
@@ -917,11 +917,30 @@ function assertSameSitePath(toPath: string): void {
   }
 }
 
-export async function listRedirects() {
-  return db
-    .select()
-    .from(redirects)
-    .orderBy(desc(redirects.hitCount));
+export async function listRedirects(opts: {
+  search?: string;
+  type?: "auto" | "manual" | "all";
+  active?: boolean;
+} = {}) {
+  const conditions = [];
+  if (opts.search) {
+    const pattern = `%${opts.search.toLowerCase()}%`;
+    conditions.push(
+      sql`(LOWER(${redirects.fromPath}) LIKE ${pattern} OR LOWER(${redirects.toPath}) LIKE ${pattern})`,
+    );
+  }
+  if (opts.type === "auto") {
+    conditions.push(sql`${redirects.note} LIKE 'auto-promoted from 404%'`);
+  } else if (opts.type === "manual") {
+    conditions.push(sql`(${redirects.note} IS NULL OR ${redirects.note} NOT LIKE 'auto-promoted from 404%')`);
+  }
+  if (opts.active !== undefined) {
+    conditions.push(eq(redirects.isActive, opts.active));
+  }
+
+  const query = db.select().from(redirects).orderBy(desc(redirects.hitCount));
+  if (conditions.length === 0) return query;
+  return query.where(and(...conditions));
 }
 
 export async function createRedirect(fromPath: string, toPath: string, statusCode = 301, note?: string) {
@@ -1018,4 +1037,88 @@ export async function resolve404(notFoundId: number, toPath: string, statusCode 
   const redirect = await createRedirect(entry.path, toPath, statusCode);
 
   return { redirect, notFoundEntry: entry };
+}
+
+/**
+ * Bulk-resolve a set of 404 entries by accepting each one's top
+ * suggestion as the redirect target. Skips entries with no suggestions
+ * or entries whose suggestion would conflict (existing redirect on the
+ * fromPath). Per-entry try/catch so one failure can't poison the batch.
+ *
+ * Returns counts so the UI toast can show "resolved 42, skipped 8 (no
+ * suggestion), errored 1."
+ */
+export async function bulkResolve404s(
+  ids: number[],
+  opts: { statusCode?: 301 | 302 } = {},
+): Promise<{
+  resolved: number;
+  skippedNoSuggestion: number;
+  errors: number;
+  firstError: string | null;
+}> {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { resolved: 0, skippedNoSuggestion: 0, errors: 0, firstError: null };
+  }
+  const statusCode = opts.statusCode ?? 301;
+
+  // Fetch only what we need: id + path + cached suggestions.
+  const entries = await db
+    .select({
+      id: notFoundLog.id,
+      path: notFoundLog.path,
+      suggestions: notFoundLog.suggestions,
+      resolved: notFoundLog.resolved,
+    })
+    .from(notFoundLog)
+    .where(inArray(notFoundLog.id, ids));
+
+  let resolved = 0;
+  let skippedNoSuggestion = 0;
+  let errors = 0;
+  let firstError: string | null = null;
+
+  for (const entry of entries) {
+    if (entry.resolved) continue; // already done — silently skip
+    const sugg = entry.suggestions as RedirectSuggestion[] | null;
+    const top = sugg?.[0];
+    if (!top || !top.target) {
+      skippedNoSuggestion++;
+      continue;
+    }
+    try {
+      await createRedirect(entry.path, top.target, statusCode);
+      resolved++;
+    } catch (err) {
+      errors++;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!firstError) firstError = `id=${entry.id}: ${msg.slice(0, 200)}`;
+      logger.warn("Bulk resolve entry failed", TAG, {
+        id: entry.id,
+        path: entry.path.slice(0, 200),
+        error: msg.slice(0, 300),
+      });
+    }
+  }
+  return { resolved, skippedNoSuggestion, errors, firstError };
+}
+
+/**
+ * Bulk-ignore: mark a set of 404 entries as resolved WITHOUT creating
+ * any redirect. Use case: admin reviewed the suggestions and decided
+ * none of them are good targets — better to leave the path 404'd than
+ * to send users to a wrong page.
+ *
+ * The entries stay in the table (admin can find them by toggling to
+ * "Resolved" view) but won't bog down the unresolved list.
+ */
+export async function bulkIgnore404s(ids: number[]): Promise<{ ignored: number }> {
+  if (!Array.isArray(ids) || ids.length === 0) return { ignored: 0 };
+  const result: any = await db
+    .update(notFoundLog)
+    .set({ resolved: true })
+    .where(and(inArray(notFoundLog.id, ids), eq(notFoundLog.resolved, false)))
+    .returning({ id: notFoundLog.id });
+  const rows = result?.length ?? 0;
+  return { ignored: rows };
 }

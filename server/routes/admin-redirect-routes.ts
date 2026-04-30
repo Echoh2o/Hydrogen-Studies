@@ -14,16 +14,25 @@ import {
   backfillSuggestions,
   getRankedSuggestions,
   getRedirectDiagnostics,
+  bulkResolve404s,
+  bulkIgnore404s,
 } from "../services/redirect-service";
 
 const router = Router();
 
 // ── Redirects CRUD ────────────────────────────────────────────
 
-/** GET /api/admin/redirects — List all redirects sorted by hit count */
-router.get("/", requireAdmin, async (_req: Request, res: Response) => {
+/** GET /api/admin/redirects — List redirects sorted by hit count.
+ *  Query params: search (LIKE on from/to), type (auto|manual|all), active (true|false).
+ */
+router.get("/", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const rows = await listRedirects();
+    const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 200) : undefined;
+    const typeRaw = typeof req.query.type === "string" ? req.query.type : undefined;
+    const type = typeRaw === "auto" || typeRaw === "manual" ? typeRaw : undefined;
+    const activeRaw = typeof req.query.active === "string" ? req.query.active : undefined;
+    const active = activeRaw === "true" ? true : activeRaw === "false" ? false : undefined;
+    const rows = await listRedirects({ search: search || undefined, type, active });
     res.json({ data: rows });
   } catch (error) {
     console.error("Failed to fetch redirects:", error);
@@ -128,6 +137,41 @@ router.post("/404s/:id/resolve", requireAdmin, async (req: Request, res: Respons
     }
     console.error("Failed to resolve 404:", error);
     res.status(500).json({ error: "Failed to resolve 404" });
+  }
+});
+
+/** POST /api/admin/redirects/404s/bulk-resolve — Accept top suggestions for many entries
+ *  Body: { ids: number[], statusCode?: 301 | 302 }
+ *  Use case: admin reviewed a batch and wants to mass-accept the auto-suggested targets.
+ */
+router.post("/404s/bulk-resolve", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter((n: any) => typeof n === "number") : [];
+    if (ids.length === 0) return res.status(400).json({ error: "ids array required" });
+    if (ids.length > 500) return res.status(400).json({ error: "max 500 ids per call" });
+    const statusCode = req.body?.statusCode === 302 ? 302 : 301;
+    const result = await bulkResolve404s(ids, { statusCode });
+    res.json(result);
+  } catch (error) {
+    console.error("Bulk resolve failed:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Bulk resolve failed" });
+  }
+});
+
+/** POST /api/admin/redirects/404s/bulk-ignore — Mark entries resolved without creating redirects
+ *  Body: { ids: number[] }
+ *  Use case: admin reviewed and decided no good redirect target exists; better to leave 404.
+ */
+router.post("/404s/bulk-ignore", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter((n: any) => typeof n === "number") : [];
+    if (ids.length === 0) return res.status(400).json({ error: "ids array required" });
+    if (ids.length > 500) return res.status(400).json({ error: "max 500 ids per call" });
+    const result = await bulkIgnore404s(ids);
+    res.json(result);
+  } catch (error) {
+    console.error("Bulk ignore failed:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Bulk ignore failed" });
   }
 });
 
