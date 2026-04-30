@@ -121,7 +121,11 @@ Sitemap: ${baseUrl}/sitemap-index.xml
 // ============================================================
 // Sitemap Index
 // ============================================================
-router.get("/sitemap-index.xml", (req: Request, res: Response) => {
+// Serve the same content at both `/sitemap.xml` (the historical convention
+// crawlers probe by default) and `/sitemap-index.xml` (what robots.txt
+// advertises). Without this, the SPA catch-all caught /sitemap.xml and
+// returned the React app's index.html — a soft-404 from Google's view.
+router.get(["/sitemap.xml", "/sitemap-index.xml"], (req: Request, res: Response) => {
   const today = formatDate(new Date());
   const xml = xmlHeader() +
 `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
