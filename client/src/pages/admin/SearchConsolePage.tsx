@@ -253,7 +253,7 @@ export default function SearchConsolePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
                 <TabsList className="grid grid-cols-3 w-full md:w-auto">
                   <TabsTrigger value="climbers" className="gap-1.5">
                     <TrendingUp className="h-3.5 w-3.5" />

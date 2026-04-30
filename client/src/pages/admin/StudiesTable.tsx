@@ -121,6 +121,18 @@ export default function StudiesTable() {
     setSelectedIds(new Set());
   }, [currentPage, searchQuery, selectedCategory, sortBy, sortOrder]);
 
+  // Extract data from the paginated response upfront so the helpers
+  // below (toggleSelectAll, render code, etc.) close over a fresh value
+  // on each render. Previously these were declared after the mutation
+  // hooks — the closures still worked because JS hoists const through
+  // closure capture, but the order made it look like a bug.
+  const studies: any[] = studiesQuery.data?.data || [];
+  const totalStudies = studiesQuery.data?.total || 0;
+  const totalPages = studiesQuery.data?.totalPages || 1;
+  const categories = Array.isArray(categoriesQuery.data)
+    ? categoriesQuery.data
+    : [];
+
   // Single delete mutation
   const deleteMutation = useMutation({
     mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
@@ -192,14 +204,6 @@ export default function StudiesTable() {
       </Alert>
     );
   }
-
-  // Extract data from paginated response
-  const studies = studiesQuery.data?.data || [];
-  const totalStudies = studiesQuery.data?.total || 0;
-  const totalPages = studiesQuery.data?.totalPages || 1;
-  const categories = Array.isArray(categoriesQuery.data)
-    ? categoriesQuery.data
-    : [];
 
   // Handle search input change with debounce effect
   const handleSearchChange = (value: string) => {
