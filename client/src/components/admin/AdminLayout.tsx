@@ -75,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/seo/search-console", label: "Search Console" },
       { href: "/admin/seo/analytics", label: "Analytics (GA4)" },
+      { href: "/admin/seo/pillars", label: "Pillars" },
       { href: "/admin/seo-strategy", label: "SEO Strategy" },
       { href: "/admin/links", label: "Internal Links" },
       { href: "/admin/redirects", label: "Redirects" },

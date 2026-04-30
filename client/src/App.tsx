@@ -183,6 +183,7 @@ const LinkManagementPage = lazy(() => import("./pages/admin/LinkManagementPage")
 const RedirectsPage = lazy(() => import("./pages/admin/RedirectsPage"));
 const SearchConsolePage = lazy(() => import("./pages/admin/SearchConsolePage"));
 const AnalyticsGa4Page = lazy(() => import("./pages/admin/AnalyticsGa4Page"));
+const PillarsPage = lazy(() => import("./pages/admin/PillarsPage"));
 const ThisWeekPage = lazy(() => import("./pages/ThisWeekPage"));
 
 // Content Hub / Pillar Pages
@@ -488,6 +489,14 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin"]}>
               <AnalyticsGa4Page />
+            </ProtectedRoute>
+          )}
+        </Route>
+        {/* Admin Pillars — Phase B dashboard */}
+        <Route path="/admin/seo/pillars">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <PillarsPage />
             </ProtectedRoute>
           )}
         </Route>

@@ -863,6 +863,44 @@ router.post("/:id(\\d+)/demote-from-pillar", requireAdmin, async (req, res) => {
 });
 
 /**
+ * All pillars + per-pillar cluster counts, in a single round-trip.
+ *
+ * The pillar dashboard at /admin/seo/pillars renders this as a table.
+ * Doing per-pillar /:id/cluster fetches would be N+1 queries; this
+ * single LEFT JOIN + GROUP BY scales fine for the realistic pillar
+ * count (low hundreds at most).
+ */
+router.get("/pillars", requireAdmin, async (_req, res) => {
+  try {
+    const result: any = await db.execute(sql`
+      SELECT
+        p.id,
+        p.title,
+        p.slug,
+        p.is_published AS "isPublished",
+        p.published_at AS "publishedAt",
+        p.promoted_to_pillar_at AS "promotedToPillarAt",
+        p.view_count AS "viewCount",
+        COUNT(c.id)::int AS "totalClusters",
+        COUNT(c.id) FILTER (WHERE c.is_published = true)::int AS "publishedClusters",
+        COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NULL)::int AS "draftClusters",
+        COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NOT NULL)::int AS "scheduledClusters",
+        MAX(c.published_at) AS "lastClusterPublishedAt"
+      FROM blog_articles p
+      LEFT JOIN blog_articles c ON c.pillar_blog_id = p.id
+      WHERE p.is_pillar = true
+      GROUP BY p.id
+      ORDER BY p.promoted_to_pillar_at DESC NULLS LAST
+    `);
+    const rows = result?.rows ?? result ?? [];
+    res.json({ data: rows });
+  } catch (err) {
+    console.error("Pillar list error:", err);
+    res.status(500).json({ error: "Failed to fetch pillars" });
+  }
+});
+
+/**
  * Cluster cohort — pillar metadata + the list of cluster posts that
  * declare this blog as their pillar. Used by the pillar editor side panel
  * and (later) the pillar dashboard.
