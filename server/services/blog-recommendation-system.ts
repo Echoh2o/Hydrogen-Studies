@@ -29,6 +29,10 @@ export interface BlogRecommendation {
   qualityScore: number | null;
   /** How underserved this study's category is (0–1). Higher = more content-gap opportunity. */
   categoryGapScore: number;
+  /** Normalized 30-day GSC impressions for this study's category (0–1). 0 when GSC isn't connected. */
+  gscOpportunityScore: number;
+  /** Raw category-level GSC impressions over the past 30 days. Surfaced for the UI tooltip. */
+  categoryGscImpressions30d: number;
   /** Composite rank score — what the sort actually uses. Higher = better candidate. */
   rankScore: number;
 }
@@ -157,6 +161,40 @@ export async function getBlogRecommendations(
       gapByCategory.set(String(r.category), gap);
     }
 
+    // 2.5 GSC opportunity per category — sum 30-day impressions across all
+    //     existing blogs whose study lives in that category. High impressions
+    //     mean the topic is pulling search traffic; combined with categoryGap
+    //     this surfaces "topic Google likes that you haven't fully covered."
+    //     Wrapped in try/catch so a missing gsc_query_metrics table (fresh
+    //     deploy / GSC not connected) just zeroes the component out, leaving
+    //     the rest of the algorithm intact.
+    const gscImpressionsByCategory = new Map<string, number>();
+    let maxCategoryGscImpressions = 0;
+    try {
+      const gscRows: any = await db.execute(sql`
+        SELECT
+          COALESCE(s.category, 'General') AS category,
+          COALESCE(SUM(g.impressions), 0)::int AS impressions
+        FROM gsc_query_metrics g
+        INNER JOIN ${blogArticles} b
+          ON REGEXP_REPLACE(g.page, '^https?://[^/]+', '') = '/blog/' || b.slug
+        INNER JOIN ${studies} s ON s.id = b.study_id
+        WHERE g.date >= TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'YYYY-MM-DD')
+        GROUP BY COALESCE(s.category, 'General')
+      `);
+      for (const r of (gscRows.rows ?? gscRows) as any[]) {
+        const impressions = Number(r.impressions) || 0;
+        gscImpressionsByCategory.set(String(r.category), impressions);
+        if (impressions > maxCategoryGscImpressions) maxCategoryGscImpressions = impressions;
+      }
+    } catch (gscErr) {
+      logger.warn(
+        "Recommendation: GSC enrichment unavailable, falling back to no GSC component",
+        "BlogRecommendationSystem",
+        { error: gscErr instanceof Error ? gscErr.message : String(gscErr) },
+      );
+    }
+
     // 3. Score every candidate with a composite rank
     const recommendations: BlogRecommendation[] = candidates.map((c) => {
       const blogCount = Number(c.blog_count) || 0;
@@ -167,11 +205,16 @@ export async function getBlogRecommendations(
       // Composite rank — tuneable weights. Each component is 0–1 and summed;
       // then we reuse the result as both the rank number and the ordered tier.
       //
-      //   • Quality (40%): good science deserves coverage. Treated as 0.5 if
+      //   • Quality (35%): good science deserves coverage. Treated as 0.5 if
       //     the study hasn't been scored yet (neutral prior, not penalised).
-      //   • Category gap (30%): fill editorial blind spots first.
+      //   • Category gap (25%): fill editorial blind spots first.
       //   • Coverage (20%): 1.0 if no existing blogs, 0 if ≥3.
       //   • Recency (10%): linear decay over 3 years from publish date.
+      //   • GSC opportunity (10%): how much 30-day search demand exists in
+      //     this category. Normalized to [0,1] across the candidate pool —
+      //     the noisiest category in the pool gets 1.0, others scale down.
+      //     Falls back to 0 (no influence) when GSC isn't connected, so
+      //     pre-GSC behavior is preserved on the rest of the formula.
       //
       // Red flags are a deliberate quality discount — a 90-score study with 2
       // red flags is no longer a slam-dunk blog candidate.
@@ -192,11 +235,18 @@ export async function getBlogRecommendations(
         ? Math.max(0, 1 - (currentYear - publishYear) / 3)
         : 0;
 
+      const categoryGscImpressions = gscImpressionsByCategory.get(categoryKey) ?? 0;
+      const gscComponent =
+        maxCategoryGscImpressions > 0
+          ? categoryGscImpressions / maxCategoryGscImpressions
+          : 0;
+
       const rankScore =
-        qComponent * 0.4 +
-        categoryGap * 0.3 +
+        qComponent * 0.35 +
+        categoryGap * 0.25 +
         coverageComponent * 0.2 +
-        recencyComponent * 0.1;
+        recencyComponent * 0.1 +
+        gscComponent * 0.1;
 
       // Priority tier — derived from rankScore so "high" actually means
       // something the algorithm thinks is a strong candidate, not a keyword hit.
@@ -218,6 +268,12 @@ export async function getBlogRecommendations(
         reasons.push("no existing blog coverage");
       } else if (blogCount === 1) {
         reasons.push("only 1 existing blog");
+      }
+      if (categoryGscImpressions >= 500) {
+        const k = categoryGscImpressions >= 1000
+          ? `${(categoryGscImpressions / 1000).toFixed(1)}k`
+          : categoryGscImpressions.toLocaleString();
+        reasons.push(`category pulls ${k} impressions/30d`);
       }
       if (redFlags > 0) {
         reasons.push(`⚠ ${redFlags} red flag${redFlags > 1 ? "s" : ""}`);
@@ -262,6 +318,8 @@ export async function getBlogRecommendations(
         existingBlogCount: blogCount,
         qualityScore,
         categoryGapScore: Math.round(categoryGap * 100) / 100,
+        gscOpportunityScore: Math.round(gscComponent * 100) / 100,
+        categoryGscImpressions30d: categoryGscImpressions,
         rankScore: Math.round(rankScore * 100) / 100,
       };
     });
