@@ -577,6 +577,7 @@ export class JobScheduler {
         logger.info("Redirect suggestion backfill complete", "JobScheduler", {
           processed: result.processed,
           suggested: result.suggested,
+          autoPromoted: result.autoPromoted,
           errors: result.errors,
           firstError: result.firstError,
         });
