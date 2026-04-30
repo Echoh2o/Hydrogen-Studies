@@ -279,6 +279,39 @@ router.get("/study-context/:studyId(\\d+)", requireAdmin, async (req, res) => {
         ? Math.max(0, 1 - catBlogCount / (studyCount * 1.5))
         : 0.5;
 
+    // GSC opportunity signal: how much search traffic do existing blogs
+    // in this category already pull? High impressions = proven demand
+    // for the topic; high clicks = winning page exists already (saturated).
+    // Both are useful signals before generating new content. Wrapped in
+    // try/catch so a missing gsc_query_metrics table doesn't break the
+    // existing context endpoint.
+    let categoryGscImpressions30d = 0;
+    let categoryGscClicks30d = 0;
+    try {
+      const [gscRow] = await db.execute<{
+        impressions: number;
+        clicks: number;
+      }>(sql`
+        SELECT
+          COALESCE(SUM(g.impressions), 0)::int AS impressions,
+          COALESCE(SUM(g.clicks), 0)::int AS clicks
+        FROM gsc_query_metrics g
+        INNER JOIN blog_articles b
+          ON REGEXP_REPLACE(g.page, '^https?://[^/]+', '') = '/blog/' || b.slug
+        WHERE COALESCE(b.study_id, 0) IN (
+          SELECT id FROM studies WHERE COALESCE(category, 'General') = ${row.category || "General"}
+        )
+        AND g.date >= TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'YYYY-MM-DD')
+      `).then((r: any) => r.rows ?? r);
+      categoryGscImpressions30d = Number(gscRow?.impressions ?? 0);
+      categoryGscClicks30d = Number(gscRow?.clicks ?? 0);
+    } catch (gscErr) {
+      console.warn(
+        "study-context: GSC enrichment failed:",
+        gscErr instanceof Error ? gscErr.message : gscErr,
+      );
+    }
+
     res.json({
       studyId,
       title: row.title,
@@ -288,6 +321,8 @@ router.get("/study-context/:studyId(\\d+)", requireAdmin, async (req, res) => {
       scoreConfidence: row.score_confidence,
       existingBlogCount: Number(row.blog_count),
       categoryGap: Math.round(categoryGap * 100) / 100,
+      categoryGscImpressions30d,
+      categoryGscClicks30d,
     });
   } catch (error) {
     console.error("Error fetching study context:", error);
@@ -931,28 +966,92 @@ router.post("/:id(\\d+)/demote-from-pillar", requireAdmin, async (req, res) => {
  * count (low hundreds at most).
  */
 router.get("/pillars", requireAdmin, async (_req, res) => {
-  try {
-    const result: any = await db.execute(sql`
+  // CTEs pre-aggregate the metrics tables so the LEFT JOINs are 1-to-1
+  // on path — without that, joining gsc_query_metrics directly would
+  // multiply rows by (queries × days) and inflate the cluster counts.
+  const FULL_QUERY = sql`
+    WITH gsc_agg AS (
       SELECT
-        p.id,
-        p.title,
-        p.slug,
-        p.is_published AS "isPublished",
-        p.published_at AS "publishedAt",
-        p.promoted_to_pillar_at AS "promotedToPillarAt",
-        p.view_count AS "viewCount",
-        COUNT(c.id)::int AS "totalClusters",
-        COUNT(c.id) FILTER (WHERE c.is_published = true)::int AS "publishedClusters",
-        COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NULL)::int AS "draftClusters",
-        COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NOT NULL)::int AS "scheduledClusters",
-        MAX(c.published_at) AS "lastClusterPublishedAt"
-      FROM blog_articles p
-      LEFT JOIN blog_articles c ON c.pillar_blog_id = p.id
-      WHERE p.is_pillar = true
-      GROUP BY p.id
-      ORDER BY p.promoted_to_pillar_at DESC NULLS LAST
-    `);
-    const rows = result?.rows ?? result ?? [];
+        REGEXP_REPLACE(page, '^https?://[^/]+', '') AS path,
+        SUM(clicks)::int AS clicks,
+        SUM(impressions)::int AS impressions,
+        AVG(position::float)::float AS avg_position
+      FROM gsc_query_metrics
+      WHERE date >= TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'YYYY-MM-DD')
+      GROUP BY path
+    ),
+    ga4_agg AS (
+      SELECT
+        page AS path,
+        SUM(sessions)::int AS sessions,
+        SUM(engaged_sessions)::int AS engaged_sessions
+      FROM ga4_page_metrics
+      WHERE date >= TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'YYYY-MM-DD')
+      GROUP BY page
+    )
+    SELECT
+      p.id,
+      p.title,
+      p.slug,
+      p.is_published AS "isPublished",
+      p.published_at AS "publishedAt",
+      p.promoted_to_pillar_at AS "promotedToPillarAt",
+      p.view_count AS "viewCount",
+      COUNT(c.id)::int AS "totalClusters",
+      COUNT(c.id) FILTER (WHERE c.is_published = true)::int AS "publishedClusters",
+      COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NULL)::int AS "draftClusters",
+      COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NOT NULL)::int AS "scheduledClusters",
+      MAX(c.published_at) AS "lastClusterPublishedAt",
+      COALESCE(g.clicks, 0)::int AS "gscClicks30d",
+      COALESCE(g.impressions, 0)::int AS "gscImpressions30d",
+      g.avg_position AS "gscAvgPosition",
+      COALESCE(a.sessions, 0)::int AS "ga4Sessions30d",
+      COALESCE(a.engaged_sessions, 0)::int AS "ga4EngagedSessions30d"
+    FROM blog_articles p
+    LEFT JOIN blog_articles c ON c.pillar_blog_id = p.id
+    LEFT JOIN gsc_agg g ON g.path = '/blog/' || p.slug
+    LEFT JOIN ga4_agg a ON a.path = '/blog/' || p.slug
+    WHERE p.is_pillar = true
+    GROUP BY p.id, g.clicks, g.impressions, g.avg_position, a.sessions, a.engaged_sessions
+    ORDER BY p.promoted_to_pillar_at DESC NULLS LAST
+  `;
+  const FALLBACK_QUERY = sql`
+    SELECT
+      p.id,
+      p.title,
+      p.slug,
+      p.is_published AS "isPublished",
+      p.published_at AS "publishedAt",
+      p.promoted_to_pillar_at AS "promotedToPillarAt",
+      p.view_count AS "viewCount",
+      COUNT(c.id)::int AS "totalClusters",
+      COUNT(c.id) FILTER (WHERE c.is_published = true)::int AS "publishedClusters",
+      COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NULL)::int AS "draftClusters",
+      COUNT(c.id) FILTER (WHERE c.is_published = false AND c.scheduled_for IS NOT NULL)::int AS "scheduledClusters",
+      MAX(c.published_at) AS "lastClusterPublishedAt",
+      0::int AS "gscClicks30d",
+      0::int AS "gscImpressions30d",
+      NULL::float AS "gscAvgPosition",
+      0::int AS "ga4Sessions30d",
+      0::int AS "ga4EngagedSessions30d"
+    FROM blog_articles p
+    LEFT JOIN blog_articles c ON c.pillar_blog_id = p.id
+    WHERE p.is_pillar = true
+    GROUP BY p.id
+    ORDER BY p.promoted_to_pillar_at DESC NULLS LAST
+  `;
+  try {
+    let rows: any[];
+    try {
+      const result: any = await db.execute(FULL_QUERY);
+      rows = result?.rows ?? result ?? [];
+    } catch (metricsErr) {
+      // Metrics tables don't exist yet (fresh deploy before ensureGa4Tables /
+      // ensureGscTables runs) — degrade gracefully to the no-metrics query.
+      console.warn("Pillars: metrics tables unavailable, falling back:", metricsErr instanceof Error ? metricsErr.message : metricsErr);
+      const result: any = await db.execute(FALLBACK_QUERY);
+      rows = result?.rows ?? result ?? [];
+    }
     res.json({ data: rows });
   } catch (err) {
     console.error("Pillar list error:", err);

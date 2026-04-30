@@ -42,6 +42,13 @@ interface PillarRow {
   draftClusters: number;
   scheduledClusters: number;
   lastClusterPublishedAt: string | null;
+  // 30-day metrics — 0 when no GSC/GA4 data; null gscAvgPosition when
+  // the page hasn't accumulated rank data yet.
+  gscClicks30d: number;
+  gscImpressions30d: number;
+  gscAvgPosition: number | null;
+  ga4Sessions30d: number;
+  ga4EngagedSessions30d: number;
 }
 
 function formatDate(iso: string | null): string {
@@ -172,6 +179,8 @@ export default function PillarsPage() {
                 <TableHead className="w-[80px] text-right">Draft</TableHead>
                 <TableHead className="w-[80px] text-right">Sched.</TableHead>
                 <TableHead className="w-[120px]">Last cluster</TableHead>
+                <TableHead className="w-[100px] text-right" title="Search Console clicks (last 30 days)">GSC 30d</TableHead>
+                <TableHead className="w-[100px] text-right" title="GA4 sessions (last 30 days)">GA4 30d</TableHead>
                 <TableHead className="w-[110px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -212,6 +221,32 @@ export default function PillarsPage() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatRelative(p.lastClusterPublishedAt)}
+                  </TableCell>
+                  <TableCell
+                    className="text-right text-xs"
+                    title={`${p.gscImpressions30d.toLocaleString()} impressions${
+                      p.gscAvgPosition != null ? ` · avg position ${p.gscAvgPosition.toFixed(1)}` : ""
+                    }`}
+                  >
+                    {p.gscClicks30d > 0 ? (
+                      <span className="font-medium tabular-nums text-emerald-700">
+                        {p.gscClicks30d.toLocaleString()} clicks
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className="text-right text-xs"
+                    title={`${p.ga4EngagedSessions30d.toLocaleString()} engaged sessions`}
+                  >
+                    {p.ga4Sessions30d > 0 ? (
+                      <span className="font-medium tabular-nums text-blue-700">
+                        {p.ga4Sessions30d.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">

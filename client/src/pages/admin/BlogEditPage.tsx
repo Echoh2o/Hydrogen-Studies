@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
-import { ArrowLeft, FileEdit, Image, Loader } from "lucide-react";
+import { ArrowLeft, FileEdit, Image, Loader, TrendingUp, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { MediaUpload } from "@/components/common/MediaUpload";
@@ -83,6 +83,24 @@ export default function BlogEditPage() {
   }>({
     queryKey: [`/api/blogs/${blogId}/cluster`],
     enabled: !!blogId && !!blog?.isPillar,
+  });
+
+  // GSC performance for THIS blog over the last 30 days. Endpoint already
+  // exists from Phase A — we just bind it to the editor side panel here.
+  // Lazy: only loads after the blog has a slug, and only renders the card
+  // when there's actual GSC data for it (most newly-published blogs will
+  // have nothing for the first week or two).
+  const { data: gscMetrics } = useQuery<{
+    trend: Array<{ date: string; impressions: number; clicks: number; avg_position: number }>;
+    topQueries: Array<{ query: string; impressions: number; clicks: number; avg_position: number }>;
+  }>({
+    queryKey: [`/api/admin/gsc/page`, blog?.slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/gsc/page?path=/blog/${blog?.slug}`);
+      if (!res.ok) throw new Error("Failed to load GSC metrics");
+      return res.json();
+    },
+    enabled: !!blog?.slug,
   });
 
   // Blog data state
@@ -365,6 +383,76 @@ export default function BlogEditPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* GSC performance card — collapses (renders nothing) when there's
+            no GSC data for this URL yet, which is the common case for any
+            blog less than ~2 weeks old. Once data arrives, shows 30-day
+            totals + the top queries this page actually ranks for. */}
+        {gscMetrics && (gscMetrics.trend?.length ?? 0) > 0 && (() => {
+          const totals = gscMetrics.trend.reduce(
+            (acc, r) => {
+              acc.impressions += Number(r.impressions) || 0;
+              acc.clicks += Number(r.clicks) || 0;
+              acc.positionSum += Number(r.avg_position) || 0;
+              acc.days += 1;
+              return acc;
+            },
+            { impressions: 0, clicks: 0, positionSum: 0, days: 0 },
+          );
+          const ctr = totals.impressions > 0 ? totals.clicks / totals.impressions : 0;
+          const avgPosition = totals.days > 0 ? totals.positionSum / totals.days : 0;
+          return (
+            <Card className="mb-6 border-emerald-200 bg-emerald-50/40">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-emerald-700" />
+                  <CardTitle className="text-base">GSC performance — last 30 days</CardTitle>
+                </div>
+                <CardDescription>
+                  Search Console data for <code className="font-mono text-xs">/blog/{blog?.slug}</code>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Impressions</div>
+                    <div className="text-lg font-semibold tabular-nums">{totals.impressions.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Clicks</div>
+                    <div className="text-lg font-semibold tabular-nums">{totals.clicks.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">CTR</div>
+                    <div className="text-lg font-semibold tabular-nums">{(ctr * 100).toFixed(2)}%</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Avg position</div>
+                    <div className="text-lg font-semibold tabular-nums">{avgPosition.toFixed(1)}</div>
+                  </div>
+                </div>
+                {gscMetrics.topQueries && gscMetrics.topQueries.length > 0 && (
+                  <div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                      <Search className="h-3 w-3" />
+                      Top queries
+                    </div>
+                    <ul className="space-y-1">
+                      {gscMetrics.topQueries.slice(0, 5).map((q, i) => (
+                        <li key={i} className="flex items-center justify-between gap-3 text-sm">
+                          <span className="truncate flex-1" title={q.query}>{q.query}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                            {Number(q.impressions).toLocaleString()} impr · pos {Number(q.avg_position).toFixed(1)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6">

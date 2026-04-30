@@ -101,6 +101,11 @@ export default function BlogGeneratePage() {
     existingBlogCount: number;
     categoryGap: number;
     category: string;
+    // GSC opportunity: how much search demand exists for this category.
+    // High impressions = topic has proven traffic; clicks vs impressions
+    // shows whether existing pages are capturing it.
+    categoryGscImpressions30d: number;
+    categoryGscClicks30d: number;
   }>({
     queryKey: [`/api/blogs/study-context/${selectedStudyId}`],
     enabled: !!selectedStudyId && !isNaN(selectedStudyId),
@@ -505,6 +510,19 @@ export default function BlogGeneratePage() {
                           title={`${studyContext.category} is underserved — fewer blog articles relative to studies in this category`}
                         >
                           Content gap
+                        </Badge>
+                      )}
+                      {studyContext.categoryGscImpressions30d >= 100 && (
+                        <Badge
+                          variant="outline"
+                          className="border-emerald-500 text-emerald-700"
+                          title={`Existing blogs in "${studyContext.category}" pulled ${studyContext.categoryGscImpressions30d.toLocaleString()} impressions and ${studyContext.categoryGscClicks30d.toLocaleString()} clicks from Google in the last 30 days. Higher = proven topic demand.`}
+                        >
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          {studyContext.categoryGscImpressions30d >= 1000
+                            ? `${(studyContext.categoryGscImpressions30d / 1000).toFixed(1)}k`
+                            : studyContext.categoryGscImpressions30d.toLocaleString()}{" "}
+                          impr 30d
                         </Badge>
                       )}
                       {studyContext.existingBlogCount >= 3 && (
