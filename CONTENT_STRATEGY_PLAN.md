@@ -299,6 +299,7 @@ If we hit those, the system works. If not, we look at what GSC says is happening
 - [x] **Me:** Phase B (pillar/cluster workflow + dashboard at /admin/seo/pillars).
 - [x] **Me:** Phase D backend (GA4 schema, OAuth, sync service, cron, endpoints — reuses crypto helper + GSC OAuth client).
 - [x] **Me:** Phase D admin UI (`/admin/seo/analytics` — top-engaged + on-site search tabs).
+- [x] **Me:** Phase D cross-wires (blog list GA4 sessions column, pillar engagement column, GSC page Internal Search tab).
 - [ ] **You:** Add `analytics.readonly` scope to the existing GSC OAuth consent screen in Google Cloud, then re-authorize.
 - [ ] **You:** Add `GA4_PROPERTY_ID` env var in Railway (find under GA4 Admin → Property Settings).
 - [ ] **You:** Click Connect on `/admin/seo/analytics`. First sync runs ~6h later (or click "Sync now").
