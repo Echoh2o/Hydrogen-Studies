@@ -49,6 +49,10 @@ interface PillarRow {
   gscAvgPosition: number | null;
   ga4Sessions30d: number;
   ga4EngagedSessions30d: number;
+  // Engagement: rate is the session-weighted ratio (0–1); avg time is in
+  // seconds. Both null when GA4 has no data for the URL.
+  ga4EngagementRate: number | null;
+  ga4AvgEngagementTime: number | null;
 }
 
 function formatDate(iso: string | null): string {
@@ -181,6 +185,7 @@ export default function PillarsPage() {
                 <TableHead className="w-[120px]">Last cluster</TableHead>
                 <TableHead className="w-[100px] text-right" title="Search Console clicks (last 30 days)">GSC 30d</TableHead>
                 <TableHead className="w-[100px] text-right" title="GA4 sessions (last 30 days)">GA4 30d</TableHead>
+                <TableHead className="w-[100px] text-right" title="Engagement rate × avg time on page (last 30 days)">Engagement</TableHead>
                 <TableHead className="w-[110px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -243,6 +248,30 @@ export default function PillarsPage() {
                     {p.ga4Sessions30d > 0 ? (
                       <span className="font-medium tabular-nums text-blue-700">
                         {p.ga4Sessions30d.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className="text-right text-xs"
+                    title={
+                      p.ga4AvgEngagementTime != null
+                        ? `${Math.round(p.ga4AvgEngagementTime)}s avg time on page`
+                        : "no GA4 engagement data yet"
+                    }
+                  >
+                    {p.ga4EngagementRate != null ? (
+                      <span
+                        className={`font-medium tabular-nums ${
+                          p.ga4EngagementRate >= 0.6
+                            ? "text-emerald-700"
+                            : p.ga4EngagementRate >= 0.4
+                            ? "text-blue-700"
+                            : "text-amber-700"
+                        }`}
+                      >
+                        {(p.ga4EngagementRate * 100).toFixed(0)}%
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>

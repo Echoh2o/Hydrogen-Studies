@@ -984,7 +984,12 @@ router.get("/pillars", requireAdmin, async (_req, res) => {
       SELECT
         page AS path,
         SUM(sessions)::int AS sessions,
-        SUM(engaged_sessions)::int AS engaged_sessions
+        SUM(engaged_sessions)::int AS engaged_sessions,
+        -- Recompute engagement_rate from totals rather than averaging the
+        -- daily ratios — gives a session-weighted figure that matches what
+        -- GA4's UI shows for a 30-day rollup.
+        (SUM(engaged_sessions)::float / NULLIF(SUM(sessions), 0)::float) AS engagement_rate,
+        AVG(avg_engagement_time::float)::float AS avg_engagement_time
       FROM ga4_page_metrics
       WHERE date >= TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'YYYY-MM-DD')
       GROUP BY page
@@ -1006,13 +1011,15 @@ router.get("/pillars", requireAdmin, async (_req, res) => {
       COALESCE(g.impressions, 0)::int AS "gscImpressions30d",
       g.avg_position AS "gscAvgPosition",
       COALESCE(a.sessions, 0)::int AS "ga4Sessions30d",
-      COALESCE(a.engaged_sessions, 0)::int AS "ga4EngagedSessions30d"
+      COALESCE(a.engaged_sessions, 0)::int AS "ga4EngagedSessions30d",
+      a.engagement_rate AS "ga4EngagementRate",
+      a.avg_engagement_time AS "ga4AvgEngagementTime"
     FROM blog_articles p
     LEFT JOIN blog_articles c ON c.pillar_blog_id = p.id
     LEFT JOIN gsc_agg g ON g.path = '/blog/' || p.slug
     LEFT JOIN ga4_agg a ON a.path = '/blog/' || p.slug
     WHERE p.is_pillar = true
-    GROUP BY p.id, g.clicks, g.impressions, g.avg_position, a.sessions, a.engaged_sessions
+    GROUP BY p.id, g.clicks, g.impressions, g.avg_position, a.sessions, a.engaged_sessions, a.engagement_rate, a.avg_engagement_time
     ORDER BY p.promoted_to_pillar_at DESC NULLS LAST
   `;
   const FALLBACK_QUERY = sql`
@@ -1033,7 +1040,9 @@ router.get("/pillars", requireAdmin, async (_req, res) => {
       0::int AS "gscImpressions30d",
       NULL::float AS "gscAvgPosition",
       0::int AS "ga4Sessions30d",
-      0::int AS "ga4EngagedSessions30d"
+      0::int AS "ga4EngagedSessions30d",
+      NULL::float AS "ga4EngagementRate",
+      NULL::float AS "ga4AvgEngagementTime"
     FROM blog_articles p
     LEFT JOIN blog_articles c ON c.pillar_blog_id = p.id
     WHERE p.is_pillar = true

@@ -70,6 +70,10 @@ interface OrphanRow {
   avg_position: number;
   best_page: string;
 }
+interface InternalSearchRow {
+  search_term: string;
+  event_count: number;
+}
 
 function formatRelative(iso: string | null) {
   if (!iso) return "never";
@@ -83,7 +87,7 @@ function formatRelative(iso: string | null) {
 export default function SearchConsolePage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"climbers" | "low-ctr" | "orphan">("climbers");
+  const [activeTab, setActiveTab] = useState<"climbers" | "low-ctr" | "orphan" | "internal-search">("climbers");
 
   // ── Connection status ───────────────────────────────────────
   const { data: status, isLoading: statusLoading } = useQuery<GscStatus>({
@@ -156,6 +160,19 @@ export default function SearchConsolePage() {
       return res.json();
     },
     enabled,
+  });
+  // Internal search comes from GA4, not GSC — the tab lives here because
+  // it complements the Google-search story (what users typed once they
+  // landed). Query is GA4-gated, but we don't surface a separate "GA4
+  // not connected" state — just an empty table with a helpful note.
+  const { data: internalSearch, isLoading: internalSearchLoading } = useQuery<{ data: InternalSearchRow[] }>({
+    queryKey: ["/api/admin/ga4/search-terms"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/ga4/search-terms");
+      if (!res.ok) throw new Error("Failed to fetch internal search");
+      return res.json();
+    },
+    enabled: activeTab === "internal-search",
   });
 
   // ── Render ─────────────────────────────────────────────────
@@ -254,7 +271,7 @@ export default function SearchConsolePage() {
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-                <TabsList className="grid grid-cols-3 w-full md:w-auto">
+                <TabsList className="grid grid-cols-4 w-full md:w-auto">
                   <TabsTrigger value="climbers" className="gap-1.5">
                     <TrendingUp className="h-3.5 w-3.5" />
                     Climbers
@@ -279,6 +296,15 @@ export default function SearchConsolePage() {
                     {orphan?.data && (
                       <Badge variant="secondary" className="ml-1 text-[10px]">
                         {orphan.data.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="internal-search" className="gap-1.5">
+                    <Search className="h-3.5 w-3.5" />
+                    Internal Search
+                    {internalSearch?.data && (
+                      <Badge variant="secondary" className="ml-1 text-[10px]">
+                        {internalSearch.data.length}
                       </Badge>
                     )}
                   </TabsTrigger>
@@ -396,6 +422,23 @@ export default function SearchConsolePage() {
                           }
                         },
                       },
+                    ]}
+                  />
+                </TabsContent>
+
+                <TabsContent value="internal-search" className="mt-4">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    What visitors typed into the on-site search bar over the past 30 days
+                    (from GA4's <code className="font-mono">search</code> event). Often
+                    distinct from what brings them in via Google — a goldmine for content
+                    you should add or surface better in nav.
+                  </p>
+                  <OpportunityTable
+                    loading={internalSearchLoading}
+                    rows={internalSearch?.data ?? []}
+                    columns={[
+                      { key: "search_term", label: "Search term", className: "font-medium" },
+                      { key: "event_count", label: "Searches", numeric: true },
                     ]}
                   />
                 </TabsContent>
