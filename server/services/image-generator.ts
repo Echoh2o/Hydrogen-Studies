@@ -17,6 +17,7 @@ import { eq, isNull, or } from "drizzle-orm";
 import { ai, getImageModel } from "./ai-provider";
 import { logger } from "../utils/logger";
 import { uploadFile, isCloudStorageConfigured } from "../utils/storage";
+import { brandStylePromptSuffix } from "./brand-style-guide";
 
 /**
  * Extract the generated image as a Buffer, whichever response shape the
@@ -154,8 +155,10 @@ export async function generateScientificImage(
       };
     }
 
-    // Create a simplified prompt for artistic health images
-    const prompt = `Beautiful, artistic editorial photo representing ${content}. Simple, clean, modern health magazine style with soft natural lighting. No text, labels, or scientific diagrams.`;
+    // Subject + brand style guide. The suffix carries palette, mood,
+    // composition, and exclusions so every generation lands in the same
+    // visual language regardless of which call site triggered it.
+    const prompt = `Beautiful, artistic editorial photo representing ${content}. ${brandStylePromptSuffix()}`;
 
     const { client, provider } = getImageClient();
 
@@ -236,8 +239,10 @@ export async function generateBlogImage(blogId: number): Promise<{
     const summary = blog.summary || "";
     const content = blog.content || "";
 
-    // Create a simplified prompt for blog image
-    const prompt = `Create a modern, engaging image to represent a blog article titled "${title}" about ${summary}. The image should be appropriate for a health and wellness website focused on hydrogen research. Use a clean, professional style with subtle medical/scientific elements. No text in the image.`;
+    // Subject (title + summary) followed by the shared brand style guide
+    // suffix. Centralizing the style means re-rolls always produce on-brand
+    // images even if the underlying blog body changes.
+    const prompt = `Create a hero image for a blog article titled "${title}". The article covers: ${summary}. The image should be appropriate for a hydrogen research site with subtle medical and scientific cues. ${brandStylePromptSuffix()}`;
 
     const result = await generateImageBufferWithFailover(prompt);
 
@@ -432,16 +437,16 @@ async function createImagePrompt(
     .slice(0, 3)
     .join(", ");
 
-  // Build a unique prompt that combines subject + delivery + study specifics
+  // Subject + study specifics + shared brand style guide. The brand
+  // suffix replaces the previous ad-hoc "modern, clean, no text" tail
+  // — that prose was duplicated across three call sites and drifted
+  // independently every time someone tweaked one.
   const prompt = [
-    `Editorial health magazine photograph.`,
     subjectVisual,
     specificTerms ? `Visual elements related to: ${specificTerms}.` : "",
     `Subtle reference to ${deliveryVisual}.`,
     `Category: ${category.toLowerCase()} health.`,
-    `Modern, clean composition. Soft natural lighting. Warm, hopeful mood.`,
-    `Photorealistic editorial style — NOT a diagram, NOT a textbook illustration.`,
-    `No text, no labels, no chemical formulas, no molecules, no watermarks.`,
+    brandStylePromptSuffix(),
   ].filter(Boolean).join(" ");
 
   return prompt;
