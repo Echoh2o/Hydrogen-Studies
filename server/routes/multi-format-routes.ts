@@ -20,6 +20,26 @@ import { requireAdmin } from "../auth";
 const router = Router();
 
 /**
+ * Safe JSON parse for stored content fields (podcast QA, social threads,
+ * video storyboards, infographic stats). One corrupted DB row used to
+ * crash the whole export endpoint via an unhandled JSON.parse throw —
+ * this returns the fallback instead so a single bad record can't take
+ * down everyone else's exports.
+ *
+ * Type parameter is the expected shape; caller can pass a default that
+ * matches it (e.g. an empty array) and downstream `.forEach` keeps
+ * working without an existence check.
+ */
+function safeJsonParse<T>(raw: string | null | undefined, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Generate multi-format content for a study
  * POST /api/multi-format/generate
  */
@@ -526,8 +546,8 @@ function generateTextExport(content: any): string {
       text += `Main Content:\n${content.podcastScript || ""}\n\n`;
       if (content.podcastQA) {
         text += `Q&A Segment:\n`;
-        const qa = JSON.parse(content.podcastQA);
-        qa.forEach((item: any) => {
+        const qa = safeJsonParse<Array<{ question: string; answer: string }>>(content.podcastQA, []);
+        qa.forEach((item) => {
           text += `Q: ${item.question}\nA: ${item.answer}\n\n`;
         });
       }
@@ -542,8 +562,8 @@ function generateTextExport(content: any): string {
     case ContentFormat.SOCIAL_TIKTOK:
       text += `SOCIAL MEDIA POST (${content.socialPlatform})\n\n`;
       if (content.threadContent) {
-        const thread = JSON.parse(content.threadContent);
-        thread.forEach((tweet: string, index: number) => {
+        const thread = safeJsonParse<string[]>(content.threadContent, []);
+        thread.forEach((tweet, index) => {
           text += `${index + 1}. ${tweet}\n\n`;
         });
       } else {
@@ -560,8 +580,8 @@ function generateTextExport(content: any): string {
       text += content.videoScript || "";
       if (content.videoStoryboard) {
         text += `\n\nSTORYBOARD:\n`;
-        const storyboard = JSON.parse(content.videoStoryboard);
-        storyboard.forEach((scene: any) => {
+        const storyboard = safeJsonParse<Array<{ time: string; scene: string; visuals: string; narration: string }>>(content.videoStoryboard, []);
+        storyboard.forEach((scene) => {
           text += `${scene.time}: ${scene.scene}\n`;
           text += `  Visuals: ${scene.visuals}\n`;
           text += `  Narration: ${scene.narration}\n\n`;
@@ -581,8 +601,8 @@ function generateTextExport(content: any): string {
       text += `Title: ${content.infographicTitle || ""}\n\n`;
       if (content.keyStatistics) {
         text += `Key Statistics:\n`;
-        const stats = JSON.parse(content.keyStatistics);
-        stats.forEach((stat: any) => {
+        const stats = safeJsonParse<Array<{ label: string; value: string; context: string }>>(content.keyStatistics, []);
+        stats.forEach((stat) => {
           text += `- ${stat.label}: ${stat.value} (${stat.context})\n`;
         });
       }
@@ -639,8 +659,8 @@ function generateHtmlExport(content: any): string {
         </div>`;
       if (content.podcastQA) {
         html += `<div class="section"><h3>Q&A Segment</h3>`;
-        const qa = JSON.parse(content.podcastQA);
-        qa.forEach((item: any) => {
+        const qa = safeJsonParse<Array<{ question: string; answer: string }>>(content.podcastQA, []);
+        qa.forEach((item) => {
           html += `
             <div class="qa-item">
               <strong>Q:</strong> ${item.question}<br>

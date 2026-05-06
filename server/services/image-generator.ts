@@ -97,13 +97,48 @@ function shouldFailoverToOtherProvider(err: unknown): boolean {
 }
 
 /**
+ * Per-provider call timeout. Image generation against xAI / OpenAI
+ * normally takes 5–25s; anything past 60s is the provider hanging and
+ * we'd rather surface a clean failure than tie up a worker indefinitely.
+ * Failover doubles the effective ceiling to 120s for the rare case
+ * where the primary times out and the fallback succeeds.
+ */
+const IMAGE_GENERATION_TIMEOUT_MS = 60_000;
+
+class ImageGenerationTimeoutError extends Error {
+  constructor(provider: string) {
+    super(`Image generation timed out after ${IMAGE_GENERATION_TIMEOUT_MS / 1000}s (${provider})`);
+    this.name = "ImageGenerationTimeoutError";
+  }
+}
+
+/** Wrap a provider call so a hung HTTP request can't lock the worker forever. */
+async function withTimeout<T>(promise: Promise<T>, provider: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new ImageGenerationTimeoutError(provider)),
+          IMAGE_GENERATION_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
  * Generate an image buffer with automatic provider failover.
  *
  * Attempts the primary provider (xAI if configured, else OpenAI). If the
- * primary returns a transient-ish error (429, 402, 5xx, or a credit /
- * rate-limit message) AND the OTHER provider is also configured, the same
- * prompt is retried through it. This keeps image generation working when
- * xAI hits its monthly cap — which happened in prod on 2026-04-22.
+ * primary returns a transient-ish error (429, 402, 5xx, a timeout, or
+ * a credit / rate-limit message) AND the OTHER provider is also
+ * configured, the same prompt is retried through it. This keeps image
+ * generation working when xAI hits its monthly cap — which happened in
+ * prod on 2026-04-22.
  */
 async function generateImageBufferWithFailover(
   prompt: string,
@@ -111,15 +146,19 @@ async function generateImageBufferWithFailover(
   const primary = getImageClient();
 
   try {
-    const response = await primary.client!.images.generate(
-      buildGenerateParams(primary.provider, prompt),
+    const response = await withTimeout(
+      primary.client!.images.generate(buildGenerateParams(primary.provider, prompt)),
+      primary.provider,
     );
     const buffer = await extractImageBuffer(response);
     if (buffer) return { buffer, provider: primary.provider };
     return null;
   } catch (err) {
     // Only try the fallback when primary is xAI and OpenAI is available.
-    if (primary.provider !== "xai" || !shouldFailoverToOtherProvider(err)) {
+    // Timeouts also count as failover-eligible — a hung xAI shouldn't
+    // block us from trying OpenAI when the latter is healthy.
+    const isTimeout = err instanceof ImageGenerationTimeoutError;
+    if (primary.provider !== "xai" || (!isTimeout && !shouldFailoverToOtherProvider(err))) {
       throw err;
     }
     const openaiClient = ai.getOpenAIClient();
@@ -129,8 +168,9 @@ async function generateImageBufferWithFailover(
       `xAI image generation failed (${err instanceof Error ? err.message : "unknown"}) — retrying via OpenAI`,
       "ImageGenerator",
     );
-    const response = await openaiClient.images.generate(
-      buildGenerateParams("openai", prompt),
+    const response = await withTimeout(
+      openaiClient.images.generate(buildGenerateParams("openai", prompt)),
+      "openai",
     );
     const buffer = await extractImageBuffer(response);
     if (buffer) return { buffer, provider: "openai" };

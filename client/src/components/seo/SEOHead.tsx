@@ -35,7 +35,11 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 }) => {
   const baseUrl = window.location.origin;
   const currentUrl = canonicalUrl || window.location.href;
-  const defaultImage = `${baseUrl}/og-image.jpg`;
+  // Branded OG fallback. Used when a page doesn't supply its own image
+  // (or when a generated image upload failed and imageUrl is null on a
+  // detail page). 1200×630 SVG — modern OG scrapers support it; older
+  // ones tend to fall back gracefully to the page's first <img>.
+  const defaultImage = `${baseUrl}/og-image.svg`;
   const imageUrl = ogImage || defaultImage;
 
   // Clean and optimize title
