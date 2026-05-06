@@ -59,6 +59,12 @@ export class JobScheduler {
   // useful for actual SEO recovery instead of drowning in scanner noise.
   private readonly NOT_FOUND_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
   private lastNotFoundCleanupCheck: Date | null = null;
+  // Shopify customer reconciliation runs once per day. Pulls customers
+  // updated in the past 48h from Shopify's Admin API and upserts —
+  // catches webhooks that failed or were dropped. 48h window covers
+  // ~24h of cron skew + 24h of Shopify retry attempts.
+  private readonly SHOPIFY_RECONCILE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+  private lastShopifyReconcileCheck: Date | null = null;
   // Image backfill runs every 30 min. Each cycle handles 5 blogs + 5
   // studies — keeps AI cost predictable while still draining a backlog
   // of ~500 missing images in a few days unattended.
@@ -174,6 +180,7 @@ export class JobScheduler {
         { name: "image-backfill", lastRun: toISO(this.lastImageBackfillCheck), intervalMs: this.IMAGE_BACKFILL_INTERVAL_MS },
         { name: "redirect-suggestion-backfill", lastRun: toISO(this.lastRedirectSuggestionCheck), intervalMs: this.REDIRECT_SUGGESTION_INTERVAL_MS },
         { name: "not-found-cleanup", lastRun: toISO(this.lastNotFoundCleanupCheck), intervalMs: this.NOT_FOUND_CLEANUP_INTERVAL_MS },
+        { name: "shopify-customer-reconcile", lastRun: toISO(this.lastShopifyReconcileCheck), intervalMs: this.SHOPIFY_RECONCILE_INTERVAL_MS },
       ],
     };
   }
@@ -529,6 +536,26 @@ export class JobScheduler {
         logger.error("Job 21 (not-found-cleanup) unexpected error", error, "JobScheduler");
       }
 
+      // Job 22: Shopify customer reconciliation — pulls last-48h
+      // customers from Shopify's Admin API and upserts so webhooks
+      // that failed or were dropped don't lose customers. 5-minute
+      // timeout (a 48h window is at most ~hundreds of customers
+      // even on a busy store).
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runShopifyCustomerReconcileJob(),
+          5 * 60 * 1000,
+          "shopify-customer-reconcile"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "shopify-customer-reconcile" });
+        }
+      } catch (error) {
+        logger.error("Job 22 (shopify-customer-reconcile) unexpected error", error, "JobScheduler");
+      }
+
       // Job 19: GA4 sync. Skips silently when no credentials are stored.
       // 10-minute timeout for the first-run 90-day backfill.
       try {
@@ -572,6 +599,55 @@ export class JobScheduler {
       this.lastImageBackfillCheck = new Date();
     } catch (err) {
       logger.error("Image backfill job error", err, "JobScheduler");
+    }
+  }
+
+  /**
+   * Job 22: Shopify customer reconciliation.
+   *
+   * Pulls all Shopify customers updated in the past 48h via the Admin
+   * API and upserts each one through the same syncShopifyCustomerToUser
+   * path the webhooks use. Idempotent: existing accounts are skipped.
+   *
+   * Why 48h: Shopify retries failed webhooks for up to 48h before
+   * giving up. Pulling that window catches every webhook we MIGHT have
+   * missed. Beyond 48h is the manual backfill's job.
+   *
+   * Skipped entirely when SHOPIFY_ACCESS_TOKEN isn't set — the admin
+   * hasn't enabled the integration yet, so there's nothing to do.
+   */
+  private async runShopifyCustomerReconcileJob() {
+    try {
+      if (this.lastShopifyReconcileCheck) {
+        const elapsed = Date.now() - this.lastShopifyReconcileCheck.getTime();
+        if (elapsed < this.SHOPIFY_RECONCILE_INTERVAL_MS) return;
+      }
+
+      const { shopifyApiConfigured } = await import("./shopify-client");
+      if (!shopifyApiConfigured()) {
+        // No Shopify creds — silently skip and don't burn a check window.
+        // We'll re-evaluate next tick.
+        return;
+      }
+
+      const { backfillShopifyCustomers } = await import("./shopify-customer-sync");
+      const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      const summary = await backfillShopifyCustomers({ updatedAtMin: since });
+      this.lastShopifyReconcileCheck = new Date();
+
+      // Always log the result so we can see in Railway logs that the
+      // job ran, even when nothing was reconciled. Useful evidence that
+      // webhooks ARE catching everything (in steady state, created==0).
+      logger.info("Shopify customer reconcile complete", "JobScheduler", {
+        windowHours: 48,
+        processed: summary.processed,
+        created: summary.created,
+        existed: summary.existed,
+        errors: summary.errors,
+        firstErrors: summary.firstErrors.length > 0 ? summary.firstErrors : undefined,
+      });
+    } catch (err) {
+      logger.error("Shopify customer reconcile error", err, "JobScheduler");
     }
   }
 

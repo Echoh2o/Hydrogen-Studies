@@ -18,11 +18,14 @@
 
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
-import { v4 as uuidv4 } from "uuid";
 import { db } from "../db";
 import { users } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../utils/logger";
+import { syncShopifyCustomerPayload, backfillShopifyCustomers } from "../services/shopify-customer-sync";
+import { shopifyApiConfigured } from "../services/shopify-client";
+import { requireAdmin } from "../auth";
+import { count, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -52,34 +55,18 @@ function verifyShopifyWebhook(rawBody: Buffer, hmacHeader: string): boolean {
 }
 
 /**
- * Generate a random password for auto-created accounts
- * Users can reset via the password reset flow
- */
-function generateRandomPassword(): string {
-  return crypto.randomBytes(24).toString("base64url");
-}
-
-/**
  * POST /api/webhooks/shopify/customer-created
- * Called by Shopify when a new customer registers on echowater.com
+ * Called by Shopify when a new customer registers on echowater.com.
  *
- * Shopify sends:
- * {
- *   id: 12345,
- *   email: "customer@example.com",
- *   first_name: "Jane",
- *   last_name: "Doe",
- *   phone: "+1...",
- *   tags: "...",
- *   created_at: "2024-01-01T00:00:00Z"
- * }
+ * The actual account creation lives in syncShopifyCustomerPayload —
+ * this handler just verifies the signature and translates the result
+ * into a 200 response. Same upsert function is reused by backfill +
+ * the reconciliation cron so behavior stays consistent.
  */
 router.post("/customer-created", async (req: Request, res: Response) => {
   try {
-    // Verify webhook signature
     const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string;
     const rawBody = (req as any).rawBody as Buffer | undefined;
-
     if (process.env.SHOPIFY_WEBHOOK_SECRET) {
       if (!hmacHeader) {
         logger.warn("Missing HMAC header", "Shopify");
@@ -96,71 +83,21 @@ router.post("/customer-created", async (req: Request, res: Response) => {
     }
 
     const customer = req.body;
-    if (!customer || !customer.email) {
-      logger.warn("Invalid webhook payload — missing email", "Shopify");
-      return res.status(400).json({ error: "Invalid payload" });
-    }
-
-    const email = customer.email.toLowerCase().trim();
-    const firstName = customer.first_name || "";
-    const lastName = customer.last_name || "";
-    const shopifyCustomerId = String(customer.id);
-
-    logger.info("Customer created webhook received", "Shopify", { email, shopifyCustomerId });
-
-    // Check if user already exists
-    const [existing] = await db.select({ id: users.id, email: users.email })
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    if (existing) {
-      logger.info("User already exists, skipping", "Shopify", { email, userId: existing.id });
-      return res.status(200).json({ status: "exists", userId: existing.id });
-    }
-
-    // Generate username from email (before the @)
-    let username = email.split("@")[0].replace(/[^a-z0-9]/gi, "").toLowerCase();
-
-    // Check username uniqueness
-    const [usernameExists] = await db.select({ id: users.id })
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
-
-    if (usernameExists) {
-      username = `${username}${Date.now().toString().slice(-4)}`;
-    }
-
-    // Hash a random password — user will need to reset on first login
-    const bcrypt = await import("bcrypt");
-    const randomPassword = generateRandomPassword();
-    const passwordHash = await bcrypt.hash(randomPassword, 10);
-
-    // Create the account
-    const userId = uuidv4();
-    const [newUser] = await db.insert(users).values({
-      id: userId,
-      username,
-      email,
-      passwordHash,
-      role: "customer",
-      isActive: true,
-    }).returning({ id: users.id });
-
-    logger.info("Created account", "Shopify", { email, userId: newUser.id, username });
-
-    // Return success to Shopify (they expect 200)
-    res.status(200).json({
-      status: "created",
-      userId: newUser.id,
-      username,
+    logger.info("Customer created webhook received", "Shopify", {
+      email: customer?.email,
+      shopifyCustomerId: customer?.id,
     });
+
+    const result = await syncShopifyCustomerPayload(customer);
+    if (result.status === "error") {
+      // Return 200 anyway so Shopify doesn't retry — we've already
+      // logged the error and a future cron run will pick it up.
+      return res.status(200).json({ status: "error", message: result.error });
+    }
+    res.status(200).json(result);
   } catch (error) {
     logger.error("Customer created webhook error", error, "Shopify");
-    // Return 200 anyway to prevent Shopify from retrying
-    // Log the error and handle it manually
-    res.status(200).json({ status: "error", message: "Internal error, will retry" });
+    res.status(200).json({ status: "error", message: "Internal error" });
   }
 });
 
@@ -240,39 +177,136 @@ router.post("/order-created", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid payload" });
     }
 
-    const email = order.email.toLowerCase().trim();
-    logger.info("Order created", "Shopify", { email, totalPrice: order.total_price });
+    logger.info("Order created", "Shopify", {
+      email: order.email,
+      totalPrice: order.total_price,
+    });
 
-    // Find or create user
-    const [existingUser] = await db.select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    if (!existingUser) {
-      // Customer placed an order but doesn't have an account yet — auto-create
-      const username = email.split("@")[0].replace(/[^a-z0-9]/gi, "").toLowerCase() + Date.now().toString().slice(-4);
-      const bcrypt = await import("bcrypt");
-      const passwordHash = await bcrypt.hash(generateRandomPassword(), 10);
-
-      const orderUserId = uuidv4();
-      const [newUser] = await db.insert(users).values({
-        id: orderUserId,
-        username,
-        email,
-        passwordHash,
-        role: "customer",
-        isActive: true,
-      }).returning({ id: users.id });
-
-      logger.info("Auto-created account for order customer", "Shopify", { email, userId: newUser.id });
-    }
-
-    res.status(200).json({ status: "acknowledged" });
+    // Reuse the shared sync. Pass minimal fields — order webhooks don't
+    // include a `customer.id`, just an email + customer object embedded
+    // in the order payload. The sync function handles missing fields.
+    const customerLike = {
+      id: order.customer?.id ?? null,
+      email: order.email,
+      first_name: order.customer?.first_name ?? null,
+      last_name: order.customer?.last_name ?? null,
+    };
+    const result = await syncShopifyCustomerPayload(customerLike);
+    res.status(200).json({ status: "acknowledged", sync: result });
   } catch (error) {
     logger.error("Order webhook error", error, "Shopify");
     res.status(200).json({ status: "error" });
   }
+});
+
+// ── Admin-facing endpoints (NOT webhook callbacks) ─────────────
+//
+// Mounted on the same /api/webhooks/shopify prefix for grouping. They
+// require requireAdmin so they're not callable from Shopify or the
+// public.
+
+/**
+ * GET /api/webhooks/shopify/sync-status
+ * Returns Shopify-customer-account stats so the admin can see at a
+ * glance whether the sync is actually working.
+ */
+router.get("/sync-status", requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const [counts]: any = await db
+      .select({
+        total: count(users.id),
+      })
+      .from(users)
+      .where(sql`${users.role} = 'customer'`);
+
+    const recent = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(sql`${users.role} = 'customer'`)
+      .orderBy(sql`${users.createdAt} DESC`)
+      .limit(10);
+
+    res.json({
+      apiConfigured: shopifyApiConfigured(),
+      webhookSecretConfigured: Boolean(process.env.SHOPIFY_WEBHOOK_SECRET),
+      totalCustomerAccounts: Number(counts?.total ?? 0),
+      mostRecent: recent,
+    });
+  } catch (err) {
+    console.error("Shopify sync-status error:", err);
+    res.status(500).json({ error: "Failed to fetch sync status" });
+  }
+});
+
+/**
+ * POST /api/webhooks/shopify/backfill
+ * Body: { since?: string (ISO date), max?: number }
+ *
+ * Triggers the historical-customer backfill. Fire-and-forget — long
+ * operations would trip the client's 30s fetch timeout (a 30k-customer
+ * backfill takes ~3 minutes against Shopify's 2 req/sec budget). The
+ * client gets 202 immediately; results show up in /sync-status as the
+ * customer count climbs.
+ *
+ * Concurrent invocations are gated by an in-process flag so a click
+ * spam doesn't kick off 5 parallel backfills against the same Shopify
+ * data.
+ */
+let backfillInProgress = false;
+
+router.post("/backfill", requireAdmin, async (req: Request, res: Response) => {
+  if (backfillInProgress) {
+    return res.status(409).json({ error: "Backfill already running, please wait" });
+  }
+  if (!shopifyApiConfigured()) {
+    return res.status(400).json({
+      error: "SHOPIFY_ACCESS_TOKEN and SHOPIFY_STORE_URL must be set in env",
+    });
+  }
+
+  const since = typeof req.body?.since === "string" ? new Date(req.body.since) : undefined;
+  const max = typeof req.body?.max === "number" ? req.body.max : undefined;
+  if (since && isNaN(since.getTime())) {
+    return res.status(400).json({ error: "Invalid `since` date" });
+  }
+
+  backfillInProgress = true;
+  // Fire and forget. The .then/.catch are defensive — backfill itself
+  // catches per-customer errors, but this guards against a top-level
+  // crash leaving backfillInProgress stuck.
+  backfillShopifyCustomers({
+    updatedAtMin: since,
+    maxCustomers: max,
+    progressEvery: 100,
+    onProgress: (s) => {
+      console.log(
+        `[Shopify backfill] processed=${s.processed} created=${s.created} ` +
+          `existed=${s.existed} errors=${s.errors}`,
+      );
+    },
+  })
+    .then((summary) => {
+      console.log(
+        `[Shopify backfill] DONE: ${summary.processed} processed, ` +
+          `${summary.created} created, ${summary.existed} existed, ${summary.errors} errors`,
+      );
+    })
+    .catch((err) => {
+      console.error("[Shopify backfill] background failure:", err);
+    })
+    .finally(() => {
+      backfillInProgress = false;
+    });
+
+  res.status(202).json({
+    started: true,
+    message: "Backfill running in background. Check /sync-status for progress.",
+  });
 });
 
 export default router;
