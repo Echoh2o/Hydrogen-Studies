@@ -673,6 +673,14 @@ router.put("/:id(\\d+)", requireAdmin, async (req, res) => {
       isPublished: z.boolean().default(false),
       editorNotes: z.string().optional(),
       articleType: z.string().optional(),
+      // Phase C — optional YouTube embed. Empty string clears the field.
+      // Validates the 11-char ID shape so we can't accidentally store junk
+      // that breaks the iframe src on the public page.
+      youtubeEmbedId: z
+        .string()
+        .regex(/^[A-Za-z0-9_-]{11}$/, "Invalid YouTube ID")
+        .or(z.literal(""))
+        .optional(),
     });
 
     const validatedData = blogValidationSchema.parse(req.body);
@@ -706,6 +714,8 @@ router.put("/:id(\\d+)", requireAdmin, async (req, res) => {
         articleType: validatedData.articleType,
         isPublished: validatedData.isPublished,
         editorNotes: validatedData.editorNotes || null,
+        // Empty string → null so the public page renders no embed.
+        youtubeEmbedId: validatedData.youtubeEmbedId || null,
         updatedAt: new Date(),
       })
       .where(eq(blogArticles.id, id))

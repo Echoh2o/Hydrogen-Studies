@@ -66,6 +66,8 @@ interface BlogArticle {
     viewCount?: number;
     studyId?: number;
     semanticKeywords?: string[];
+    /** Optional 11-char YouTube video ID. Renders an iframe below the hero. */
+    youtubeEmbedId?: string | null;
 }
 
 function safeDateFormat(dateString: string | null | undefined): string {
@@ -327,6 +329,23 @@ function BlogPageContent() {
               </div>
             )}
           </header>
+
+          {/* Optional YouTube embed — sits between the header and the
+              article body so it acts as visual depth without disrupting
+              the reading flow. Only renders when an editor has curated
+              one (Phase C deliberately rejects AI-generated video). */}
+          {blog.youtubeEmbedId && /^[A-Za-z0-9_-]{11}$/.test(blog.youtubeEmbedId) && (
+            <div className="mb-8 aspect-video w-full overflow-hidden rounded-lg border bg-neutral-100">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${blog.youtubeEmbedId}`}
+                title={`Video: ${blog.title}`}
+                loading="lazy"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            </div>
+          )}
 
           {/* Article content */}
           <article className="prose prose-neutral max-w-none mb-8">

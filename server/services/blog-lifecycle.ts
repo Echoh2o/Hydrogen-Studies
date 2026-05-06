@@ -34,6 +34,8 @@ export function ensureBlogLifecycleColumns(): Promise<void> {
       await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS is_pillar boolean NOT NULL DEFAULT false`);
       await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS pillar_blog_id integer`);
       await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS promoted_to_pillar_at timestamp`);
+      // Phase C visual-depth columns
+      await db.execute(sql`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS youtube_embed_id text`);
       // Indexed because cluster lookups (`pillarBlogId = X`) are part of the
       // pillar-edit-page render path. Partial index on the parent flag keeps
       // the pillar-list query trivial.

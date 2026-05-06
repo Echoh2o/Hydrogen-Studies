@@ -126,7 +126,10 @@ app.use(
           "https://api.anthropic.com",
           "https://analytics.ahrefs.com",
         ],
-        frameSrc: ["'self'"],
+        // youtube-nocookie.com is the privacy-respecting embed host that
+        // doesn't set a tracking cookie until the user clicks play. Used
+        // by the optional YouTube embed on blog posts (Phase C).
+        frameSrc: ["'self'", "https://www.youtube-nocookie.com", "https://www.youtube.com"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests:
           process.env.NODE_ENV === "production" ? [] : null,

@@ -929,6 +929,14 @@ export const blogArticles = pgTable(
     imageUrl: text("image_url"),
     imageAlt: text("image_alt"),
     images: text("images").array(), // Support for multiple generated images
+    /**
+     * YouTube video ID (e.g. "dQw4w9WgXcQ", not the full URL) for an
+     * optional embedded video on the blog page. Manually curated by the
+     * editor; intentionally not AI-generated. Null = no embed.
+     * Phase C visual depth — text-to-video AI was explicitly rejected
+     * as an alternative because output quality is unfit for a research site.
+     */
+    youtubeEmbedId: text("youtube_embed_id"),
     readingLevel: text("reading_level").default("general"),
     articleType: text("article_type"),
     isPublished: boolean("is_published").default(false),

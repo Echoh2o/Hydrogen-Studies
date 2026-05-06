@@ -114,6 +114,7 @@ export default function BlogEditPage() {
     studyId: 0,
     editorNotes: "",
     isPublished: false,
+    youtubeEmbedId: "",
   });
 
   // Update local state when blog data is fetched
@@ -129,6 +130,7 @@ export default function BlogEditPage() {
         studyId: blog.studyId || 0,
         editorNotes: blog.editorNotes || "",
         isPublished: blog.isPublished || false,
+        youtubeEmbedId: blog.youtubeEmbedId || "",
       });
     }
   }, [blog]);
@@ -776,6 +778,64 @@ export default function BlogEditPage() {
                     />
                   </TabsContent>
                 </Tabs>
+              </CardContent>
+            </Card>
+
+            {/* Optional YouTube embed — manual curation only. Editor pastes
+                the 11-character video ID (or the full URL; we strip below)
+                and the public page renders an oEmbed iframe. Leaving it
+                empty is the common case. */}
+            <Card>
+              <CardHeader>
+                <CardTitle>YouTube Embed (optional)</CardTitle>
+                <CardDescription>
+                  Add a relevant YouTube video for visual depth. Paste the 11-character
+                  video ID (e.g. <code className="font-mono text-xs">dQw4w9WgXcQ</code>)
+                  or a full URL — we'll extract the ID.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="youtubeEmbedId">Video ID or URL</Label>
+                  <Input
+                    id="youtubeEmbedId"
+                    value={blogData.youtubeEmbedId}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim();
+                      // Accept either bare ID or any of the common URL forms;
+                      // store just the 11-char ID so the renderer doesn't
+                      // need to re-parse on every page view.
+                      const idMatch = raw.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+                      const id = idMatch
+                        ? idMatch[1]
+                        : /^[A-Za-z0-9_-]{11}$/.test(raw)
+                        ? raw
+                        : raw;
+                      setBlogData({ ...blogData, youtubeEmbedId: id });
+                    }}
+                    placeholder="dQw4w9WgXcQ"
+                  />
+                </div>
+                {blogData.youtubeEmbedId && /^[A-Za-z0-9_-]{11}$/.test(blogData.youtubeEmbedId) && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Preview</p>
+                    <div className="aspect-video w-full max-w-md overflow-hidden rounded-lg border">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${blogData.youtubeEmbedId}`}
+                        title="YouTube video preview"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="h-full w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+                {blogData.youtubeEmbedId && !/^[A-Za-z0-9_-]{11}$/.test(blogData.youtubeEmbedId) && (
+                  <p className="text-xs text-amber-600">
+                    Doesn't look like a valid YouTube ID — it should be exactly 11 characters
+                    of letters, digits, dashes, or underscores.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
