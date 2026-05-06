@@ -968,6 +968,105 @@ router.post("/:id(\\d+)/demote-from-pillar", requireAdmin, async (req, res) => {
 });
 
 /**
+ * Phase C visual depth — chart data for the public blog page.
+ *
+ * Returns numeric data the BlogPage can render as a chart without
+ * inventing numbers. Two pieces:
+ *
+ *   1. This study's sample_size and duration (numeric columns; NULL when
+ *      the study didn't capture them).
+ *   2. Research-velocity timeline: count of studies in this study's
+ *      category, bucketed by year for the past 5 years. Shows readers
+ *      the topic's research momentum with real data.
+ *
+ * No AI involvement. The plan called this out: "Real numbers, branded
+ * styling, no AI hallucination."
+ *
+ * Returns 200 with empty arrays/nulls rather than 404 when fields are
+ * missing — the client-side renderer hides the chart when nothing to show.
+ */
+router.get("/:id(\\d+)/study-chart-data", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid blog ID" });
+
+    // Resolve the blog → its study, then category. Single round-trip.
+    const [link]: any = await db.execute(sql`
+      SELECT
+        s.id AS "studyId",
+        s.category,
+        s.sample_size AS "sampleSize",
+        s.duration AS "durationDays"
+      FROM blog_articles b
+      INNER JOIN studies s ON s.id = b.study_id
+      WHERE b.id = ${id}
+      LIMIT 1
+    `).then((r: any) => r.rows ?? r);
+
+    if (!link) {
+      return res.json({
+        thisStudy: null,
+        categoryTimeline: [],
+        category: null,
+      });
+    }
+
+    const category = link.category || "General";
+
+    // Yearly histogram for the category, last 5 calendar years. Uses
+    // journal_publish_date when available (the actual publication year),
+    // otherwise falls back to publish_date (when we added the study).
+    let timeline: Array<{ year: number; count: number }> = [];
+    try {
+      const rows: any = await db.execute(sql`
+        WITH years AS (
+          SELECT generate_series(
+            EXTRACT(YEAR FROM CURRENT_DATE)::int - 4,
+            EXTRACT(YEAR FROM CURRENT_DATE)::int
+          ) AS year
+        )
+        SELECT
+          y.year::int AS year,
+          COALESCE(COUNT(s.id), 0)::int AS count
+        FROM years y
+        LEFT JOIN studies s
+          ON COALESCE(s.category, 'General') = ${category}
+          AND EXTRACT(YEAR FROM COALESCE(
+            CASE WHEN s.journal_publish_date ~ '^\\d{4}' THEN to_date(LEFT(s.journal_publish_date, 10), 'YYYY-MM-DD') END,
+            CASE WHEN s.publish_date ~ '^\\d{4}' THEN to_date(LEFT(s.publish_date, 10), 'YYYY-MM-DD') END
+          ))::int = y.year
+        GROUP BY y.year
+        ORDER BY y.year
+      `);
+      timeline = ((rows.rows ?? rows) as any[]).map((r) => ({
+        year: Number(r.year),
+        count: Number(r.count) || 0,
+      }));
+    } catch (timelineErr) {
+      // Date parsing on text columns is fragile — fall back to empty
+      // timeline rather than 500ing the whole endpoint. The chart
+      // component just hides itself when the array is empty.
+      console.warn(
+        "study-chart-data: timeline query failed:",
+        timelineErr instanceof Error ? timelineErr.message : timelineErr,
+      );
+    }
+
+    res.json({
+      thisStudy: {
+        sampleSize: link.sampleSize != null ? Number(link.sampleSize) : null,
+        durationDays: link.durationDays != null ? Number(link.durationDays) : null,
+      },
+      categoryTimeline: timeline,
+      category,
+    });
+  } catch (err) {
+    console.error("study-chart-data error:", err);
+    res.status(500).json({ error: "Failed to fetch chart data" });
+  }
+});
+
+/**
  * All pillars + per-pillar cluster counts, in a single round-trip.
  *
  * The pillar dashboard at /admin/seo/pillars renders this as a table.

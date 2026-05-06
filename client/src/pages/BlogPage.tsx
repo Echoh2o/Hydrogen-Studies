@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import RelatedContent from "@/components/seo/RelatedContent";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
+import { StudyContextChart } from "@/components/blog/StudyContextChart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -346,6 +347,10 @@ function BlogPageContent() {
               />
             </div>
           )}
+
+          {/* Phase C visual depth — at-a-glance stats + category research
+              velocity. Self-hides when the underlying data is missing. */}
+          <StudyContextChart blogId={blog.id} />
 
           {/* Article content */}
           <article className="prose prose-neutral max-w-none mb-8">
