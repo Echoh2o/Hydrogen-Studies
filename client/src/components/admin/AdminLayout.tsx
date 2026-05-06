@@ -92,6 +92,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   { label: "Users", icon: Users, href: "/admin/users" },
+  { label: "Shopify Sync", icon: Users, href: "/admin/shopify-sync" },
   { label: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
