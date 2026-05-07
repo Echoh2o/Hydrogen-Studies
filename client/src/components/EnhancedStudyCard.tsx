@@ -94,6 +94,8 @@ export function EnhancedStudyCard({
               <img
                 src={study.imageUrl}
                 alt={study.title}
+                loading="lazy"
+                decoding="async"
                 className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
               />
             )}
@@ -184,6 +186,8 @@ export function EnhancedStudyCard({
                 <img
                   src={study.imageUrl}
                   alt={study.title}
+                  loading="lazy"
+                  decoding="async"
                   className="w-32 h-32 object-cover rounded-lg shadow-md"
                 />
                 {study.enhancedWithAI && (
@@ -359,6 +363,8 @@ export function EnhancedStudyCard({
             <img
               src={study.imageUrl}
               alt={study.title}
+              loading="lazy"
+              decoding="async"
               className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
             />
           )}

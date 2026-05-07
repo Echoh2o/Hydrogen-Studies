@@ -367,6 +367,8 @@ export default function SEOStudyPage() {
                                 study.image_alt ||
                                 `Scientific visualization for ${study.title}`
                               }
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-auto max-h-96 object-cover"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;

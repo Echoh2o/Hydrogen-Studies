@@ -88,6 +88,8 @@ const EducationalResourcesSection = () => {
                   <img
                     src={resource.imageUrl}
                     alt={resource.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-5">

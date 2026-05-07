@@ -70,6 +70,9 @@ interface SearchResult {
 interface SearchResponse {
   data: SearchResult[];
   total: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
   facets: {
     tags: Array<{ name: string; count: number }>;
     journals: Array<{ name: string; count: number }>;
@@ -78,6 +81,8 @@ interface SearchResponse {
   suggestions: string[];
   trending: string[];
 }
+
+const RESULTS_PER_PAGE = 20;
 
 export default function EnhancedSearchPage() {
   const [location, setLocation] = useLocation();
@@ -94,13 +99,33 @@ export default function EnhancedSearchPage() {
   });
 
   const [searchMode, setSearchMode] = useState<"simple" | "advanced">("simple");
+  // Pagination state. Reset to page 1 whenever filters change so a
+  // search like "hydrogen" doesn't try to display "page 47" from a
+  // narrower previous query.
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [
+    filters.query,
+    filters.category,
+    filters.dateRange,
+    filters.studyType,
+    filters.minViewCount,
+    filters.sortBy,
+    filters.tags,
+  ]);
 
-  // Enhanced search with multiple filters and AI-powered relevance
+  // Enhanced search with multiple filters and AI-powered relevance.
+  // queryKey includes page + pageSize so changing pages refetches and
+  // results are cached per (filters, page) tuple.
   const { data: searchResults, isLoading: searchLoading } =
     useQuery<SearchResponse>({
-      queryKey: ["/api/search/enhanced", filters],
+      queryKey: ["/api/search/enhanced", { ...filters, page, limit: RESULTS_PER_PAGE }],
       enabled: filters.query.length > 0 || filters.tags.length > 0,
     });
+
+  const totalPages = searchResults?.totalPages
+    ?? (searchResults?.total ? Math.ceil(searchResults.total / RESULTS_PER_PAGE) : 1);
 
   // Get search suggestions as user types
   const { data: suggestions } = useQuery<string[]>({
@@ -444,6 +469,49 @@ export default function EnhancedSearchPage() {
                         </CardContent>
                       </Card>
                     ))}
+
+                    {/* Pagination controls — only render when there's
+                        more than one page of results. Compact pager: prev,
+                        page X of Y, next. Buttons disable at the
+                        boundaries. Scrolling to top on page change keeps
+                        the result list anchored consistently. */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                          Page {page} of {totalPages}
+                          {searchResults.total > 0 && (
+                            <span className="ml-2 tabular-nums">
+                              · {searchResults.total.toLocaleString()} result
+                              {searchResults.total === 1 ? "" : "s"}
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={page <= 1}
+                            onClick={() => {
+                              setPage((p) => Math.max(1, p - 1));
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                          >
+                            ← Previous
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={page >= totalPages}
+                            onClick={() => {
+                              setPage((p) => Math.min(totalPages, p + 1));
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                          >
+                            Next →
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

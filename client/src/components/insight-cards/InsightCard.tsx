@@ -214,6 +214,8 @@ export default function InsightCard({
                 <img
                   src={imageUrl}
                   alt="Research insight visualization"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               ) : (

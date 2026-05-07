@@ -407,6 +407,8 @@ const ExploreByBenefit: React.FC = () => {
                               <img
                                 src={study.imageUrl}
                                 alt={`Illustration for study: ${study.title}`}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover"
                               />
                             </div>

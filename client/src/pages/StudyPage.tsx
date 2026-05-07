@@ -266,13 +266,12 @@ const StudyPageContent = () => {
     queryKey: [`/api/studies/${studyId}`],
   });
 
-  // Create fallback image directly as base64-encoded SVG data URI
-  const fallbackImageBase64 =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPkh5ZHJvZ2VuIFJlc2VhcmNoIFN0dWR5PC90ZXh0PjxjaXJjbGUgY3g9IjQwMCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDY2Y2MiIG9wYWNpdHk9IjAuNyIvPjxjaXJjbGUgY3g9IjM0MCIgY3k9IjM1MCIgcj0iNDAiIGZpbGw9IiMwMDMzNjYiIG9wYWNpdHk9IjAuNyIvPjxsaW5lIHgxPSIzNzAiIHkxPSIzNTAiIHgyPSI0MzAiIHkyPSIzNTAiIHN0cm9rZT0iIzAwMzM2NiIgc3Ryb2tlLXdpZHRoPSI0Ii8+PC9zdmc+";
-
-  // Special case for study #1000 that has known issues
-  const study1000ImageBase64 =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2UyZjNmZiIvPjx0ZXh0IHg9IjQwMCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN0dWR5ICMxMDAwPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiIGZvbnQtd2VpZ2h0PSJib2xkIj5GdXR1cmUgRGlyZWN0aW9ucyBpbiBIeWRyb2dlbiBTdHVkaWVzPC90ZXh0Pjx0ZXh0IHg9IjQwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMwMDMzNjYiPlN1biwgWHVlanVuLCBPaHRhLCBTaGlnZW88L3RleHQ+PHRleHQgeD0iNDAwIiB5PSIyOTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMzM2NiI+SHlkcm9nZW4gTW9sZWN1bGFyIEJpb2xvZ3kgYW5kIE1lZGljaW5lICgyMDE1KTwvdGV4dD48Y2lyY2xlIGN4PSI0MDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDA2NmNjIiBvcGFjaXR5PSIwLjciLz48Y2lyY2xlIGN4PSIzNDAiIGN5PSIzODAiIHI9IjQwIiBmaWxsPSIjMDAzMzY2IiBvcGFjaXR5PSIwLjciLz48bGluZSB4MT0iMzcwIiB5MT0iMzgwIiB4Mj0iNDMwIiB5Mj0iMzgwIiBzdHJva2U9IiMwMDMzNjYiIHN0cm9rZS13aWR0aD0iNCIvPjwvc3ZnPg==";
+  // Externalized fallback images. These used to be ~1.5KB base64 strings
+  // shipped with every render of every study page; now they're cacheable
+  // assets fetched once per visitor. /public/images/ already has both
+  // files so no new asset commits are needed.
+  const fallbackImageBase64 = "/images/fallback-study-image.svg";
+  const study1000ImageBase64 = "/images/study-1000-fallback.svg";
 
   // Enhanced helper function to process image URLs correctly and handle all edge cases
   const getProcessedImageUrl = (study?: Study) => {
@@ -356,6 +355,11 @@ const StudyPageContent = () => {
       return res.json();
     },
     enabled: !!study?.category || !!relatedSearchQuery,
+    // Related studies don't change minute-to-minute. 5min stale +
+    // 10min cache means revisiting a study or scrolling within the
+    // page doesn't re-hit the search API.
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
   const relatedArray = Array.isArray(relatedData?.studies) ? relatedData.studies : Array.isArray(relatedData?.data) ? relatedData.data : [];
   const relatedStudies = relatedArray

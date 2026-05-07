@@ -176,6 +176,8 @@ export default function RelatedBlogs({ studyId }: RelatedBlogsProps) {
                         <img
                           src={blog.imageUrl}
                           alt={blog.imageAlt || "Blog illustration"}
+                          loading="lazy"
+                          decoding="async"
                           className="rounded-md w-full h-auto object-cover max-h-64"
                         />
                       </div>
