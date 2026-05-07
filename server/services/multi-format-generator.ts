@@ -11,6 +11,13 @@ import {
   multiFormatContent,
   studies,
 } from "@shared/schema";
+import {
+  PodcastQASchema,
+  ThreadContentSchema,
+  VideoStoryboardSchema,
+  KeyStatisticsSchema,
+  validateOrFallback,
+} from "@shared/schemas/multi-format";
 import { db } from "../db";
 import { eq, and } from "drizzle-orm";
 import {
@@ -248,7 +255,9 @@ Format the response as JSON with these fields:
     podcastScript: podcastData.mainScript,
     podcastIntro: podcastData.intro,
     podcastOutro: podcastData.outro,
-    podcastQA: JSON.stringify(podcastData.qaSegment),
+    podcastQA: JSON.stringify(
+      validateOrFallback(podcastData.qaSegment, PodcastQASchema, [], "podcastQA"),
+    ),
     podcastShowNotes: podcastData.showNotes.join("\n"),
     podcastDuration: podcastData.estimatedDuration,
     readingLevel: "6th_grade",
@@ -317,7 +326,9 @@ Format as JSON with:
     title: infographicData.title,
     infographicTitle: infographicData.title,
     infographicSubheadings: JSON.stringify(infographicData.subheadings),
-    keyStatistics: JSON.stringify(infographicData.keyStatistics),
+    keyStatistics: JSON.stringify(
+      validateOrFallback(infographicData.keyStatistics, KeyStatisticsSchema, [], "keyStatistics"),
+    ),
     dataPoints: JSON.stringify(infographicData.comparisons),
     visualSuggestions: JSON.stringify(infographicData.visualSuggestions),
     readingLevel: "6th_grade",
@@ -422,7 +433,11 @@ ${
     title: `${platform.replace("social_", "").toUpperCase()} Post: ${study.title.substring(0, 50)}`,
     socialPlatform: platform.replace("social_", ""),
     socialContent: isTwitter ? socialData.thread[0] : socialData.content,
-    threadContent: isTwitter ? JSON.stringify(socialData.thread) : undefined,
+    threadContent: isTwitter
+      ? JSON.stringify(
+          validateOrFallback(socialData.thread, ThreadContentSchema, [], "threadContent"),
+        )
+      : undefined,
     hashtags: socialData.hashtags,
     characterCount: isTwitter
       ? socialData.thread.reduce(
@@ -495,7 +510,9 @@ Format as JSON:
     title: `${isShortForm ? "Short" : "YouTube"} Video: ${study.title.substring(0, 50)}`,
     videoScript: videoData.script,
     videoType: isShortForm ? "short_form" : "youtube_explainer",
-    videoStoryboard: JSON.stringify(videoData.storyboard),
+    videoStoryboard: JSON.stringify(
+      validateOrFallback(videoData.storyboard, VideoStoryboardSchema, [], "videoStoryboard"),
+    ),
     videoDuration: videoData.duration,
     visualCues: JSON.stringify(videoData.visualCues),
     readingLevel: "6th_grade",
