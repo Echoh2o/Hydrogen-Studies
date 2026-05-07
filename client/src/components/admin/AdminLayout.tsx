@@ -89,6 +89,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/analytics", label: "Content Analytics" },
       { href: "/admin/trends", label: "Trends" },
       { href: "/admin/monitoring", label: "System Monitoring" },
+      { href: "/admin/jobs", label: "Generation Jobs" },
     ],
   },
   { label: "Users", icon: Users, href: "/admin/users" },

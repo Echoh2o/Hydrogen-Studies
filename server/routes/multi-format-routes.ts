@@ -16,28 +16,9 @@ import { multiFormatContent, studies } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { AppError, ErrorCode } from "../utils/app-errors";
 import { requireAdmin } from "../auth";
+import { safeJsonParse } from "../utils/sanitize";
 
 const router = Router();
-
-/**
- * Safe JSON parse for stored content fields (podcast QA, social threads,
- * video storyboards, infographic stats). One corrupted DB row used to
- * crash the whole export endpoint via an unhandled JSON.parse throw —
- * this returns the fallback instead so a single bad record can't take
- * down everyone else's exports.
- *
- * Type parameter is the expected shape; caller can pass a default that
- * matches it (e.g. an empty array) and downstream `.forEach` keeps
- * working without an existence check.
- */
-function safeJsonParse<T>(raw: string | null | undefined, fallback: T): T {
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
 
 /**
  * Generate multi-format content for a study

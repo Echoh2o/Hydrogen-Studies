@@ -249,7 +249,7 @@ const BOT_PROBE_PATTERNS: RegExp[] = [
   /\/(nikto|nmap|sqlmap|metasploit|nessus|burp)/i,
 ];
 
-function isBotProbe(normalizedPath: string): boolean {
+export function isBotProbe(normalizedPath: string): boolean {
   for (const pattern of BOT_PROBE_PATTERNS) {
     if (pattern.test(normalizedPath)) return true;
   }
@@ -324,7 +324,7 @@ const STOPWORDS = new Set([
   "with", "without", "by", "from", "is", "are", "was", "were", "be",
 ]);
 
-function reconstructQuery(path: string): {
+export function reconstructQuery(path: string): {
   query: string;
   tokens: string[];
   pathHint: "study" | "blog" | "condition" | null;
@@ -362,7 +362,7 @@ function reconstructQuery(path: string): {
 }
 
 /** Count how many query tokens appear anywhere in a set of array-ish fields. */
-function tokenOverlap(tokens: string[], fields: Array<string[] | null | undefined>): number {
+export function tokenOverlap(tokens: string[], fields: Array<string[] | null | undefined>): number {
   if (tokens.length === 0) return 0;
   const haystack = new Set<string>();
   for (const field of fields) {
@@ -379,7 +379,7 @@ function tokenOverlap(tokens: string[], fields: Array<string[] | null | undefine
   return hits;
 }
 
-function popularityBonus(viewCount: number | null | undefined): number {
+export function popularityBonus(viewCount: number | null | undefined): number {
   const v = viewCount ?? 0;
   if (v <= 0) return 0;
   return Math.min(0.05, Math.log10(v + 1) / 60); // ~0.02 at 10 views, capped at 0.05
@@ -927,7 +927,7 @@ export async function backfillSuggestions(
  * mistake (or compromised admin account) could turn the redirect
  * middleware into an open redirector. Reject those explicitly.
  */
-function assertSameSitePath(toPath: string): void {
+export function assertSameSitePath(toPath: string): void {
   if (typeof toPath !== "string" || toPath.length === 0) {
     throw new Error("Redirect target is required");
   }

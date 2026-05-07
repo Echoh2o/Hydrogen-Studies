@@ -185,6 +185,7 @@ const SearchConsolePage = lazy(() => import("./pages/admin/SearchConsolePage"));
 const AnalyticsGa4Page = lazy(() => import("./pages/admin/AnalyticsGa4Page"));
 const PillarsPage = lazy(() => import("./pages/admin/PillarsPage"));
 const ShopifySyncPage = lazy(() => import("./pages/admin/ShopifySyncPage"));
+const JobsPage = lazy(() => import("./pages/admin/JobsPage"));
 const ThisWeekPage = lazy(() => import("./pages/ThisWeekPage"));
 
 // Content Hub / Pillar Pages
@@ -506,6 +507,14 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin"]}>
               <ShopifySyncPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        {/* Admin Blog generation jobs (paused/stuck job recovery) */}
+        <Route path="/admin/jobs">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <JobsPage />
             </ProtectedRoute>
           )}
         </Route>
