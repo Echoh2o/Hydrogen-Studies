@@ -13,7 +13,7 @@
 import { ai } from "./ai-provider";
 import { db } from "../db";
 import { studies, blogArticles, seoContentClusters } from "../../shared/schema";
-import { eq, sql, desc, ilike, or } from "drizzle-orm";
+import { eq, sql, desc, ilike, or, inArray } from "drizzle-orm";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 const ECHO_SITE = "https://echowater.com";
@@ -479,18 +479,24 @@ export async function seedKeywordClusters(): Promise<{ created: number; existing
   let created = 0;
   let existing = 0;
 
-  for (const seed of DEFAULT_KEYWORD_CLUSTERS) {
-    const [exists] = await db.select({ id: seoContentClusters.id })
-      .from(seoContentClusters)
-      .where(eq(seoContentClusters.slug, seed.slug))
-      .limit(1);
+  // One-shot existence check for all seed slugs instead of one query
+  // per seed. With ~28 default clusters, this is 1 query instead of 28.
+  const seedSlugs = DEFAULT_KEYWORD_CLUSTERS.map((s) => s.slug);
+  const existingRows = await db
+    .select({ slug: seoContentClusters.slug })
+    .from(seoContentClusters)
+    .where(inArray(seoContentClusters.slug, seedSlugs));
+  const existingSlugs = new Set(existingRows.map((r) => r.slug));
 
-    if (exists) {
+  // Collect new rows for a single batch insert. The previous version
+  // also did one INSERT per seed.
+  const toInsert: Array<typeof seoContentClusters.$inferInsert> = [];
+  for (const seed of DEFAULT_KEYWORD_CLUSTERS) {
+    if (existingSlugs.has(seed.slug)) {
       existing++;
       continue;
     }
-
-    await db.insert(seoContentClusters).values({
+    toInsert.push({
       pillarKeyword: seed.pillarKeyword,
       pillarTitle: seed.pillarTitle,
       slug: seed.slug,
@@ -508,7 +514,10 @@ export async function seedKeywordClusters(): Promise<{ created: number; existing
       estimatedSearchVolume: seed.estimatedSearchVolume || null,
       priority: seed.priority,
     });
-    created++;
+  }
+  if (toInsert.length > 0) {
+    await db.insert(seoContentClusters).values(toInsert);
+    created = toInsert.length;
   }
 
   return { created, existing };

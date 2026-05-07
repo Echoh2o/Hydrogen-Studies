@@ -63,33 +63,50 @@ router.post("/bulk-generate", requireAdmin, async (req, res) => {
     let failedSaves = 0;
 
     if (validatedRequest.saveToDatabase) {
+      // Collect all rows up front and do a single batch INSERT instead
+      // of one INSERT per blog. With 50 studies × 3 articles = ~150
+      // round-trips that's a real bottleneck on a "bulk generate"
+      // request — collapsing to 1 round-trip removes seconds of latency.
+      // Each slug appends a per-row counter (in addition to Date.now())
+      // so the unique-constraint can't be tripped by two rows in the
+      // same millisecond.
+      const baseTimestamp = Date.now();
+      const rowsToInsert: Array<typeof blogArticles.$inferInsert> = [];
+      let counter = 0;
       for (const studyResult of results) {
         if (!studyResult.success) continue;
         for (const blog of studyResult.generatedBlogs) {
-          try {
-            const slug = (blog.title || "untitled")
-              .toLowerCase()
-              .replace(/[^\w\s-]/g, "")
-              .replace(/\s+/g, "-")
-              .replace(/-+/g, "-")
-              .replace(/^-+|-+$/g, "")
-              .substring(0, 100) || "untitled-blog";
-
-            await db.insert(blogArticles).values({
-              title: blog.title,
-              slug: `${slug}-${Date.now()}`,
-              summary: blog.summary || blog.title,
-              content: blog.content,
-              studyId: studyResult.studyId,
-              articleType: blog.articleType || "summary",
-              readingLevel: validatedRequest.readingLevel || "general",
-              isPublished: false,
-            });
-            savedCount++;
-          } catch (saveError) {
-            console.error("Error saving bulk blog:", saveError);
-            failedSaves++;
-          }
+          const slug = (blog.title || "untitled")
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .substring(0, 100) || "untitled-blog";
+          rowsToInsert.push({
+            title: blog.title,
+            slug: `${slug}-${baseTimestamp}-${counter++}`,
+            summary: blog.summary || blog.title,
+            content: blog.content,
+            studyId: studyResult.studyId,
+            articleType: blog.articleType || "summary",
+            readingLevel: validatedRequest.readingLevel || "general",
+            isPublished: false,
+          });
+        }
+      }
+      if (rowsToInsert.length > 0) {
+        try {
+          // Single INSERT ... VALUES (...), (...), (...) — Postgres handles
+          // hundreds of rows without issue.
+          await db.insert(blogArticles).values(rowsToInsert);
+          savedCount = rowsToInsert.length;
+        } catch (saveError) {
+          console.error("Error saving bulk blogs:", saveError);
+          // The batch is all-or-nothing on a failure; report the full
+          // intended count as failed so the response stays accurate.
+          failedSaves = rowsToInsert.length;
+          savedCount = 0;
         }
       }
     }

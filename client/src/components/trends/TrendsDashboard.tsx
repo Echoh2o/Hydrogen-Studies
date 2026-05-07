@@ -3,7 +3,7 @@
  * Displays emerging topics, breakthrough studies, and research momentum
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -206,8 +206,11 @@ export default function TrendsDashboard() {
     },
   });
 
-  // Prepare chart data
-  const prepareKeywordChartData = () => {
+  // Prepare chart data — memoized so the JSX can reference these
+  // multiple times per render without recomputing. Previously
+  // momentumChartData was called twice in the same render
+  // (lines 718 + 734), doubling the work for no benefit.
+  const keywordChartData = useMemo(() => {
     if (!trendReport?.keywordTrends) return [];
     return trendReport.keywordTrends.slice(0, 10).map((trend) => ({
       keyword: trend.keyword,
@@ -215,9 +218,9 @@ export default function TrendsDashboard() {
       previous: trend.previousFrequency,
       change: parseFloat(trend.change),
     }));
-  };
+  }, [trendReport?.keywordTrends]);
 
-  const prepareMomentumChartData = () => {
+  const momentumChartData = useMemo(() => {
     if (!trendReport?.momentum) return [];
     const data: Array<{ area: string; type: string; change: number; activity: number }> = [];
 
@@ -240,7 +243,7 @@ export default function TrendsDashboard() {
     });
 
     return data;
-  };
+  }, [trendReport?.momentum]);
 
   const toggleTopicExpansion = (topicName: string) => {
     const newExpanded = new Set(expandedTopics);
@@ -715,7 +718,7 @@ export default function TrendsDashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={prepareMomentumChartData()}>
+                <BarChart data={momentumChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="area"
@@ -731,7 +734,7 @@ export default function TrendsDashboard() {
                     fill="#3b82f6"
                     name="Change (%)"
                   >
-                    {prepareMomentumChartData().map((entry, index) => (
+                    {momentumChartData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={entry.type === "Accelerating" ? "#10b981" : "#ef4444"}
@@ -836,7 +839,7 @@ export default function TrendsDashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={prepareKeywordChartData()}>
+                <AreaChart data={keywordChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="keyword"

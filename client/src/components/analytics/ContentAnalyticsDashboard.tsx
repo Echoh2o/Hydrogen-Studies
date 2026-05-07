@@ -3,7 +3,7 @@
  * Comprehensive dashboard for viewing content performance metrics and insights
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -146,27 +146,60 @@ export function ContentAnalyticsDashboard() {
     refetchTopContent();
   };
 
-  // Calculate summary statistics
-  const summaryStats = {
-    totalViews: topContent?.reduce((sum: number, item: ContentMetrics) => sum + item.viewCount, 0) || 0,
-    totalUniqueViewers: topContent?.reduce((sum: number, item: ContentMetrics) => sum + item.uniqueViewers, 0) || 0,
-    avgEngagement: topContent?.reduce((sum: number, item: ContentMetrics) => sum + item.avgTimeSpent, 0) / (topContent?.length || 1) || 0,
-    avgBounceRate: topContent?.reduce((sum: number, item: ContentMetrics) => sum + item.bounceRate, 0) / (topContent?.length || 1) || 0,
-  };
+  // Calculate summary statistics — memoized so the 4 reduces don't
+  // re-run on every parent re-render or filter tweak. Previously each
+  // reduce walked topContent on every render of the dashboard
+  // (potentially many per session as filters change).
+  const summaryStats = useMemo(() => {
+    const list = topContent ?? [];
+    if (list.length === 0) {
+      return { totalViews: 0, totalUniqueViewers: 0, avgEngagement: 0, avgBounceRate: 0 };
+    }
+    let totalViews = 0;
+    let totalUniqueViewers = 0;
+    let sumEngagement = 0;
+    let sumBounceRate = 0;
+    for (const item of list as ContentMetrics[]) {
+      totalViews += item.viewCount;
+      totalUniqueViewers += item.uniqueViewers;
+      sumEngagement += item.avgTimeSpent;
+      sumBounceRate += item.bounceRate;
+    }
+    return {
+      totalViews,
+      totalUniqueViewers,
+      avgEngagement: sumEngagement / list.length,
+      avgBounceRate: sumBounceRate / list.length,
+    };
+  }, [topContent]);
 
-  // Prepare chart data
-  const engagementData = topContent?.slice(0, 5).map((item: ContentMetrics) => ({
-    name: item.title?.substring(0, 30) + '...',
-    views: item.viewCount,
-    timeSpent: item.avgTimeSpent,
-    shares: item.shareCount,
-  })) || [];
+  // Prepare chart data — also memoized so chart re-mounts during a
+  // tab switch don't trigger a full transform of the source array.
+  const engagementData = useMemo(
+    () =>
+      (topContent ?? []).slice(0, 5).map((item: ContentMetrics) => ({
+        name: item.title?.substring(0, 30) + '...',
+        views: item.viewCount,
+        timeSpent: item.avgTimeSpent,
+        shares: item.shareCount,
+      })),
+    [topContent],
+  );
 
-  const contentTypeDistribution = [
-    { name: 'Studies', value: topContent?.filter((c: ContentMetrics) => c.contentType === 'study').length || 0 },
-    { name: 'Blogs', value: topContent?.filter((c: ContentMetrics) => c.contentType === 'blog').length || 0 },
-    { name: 'Articles', value: topContent?.filter((c: ContentMetrics) => c.contentType === 'article').length || 0 },
-  ];
+  const contentTypeDistribution = useMemo(() => {
+    const list = (topContent ?? []) as ContentMetrics[];
+    let studies = 0, blogs = 0, articles = 0;
+    for (const c of list) {
+      if (c.contentType === 'study') studies++;
+      else if (c.contentType === 'blog') blogs++;
+      else if (c.contentType === 'article') articles++;
+    }
+    return [
+      { name: 'Studies', value: studies },
+      { name: 'Blogs', value: blogs },
+      { name: 'Articles', value: articles },
+    ];
+  }, [topContent]);
 
   return (
     <div className="space-y-6 p-6" data-testid="analytics-dashboard">
