@@ -1150,16 +1150,34 @@ export default function RedirectsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Resolve 404 Dialog ────────────────────────────── */}
+      {/* ── Resolve 404 Dialog ──────────────────────────────
+          DialogContent default is max-w-lg (~512px) — too narrow for
+          the URL paths admins actually deal with (some bot probe paths
+          are 200+ chars including query strings). max-w-2xl plus a
+          height cap with overflow keeps very long paths + many
+          suggestions readable instead of overflowing the viewport. */}
       <Dialog open={!!resolveEntry} onOpenChange={(open) => !open && setResolveEntry(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Resolve 404</DialogTitle>
-            <DialogDescription>
-              Create a redirect for <code className="text-xs">{resolveEntry?.path}</code>
-              {resolveEntry?.hitCount && (
-                <span className="ml-1">({resolveEntry.hitCount} hits)</span>
-              )}
+            <DialogDescription asChild>
+              <div className="space-y-1.5">
+                <div>
+                  Create a redirect for:
+                  {resolveEntry?.hitCount ? (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      ({resolveEntry.hitCount.toLocaleString()} hits)
+                    </span>
+                  ) : null}
+                </div>
+                {/* Path on its own line in a code block that wraps and
+                    horizontally scrolls if needed. break-all is required
+                    because URLs lack natural break points; without it a
+                    160-char path forces the whole dialog wider. */}
+                <code className="block text-xs bg-muted/50 rounded px-2 py-1.5 break-all max-h-24 overflow-y-auto">
+                  {resolveEntry?.path}
+                </code>
+              </div>
             </DialogDescription>
           </DialogHeader>
           {resolveEntry && (
@@ -1274,15 +1292,22 @@ function ResolveForm({
                         : "border-border hover:bg-muted/50"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <ConfidenceBadge score={s.score} />
-                      <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 shrink-0">
                         {contentTypeLabel(s.contentType)}
                       </Badge>
                       {i === 0 && (
-                        <Badge variant="default" className="text-[10px] h-5 px-1.5">Top pick</Badge>
+                        <Badge variant="default" className="text-[10px] h-5 px-1.5 shrink-0">Top pick</Badge>
                       )}
-                      <span className="ml-auto font-mono text-xs truncate text-muted-foreground" title={s.target}>
+                      {/* min-w-0 on the parent flex + this span lets
+                          truncate actually do its job. Without min-w-0
+                          the flex child claims its full intrinsic width
+                          and overflows the dialog. */}
+                      <span
+                        className="ml-auto font-mono text-xs truncate text-muted-foreground min-w-0"
+                        title={s.target}
+                      >
                         {s.target}
                       </span>
                     </div>
