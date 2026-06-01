@@ -16,7 +16,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import { randomBytes } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { requireAdmin } from "../auth";
@@ -37,6 +37,13 @@ const router = Router();
 
 const STATE_COOKIE = "ga4_oauth_state";
 const STATE_COOKIE_MAX_AGE_MS = 5 * 60 * 1000;
+
+/** Constant-time string comparison for the OAuth state token. */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
+}
 
 router.get("/status", requireAdmin, async (_req, res) => {
   try {
@@ -103,7 +110,7 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     const state = req.query.state as string | undefined;
     const cookieState = (req as any).cookies?.[STATE_COOKIE];
 
-    if (!code || !state || !cookieState || state !== cookieState) {
+    if (!code || !state || !cookieState || !safeEqual(state, cookieState)) {
       return res
         .status(400)
         .send("OAuth callback failed: state mismatch. Try connecting again from the admin UI.");

@@ -17,6 +17,46 @@ import { logger } from "../utils/logger";
 
 const router = Router();
 
+/**
+ * Regenerate the Express session, returning a promise. Used at the
+ * authentication boundary (login/register) to prevent session fixation: a
+ * pre-auth session ID (and its CSRF secret) must not survive into the
+ * authenticated session. If regeneration fails we log and continue rather
+ * than hard-failing the login.
+ */
+function regenerateSession(req: Request): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof (req.session as any)?.regenerate !== "function") return resolve();
+    req.session.regenerate((err) => {
+      if (err) logger.error("Session regenerate failed", err, "AuthRoutes");
+      resolve();
+    });
+  });
+}
+
+/**
+ * Invalidate stored sessions belonging to a user — called after a password
+ * change/reset so a compromised/old session can't survive the reset.
+ * connect-pg-simple keeps sessions in the `session` table with the payload in
+ * the `sess` json column; we match on the userId set at login. `exceptSid`
+ * preserves the caller's own session (used by change-password so the user
+ * isn't logged out of the device they just changed the password on).
+ */
+async function destroyUserSessions(userId: string, exceptSid?: string): Promise<void> {
+  try {
+    if (exceptSid) {
+      await db.execute(
+        sql`DELETE FROM session WHERE (sess->>'userId') = ${userId} AND sid <> ${exceptSid}`,
+      );
+    } else {
+      await db.execute(sql`DELETE FROM session WHERE (sess->>'userId') = ${userId}`);
+    }
+  } catch (err) {
+    // Dev may use a non-PG session store (memorystore); best-effort only.
+    logger.error("Failed to destroy user sessions", err, "AuthRoutes");
+  }
+}
+
 // Validation schemas
 const registerSchema = z
   .object({
@@ -100,12 +140,6 @@ router.post("/register", authRateLimiter, async (req: Request, res: Response) =>
       .where(eq(users.username, validatedData.username))
       .limit(1);
 
-    if (existingUsername.length > 0) {
-      return res.status(400).json({
-        error: "Username already exists",
-      });
-    }
-
     // Check if email already exists
     const existingEmail = await db
       .select()
@@ -113,9 +147,12 @@ router.post("/register", authRateLimiter, async (req: Request, res: Response) =>
       .where(eq(users.email, validatedData.email))
       .limit(1);
 
-    if (existingEmail.length > 0) {
+    // Use one generic message for both username and email collisions so the
+    // public registration endpoint doesn't confirm whether a given email is
+    // already registered (account enumeration).
+    if (existingUsername.length > 0 || existingEmail.length > 0) {
       return res.status(400).json({
-        error: "Email already registered",
+        error: "That username or email is already in use",
       });
     }
 
@@ -147,6 +184,11 @@ router.post("/register", authRateLimiter, async (req: Request, res: Response) =>
         isActive: true,
       })
       .returning();
+
+    // Regenerate the session before storing identity to prevent session
+    // fixation — a pre-auth session ID (and its CSRF secret) must not carry
+    // across the authentication boundary.
+    await regenerateSession(req);
 
     // Create session
     req.session.userId = newUser.id;
@@ -254,6 +296,10 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
       .update(users)
       .set({ lastLogin: new Date() })
       .where(eq(users.id, user.id));
+
+    // Regenerate the session before storing identity to prevent session
+    // fixation (new SID for the authenticated session).
+    await regenerateSession(req);
 
     // Create session
     req.session.userId = user.id;
@@ -437,6 +483,10 @@ router.post(
         .update(users)
         .set({ passwordHash: newPasswordHash })
         .where(eq(users.id, userId));
+
+      // Invalidate the user's other sessions (keep the current one) so a
+      // changed password logs out every other device.
+      await destroyUserSessions(userId, req.sessionID);
 
       // Create audit log
       await createAuditLog(
@@ -820,6 +870,10 @@ router.post(
           .set({ passwordHash })
           .where(eq(users.id, resetToken.userId));
       });
+
+      // A password reset must evict any existing sessions for the account —
+      // if it was compromised, the attacker's live session is killed here.
+      await destroyUserSessions(resetToken!.userId);
 
       createAuditLog(
         resetToken!.userId,
