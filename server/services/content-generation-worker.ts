@@ -156,11 +156,20 @@ export async function processContentQueue(maxItems: number = 3): Promise<{
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
 
-    // Mark as processing
-    await db
+    // Atomically claim the item: flip pending→processing only if it's STILL
+    // pending. The earlier SELECT + this UPDATE are not a transaction, so a
+    // concurrent worker (or another Railway instance, or the boot-time run
+    // overlapping the first scheduler tick) may have grabbed it in between.
+    // If the conditional update touches 0 rows we lost the race — skip it
+    // rather than double-spend AI budget generating duplicate content.
+    const claimed = await db
       .update(contentGenerationQueue)
       .set({ status: "processing", startedAt: new Date() })
-      .where(eq(contentGenerationQueue.id, item.id));
+      .where(and(eq(contentGenerationQueue.id, item.id), eq(contentGenerationQueue.status, "pending")))
+      .returning({ id: contentGenerationQueue.id });
+    if (claimed.length === 0) {
+      continue;
+    }
 
     try {
       await runWaterfall(item.id, item.studyId, (item.completedSteps as string[]) || []);

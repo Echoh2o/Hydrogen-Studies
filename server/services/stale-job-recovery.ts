@@ -16,7 +16,15 @@ import { db } from "../db";
 import { sql } from "drizzle-orm";
 import { logger } from "../utils/logger";
 
-const STALE_THRESHOLD = "30 minutes";
+// Pipeline items checkpoint `updated_at` after every step (3-min job timeout),
+// so 30 min idle is unambiguously stuck. Content-generation items set
+// `started_at` once at claim and never heartbeat, and the multi-step waterfall
+// (multiple AI calls + retries + image gen) can legitimately run well over 30
+// min — so a short threshold would reset a LIVE job and, now that claims are
+// atomic, let another worker re-claim it (duplicate AI spend). Use a threshold
+// safely beyond the worst-case waterfall instead.
+const PIPELINE_STALE_THRESHOLD = "30 minutes";
+const CONTENT_STALE_THRESHOLD = "90 minutes";
 
 export async function resetStaleProcessingJobs(): Promise<void> {
   // Pipeline queue — core AI analysis
@@ -25,7 +33,7 @@ export async function resetStaleProcessingJobs(): Promise<void> {
       UPDATE pipeline_queue
       SET status = 'pending', updated_at = NOW()
       WHERE status = 'processing'
-        AND updated_at < NOW() - INTERVAL '${sql.raw(STALE_THRESHOLD)}'
+        AND updated_at < NOW() - INTERVAL '${sql.raw(PIPELINE_STALE_THRESHOLD)}'
       RETURNING id
     `);
     const n = pq.rows?.length ?? 0;
@@ -46,7 +54,7 @@ export async function resetStaleProcessingJobs(): Promise<void> {
       UPDATE content_generation_queue
       SET status = 'pending'
       WHERE status = 'processing'
-        AND started_at < NOW() - INTERVAL '${sql.raw(STALE_THRESHOLD)}'
+        AND started_at < NOW() - INTERVAL '${sql.raw(CONTENT_STALE_THRESHOLD)}'
       RETURNING id
     `);
     const n = cg.rows?.length ?? 0;

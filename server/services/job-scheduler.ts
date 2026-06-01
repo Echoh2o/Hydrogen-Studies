@@ -21,6 +21,13 @@ export class JobScheduler {
   private lastRetractionCheck: Date | null = null;
   private lastLinkBuildCheck: Date | null = null;
   private lastDiscoveryCheck: Date | null = null;
+  // Per-cycle jobs — previously had no last-run visibility. Set at the end
+  // of each successful invocation so System Health can flag silent failure.
+  private lastKeywordDiscoveryCheck: Date | null = null;
+  private lastEnrichmentCheck: Date | null = null;
+  private lastPipelineProcessingCheck: Date | null = null;
+  private lastTldrGenerationCheck: Date | null = null;
+  private lastSummaryEnrichmentCheck: Date | null = null;
   private lastCitationBuildCheck: Date | null = null;
   private lastDigestCheck: Date | null = null;
   private lastFreshnessCheck: Date | null = null;
@@ -70,6 +77,12 @@ export class JobScheduler {
   // of ~500 missing images in a few days unattended.
   private readonly IMAGE_BACKFILL_INTERVAL_MS = 30 * 60 * 1000;
   private lastImageBackfillCheck: Date | null = null;
+  // Stale-job recovery. resetStaleProcessingJobs() runs at boot in app.ts,
+  // but if the server doesn't restart for days, items can get stuck in
+  // pipeline_queue/content_generation_queue.status='processing' with no path
+  // back to 'pending'. Re-run every 5 min as a safety net.
+  private readonly STALE_RECOVERY_INTERVAL_MS = 5 * 60 * 1000;
+  private lastStaleRecoveryCheck: Date | null = null;
 
   // Configuration
   private readonly CHECK_INTERVAL_MS = 15 * 60 * 1000; // Check every 15 minutes
@@ -80,17 +93,43 @@ export class JobScheduler {
   /**
    * Wrap an async function with a timeout. Returns null if the job times out or throws.
    */
-  private async withTimeout<T>(fn: () => Promise<T>, timeoutMs: number, jobName: string): Promise<T | null> {
+  /**
+   * Run `fn` with a timeout. Resolves to `null` on timeout or throw.
+   *
+   * `onSuccess` fires ONLY when `fn` genuinely completes before the timeout —
+   * use it to record liveness so a job that times out or throws does NOT stamp
+   * a "last ran" timestamp it never earned. The `settled` guard ensures a job
+   * that completes *after* the timeout already fired cannot retroactively
+   * mark itself healthy.
+   *
+   * NOTE: a timed-out `fn` is not actually cancelled — it keeps running in the
+   * background. Jobs that do network I/O should accept an AbortSignal so the
+   * orphaned work can stop; see runJobs() comments.
+   */
+  private async withTimeout<T>(
+    fn: () => Promise<T>,
+    timeoutMs: number,
+    jobName: string,
+    onSuccess?: () => void,
+  ): Promise<T | null> {
     return new Promise<T | null>((resolve) => {
+      let settled = false;
       const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
         logger.warn(`Job timed out after ${timeoutMs}ms`, "JobScheduler", { job: jobName });
         resolve(null);
       }, timeoutMs);
 
       fn().then((result) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
+        try { onSuccess?.(); } catch { /* liveness bookkeeping must never break the job loop */ }
         resolve(result);
       }).catch((error) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
         logger.error(`Job failed: ${jobName}`, error, "JobScheduler");
         resolve(null);
@@ -164,7 +203,13 @@ export class JobScheduler {
       running: this.checkInterval !== null,
       checkIntervalMs: this.CHECK_INTERVAL_MS,
       jobs: [
-        { name: "study-discovery", lastRun: toISO(this.lastDiscoveryCheck), intervalMs: this.DISCOVERY_INTERVAL_MS },
+        { name: "research-discovery", lastRun: toISO(this.lastDiscoveryCheck), intervalMs: this.DISCOVERY_INTERVAL_MS },
+        // Per-cycle jobs run on every 15 min tick — intervalMs reflects cadence, not throttle.
+        { name: "keyword-discovery", lastRun: toISO(this.lastKeywordDiscoveryCheck), intervalMs: this.CHECK_INTERVAL_MS },
+        { name: "enrichment", lastRun: toISO(this.lastEnrichmentCheck), intervalMs: this.CHECK_INTERVAL_MS },
+        { name: "pipeline-processing", lastRun: toISO(this.lastPipelineProcessingCheck), intervalMs: this.CHECK_INTERVAL_MS },
+        { name: "tldr-generation", lastRun: toISO(this.lastTldrGenerationCheck), intervalMs: this.CHECK_INTERVAL_MS },
+        { name: "summary-enrichment", lastRun: toISO(this.lastSummaryEnrichmentCheck), intervalMs: this.CHECK_INTERVAL_MS },
         { name: "retraction-check", lastRun: toISO(this.lastRetractionCheck), intervalMs: this.RETRACTION_CHECK_INTERVAL_MS },
         { name: "link-building", lastRun: toISO(this.lastLinkBuildCheck), intervalMs: this.LINK_BUILD_INTERVAL_MS },
         { name: "citation-build", lastRun: toISO(this.lastCitationBuildCheck), intervalMs: this.CITATION_BUILD_INTERVAL_MS },
@@ -181,6 +226,7 @@ export class JobScheduler {
         { name: "redirect-suggestion-backfill", lastRun: toISO(this.lastRedirectSuggestionCheck), intervalMs: this.REDIRECT_SUGGESTION_INTERVAL_MS },
         { name: "not-found-cleanup", lastRun: toISO(this.lastNotFoundCleanupCheck), intervalMs: this.NOT_FOUND_CLEANUP_INTERVAL_MS },
         { name: "shopify-customer-reconcile", lastRun: toISO(this.lastShopifyReconcileCheck), intervalMs: this.SHOPIFY_RECONCILE_INTERVAL_MS },
+        { name: "stale-job-recovery", lastRun: toISO(this.lastStaleRecoveryCheck), intervalMs: this.STALE_RECOVERY_INTERVAL_MS },
       ],
     };
   }
@@ -203,7 +249,8 @@ export class JobScheduler {
         const discoveryResult = await this.withTimeout(
           () => checkScheduledSearches(),
           5 * 60 * 1000,
-          "discovery"
+          "discovery",
+          () => { this.lastKeywordDiscoveryCheck = new Date(); }
         );
         const elapsed = Date.now() - start;
         if (discoveryResult?.ran) {
@@ -214,6 +261,8 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 1 (discovery) unexpected error", error, "JobScheduler");
+        const { reportError } = await import("../utils/error-reporting");
+        reportError(error, { tags: { job: "keyword-discovery" } });
       }
 
       // Job 2: Intelligent Content Enrichment
@@ -222,7 +271,8 @@ export class JobScheduler {
         const enrichmentStats = await this.withTimeout(
           () => checkAndEnrichStudies(),
           5 * 60 * 1000,
-          "enrichment"
+          "enrichment",
+          () => { this.lastEnrichmentCheck = new Date(); }
         );
         const elapsed = Date.now() - start;
         if (enrichmentStats && enrichmentStats.totalProcessed > 0) {
@@ -233,6 +283,8 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 2 (enrichment) unexpected error", error, "JobScheduler");
+        const { reportError } = await import("../utils/error-reporting");
+        reportError(error, { tags: { job: "enrichment" } });
       }
 
       // Job 3: Retraction & Correction Monitoring (runs once per day)
@@ -289,7 +341,8 @@ export class JobScheduler {
         await this.withTimeout(
           () => this.runPipelineProcessingJob(),
           3 * 60 * 1000,
-          "pipeline-processing"
+          "pipeline-processing",
+          () => { this.lastPipelineProcessingCheck = new Date(); }
         );
         const elapsed = Date.now() - start;
         if (elapsed > 1000) {
@@ -297,6 +350,8 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 6 (pipeline-processing) unexpected error", error, "JobScheduler");
+        const { reportError } = await import("../utils/error-reporting");
+        reportError(error, { tags: { job: "pipeline-processing" } });
       }
 
       // Job 7: Batch Blog Auto-Generation (runs after pipeline, up to 5 per cycle)
@@ -370,7 +425,8 @@ export class JobScheduler {
         await this.withTimeout(
           () => this.runTldrGenerationJob(),
           3 * 60 * 1000,
-          "tldr-generation"
+          "tldr-generation",
+          () => { this.lastTldrGenerationCheck = new Date(); }
         );
         const elapsed = Date.now() - start;
         if (elapsed > 1000) {
@@ -378,6 +434,8 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 11 (tldr-generation) unexpected error", error, "JobScheduler");
+        const { reportError } = await import("../utils/error-reporting");
+        reportError(error, { tags: { job: "tldr-generation" } });
       }
 
       // Job 12: Generate consumer-facing summaries (plain_summary, key_finding, practical_takeaway)
@@ -386,7 +444,8 @@ export class JobScheduler {
         await this.withTimeout(
           () => this.runSummaryEnrichmentJob(),
           3 * 60 * 1000,
-          "summary-enrichment"
+          "summary-enrichment",
+          () => { this.lastSummaryEnrichmentCheck = new Date(); }
         );
         const elapsed = Date.now() - start;
         if (elapsed > 1000) {
@@ -394,6 +453,8 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 12 (summary-enrichment) unexpected error", error, "JobScheduler");
+        const { reportError } = await import("../utils/error-reporting");
+        reportError(error, { tags: { job: "summary-enrichment" } });
       }
 
       // Job 13: Content Generation Queue (runs every 5 minutes)
@@ -556,6 +617,25 @@ export class JobScheduler {
         logger.error("Job 22 (shopify-customer-reconcile) unexpected error", error, "JobScheduler");
       }
 
+      // Job 23: Stale-job recovery — resets pipeline_queue and
+      // content_generation_queue rows that have been stuck in 'processing'
+      // for >30 min. Cheap (two indexed UPDATEs). Runs every 5 min so
+      // long-lived deployments don't accrete stuck jobs between restarts.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runStaleJobRecovery(),
+          60 * 1000,
+          "stale-job-recovery"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "stale-job-recovery" });
+        }
+      } catch (error) {
+        logger.error("Job 23 (stale-job-recovery) unexpected error", error, "JobScheduler");
+      }
+
       // Job 19: GA4 sync. Skips silently when no credentials are stored.
       // 10-minute timeout for the first-run 90-day backfill.
       try {
@@ -577,6 +657,27 @@ export class JobScheduler {
       logger.error("Critical error", error, "JobScheduler");
     } finally {
       this.isJobRunning = false;
+    }
+  }
+
+  /**
+   * Job 23: Stale-job recovery.
+   *
+   * Resets pipeline_queue / content_generation_queue rows stuck in
+   * 'processing'. The same function runs once at boot; this scheduled
+   * call covers the gap between restarts on long-lived deploys.
+   */
+  private async runStaleJobRecovery() {
+    try {
+      if (this.lastStaleRecoveryCheck) {
+        const elapsed = Date.now() - this.lastStaleRecoveryCheck.getTime();
+        if (elapsed < this.STALE_RECOVERY_INTERVAL_MS) return;
+      }
+      const { resetStaleProcessingJobs } = await import("./stale-job-recovery");
+      await resetStaleProcessingJobs();
+      this.lastStaleRecoveryCheck = new Date();
+    } catch (err) {
+      logger.error("Stale-job recovery error", err, "JobScheduler");
     }
   }
 

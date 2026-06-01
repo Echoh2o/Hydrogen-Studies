@@ -17,7 +17,7 @@
 import { db } from "../db";
 import { pipelineQueue, studies } from "@shared/schema";
 import type { PipelineQueueItem } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
 
@@ -435,6 +435,17 @@ export async function processPipelineQueue(): Promise<{
 
   for (const item of pendingItems) {
     try {
+      // Atomically claim before processing — the SELECT above and the claim
+      // are not a single transaction, so a concurrent run may have already
+      // taken this item. Only proceed if pending→processing touches a row.
+      const claimed = await db
+        .update(pipelineQueue)
+        .set({ status: "processing", updatedAt: new Date() })
+        .where(and(eq(pipelineQueue.id, item.id), eq(pipelineQueue.status, "pending")))
+        .returning({ id: pipelineQueue.id });
+      if (claimed.length === 0) {
+        continue;
+      }
       await processItem(item);
       // Re-check status after processing. processItem marks items as
       // "awaiting_approval" after all AI steps finish (admin review is
