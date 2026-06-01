@@ -13,6 +13,7 @@ import { fileURLToPath } from "url";
 import { db } from "../db";
 import { studies, blogArticles } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
+import { jsonLdSafe } from "../utils/html-safety";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -411,10 +412,10 @@ function injectMeta(html: string, meta: PageMeta): string {
   if (meta.jsonLd) {
     if (Array.isArray(meta.jsonLd)) {
       jsonLdScript = meta.jsonLd.map(ld =>
-        `<script type="application/ld+json">${JSON.stringify(ld)}</script>`
+        `<script type="application/ld+json">${jsonLdSafe(ld)}</script>`
       ).join("\n    ");
     } else {
-      jsonLdScript = `<script type="application/ld+json">${JSON.stringify(meta.jsonLd)}</script>`;
+      jsonLdScript = `<script type="application/ld+json">${jsonLdSafe(meta.jsonLd)}</script>`;
     }
   }
 

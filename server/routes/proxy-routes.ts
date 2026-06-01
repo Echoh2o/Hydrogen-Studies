@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../db";
+import { jsonLdSafe, safeUrl } from "../utils/html-safety";
 
 const router = Router();
 
@@ -259,7 +260,7 @@ function renderPageWithSchema(title: string, metaDescription: string, content: s
   <meta property="og:url" content="${escapeAttr(canonicalUrl)}">
   <meta property="og:type" content="article">
   ${ogImage ? `<meta property="og:image" content="${escapeAttr(ogImage)}">` : ""}
-  <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+  <script type="application/ld+json">${jsonLdSafe(jsonLd)}</script>
   <script src="https://analytics.ahrefs.com/analytics.js" data-key="rjIt9UY/qFbTPzCzRK8BRg" async></script>
   <style>${CSS}</style>
 </head>
@@ -289,7 +290,8 @@ function escapeHtml(str: string): string {
 
 function escapeAttr(str: string): string {
   if (!str) return "";
-  return str.replace(/"/g, "&quot;").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // `&` MUST be escaped first, else the entities below get double-escaped.
+  return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /** Return the string if it has real content, or empty string for sentinels/blanks */
@@ -791,7 +793,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
         <p class="h2r-text">
           ${study.doi ? `<a href="https://doi.org/${escapeAttr(study.doi)}" target="_blank" rel="noopener" class="h2r-link">View on DOI</a>` : ""}
           ${study.doi && study.url ? ` &middot; ` : ""}
-          ${study.url ? `<a href="${escapeAttr(study.url)}" target="_blank" rel="noopener" class="h2r-link">View Source</a>` : ""}
+          ${study.url && safeUrl(study.url) ? `<a href="${escapeAttr(safeUrl(study.url))}" target="_blank" rel="noopener" class="h2r-link">View Source</a>` : ""}
         </p>
         <div class="h2r-citation-box">${escapeHtml(citation)}</div>
       </div>

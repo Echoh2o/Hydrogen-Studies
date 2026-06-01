@@ -7,6 +7,7 @@
 
 import { db } from "../db";
 import { sql } from "drizzle-orm";
+import { sanitizeArticleHtml } from "../utils/sanitize-html";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -302,12 +303,10 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
     h += `<h1 itemprop="headline">${esc(b.title)}</h1>\n`;
     if (b.created_at) h += `<time itemprop="datePublished" datetime="${new Date(b.created_at).toISOString()}">${fmtDate(b.created_at)}</time>\n`;
 
-    // Blog content — strip script/event-handler tags for safety, keep structural HTML
+    // Blog content — DOM-aware allowlist sanitization (DOMPurify), keeps
+    // structural HTML while stripping scripts/handlers/dangerous URIs.
     if (b.content) {
-      const safeContent = (b.content as string)
-        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/\s+on\w+\s*=\s*"[^"]*"/gi, "")
-        .replace(/\s+on\w+\s*=\s*'[^']*'/gi, "");
+      const safeContent = sanitizeArticleHtml(b.content as string);
       h += `<div itemprop="articleBody">${safeContent}</div>\n`;
     } else if (b.summary) {
       h += `<div itemprop="articleBody"><p>${esc(b.summary)}</p></div>\n`;

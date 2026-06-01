@@ -297,8 +297,9 @@ async function downloadAndOptimizeImage(
     const originalPath = path.join(uploadsDir, originalFilename);
     await fs.writeFile(originalPath, originalBuffer);
 
-    // Optimize and convert to WebP using Sharp
-    const optimizedBuffer = await sharp(originalBuffer)
+    // Optimize and convert to WebP using Sharp. Cap input pixels to guard
+    // against decompression-bomb images fetched from external/ingested URLs.
+    const optimizedBuffer = await sharp(originalBuffer, { limitInputPixels: 24_000_000 })
       .resize(800, 600, {
         fit: "cover",
         position: "center",
