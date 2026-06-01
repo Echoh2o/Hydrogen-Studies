@@ -891,6 +891,8 @@ export class JobScheduler {
       }
     } catch (err) {
       logger.error("GA4 sync error", err, "JobScheduler");
+      const { reportError } = await import("../utils/error-reporting");
+      reportError(err, { tags: { job: "ga4-sync" } });
     }
   }
 
@@ -920,6 +922,8 @@ export class JobScheduler {
       }
     } catch (err) {
       logger.error("GSC sync error", err, "JobScheduler");
+      const { reportError } = await import("../utils/error-reporting");
+      reportError(err, { tags: { job: "gsc-sync" } });
     }
   }
 
