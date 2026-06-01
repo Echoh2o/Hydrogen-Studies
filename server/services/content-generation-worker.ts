@@ -52,11 +52,13 @@ export async function enqueueStudy(studyId: number, priority: number = 0): Promi
       return;
     }
 
-    await db.insert(contentGenerationQueue).values({
-      studyId,
-      priority,
-      status: "pending",
-    });
+    // onConflictDoNothing backs the pre-check with the partial unique index
+    // (uq_cgq_active_study): a concurrent enqueue racing past the SELECT
+    // resolves to a silent no-op instead of a unique-violation error.
+    await db
+      .insert(contentGenerationQueue)
+      .values({ studyId, priority, status: "pending" })
+      .onConflictDoNothing();
 
     logger.info(`Enqueued study ${studyId} for content generation`, "ContentWorker");
   } catch (error) {
@@ -83,12 +85,12 @@ export async function enqueueStudies(studyIds: number[], priority: number = 0): 
         .limit(1);
 
       if (!existing) {
-        await db.insert(contentGenerationQueue).values({
-          studyId,
-          priority,
-          status: "pending",
-        });
-        enqueued++;
+        const inserted = await db
+          .insert(contentGenerationQueue)
+          .values({ studyId, priority, status: "pending" })
+          .onConflictDoNothing()
+          .returning({ id: contentGenerationQueue.id });
+        if (inserted.length > 0) enqueued++;
       }
     } catch (error) {
       logger.error(`Failed to enqueue study ${studyId}`, error, "ContentWorker");
