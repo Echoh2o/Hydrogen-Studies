@@ -197,99 +197,11 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Database health check with timeout
- */
-export async function checkDatabaseHealth(
-  db: any,
-  timeout = 5000,
-): Promise<{ healthy: boolean; latency?: number; error?: string }> {
-  const startTime = Date.now();
-
-  try {
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Health check timeout")), timeout),
-    );
-
-    const queryPromise = db.raw("SELECT 1");
-
-    await Promise.race([queryPromise, timeoutPromise]);
-
-    return {
-      healthy: true,
-      latency: Date.now() - startTime,
-    };
-  } catch (error: any) {
-    return {
-      healthy: false,
-      latency: Date.now() - startTime,
-      error: error.message,
-    };
-  }
-}
-
-/**
- * Circuit breaker for database operations
- */
-export class DatabaseCircuitBreaker {
-  private failures = 0;
-  private lastFailureTime = 0;
-  private state: "closed" | "open" | "half-open" = "closed";
-
-  constructor(
-    private readonly threshold = 5,
-    private readonly timeout = 60000,
-    private readonly halfOpenRequests = 3,
-  ) {}
-
-  async execute<T>(operation: () => Promise<T>): Promise<T> {
-    if (this.state === "open") {
-      if (Date.now() - this.lastFailureTime > this.timeout) {
-        this.state = "half-open";
-        this.failures = 0;
-      } else {
-        throw new DatabaseError("Database circuit breaker is open", false);
-      }
-    }
-
-    try {
-      const result = await operation();
-
-      if (this.state === "half-open") {
-        this.failures = 0;
-        this.state = "closed";
-      }
-
-      return result;
-    } catch (error) {
-      this.recordFailure();
-      throw error;
-    }
-  }
-
-  private recordFailure() {
-    this.failures++;
-    this.lastFailureTime = Date.now();
-
-    if (this.failures >= this.threshold) {
-      this.state = "open";
-      console.error(
-        `Database circuit breaker opened after ${this.failures} failures`,
-      );
-    }
-  }
-
-  getState() {
-    return {
-      state: this.state,
-      failures: this.failures,
-      lastFailureTime: this.lastFailureTime,
-    };
-  }
-
-  reset() {
-    this.failures = 0;
-    this.state = "closed";
-    this.lastFailureTime = 0;
-  }
-}
+// NOTE: A DatabaseCircuitBreaker class and a checkDatabaseHealth() helper used
+// to live here. Both were dead code — the breaker was instantiated in app.ts
+// but its .execute() was never called (so it protected nothing), and
+// checkDatabaseHealth called db.raw() which doesn't exist on the drizzle
+// instance. They were removed to avoid a false sense of resilience. The live
+// health checks use db.execute(sql`SELECT 1`) directly (see /health, /healthz
+// in app.ts). Reintroduce a breaker only if it is actually wired into the
+// query path.

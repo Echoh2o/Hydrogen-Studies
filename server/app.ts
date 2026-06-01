@@ -27,10 +27,9 @@ import {
   errorReportingHandler,
 } from "./utils/error-reporting";
 import { NotFoundError } from "./utils/app-errors";
-import { DatabaseCircuitBreaker } from "./utils/database-wrapper";
 import { db } from "./db";
-import { studies } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { studies, gscCredentials, gscSyncRuns, ga4Credentials, ga4SyncRuns } from "@shared/schema";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 // Route imports
 import authRoutes from "./routes/auth-routes";
@@ -101,9 +100,6 @@ export const app = express();
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
-
-// Initialize database circuit breaker
-export const dbCircuitBreaker = new DatabaseCircuitBreaker();
 
 // Security headers via helmet (CSP, HSTS, X-Frame-Options, etc.)
 app.use(
@@ -216,6 +212,132 @@ app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 // Dynamic SEO routes (sitemaps, robots.txt) — must be before CSRF and session
 app.use(seoRoutes);
 
+// Liveness + readiness probe for external uptime monitors (Railway, UptimeRobot,
+// Datadog). Public, no auth, no CSRF. Returns 200 when the DB is reachable and
+// every connected sync has run successfully in the last 24h; 503 otherwise so a
+// stuck cron surfaces as an alert instead of silently rotting.
+//
+// Hardened against being a DoS amplifier on an unauthenticated endpoint:
+//  - the whole probe is bounded by HEALTH_PROBE_TIMEOUT_MS (returns 503 rather
+//    than holding a pool connection open indefinitely under DB stress)
+//  - results are cached for HEALTH_CACHE_MS so a flood collapses to one DB round-trip
+const HEALTH_STALE_MS = 24 * 60 * 60 * 1000; // a sync that hasn't succeeded in 24h is stale
+const HEALTH_RUNNING_STUCK_MS = 60 * 60 * 1000; // a run still 'running' after 1h is stuck
+const HEALTH_PROBE_TIMEOUT_MS = 3000;
+const HEALTH_CACHE_MS = 10 * 1000;
+
+type HealthSync = { connected: boolean; lastSync: string | null; ageMinutes: number | null };
+type HealthOut = {
+  status: "ok" | "degraded";
+  db: "ok" | "fail";
+  gsc: HealthSync;
+  ga4: HealthSync;
+  note?: string;
+};
+
+let healthCache: { at: number; out: HealthOut } | null = null;
+
+// Evaluate one sync's health from its credential + sync-run tables. Looks at the
+// latest run of ANY status (to catch a sync stuck in 'running' or whose most
+// recent attempt 'failed') as well as the latest successful run.
+async function evaluateSyncHealth(
+  credTable: any,
+  runTable: any,
+  now: number,
+): Promise<{ sync: HealthSync; degraded: boolean }> {
+  const sync: HealthSync = { connected: false, lastSync: null, ageMinutes: null };
+  try {
+    const [cred] = await db.select().from(credTable).limit(1);
+    if (!cred) return { sync, degraded: false };
+    sync.connected = true;
+
+    const [latestAny] = await db
+      .select()
+      .from(runTable)
+      .orderBy(desc(runTable.startedAt))
+      .limit(1);
+    const [latestSuccess] = await db
+      .select()
+      .from(runTable)
+      .where(eq(runTable.status, "success"))
+      .orderBy(desc(runTable.startedAt))
+      .limit(1);
+
+    const lastSuccess: Date | null =
+      latestSuccess?.completedAt ?? latestSuccess?.startedAt ?? null;
+    sync.lastSync = lastSuccess ? lastSuccess.toISOString() : null;
+    sync.ageMinutes = lastSuccess ? Math.round((now - lastSuccess.getTime()) / 60000) : null;
+
+    let degraded = false;
+    if (!lastSuccess || now - lastSuccess.getTime() > HEALTH_STALE_MS) degraded = true;
+    // Most recent attempt failed (and there's no newer success) → degraded.
+    if (latestAny?.status === "failed") degraded = true;
+    // A run wedged in 'running' for over an hour → degraded.
+    if (
+      latestAny?.status === "running" &&
+      latestAny.startedAt &&
+      now - new Date(latestAny.startedAt).getTime() > HEALTH_RUNNING_STUCK_MS
+    ) {
+      degraded = true;
+    }
+    return { sync, degraded };
+  } catch {
+    // Sync-runs tables missing in fresh dev DBs — don't fail the probe for that.
+    return { sync, degraded: false };
+  }
+}
+
+async function computeHealth(): Promise<HealthOut> {
+  const out: HealthOut = {
+    status: "ok",
+    db: "ok",
+    gsc: { connected: false, lastSync: null, ageMinutes: null },
+    ga4: { connected: false, lastSync: null, ageMinutes: null },
+  };
+
+  try {
+    await db.execute(sql`SELECT 1`);
+  } catch {
+    out.db = "fail";
+    out.status = "degraded";
+    return out;
+  }
+
+  const now = Date.now();
+  const [gsc, ga4] = await Promise.all([
+    evaluateSyncHealth(gscCredentials, gscSyncRuns, now),
+    evaluateSyncHealth(ga4Credentials, ga4SyncRuns, now),
+  ]);
+  out.gsc = gsc.sync;
+  out.ga4 = ga4.sync;
+  if (gsc.degraded || ga4.degraded) out.status = "degraded";
+  return out;
+}
+
+app.get("/healthz", async (_req, res) => {
+  if (healthCache && Date.now() - healthCache.at < HEALTH_CACHE_MS) {
+    return res.status(healthCache.out.status === "ok" ? 200 : 503).json(healthCache.out);
+  }
+
+  const timeout = new Promise<HealthOut>((resolve) =>
+    setTimeout(
+      () =>
+        resolve({
+          status: "degraded",
+          db: "fail",
+          gsc: { connected: false, lastSync: null, ageMinutes: null },
+          ga4: { connected: false, lastSync: null, ageMinutes: null },
+          note: "probe timed out",
+        }),
+      HEALTH_PROBE_TIMEOUT_MS,
+    ),
+  );
+
+  const out = await Promise.race([computeHealth(), timeout]);
+  healthCache = { at: Date.now(), out };
+  res.status(out.status === "ok" ? 200 : 503).json(out);
+});
+
 // Shopify App Proxy SSR routes — public HTML pages, no CSRF/session needed
 // Mounted at /proxy — Shopify App Proxy forwards echowater.com/tools/hydrogen-research/* → /proxy/*
 import proxyRoutes from "./routes/proxy-routes";
@@ -294,52 +416,34 @@ console.log("🔄 Initializing session store with PostgreSQL...");
 // CSRF protection middleware
 const csrf = csrfProtection({
   ignoreMethods: ["GET", "HEAD", "OPTIONS"],
+    // Only routes that genuinely cannot present a CSRF token belong here:
+    // public/no-session endpoints, server-to-server callbacks (HMAC-verified),
+    // and GET-only read APIs (GET is already exempt via ignoreMethods, listed
+    // for clarity). Admin/state-changing namespaces are deliberately NOT
+    // ignored — the client attaches the X-CSRF-Token header to every
+    // same-origin mutation via the fetch interceptor (client/src/lib/csrf.ts).
   ignoreRoutes: [
     "/health",
+    // GET-only public reads (exempt by method anyway):
     "/api/stats",
     "/api/search",
     "/api/categories",
     "/api/filters",
     "/api/overview",
-    "/api/studies", // GET requests only
-    "/api/admin/quality/monitor",
-    "/api/admin/quality/integrity",
-    "/api/chat", // Chat endpoint
-    "/api/advanced-chat", // Advanced chat endpoint
-    "/api/chat/popular-questions", // Popular questions endpoint
-    "/api/chat/conversations", // Conversations endpoint
-    "/api/chat/feedback", // Feedback endpoint
-    "/api/auth/register", // Registration doesn't require CSRF (no session yet)
-    "/api/auth/login", // Login doesn't require CSRF (no session yet)
-    "/api/auth/logout", // Logout doesn't require CSRF (session being destroyed)
-    "/api/auth/forgot-password", // Password reset (no session yet)
-    "/api/auth/reset-password", // Password reset (token-verified)
-    "/api/client-errors", // Client error reporting (fire-and-forget)
-    "/api/import", // Import endpoints (protected by admin auth)
-    "/api/blogs", // Blog CRUD (protected by admin auth)
-    "/api/content-enrichment", // Content enrichment (protected by admin auth)
-    "/api/enrichment", // Enrichment endpoints (protected by admin auth)
-    "/api/admin", // Admin endpoints (protected by admin auth)
-    "/api/keywords", // Keyword monitor (protected by admin auth)
-    "/api/consensus", // Consensus API (protected by admin auth on write endpoints)
-    "/api/auth/users", // Admin user creation (protected by admin auth)
-    "/api/scraper", // Scraper endpoints (protected by admin auth)
-    "/api/studies", // Study endpoints including blog generation (protected by admin auth)
-    "/api/seo", // SEO content factory (protected by admin auth)
-    "/api/webhooks", // Shopify webhooks (verified by HMAC signature)
+    // Public / no-session endpoints:
+    "/api/chat", // Public chat (no auth session)
+    "/api/advanced-chat",
+    "/api/consensus", // Public consensus search
+    "/api/auth/register", // No session yet
+    "/api/auth/login", // No session yet
+    "/api/auth/logout", // Session being destroyed
+    "/api/auth/forgot-password", // No session yet
+    "/api/auth/reset-password", // Token-verified, no session
+    "/api/client-errors", // Fire-and-forget (navigator.sendBeacon, can't set headers)
     "/api/newsletter", // Public newsletter signup
-    "/api/research", // Research import (protected by admin auth)
-    "/api/europepmc", // Europe PMC routes (protected by admin auth)
-    "/api/semantic-scholar", // Semantic Scholar import (protected by admin auth)
-    "/api/crossref", // CrossRef routes (protected by admin auth)
-    "/api/multi-format", // Multi-format generation (protected by admin auth)
-    "/api/blog-recommendations", // Blog recommendations (protected by admin auth)
-    "/api/pipeline", // Research pipeline (protected by admin auth)
-    "/api/image-generation", // Image generation (protected by admin auth)
-    "/api/content-optimization", // Content optimization (protected by admin auth)
-    "/api/consumer-categories", // Consumer categories (protected by admin auth)
-    "/api/doi", // DOI enhancer (protected by admin auth)
-    "/proxy", // Shopify App Proxy SSR routes (public HTML, no CSRF needed)
+    // Server-to-server (not browser-originated, verified by other means):
+    "/api/webhooks", // Shopify webhooks (HMAC-verified)
+    "/proxy", // Shopify App Proxy SSR (HMAC-verified)
   ],
 });
 
@@ -687,7 +791,19 @@ app.use("/uploads", async (req, res, next) => {
     const { getStoredImage } = await import("./utils/storage");
     const image = await getStoredImage(key);
     if (image) {
-      res.setHeader("Content-Type", image.contentType);
+      // Never let the browser sniff a different type, and only serve raster
+      // images inline. Anything else (SVG, HTML masquerading as an image)
+      // could execute as same-origin script if rendered inline, so force a
+      // download with a generic type instead.
+      const ct = (image.contentType || "").toLowerCase();
+      const inlineSafe = /^image\/(png|jpe?g|gif|webp|avif)$/.test(ct);
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (inlineSafe) {
+        res.setHeader("Content-Type", ct);
+      } else {
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader("Content-Disposition", "attachment");
+      }
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       return res.send(image.data);
     }
@@ -699,7 +815,9 @@ app.use("/uploads", async (req, res, next) => {
 });
 app.use(
   "/uploads",
-  express.static(path.join(process.cwd(), "uploads")),
+  express.static(path.join(process.cwd(), "uploads"), {
+    setHeaders: (res) => res.setHeader("X-Content-Type-Options", "nosniff"),
+  }),
 );
 
 // Client error reporting endpoint (receives errors from frontend error-tracking.ts)
