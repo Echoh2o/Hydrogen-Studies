@@ -18,6 +18,15 @@ export class JobScheduler {
   private static instance: JobScheduler;
   private checkInterval: NodeJS.Timeout | null = null;
   private isJobRunning: boolean = false;
+  // Separate fast loop for time-sensitive per-cycle jobs (content-generation
+  // queue, scheduled blog publishing, stale-job recovery). These previously
+  // ran inline in the 15-min loop AFTER the long jobs (blog gen ~30m, scoring/
+  // sync ~10m each), so a single slow upstream call could starve them for
+  // hours. The fast loop runs them on their own cadence with its own
+  // re-entrancy guard, independent of the slow loop.
+  private fastCheckInterval: NodeJS.Timeout | null = null;
+  private isFastJobRunning: boolean = false;
+  private readonly FAST_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
   private lastRetractionCheck: Date | null = null;
   private lastLinkBuildCheck: Date | null = null;
   private lastDiscoveryCheck: Date | null = null;
@@ -169,7 +178,24 @@ export class JobScheduler {
       });
     }, this.CHECK_INTERVAL_MS);
 
-    logger.info("Active", "JobScheduler", { intervalMs: this.CHECK_INTERVAL_MS, firstRunIn: "10s" });
+    // Fast loop for time-sensitive jobs — first run shortly after boot, then
+    // every FAST_CHECK_INTERVAL_MS, independent of the slow loop above.
+    setTimeout(() => {
+      this.runFastJobs().catch(err => {
+        logger.error("Initial fast run failed", err, "JobScheduler");
+      });
+    }, 15000);
+    this.fastCheckInterval = setInterval(() => {
+      this.runFastJobs().catch(err => {
+        logger.error("Periodic fast run failed", err, "JobScheduler");
+      });
+    }, this.FAST_CHECK_INTERVAL_MS);
+
+    logger.info("Active", "JobScheduler", {
+      intervalMs: this.CHECK_INTERVAL_MS,
+      fastIntervalMs: this.FAST_CHECK_INTERVAL_MS,
+      firstRunIn: "10s",
+    });
   }
 
   /**
@@ -179,8 +205,12 @@ export class JobScheduler {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
-      logger.info("Stopped", "JobScheduler");
     }
+    if (this.fastCheckInterval) {
+      clearInterval(this.fastCheckInterval);
+      this.fastCheckInterval = null;
+    }
+    logger.info("Stopped", "JobScheduler");
   }
 
   /**
@@ -457,21 +487,7 @@ export class JobScheduler {
         reportError(error, { tags: { job: "summary-enrichment" } });
       }
 
-      // Job 13: Content Generation Queue (runs every 5 minutes)
-      try {
-        const start = Date.now();
-        await this.withTimeout(
-          () => this.runContentQueueJob(),
-          10 * 60 * 1000,
-          "content-queue"
-        );
-        const elapsed = Date.now() - start;
-        if (elapsed > 1000) {
-          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "content-queue" });
-        }
-      } catch (error) {
-        logger.error("Job 13 (content-queue) unexpected error", error, "JobScheduler");
-      }
+      // Job 13 (content-generation queue) moved to the fast loop — see runFastJobs().
 
       // Job 14: Journal publication-date backfill (runs once per day)
       try {
@@ -507,23 +523,7 @@ export class JobScheduler {
         logger.error("Job 15 (study-scoring) unexpected error", error, "JobScheduler");
       }
 
-      // Job 16: Scheduled blog publishing — promotes drafts whose
-      // scheduledFor has passed. Cheap query (indexed on scheduledFor),
-      // runs every cycle, latency = scheduling resolution.
-      try {
-        const start = Date.now();
-        await this.withTimeout(
-          () => this.runScheduledPublishJob(),
-          60 * 1000,
-          "scheduled-publish"
-        );
-        const elapsed = Date.now() - start;
-        if (elapsed > 1000) {
-          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "scheduled-publish" });
-        }
-      } catch (error) {
-        logger.error("Job 16 (scheduled-publish) unexpected error", error, "JobScheduler");
-      }
+      // Job 16 (scheduled blog publishing) moved to the fast loop — see runFastJobs().
 
       // Job 17: Google Search Console sync. Skips when no credentials
       // are stored (i.e., admin hasn't connected yet). 10-minute timeout
@@ -617,24 +617,7 @@ export class JobScheduler {
         logger.error("Job 22 (shopify-customer-reconcile) unexpected error", error, "JobScheduler");
       }
 
-      // Job 23: Stale-job recovery — resets pipeline_queue and
-      // content_generation_queue rows that have been stuck in 'processing'
-      // for >30 min. Cheap (two indexed UPDATEs). Runs every 5 min so
-      // long-lived deployments don't accrete stuck jobs between restarts.
-      try {
-        const start = Date.now();
-        await this.withTimeout(
-          () => this.runStaleJobRecovery(),
-          60 * 1000,
-          "stale-job-recovery"
-        );
-        const elapsed = Date.now() - start;
-        if (elapsed > 1000) {
-          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "stale-job-recovery" });
-        }
-      } catch (error) {
-        logger.error("Job 23 (stale-job-recovery) unexpected error", error, "JobScheduler");
-      }
+      // Job 23 (stale-job recovery) moved to the fast loop — see runFastJobs().
 
       // Job 19: GA4 sync. Skips silently when no credentials are stored.
       // 10-minute timeout for the first-run 90-day backfill.
@@ -661,18 +644,86 @@ export class JobScheduler {
   }
 
   /**
+   * Fast loop — time-sensitive per-cycle jobs that must not be gated behind the
+   * long-running jobs in runJobs(). Runs on FAST_CHECK_INTERVAL_MS with its own
+   * re-entrancy guard so a slow tick of the main loop can't delay publishing or
+   * content-queue draining.
+   */
+  private async runFastJobs(): Promise<void> {
+    if (this.isFastJobRunning) {
+      return;
+    }
+    this.isFastJobRunning = true;
+
+    try {
+      // Job 13: Content Generation Queue
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runContentQueueJob(),
+          10 * 60 * 1000,
+          "content-queue"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "content-queue" });
+        }
+      } catch (error) {
+        logger.error("Job 13 (content-queue) unexpected error", error, "JobScheduler");
+      }
+
+      // Job 16: Scheduled blog publishing — promotes drafts whose scheduledFor
+      // has passed. Cheap (indexed query); latency = scheduling resolution.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runScheduledPublishJob(),
+          60 * 1000,
+          "scheduled-publish"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "scheduled-publish" });
+        }
+      } catch (error) {
+        logger.error("Job 16 (scheduled-publish) unexpected error", error, "JobScheduler");
+      }
+
+      // Job 23: Stale-job recovery — resets pipeline_queue and
+      // content_generation_queue rows stuck in 'processing'. Cheap (two indexed
+      // UPDATEs); a safety net between restarts on long-lived deploys.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runStaleJobRecovery(),
+          60 * 1000,
+          "stale-job-recovery"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "stale-job-recovery" });
+        }
+      } catch (error) {
+        logger.error("Job 23 (stale-job-recovery) unexpected error", error, "JobScheduler");
+      }
+    } catch (error) {
+      logger.error("Critical error (fast loop)", error, "JobScheduler");
+    } finally {
+      this.isFastJobRunning = false;
+    }
+  }
+
+  /**
    * Job 23: Stale-job recovery.
    *
    * Resets pipeline_queue / content_generation_queue rows stuck in
-   * 'processing'. The same function runs once at boot; this scheduled
-   * call covers the gap between restarts on long-lived deploys.
+   * 'processing'. The same function runs once at boot; the fast loop's
+   * scheduled call covers the gap between restarts on long-lived deploys.
+   * Cadence is owned by the fast loop (FAST_CHECK_INTERVAL_MS), so no internal
+   * throttle is needed here.
    */
   private async runStaleJobRecovery() {
     try {
-      if (this.lastStaleRecoveryCheck) {
-        const elapsed = Date.now() - this.lastStaleRecoveryCheck.getTime();
-        if (elapsed < this.STALE_RECOVERY_INTERVAL_MS) return;
-      }
       const { resetStaleProcessingJobs } = await import("./stale-job-recovery");
       await resetStaleProcessingJobs();
       this.lastStaleRecoveryCheck = new Date();
