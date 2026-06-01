@@ -208,7 +208,7 @@ function BlogPageContent() {
         {blog.imageUrl && <meta name="twitter:image" content={blog.imageUrl} />}
 
         {/* Keywords meta tag */}
-        {blog.semanticKeywords?.length && <meta name="keywords" content={blog.semanticKeywords.join(", ")} />}
+        {blog.semanticKeywords?.length ? <meta name="keywords" content={blog.semanticKeywords.join(", ")} /> : null}
 
         {/* Schema.org markup for article */}
         <script type="application/ld+json">

@@ -550,7 +550,7 @@ async function downloadImage(
       maxRedirects: 3,
       maxContentLength: 10 * 1024 * 1024,
     });
-    const contentType = response.headers["content-type"];
+    const contentType = String(response.headers["content-type"] || "");
 
     // Ensure it's an image
     if (!contentType || !contentType.startsWith("image/")) {

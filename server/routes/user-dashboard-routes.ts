@@ -33,7 +33,7 @@ router.use(isAuthenticated);
  */
 router.get("/dashboard", async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).session?.passport?.user || (req as any).user?.id;
+    const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
     // Fetch all dashboard data in parallel
@@ -133,7 +133,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
  */
 router.post("/preferences", async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).session?.passport?.user || (req as any).user?.id;
+    const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
     const {
@@ -180,7 +180,7 @@ router.post("/preferences", async (req: Request, res: Response) => {
  */
 router.post("/save-study/:id", async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).session?.passport?.user || (req as any).user?.id;
+    const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
     const studyId = parseInt(req.params.id);
@@ -226,7 +226,7 @@ router.post("/save-study/:id", async (req: Request, res: Response) => {
  */
 router.get("/saved-studies", async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).session?.passport?.user || (req as any).user?.id;
+    const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
     const saved = await db.select({ studyId: userStudyInteractions.studyId })

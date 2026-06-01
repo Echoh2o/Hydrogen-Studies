@@ -72,9 +72,7 @@ router.post("/generate", requireAdmin, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to generate content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to generate content",    });
   }
 });
 
@@ -101,9 +99,7 @@ router.get("/study/:studyId", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to fetch content",    });
   }
 });
 
@@ -136,9 +132,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to fetch content",    });
   }
 });
 
@@ -155,10 +149,24 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
       throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
     }
 
-    // Remove fields that shouldn't be updated directly
-    delete updates.id;
-    delete updates.createdAt;
-    delete updates.studyId;
+    // Strip fields that must not be client-settable: identity/ownership and
+    // server-managed metrics/timestamps. (Drizzle's .set() already ignores
+    // keys that aren't real columns, so this guards against tampering with
+    // legitimate-but-sensitive columns rather than column injection.)
+    for (const field of [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "studyId",
+      "publishedAt",
+      "viewCount",
+      "engagementScore",
+      "shareCount",
+      "clickThroughRate",
+      "conversionMetrics",
+    ]) {
+      delete updates[field];
+    }
 
     await updateMultiFormatContent(contentId, updates);
 
@@ -171,9 +179,7 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to update content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to update content",    });
   }
 });
 
@@ -200,9 +206,7 @@ router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to delete content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to delete content",    });
   }
 });
 
@@ -234,9 +238,7 @@ router.post("/batch-generate", requireAdmin, async (req: Request, res: Response)
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Batch generation failed",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Batch generation failed",    });
   }
 });
 
@@ -295,9 +297,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to fetch content",    });
   }
 });
 
@@ -334,9 +334,7 @@ router.post("/:id/publish", requireAdmin, async (req: Request, res: Response) =>
       message:
         error instanceof Error
           ? error.message
-          : "Failed to update publish status",
-      error: error,
-    });
+          : "Failed to update publish status",    });
   }
 });
 
@@ -387,9 +385,7 @@ router.post("/:id/schedule", requireAdmin, async (req: Request, res: Response) =
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to schedule content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to schedule content",    });
   }
 });
 
@@ -441,9 +437,7 @@ router.get("/stats", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch statistics",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to fetch statistics",    });
   }
 });
 
@@ -508,9 +502,7 @@ router.get("/:id/export", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to export content",
-      error: error,
-    });
+        error instanceof Error ? error.message : "Failed to export content",    });
   }
 });
 

@@ -17,21 +17,29 @@ interface RelatedContentProps {
   contentType: "study" | "blog";
   contentId: number;
   className?: string;
+  title?: string;
 }
 
 /**
  * Displays related content links from the internal linking engine.
  * Shows related studies and blog posts for cross-linking SEO.
  */
-export default function RelatedContent({ contentType, contentId, className }: RelatedContentProps) {
-  const { data: links, isLoading } = useQuery<RelatedLink[]>({
+export default function RelatedContent({ contentType, contentId, className, title = "Related Content" }: RelatedContentProps) {
+  const { data, isLoading } = useQuery<unknown>({
     queryKey: [`/api/internal-links/${contentType}/${contentId}`],
     staleTime: 10 * 60 * 1000,
     enabled: !!contentId,
   });
 
-  // API may return { success: true, data: [...] } or an array directly
-  const linksArray: RelatedLink[] = Array.isArray(links) ? links : Array.isArray((links as any)?.data) ? (links as any).data : [];
+  // The public endpoint at app.ts returns `{ links: RelatedLink[] }`; older
+  // call sites returned a bare array or `{ data: [...] }`. Unwrap all three.
+  const linksArray: RelatedLink[] = Array.isArray(data)
+    ? (data as RelatedLink[])
+    : Array.isArray((data as any)?.links)
+    ? (data as any).links
+    : Array.isArray((data as any)?.data)
+    ? (data as any).data
+    : [];
 
   if (isLoading || linksArray.length === 0) return null;
 
@@ -43,7 +51,7 @@ export default function RelatedContent({ contentType, contentId, className }: Re
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <ArrowRight className="h-5 w-5 text-teal-600" />
-          Related Content
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

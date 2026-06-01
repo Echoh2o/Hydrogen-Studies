@@ -22,7 +22,7 @@ import {
 import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
 import RelatedBlogs from "@/components/studies/related-blogs";
-import RelatedContent from "@/components/RelatedContent";
+import RelatedContent from "@/components/seo/RelatedContent";
 import JsonLd, {
   generateMedicalArticleSchema,
   generateBreadcrumbSchema,
@@ -264,6 +264,8 @@ const StudyPageContent = () => {
     error,
   } = useQuery<Study>({
     queryKey: [`/api/studies/${studyId}`],
+    // Don't fire GET /api/studies/NaN or /0 for a missing/non-numeric route param.
+    enabled: Number.isFinite(studyId) && studyId > 0,
   });
 
   // Externalized fallback images. These used to be ~1.5KB base64 strings
