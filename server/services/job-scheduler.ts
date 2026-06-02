@@ -202,6 +202,7 @@ export class JobScheduler {
    * Stop the scheduler
    */
   public stop(): void {
+    const wasRunning = this.checkInterval !== null || this.fastCheckInterval !== null;
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
@@ -210,7 +211,9 @@ export class JobScheduler {
       clearInterval(this.fastCheckInterval);
       this.fastCheckInterval = null;
     }
-    logger.info("Stopped", "JobScheduler");
+    if (wasRunning) {
+      logger.info("Stopped", "JobScheduler");
+    }
   }
 
   /**
@@ -656,21 +659,13 @@ export class JobScheduler {
     this.isFastJobRunning = true;
 
     try {
-      // Job 13: Content Generation Queue
-      try {
-        const start = Date.now();
-        await this.withTimeout(
-          () => this.runContentQueueJob(),
-          10 * 60 * 1000,
-          "content-queue"
-        );
-        const elapsed = Date.now() - start;
-        if (elapsed > 1000) {
-          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "content-queue" });
-        }
-      } catch (error) {
-        logger.error("Job 13 (content-queue) unexpected error", error, "JobScheduler");
-      }
+      // Order matters: the cheap, latency-sensitive jobs (publish, stale
+      // recovery — both 60s) run FIRST so they execute promptly each tick.
+      // content-queue (up to a 10-min timeout) runs LAST so a long drain can't
+      // delay scheduled publishing — the whole reason these moved off the slow
+      // loop. All three share the isFastJobRunning guard, so a long
+      // content-queue tick still skips the next fast tick, but publishing has
+      // already happened by then.
 
       // Job 16: Scheduled blog publishing — promotes drafts whose scheduledFor
       // has passed. Cheap (indexed query); latency = scheduling resolution.
@@ -705,6 +700,23 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 23 (stale-job-recovery) unexpected error", error, "JobScheduler");
+      }
+
+      // Job 13: Content Generation Queue — heaviest fast-loop job (10-min
+      // timeout), so it runs last; see ordering note above.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runContentQueueJob(),
+          10 * 60 * 1000,
+          "content-queue"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "content-queue" });
+        }
+      } catch (error) {
+        logger.error("Job 13 (content-queue) unexpected error", error, "JobScheduler");
       }
     } catch (error) {
       logger.error("Critical error (fast loop)", error, "JobScheduler");

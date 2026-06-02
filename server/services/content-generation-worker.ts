@@ -55,12 +55,18 @@ export async function enqueueStudy(studyId: number, priority: number = 0): Promi
     // onConflictDoNothing backs the pre-check with the partial unique index
     // (uq_cgq_active_study): a concurrent enqueue racing past the SELECT
     // resolves to a silent no-op instead of a unique-violation error.
-    await db
+    const inserted = await db
       .insert(contentGenerationQueue)
       .values({ studyId, priority, status: "pending" })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: contentGenerationQueue.id });
 
-    logger.info(`Enqueued study ${studyId} for content generation`, "ContentWorker");
+    if (inserted.length > 0) {
+      logger.info(`Enqueued study ${studyId} for content generation`, "ContentWorker");
+    } else {
+      // A concurrent enqueue won the race after our SELECT; nothing was inserted.
+      logger.info(`Study ${studyId} already queued by a concurrent enqueue, skipping`, "ContentWorker");
+    }
   } catch (error) {
     logger.error(`Failed to enqueue study ${studyId}`, error, "ContentWorker");
   }

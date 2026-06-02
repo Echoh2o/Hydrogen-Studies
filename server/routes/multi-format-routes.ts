@@ -72,7 +72,8 @@ router.post("/generate", requireAdmin, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to generate content",    });
+        error instanceof Error ? error.message : "Failed to generate content",
+    });
   }
 });
 
@@ -99,7 +100,8 @@ router.get("/study/:studyId", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch content",    });
+        error instanceof Error ? error.message : "Failed to fetch content",
+    });
   }
 });
 
@@ -132,7 +134,8 @@ router.get("/:id", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch content",    });
+        error instanceof Error ? error.message : "Failed to fetch content",
+    });
   }
 });
 
@@ -179,7 +182,8 @@ router.put("/:id", requireAdmin, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to update content",    });
+        error instanceof Error ? error.message : "Failed to update content",
+    });
   }
 });
 
@@ -206,7 +210,8 @@ router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to delete content",    });
+        error instanceof Error ? error.message : "Failed to delete content",
+    });
   }
 });
 
@@ -238,7 +243,8 @@ router.post("/batch-generate", requireAdmin, async (req: Request, res: Response)
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Batch generation failed",    });
+        error instanceof Error ? error.message : "Batch generation failed",
+    });
   }
 });
 
@@ -297,7 +303,8 @@ router.get("/", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch content",    });
+        error instanceof Error ? error.message : "Failed to fetch content",
+    });
   }
 });
 
@@ -334,7 +341,8 @@ router.post("/:id/publish", requireAdmin, async (req: Request, res: Response) =>
       message:
         error instanceof Error
           ? error.message
-          : "Failed to update publish status",    });
+          : "Failed to update publish status",
+    });
   }
 });
 
@@ -385,7 +393,8 @@ router.post("/:id/schedule", requireAdmin, async (req: Request, res: Response) =
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to schedule content",    });
+        error instanceof Error ? error.message : "Failed to schedule content",
+    });
   }
 });
 
@@ -437,7 +446,8 @@ router.get("/stats", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch statistics",    });
+        error instanceof Error ? error.message : "Failed to fetch statistics",
+    });
   }
 });
 
@@ -502,7 +512,8 @@ router.get("/:id/export", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to export content",    });
+        error instanceof Error ? error.message : "Failed to export content",
+    });
   }
 });
 
