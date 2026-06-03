@@ -767,6 +767,7 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
           const message = await anthropic.messages.create({
             model: "claude-sonnet-4-6",
             max_tokens: 200,
+            output_config: { effort: "low" }, // 1-2 sentence TLDR — no deep reasoning needed
             messages: [{ role: "user", content: prompt }],
           });
 
@@ -829,6 +830,7 @@ Write ONLY the TL;DR text, nothing else.`;
               const message = await anthropic.messages.create({
                 model: "claude-sonnet-4-6",
                 max_tokens: 200,
+                output_config: { effort: "low" }, // 1-2 sentence TLDR — no deep reasoning needed
                 messages: [{ role: "user", content: prompt }],
               });
 

@@ -26,7 +26,7 @@
     "backfill-shopify-customers": "npx tsx server/scripts/backfill-shopify-customers.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
+    "@anthropic-ai/sdk": "^0.100.1",
     "@aws-sdk/client-s3": "^3.1015.0",
     "@headlessui/react": "^2.2.3",
     "@hookform/resolvers": "^3.10.0",

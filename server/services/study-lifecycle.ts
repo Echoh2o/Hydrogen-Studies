@@ -95,6 +95,7 @@ export async function runStudyLifecyclePipeline(studyId: number): Promise<Pipeli
       const message = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 200,
+        output_config: { effort: "low" }, // 1-2 sentence TLDR — no deep reasoning needed
         messages: [{
           role: "user",
           content: `You are a science communicator. Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.\n\nStudy title: ${study.title}\nAbstract: ${study.abstract}\n${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}\n\nWrite ONLY the TL;DR text, nothing else.`

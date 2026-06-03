@@ -64,12 +64,20 @@ export interface AIGenerateOptions {
   maxTokens?: number;
   temperature?: number;
   model?: string; // override model — use MODELS.HAIKU for cheap tasks
+  /**
+   * Thinking depth / token-spend tradeoff (Sonnet 4.6 & Opus only; ignored on
+   * Haiku 4.5, which has no effort param). Sonnet 4.6 defaults to "high" — set
+   * "low" for short extraction/summary tasks to cut tokens + latency.
+   */
+  effort?: "low" | "medium" | "high";
 }
 
 // Model constants for cost optimization
 export const MODELS = {
-  /** Full-power model for complex generation (blog content, detailed analysis) */
+  /** Balanced model for general generation (blog content, analysis, TLDRs) */
   SONNET: "claude-sonnet-4-6",
+  /** Most capable model — research synthesis / long-horizon quality work */
+  OPUS: "claude-opus-4-8",
   /** Fast, cheap model (~90% cheaper) for extraction, parsing, short summaries */
   HAIKU: "claude-haiku-4-5",
   /** xAI image model — configurable via XAI_IMAGE_MODEL env var */
@@ -101,15 +109,21 @@ async function generateText(
   userPrompt: string,
   options: AIGenerateOptions = {},
 ): Promise<string> {
-  const { maxTokens = 4096, temperature = 0.3, model } = options;
+  const { maxTokens = 4096, temperature = 0.3, model, effort } = options;
 
   // Try Anthropic first
   const claude = getAnthropic();
   if (claude) {
+    const resolvedModel = model || MODELS.SONNET;
+    // Opus 4.7+ reject sampling params (temperature/top_p/top_k → 400).
+    const acceptsTemperature = !/^claude-opus-4-(7|8)/.test(resolvedModel);
+    // Haiku 4.5 has no effort param (would error); Sonnet 4.6 / Opus support it.
+    const acceptsEffort = !/haiku/.test(resolvedModel);
     const response = await claude.messages.create({
-      model: model || "claude-sonnet-4-6",
+      model: resolvedModel,
       max_tokens: maxTokens,
-      temperature,
+      ...(acceptsTemperature ? { temperature } : {}),
+      ...(acceptsEffort && effort ? { output_config: { effort } } : {}),
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });

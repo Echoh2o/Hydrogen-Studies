@@ -52,7 +52,7 @@ Keep it under 80 characters.`,
     `Original title: ${item.title}
 ${item.abstract ? `Abstract excerpt: ${item.abstract.substring(0, 500)}` : ""}
 Journal: ${item.journal || "Unknown"}`,
-    { model: PIPELINE_MODEL, maxTokens: 200 },
+    { model: PIPELINE_MODEL, maxTokens: 200, effort: "low" },
   );
 
   return { ...results, step0: response };
@@ -83,7 +83,7 @@ Return JSON with:
 ${item.abstract ? `Abstract: ${item.abstract.substring(0, 1000)}` : ""}
 Authors: ${item.authors || "Unknown"}
 Journal: ${item.journal || "Unknown"}`,
-    { model: PIPELINE_MODEL, maxTokens: 500 },
+    { model: PIPELINE_MODEL, maxTokens: 500, effort: "low" },
   );
 
   return { ...results, step1: response };
@@ -115,7 +115,7 @@ Return JSON with:
     `Title: ${item.title}
 ${item.abstract ? `Abstract: ${item.abstract}` : "No abstract available — infer from title and journal."}
 Journal: ${item.journal || "Unknown"}`,
-    { model: PIPELINE_MODEL, maxTokens: 600 },
+    { model: PIPELINE_MODEL, maxTokens: 600, effort: "low" },
   );
 
   return { ...results, step2: response };
@@ -159,7 +159,7 @@ Sample Size: ${step2.sampleSize || "unknown"}
 Duration: ${step2.duration ? `${step2.duration} days` : "unknown"}
 Methodology: ${step2.methodology || "unknown"}
 ${item.abstract ? `Abstract excerpt: ${item.abstract.substring(0, 800)}` : ""}`,
-    { model: PIPELINE_MODEL, maxTokens: 600 },
+    { model: PIPELINE_MODEL, maxTokens: 600, effort: "low" },
   );
 
   return { ...results, step3: response };
@@ -198,7 +198,7 @@ Return JSON with:
 ${item.abstract ? `Abstract: ${item.abstract}` : ""}
 Key Outcomes: ${JSON.stringify(step2.keyOutcomes || [])}
 Outcome: ${step2.outcome || "unknown"}`,
-    { model: PIPELINE_MODEL, maxTokens: 1000 },
+    { model: PIPELINE_MODEL, maxTokens: 1000, effort: "low" },
   );
 
   return { ...results, step4: response };
@@ -237,7 +237,7 @@ Original Title: ${item.title}
 Category: ${step1.category || "General"}
 Health Conditions: ${JSON.stringify(step1.healthConditions || [])}
 Body Systems: ${JSON.stringify(step1.bodySystems || [])}`,
-    { model: PIPELINE_MODEL, maxTokens: 500 },
+    { model: PIPELINE_MODEL, maxTokens: 500, effort: "low" },
   );
 
   return { ...results, step5: response };
