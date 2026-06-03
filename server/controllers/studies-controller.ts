@@ -765,7 +765,7 @@ ${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}
 Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
 
           const message = await anthropic.messages.create({
-            model: "claude-sonnet-4-20250514",
+            model: "claude-sonnet-4-6",
             max_tokens: 200,
             messages: [{ role: "user", content: prompt }],
           });
@@ -827,7 +827,7 @@ ${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}
 Write ONLY the TL;DR text, nothing else.`;
 
               const message = await anthropic.messages.create({
-                model: "claude-sonnet-4-20250514",
+                model: "claude-sonnet-4-6",
                 max_tokens: 200,
                 messages: [{ role: "user", content: prompt }],
               });

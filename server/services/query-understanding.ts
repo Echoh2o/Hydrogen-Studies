@@ -118,7 +118,7 @@ async function correctSpellingAndAbbreviations(query: string): Promise<string> {
     const result = await ai.generateText(systemPrompt, query, {
       temperature: 0.1,
       maxTokens: 100,
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-haiku-4-5",
     });
 
     return result?.trim() || query;
@@ -175,7 +175,7 @@ async function generateContextualExpansions(
     const result = await ai.generateJSON(systemPrompt, `Query: "${query}"\nIntent: ${parsed.intent}`, {
       temperature: 0.4,
       maxTokens: 200,
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-haiku-4-5",
     });
 
     expansions.push(...(result.expansions || []));
@@ -227,7 +227,7 @@ async function generateQuerySuggestions(
     const result = await ai.generateJSON(systemPrompt, `Query: "${query}"\nParsed entities: ${JSON.stringify(parsed.entities)}`, {
       temperature: 0.5,
       maxTokens: 300,
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-haiku-4-5",
     });
 
     suggestions.push(...(result.suggestions || []));

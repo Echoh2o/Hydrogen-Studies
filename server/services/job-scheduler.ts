@@ -1330,7 +1330,7 @@ export class JobScheduler {
           const prompt = `You are a science communicator. Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.\n\nStudy title: ${study.title}\nAbstract: ${study.abstract}\n${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}\n\nWrite ONLY the TL;DR text, nothing else.`;
 
           const message = await anthropic.messages.create({
-            model: "claude-haiku-4-5-20251001", // Haiku is 90% cheaper — TLDRs are simple summaries
+            model: "claude-haiku-4-5", // Haiku is 90% cheaper — TLDRs are simple summaries
             max_tokens: 200,
             messages: [{ role: "user", content: prompt }],
           });

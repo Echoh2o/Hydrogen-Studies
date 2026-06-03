@@ -629,7 +629,7 @@ export class TrendDetectionService {
       const response = await ai.generateText(systemPrompt, userPrompt, {
         maxTokens: 100,
         temperature: 0.7,
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-haiku-4-5",
       });
 
       return (
@@ -759,7 +759,7 @@ export class TrendDetectionService {
       const aiResponse = await ai.generateText(systemPrompt, userPrompt, {
         maxTokens: 500,
         temperature: 0.7,
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-haiku-4-5",
       });
 
       const responseText = aiResponse || "";

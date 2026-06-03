@@ -241,7 +241,7 @@ H2 Delivery: ${study.h2DeliveryMethod || "Not specified"}`;
   const rawResult = await ai.generateJSON<SummaryExtractionResult>(
     SYSTEM_PROMPT,
     userPrompt,
-    { maxTokens: 1500, temperature: 0.4, model: "claude-haiku-4-5-20251001" },
+    { maxTokens: 1500, temperature: 0.4, model: "claude-haiku-4-5" },
   );
 
   const result = validateResponse(rawResult);

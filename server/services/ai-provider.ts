@@ -69,9 +69,9 @@ export interface AIGenerateOptions {
 // Model constants for cost optimization
 export const MODELS = {
   /** Full-power model for complex generation (blog content, detailed analysis) */
-  SONNET: "claude-sonnet-4-20250514",
+  SONNET: "claude-sonnet-4-6",
   /** Fast, cheap model (~90% cheaper) for extraction, parsing, short summaries */
-  HAIKU: "claude-haiku-4-5-20251001",
+  HAIKU: "claude-haiku-4-5",
   /** xAI image model — configurable via XAI_IMAGE_MODEL env var */
   XAI_IMAGE: process.env.XAI_IMAGE_MODEL || "grok-imagine-image",
   /** OpenAI image model */
@@ -107,7 +107,7 @@ async function generateText(
   const claude = getAnthropic();
   if (claude) {
     const response = await claude.messages.create({
-      model: model || "claude-sonnet-4-20250514",
+      model: model || "claude-sonnet-4-6",
       max_tokens: maxTokens,
       temperature,
       system: systemPrompt,

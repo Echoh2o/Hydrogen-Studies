@@ -352,7 +352,7 @@ async function executeStep(step: WaterfallStep, studyId: number): Promise<void> 
             const anthropic = new Anthropic();
 
             const message = await anthropic.messages.create({
-              model: "claude-haiku-4-5-20251001",
+              model: "claude-haiku-4-5",
               max_tokens: 200,
               messages: [{
                 role: "user",
@@ -403,7 +403,7 @@ Write ONLY the TL;DR text, nothing else.`,
         const anthropic = new Anthropic();
 
         const message = await anthropic.messages.create({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-haiku-4-5",
           max_tokens: 300,
           messages: [{
             role: "user",

@@ -25,7 +25,7 @@ const MAX_ITEMS_PER_CYCLE = 10;
 const TOTAL_STEPS = 6; // Steps 0-5
 
 // Cost-efficient model for pipeline processing
-const PIPELINE_MODEL = "claude-sonnet-4-20250514";
+const PIPELINE_MODEL = "claude-sonnet-4-6";
 
 interface StepResults {
   [key: string]: any;

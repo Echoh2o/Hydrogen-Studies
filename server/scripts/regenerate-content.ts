@@ -152,7 +152,7 @@ Example: ["gut health","hydrogen water benefits","inflammation relief","digestiv
         const result = await ai.generateText(
           "You generate consumer-friendly search tags for health research. Return only a JSON array of strings.",
           tagPrompt,
-          { maxTokens: 150, temperature: 0.3, model: "claude-haiku-4-5-20251001" },
+          { maxTokens: 150, temperature: 0.3, model: "claude-haiku-4-5" },
         );
 
         if (result) {

@@ -222,7 +222,7 @@ Return ONLY valid JSON with these fields:
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-opus-4-8",
       max_tokens: 1000,
       messages: [{ role: "user", content: prompt }],
     });
@@ -348,7 +348,7 @@ Important:
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-opus-4-8",
       max_tokens: 2000,
       messages: [{ role: "user", content: prompt }],
     });
@@ -470,7 +470,7 @@ Important:
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-opus-4-8",
       max_tokens: 3000,
       messages: [{ role: "user", content: prompt }],
     });

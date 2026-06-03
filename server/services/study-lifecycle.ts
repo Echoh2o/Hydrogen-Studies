@@ -93,7 +93,7 @@ export async function runStudyLifecyclePipeline(studyId: number): Promise<Pipeli
       const anthropic = new Anthropic();
 
       const message = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 200,
         messages: [{
           role: "user",

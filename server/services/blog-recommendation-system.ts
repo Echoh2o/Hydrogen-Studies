@@ -443,7 +443,7 @@ async function generateSingleBlogContent(
       ai.generateText(systemPrompt, contentPrompt, {
         temperature: 0.7,
         maxTokens: 2048,
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-haiku-4-5",
       }),
       new Promise<string>((_, reject) =>
         setTimeout(() => reject(new Error("AI provider timeout")), 45000),
