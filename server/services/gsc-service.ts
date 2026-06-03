@@ -271,7 +271,34 @@ async function fetchDay(
  *
  * @returns the run summary
  */
+/**
+ * Serialize sync runs in-process. The scheduled job (slow loop, guarded by
+ * isJobRunning) and a manual admin-triggered sync can otherwise overlap — the
+ * manual path bypasses the scheduler guard — producing two concurrent
+ * `running` rows, duplicate OAuth token refreshes, and redundant upserts.
+ * In-process guard only; a multi-instance deployment would need a Postgres
+ * advisory lock (pg_try_advisory_lock) for cross-process exclusion.
+ */
+let gscSyncInFlight = false;
+
 export async function syncSearchConsole(opts: { force?: boolean } = {}): Promise<{
+  daysPulled: number;
+  rowsInserted: number;
+  rowsUpdated: number;
+  skipped?: string;
+}> {
+  if (gscSyncInFlight) {
+    return { daysPulled: 0, rowsInserted: 0, rowsUpdated: 0, skipped: "already running" };
+  }
+  gscSyncInFlight = true;
+  try {
+    return await syncSearchConsoleImpl(opts);
+  } finally {
+    gscSyncInFlight = false;
+  }
+}
+
+async function syncSearchConsoleImpl(opts: { force?: boolean } = {}): Promise<{
   daysPulled: number;
   rowsInserted: number;
   rowsUpdated: number;

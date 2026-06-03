@@ -139,7 +139,10 @@ export async function getQueueStatus(): Promise<{
  * Process pending items from the content generation queue.
  * Picks up the oldest items with highest priority first.
  */
-export async function processContentQueue(maxItems: number = 3): Promise<{
+export async function processContentQueue(
+  maxItems: number = 3,
+  signal?: AbortSignal,
+): Promise<{
   processed: number;
   failed: number;
 }> {
@@ -162,6 +165,17 @@ export async function processContentQueue(maxItems: number = 3): Promise<{
 
   let retrying = 0;
   for (let i = 0; i < items.length; i++) {
+    // Stop claiming new items once the scheduler's timeout has fired. Without
+    // this, a slow drain keeps running as an orphan after withTimeout() gave
+    // up — claiming items and writing 'completed' while the NEXT fast tick
+    // starts a second concurrent drain (double AI spend, rate-limit pressure).
+    if (signal?.aborted) {
+      logger.warn(
+        `Content queue drain aborted (timeout): ${processed} processed, ${items.length - i} items left for next cycle`,
+        "ContentWorker",
+      );
+      break;
+    }
     const item = items[i];
 
     // Atomically claim the item: flip pending→processing only if it's STILL
@@ -180,7 +194,7 @@ export async function processContentQueue(maxItems: number = 3): Promise<{
     }
 
     try {
-      await runWaterfall(item.id, item.studyId, (item.completedSteps as string[]) || []);
+      await runWaterfall(item.id, item.studyId, (item.completedSteps as string[]) || [], signal);
       // runWaterfall handles step failures by storing retry state in the DB
       // and returning cleanly. Re-read status to categorize correctly.
       const [after] = await db
@@ -217,6 +231,7 @@ async function runWaterfall(
   queueId: number,
   studyId: number,
   alreadyCompleted: string[],
+  signal?: AbortSignal,
 ): Promise<void> {
   const completedSet = new Set(alreadyCompleted);
 
@@ -224,6 +239,23 @@ async function runWaterfall(
     if (completedSet.has(step)) {
       logger.info(`Skipping already-completed step "${step}" for study ${studyId}`, "ContentWorker");
       continue;
+    }
+
+    // Cooperative cancellation: the scheduler's timeout fired mid-drain. Release
+    // the claim back to 'pending' (preserving finished steps) so the next cycle
+    // resumes immediately, instead of leaving the row 'processing' until the
+    // 90-min stale-recovery sweep. Checked before starting an unfinished step,
+    // so a fully-completed waterfall still falls through to mark 'completed'.
+    if (signal?.aborted) {
+      await db
+        .update(contentGenerationQueue)
+        .set({ status: "pending", currentStep: null, completedSteps: Array.from(completedSet) })
+        .where(eq(contentGenerationQueue.id, queueId));
+      logger.warn(
+        `Waterfall aborted (timeout) for study ${studyId} before step "${step}"; reset to pending`,
+        "ContentWorker",
+      );
+      return;
     }
 
     // Update current step

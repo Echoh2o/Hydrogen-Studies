@@ -116,21 +116,27 @@ export class JobScheduler {
    * orphaned work can stop; see runJobs() comments.
    */
   private async withTimeout<T>(
-    fn: () => Promise<T>,
+    fn: (signal: AbortSignal) => Promise<T>,
     timeoutMs: number,
     jobName: string,
     onSuccess?: () => void,
   ): Promise<T | null> {
     return new Promise<T | null>((resolve) => {
       let settled = false;
+      const controller = new AbortController();
       const timer = setTimeout(() => {
         if (settled) return;
         settled = true;
+        // Cooperative cancellation: abort-aware jobs (e.g. the content queue)
+        // observe this signal and stop at their next checkpoint instead of
+        // running on as an orphan and writing results after we've given up on
+        // them. Jobs that ignore the signal behave exactly as before.
+        controller.abort();
         logger.warn(`Job timed out after ${timeoutMs}ms`, "JobScheduler", { job: jobName });
         resolve(null);
       }, timeoutMs);
 
-      fn().then((result) => {
+      fn(controller.signal).then((result) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
@@ -707,7 +713,7 @@ export class JobScheduler {
       try {
         const start = Date.now();
         await this.withTimeout(
-          () => this.runContentQueueJob(),
+          (signal) => this.runContentQueueJob(signal),
           10 * 60 * 1000,
           "content-queue"
         );
@@ -1555,7 +1561,7 @@ export class JobScheduler {
    * Processes pending items from the unified content generation queue.
    * Runs every 5 minutes, processes 2 studies per cycle to respect API rate limits.
    */
-  private async runContentQueueJob() {
+  private async runContentQueueJob(signal?: AbortSignal) {
     try {
       if (this.lastContentQueueCheck) {
         const elapsed = Date.now() - this.lastContentQueueCheck.getTime();
@@ -1563,7 +1569,7 @@ export class JobScheduler {
       }
 
       const { processContentQueue } = await import("./content-generation-worker");
-      const result = await processContentQueue(10);
+      const result = await processContentQueue(10, signal);
       this.lastContentQueueCheck = new Date();
 
       if (result.processed > 0 || result.failed > 0) {

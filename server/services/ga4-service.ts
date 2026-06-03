@@ -344,7 +344,33 @@ async function fetchSearchTerms(
   return out;
 }
 
+/**
+ * Serialize sync runs in-process. The scheduled job and a manual admin-triggered
+ * sync can otherwise overlap (the manual path bypasses the scheduler's
+ * isJobRunning guard), producing two concurrent `running` rows, duplicate OAuth
+ * token refreshes, and redundant upserts. In-process guard only; a multi-instance
+ * deployment would need a Postgres advisory lock for cross-process exclusion.
+ */
+let ga4SyncInFlight = false;
+
 export async function syncGa4(): Promise<{
+  daysPulled: number;
+  rowsInserted: number;
+  rowsUpdated: number;
+  skipped?: string;
+}> {
+  if (ga4SyncInFlight) {
+    return { daysPulled: 0, rowsInserted: 0, rowsUpdated: 0, skipped: "already running" };
+  }
+  ga4SyncInFlight = true;
+  try {
+    return await syncGa4Impl();
+  } finally {
+    ga4SyncInFlight = false;
+  }
+}
+
+async function syncGa4Impl(): Promise<{
   daysPulled: number;
   rowsInserted: number;
   rowsUpdated: number;
