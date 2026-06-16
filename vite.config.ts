@@ -3,24 +3,49 @@ import react from "@vitejs/plugin-react";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import path from "path";
 
+// Release name shared with the server (see server/utils/sentry.ts and
+// error-reporting.ts). RAILWAY_GIT_COMMIT_SHA is injected by Railway per deploy;
+// SENTRY_RELEASE allows a manual override. Undefined locally/in CI (no release
+// association, but sourcemaps still upload via debug IDs).
+const sentryRelease =
+  process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA;
+
 export default defineConfig({
   plugins: [
     react(),
     // Upload client source maps to Sentry during the build so production stack
-    // traces are de-minified. Only runs when SENTRY_AUTH_TOKEN is present (set
-    // in the Railway build env), so local/CI builds without the token are
-    // unaffected. Source maps are emitted "hidden" (see build.sourcemap below)
-    // and the plugin deletes them after upload, so they are never deployed.
+    // traces are de-minified, and tag the build with a release so issues are
+    // attributed to a deploy (enables regression detection and, once the Sentry
+    // GitHub integration is installed, "Fixes <ISSUE-ID>" commit auto-resolve).
+    // Only runs when SENTRY_AUTH_TOKEN is present (set in the Railway build env),
+    // so local/CI builds without the token are unaffected.
     ...(process.env.SENTRY_AUTH_TOKEN
       ? [
           sentryVitePlugin({
             org: "echo-water",
             project: "hydrogen-studies-client",
             authToken: process.env.SENTRY_AUTH_TOKEN,
+            release: sentryRelease
+              ? {
+                  name: sentryRelease,
+                  // Associate the deploy commit with this release. Requires the
+                  // Sentry GitHub integration on Echoh2o/Hydrogen-Studies; until
+                  // it is installed this no-ops instead of failing the build.
+                  setCommits: {
+                    repo: "Echoh2o/Hydrogen-Studies",
+                    commit: sentryRelease,
+                    shouldNotThrowOnFailure: true,
+                  },
+                  deploy: { env: "production" },
+                }
+              : undefined,
             sourcemaps: {
               // Delete the emitted .map files after upload so they are never
-              // served from the production bundle.
-              filesToDeleteAfterUpload: ["./dist/public/**/*.map"],
+              // served from the production bundle. Absolute path so the glob
+              // resolves regardless of the build's working directory.
+              filesToDeleteAfterUpload: [
+                path.resolve(import.meta.dirname, "dist", "public", "**", "*.map"),
+              ],
             },
           }),
         ]

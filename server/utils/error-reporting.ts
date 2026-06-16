@@ -49,7 +49,13 @@ export function initErrorReporting(): void {
         Sentry.init({
           dsn,
           environment: process.env.NODE_ENV || "development",
-          release: process.env.npm_package_version || "unknown",
+          // Tag events with the deployed commit so issues are attributed to a
+          // release (enables regression detection + "Fixes <ID>" auto-resolve).
+          // Must match the client release name set in vite.config.ts.
+          release:
+            process.env.SENTRY_RELEASE ||
+            process.env.RAILWAY_GIT_COMMIT_SHA ||
+            process.env.npm_package_version,
           tracesSampleRate: 0.1,
           // Don't send PII by default
           sendDefaultPii: false,
