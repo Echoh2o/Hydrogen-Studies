@@ -51,6 +51,19 @@ async function setupServer() {
       console.error(`Static files path not found: ${staticPath}`);
     }
 
+    // Never serve client source maps publicly. They are uploaded to Sentry at
+    // build time (vite.config.ts) for de-minified stack traces, but must not be
+    // downloadable. Build-time deletion proved unreliable under Railway's
+    // Railpack builder, so block at request time — independent of what ends up
+    // on disk.
+    app.use((req, res, next) => {
+      if (req.path.endsWith(".map")) {
+        res.status(404).end();
+        return;
+      }
+      next();
+    });
+
     // SEO bot middleware — inject correct meta tags for crawlers BEFORE static files
     app.use(seoBotMiddleware(staticPath));
 
