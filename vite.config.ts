@@ -1,9 +1,31 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Upload client source maps to Sentry during the build so production stack
+    // traces are de-minified. Only runs when SENTRY_AUTH_TOKEN is present (set
+    // in the Railway build env), so local/CI builds without the token are
+    // unaffected. Source maps are emitted "hidden" (see build.sourcemap below)
+    // and the plugin deletes them after upload, so they are never deployed.
+    ...(process.env.SENTRY_AUTH_TOKEN
+      ? [
+          sentryVitePlugin({
+            org: "echo-water",
+            project: "hydrogen-studies-client",
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            sourcemaps: {
+              // Delete the emitted .map files after upload so they are never
+              // served from the production bundle.
+              filesToDeleteAfterUpload: ["./dist/public/**/*.map"],
+            },
+          }),
+        ]
+      : []),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
