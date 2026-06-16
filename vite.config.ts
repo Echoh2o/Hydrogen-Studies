@@ -25,16 +25,22 @@ export default defineConfig({
             org: "echo-water",
             project: "hydrogen-studies-client",
             authToken: process.env.SENTRY_AUTH_TOKEN,
+            // Sentry build steps (release/sourcemaps) must never fail the deploy.
+            // setCommits in particular errors until the Sentry GitHub integration
+            // is installed on Echoh2o/Hydrogen-Studies — log and continue.
+            errorHandler: (err) =>
+              console.warn(`[sentry-vite-plugin] ${err.message}`),
             release: sentryRelease
               ? {
                   name: sentryRelease,
-                  // Associate the deploy commit with this release. Requires the
-                  // Sentry GitHub integration on Echoh2o/Hydrogen-Studies; until
-                  // it is installed this no-ops instead of failing the build.
+                  // Associate the deploy commit with this release (suspect
+                  // commits + "Fixes <ISSUE-ID>" auto-resolve). Activates once
+                  // the Sentry GitHub integration is installed.
                   setCommits: {
                     repo: "Echoh2o/Hydrogen-Studies",
                     commit: sentryRelease,
-                    shouldNotThrowOnFailure: true,
+                    ignoreMissing: true,
+                    ignoreEmpty: true,
                   },
                   deploy: { env: "production" },
                 }
