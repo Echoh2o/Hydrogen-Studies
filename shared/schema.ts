@@ -422,7 +422,7 @@ export const studies = pgTable(
       // legacy duplicate DOIs exist, so a unique index would fail to build at
       // migration time and block deploys. Mirrors boot migration
       // 016_add_studies_doi_index.
-      doiIdx: index("idx_studies_doi")
+      doiIdx: index("studies_doi_idx")
         .on(table.doi)
         .where(sql`${table.doi} IS NOT NULL`),
     };

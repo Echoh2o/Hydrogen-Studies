@@ -10,7 +10,7 @@
  * and block the deploy (migration failures are fatal — see app.ts). Partial
  * (`WHERE doi IS NOT NULL`) so the many DOI-less rows don't bloat it.
  *
- * IF EXISTS-safe and idempotent; mirrored in shared/schema.ts (`doiIdx`).
+ * IF NOT EXISTS-guarded and idempotent; mirrored in shared/schema.ts (`doiIdx`).
  */
 import { db } from "../db";
 import { sql } from "drizzle-orm";
@@ -18,7 +18,7 @@ import { logger } from "../utils/logger";
 
 export async function addStudiesDoiIndex(): Promise<void> {
   await db.execute(sql`
-    CREATE INDEX IF NOT EXISTS idx_studies_doi ON studies (doi) WHERE doi IS NOT NULL
+    CREATE INDEX IF NOT EXISTS studies_doi_idx ON studies (doi) WHERE doi IS NOT NULL
   `);
-  logger.info("Ensured partial index idx_studies_doi on studies(doi)", "Migration");
+  logger.info("Ensured partial index studies_doi_idx on studies(doi)", "Migration");
 }

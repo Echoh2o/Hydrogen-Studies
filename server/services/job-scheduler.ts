@@ -101,10 +101,8 @@ export class JobScheduler {
   private constructor() {}
 
   /**
-   * Wrap an async function with a timeout. Returns null if the job times out or throws.
-   */
-  /**
-   * Run `fn` with a timeout. Resolves to `null` on timeout or throw.
+   * Run `fn` with a timeout. Resolves to `null` on timeout, throw, or
+   * advisory-lock contention (another instance is running the job).
    *
    * `onSuccess` fires ONLY when `fn` genuinely completes before the timeout —
    * use it to record liveness so a job that times out or throws does NOT stamp
