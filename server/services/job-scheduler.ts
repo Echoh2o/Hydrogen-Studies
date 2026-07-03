@@ -104,9 +104,12 @@ export class JobScheduler {
    * Run `fn` with a timeout. Resolves to `null` on timeout, throw, or
    * advisory-lock contention (another instance is running the job).
    *
-   * `onSuccess` fires ONLY when `fn` genuinely completes before the timeout —
-   * use it to record liveness so a job that times out or throws does NOT stamp
-   * a "last ran" timestamp it never earned. The `settled` guard ensures a job
+   * `onSuccess` fires when the wrapped call resolves before the timeout —
+   * including the lock-contended case, where it stamps `last*Check` even
+   * though a SIBLING instance did the work. That is deliberate: the stamps
+   * only feed getStatus() monitoring (never throttling — throttle stamps are
+   * set inside each fn), and cluster-wide the job genuinely ran. A job that
+   * times out or throws does NOT stamp. The `settled` guard ensures a job
    * that completes *after* the timeout already fired cannot retroactively
    * mark itself healthy.
    *
