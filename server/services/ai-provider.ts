@@ -26,8 +26,10 @@ function getAnthropic(): Anthropic | null {
     console.warn("⚠️ ANTHROPIC_API_KEY not configured — AI text generation will use OpenAI fallback");
     return null;
   }
-  // 60s default timeout (SDK default is 10 min — far too long for our short
-  // generation calls); per-request timeout is raised for large max_tokens below.
+  // 60s client-level timeout (SDK default is 10 min — far too long for our
+  // short generation calls). NOTE: this is a safety net only — every wrapper
+  // request overrides it per-request in generateTextWithAnthropic (60s for
+  // short calls, 120s when max_tokens > 2048).
   // maxRetries: 2 = SDK retries 408/429/5xx + connection errors with backoff.
   anthropicClient = new Anthropic({ apiKey, timeout: 60_000, maxRetries: 2 });
   return anthropicClient;
@@ -99,6 +101,34 @@ export const MODELS = {
   OPENAI_IMAGE: "dall-e-3",
 } as const;
 
+/**
+ * Per-model request capabilities, colocated with MODELS so a model-constant
+ * bump forces this map to change in the same edit. Capability rules like
+ * "Opus 4.7+ rejects sampling params" or "Haiku has no effort param" are
+ * per-model facts, not stable name patterns — a denylist regex silently breaks
+ * on the next model migration (and sending an unsupported param is a
+ * non-retryable 400, so nothing would fall back to OpenAI).
+ *
+ * Keys are the model ID strings (the MODELS values), so call sites passing the
+ * literal ID (e.g. "claude-haiku-4-5") resolve identically.
+ */
+const MODEL_CAPABILITIES: Record<string, { temperature: boolean; effort: boolean }> = {
+  [MODELS.SONNET]: { temperature: true, effort: true },
+  // Opus 4.8 (4.7+) rejects sampling params (temperature/top_p/top_k → 400).
+  [MODELS.OPUS]: { temperature: false, effort: true },
+  // Haiku 4.5 has no effort param (sending it errors).
+  [MODELS.HAIKU]: { temperature: true, effort: false },
+};
+
+/**
+ * Safe default for model IDs not in the map (e.g. a per-call override during a
+ * migration): omit both optional params. Omitting is always accepted — the
+ * model just uses its own defaults — whereas sending an unsupported param is a
+ * non-retryable 400 (no OpenAI fallback ⇒ hard failure). Add an entry to
+ * MODEL_CAPABILITIES to opt a new model into temperature/effort.
+ */
+const DEFAULT_MODEL_CAPABILITIES = { temperature: false, effort: false } as const;
+
 /** Get the correct image model name for the given provider */
 export function getImageModel(provider: "xai" | "openai"): string {
   return provider === "xai" ? MODELS.XAI_IMAGE : MODELS.OPENAI_IMAGE;
@@ -113,8 +143,19 @@ export function getPreferredImageClient(): { client: OpenAI; provider: "xai" | "
   return null;
 }
 
-/** Anthropic statuses worth failing over on (after the SDK's own retries). */
+/**
+ * Anthropic statuses worth failing over on (after the SDK's own retries).
+ * 408 (request timeout) is deliberately excluded: the SDK already retried it
+ * twice, and a request that repeatedly times out is almost always our payload
+ * or timeout configuration (not a provider outage) — the same request would
+ * likely blow the OpenAI call's budget too, so surface it to the caller.
+ */
 const RETRYABLE_ANTHROPIC_STATUSES = new Set([429, 500, 502, 503, 529]);
+
+/** Quiet config check for the fallback gate — getOpenAI() console.warns when unconfigured. */
+function isOpenAIConfigured(): boolean {
+  return !!process.env.OPENAI_API_KEY;
+}
 
 function isRetryableAnthropicError(err: unknown): boolean {
   // Connection errors (no HTTP response at all) are always retryable.
@@ -133,10 +174,8 @@ async function generateTextWithAnthropic(
 ): Promise<string> {
   const { maxTokens = 4096, temperature = 0.3, model, effort, caller, signal } = options;
   const resolvedModel = model || MODELS.SONNET;
-  // Opus 4.7+ reject sampling params (temperature/top_p/top_k → 400).
-  const acceptsTemperature = !/^claude-opus-4-(7|8)/.test(resolvedModel);
-  // Haiku 4.5 has no effort param (would error); Sonnet 4.6 / Opus support it.
-  const acceptsEffort = !/haiku/.test(resolvedModel);
+  const { temperature: acceptsTemperature, effort: acceptsEffort } =
+    MODEL_CAPABILITIES[resolvedModel] ?? DEFAULT_MODEL_CAPABILITIES;
   // Long-form outputs (blog drafts, Opus synthesis) legitimately run past 60s;
   // give those requests 120s while keeping the tight 60s default for short calls.
   const timeout = maxTokens > 2048 ? 120_000 : 60_000;
@@ -217,7 +256,7 @@ async function generateText(
     try {
       return await generateTextWithAnthropic(claude, systemPrompt, userPrompt, options);
     } catch (err) {
-      if (isRetryableAnthropicError(err) && getOpenAI()) {
+      if (isRetryableAnthropicError(err) && isOpenAIConfigured()) {
         logger.warn(
           "Anthropic request failed after retries — falling back to OpenAI",
           "AIProvider",

@@ -176,6 +176,75 @@ describe("ai.generateText — OpenAI fallback on retryable errors (M2)", () => {
   });
 });
 
+describe("ai.generateText — Anthropic request payload shape", () => {
+  function okText() {
+    return anthropicResponse([{ type: "text", text: "ok" }]);
+  }
+
+  it("omits the temperature field when temperature: null is passed", async () => {
+    const { ai, MODELS } = await loadAi({ anthropic: true });
+    mocks.messagesCreate.mockResolvedValueOnce(okText());
+
+    await ai.generateText("sys", "user", { model: MODELS.HAIKU, temperature: null });
+
+    const [body] = mocks.messagesCreate.mock.calls[0];
+    expect(body).not.toHaveProperty("temperature");
+  });
+
+  it("defaults temperature to 0.3 when not specified (temperature-capable model)", async () => {
+    const { ai, MODELS } = await loadAi({ anthropic: true });
+    mocks.messagesCreate.mockResolvedValueOnce(okText());
+
+    await ai.generateText("sys", "user", { model: MODELS.SONNET });
+
+    const [body] = mocks.messagesCreate.mock.calls[0];
+    expect(body.temperature).toBe(0.3);
+  });
+
+  it("does not send effort (output_config) for Haiku even when requested", async () => {
+    const { ai, MODELS } = await loadAi({ anthropic: true });
+    mocks.messagesCreate.mockResolvedValueOnce(okText());
+
+    await ai.generateText("sys", "user", { model: MODELS.HAIKU, effort: "low" });
+
+    const [body] = mocks.messagesCreate.mock.calls[0];
+    expect(body).not.toHaveProperty("output_config");
+  });
+
+  it("omits temperature and effort for model IDs not in the capability map", async () => {
+    const { ai } = await loadAi({ anthropic: true });
+    mocks.messagesCreate.mockResolvedValueOnce(okText());
+
+    // Unknown model (e.g. mid-migration override): omitting is always safe;
+    // sending an unsupported param would be a non-retryable 400.
+    await ai.generateText("sys", "user", { model: "claude-future-model-9", effort: "low" });
+
+    const [body] = mocks.messagesCreate.mock.calls[0];
+    expect(body).not.toHaveProperty("temperature");
+    expect(body).not.toHaveProperty("output_config");
+  });
+
+  it("uses a 120s per-request timeout when maxTokens > 2048", async () => {
+    const { ai, MODELS } = await loadAi({ anthropic: true });
+    mocks.messagesCreate.mockResolvedValueOnce(okText());
+
+    await ai.generateText("sys", "user", { model: MODELS.OPUS, maxTokens: 3000 });
+
+    const [, requestOptions] = mocks.messagesCreate.mock.calls[0];
+    expect(requestOptions).toMatchObject({ timeout: 120_000 });
+  });
+
+  it("uses a 60s per-request timeout when maxTokens <= 2048", async () => {
+    const { ai, MODELS } = await loadAi({ anthropic: true });
+    mocks.messagesCreate.mockResolvedValueOnce(okText());
+
+    await ai.generateText("sys", "user", { model: MODELS.HAIKU, maxTokens: 200 });
+
+    const [, requestOptions] = mocks.messagesCreate.mock.calls[0];
+    expect(requestOptions).toMatchObject({ timeout: 60_000 });
+  });
+});
+
 describe("ai.generateText — usage logging (M2b)", () => {
   it("logs input/output token usage with model and caller tag", async () => {
     const { ai, MODELS } = await loadAi({ anthropic: true });
