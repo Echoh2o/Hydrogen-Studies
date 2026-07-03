@@ -751,8 +751,7 @@ export class StudiesController {
           const study = await studyService.getStudyById(studyId);
           if (!study) return res.status(404).json({ error: "Study not found" });
 
-          const Anthropic = (await import("@anthropic-ai/sdk")).default;
-          const anthropic = new Anthropic();
+          const { ai, MODELS } = await import("../services/ai-provider");
 
           const prompt = `You are a science communicator. Write a TL;DR (too long; didn't read) summary of this study in 1-2 simple sentences.
 
@@ -764,14 +763,15 @@ ${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}
 
 Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
 
-          const message = await anthropic.messages.create({
-            model: "claude-sonnet-4-6",
-            max_tokens: 200,
-            output_config: { effort: "low" }, // 1-2 sentence TLDR — no deep reasoning needed
-            messages: [{ role: "user", content: prompt }],
-          });
-
-          const tldr = (message.content[0] as any).text?.trim();
+          const tldr = (
+            await ai.generateText("", prompt, {
+              model: MODELS.SONNET,
+              maxTokens: 200,
+              temperature: null,
+              effort: "low", // 1-2 sentence TLDR — no deep reasoning needed
+              caller: "StudiesController.generateTldr",
+            })
+          ).trim();
 
           if (!tldr) {
             return res.status(500).json({ error: "Failed to generate TLDR" });
@@ -810,8 +810,8 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
             return res.json({ success: true, message: "All studies already have TLDRs", generated: 0 });
           }
 
-          const Anthropic = (await import("@anthropic-ai/sdk")).default;
-          const anthropic = new Anthropic();
+          const { generateStudyTldr } = await import("../services/tldr-generator");
+          const { MODELS } = await import("../services/ai-provider");
           const { eq } = await import("drizzle-orm");
 
           let generated = 0;
@@ -819,22 +819,11 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
 
           for (const study of studiesWithoutTldr) {
             try {
-              const prompt = `You are a science communicator. Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.
-
-Study title: ${study.title}
-Abstract: ${study.abstract}
-${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}
-
-Write ONLY the TL;DR text, nothing else.`;
-
-              const message = await anthropic.messages.create({
-                model: "claude-sonnet-4-6",
-                max_tokens: 200,
-                output_config: { effort: "low" }, // 1-2 sentence TLDR — no deep reasoning needed
-                messages: [{ role: "user", content: prompt }],
+              const tldr = await generateStudyTldr(study, {
+                model: MODELS.SONNET,
+                effort: "low", // 1-2 sentence TLDR — no deep reasoning needed
+                caller: "StudiesController.batchTldr",
               });
-
-              const tldr = (message.content[0] as any).text?.trim();
               if (tldr) {
                 await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
                 generated++;

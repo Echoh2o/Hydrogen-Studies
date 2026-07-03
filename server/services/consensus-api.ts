@@ -7,7 +7,7 @@
  */
 
 import axios, { AxiosError } from "axios";
-import Anthropic from "@anthropic-ai/sdk";
+import { ai, MODELS } from "./ai-provider";
 
 // --- Types ---
 
@@ -99,10 +99,9 @@ function getApiKey(): string | null {
   return process.env.CONSENSUS_API_KEY || null;
 }
 
-function getAnthropicClient(): Anthropic | null {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
-  return new Anthropic({ apiKey: key });
+/** Whether an AI text provider (Anthropic, or the OpenAI fallback) is configured. */
+function hasAiProvider(): boolean {
+  return ai.getProviderStatus().primary !== "none";
 }
 
 /**
@@ -186,8 +185,7 @@ export async function summarizeSingleStudy(
   const cached = getFromCache<StudySummary>(cacheKey);
   if (cached) return cached;
 
-  const anthropic = getAnthropicClient();
-  if (!anthropic) {
+  if (!hasAiProvider()) {
     // Return a basic summary without AI
     return {
       who_was_studied: "See abstract for details",
@@ -221,13 +219,12 @@ Return ONLY valid JSON with these fields:
 }`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }],
+    const text = await ai.generateText("", prompt, {
+      model: MODELS.OPUS,
+      maxTokens: 1000,
+      temperature: null,
+      caller: "ConsensusApi.summarizeSingleStudy",
     });
-
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
     // Extract JSON from potential markdown code blocks
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON found in AI response");
@@ -284,8 +281,7 @@ export async function synthesizeTopicEvidence(
     };
   }
 
-  const anthropic = getAnthropicClient();
-  if (!anthropic) {
+  if (!hasAiProvider()) {
     // Return basic synthesis without AI
     return {
       topic_scope: topicTitle,
@@ -347,13 +343,12 @@ Important:
 - Flag if sample sizes are small`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: prompt }],
+    const text = await ai.generateText("", prompt, {
+      model: MODELS.OPUS,
+      maxTokens: 2000,
+      temperature: null,
+      caller: "ConsensusApi.synthesizeTopicEvidence",
     });
-
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON in AI response");
 
@@ -408,8 +403,7 @@ export async function generateBlogOutline(
     };
   }
 
-  const anthropic = getAnthropicClient();
-  if (!anthropic) {
+  if (!hasAiProvider()) {
     return {
       background: `This article reviews ${papers.length} studies on ${topic}.`,
       mechanisms: "AI analysis required for mechanism details.",
@@ -469,13 +463,12 @@ Important:
 - Include a disclaimer that this is educational, not medical advice`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
+    const text = await ai.generateText("", prompt, {
+      model: MODELS.OPUS,
+      maxTokens: 3000,
+      temperature: null,
+      caller: "ConsensusApi.generateBlogOutline",
     });
-
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON in AI response");
 

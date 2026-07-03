@@ -380,25 +380,13 @@ async function executeStep(step: WaterfallStep, studyId: number): Promise<void> 
             .limit(1);
 
           if (fullStudy?.abstract) {
-            const Anthropic = (await import("@anthropic-ai/sdk")).default;
-            const anthropic = new Anthropic();
+            const { generateStudyTldr } = await import("./tldr-generator");
 
-            const message = await anthropic.messages.create({
-              model: "claude-haiku-4-5",
-              max_tokens: 200,
-              messages: [{
-                role: "user",
-                content: `Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.
-
-Study title: ${fullStudy.title}
-Abstract: ${fullStudy.abstract}
-${fullStudy.conclusion ? `Conclusion: ${fullStudy.conclusion}` : ""}
-
-Write ONLY the TL;DR text, nothing else.`,
-              }],
+            // This copy of the TLDR prompt never included the persona prefix.
+            const tldr = await generateStudyTldr(fullStudy, {
+              includePersona: false,
+              caller: "ContentWorker.tldr",
             });
-
-            const tldr = (message.content[0] as any).text?.trim();
             if (tldr) {
               await db.update(studies).set({ tldr }).where(eq(studies.id, studyId));
             }
@@ -431,25 +419,21 @@ Write ONLY the TL;DR text, nothing else.`,
       if (study.tags && study.tags.length > 0) break;
 
       try {
-        const Anthropic = (await import("@anthropic-ai/sdk")).default;
-        const anthropic = new Anthropic();
+        const { ai, MODELS } = await import("./ai-provider");
 
-        const message = await anthropic.messages.create({
-          model: "claude-haiku-4-5",
-          max_tokens: 300,
-          messages: [{
-            role: "user",
-            content: `Generate 5-8 consumer-friendly tags for this hydrogen study. Tags should be simple, lowercase phrases that a health-conscious consumer would search for. Focus on conditions, benefits, and delivery methods.
+        const text = (
+          await ai.generateText(
+            "",
+            `Generate 5-8 consumer-friendly tags for this hydrogen study. Tags should be simple, lowercase phrases that a health-conscious consumer would search for. Focus on conditions, benefits, and delivery methods.
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 Category: ${study.category || "General"}
 
 Return ONLY a JSON array of strings, nothing else. Example: ["gut health", "inflammation", "hydrogen water", "antioxidant"]`,
-          }],
-        });
-
-        const text = (message.content[0] as any).text?.trim();
+            { model: MODELS.HAIKU, maxTokens: 300, temperature: null, caller: "ContentWorker.tags" },
+          )
+        ).trim();
         if (text) {
           const tags = JSON.parse(text);
           if (Array.isArray(tags) && tags.length > 0) {

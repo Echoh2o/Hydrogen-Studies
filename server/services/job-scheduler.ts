@@ -1323,8 +1323,7 @@ export class JobScheduler {
 
       if (studiesWithoutTldr.length === 0) return;
 
-      const Anthropic = (await import("@anthropic-ai/sdk")).default;
-      const anthropic = new Anthropic();
+      const { generateStudyTldr } = await import("./tldr-generator");
       const { eq } = await import("drizzle-orm");
 
       let generated = 0;
@@ -1333,15 +1332,8 @@ export class JobScheduler {
         try {
           if (!study.abstract) continue;
 
-          const prompt = `You are a science communicator. Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.\n\nStudy title: ${study.title}\nAbstract: ${study.abstract}\n${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}\n\nWrite ONLY the TL;DR text, nothing else.`;
-
-          const message = await anthropic.messages.create({
-            model: "claude-haiku-4-5", // Haiku is 90% cheaper — TLDRs are simple summaries
-            max_tokens: 200,
-            messages: [{ role: "user", content: prompt }],
-          });
-
-          const tldr = (message.content[0] as any).text?.trim();
+          // Haiku (default) is 90% cheaper — TLDRs are simple summaries
+          const tldr = await generateStudyTldr(study, { caller: "JobScheduler.tldr" });
           if (tldr) {
             await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
             generated++;
