@@ -39,4 +39,7 @@ blob-report/
 
 # WordPress export data files
 hydrogenstudies.WordPress.2026-02-20.xml
-studies.db
+*.db
+
+# Marketing reference material (product page snapshots, images)
+products/
