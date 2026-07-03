@@ -54,7 +54,11 @@ server.on("error", (error) => {
 
 server.on("exit", (code, signal) => {
   if (shuttingDown) {
-    // Child finished draining after we forwarded the shutdown signal.
+    if (code === 0) {
+      console.log("✅ Server exited cleanly.");
+    } else {
+      console.error(`⚠️ Server exited during drain with code ${code}, signal ${signal}`);
+    }
     process.exit(0);
   }
   if (signal) {
@@ -75,10 +79,10 @@ const FORCE_EXIT_TIMEOUT_MS = 30_000;
 function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log(`\n🛑 Received ${signal}, forwarding to server and waiting for it to drain...`);
+  console.log(`\n🛑 Received ${signal}, sending SIGTERM to server and waiting for it to drain...`);
   server.kill("SIGTERM");
   setTimeout(() => {
-    console.error("❌ Server did not exit within 30s; forcing exit.");
+    console.error(`❌ Server did not exit within ${FORCE_EXIT_TIMEOUT_MS / 1000}s; forcing exit.`);
     process.exit(1);
   }, FORCE_EXIT_TIMEOUT_MS);
 }
