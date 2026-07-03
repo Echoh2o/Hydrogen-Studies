@@ -12,6 +12,8 @@
  * Uses Klaviyo API v2023-12-15 (revision header)
  */
 
+import { fetchWithTimeout } from "../utils/http";
+
 const KLAVIYO_API_URL = "https://a.klaviyo.com/api";
 const KLAVIYO_REVISION = "2024-10-15";
 
@@ -52,7 +54,7 @@ export async function subscribeToNewsletter(email: string, options: {
 
   try {
     // Step 1: Create or update the profile
-    const profileResponse = await fetch(`${KLAVIYO_API_URL}/profiles/`, {
+    const profileResponse = await fetchWithTimeout(`${KLAVIYO_API_URL}/profiles/`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
@@ -88,7 +90,7 @@ export async function subscribeToNewsletter(email: string, options: {
 
     if (!profileId) {
       // Try to look up by email
-      const lookupResponse = await fetch(
+      const lookupResponse = await fetchWithTimeout(
         `${KLAVIYO_API_URL}/profiles/?filter=equals(email,"${encodeURIComponent(email.toLowerCase().trim())}")`,
         { headers: getHeaders() },
       );
@@ -103,7 +105,7 @@ export async function subscribeToNewsletter(email: string, options: {
     }
 
     // Step 2: Subscribe the profile to the list
-    const subscribeResponse = await fetch(`${KLAVIYO_API_URL}/lists/${listId}/relationships/profiles/`, {
+    const subscribeResponse = await fetchWithTimeout(`${KLAVIYO_API_URL}/lists/${listId}/relationships/profiles/`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
@@ -146,7 +148,7 @@ export async function addCustomerProfile(email: string, options: {
 
   try {
     // Create/update profile with customer properties
-    const profileResponse = await fetch(`${KLAVIYO_API_URL}/profiles/`, {
+    const profileResponse = await fetchWithTimeout(`${KLAVIYO_API_URL}/profiles/`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
@@ -180,7 +182,7 @@ export async function addCustomerProfile(email: string, options: {
 
     // Add to customer list if configured
     if (profileId && customerListId) {
-      await fetch(`${KLAVIYO_API_URL}/lists/${customerListId}/relationships/profiles/`, {
+      await fetchWithTimeout(`${KLAVIYO_API_URL}/lists/${customerListId}/relationships/profiles/`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({
@@ -209,7 +211,7 @@ export async function trackEvent(email: string, eventName: string, properties: R
   if (!apiKey) return false;
 
   try {
-    const response = await fetch(`${KLAVIYO_API_URL}/events/`, {
+    const response = await fetchWithTimeout(`${KLAVIYO_API_URL}/events/`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({

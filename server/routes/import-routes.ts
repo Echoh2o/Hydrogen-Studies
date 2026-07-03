@@ -6,7 +6,7 @@ import { studyService } from "../services/study-service";
 import { InsertStudy } from "@shared/schema";
 import path from "path";
 import fs from "fs";
-import axios from "axios";
+import { externalApi } from "../utils/http";
 import { logger } from "../utils/logger";
 
 const router = express.Router();
@@ -553,7 +553,8 @@ router.post("/googlesheet", async (req: Request, res: Response) => {
 
     const sheetId = match[1];
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
-    const response = await axios.get(csvUrl, { responseType: "arraybuffer" });
+    // Google Sheets CSV export of a large sheet can exceed the 10s default.
+    const response = await externalApi.get(csvUrl, { responseType: "arraybuffer", timeout: 30_000 });
 
     const uploadDir = path.join(process.cwd(), "temp_files");
     if (!fs.existsSync(uploadDir)) {

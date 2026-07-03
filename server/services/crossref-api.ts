@@ -5,7 +5,7 @@
  * Note: CrossRef recommends identifying your application with a proper User-Agent header
  * to prevent being rate-limited as anonymous users.
  */
-import axios from "axios";
+import { externalApi } from "../utils/http";
 
 // Base URL for CrossRef API
 const CROSSREF_API_BASE_URL = "https://api.crossref.org";
@@ -23,7 +23,7 @@ export async function searchCrossRef(
   pageSize: number = 20,
 ): Promise<any> {
   try {
-    const response = await axios.get(`${CROSSREF_API_BASE_URL}/works`, {
+    const response = await externalApi.get(`${CROSSREF_API_BASE_URL}/works`, {
       params: {
         query,
         rows: pageSize,
@@ -52,7 +52,7 @@ export async function getCrossRefArticleByDOI(doi: string): Promise<any> {
     // Encode the DOI to handle special characters
     const encodedDOI = encodeURIComponent(doi);
 
-    const response = await axios.get(
+    const response = await externalApi.get(
       `${CROSSREF_API_BASE_URL}/works/${encodedDOI}`,
       {
         headers: {

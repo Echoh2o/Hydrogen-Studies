@@ -10,6 +10,7 @@ import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { ai, getImageModel } from "./ai-provider";
+import { fetchWithTimeout } from "../utils/http";
 
 /**
  * Get the image generation client.
@@ -279,8 +280,8 @@ async function downloadAndOptimizeImage(
     await fs.mkdir(uploadsDir, { recursive: true });
     await fs.mkdir(optimizedDir, { recursive: true });
 
-    // Download original image
-    const response = await fetch(imageUrl);
+    // Download original image (30s: full-size generated images can be large)
+    const response = await fetchWithTimeout(imageUrl, undefined, 30_000);
     if (!response.ok) {
       throw new Error(`Failed to download image: ${response.status}`);
     }

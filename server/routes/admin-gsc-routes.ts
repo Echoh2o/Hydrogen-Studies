@@ -21,6 +21,7 @@ import { Router, Request, Response } from "express";
 import { randomBytes, timingSafeEqual } from "crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../db";
+import { fetchWithTimeout } from "../utils/http";
 import { requireAdmin } from "../auth";
 import {
   buildAuthUrl,
@@ -135,7 +136,7 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     try {
       const accessToken = tokens.access_token;
       if (accessToken) {
-        const r = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        const r = await fetchWithTimeout("https://www.googleapis.com/oauth2/v3/userinfo", {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (r.ok) {

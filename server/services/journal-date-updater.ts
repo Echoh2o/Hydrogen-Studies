@@ -8,7 +8,7 @@ import { studies } from "@shared/schema";
 import { eq, isNull, not, and } from "drizzle-orm";
 import { getCrossRefArticleByDOI } from "./crossref-api";
 import { getArticleByDOI } from "./europepmc-api";
-import axios from "axios";
+import { externalApi } from "../utils/http";
 
 /**
  * Update journal publication dates for studies with DOIs
@@ -146,7 +146,7 @@ async function findJournalPublicationDate(doi: string): Promise<string | null> {
 
   // Last resort: Try DOI.org API
   try {
-    const response = await axios.get(`https://doi.org/${doi}`, {
+    const response = await externalApi.get(`https://doi.org/${doi}`, {
       headers: {
         Accept: "application/json",
       },

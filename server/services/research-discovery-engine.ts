@@ -16,7 +16,7 @@ import {
 import { eq, sql, or, ilike } from "drizzle-orm";
 import { searchCrossRef } from "./crossref-api";
 import { searchEuropePMC } from "./europepmc-api";
-import axios from "axios";
+import { externalApi } from "../utils/http";
 import { logger } from "../utils/logger";
 
 // Rotating query set — covers the breadth of hydrogen research
@@ -212,7 +212,7 @@ async function searchPubMedForHydrogen(query: string): Promise<DiscoveryResult[]
       searchUrl += `&api_key=${apiKey}`;
     }
 
-    const searchResponse = await axios.get(searchUrl);
+    const searchResponse = await externalApi.get(searchUrl);
     const idList: string[] = searchResponse.data?.esearchresult?.idlist || [];
 
     if (idList.length === 0) {
@@ -225,7 +225,7 @@ async function searchPubMedForHydrogen(query: string): Promise<DiscoveryResult[]
       summaryUrl += `&api_key=${apiKey}`;
     }
 
-    const summaryResponse = await axios.get(summaryUrl);
+    const summaryResponse = await externalApi.get(summaryUrl);
     const summaryResult = summaryResponse.data?.result || {};
 
     const results: DiscoveryResult[] = [];

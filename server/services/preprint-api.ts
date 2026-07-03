@@ -11,6 +11,8 @@
  * API docs: https://api.biorxiv.org/
  */
 
+import { fetchWithTimeout } from "../utils/http";
+
 interface PreprintResult {
   title: string;
   abstract: string;
@@ -63,9 +65,11 @@ async function fetchRecentPreprints(
 ): Promise<PreprintApiResponse> {
   const url = `https://api.biorxiv.org/details/${server}/${fromDate}/${toDate}/${cursor}`;
 
-  const response = await fetch(url, {
+  // 30s: the biorxiv details endpoint returns bulk 100-record pages and the
+  // public API is often sluggish.
+  const response = await fetchWithTimeout(url, {
     headers: { "User-Agent": USER_AGENT },
-  });
+  }, 30_000);
 
   if (!response.ok) {
     throw new Error(`${server} API error: ${response.status} ${response.statusText}`);
@@ -186,7 +190,7 @@ export async function checkPreprintPublished(doi: string): Promise<{
 } | null> {
   try {
     const url = `https://api.biorxiv.org/pubs/${doi}`;
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       headers: { "User-Agent": USER_AGENT },
     });
 

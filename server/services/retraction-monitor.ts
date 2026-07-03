@@ -21,6 +21,7 @@
 import { db } from "../db";
 import { studies, blogArticles, updateNotifications } from "../../shared/schema";
 import { eq, isNotNull, sql, and, or, inArray } from "drizzle-orm";
+import { fetchWithTimeout } from "../utils/http";
 
 const USER_AGENT = "HydrogenStudies.com Research Database/1.0 (https://hydrogenstudies.com; mailto:info@hydrogenstudies.com)";
 
@@ -50,7 +51,7 @@ async function checkCrossRefStatus(doi: string): Promise<{
 } | null> {
   try {
     const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       headers: { "User-Agent": USER_AGENT },
     });
 
@@ -145,7 +146,7 @@ async function checkPubMedRetraction(doi: string, title: string): Promise<{
 
     const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(searchQuery)}&retmode=json${apiKeyParam}`;
 
-    const searchResponse = await fetch(searchUrl, {
+    const searchResponse = await fetchWithTimeout(searchUrl, {
       headers: { "User-Agent": USER_AGENT },
     });
 
@@ -169,7 +170,7 @@ async function checkPubMedRetraction(doi: string, title: string): Promise<{
 
     const correctionUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(correctionQuery)}&retmode=json${apiKeyParam}`;
 
-    const correctionResponse = await fetch(correctionUrl, {
+    const correctionResponse = await fetchWithTimeout(correctionUrl, {
       headers: { "User-Agent": USER_AGENT },
     });
 

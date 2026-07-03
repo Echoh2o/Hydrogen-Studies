@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import axios from "axios";
+import { externalApi } from "../utils/http";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { sql } from "drizzle-orm";
@@ -145,7 +145,7 @@ export async function searchPubMed(
       api_key: apiKey,
     };
 
-    const searchResponse = await axios.get(searchUrl, { params: searchParams });
+    const searchResponse = await externalApi.get(searchUrl, { params: searchParams });
     const idList = searchResponse.data.esearchresult.idlist;
 
     if (!idList || idList.length === 0) {
@@ -162,7 +162,7 @@ export async function searchPubMed(
       api_key: apiKey,
     };
 
-    const summaryResponse = await axios.get(summaryUrl, {
+    const summaryResponse = await externalApi.get(summaryUrl, {
       params: summaryParams,
     });
     const results = summaryResponse.data.result;
@@ -321,7 +321,7 @@ export async function searchPubMedWithPagination(
       api_key: PUBMED_API_KEY,
     };
 
-    const searchResponse = await axios.get(searchUrl, { params: searchParams });
+    const searchResponse = await externalApi.get(searchUrl, { params: searchParams });
     const data = searchResponse.data.esearchresult;
     const idList = data.idlist;
     const totalResults = parseInt(data.count);
@@ -340,7 +340,7 @@ export async function searchPubMedWithPagination(
       api_key: PUBMED_API_KEY,
     };
 
-    const summaryResponse = await axios.get(summaryUrl, {
+    const summaryResponse = await externalApi.get(summaryUrl, {
       params: summaryParams,
     });
     const results = summaryResponse.data.result;

@@ -11,6 +11,14 @@ import { requireAdmin } from "../auth";
 import { jobScheduler } from "../services/job-scheduler";
 import { RUBRIC_VERSION } from "../services/study-scoring-service";
 import { ai } from "../services/ai-provider";
+import { fetchWithTimeout } from "../utils/http";
+
+/**
+ * Per-study cap for the loopback enrichment calls below. Enrichment runs AI
+ * + external lookups and can legitimately take a while, but without a cap a
+ * hung request wedges the in-process isRunning guard forever.
+ */
+const ENRICHMENT_CALL_TIMEOUT_MS = 120_000;
 
 const router = Router();
 
@@ -342,9 +350,10 @@ router.post("/trigger/consumer-content", async (req: Request, res: Response) => 
       for (const study of candidates) {
         try {
           // Use the existing content enrichment endpoint
-          const response = await fetch(
+          const response = await fetchWithTimeout(
             `http://localhost:${process.env.PORT || 5000}/api/content-enrichment/study/${study.id}`,
             { method: "POST", headers: { "Content-Type": "application/json" } },
+            ENRICHMENT_CALL_TIMEOUT_MS,
           );
           if (response.ok) processed++;
         } catch (err) {
@@ -392,9 +401,10 @@ router.post("/trigger/research-enrichment", async (req: Request, res: Response) 
       let processed = 0;
       for (const study of candidates) {
         try {
-          const response = await fetch(
+          const response = await fetchWithTimeout(
             `http://localhost:${process.env.PORT || 5000}/api/content-enrichment/study/${study.id}`,
             { method: "POST", headers: { "Content-Type": "application/json" } },
+            ENRICHMENT_CALL_TIMEOUT_MS,
           );
           if (response.ok) processed++;
         } catch (err) {
@@ -442,9 +452,10 @@ router.post("/trigger/visual-enhancement", async (req: Request, res: Response) =
       let processed = 0;
       for (const study of candidates) {
         try {
-          const response = await fetch(
+          const response = await fetchWithTimeout(
             `http://localhost:${process.env.PORT || 5000}/api/content-enrichment/study/${study.id}`,
             { method: "POST", headers: { "Content-Type": "application/json" } },
+            ENRICHMENT_CALL_TIMEOUT_MS,
           );
           if (response.ok) processed++;
         } catch (err) {

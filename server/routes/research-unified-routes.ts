@@ -15,6 +15,7 @@ import { db } from "../db";
 import { studyReviewQueue } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
+import { fetchWithTimeout } from "../utils/http";
 import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
 
@@ -1166,7 +1167,7 @@ router.get("/api/europepmc/article/:id", async (req: Request, res: Response) => 
 
     // Fetch full article details from Europe PMC
     const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:${encodeURIComponent(id)}%20AND%20SRC:${source}&format=json&resultType=core`;
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url);
     const data = await response.json();
 
     if (!data.resultList?.result?.[0]) {
@@ -1187,7 +1188,7 @@ router.post("/api/europepmc/save", requireAdmin, async (req: Request, res: Respo
 
     // First fetch the article details
     const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:${encodeURIComponent(id)}%20AND%20SRC:${source || "MED"}&format=json&resultType=core`;
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url);
     const data = await response.json();
 
     const article = data.resultList?.result?.[0];

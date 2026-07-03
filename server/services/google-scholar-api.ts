@@ -19,6 +19,8 @@
  * It also provides citation counts — useful for prioritizing studies.
  */
 
+import { fetchWithTimeout } from "../utils/http";
+
 interface ScholarResult {
   title: string;
   abstract: string;
@@ -57,9 +59,11 @@ async function searchViaSerpApi(
       hl: "en",
     });
 
-    const response = await fetch(`https://serpapi.com/search.json?${params}`, {
+    // 30s: SerpAPI runs a live Scholar search server-side and can take
+    // well over 10s on cache misses.
+    const response = await fetchWithTimeout(`https://serpapi.com/search.json?${params}`, {
       headers: { "User-Agent": USER_AGENT },
-    });
+    }, 30_000);
 
     if (!response.ok) {
       console.error(`[Google Scholar] SerpAPI error: ${response.status}`);
@@ -116,7 +120,7 @@ async function searchViaDirectHttp(
       hl: "en",
     });
 
-    const response = await fetch(`https://scholar.google.com/scholar?${params}`, {
+    const response = await fetchWithTimeout(`https://scholar.google.com/scholar?${params}`, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

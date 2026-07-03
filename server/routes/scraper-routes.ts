@@ -11,7 +11,7 @@ import { getCrossRefArticleByDOI, extractStudyFromCrossRef } from "../services/c
 import { db } from "../db";
 import { studies } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import axios from "axios";
+import { externalApi } from "../utils/http";
 
 const router = Router();
 
@@ -84,7 +84,7 @@ async function fetchStudyFromUrl(url: string): Promise<any> {
 
     case "pmc": {
       // Use Europe PMC to fetch by DOI search or PMCID
-      const response = await axios.get("https://www.ebi.ac.uk/europepmc/webservices/rest/search", {
+      const response = await externalApi.get("https://www.ebi.ac.uk/europepmc/webservices/rest/search", {
         params: { query: `PMCID:${id}`, resultType: "core", format: "json" },
       });
       if (response.data.hitCount > 0 && response.data.resultList.result.length > 0) {
@@ -113,7 +113,7 @@ async function fetchStudyFromUrl(url: string): Promise<any> {
 
     case "semanticscholar": {
       // Use Semantic Scholar API
-      const response = await axios.get(
+      const response = await externalApi.get(
         `https://api.semanticscholar.org/graph/v1/paper/${id}`,
         {
           params: {

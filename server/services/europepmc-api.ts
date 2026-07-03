@@ -1,4 +1,4 @@
-import axios from "axios";
+import { externalApi } from "../utils/http";
 import type { InsertStudy } from "@shared/schema";
 
 /**
@@ -23,7 +23,7 @@ export async function searchEuropePMC(
 
     console.log(`Sending request to EuropePMC with query: ${enhancedQuery}`);
 
-    const response = await axios.get(
+    const response = await externalApi.get(
       "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
       {
         params: {
@@ -106,7 +106,7 @@ export async function getEuropePmcArticleByDOI(doi: string): Promise<any> {
  */
 export async function getArticleByDOI(doi: string): Promise<any> {
   try {
-    const response = await axios.get(
+    const response = await externalApi.get(
       "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
       {
         params: {
@@ -138,7 +138,7 @@ export async function getArticleByDOI(doi: string): Promise<any> {
  */
 export async function getArticleByPMID(pmid: string): Promise<any> {
   try {
-    const response = await axios.get(
+    const response = await externalApi.get(
       "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
       {
         params: {
@@ -173,7 +173,7 @@ export async function getArticleByPMCID(pmcid: string): Promise<any> {
     // Remove PMC prefix if present
     const cleanPMCID = pmcid.startsWith("PMC") ? pmcid.substring(3) : pmcid;
 
-    const response = await axios.get(
+    const response = await externalApi.get(
       "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
       {
         params: {

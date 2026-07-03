@@ -5,7 +5,7 @@
  * using identifiers like PMID, DOI, or other search criteria.
  */
 
-import axios from "axios";
+import { externalApi } from "../utils/http";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { eq, or, isNull } from "drizzle-orm";
@@ -154,7 +154,7 @@ async function searchPubMedByTitle(title: string): Promise<string | null> {
       api_key: apiKey,
     };
 
-    const response = await axios.get(PUBMED_SEARCH, { params });
+    const response = await externalApi.get(PUBMED_SEARCH, { params });
     const data = response.data;
 
     if (data.esearchresult.count > 0 && data.esearchresult.idlist.length > 0) {
@@ -182,7 +182,7 @@ async function fetchPubMedArticle(pmid: string): Promise<any> {
       api_key: apiKey,
     };
 
-    const response = await axios.get(PUBMED_FETCH, { params });
+    const response = await externalApi.get(PUBMED_FETCH, { params });
 
     // Get summary data in JSON format
     const summaryParams = {
@@ -192,7 +192,7 @@ async function fetchPubMedArticle(pmid: string): Promise<any> {
       api_key: apiKey,
     };
 
-    const summaryResponse = await axios.get(PUBMED_SUMMARY, { params: summaryParams });
+    const summaryResponse = await externalApi.get(PUBMED_SUMMARY, { params: summaryParams });
     const summaryData = summaryResponse.data;
 
     // Combine XML and JSON data

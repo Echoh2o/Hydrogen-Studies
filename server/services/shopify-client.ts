@@ -13,6 +13,7 @@
  * comfortably without needing to track the bucket header.
  */
 
+import { fetchWithTimeout } from "../utils/http";
 import { logger } from "../utils/logger";
 
 const TAG = "ShopifyClient";
@@ -123,13 +124,14 @@ export async function* listCustomers(opts: ListCustomersOptions = {}): AsyncGene
     const url = `${adminBase()}/customers.json?${params.toString()}`;
     let res: Response;
     try {
-      res = await fetch(url, {
+      // 30s: a full 250-customer page can be slow on large stores.
+      res = await fetchWithTimeout(url, {
         headers: {
           "X-Shopify-Access-Token": accessToken(),
           "Content-Type": "application/json",
           "Accept": "application/json",
         },
-      });
+      }, 30_000);
     } catch (err) {
       logger.error(`Network error fetching Shopify customers page ${pageNum}`, err, TAG);
       throw err;

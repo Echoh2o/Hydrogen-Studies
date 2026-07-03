@@ -19,6 +19,7 @@ import { sql, eq, desc } from "drizzle-orm";
 import { db } from "../db";
 import { ga4Credentials, ga4PageMetrics, ga4SearchTerms, ga4SyncRuns } from "@shared/schema";
 import { encryptSecret, decryptSecret, ensureSystemSecretsTable } from "./crypto-secrets";
+import { fetchWithTimeout } from "../utils/http";
 import { logger } from "../utils/logger";
 
 const TAG = "Ga4Service";
@@ -241,14 +242,15 @@ async function runReport(
     propertyId,
   )}:runReport`;
 
-  const res = await fetch(url, {
+  // 30s: a 90-day backfill runReport can return large row sets slowly.
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken.token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-  });
+  }, 30_000);
   if (!res.ok) {
     const errBody = await res.text().catch(() => "");
     throw new Error(`GA4 API ${res.status}: ${errBody.slice(0, 400)}`);
