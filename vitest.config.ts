@@ -29,7 +29,9 @@ export default defineConfig({
         test: {
           name: "client",
           environment: "node",
-          include: ["client/src/__tests__/**/*.test.ts"],
+          // Match __tests__ dirs anywhere under client/src (e.g. both
+          // client/src/__tests__/ and client/src/lib/__tests__/).
+          include: ["client/src/**/__tests__/**/*.test.ts"],
           globals: true,
         },
         resolve: {

@@ -30,9 +30,13 @@ import { count, sql } from "drizzle-orm";
 const router = Router();
 
 /**
- * Verify Shopify webhook HMAC signature
+ * Verify Shopify webhook HMAC signature.
+ *
+ * Named export so tests can exercise the REAL verification logic
+ * (server/__tests__/shopify-webhooks.test.ts) — the router below stays
+ * the default export.
  */
-function verifyShopifyWebhook(rawBody: Buffer, hmacHeader: string): boolean {
+export function verifyShopifyWebhook(rawBody: Buffer, hmacHeader: string): boolean {
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
   if (!secret) {
     if (process.env.NODE_ENV === "production") {

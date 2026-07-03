@@ -136,6 +136,28 @@ export async function getQueueStatus(): Promise<{
 }
 
 /**
+ * Atomically claim a queue item: flip pending→processing only if it is
+ * STILL pending. Returns the updated row ([] = someone else claimed it
+ * first — "lost the race"). This single conditional UPDATE ... RETURNING
+ * is the entire claim protocol; there is deliberately no surrounding
+ * transaction. Exported so race-safety tests exercise the real statement
+ * (content-queue-claim.pglite.test.ts); processContentQueue uses this
+ * exact path.
+ */
+export async function claimQueueItem(queueItemId: number): Promise<{ id: number }[]> {
+  return db
+    .update(contentGenerationQueue)
+    .set({ status: "processing", startedAt: new Date() })
+    .where(
+      and(
+        eq(contentGenerationQueue.id, queueItemId),
+        eq(contentGenerationQueue.status, "pending"),
+      ),
+    )
+    .returning({ id: contentGenerationQueue.id });
+}
+
+/**
  * Process pending items from the content generation queue.
  * Picks up the oldest items with highest priority first.
  */
@@ -184,11 +206,7 @@ export async function processContentQueue(
     // overlapping the first scheduler tick) may have grabbed it in between.
     // If the conditional update touches 0 rows we lost the race — skip it
     // rather than double-spend AI budget generating duplicate content.
-    const claimed = await db
-      .update(contentGenerationQueue)
-      .set({ status: "processing", startedAt: new Date() })
-      .where(and(eq(contentGenerationQueue.id, item.id), eq(contentGenerationQueue.status, "pending")))
-      .returning({ id: contentGenerationQueue.id });
+    const claimed = await claimQueueItem(item.id);
     if (claimed.length === 0) {
       continue;
     }

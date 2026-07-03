@@ -36,6 +36,29 @@ export function formatAuthors(authors: unknown): string {
   return String(authors);
 }
 
+/**
+ * Safely extract an array from an API response of unknown shape.
+ * Handles: a bare array, or an object wrapping the array under a common
+ * key ({ data }, { studies }, { articles }, { results }, { items }).
+ * Always returns an array, so .map()/.filter() are safe on the result.
+ *
+ * Canonical extraction of the ad-hoc pattern inlined in several pages
+ * (e.g. StudyPage's relatedArray, BlogListPage's articles) — prefer this
+ * util for new code so the response-shape handling stays in one place.
+ */
+export function safeArray(response: unknown): any[] {
+  if (Array.isArray(response)) return response;
+  if (response && typeof response === "object") {
+    const obj = response as Record<string, unknown>;
+    if (Array.isArray(obj.data)) return obj.data;
+    if (Array.isArray(obj.studies)) return obj.studies;
+    if (Array.isArray(obj.articles)) return obj.articles;
+    if (Array.isArray(obj.results)) return obj.results;
+    if (Array.isArray(obj.items)) return obj.items;
+  }
+  return [];
+}
+
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + "...";

@@ -5,38 +5,16 @@
  * - .filter()/.map() called on non-arrays
  * - .toLocaleString() on non-numbers
  * - Date parsing on malformed strings
+ *
+ * These import the REAL utilities from client/src/lib/utils.ts (previously
+ * this file tested inline copies, which could drift from production code):
+ * - formatAuthors: the util actually used by study pages/cards
+ * - safeArray: extracted to the util file as the canonical form of the
+ *   array-extraction pattern that pages had been inlining ad hoc
+ *   (StudyPage.tsx relatedArray, BlogListPage.tsx articles, ...)
  */
 import { describe, it, expect } from "vitest";
-
-// Simulate the formatAuthors utility
-function formatAuthors(authors: unknown): string {
-  if (!authors) return "";
-  if (typeof authors === "string") return authors;
-  if (Array.isArray(authors)) {
-    return authors
-      .map((a) => (typeof a === "string" ? a : a?.name || a?.authorName || ""))
-      .filter(Boolean)
-      .join(", ");
-  }
-  if (typeof authors === "object" && authors !== null && "name" in authors) {
-    return (authors as { name: string }).name;
-  }
-  return String(authors);
-}
-
-// Simulate safe array extraction from API responses
-function safeArray(response: unknown): any[] {
-  if (Array.isArray(response)) return response;
-  if (response && typeof response === "object") {
-    const obj = response as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data;
-    if (Array.isArray(obj.studies)) return obj.studies;
-    if (Array.isArray(obj.articles)) return obj.articles;
-    if (Array.isArray(obj.results)) return obj.results;
-    if (Array.isArray(obj.items)) return obj.items;
-  }
-  return [];
-}
+import { formatAuthors, safeArray } from "../../client/src/lib/utils";
 
 describe("API Response Safety", () => {
   describe("formatAuthors handles all API response shapes", () => {
@@ -73,6 +51,10 @@ describe("API Response Safety", () => {
 
     it("handles { studies: [...] } shape", () => {
       expect(safeArray({ studies: [{ id: 1 }] })).toEqual([{ id: 1 }]);
+    });
+
+    it("handles { articles: [...] } shape (blog list)", () => {
+      expect(safeArray({ articles: [{ id: 7 }] })).toEqual([{ id: 7 }]);
     });
 
     it("handles { results: [...] } shape (EuropePMC)", () => {

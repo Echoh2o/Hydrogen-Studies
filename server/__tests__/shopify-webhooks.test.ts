@@ -1,72 +1,98 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+/**
+ * Tests the REAL verifyShopifyWebhook from server/routes/shopify-webhook-routes.ts
+ * (named export; the router stays the default export).
+ *
+ * The real function reads SHOPIFY_WEBHOOK_SECRET and NODE_ENV from process.env
+ * rather than taking them as parameters, so each test sets/clears those env
+ * vars and the suite restores them afterwards.
+ *
+ * Invariants covered (ported from the previous copy-based test, re-aimed at
+ * the real implementation):
+ *  - valid HMAC-SHA256(base64) signature over the raw body → accepted
+ *  - tampered body / wrong secret → rejected (timing-safe compare)
+ *  - no secret configured in production → fail closed (rejected)
+ *  - no secret configured in development → verification skipped (accepted)
+ */
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from "vitest";
 import crypto from "crypto";
 
-// Test the HMAC verification logic directly (extracted from the route file)
-function verifyShopifyWebhook(
-  rawBody: Buffer,
-  hmacHeader: string,
-  secret: string | undefined,
-  nodeEnv: string,
-): boolean {
-  if (!secret) {
-    if (nodeEnv === "production") {
-      return false;
-    }
-    return true;
-  }
+// The route module imports ../db (which throws without DATABASE_URL) plus
+// customer-sync/auth modules. Mock the db seam so importing the module for
+// its named export has no side effects; nothing in these tests touches it.
+vi.mock("../db", () => ({
+  db: {},
+  pool: { query: async () => ({ rows: [] }), on: () => {} },
+  sqlQuery: async () => [],
+}));
 
-  const computed = crypto
-    .createHmac("sha256", secret)
-    .update(rawBody)
-    .digest("base64");
+const { verifyShopifyWebhook } = await import("../routes/shopify-webhook-routes");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(computed),
-    Buffer.from(hmacHeader),
-  );
-}
-
-describe("verifyShopifyWebhook", () => {
+describe("verifyShopifyWebhook (real implementation)", () => {
   const testSecret = "test-webhook-secret";
   const testBody = Buffer.from('{"email":"test@example.com"}');
 
+  const savedSecret = process.env.SHOPIFY_WEBHOOK_SECRET;
+  const savedNodeEnv = process.env.NODE_ENV;
+
+  beforeAll(() => {
+    // Silence the logger warnings the real function emits on the
+    // no-secret paths.
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  beforeEach(() => {
+    process.env.SHOPIFY_WEBHOOK_SECRET = testSecret;
+    process.env.NODE_ENV = "production";
+  });
+
+  afterAll(() => {
+    if (savedSecret !== undefined) process.env.SHOPIFY_WEBHOOK_SECRET = savedSecret;
+    else delete process.env.SHOPIFY_WEBHOOK_SECRET;
+    if (savedNodeEnv !== undefined) process.env.NODE_ENV = savedNodeEnv;
+    else delete process.env.NODE_ENV;
+    vi.restoreAllMocks();
+  });
+
   function computeHmac(body: Buffer, secret: string): string {
-    return crypto
-      .createHmac("sha256", secret)
-      .update(body)
-      .digest("base64");
+    return crypto.createHmac("sha256", secret).update(body).digest("base64");
   }
 
-  it("returns true for valid HMAC signature", () => {
+  it("returns true for a valid HMAC signature", () => {
     const hmac = computeHmac(testBody, testSecret);
-    expect(verifyShopifyWebhook(testBody, hmac, testSecret, "production")).toBe(
-      true,
-    );
+    expect(verifyShopifyWebhook(testBody, hmac)).toBe(true);
   });
 
-  it("returns false for invalid HMAC signature", () => {
+  it("returns false when the body was tampered with", () => {
+    // Signature computed over a different payload (same length after base64,
+    // so this exercises the timing-safe compare rather than a length check).
     const fakeHmac = computeHmac(Buffer.from("tampered"), testSecret);
-    expect(
-      verifyShopifyWebhook(testBody, fakeHmac, testSecret, "production"),
-    ).toBe(false);
+    expect(verifyShopifyWebhook(testBody, fakeHmac)).toBe(false);
   });
 
-  it("returns false for wrong secret", () => {
+  it("returns false when signed with the wrong secret", () => {
     const hmac = computeHmac(testBody, "wrong-secret");
-    expect(
-      verifyShopifyWebhook(testBody, hmac, testSecret, "production"),
-    ).toBe(false);
+    expect(verifyShopifyWebhook(testBody, hmac)).toBe(false);
   });
 
-  it("rejects in production when secret is not configured", () => {
-    expect(
-      verifyShopifyWebhook(testBody, "any-hmac", undefined, "production"),
-    ).toBe(false);
+  it("fails closed in production when no secret is configured", () => {
+    delete process.env.SHOPIFY_WEBHOOK_SECRET;
+    process.env.NODE_ENV = "production";
+    expect(verifyShopifyWebhook(testBody, computeHmac(testBody, testSecret))).toBe(false);
   });
 
-  it("allows in development when secret is not configured", () => {
-    expect(
-      verifyShopifyWebhook(testBody, "any-hmac", undefined, "development"),
-    ).toBe(true);
+  it("skips verification in development when no secret is configured", () => {
+    delete process.env.SHOPIFY_WEBHOOK_SECRET;
+    process.env.NODE_ENV = "development";
+    expect(verifyShopifyWebhook(testBody, "any-hmac")).toBe(true);
+  });
+
+  it("uses a timing-safe comparison (correct base64 sha256 length, one byte off)", () => {
+    const hmac = computeHmac(testBody, testSecret);
+    // Flip the first character to a different one — same length, near-identical
+    // content. A naive prefix-compare bug or an accepted-anyway bug would pass.
+    const flipped = (hmac[0] === "A" ? "B" : "A") + hmac.slice(1);
+    expect(verifyShopifyWebhook(testBody, flipped)).toBe(false);
   });
 });
