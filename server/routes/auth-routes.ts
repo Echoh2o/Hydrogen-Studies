@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { db } from "../db";
 import { users, auditLogs, passwordResetTokens, UserRole } from "../../shared/schema";
-import { eq, and, gt, sql } from "drizzle-orm";
+import { eq, and, gt, isNull, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { isAuthenticated, requireRole, hasPermission } from "../auth";
 import { authRateLimiter } from "../utils/rate-limiting";
@@ -826,6 +826,73 @@ router.post(
   },
 );
 
+/** A password_reset_tokens row as mapped by drizzle (camelCase properties). */
+type PasswordResetTokenRow = typeof passwordResetTokens.$inferSelect;
+
+/**
+ * Validate a password-reset token and apply the new password. Extracted from
+ * the POST /reset-password handler so the token-consumption logic is unit
+ * testable (see server/__tests__/password-reset.test.ts).
+ *
+ * Throws Error("INVALID_TOKEN") for an unknown, expired, or already-used
+ * token; the route maps all three to one generic 400 so responses don't leak
+ * which case occurred.
+ *
+ * Regression note: this used to fetch the row with raw SQL (tx.execute),
+ * whose rows keep the pg driver's snake_case keys (used_at/user_id) — so
+ * resetToken.usedAt and resetToken.userId were always undefined, silently
+ * disabling the used-token guard and making the users UPDATE match no rows.
+ * Always fetch through the query builder here so drizzle's column mapping
+ * applies.
+ */
+export async function executePasswordReset(
+  token: string,
+  passwordHash: string,
+): Promise<PasswordResetTokenRow> {
+  // Use transaction with row-level locking to atomically validate token + update password
+  // FOR UPDATE prevents race condition where concurrent requests reuse the same token
+  let resetToken: PasswordResetTokenRow | undefined;
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.token, token),
+          gt(passwordResetTokens.expiresAt, sql`now()`),
+          isNull(passwordResetTokens.usedAt),
+        ),
+      )
+      .limit(1)
+      .for("update", { skipLocked: true });
+    resetToken = rows[0];
+
+    // The WHERE above already excludes used/expired tokens; keep explicit
+    // guards too so a future query edit can't silently reopen the hole.
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt.getTime() <= Date.now()) {
+      throw new Error("INVALID_TOKEN");
+    }
+
+    // Mark token as used first (prevents concurrent use)
+    await tx
+      .update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.id, resetToken.id));
+
+    // Update password atomically
+    await tx
+      .update(users)
+      .set({ passwordHash })
+      .where(eq(users.id, resetToken.userId));
+  });
+
+  // A password reset must evict any existing sessions for the account —
+  // if it was compromised, the attacker's live session is killed here.
+  await destroyUserSessions(resetToken!.userId);
+
+  return resetToken!;
+}
+
 // POST /api/auth/reset-password - Reset password with token
 router.post(
   "/reset-password",
@@ -842,44 +909,13 @@ router.post(
       // Hash password before transaction to avoid holding DB lock during bcrypt
       const passwordHash = await bcrypt.hash(newPassword, 10);
 
-      // Use transaction with row-level locking to atomically validate token + update password
-      // FOR UPDATE prevents race condition where concurrent requests reuse the same token
-      let resetToken: typeof passwordResetTokens.$inferSelect | undefined;
-      await db.transaction(async (tx) => {
-        const rows = await tx.execute(
-          sql`SELECT * FROM password_reset_tokens
-              WHERE token = ${token} AND expires_at > NOW()
-              LIMIT 1
-              FOR UPDATE SKIP LOCKED`
-        );
-        resetToken = (rows.rows?.[0] || (rows as any)[0]) as typeof resetToken;
-
-        if (!resetToken || resetToken.usedAt) {
-          throw new Error("INVALID_TOKEN");
-        }
-
-        // Mark token as used first (prevents concurrent use)
-        await tx
-          .update(passwordResetTokens)
-          .set({ usedAt: new Date() })
-          .where(eq(passwordResetTokens.id, resetToken.id));
-
-        // Update password atomically
-        await tx
-          .update(users)
-          .set({ passwordHash })
-          .where(eq(users.id, resetToken.userId));
-      });
-
-      // A password reset must evict any existing sessions for the account —
-      // if it was compromised, the attacker's live session is killed here.
-      await destroyUserSessions(resetToken!.userId);
+      const resetToken = await executePasswordReset(token, passwordHash);
 
       createAuditLog(
-        resetToken!.userId,
+        resetToken.userId,
         "password_reset_completed",
         "user",
-        resetToken!.userId,
+        resetToken.userId,
         req.ip,
         req.headers["user-agent"] as string,
         null,
