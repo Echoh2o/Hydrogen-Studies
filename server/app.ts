@@ -88,6 +88,7 @@ import {
   searchRateLimiter,
   generalApiRateLimiter,
   aiGenerationRateLimiter,
+  aiSearchRateLimiter,
   skipForAdmin,
 } from "./utils/rate-limiting";
 
@@ -422,28 +423,34 @@ const csrf = csrfProtection({
     // for clarity). Admin/state-changing namespaces are deliberately NOT
     // ignored — the client attaches the X-CSRF-Token header to every
     // same-origin mutation via the fetch interceptor (client/src/lib/csrf.ts).
+    //
+    // Matching is EXACT unless an entry ends with "/" — a trailing slash is an
+    // explicit wildcard that exempts the whole subtree (see isCsrfExempt in
+    // server/csrf-protection.ts). Bare prefixes no longer silently exempt
+    // sibling paths (e.g. "/api/search" no longer exempts /api/search/save or
+    // the AI endpoints under /api/search/*).
   ignoreRoutes: [
     "/health",
-    // GET-only public reads (exempt by method anyway):
+    // GET-only public reads (exempt by method anyway; exact-matched for clarity):
     "/api/stats",
     "/api/search",
     "/api/categories",
     "/api/filters",
     "/api/overview",
-    // Public / no-session endpoints:
-    "/api/chat", // Public chat (no auth session)
+    // Public / no-session endpoints (exact paths):
+    "/api/chat", // Public chat POST (no auth session)
     "/api/advanced-chat",
-    "/api/consensus", // Public consensus search
     "/api/auth/register", // No session yet
     "/api/auth/login", // No session yet
     "/api/auth/logout", // Session being destroyed
     "/api/auth/forgot-password", // No session yet
     "/api/auth/reset-password", // Token-verified, no session
     "/api/client-errors", // Fire-and-forget (navigator.sendBeacon, can't set headers)
-    "/api/newsletter", // Public newsletter signup
-    // Server-to-server (not browser-originated, verified by other means):
-    "/api/webhooks", // Shopify webhooks (HMAC-verified)
-    "/proxy", // Shopify App Proxy SSR (HMAC-verified)
+    "/api/newsletter/subscribe", // Public newsletter signup
+    // Server-to-server (not browser-originated, verified by other means).
+    // Trailing "/" = explicit subtree wildcard:
+    "/api/webhooks/", // Shopify webhooks (HMAC-verified)
+    "/proxy/", // Shopify App Proxy SSR (HMAC-verified)
   ],
 });
 
@@ -471,6 +478,21 @@ app.use("/api/blogs", blogRoutes);
 
 // Search
 app.use("/api", searchController.router); // Mounts /advanced-search, /search, etc.
+// Natural-language search invokes Claude per request — throttle the public
+// AI endpoints per-IP before mounting the router (which defines full paths).
+app.use(
+  [
+    "/api/search/natural-language",
+    "/api/search/parse-query",
+    "/api/search/correct-query",
+    "/api/search/detect-intent",
+    "/api/search/batch",
+  ],
+  aiSearchRateLimiter,
+);
+// Typeahead suggestions also call Claude but fire per keystroke — use the
+// moderate search limiter so the UX keeps working while cost stays bounded.
+app.use("/api/search/nl-suggestions", searchRateLimiter);
 app.use(naturalLanguageSearchRoutes);
 
 // Public site stats (no auth — cached for 5 minutes)

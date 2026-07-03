@@ -38,6 +38,24 @@ export const aiGenerationRateLimiter = rateLimit({
 });
 
 /**
+ * Rate limit for public AI-backed search endpoints
+ * (natural-language search, parse/correct/intent, batch).
+ * These invoke Claude per request but back a public search UI,
+ * so allow more than aiGeneration while still bounding cost.
+ * 10 requests per minute per IP
+ */
+export const aiSearchRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per window
+  message:
+    "AI search rate limit exceeded. Maximum 10 requests per minute allowed.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  skip: skipForAdmin,
+});
+
+/**
  * Moderate rate limit for search endpoints
  * 30 requests per minute per IP
  */
@@ -139,6 +157,7 @@ export const authRateLimiter = rateLimit({
 // Export rate limit configurations for logging/monitoring
 export const rateLimitConfigs = {
   aiGeneration: { windowMs: 60 * 1000, max: 5, name: "AI Generation" },
+  aiSearch: { windowMs: 60 * 1000, max: 10, name: "AI Search" },
   search: { windowMs: 60 * 1000, max: 30, name: "Search" },
   generalApi: { windowMs: 60 * 1000, max: 100, name: "General API" },
   imageGeneration: { windowMs: 60 * 1000, max: 3, name: "Image Generation" },

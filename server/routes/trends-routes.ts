@@ -3,6 +3,7 @@
  */
 
 import express from "express";
+import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
 import { trendDetectionService } from "../services/trend-detection-service";
 import { db } from "../db";
@@ -332,9 +333,9 @@ router.get("/report", async (req, res) => {
 
 /**
  * POST /api/trends/analyze
- * Triggers trend analysis
+ * Triggers trend analysis (admin only — fires background AI analysis)
  */
-router.post("/analyze", async (req, res) => {
+router.post("/analyze", requireAdmin, async (req, res) => {
   try {
     const { period = "weekly", type = "comprehensive" } = req.body;
 
@@ -467,9 +468,9 @@ router.get("/alerts", async (req, res) => {
 
 /**
  * PUT /api/trends/alerts/:id/acknowledge
- * Acknowledge an alert
+ * Acknowledge an alert (admin only — mutates alert state)
  */
-router.put("/alerts/:id/acknowledge", async (req, res) => {
+router.put("/alerts/:id/acknowledge", requireAdmin, async (req, res) => {
   try {
     const alertId = parseInt(req.params.id);
     const { userId } = req.body;
@@ -530,9 +531,11 @@ router.get("/search-queries", async (req, res) => {
 
 /**
  * POST /api/trends/track-search
- * Track a search query
+ * Track a search query (admin only — no client or server callers exist today;
+ * gated to prevent anonymous DB writes. Remove the guard if this is ever
+ * wired up as a public analytics sink, and add validation instead.)
  */
-router.post("/track-search", async (req, res) => {
+router.post("/track-search", requireAdmin, async (req, res) => {
   try {
     const { query, userId, results, clickedIds } = req.body;
 
@@ -564,9 +567,10 @@ router.post("/track-search", async (req, res) => {
 
 /**
  * POST /api/trends/track-metrics
- * Track study engagement metrics
+ * Track study engagement metrics (admin only — no client or server callers
+ * exist today; gated to prevent anonymous DB writes)
  */
-router.post("/track-metrics", async (req, res) => {
+router.post("/track-metrics", requireAdmin, async (req, res) => {
   try {
     const { studyId, metrics } = req.body;
 

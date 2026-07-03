@@ -21,6 +21,10 @@ import {
   analyzeQueryComplexity,
   extractKeyPhrases,
 } from "../services/query-understanding";
+import {
+  validateQueryInput,
+  validateBatchQueries,
+} from "../utils/nl-search-validation";
 
 const router = Router();
 
@@ -30,15 +34,23 @@ const router = Router();
  */
 router.post("/api/search/natural-language", async (req, res) => {
   try {
-    const { query, page = 1, pageSize = 20, context = null } = req.body;
+    const { context = null } = req.body;
 
-    if (!query || typeof query !== "string" || query.trim().length === 0) {
+    const validated = validateQueryInput(req.body.query);
+    if (!validated.ok) {
       return res.status(400).json({
-        error: "Query is required",
-        message: "Please provide a search query",
+        error: validated.error,
+        message: "Please provide a valid search query",
       });
     }
+    const query = validated.query;
 
+    // Clamp pagination to sane bounds (these values drive DB work)
+    const page = Math.max(1, parseInt(String(req.body.page ?? 1), 10) || 1);
+    const pageSize = Math.min(
+      100,
+      Math.max(1, parseInt(String(req.body.pageSize ?? 20), 10) || 20),
+    );
     const offset = (page - 1) * pageSize;
 
     console.log(`Natural language search: "${query}"`);
@@ -124,11 +136,11 @@ router.post("/api/search/natural-language", async (req, res) => {
  */
 router.post("/api/search/parse-query", async (req, res) => {
   try {
-    const { query } = req.body;
-
-    if (!query) {
-      return res.status(400).json({ error: "Query is required" });
+    const validated = validateQueryInput(req.body.query);
+    if (!validated.ok) {
+      return res.status(400).json({ error: validated.error });
     }
+    const query = validated.query;
 
     const parsed = await parseNaturalLanguageQuery(query);
 
@@ -153,7 +165,8 @@ router.get("/api/search/nl-suggestions", async (req, res) => {
   try {
     const { q } = req.query;
 
-    if (!q || typeof q !== "string" || q.length < 2) {
+    // Typeahead input: skip AI for too-short or absurdly long values
+    if (!q || typeof q !== "string" || q.length < 2 || q.length > 200) {
       return res.json({ suggestions: [] });
     }
 
@@ -175,11 +188,11 @@ router.get("/api/search/nl-suggestions", async (req, res) => {
  */
 router.post("/api/search/correct-query", async (req, res) => {
   try {
-    const { query } = req.body;
-
-    if (!query) {
-      return res.status(400).json({ error: "Query is required" });
+    const validated = validateQueryInput(req.body.query);
+    if (!validated.ok) {
+      return res.status(400).json({ error: validated.error });
     }
+    const query = validated.query;
 
     const corrected = await correctAndExpandQuery(query);
 
@@ -290,11 +303,11 @@ router.get("/api/search/query-examples", async (req, res) => {
  */
 router.post("/api/search/detect-intent", async (req, res) => {
   try {
-    const { query } = req.body;
-
-    if (!query) {
-      return res.status(400).json({ error: "Query is required" });
+    const validated = validateQueryInput(req.body.query);
+    if (!validated.ok) {
+      return res.status(400).json({ error: validated.error });
     }
+    const query = validated.query;
 
     const parsed = await parseNaturalLanguageQuery(query);
     const complexity = analyzeQueryComplexity(query);
@@ -322,17 +335,17 @@ router.post("/api/search/detect-intent", async (req, res) => {
  */
 router.post("/api/search/batch", async (req, res) => {
   try {
-    const { queries, pageSize = 10 } = req.body;
-
-    if (!queries || !Array.isArray(queries) || queries.length === 0) {
-      return res.status(400).json({ error: "Queries array is required" });
+    const validated = validateBatchQueries(req.body.queries);
+    if (!validated.ok) {
+      return res.status(400).json({ error: validated.error });
     }
+    const queries = validated.queries;
 
-    if (queries.length > 5) {
-      return res
-        .status(400)
-        .json({ error: "Maximum 5 queries allowed per batch" });
-    }
+    // Clamp pageSize — it drives DB work per query
+    const pageSize = Math.min(
+      50,
+      Math.max(1, parseInt(String(req.body.pageSize ?? 10), 10) || 10),
+    );
 
     const results = await Promise.all(
       queries.map(async (query) => {

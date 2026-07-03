@@ -60,6 +60,27 @@ interface CsrfOptions {
 }
 
 /**
+ * Decides whether a request path is exempt from CSRF verification.
+ *
+ * Matching semantics (deliberately strict — no implicit prefix matching):
+ * - An entry WITHOUT a trailing slash matches that exact path only.
+ *   e.g. "/api/search" exempts POST /api/search but NOT /api/search/save.
+ * - An entry WITH a trailing slash is an explicit wildcard: it matches the
+ *   bare prefix and everything beneath it.
+ *   e.g. "/api/webhooks/" exempts /api/webhooks and /api/webhooks/shopify/*.
+ *
+ * Exported for unit testing (see server/__tests__/csrf-route-matching.test.ts).
+ */
+export function isCsrfExempt(path: string, ignoreRoutes: string[]): boolean {
+  return ignoreRoutes.some((route) => {
+    if (route.endsWith("/")) {
+      return path === route.slice(0, -1) || path.startsWith(route);
+    }
+    return path === route;
+  });
+}
+
+/**
  * Creates CSRF protection middleware
  */
 export function csrfProtection(options: CsrfOptions = {}) {
@@ -86,8 +107,9 @@ export function csrfProtection(options: CsrfOptions = {}) {
       return next();
     }
 
-    // Skip CSRF check for ignored routes
-    if (ignoreRoutes.some((route) => req.path.startsWith(route))) {
+    // Skip CSRF check for ignored routes (exact match, or explicit
+    // trailing-slash wildcard — see isCsrfExempt)
+    if (isCsrfExempt(req.path, ignoreRoutes)) {
       return next();
     }
 

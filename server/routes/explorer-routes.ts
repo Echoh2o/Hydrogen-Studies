@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAdmin } from "../auth";
 import { explorerDataService } from "../services/explorer-data-service";
 
 const router = Router();
@@ -91,7 +92,7 @@ router.get("/api/explorer/comparison/:ids", async (req, res) => {
 });
 
 // Clear cache endpoint (admin only)
-router.post("/api/explorer/clear-cache", async (req, res) => {
+router.post("/api/explorer/clear-cache", requireAdmin, async (req, res) => {
   try {
     explorerDataService.clearCache();
     res.json({ message: "Cache cleared successfully" });
