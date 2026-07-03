@@ -19,6 +19,8 @@ import { db } from "../db";
 import { gscCredentials, gscQueryMetrics, gscSyncRuns } from "@shared/schema";
 import { encryptSecret, decryptSecret, ensureSystemSecretsTable } from "./crypto-secrets";
 import { logger } from "../utils/logger";
+import { fetchWithTimeout } from "../utils/http";
+import { withAdvisoryLock } from "../utils/advisory-lock";
 
 const TAG = "GscService";
 
@@ -222,7 +224,10 @@ async function fetchDay(
     if (!accessToken.token) {
       throw new Error("Failed to obtain access token");
     }
-    const res = await fetch(url, {
+    // 30s timeout — each request can return up to 25k rows, so give it more
+    // headroom than the 10s default, but never let a hung API call wedge the
+    // sync (and the advisory lock / in-flight guard) indefinitely.
+    const res = await fetchWithTimeout(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken.token}`,
@@ -236,7 +241,7 @@ async function fetchDay(
         startRow: pageIdx * ROW_LIMIT,
         dataState: "final",
       }),
-    });
+    }, 30_000);
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -272,12 +277,21 @@ async function fetchDay(
  * @returns the run summary
  */
 /**
- * Serialize sync runs in-process. The scheduled job (slow loop, guarded by
- * isJobRunning) and a manual admin-triggered sync can otherwise overlap — the
- * manual path bypasses the scheduler guard — producing two concurrent
- * `running` rows, duplicate OAuth token refreshes, and redundant upserts.
- * In-process guard only; a multi-instance deployment would need a Postgres
- * advisory lock (pg_try_advisory_lock) for cross-process exclusion.
+ * Serialize sync runs. Two layers:
+ *
+ * 1. `gscSyncInFlight` — in-process fast path. The scheduled job (slow loop,
+ *    guarded by isJobRunning) and a manual admin-triggered sync can otherwise
+ *    overlap — the manual path bypasses the scheduler guard — producing two
+ *    concurrent `running` rows, duplicate OAuth token refreshes, and
+ *    redundant upserts.
+ * 2. `withAdvisoryLock("gsc-sync", …)` — cross-process exclusion. A second
+ *    Railway replica (or old+new instance overlap during a rolling deploy)
+ *    shares no memory with this one, so the boolean alone can't stop it.
+ *
+ * Note: the scheduler wraps the whole job in its own `job:gsc-sync` advisory
+ * lock (see job-scheduler withTimeout). That is a DIFFERENT key, so the
+ * nested acquisition here (on its own pooled connection) succeeds — this lock
+ * exists to also cover the manual admin path, which bypasses the scheduler.
  */
 let gscSyncInFlight = false;
 
@@ -292,7 +306,15 @@ export async function syncSearchConsole(opts: { force?: boolean } = {}): Promise
   }
   gscSyncInFlight = true;
   try {
-    return await syncSearchConsoleImpl(opts);
+    const result = await withAdvisoryLock("gsc-sync", () => syncSearchConsoleImpl(opts));
+    return (
+      result ?? {
+        daysPulled: 0,
+        rowsInserted: 0,
+        rowsUpdated: 0,
+        skipped: "another instance is syncing",
+      }
+    );
   } finally {
     gscSyncInFlight = false;
   }

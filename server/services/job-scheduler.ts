@@ -8,6 +8,7 @@ import { db } from "../db";
 import { studies, blogArticles } from "@shared/schema";
 import { eq, sql, asc, isNotNull } from "drizzle-orm";
 import { logger } from "../utils/logger";
+import { withAdvisoryLock } from "../utils/advisory-lock";
 
 /**
  * Job Scheduler Service
@@ -114,6 +115,17 @@ export class JobScheduler {
    * NOTE: a timed-out `fn` is not actually cancelled — it keeps running in the
    * background. Jobs that do network I/O should accept an AbortSignal so the
    * orphaned work can stop; see runJobs() comments.
+   *
+   * Cross-process exclusion: every job is also wrapped in a Postgres advisory
+   * lock named `job:<jobName>` (see utils/advisory-lock.ts). The in-process
+   * isJobRunning/isFastJobRunning booleans only guard within ONE instance; a
+   * second Railway replica (or old+new overlap during a rolling deploy) would
+   * otherwise double-run syncs and double AI spend. If another instance holds
+   * the lock, the job resolves `null` for this tick — same shape as a
+   * timeout/throw skip. A timed-out orphan keeps holding the lock until it
+   * settles, which is correct: no other instance should start while it runs.
+   * (The content queue's per-item claims are already atomic; this lock only
+   * serializes the scheduling/drain runs, not queue item claims.)
    */
   private async withTimeout<T>(
     fn: (signal: AbortSignal) => Promise<T>,
@@ -136,7 +148,7 @@ export class JobScheduler {
         resolve(null);
       }, timeoutMs);
 
-      fn(controller.signal).then((result) => {
+      withAdvisoryLock(`job:${jobName}`, () => fn(controller.signal)).then((result) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);

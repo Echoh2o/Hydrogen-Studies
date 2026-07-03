@@ -13,6 +13,7 @@ import {
   customType,
   jsonb,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -415,6 +416,15 @@ export const studies = pgTable(
       peerReviewedIdx: index("studies_peer_reviewed_idx").on(table.peerReviewed),
       studyTypeIdx: index("studies_study_type_idx").on(table.studyType),
       publishDateIdx: index("studies_publish_date_idx").on(table.publishDate),
+      // DOI is the dedupe key research discovery probes per candidate item
+      // (eq(studies.doi, ...) every 6h) — without an index each probe is a
+      // sequential scan. Partial (doi IS NOT NULL) and deliberately NON-unique:
+      // legacy duplicate DOIs exist, so a unique index would fail to build at
+      // migration time and block deploys. Mirrors boot migration
+      // 016_add_studies_doi_index.
+      doiIdx: index("idx_studies_doi")
+        .on(table.doi)
+        .where(sql`${table.doi} IS NOT NULL`),
     };
   },
 );
