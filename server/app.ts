@@ -909,6 +909,9 @@ initializeHealthMonitoring();
 
 // Verify database connectivity on startup, then run versioned migrations
 import { pool } from "./db";
+// NOTE: server/__tests__/admin-route-guards.test.ts intercepts this exact
+// probe text ("SELECT 1") and never settles it, so this migration/exit chain
+// stays inert under supertest — keep that test's db mock in sync if this changes.
 pool.query("SELECT 1").then(async () => {
   console.log("Database connection verified");
   try {

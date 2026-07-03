@@ -18,20 +18,29 @@
  *     requireAdmin once a valid CSRF token is presented without a login.
  *
  * How the app import is made side-effect free:
- *  - ../db is mocked. pool.query("SELECT 1") returns a promise that never
- *    settles, so app.ts's floating boot chain (migrations → stale-job
- *    recovery → process.exit(1) on failure) never runs. All other db access
- *    resolves to empty results via a chainable thenable — irrelevant here
- *    because every assertion hits a guard that short-circuits before any
- *    handler touches data.
+ *  - ../db is mocked. EVERY pool.query returns a promise that never settles,
+ *    so app.ts's floating boot chain (pool.query("SELECT 1") → migrations →
+ *    stale-job recovery, with process.exit(1) in both catch paths) can never
+ *    run — not even if the probe text changes. The "boot probe contract"
+ *    test below asserts the only boot-time pool.query is exactly "SELECT 1"
+ *    (mirrored by a comment at the probe in server/app.ts), so a probe change
+ *    fails loudly here instead of surfacing as confusing downstream errors.
+ *    drizzle `db` access resolves to empty results via a chainable thenable —
+ *    irrelevant here because every assertion hits a guard that
+ *    short-circuits before any handler touches data.
  *  - ../config/session-config is mocked with a real express-session backed
  *    by the in-memory store (same cookie/session semantics, no Postgres),
  *    so requireRole and the CSRF double-submit flow behave exactly as prod.
  *  - ../services/job-scheduler and ../utils/health-monitoring are mocked so
  *    no background intervals start.
  */
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import request from "supertest";
+
+// Every SQL text the app hands to pool.query, recorded by the ../db mock so
+// the boot-probe contract can be asserted below (vi.hoisted: the array must
+// exist before the hoisted vi.mock factory runs at app import).
+const poolQueryTexts = vi.hoisted(() => [] as string[]);
 
 // Env needed by modules in app.ts's import graph. db.ts itself is mocked,
 // but SESSION_SECRET/DATABASE_URL are read defensively elsewhere.
@@ -69,12 +78,16 @@ vi.mock("../db", () => {
     db,
     pool: {
       query: vi.fn((text?: unknown) => {
-        // Never settle the boot probe: keeps app.ts's migration/exit chain
-        // (pool.query("SELECT 1").then(...migrations...)) permanently pending.
-        if (typeof text === "string" && text.trim() === "SELECT 1") {
-          return new Promise(() => {});
-        }
-        return Promise.resolve({ rows: [], rowCount: 0 });
+        // Record the call, then never settle it. The expected caller is the
+        // boot probe pool.query("SELECT 1") in server/app.ts (see comment
+        // there): leaving it pending keeps the migration/exit chain inert.
+        // Never settling UNEXPECTED queries too means a changed probe text
+        // (or any new boot-time pool usage) cannot leak into the migration
+        // chain against the proxy db or trip either process.exit(1) catch —
+        // instead the boot-probe contract test below fails with the exact
+        // query text.
+        poolQueryTexts.push(typeof text === "string" ? text.trim() : String(text));
+        return new Promise(() => {});
       }),
       on: vi.fn(),
       end: vi.fn(),
@@ -139,6 +152,20 @@ describe("admin route guards (unauthenticated)", () => {
     // The app logs route errors and session-init chatter; keep output clean.
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe("0. boot-probe contract with server/app.ts", () => {
+    it('the only boot-time pool.query is the intercepted "SELECT 1" probe', () => {
+      // If this fails, server/app.ts changed its boot probe (or grew a new
+      // boot-time pool.query). Update the probe interception note in app.ts
+      // and this contract together — the mock intentionally never settles
+      // any pool.query, so an unnoticed change would otherwise just hang.
+      expect(poolQueryTexts).toEqual(["SELECT 1"]);
+    });
   });
 
   describe("1. /api/admin/* GETs return 401, never 200", () => {

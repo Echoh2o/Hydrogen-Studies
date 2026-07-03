@@ -42,9 +42,9 @@ export function formatAuthors(authors: unknown): string {
  * key ({ data }, { studies }, { articles }, { results }, { items }).
  * Always returns an array, so .map()/.filter() are safe on the result.
  *
- * Canonical extraction of the ad-hoc pattern inlined in several pages
- * (e.g. StudyPage's relatedArray, BlogListPage's articles) — prefer this
- * util for new code so the response-shape handling stays in one place.
+ * Canonical form of the array-extraction pattern pages used to inline ad
+ * hoc; used by e.g. StudyPage (relatedArray) and BlogListPage (articles).
+ * Prefer this util so the response-shape handling stays in one place.
  */
 export function safeArray(response: unknown): any[] {
   if (Array.isArray(response)) return response;

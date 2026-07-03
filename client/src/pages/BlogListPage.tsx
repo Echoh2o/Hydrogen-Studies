@@ -31,6 +31,7 @@ import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
+import { safeArray } from "@/lib/utils";
 
 export default function BlogListPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -95,7 +96,7 @@ export default function BlogListPage() {
     { value: "case-studies", label: "Case Studies" },
   ];
 
-  const articles: any[] = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+  const articles: any[] = safeArray(response);
   const filteredArticles = articles;
 
   const formatDate = (dateString: string | null | undefined) => {

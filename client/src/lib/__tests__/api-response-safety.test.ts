@@ -6,15 +6,15 @@
  * - .toLocaleString() on non-numbers
  * - Date parsing on malformed strings
  *
- * These import the REAL utilities from client/src/lib/utils.ts (previously
- * this file tested inline copies, which could drift from production code):
+ * These import the REAL utilities from ../utils (previously this file lived
+ * in server/__tests__ and tested inline copies, which could drift from
+ * production code):
  * - formatAuthors: the util actually used by study pages/cards
- * - safeArray: extracted to the util file as the canonical form of the
- *   array-extraction pattern that pages had been inlining ad hoc
- *   (StudyPage.tsx relatedArray, BlogListPage.tsx articles, ...)
+ * - safeArray: the canonical array-extraction util, used by
+ *   StudyPage.tsx (relatedArray) and BlogListPage.tsx (articles)
  */
 import { describe, it, expect } from "vitest";
-import { formatAuthors, safeArray } from "../../client/src/lib/utils";
+import { formatAuthors, safeArray } from "../utils";
 
 describe("API Response Safety", () => {
   describe("formatAuthors handles all API response shapes", () => {

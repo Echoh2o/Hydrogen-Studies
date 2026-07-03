@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DOMPurify from "dompurify";
 import { Link, useParams, useLocation } from "wouter";
-import { formatAuthors } from "@/lib/utils";
+import { formatAuthors, safeArray } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -363,7 +363,7 @@ const StudyPageContent = () => {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
-  const relatedArray = Array.isArray(relatedData?.studies) ? relatedData.studies : Array.isArray(relatedData?.data) ? relatedData.data : [];
+  const relatedArray = safeArray(relatedData);
   const relatedStudies = relatedArray
     .filter((s: any) => s.id !== studyId)
     .slice(0, 3);

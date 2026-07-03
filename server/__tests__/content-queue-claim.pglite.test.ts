@@ -20,10 +20,13 @@
  * true MVCC concurrency (two sessions blocking on the same row mid-statement)
  * — that would need a real multi-connection Postgres harness.
  *
- * Schema below mirrors migrations/add-content-generation-queue.ts plus the
- * uq_cgq_active_study partial unique index from scripts/apply-unique-constraints.ts
- * (minus CONCURRENTLY, which needs a real multi-session server), and a minimal
- * pipeline_queue with just the columns the stale sweep touches.
+ * Schema: content_generation_queue (table + indexes) is created by running
+ * the REAL migration, server/migrations/add-content-generation-queue.ts,
+ * through the same mocked db seam. Only two pieces are hand-written DDL:
+ * the uq_cgq_active_study partial unique index from
+ * scripts/apply-unique-constraints.ts (minus CONCURRENTLY, which requires a
+ * real multi-session server), and a minimal pipeline_queue with just the
+ * columns the stale sweep touches.
  */
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from "vitest";
 import { sql } from "drizzle-orm";
@@ -53,6 +56,9 @@ const { enqueueStudy, claimQueueItem } = await import(
   "../services/content-generation-worker"
 );
 const { resetStaleProcessingJobs } = await import("../services/stale-job-recovery");
+const { addContentGenerationQueue } = await import(
+  "../migrations/add-content-generation-queue"
+);
 
 async function rows(query: string): Promise<any[]> {
   const res: any = await db.execute(sql.raw(query));
@@ -60,22 +66,14 @@ async function rows(query: string): Promise<any[]> {
 }
 
 beforeAll(async () => {
-  // Mirrors migrations/add-content-generation-queue.ts
-  await db.execute(sql.raw(`
-    CREATE TABLE IF NOT EXISTS content_generation_queue (
-      id SERIAL PRIMARY KEY,
-      study_id INTEGER NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending',
-      current_step TEXT,
-      completed_steps TEXT[] DEFAULT '{}',
-      error_message TEXT,
-      retry_count INTEGER NOT NULL DEFAULT 0,
-      priority INTEGER NOT NULL DEFAULT 0,
-      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-      started_at TIMESTAMP,
-      completed_at TIMESTAMP
-    )
-  `));
+  // Silence the migration's console.log chatter and the worker's logger
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+
+  // Run the REAL production migration against PGlite (via the mocked db
+  // seam) so the table/indexes under test can't drift from what deploys.
+  await addContentGenerationQueue();
   // Mirrors scripts/apply-unique-constraints.ts (without CONCURRENTLY)
   await db.execute(sql.raw(`
     CREATE UNIQUE INDEX IF NOT EXISTS uq_cgq_active_study
@@ -90,19 +88,17 @@ beforeAll(async () => {
       updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `));
-
-  // Silence the worker's logger output in test runs
-  vi.spyOn(console, "log").mockImplementation(() => {});
-  vi.spyOn(console, "info").mockImplementation(() => {});
-  vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 beforeEach(async () => {
   await db.execute(sql.raw("TRUNCATE content_generation_queue, pipeline_queue RESTART IDENTITY"));
 });
 
-afterAll(() => {
+afterAll(async () => {
   vi.restoreAllMocks();
+  // Shut the in-memory Postgres down cleanly (frees the WASM instance).
+  const { __pglite } = (await import("../db")) as any;
+  await __pglite.close();
 });
 
 describe("enqueueStudy — dedup invariant (partial unique index + onConflictDoNothing)", () => {
