@@ -89,6 +89,7 @@ import {
   generalApiRateLimiter,
   aiGenerationRateLimiter,
   aiSearchRateLimiter,
+  nlSuggestionsRateLimiter,
   skipForAdmin,
 } from "./utils/rate-limiting";
 
@@ -490,9 +491,10 @@ app.use(
   ],
   aiSearchRateLimiter,
 );
-// Typeahead suggestions also call Claude but fire per keystroke — use the
-// moderate search limiter so the UX keeps working while cost stays bounded.
-app.use("/api/search/nl-suggestions", searchRateLimiter);
+// Typeahead suggestions also call Claude but fire per keystroke — dedicated
+// limiter instance so suggestion traffic can't drain the shared search
+// budget used by core search reads (same 30/min ceiling, separate bucket).
+app.use("/api/search/nl-suggestions", nlSuggestionsRateLimiter);
 app.use(naturalLanguageSearchRoutes);
 
 // Public site stats (no auth — cached for 5 minutes)

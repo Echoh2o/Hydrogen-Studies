@@ -24,6 +24,7 @@ import {
 import {
   validateQueryInput,
   validateBatchQueries,
+  sanitizeContext,
 } from "../utils/nl-search-validation";
 
 const router = Router();
@@ -34,7 +35,10 @@ const router = Router();
  */
 router.post("/api/search/natural-language", async (req, res) => {
   try {
-    const { context = null } = req.body;
+    // Context strings flow into Claude prompts (query-understanding.ts) —
+    // sanitize/cap them so a large request body can't bypass the per-query
+    // length cap. Non-conforming context is dropped, not rejected.
+    const context = sanitizeContext(req.body.context);
 
     const validated = validateQueryInput(req.body.query);
     if (!validated.ok) {

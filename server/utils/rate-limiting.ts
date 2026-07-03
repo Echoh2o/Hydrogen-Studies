@@ -56,6 +56,24 @@ export const aiSearchRateLimiter = rateLimit({
 });
 
 /**
+ * Rate limit for the NL search typeahead (GET /api/search/nl-suggestions).
+ * Same budget as search, but a DEDICATED instance so per-keystroke suggestion
+ * traffic drains its own per-IP counter bucket instead of sharing (and
+ * exhausting) the searchRateLimiter bucket used by core search reads.
+ * 30 requests per minute per IP
+ */
+export const nlSuggestionsRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 requests per window
+  message:
+    "Suggestions rate limit exceeded. Maximum 30 requests per minute allowed.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  skip: skipForAdmin,
+});
+
+/**
  * Moderate rate limit for search endpoints
  * 30 requests per minute per IP
  */
@@ -158,6 +176,11 @@ export const authRateLimiter = rateLimit({
 export const rateLimitConfigs = {
   aiGeneration: { windowMs: 60 * 1000, max: 5, name: "AI Generation" },
   aiSearch: { windowMs: 60 * 1000, max: 10, name: "AI Search" },
+  nlSuggestions: {
+    windowMs: 60 * 1000,
+    max: 30,
+    name: "NL Search Suggestions",
+  },
   search: { windowMs: 60 * 1000, max: 30, name: "Search" },
   generalApi: { windowMs: 60 * 1000, max: 100, name: "General API" },
   imageGeneration: { windowMs: 60 * 1000, max: 3, name: "Image Generation" },
