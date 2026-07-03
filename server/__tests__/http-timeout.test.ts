@@ -99,6 +99,30 @@ describe("fetchWithTimeout", () => {
     ).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
+  it("still times out when a caller signal is present but never aborted", async () => {
+    // Guards against a regression like `init.signal ?? timeoutSignal`, which
+    // would silently drop timeout enforcement whenever callers pass a signal.
+    const fetchMock = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(init.signal!.reason),
+          );
+        }),
+    );
+    global.fetch = fetchMock as any;
+
+    const callerController = new AbortController();
+    await expect(
+      fetchWithTimeout(
+        "https://hung.example.com",
+        { signal: callerController.signal },
+        10,
+      ),
+    ).rejects.toMatchObject({ name: "TimeoutError" });
+    expect(callerController.signal.aborted).toBe(false);
+  });
+
   it("does not abort when the response arrives before the timeout", async () => {
     global.fetch = vi.fn().mockResolvedValue(new Response("fast")) as any;
 
