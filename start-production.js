@@ -2,7 +2,11 @@
 
 /**
  * Production Server Starter
- * This file starts the production server after the build process
+ * This file starts the production server after the build process.
+ *
+ * Note: database migrations are NOT run here. `npm run db:push` runs once
+ * per deployment via Railway's preDeployCommand (see railway.toml), which
+ * avoids per-instance migration races and boot latency.
  */
 
 import { spawn } from "child_process";
@@ -32,61 +36,52 @@ console.log(
   `🔑 Database: ${process.env.DATABASE_URL ? "Connected" : "Not configured"}`,
 );
 
-// Run database migrations
-console.log("🔄 Checking for database migrations...");
-try {
-  // Use spawnSync to run migrations synchronously before server starts
-  const migration = spawn("npm", ["run", "db:push"], {
-    stdio: "inherit",
-    env: { ...process.env },
-  });
+// Start the production server
+const server = spawn("node", [distPath], {
+  stdio: "inherit",
+  env: {
+    ...process.env,
+    NODE_ENV: "production",
+  },
+});
 
-  migration.on("close", (code) => {
-    if (code !== 0) {
-      console.error("❌ Database migration failed!");
-      process.exit(1);
-    }
-    console.log("✅ Database migrations applied successfully.");
-    startServer();
-  });
-} catch (error) {
-  console.error("❌ Failed to run migrations:", error);
+let shuttingDown = false;
+
+server.on("error", (error) => {
+  console.error("❌ Failed to start server:", error);
   process.exit(1);
-}
+});
 
-function startServer() {
-  // Start the production server
-  const server = spawn("node", [distPath], {
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      NODE_ENV: "production",
-    },
-  });
-
-  // Handle process termination
-  server.on("error", (error) => {
-    console.error("❌ Failed to start server:", error);
+server.on("exit", (code, signal) => {
+  if (shuttingDown) {
+    // Child finished draining after we forwarded the shutdown signal.
+    process.exit(0);
+  }
+  if (signal) {
+    console.error(`❌ Server terminated by signal ${signal}`);
     process.exit(1);
-  });
+  }
+  if (code !== 0) {
+    console.error(`❌ Server exited with code ${code}`);
+  }
+  process.exit(code ?? 0);
+});
 
-  server.on("exit", (code) => {
-    if (code !== 0) {
-      console.error(`❌ Server exited with code ${code}`);
-      process.exit(code);
-    }
-  });
+// Graceful shutdown: forward the signal to the child and wait for it to
+// drain in-flight requests (dist/index.js has its own graceful shutdown).
+// A force-exit timeout guards against the child never exiting.
+const FORCE_EXIT_TIMEOUT_MS = 30_000;
 
-  // Graceful shutdown
-  process.on("SIGINT", () => {
-    console.log("\n🛑 Shutting down gracefully...");
-    server.kill("SIGTERM");
-    process.exit(0);
-  });
-
-  process.on("SIGTERM", () => {
-    console.log("\n🛑 Received termination signal...");
-    server.kill("SIGTERM");
-    process.exit(0);
-  });
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`\n🛑 Received ${signal}, forwarding to server and waiting for it to drain...`);
+  server.kill("SIGTERM");
+  setTimeout(() => {
+    console.error("❌ Server did not exit within 30s; forcing exit.");
+    process.exit(1);
+  }, FORCE_EXIT_TIMEOUT_MS);
 }
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));

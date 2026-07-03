@@ -3,7 +3,12 @@ builder = "nixpacks"
 buildCommand = "npm run build"
 
 [deploy]
-# Runs DB migrations (drizzle-kit push) before starting the built server.
+# DB migrations run once per deployment here (not once per instance/restart),
+# with the service's env vars, before the new instance starts. Pre-deploy has
+# no TTY: if drizzle-kit push hits an ambiguous schema diff it fails
+# non-interactively (deploy fails visibly) instead of hanging boot. Resolve
+# such diffs by running `npm run db:push` locally before deploying.
+preDeployCommand = "npm run db:push"
 startCommand = "node start-production.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
