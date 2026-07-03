@@ -58,6 +58,8 @@ export default function DeletionLedgerPage() {
     pageCount: number;
   }>({
     queryKey: ["/api/studies/deleted-ledger", { page, pageSize }],
+    // Keep the previous page's rows visible while the next page loads.
+    placeholderData: (prev) => prev,
   });
 
   const restoreMutation = useMutation({

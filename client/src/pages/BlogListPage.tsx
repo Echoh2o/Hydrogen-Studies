@@ -80,7 +80,9 @@ export default function BlogListPage() {
         const res = await fetch(`/api/blogs?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch blogs");
         return res.json();
-    }
+    },
+    // Keep the previous results visible while a new search/filter loads.
+    placeholderData: (prev) => prev,
   });
 
   const categories = [

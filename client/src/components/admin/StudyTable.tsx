@@ -44,6 +44,8 @@ export default function StudyTable({ searchQuery = "" }: StudyTableProps) {
   const { data, isLoading, error } = useQuery<Study[]>({
     queryKey: ["/api/studies", searchQuery, page, limit],
     staleTime: 60000, // 1 minute
+    // Keep the previous page's rows visible while the next page loads.
+    placeholderData: (prev) => prev,
   });
 
   // Format date

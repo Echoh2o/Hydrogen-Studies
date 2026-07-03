@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Form schema
 const studyFormSchema = z.object({
@@ -111,13 +111,32 @@ export default function StudyForm({
       const response = await apiRequest(method, endpoint, formattedData);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
         title: studyId ? "Study Updated" : "Study Created",
         description: studyId
           ? "The study has been updated successfully."
           : "The study has been created successfully.",
       });
+
+      // Refresh cached study data so the change is visible immediately
+      // (global staleTime is 10min with refetchOnMount: false).
+      // Query keys here are URL strings: the ["/api/studies"] prefix matches
+      // list keys like ["/api/studies", page, ...] but NOT single-string
+      // detail keys like ["/api/studies/123"], so detail keys are
+      // invalidated explicitly.
+      queryClient.invalidateQueries({ queryKey: ["/api/studies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/studies/latest"] });
+
+      const id = studyId ?? data?.id;
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/studies/${id}`] });
+      }
+      if (data?.slug) {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/studies/slug/${data.slug}`],
+        });
+      }
 
       if (onSuccess) {
         onSuccess();

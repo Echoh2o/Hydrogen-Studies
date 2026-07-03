@@ -122,7 +122,11 @@ export const queryClient = new QueryClient({
       staleTime: 10 * 60 * 1000, // 10 minutes for better performance
       retry: 1, // Single retry for better reliability
       gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
-      placeholderData: (previousData: any) => previousData,
+      // NOTE: no global placeholderData. Keeping previous data across query
+      // *key* changes is only safe for paginated/filtered lists — on detail
+      // pages it renders the previous entity under the new URL. List queries
+      // that want keep-previous-data opt in with a per-query
+      // `placeholderData: (prev) => prev`.
       refetchOnMount: false, // Reduce unnecessary requests
     },
     mutations: {

@@ -87,6 +87,9 @@ export default function Studies() {
       }
       return response.json();
     },
+    // Keep the previous page's results visible while the next page/filter
+    // combination loads (smooth pagination).
+    placeholderData: (prev) => prev,
   });
 
   // Extract the studies array from the paginated response

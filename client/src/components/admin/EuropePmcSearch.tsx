@@ -106,6 +106,8 @@ const EuropePmcSearch: React.FC = () => {
     },
     enabled: searchQuery.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // Keep the previous results visible while the next page/query loads.
+    placeholderData: (prev) => prev,
   });
 
   const { data: articleDetails, isLoading: isLoadingDetails } = useQuery({

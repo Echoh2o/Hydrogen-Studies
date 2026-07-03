@@ -77,6 +77,8 @@ export default function BlogGeneratePage() {
     queryKey: ["/api/studies/search", { query: searchQuery }],
     enabled: !!searchQuery.trim(),
     retry: false,
+    // Keep the previous results visible while a new search term loads.
+    placeholderData: (prev: any) => prev,
   });
 
   // If a study is selected, get more details
