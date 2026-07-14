@@ -14,6 +14,7 @@ import { db } from "../db";
 import { studies, blogArticles } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 import { jsonLdSafe } from "../utils/html-safety";
+import { toAbsoluteUrl } from "../utils/absolute-url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -29,10 +30,27 @@ const BOT_PATTERNS = [
   /tumblr/i, /bitlybot/i, /skypeuripreview/i, /nuzzel/i, /discordbot/i,
   /google page speed/i, /chromelighthouse/i, /headlesschrome/i,
   /petalbot/i, /ahrefsbot/i, /semrushbot/i, /dotbot/i, /rogerbot/i,
+  // AI assistants/search — these citing the site is a distribution channel
+  /gptbot/i, /oai-searchbot/i, /chatgpt-user/i, /claudebot/i, /claude-web/i,
+  /anthropic-ai/i, /perplexitybot/i, /perplexity-user/i, /ccbot/i,
+  /meta-externalagent/i,
 ];
 
-function isBot(userAgent: string): boolean {
+export function isBot(userAgent: string): boolean {
   return BOT_PATTERNS.some(pattern => pattern.test(userAgent));
+}
+
+// Paths whose content is definitively DB-backed: a resolution miss means the
+// page truly doesn't exist (vs. a SPA route missing from the static-meta map),
+// so bots must get a hard 404 instead of a soft-404 fallback.
+const CONTENT_PATH_PATTERNS = [
+  /^\/study\/[^/]+$/,
+  /^\/studies\/(?!tags$)[^/]+$/,
+  /^\/blog\/[^/]+$/,
+];
+
+function isContentPath(pathname: string): boolean {
+  return CONTENT_PATH_PATTERNS.some(pattern => pattern.test(pathname));
 }
 
 function escapeHtml(str: string): string {
@@ -124,7 +142,7 @@ function buildStudyMeta(study: any): PageMeta {
     || stripHtml(study.abstract);
   const slug = study.slug || `id/${study.id}`;
   const canonical = `${SITE_URL}/study/${slug}`;
-  const ogImage = study.ogImage || study.imageUrl || `${SITE_URL}/logo.png`;
+  const ogImage = toAbsoluteUrl(study.ogImage || study.imageUrl || "/logo.png", SITE_URL);
 
   const jsonLd: any = {
     "@context": "https://schema.org",
@@ -187,7 +205,7 @@ function buildBlogMeta(blog: any): PageMeta {
   const title = blog.metaTitle || blog.title;
   const description = blog.metaDescription || blog.summary100Words || blog.summary;
   const canonical = `${SITE_URL}/blog/${blog.slug}`;
-  const ogImage = blog.ogImage || blog.imageUrl || `${SITE_URL}/logo.png`;
+  const ogImage = toAbsoluteUrl(blog.ogImage || blog.imageUrl || "/logo.png", SITE_URL);
 
   const jsonLd: any = {
     "@context": "https://schema.org",
@@ -422,7 +440,7 @@ function injectMeta(html: string, meta: PageMeta): string {
   // Replace the <head> content with proper meta tags
   const newHead = `<head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Primary SEO Meta Tags (Server-Injected for Crawlers) -->
     <title>${title}</title>
@@ -532,6 +550,24 @@ export function seoBotMiddleware(staticPath: string) {
 
     try {
       const meta = await resolvePageMeta(req.path);
+
+      // DB-backed path with no matching row: real 404 (noindex, uncached so
+      // the URL recovers as soon as the content is published).
+      if (!meta && isContentPath(req.path)) {
+        const notFoundHtml = injectMeta(htmlTemplate, {
+          title: `Page Not Found | ${SITE_NAME}`,
+          description: "The page you're looking for doesn't exist or has moved.",
+          canonical: `${SITE_URL}${req.path}`,
+          ogType: "website",
+          ogImage: `${SITE_URL}/logo.png`,
+          robots: "noindex, follow",
+        });
+        res.status(404);
+        res.set("Content-Type", "text/html");
+        res.set("Cache-Control", "no-cache");
+        return res.send(notFoundHtml);
+      }
+
       const fallbackMeta = meta || resolveStaticPageMeta("/");
       if (!fallbackMeta) return next();
 

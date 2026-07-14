@@ -11,6 +11,7 @@ import { studies, blogArticles, categories } from "../../shared/schema";
 import { eq, desc, isNotNull, isNull, sql, and, count, inArray, gt } from "drizzle-orm";
 import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
+import { toAbsoluteUrl } from "../utils/absolute-url";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -253,7 +254,7 @@ router.get("/sitemap-studies.xml", async (req: Request, res: Response) => {
       const lastmod = formatDate(s.lastModified || s.createdAt);
       const imageTag = s.imageUrl ? `
     <image:image>
-      <image:loc>${escapeXml(s.imageUrl)}</image:loc>
+      <image:loc>${escapeXml(toAbsoluteUrl(s.imageUrl, SITE_URL))}</image:loc>
       <image:title>${escapeXml(s.title)}</image:title>
     </image:image>` : "";
       return `  <url>
@@ -307,7 +308,7 @@ router.get("/sitemap-blog.xml", async (req: Request, res: Response) => {
       const lastmod = formatDate(b.updatedAt || b.createdAt);
       const imageTag = b.imageUrl ? `
     <image:image>
-      <image:loc>${escapeXml(b.imageUrl)}</image:loc>
+      <image:loc>${escapeXml(toAbsoluteUrl(b.imageUrl, SITE_URL))}</image:loc>
       <image:title>${escapeXml(b.title)}</image:title>
     </image:image>` : "";
       return `  <url>
