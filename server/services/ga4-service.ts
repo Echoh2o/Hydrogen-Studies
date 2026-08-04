@@ -234,7 +234,7 @@ async function runReport(
   oauth: OAuth2Client,
   propertyId: string,
   body: Record<string, any>,
-): Promise<{ rows: any[]; metricHeaders: any[]; dimensionHeaders: any[] }> {
+): Promise<{ rows: any[]; metricHeaders: any[]; dimensionHeaders: any[]; rowCount: number }> {
   const accessToken = await oauth.getAccessToken();
   if (!accessToken.token) throw new Error("Failed to obtain access token");
 
@@ -260,7 +260,41 @@ async function runReport(
     rows: json.rows ?? [],
     metricHeaders: json.metricHeaders ?? [],
     dimensionHeaders: json.dimensionHeaders ?? [],
+    // Total rows matching the query (independent of the page window). Used to
+    // drive offset pagination in runReportAllRows.
+    rowCount: Number(json.rowCount ?? (json.rows?.length ?? 0)),
   };
+}
+
+/**
+ * runReport paginates at ROW_LIMIT_PER_REPORT (100k) rows. A 90-day backfill
+ * of (date, pagePath) rows can exceed that, and a single call silently
+ * truncated the result — the sync still reported success while under-counting.
+ * This walks `offset` until every matching row is fetched.
+ */
+async function runReportAllRows(
+  oauth: OAuth2Client,
+  propertyId: string,
+  body: Record<string, any>,
+): Promise<any[]> {
+  const all: any[] = [];
+  let offset = 0;
+  // Hard cap on iterations as a runaway backstop (10M rows at 100k/page).
+  for (let i = 0; i < 100; i++) {
+    const { rows, rowCount } = await runReport(oauth, propertyId, {
+      ...body,
+      limit: ROW_LIMIT_PER_REPORT,
+      offset,
+    });
+    all.push(...rows);
+    offset += rows.length;
+    // Stop when the API returned a short (final) page or we've collected the
+    // full reported row count.
+    if (rows.length < ROW_LIMIT_PER_REPORT) break;
+    if (rowCount && offset >= rowCount) break;
+    if (rows.length === 0) break;
+  }
+  return all;
 }
 
 async function fetchPageMetrics(
@@ -269,7 +303,7 @@ async function fetchPageMetrics(
   startDate: string,
   endDate: string,
 ): Promise<PageMetricRow[]> {
-  const { rows } = await runReport(oauth, propertyId, {
+  const rows = await runReportAllRows(oauth, propertyId, {
     dateRanges: [{ startDate, endDate }],
     dimensions: [{ name: "date" }, { name: "pagePath" }],
     metrics: [
@@ -280,7 +314,6 @@ async function fetchPageMetrics(
       { name: "bounceRate" },
       { name: "conversions" },
     ],
-    limit: ROW_LIMIT_PER_REPORT,
     keepEmptyRows: false,
   });
 
@@ -318,7 +351,7 @@ async function fetchSearchTerms(
   // The `search_term` event fires when GA4's enhanced measurement detects
   // a site search. If the property doesn't have site search configured,
   // this returns zero rows — that's fine, just skip.
-  const { rows } = await runReport(oauth, propertyId, {
+  const rows = await runReportAllRows(oauth, propertyId, {
     dateRanges: [{ startDate, endDate }],
     dimensions: [{ name: "date" }, { name: "searchTerm" }],
     metrics: [{ name: "eventCount" }],
@@ -328,9 +361,8 @@ async function fetchSearchTerms(
         stringFilter: { value: "search", matchType: "EXACT" },
       },
     },
-    limit: ROW_LIMIT_PER_REPORT,
     keepEmptyRows: false,
-  }).catch(() => ({ rows: [] as any[] }));
+  }).catch(() => [] as any[]);
 
   const out: SearchTermRow[] = [];
   for (const r of rows) {

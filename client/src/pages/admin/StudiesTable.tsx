@@ -128,7 +128,14 @@ export default function StudiesTable() {
   // closure capture, but the order made it look like a bug.
   const studies: any[] = studiesQuery.data?.data || [];
   const totalStudies = studiesQuery.data?.total || 0;
-  const totalPages = studiesQuery.data?.totalPages || 1;
+  // GET /api/studies returns PaginatedResults with `pageCount` (not
+  // `totalPages`). Reading the wrong key pinned this to 1 and hid the
+  // pagination footer, trapping admins on the first 50 studies. Fall back
+  // across both keys plus a computed value for resilience to envelope drift.
+  const totalPages =
+    studiesQuery.data?.pageCount ||
+    studiesQuery.data?.totalPages ||
+    (totalStudies ? Math.ceil(totalStudies / (studiesQuery.data?.pageSize || 50)) : 1);
   const categories = Array.isArray(categoriesQuery.data)
     ? categoriesQuery.data
     : [];

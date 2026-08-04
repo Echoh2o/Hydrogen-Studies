@@ -23,24 +23,52 @@ export async function searchEuropePMC(
 
     console.log(`Sending request to EuropePMC with query: ${enhancedQuery}`);
 
-    const response = await externalApi.get(
-      "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
-      {
-        params: {
-          query: enhancedQuery,
-          resultType: "core",
-          format: "json",
-          pageSize: pageSize,
-          page: page,
-          sort: "RELEVANCE",
-        },
-        timeout: 10000, // 10 second timeout
-      },
-    );
+    // Europe PMC's REST search does NOT support a `page` parameter — it
+    // paginates only via cursorMark. Passing `page` was a silent no-op, so
+    // every "next page" returned the identical first N results. We walk the
+    // cursor forward from "*" until we reach the requested page. Bounded to
+    // keep deep-page requests from fanning out into many sequential calls.
+    const MAX_PAGE = 100;
+    const targetPage = Math.min(Math.max(1, Math.floor(page)), MAX_PAGE);
 
-    // Format the response to match our unified structure
-    const total = response.data.hitCount || 0;
-    const results = response.data.resultList?.result || [];
+    let cursorMark = "*";
+    let total = 0;
+    let results: any[] = [];
+
+    for (let current = 1; current <= targetPage; current++) {
+      const response = await externalApi.get(
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+        {
+          params: {
+            query: enhancedQuery,
+            resultType: "core",
+            format: "json",
+            pageSize: pageSize,
+            cursorMark: cursorMark,
+            sort: "RELEVANCE",
+          },
+          timeout: 10000, // 10 second timeout
+        },
+      );
+
+      total = response.data.hitCount || 0;
+      const batch = response.data.resultList?.result || [];
+      const nextCursorMark = response.data.nextCursorMark;
+
+      if (current === targetPage) {
+        // Reached the requested page — these are the rows to return.
+        results = batch;
+        break;
+      }
+
+      // Need to advance further. If the cursor can't move (no next mark, it
+      // repeats, or the batch is empty) the requested page is past the end.
+      if (!nextCursorMark || nextCursorMark === cursorMark || batch.length === 0) {
+        results = [];
+        break;
+      }
+      cursorMark = nextCursorMark;
+    }
 
     console.log(
       `EuropePMC returned ${results.length} results of ${total} total hits`,

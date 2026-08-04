@@ -14,6 +14,9 @@ vite.config.ts.*
 # Build artifacts
 *.tgz
 
+# Test coverage output
+coverage/
+
 # IDE
 .vscode/
 .idea/

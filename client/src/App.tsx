@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, lazy, Suspense, startTransition } from "react";
 import CookieConsent from "@/components/ui/cookie-consent";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
-import { initGA } from "./lib/analytics";
+import { initGA, initAhrefs } from "./lib/analytics";
 import { initErrorTracking, trackError } from "./lib/error-tracking";
 import { useAnalytics } from "./hooks/use-analytics";
 import PageLoader from "@/components/ui/page-loader";
@@ -582,6 +582,7 @@ function App() {
     initErrorTracking();
     startTransition(() => {
       initGA();
+      initAhrefs();
     });
 
     // Global error handling

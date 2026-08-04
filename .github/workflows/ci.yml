@@ -19,13 +19,21 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: TypeScript type check
         run: npx tsc --noEmit
+
+      # Non-blocking for now: react-quill (abandoned, pins vulnerable quill),
+      # exceljs, and sharp still carry high advisories that need a dependency
+      # migration/breaking bump (tracked as separate work). Flip to a hard
+      # gate (drop continue-on-error) once those are resolved.
+      - name: Dependency vulnerability audit
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
 
       - name: Build
         run: npm run build
 
       - name: Run tests
-        run: npx vitest run --passWithNoTests
+        run: npx vitest run

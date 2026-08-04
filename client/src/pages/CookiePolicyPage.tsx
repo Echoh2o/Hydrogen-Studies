@@ -35,7 +35,7 @@ export default function CookiePolicyPage() {
           
           <div className="prose prose-gray max-w-none">
             <p className="text-sm text-gray-600 mb-6">
-              Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              Last Updated: August 4, 2026
             </p>
 
             <div className="bg-teal-50 border-l-4 border-teal-400 p-4 mb-8">
@@ -158,17 +158,20 @@ export default function CookiePolicyPage() {
                 Some cookies on our website are placed by third-party services that appear on our pages. We do not control these cookies and cannot access them. These third parties may use cookies to:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
-                <li>Measure website performance (Google Analytics)</li>
-                <li>Provide functionality (OpenAI for AI features)</li>
+                <li>Measure website traffic and performance (Google Analytics, Ahrefs)</li>
+                <li>Monitor application errors (Sentry)</li>
                 <li>Ensure secure authentication (session management)</li>
               </ul>
               <p className="text-gray-700 mb-4">
                 Third-party providers we use include:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
-                <li><strong>Google Analytics:</strong> For website analytics and performance monitoring</li>
-                <li><strong>OpenAI:</strong> For AI-powered features and chat functionality</li>
-                <li><strong>Replit:</strong> For hosting and deployment services</li>
+                <li><strong>Google Analytics:</strong> Website analytics and performance monitoring (loaded only after you grant consent)</li>
+                <li><strong>Ahrefs Web Analytics:</strong> Privacy-friendly traffic analytics (loaded only after you grant consent)</li>
+                <li><strong>Sentry:</strong> Application error monitoring</li>
+                <li><strong>Klaviyo:</strong> Newsletter and email engagement</li>
+                <li><strong>Shopify:</strong> Product commerce and checkout</li>
+                <li><strong>Railway:</strong> Application hosting and database</li>
               </ul>
             </section>
 
@@ -224,6 +227,9 @@ export default function CookiePolicyPage() {
                 You can opt out of specific third-party cookies:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>
+                  <strong>Cookie banner:</strong> Decline analytics in our cookie banner — both Google Analytics and Ahrefs are only loaded after you consent, so declining prevents them from running at all.
+                </li>
                 <li>
                   <strong>Google Analytics:</strong> Install the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Google Analytics Opt-out Browser Add-on</a>
                 </li>

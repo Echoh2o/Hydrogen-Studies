@@ -196,6 +196,49 @@ export function isAdminOrEditor(
 }
 
 /**
+ * Non-blocking check for whether the current request is an authenticated
+ * admin or editor. Unlike requireRole/requireAdmin (which respond 401/403),
+ * this just returns a boolean so a single endpoint can serve both the public
+ * and the admin surface — e.g. the blog list, where anonymous callers must
+ * only ever see published rows but admins may filter drafts.
+ *
+ * Anonymous requests short-circuit with no DB hit; only logged-in sessions
+ * incur a role lookup (reusing the session role cache when fresh).
+ */
+export async function isElevatedRequest(req: Request): Promise<boolean> {
+  if (!req.session || !req.session.userId) return false;
+
+  const elevated = [UserRole.ADMIN, UserRole.EDITOR] as string[];
+
+  const cacheAge = Date.now() - (req.session.roleCachedAt || 0);
+  const ROLE_CACHE_TTL = 5 * 60 * 1000;
+  if (
+    req.session.userRole &&
+    req.session.userIsActive !== undefined &&
+    cacheAge < ROLE_CACHE_TTL
+  ) {
+    return req.session.userIsActive && elevated.includes(req.session.userRole);
+  }
+
+  try {
+    const [user] = await db
+      .select({ role: users.role, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.id, req.session.userId))
+      .limit(1);
+    if (!user) return false;
+    req.session.userRole = user.role || "";
+    req.session.userIsActive = user.isActive ?? true;
+    req.session.roleCachedAt = Date.now();
+    return (user.isActive ?? true) && elevated.includes(user.role || "");
+  } catch (error) {
+    // Fail closed: on any lookup error, treat the request as unprivileged.
+    logger.error("isElevatedRequest check error", error, "Auth");
+    return false;
+  }
+}
+
+/**
  * Get current user from request
  */
 export async function getCurrentUser(req: Request) {

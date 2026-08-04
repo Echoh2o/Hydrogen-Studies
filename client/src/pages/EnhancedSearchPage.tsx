@@ -116,11 +116,16 @@ export default function EnhancedSearchPage() {
   ]);
 
   // Enhanced search with multiple filters and AI-powered relevance.
-  // queryKey includes page + pageSize so changing pages refetches and
-  // results are cached per (filters, page) tuple.
+  // The server paginates by `offset`/`limit` (it ignores `page`), so the
+  // key must carry offset — sending `page` left every page showing the
+  // first results. offset still changes per page, so the cache stays keyed
+  // per (filters, page) tuple.
   const { data: searchResults, isLoading: searchLoading } =
     useQuery<SearchResponse>({
-      queryKey: ["/api/search/enhanced", { ...filters, page, limit: RESULTS_PER_PAGE }],
+      queryKey: [
+        "/api/search/enhanced",
+        { ...filters, offset: (page - 1) * RESULTS_PER_PAGE, limit: RESULTS_PER_PAGE },
+      ],
       enabled: filters.query.length > 0 || filters.tags.length > 0,
     });
 

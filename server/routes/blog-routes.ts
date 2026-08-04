@@ -3,7 +3,7 @@ import { db } from "../db";
 import { blogArticles, studies, insertBlogArticleSchema } from "@shared/schema";
 import { sql, count, desc, eq, isNotNull, and } from "drizzle-orm";
 import { z } from "zod";
-import { isAuthenticated, requireAdmin } from "../auth";
+import { isAuthenticated, requireAdmin, isElevatedRequest } from "../auth";
 import {
   aiGenerationRateLimiter,
   generalApiRateLimiter,
@@ -104,8 +104,20 @@ router.get("/", async (req, res) => {
 
     const conditions: any[] = [];
 
-    // Default: hide archived rows unless filterStatus explicitly requests them.
-    if (filterStatus !== "archived" && filterStatus !== "all") {
+    // This endpoint is shared by the public /blog page and the admin
+    // dashboard. Anonymous (or non-admin/editor) callers must only ever see
+    // published, non-archived rows — the isPublished filter and the
+    // draft/scheduled/archived/all filterStatus values are privileged.
+    const elevated = await isElevatedRequest(req);
+
+    if (!elevated) {
+      // Force the public contract regardless of query params: published only,
+      // never archived. filterStatus overrides below are gated behind
+      // `elevated` so a crafted ?filterStatus=draft can't leak unpublished rows.
+      conditions.push(eq(blogArticles.isPublished, true));
+      conditions.push(eq(blogArticles.isArchived, false));
+    } else if (filterStatus !== "archived" && filterStatus !== "all") {
+      // Admin default: hide archived rows unless explicitly requested.
       conditions.push(eq(blogArticles.isArchived, false));
     }
 
@@ -117,7 +129,10 @@ router.get("/", async (req, res) => {
     if (filterType && filterType !== "all") {
       conditions.push(eq(blogArticles.articleType, filterType));
     }
-    if (filterStatus === "published") {
+    if (!elevated) {
+      // Public callers already constrained to published above; ignore any
+      // filterStatus they supplied.
+    } else if (filterStatus === "published") {
       conditions.push(eq(blogArticles.isPublished, true));
     } else if (filterStatus === "draft") {
       // "draft" = unpublished AND not scheduled. Scheduled posts get their own bucket.
@@ -195,8 +210,11 @@ router.get("/", async (req, res) => {
     const enriched = blogs.map((b: any) => {
       const path = `/blog/${b.slug}`;
       const gsc = gscMap.get(path);
+      // editorNotes is an internal admin-only field; never expose it to
+      // public callers.
+      const { editorNotes, ...rest } = b;
       return {
-        ...b,
+        ...(elevated ? b : rest),
         ga4Sessions30d: ga4Map.get(path) ?? null,
         gscClicks30d: gsc?.clicks ?? null,
         gscImpressions30d: gsc?.impressions ?? null,
@@ -504,16 +522,21 @@ router.get("/slug/:slug", async (req, res) => {
       .from(blogArticles)
       .where(eq(blogArticles.slug, slug));
 
-    if (!blog) {
+    // Return 404 for unpublished/archived rows to anonymous callers — an
+    // indistinguishable "not found" avoids leaking draft slugs. Admins and
+    // editors get the full row.
+    const elevated = await isElevatedRequest(req);
+    if (!blog || (!elevated && (!blog.isPublished || blog.isArchived))) {
       return res.status(404).json({
         success: false,
         error: "Blog article not found",
       });
     }
 
+    const { editorNotes, ...publicBlog } = blog as any;
     res.json({
       success: true,
-      data: blog,
+      data: elevated ? blog : publicBlog,
     });
   } catch (error) {
     console.error("Error fetching blog by slug:", error);
@@ -543,16 +566,19 @@ router.get("/:id(\\d+)", async (req, res) => {
       .from(blogArticles)
       .where(eq(blogArticles.id, id));
 
-    if (!blog) {
+    // Same gating as /slug/:slug — unpublished/archived rows are 404 to the public.
+    const elevated = await isElevatedRequest(req);
+    if (!blog || (!elevated && (!blog.isPublished || blog.isArchived))) {
       return res.status(404).json({
         success: false,
         error: "Blog article not found",
       });
     }
 
+    const { editorNotes, ...publicBlog } = blog as any;
     res.json({
       success: true,
-      data: blog,
+      data: elevated ? blog : publicBlog,
     });
   } catch (error) {
     console.error("Error fetching blog:", error);
