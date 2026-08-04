@@ -78,11 +78,12 @@ router.post("/chat", async (req, res) => {
       data: response,
     });
   } catch (error) {
+    // Log the raw error server-side, but don't leak driver/AI-provider error
+    // strings (SQL fragments, table names, internal paths) to anonymous callers.
     console.error("Chat API error:", error);
     res.status(500).json({
       success: false,
       error: "Failed to process chat request",
-      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });

@@ -6,8 +6,13 @@ import {
 } from "../services/crossref-api";
 import { studyService } from "../services/study-service";
 import { requireAdmin } from "../auth";
+import { searchRateLimiter } from "../utils/rate-limiting";
 
 const router = express.Router();
+
+// Public proxy to the CrossRef API — throttle so an anonymous caller can't
+// burn upstream quota or get the server IP rate-banned. Admins skip.
+router.use(searchRateLimiter);
 
 /**
  * Search CrossRef for studies

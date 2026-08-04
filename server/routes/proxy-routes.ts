@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../db";
-import { jsonLdSafe, safeUrl } from "../utils/html-safety";
+import { jsonLdSafe, safeUrl, escapeHtml, escapeAttr } from "../utils/html-safety";
 
 const router = Router();
 
@@ -278,21 +278,10 @@ function renderPageWithSchema(title: string, metaDescription: string, content: s
 </html>`;
 }
 
-function escapeHtml(str: string): string {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function escapeAttr(str: string): string {
-  if (!str) return "";
-  // `&` MUST be escaped first, else the entities below get double-escaped.
-  return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
+// escapeHtml/escapeAttr are imported from ../utils/html-safety (see top of
+// file). The local copies were deleted: the local escapeAttr omitted single-
+// quote escaping, diverging from the shared version and risking an XSS sink in
+// any future single-quoted attribute.
 
 /** Return the string if it has real content, or empty string for sentinels/blanks */
 function realContent(val: string | null | undefined): string {
@@ -1441,8 +1430,13 @@ router.get("/export", async (req: Request, res: Response) => {
 
     const csv = [headers.join(","), ...csvRows.map((r: string[]) => r.join(","))].join("\n");
 
-    const filename = conditionSlug
-      ? `hydrogen-research-${conditionSlug}.csv`
+    // Whitelist the slug for the header: a raw `"` would break out of the
+    // quoted filename and inject extra Content-Disposition params, and CR/LF
+    // would make setHeader throw (500). Query/HTML uses of conditionSlug are
+    // parameterized/escaped elsewhere, so only the header needs this.
+    const safeSlug = conditionSlug.replace(/[^a-z0-9-]/gi, "").slice(0, 100);
+    const filename = safeSlug
+      ? `hydrogen-research-${safeSlug}.csv`
       : "hydrogen-research-database.csv";
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -1473,7 +1467,14 @@ async function executeRawQuery(query: string, params: any[]): Promise<any[]> {
  */
 function csvEscape(val: string | null | undefined): string {
   if (val === null || val === undefined) return "";
-  const str = String(val);
+  let str = String(val);
+  // Formula-injection guard (OWASP CSV injection): a leading =, +, -, @, tab,
+  // or CR makes Excel/Sheets execute the field as a formula/DDE. Study
+  // title/authors/results come from third-party ingestion, so prefix a single
+  // quote to neutralize it before the normal quoting below.
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = "'" + str;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
     return `"${str.replace(/"/g, '""')}"`;
   }

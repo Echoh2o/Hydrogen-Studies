@@ -363,7 +363,13 @@ function shopifyProxyAuth(
 
   const secret = process.env.SHOPIFY_APP_SECRET;
   if (!secret) {
-    // No secret configured — skip verification (local dev)
+    // Fail CLOSED in production: a prod deploy with the secret unset (rotation,
+    // fresh environment) must not serve the whole /proxy surface unverified.
+    // Only skip verification in non-production for local dev convenience.
+    if (process.env.NODE_ENV === "production") {
+      console.error("SHOPIFY_APP_SECRET is unset in production — rejecting /proxy request");
+      return res.status(503).send("Service unavailable");
+    }
     return next();
   }
 

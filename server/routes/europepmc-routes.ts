@@ -8,8 +8,13 @@ import {
 } from "../services/europepmc-api";
 import { studyService } from "../services/study-service";
 import { requireAdmin } from "../auth";
+import { searchRateLimiter } from "../utils/rate-limiting";
 
 const router = express.Router();
+
+// Public proxy to Europe PMC's REST API — throttle so an anonymous caller
+// can't burn the upstream quota or get the server IP rate-banned. Admins skip.
+router.use(searchRateLimiter);
 
 /**
  * Search Europe PMC for studies

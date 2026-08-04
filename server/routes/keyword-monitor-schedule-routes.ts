@@ -7,8 +7,15 @@ import {
   checkScheduledSearches,
   runKeywordMonitorNow,
 } from "../services/keyword-monitor-service";
+import { requireAdmin } from "../auth";
 
 const router = Router();
+
+// Self-protect: every route here mutates cron/schedule state. Previously these
+// were guarded only because the sibling keywordMonitorRoutes (mounted one line
+// earlier at /api/keywords) runs its requireAdmin first — reordering the mounts
+// would have silently exposed unauthenticated schedule control.
+router.use(requireAdmin);
 
 // Schema for schedule updates
 const scheduleSchema = z.object({

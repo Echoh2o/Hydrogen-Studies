@@ -40,6 +40,22 @@ describe("sanitizeUserText", () => {
     expect(out).not.toContain("<");
   });
 
+  it("neutralizes DOUBLE-encoded payloads (regression: strip-then-decode leaked these)", () => {
+    // `&amp;lt;...&amp;gt;` decodes to `&lt;...&gt;` then `<...>`. The old
+    // strip-first/decode-second order surfaced the tag on the final pass with
+    // no strip after it. The fixpoint loop must fully remove it.
+    const out = sanitizeUserText("&amp;lt;img src=x onerror=alert(1)&amp;gt;");
+    expect(out).not.toContain("<");
+    expect(out).not.toContain(">");
+    expect(out).not.toContain("onerror=alert(1)>");
+  });
+
+  it("neutralizes triple-encoded payloads too", () => {
+    const out = sanitizeUserText("&amp;amp;lt;script&amp;amp;gt;");
+    expect(out).not.toContain("<");
+    expect(out).not.toContain(">");
+  });
+
   it("strips zero-width characters used to evade regexes", () => {
     const out = sanitizeUserText("hello\u200Bworld\uFEFF!");
     expect(out).toBe("helloworld!");

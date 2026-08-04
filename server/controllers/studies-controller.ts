@@ -530,7 +530,24 @@ export class StudiesController {
           const studyId = parseInt(req.params.id);
           if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
 
-          const updatedStudy = await studyService.updateStudy(studyId, req.body);
+          // Validate + whitelist the body instead of passing raw req.body into
+          // db.update().set(). This strips unknown keys, blocks mass-assignment
+          // of protected columns (id/createdAt/lastModified are already omitted
+          // by insertStudySchema; slug/viewCount omitted here to protect
+          // canonical URLs, the redirect system, and the view counter), and
+          // rejects an empty update (which otherwise threw "No values to set").
+          const { insertStudySchema } = await import("../../shared/schema");
+          const updateSchema = insertStudySchema.partial().omit({ slug: true, viewCount: true });
+          const parsed = updateSchema.safeParse(req.body);
+          if (!parsed.success) {
+              return res.status(400).json({ error: "Invalid study data", details: parsed.error.flatten() });
+          }
+          if (Object.keys(parsed.data).length === 0) {
+              return res.status(400).json({ error: "No valid fields to update" });
+          }
+
+          const updatedStudy = await studyService.updateStudy(studyId, parsed.data);
+          if (!updatedStudy) return res.status(404).json({ error: "Study not found" });
           res.json(updatedStudy);
       } catch (error) {
           logger.error("Error updating study", error, "StudiesController");

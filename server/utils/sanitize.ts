@@ -15,9 +15,12 @@
  * to prevent stored XSS.
  *
  * Conservative approach (regex tag-strip rather than DOM parser):
- *   1. Remove anything tag-shaped.
- *   2. Decode the few entities that might evade #1 (`&lt;script&gt;`).
- *   3. Re-strip in case #2 surfaced new tag-shaped strings.
+ *   1. DECODE entities first — decoding can surface tag-shaped strings that
+ *      were (multiply) entity-encoded, e.g. `&amp;lt;img ...&amp;gt;`.
+ *   2. Strip anything tag-shaped.
+ *   3. Repeat 1-2 to a fixpoint: the old strip-then-decode order left a
+ *      decoded tag un-stripped, so a double-encoded payload slipped through.
+ *      Looping until the string stops changing closes that hole.
  *   4. Strip control + zero-width chars; collapse whitespace.
  *
  * Not bulletproof against every payload, but good enough for plain-
@@ -26,15 +29,21 @@
  */
 export function sanitizeUserText(input: string): string {
   let s = String(input);
-  for (let i = 0; i < 2; i++) {
-    s = s.replace(/<[^>]*>/g, "");
+  // Bounded fixpoint loop (10 = generous backstop; real inputs converge in 1-3).
+  for (let i = 0; i < 10; i++) {
+    const before = s;
+    // Decode BEFORE stripping. Decode `&amp;` LAST so a payload like
+    // `&amp;lt;` becomes `&lt;` this pass and `<` the next, guaranteeing a
+    // later strip pass sees the surfaced tag.
     s = s
       .replace(/&lt;/gi, "<")
       .replace(/&gt;/gi, ">")
-      .replace(/&amp;/gi, "&")
       .replace(/&quot;/gi, '"')
       .replace(/&#0*60;?/g, "<")
-      .replace(/&#0*62;?/g, ">");
+      .replace(/&#0*62;?/g, ">")
+      .replace(/&amp;/gi, "&");
+    s = s.replace(/<[^>]*>/g, "");
+    if (s === before) break;
   }
   s = s.replace(/[\u0000-\u001f\u007f-\u009f\u200B-\u200F\uFEFF]/g, "");
   s = s.replace(/\s+/g, " ").trim();

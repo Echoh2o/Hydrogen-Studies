@@ -13,10 +13,12 @@ import {
 } from "../services/multi-format-generator";
 import { db } from "../db";
 import { multiFormatContent, studies } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { AppError, ErrorCode } from "../utils/app-errors";
 import { requireAdmin } from "../auth";
 import { safeJsonParse } from "../utils/sanitize";
+import { escapeHtml } from "../utils/html-safety";
+import { sanitizeArticleHtml } from "../utils/sanitize-html";
 
 const router = Router();
 
@@ -81,7 +83,7 @@ router.post("/generate", requireAdmin, async (req: Request, res: Response) => {
  * Get all multi-format content for a study
  * GET /api/multi-format/study/:studyId
  */
-router.get("/study/:studyId", async (req: Request, res: Response) => {
+router.get("/study/:studyId", requireAdmin, async (req: Request, res: Response) => {
   try {
     const studyId = parseInt(req.params.studyId);
 
@@ -109,7 +111,7 @@ router.get("/study/:studyId", async (req: Request, res: Response) => {
  * Get specific format content
  * GET /api/multi-format/:id
  */
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
 
@@ -252,10 +254,11 @@ router.post("/batch-generate", requireAdmin, async (req: Request, res: Response)
  * Get all multi-format content with pagination
  * GET /api/multi-format
  */
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    // Clamp limit: ?limit=1000000 would otherwise select the whole table.
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const offset = (page - 1) * limit;
     const formatType = req.query.formatType as string;
     const isPublished = req.query.isPublished === "true";
@@ -280,13 +283,14 @@ router.get("/", async (req: Request, res: Response) => {
       .limit(limit)
       .offset(offset);
 
-    // Get total count
-    const countResult = await db
-      .select({ count: multiFormatContent.id })
+    // Get total count via COUNT(*) — previously selected every row's id and
+    // used .length, scanning the whole table on every page view.
+    const [countResult] = await db
+      .select({ count: count() })
       .from(multiFormatContent)
       .where(whereClause);
 
-    const totalCount = countResult.length;
+    const totalCount = countResult?.count ?? 0;
 
     res.json({
       success: true,
@@ -402,7 +406,7 @@ router.post("/:id/schedule", requireAdmin, async (req: Request, res: Response) =
  * Get content statistics
  * GET /api/multi-format/stats
  */
-router.get("/stats", async (req: Request, res: Response) => {
+router.get("/stats", requireAdmin, async (req: Request, res: Response) => {
   try {
     // Get format distribution
     const formatStats = await db
@@ -455,7 +459,7 @@ router.get("/stats", async (req: Request, res: Response) => {
  * Export content in specific format
  * GET /api/multi-format/:id/export
  */
-router.get("/:id/export", async (req: Request, res: Response) => {
+router.get("/:id/export", requireAdmin, async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
     const exportFormat = (req.query.format as string) || "json";
@@ -613,7 +617,7 @@ function generateHtmlExport(content: any): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${content.title}</title>
+    <title>${escapeHtml(content.title)}</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { color: #333; }
@@ -625,8 +629,8 @@ function generateHtmlExport(content: any): string {
     </style>
 </head>
 <body>
-    <h1>${content.title}</h1>
-    <div class="meta">Format: ${content.formatType} | Created: ${new Date(content.createdAt).toLocaleString()}</div>
+    <h1>${escapeHtml(content.title)}</h1>
+    <div class="meta">Format: ${escapeHtml(content.formatType)} | Created: ${new Date(content.createdAt).toLocaleString()}</div>
 `;
 
   switch (content.formatType) {
@@ -635,11 +639,11 @@ function generateHtmlExport(content: any): string {
         <h2>Podcast Script</h2>
         <div class="section">
           <h3>Introduction</h3>
-          <p>${content.podcastIntro || ""}</p>
+          <p>${escapeHtml(content.podcastIntro || "")}</p>
         </div>
         <div class="section">
           <h3>Main Content</h3>
-          <p>${content.podcastScript?.replace(/\n/g, "<br>") || ""}</p>
+          <p>${escapeHtml(content.podcastScript || "").replace(/\n/g, "<br>")}</p>
         </div>`;
       if (content.podcastQA) {
         html += `<div class="section"><h3>Q&A Segment</h3>`;
@@ -647,8 +651,8 @@ function generateHtmlExport(content: any): string {
         qa.forEach((item) => {
           html += `
             <div class="qa-item">
-              <strong>Q:</strong> ${item.question}<br>
-              <strong>A:</strong> ${item.answer}
+              <strong>Q:</strong> ${escapeHtml(item.question)}<br>
+              <strong>A:</strong> ${escapeHtml(item.answer)}
             </div>`;
         });
         html += `</div>`;
@@ -656,11 +660,11 @@ function generateHtmlExport(content: any): string {
       html += `
         <div class="section">
           <h3>Outro</h3>
-          <p>${content.podcastOutro || ""}</p>
+          <p>${escapeHtml(content.podcastOutro || "")}</p>
         </div>
         <div class="section">
           <h3>Show Notes</h3>
-          <p>${content.podcastShowNotes?.replace(/\n/g, "<br>") || ""}</p>
+          <p>${escapeHtml(content.podcastShowNotes || "").replace(/\n/g, "<br>")}</p>
         </div>`;
       break;
 
@@ -668,17 +672,17 @@ function generateHtmlExport(content: any): string {
       html += `
         <h2>Email Newsletter</h2>
         <div class="section">
-          <p><strong>Subject:</strong> ${content.newsletterSubjectLine || ""}</p>
-          <p><strong>Preheader:</strong> ${content.newsletterPreheader || ""}</p>
+          <p><strong>Subject:</strong> ${escapeHtml(content.newsletterSubjectLine || "")}</p>
+          <p><strong>Preheader:</strong> ${escapeHtml(content.newsletterPreheader || "")}</p>
         </div>
         <div class="section">
           <h3>HTML Content</h3>
-          ${content.newsletterHtml || ""}
+          ${sanitizeArticleHtml(content.newsletterHtml || "")}
         </div>`;
       break;
 
     default:
-      html += `<div class="section">${content.socialContent || content.podcastScript || "No content available"}</div>`;
+      html += `<div class="section">${escapeHtml(content.socialContent || content.podcastScript || "No content available")}</div>`;
   }
 
   html += `

@@ -425,7 +425,7 @@ router.get("/status", async (req, res) => {
  * GET /api/trends/alerts
  * Get trend alerts
  */
-router.get("/alerts", async (req, res) => {
+router.get("/alerts", requireAdmin, async (req, res) => {
   try {
     const { unacknowledged = "false", limit = "20" } = req.query;
 
@@ -507,7 +507,7 @@ router.put("/alerts/:id/acknowledge", requireAdmin, async (req, res) => {
  * GET /api/trends/search-queries
  * Get popular search queries
  */
-router.get("/search-queries", async (req, res) => {
+router.get("/search-queries", requireAdmin, async (req, res) => {
   try {
     const { limit = "10" } = req.query;
 
