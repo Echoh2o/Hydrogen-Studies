@@ -383,28 +383,56 @@ async function processItem(item: PipelineQueueItem): Promise<void> {
  * Returns the new study ID.
  */
 export async function createStudyFromPipelineItem(pipelineItemId: number): Promise<number> {
-  const [item] = await db
-    .select()
-    .from(pipelineQueue)
-    .where(eq(pipelineQueue.id, pipelineItemId))
-    .limit(1);
-
-  if (!item) throw new Error(`Pipeline item ${pipelineItemId} not found`);
-
-  const results = parseStepResults(item.stepResults);
-  const studyId = await createStudyFromResults(item, results);
-
-  // Mark as completed with the created study ID
-  await db
+  // Atomically CLAIM the item before creating anything: transition
+  // awaiting_approval -> approving in a single UPDATE and only proceed if a
+  // row actually matched. This makes approval idempotent and race-safe — a
+  // double-click, a re-submitted id, or /approve-bulk passing the same id
+  // twice finds no row to claim and aborts instead of inserting a duplicate
+  // study (studies.doi is non-unique, so re-approval otherwise duplicated).
+  const claimed = await db
     .update(pipelineQueue)
-    .set({
-      status: "completed",
-      createdStudyId: studyId,
-      processedAt: new Date(),
-    })
-    .where(eq(pipelineQueue.id, pipelineItemId));
+    .set({ status: "approving", updatedAt: new Date() })
+    .where(
+      and(
+        eq(pipelineQueue.id, pipelineItemId),
+        eq(pipelineQueue.status, "awaiting_approval"),
+      ),
+    )
+    .returning();
 
-  return studyId;
+  if (claimed.length === 0) {
+    throw new Error(
+      `Pipeline item ${pipelineItemId} is not awaiting approval (already approved/claimed, rejected, or not found)`,
+    );
+  }
+
+  const item = claimed[0];
+
+  try {
+    const results = parseStepResults(item.stepResults);
+    const studyId = await createStudyFromResults(item, results);
+
+    // Mark as completed with the created study ID
+    await db
+      .update(pipelineQueue)
+      .set({
+        status: "completed",
+        createdStudyId: studyId,
+        processedAt: new Date(),
+      })
+      .where(eq(pipelineQueue.id, pipelineItemId));
+
+    return studyId;
+  } catch (err) {
+    // Creation failed — release the claim so the item can be approved again
+    // rather than being stranded in "approving".
+    await db
+      .update(pipelineQueue)
+      .set({ status: "awaiting_approval", updatedAt: new Date() })
+      .where(eq(pipelineQueue.id, pipelineItemId))
+      .catch(() => {});
+    throw err;
+  }
 }
 
 /**

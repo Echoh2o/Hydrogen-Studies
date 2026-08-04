@@ -439,24 +439,23 @@ async function executeStep(step: WaterfallStep, studyId: number): Promise<void> 
       try {
         const { ai, MODELS } = await import("./ai-provider");
 
-        const text = (
-          await ai.generateText(
-            "",
-            `Generate 5-8 consumer-friendly tags for this hydrogen study. Tags should be simple, lowercase phrases that a health-conscious consumer would search for. Focus on conditions, benefits, and delivery methods.
+        // Use generateJSON (not generateText): Haiku frequently wraps arrays in
+        // ```json fences, which made the previous JSON.parse(text) throw, get
+        // swallowed as "nice-to-have", and leave the study permanently untagged
+        // while the step was marked complete. generateJSON strips fences.
+        const tags = await ai.generateJSON<string[]>(
+          "",
+          `Generate 5-8 consumer-friendly tags for this hydrogen study. Tags should be simple, lowercase phrases that a health-conscious consumer would search for. Focus on conditions, benefits, and delivery methods.
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 Category: ${study.category || "General"}
 
 Return ONLY a JSON array of strings, nothing else. Example: ["gut health", "inflammation", "hydrogen water", "antioxidant"]`,
-            { model: MODELS.HAIKU, maxTokens: 300, temperature: null, caller: "ContentWorker.tags" },
-          )
-        ).trim();
-        if (text) {
-          const tags = JSON.parse(text);
-          if (Array.isArray(tags) && tags.length > 0) {
-            await db.update(studies).set({ tags }).where(eq(studies.id, studyId));
-          }
+          { model: MODELS.HAIKU, maxTokens: 300, temperature: null, caller: "ContentWorker.tags" },
+        );
+        if (Array.isArray(tags) && tags.length > 0) {
+          await db.update(studies).set({ tags }).where(eq(studies.id, studyId));
         }
       } catch (tagError: any) {
         // Non-fatal: tags are nice-to-have

@@ -365,6 +365,11 @@ export const studies = pgTable(
     citationFormats: text("citation_formats"), // JSON with multiple citation formats (APA, MLA, etc.)
     impactMetrics: text("impact_metrics"), // Academic ranking and impact scores
     peerReviewStatus: text("peer_review_status"), // Peer review credibility status
+    // When this study was last screened for retraction/correction by the
+    // retraction monitor. Used to rotate the daily batch through the whole
+    // catalog (ORDER BY ... ASC NULLS FIRST) instead of re-checking the same
+    // rows forever.
+    lastRetractionCheckAt: timestamp("last_retraction_check_at"),
     conflictOfInterest: text("conflict_of_interest"), // Trust signal declarations
 
     // AI Comprehension Fields

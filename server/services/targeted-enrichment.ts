@@ -261,8 +261,11 @@ export async function getEnrichmentSummary(): Promise<any> {
   const result = await db.select({
       total: sql<number>`count(*)`,
       withKeywords: sql<number>`count(case when ${studies.keywords} is not null and array_length(${studies.keywords}, 1) > 0 then 1 end)`,
-      withHealthConditions: sql<number>`count(case when ${studies.healthConditions} is not null and ${studies.healthConditions} != '' then 1 end)`,
-      withBodySystems: sql<number>`count(case when ${studies.bodySystems} is not null and ${studies.bodySystems} != '' then 1 end)`,
+      // healthConditions and bodySystems are text[] — comparing an array to ''
+      // throws "malformed array literal" and 500s the whole endpoint. Use
+      // array_length like withKeywords above. (conclusion is plain text.)
+      withHealthConditions: sql<number>`count(case when ${studies.healthConditions} is not null and array_length(${studies.healthConditions}, 1) > 0 then 1 end)`,
+      withBodySystems: sql<number>`count(case when ${studies.bodySystems} is not null and array_length(${studies.bodySystems}, 1) > 0 then 1 end)`,
       withConclusion: sql<number>`count(case when ${studies.conclusion} is not null and ${studies.conclusion} != '' then 1 end)`
   }).from(studies);
   

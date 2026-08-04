@@ -48,14 +48,26 @@ async function sleep(ms: number) {
 async function phase1_seoEnrichment() {
   log("═══ PHASE 1: SEO Enrichment ═══");
 
-  const { batchEnrichStudies } = await import("../services/study-seo-enrichment");
+  const { batchEnrichStudies, getEnrichmentCandidateCount } = await import("../services/study-seo-enrichment");
+
+  if (dryRun) {
+    const pending = await getEnrichmentCandidateCount().catch(() => -1);
+    log(`  [dry run] ${pending < 0 ? "unknown number of" : pending} studies would be SEO-enriched — skipping`);
+    log("✓ Phase 1 complete (dry run)");
+    return { enriched: 0, errors: 0 };
+  }
 
   let totalSuccess = 0;
   let totalFailed = 0;
   let batch = 1;
 
-  // Run in batches until no more candidates
-  while (true) {
+  // Cap iterations so a persistently-failing batch can't loop forever burning
+  // AI spend. Candidates are re-selected while their fields stay NULL, and a
+  // failed enrichment writes nothing, so without this guard a batch that only
+  // ever fails never terminates.
+  const MAX_BATCHES = 500;
+
+  while (batch <= MAX_BATCHES) {
     log(`  Batch ${batch}...`);
 
     const result = await batchEnrichStudies({
@@ -73,11 +85,21 @@ async function phase1_seoEnrichment() {
 
     log(`  Batch ${batch} done: ${result.success} enriched, ${result.failed} failed, ${result.total} total`);
 
-    // Stop when no more studies to enrich
+    // Stop when no more candidates, OR when a batch made zero progress (only
+    // permanently-failing studies remain) — otherwise we'd re-fetch the same
+    // failing rows every iteration.
     if (result.total === 0) break;
+    if (result.success === 0) {
+      log(`  Stopping: ${result.failed} studies could not be enriched (no progress this batch)`);
+      break;
+    }
 
     batch++;
     await sleep(fast ? 500 : 2000); // Pause between batches
+  }
+
+  if (batch > MAX_BATCHES) {
+    log(`  Stopping: reached MAX_BATCHES (${MAX_BATCHES}) guard`);
   }
 
   log(`✓ Phase 1 complete: ${totalSuccess} studies enriched, ${totalFailed} failed`);
@@ -259,6 +281,12 @@ async function phase2_blogGeneration() {
 async function phase3_linkBuilding() {
   log("═══ PHASE 3: Internal Link Building ═══");
 
+  if (dryRun) {
+    log("  [dry run] would rebuild study-to-study and blog-to-blog internal links — skipping");
+    log("✓ Phase 3 complete (dry run)");
+    return { studyLinks: 0, blogLinks: 0 };
+  }
+
   const { buildAllStudyLinks, buildAllBlogLinks } = await import("../services/internal-linking-engine");
 
   log("  Building study-to-study links...");
@@ -292,6 +320,12 @@ async function phase3_linkBuilding() {
 // ============================================================
 async function phase4_keywordStrategy() {
   log("═══ PHASE 4: Keyword Strategy Seeding ═══");
+
+  if (dryRun) {
+    log("  [dry run] would generate topic clusters from study categories — skipping");
+    log("✓ Phase 4 complete (dry run)");
+    return { clusters: 0 };
+  }
 
   try {
     // Generate topic clusters from existing study categories
@@ -371,6 +405,7 @@ async function main() {
 
   const results: Record<string, any> = {};
   const runAll = !blogOnly && !seoOnly && !linksOnly && !imagesOnly && !tagsOnly;
+  let failed = false;
 
   try {
     // Phase 1: SEO Enrichment
@@ -406,14 +441,18 @@ async function main() {
   } catch (err: any) {
     log(`✗ FATAL ERROR: ${err.message}`);
     console.error(err);
+    failed = true;
   }
 
   log("");
   log("═══ FINAL SUMMARY ═══");
   log(JSON.stringify(results, null, 2));
-  log("Done.");
+  log(failed ? "Done with errors." : "Done.");
 
-  process.exit(0);
+  // Exit non-zero on failure so `railway run`/CI and any wrapping automation
+  // don't treat a half-completed run (DB disconnect, missing API key mid-run)
+  // as success.
+  process.exit(failed ? 1 : 0);
 }
 
 main();

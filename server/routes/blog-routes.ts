@@ -924,29 +924,26 @@ router.post("/:id(\\d+)/promote-to-pillar", requireAdmin, async (req, res) => {
           continue;
         }
 
-        // Persist each generated article as an unpublished cluster post
-        // tagged to this pillar. Generator returns Insert objects, not yet
-        // saved — we add the pillar fields here.
+        // The generator already persisted each article (published, untagged).
+        // Re-tag them here as unpublished cluster posts under this pillar by
+        // UPDATING the saved rows — the previous code re-inserted, collided on
+        // the unique slug, and silently left clusters published and untagged.
         for (const article of result.articles) {
           try {
-            const [saved] = await db
-              .insert(blogArticles)
-              .values({
-                ...article,
+            await db
+              .update(blogArticles)
+              .set({
                 pillarBlogId: id,
                 isPublished: false,
                 isArchived: false,
               })
-              .returning({ id: blogArticles.id });
-            clusterIds.push(saved.id);
+              .where(eq(blogArticles.id, article.id));
+            clusterIds.push(article.id);
           } catch (dbErr: any) {
-            // 23505 = duplicate slug — generator collided. Skip.
-            if (dbErr?.code !== "23505") {
-              generationErrors.push({
-                studyId: candidate.id,
-                error: dbErr?.message ?? "DB insert failed",
-              });
-            }
+            generationErrors.push({
+              studyId: candidate.id,
+              error: dbErr?.message ?? "DB update failed",
+            });
           }
         }
       } catch (err: any) {

@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import axios from "axios";
 import slugify from "slugify";
-import { Study, InsertBlogArticle, blogArticles } from "@shared/schema";
+import { Study, InsertBlogArticle, BlogArticle, blogArticles } from "@shared/schema";
 import { db } from "../db";
 import { eq, and, desc } from "drizzle-orm";
 import {
@@ -53,12 +53,18 @@ export async function generateBlogArticlesForStudy(
     readingLevel?: ReadingLevel;
   } = {},
 ): Promise<{
-  articles: InsertBlogArticle[];
+  articles: BlogArticle[];
   errors: Array<{ type: string; error: string }>;
   warnings: string[];
 }> {
+  // Contract: every article in `articles` is ALREADY PERSISTED to the DB by
+  // this function (AI-generated ones in generateSingleBlogArticle, fallback
+  // ones via persistBasicArticle) and carries its real row id. Callers must
+  // NOT re-insert — doing so collides on the unique slug. Callers that need
+  // to tag/repurpose a generated post (e.g. pillar clusters) should UPDATE by
+  // article.id instead.
   const results = {
-    articles: [] as InsertBlogArticle[],
+    articles: [] as BlogArticle[],
     errors: [] as Array<{ type: string; error: string }>,
     warnings: [] as string[],
   };
@@ -93,8 +99,8 @@ export async function generateBlogArticlesForStudy(
         results.warnings.push(
           "No AI provider available, generating basic articles",
         );
-        const basicArticle = generateBasicArticle(study);
-        results.articles.push(basicArticle);
+        const basicArticle = await persistBasicArticle(study, "overview", results);
+        if (basicArticle) results.articles.push(basicArticle);
         return results;
       }
       throw new AppError(
@@ -133,11 +139,13 @@ export async function generateBlogArticlesForStudy(
 
       // Generate fallback for failed articles if enabled
       if (fallbackToBasic) {
-        const fallback = generateBasicArticle(study, failure.item);
-        results.articles.push(fallback);
-        results.warnings.push(
-          `Generated fallback article for type: ${failure.item}`,
-        );
+        const fallback = await persistBasicArticle(study, failure.item, results);
+        if (fallback) {
+          results.articles.push(fallback);
+          results.warnings.push(
+            `Generated fallback article for type: ${failure.item}`,
+          );
+        }
       }
     }
 
@@ -152,8 +160,8 @@ export async function generateBlogArticlesForStudy(
 
     // Return at least one basic article on fatal error
     if (options.fallbackToBasic) {
-      const basicArticle = generateBasicArticle(study);
-      results.articles.push(basicArticle);
+      const basicArticle = await persistBasicArticle(study, "overview", results);
+      if (basicArticle) results.articles.push(basicArticle);
       results.errors.push({
         type: "general",
         error: error instanceof Error ? error.message : "Unknown error",
@@ -173,7 +181,7 @@ async function generateSingleBlogArticle(
   study: Study,
   articleType: string,
   readingLevelOverride?: ReadingLevel,
-): Promise<InsertBlogArticle> {
+): Promise<BlogArticle> {
   // Normalize to the registry id before doing anything else — if a caller
   // passes an unknown type, getArticleTypeDef falls back to science_explainer
   // for prompts but we need the stored article_type to match that fallback
@@ -267,10 +275,13 @@ async function generateSingleBlogArticle(
       lastReviewed: new Date(),
     };
 
-    // Save to database with retry logic
-    await withRetry(
+    // Save to database with retry logic, capturing the inserted row (with id)
+    // so we return a persisted BlogArticle — callers rely on the id and must
+    // not re-insert.
+    const saved = await withRetry(
       async () => {
-        await db.insert(blogArticles).values(article);
+        const [row] = await db.insert(blogArticles).values(article).returning();
+        return row;
       },
       { maxRetries: 2, retryDelay: 1000 },
     );
@@ -278,24 +289,18 @@ async function generateSingleBlogArticle(
     // Generate internal links for the new blog post and its source study
     try {
       const { generateBlogLinks, generateStudyLinks, saveLinks } = await import("./internal-linking-engine");
-      // Get the newly inserted blog's ID
-      const [inserted] = await db.select({ id: blogArticles.id })
-        .from(blogArticles)
-        .where(eq(blogArticles.studyId, study.id))
-        .orderBy(desc(blogArticles.id))
-        .limit(1);
-      if (inserted) {
-        const blogLinks = await generateBlogLinks(inserted.id);
+      if (saved) {
+        const blogLinks = await generateBlogLinks(saved.id);
         const studyLinks = await generateStudyLinks(study.id);
-        const saved = await saveLinks([...blogLinks, ...studyLinks]);
-        console.log(`[Blog Generator] Created ${saved} internal links for blog ${inserted.id}`);
+        const savedLinks = await saveLinks([...blogLinks, ...studyLinks]);
+        console.log(`[Blog Generator] Created ${savedLinks} internal links for blog ${saved.id}`);
       }
     } catch (linkError) {
       // Non-fatal: don't fail blog generation if linking fails
       console.warn("[Blog Generator] Internal linking failed:", linkError);
     }
 
-    return article;
+    return saved;
   } catch (error) {
     console.error(`Failed to generate ${articleType} article:`, error);
 
@@ -684,6 +689,31 @@ function generateFallbackTitle(study: Study, articleType: string): string {
 
   const typeLabel = typeLabels[articleType] || "Research Summary";
   return `${baseTitle.substring(0, 40)}: ${typeLabel}`;
+}
+
+/**
+ * Build a basic fallback article and PERSIST it, returning the saved row.
+ * Keeps generateBlogArticlesForStudy's contract ("everything returned is
+ * already in the DB") intact for fallback paths too. On insert failure it
+ * records the error and returns null rather than throwing, so a fallback
+ * that can't be saved degrades gracefully instead of crashing the batch.
+ */
+async function persistBasicArticle(
+  study: Study,
+  articleType: string,
+  results: { errors: Array<{ type: string; error: string }> },
+): Promise<BlogArticle | null> {
+  try {
+    const basic = generateBasicArticle(study, articleType);
+    const [saved] = await db.insert(blogArticles).values(basic).returning();
+    return saved ?? null;
+  } catch (err) {
+    results.errors.push({
+      type: articleType,
+      error: `Failed to persist fallback article: ${err instanceof Error ? err.message : String(err)}`,
+    });
+    return null;
+  }
 }
 
 function generateBasicArticle(

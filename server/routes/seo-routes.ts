@@ -854,10 +854,8 @@ seoAdminRouter.post("/blogs/generate-batch", requireAdmin, async (req: Request, 
         const result = await generateBlogArticlesForStudy(study, { count: 1, fallbackToBasic: true });
 
         if (result.articles.length > 0) {
-          // Insert generated articles into the database
-          for (const article of result.articles) {
-            await db.insert(blogArticles).values(article);
-          }
+          // Articles are already persisted by the generator — do not re-insert
+          // (that collided on the unique slug).
           generated++;
         } else {
           failed++;

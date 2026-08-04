@@ -332,31 +332,42 @@ export class StudiesController {
         return res.status(400).json({ success: false, message: "Model and category parameters are required" });
       }
 
-      // Mock Data Generation
-      const generateMockStudies = (categoryName: string) => {
-        const studyTemplates = [
-            { title: `Effects of hydrogen-rich water on ${categoryName}`, abstract: `This study investigates the effects of hydrogen-rich water consumption on markers of ${categoryName.toLowerCase()}.`, journal: "Journal of Hydrogen Medicine", authors: "Smith J, Johnson A" },
-            { title: `Hydrogen inhalation therapy for ${categoryName}`, abstract: `A clinical trial evaluating hydrogen gas inhalation therapy for ${categoryName.toLowerCase()} conditions.`, journal: "Molecular Hydrogen Research", authors: "Chen L, Wang H" },
-            { title: `Comparative study of hydrogen applications in ${categoryName}`, abstract: `This comparative analysis examines various hydrogen delivery methods for addressing ${categoryName.toLowerCase()}-related health challenges.`, journal: "International Journal of Hydrogen Medicine", authors: "Yamamoto K, Suzuki T" },
-            { title: `Long-term hydrogen supplementation effects on ${categoryName}`, abstract: `A longitudinal investigation into how sustained hydrogen therapy affects ${categoryName.toLowerCase()} over a 2-year period.`, journal: "Clinical Hydrogen Applications", authors: "Brown R, Miller J" },
-            { title: `Molecular mechanisms of hydrogen in ${categoryName}`, abstract: `This research explores the cellular and molecular pathways through which hydrogen gas provides benefits for ${categoryName.toLowerCase()}.`, journal: "Biochemical Research International", authors: "Garcia M, Thompson L" },
-        ];
-        return studyTemplates.map((template, index) => ({
-            id: 1000 + index,
-            title: template.title,
-            abstract: template.abstract,
-            category: categoryName,
-            publishDate: `2023-${(index + 1).toString().padStart(2, "0")}-15`,
-            journal: template.journal,
-            authors: template.authors,
-            doi: `10.1234/hydro.2023.${(index + 10).toString().padStart(3, "0")}`,
-            imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+${categoryName.toLowerCase().replace(/\s+/g, "+").replace(/&/g, "and")}`,
-        }));
-      };
+      // Query REAL studies for this category. This endpoint previously
+      // returned hardcoded fabricated studies with invented DOIs
+      // (10.1234/hydro.2023.*) — unacceptable on an evidence database.
+      const { db } = await import("../db");
+      const { studies } = await import("../../shared/schema");
+      const { sql, desc } = await import("drizzle-orm");
 
-      const mockStudies = generateMockStudies(category);
-      res.json({ success: true, data: mockStudies });
+      const cat = category.trim();
+      const contains = `%${cat}%`;
 
+      let matchCondition;
+      if (model === "body_system") {
+        matchCondition = sql`(
+          ${studies.category} ILIKE ${contains}
+          OR EXISTS (SELECT 1 FROM unnest(coalesce(${studies.bodySystems}, ARRAY[]::text[])) v WHERE v ILIKE ${cat})
+        )`;
+      } else if (model === "condition") {
+        matchCondition = sql`(
+          ${studies.category} ILIKE ${contains}
+          OR EXISTS (SELECT 1 FROM unnest(coalesce(${studies.healthConditions}, ARRAY[]::text[])) v WHERE v ILIKE ${cat})
+          OR coalesce(${studies.consumerCategories}, '') ILIKE ${contains}
+        )`;
+      } else {
+        // life_stage (and any unknown model) has no backing column on studies.
+        // Return an honest empty result rather than fabricating studies.
+        return res.json({ success: true, data: [] });
+      }
+
+      const rows = await db
+        .select()
+        .from(studies)
+        .where(matchCondition)
+        .orderBy(desc(studies.id))
+        .limit(50);
+
+      res.json({ success: true, data: rows });
     } catch (error) {
       logger.error("Error fetching studies by consumer category", error, "StudiesController");
       res.status(500).json({ success: false, message: "Failed to fetch studies by consumer category" });
@@ -699,33 +710,15 @@ export class StudiesController {
 
           const result = await generateBlogArticlesForStudy(study, options);
 
-          // Save generated articles to database
-          const { db } = await import("../db");
-          const { blogArticles } = await import("../../shared/schema");
-
-          const savedArticles = [];
-          for (const article of result.articles) {
-            try {
-              const [saved] = await db
-                .insert(blogArticles)
-                .values(article)
-                .returning();
-              savedArticles.push(saved);
-            } catch (dbError: any) {
-              // Skip duplicates
-              if (dbError.code === "23505") {
-                result.warnings.push(`Skipped duplicate: ${article.title}`);
-              } else {
-                result.errors.push({ type: "db", error: dbError.message });
-              }
-            }
-          }
-
+          // generateBlogArticlesForStudy already persists every returned
+          // article (see its contract) — re-inserting here collided on the
+          // unique slug and made the endpoint always report saved: 0. The
+          // returned rows are the saved rows.
           res.json({
             success: true,
-            articles: savedArticles,
+            articles: result.articles,
             generated: result.articles.length,
-            saved: savedArticles.length,
+            saved: result.articles.length,
             errors: result.errors,
             warnings: result.warnings,
           });

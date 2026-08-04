@@ -932,6 +932,7 @@ pool.query("SELECT 1").then(async () => {
     const { applyFkOnDeletePolicies } = await import("./migrations/add-fk-on-delete-policies");
     const { dropLegacyPasswordColumn } = await import("./migrations/drop-legacy-password-column");
     const { addStudiesDoiIndex } = await import("./migrations/add-studies-doi-index");
+    const { addRetractionCheckTracking } = await import("./migrations/add-retraction-check-tracking");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -950,6 +951,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "014_fk_on_delete_policies", up: applyFkOnDeletePolicies },
       { name: "015_drop_legacy_password_column", up: dropLegacyPasswordColumn },
       { name: "016_add_studies_doi_index", up: addStudiesDoiIndex },
+      { name: "017_add_retraction_check_tracking", up: addRetractionCheckTracking },
     ]);
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted
