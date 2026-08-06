@@ -21,6 +21,7 @@ import { ga4Credentials, ga4PageMetrics, ga4SearchTerms, ga4SyncRuns } from "@sh
 import { encryptSecret, decryptSecret, ensureSystemSecretsTable } from "./crypto-secrets";
 import { fetchWithTimeout } from "../utils/http";
 import { logger } from "../utils/logger";
+import { withAdvisoryLock } from "../utils/advisory-lock";
 
 const TAG = "Ga4Service";
 
@@ -351,18 +352,35 @@ async function fetchSearchTerms(
   // The `search_term` event fires when GA4's enhanced measurement detects
   // a site search. If the property doesn't have site search configured,
   // this returns zero rows — that's fine, just skip.
-  const rows = await runReportAllRows(oauth, propertyId, {
-    dateRanges: [{ startDate, endDate }],
-    dimensions: [{ name: "date" }, { name: "searchTerm" }],
-    metrics: [{ name: "eventCount" }],
-    dimensionFilter: {
-      filter: {
-        fieldName: "eventName",
-        stringFilter: { value: "search", matchType: "EXACT" },
+  let rows: any[];
+  try {
+    rows = await runReportAllRows(oauth, propertyId, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "date" }, { name: "searchTerm" }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: {
+        filter: {
+          fieldName: "eventName",
+          stringFilter: { value: "search", matchType: "EXACT" },
+        },
       },
-    },
-    keepEmptyRows: false,
-  }).catch(() => [] as any[]);
+      keepEmptyRows: false,
+    });
+  } catch (err) {
+    // Only swallow "property has no site search" style failures. Auth
+    // (401/403), quota (429), and API outages (5xx) must propagate so the
+    // sync run is recorded as failed instead of a silent green with zero
+    // rows. runReport throws `GA4 API <status>: …` for HTTP errors.
+    const msg = err instanceof Error ? err.message : String(err);
+    const status = Number(msg.match(/GA4 API (\d{3})/)?.[1] ?? 0);
+    if (status === 401 || status === 403 || status === 429 || status >= 500) {
+      throw err;
+    }
+    logger.warn("GA4 search-terms report failed — treating as no site-search data", TAG, {
+      error: msg,
+    });
+    return [];
+  }
 
   const out: SearchTermRow[] = [];
   for (const r of rows) {
@@ -382,8 +400,10 @@ async function fetchSearchTerms(
  * Serialize sync runs in-process. The scheduled job and a manual admin-triggered
  * sync can otherwise overlap (the manual path bypasses the scheduler's
  * isJobRunning guard), producing two concurrent `running` rows, duplicate OAuth
- * token refreshes, and redundant upserts. In-process guard only; a multi-instance
- * deployment would need a Postgres advisory lock for cross-process exclusion.
+ * token refreshes, and redundant upserts. This boolean is the in-process fast
+ * path; syncGa4 additionally wraps the impl in `withAdvisoryLock("ga4-sync", …)`
+ * for cross-process exclusion across Railway replicas / rolling-deploy overlap
+ * (mirrors gsc-service, which bypasses the scheduler on the manual admin path).
  */
 let ga4SyncInFlight = false;
 
@@ -398,7 +418,15 @@ export async function syncGa4(): Promise<{
   }
   ga4SyncInFlight = true;
   try {
-    return await syncGa4Impl();
+    const result = await withAdvisoryLock("ga4-sync", () => syncGa4Impl());
+    return (
+      result ?? {
+        daysPulled: 0,
+        rowsInserted: 0,
+        rowsUpdated: 0,
+        skipped: "another instance is syncing",
+      }
+    );
   } finally {
     ga4SyncInFlight = false;
   }

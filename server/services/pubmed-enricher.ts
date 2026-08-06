@@ -16,6 +16,29 @@ const PUBMED_SEARCH = `${PUBMED_API_BASE}/esearch.fcgi`;
 const PUBMED_FETCH = `${PUBMED_API_BASE}/efetch.fcgi`;
 const PUBMED_SUMMARY = `${PUBMED_API_BASE}/esummary.fcgi`;
 
+// NCBI E-utilities etiquette: identify the caller via tool/email and include
+// the api_key only when configured (an empty api_key= param is rejected/ignored
+// and drops us to the lower anonymous rate limit). See:
+// https://www.ncbi.nlm.nih.gov/books/NBK25497/
+const NCBI_TOOL = "hydrogen-studies";
+const NCBI_EMAIL = process.env.NCBI_EMAIL || "contact@hydrogenstudies.com";
+
+/**
+ * Build E-utilities query params with the NCBI-recommended tool/email
+ * identifiers, adding api_key only when PUBMED_API_KEY is set.
+ */
+function eutilsParams<T extends Record<string, unknown>>(
+  extra: T,
+): T & { tool: string; email: string; api_key?: string } {
+  const apiKey = process.env.PUBMED_API_KEY;
+  return {
+    ...extra,
+    tool: NCBI_TOOL,
+    email: NCBI_EMAIL,
+    ...(apiKey ? { api_key: apiKey } : {}),
+  };
+}
+
 /**
  * Enriches a study with data from PubMed
  * @param studyId The database ID of the study to enrich
@@ -145,14 +168,12 @@ export function extractPMIDFromIdentifier(identifier: string): string | null {
  */
 async function searchPubMedByTitle(title: string): Promise<string | null> {
   try {
-    const apiKey = process.env.PUBMED_API_KEY || "";
-    const params = {
+    const params = eutilsParams({
       db: "pubmed",
       term: `"${title.replace(/[^\w\s]/g, " ")}"[Title]`,
       retmode: "json",
       retmax: 1,
-      api_key: apiKey,
-    };
+    });
 
     const response = await externalApi.get(PUBMED_SEARCH, { params });
     const data = response.data;
@@ -173,24 +194,21 @@ async function searchPubMedByTitle(title: string): Promise<string | null> {
  */
 async function fetchPubMedArticle(pmid: string): Promise<any> {
   try {
-    const apiKey = process.env.PUBMED_API_KEY || "";
-    const params = {
+    const params = eutilsParams({
       db: "pubmed",
       id: pmid,
       retmode: "xml",
       rettype: "abstract",
-      api_key: apiKey,
-    };
+    });
 
     const response = await externalApi.get(PUBMED_FETCH, { params });
 
     // Get summary data in JSON format
-    const summaryParams = {
+    const summaryParams = eutilsParams({
       db: "pubmed",
       id: pmid,
       retmode: "json",
-      api_key: apiKey,
-    };
+    });
 
     const summaryResponse = await externalApi.get(PUBMED_SUMMARY, { params: summaryParams });
     const summaryData = summaryResponse.data;

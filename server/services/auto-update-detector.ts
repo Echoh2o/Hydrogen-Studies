@@ -23,6 +23,8 @@ interface UpdateCheck {
   reason: string;
   priority: number;
   suggestedChanges?: string[];
+  /** Id of the study that triggered this check, for notification provenance. */
+  triggerStudyId?: number;
 }
 
 export class AutoUpdateDetector {
@@ -127,16 +129,26 @@ export class AutoUpdateDetector {
   private async findImpactedContent(study: any): Promise<UpdateCheck[]> {
     const updateChecks: UpdateCheck[] = [];
 
-    // Find blogs in same category
+    // Find blogs related to this study via a real shared dimension:
+    // (1) blogs generated from a study in the same topical category
+    //     (blog_articles.studyId → studies, matched on studies.category), and
+    // (2) blogs whose semantic keywords overlap this study's keywords.
+    // The former replaces a dead `articleType = study.category` branch —
+    // articleType holds content types (science_explainer, faq, …), never a
+    // topical category, so it could never match.
+    const blogConditions = [
+      sql`${blogArticles.studyId} IN (SELECT ${studies.id} FROM ${studies} WHERE ${studies.category} = ${study.category})`,
+    ];
+    if (Array.isArray(study.keywords) && study.keywords.length > 0) {
+      blogConditions.push(
+        sql`${blogArticles.semanticKeywords} && ${study.keywords}`,
+      );
+    }
+
     const relatedBlogs = await db
       .select()
       .from(blogArticles)
-      .where(
-        or(
-          sql`${blogArticles.articleType} = ${study.category}`,
-          sql`${blogArticles.semanticKeywords} && ${study.keywords}`,
-        ),
-      )
+      .where(or(...blogConditions))
       .limit(20);
 
     // Analyze each blog for potential updates
@@ -147,7 +159,9 @@ export class AutoUpdateDetector {
         "blog",
       );
       if (updateNeeded) {
-        updateChecks.push(updateNeeded);
+        // Stamp the study that actually triggered this check so notifications
+        // attribute provenance correctly (see processUpdateChecks).
+        updateChecks.push({ ...updateNeeded, triggerStudyId: study.id });
       }
     }
 
@@ -177,6 +191,7 @@ export class AutoUpdateDetector {
           suggestedChanges: [
             `Add note about contradicting findings from ${study.title}`,
           ],
+          triggerStudyId: study.id,
         });
       }
     }
@@ -316,8 +331,10 @@ Conclusion: ${study2.conclusion}`;
     const notifications: InsertUpdateNotification[] = [];
 
     for (const check of updateChecks) {
-      // Find the trigger study
-      const triggerStudy = triggerStudies[0]; // Simplified - should match properly
+      // Attribute the notification to the study that actually triggered this
+      // check (stamped in findImpactedContent), falling back to the first
+      // recent study only if it was somehow left unset.
+      const triggerContentId = check.triggerStudyId ?? triggerStudies[0]?.id;
 
       // Determine priority level
       let priority: "critical" | "high" | "medium" | "low" = "medium";
@@ -334,7 +351,7 @@ Conclusion: ${study2.conclusion}`;
           : check.reason.includes("support")
             ? "supporting_evidence"
             : "new_study",
-        triggerContentId: triggerStudy?.id,
+        triggerContentId,
         priority,
         priorityScore: check.priority,
         status: "pending",

@@ -93,11 +93,27 @@ async function fetchEPMCCitations(doi: string): Promise<{ doi?: string; title?: 
 }
 
 /**
- * Find an internal study by DOI
+ * Normalize a DOI for matching: lowercase, trim, and strip the doi.org URL
+ * prefix. Mirrors dedup-service's normalizeDoi so app-layer matching agrees
+ * with the studies_doi_idx (LOWER + prefix-strip) expression index.
+ */
+function normalizeDoi(doi: string): string {
+  return doi
+    .toLowerCase()
+    .trim()
+    .replace(/^https?:\/\/(dx\.)?doi\.org\//, "");
+}
+
+/**
+ * Find an internal study by DOI, matching on the normalized form so that
+ * case differences and doi.org/dx.doi.org prefixes still resolve to the
+ * same internal study (CrossRef/Europe PMC DOIs vary in both).
  */
 async function findStudyByDoi(doi: string): Promise<number | null> {
+  const normalized = normalizeDoi(doi);
+  if (!normalized) return null;
   const result = await db.query.studies.findFirst({
-    where: eq(studies.doi, doi),
+    where: sql`LOWER(REGEXP_REPLACE(${studies.doi}, '^https?://(dx\.)?doi\.org/', '', 'i')) = ${normalized}`,
     columns: { id: true },
   });
   return result?.id || null;

@@ -132,32 +132,46 @@ async function setupServer() {
 
     // Graceful shutdown for container deployments (Railway, Docker, etc.)
     let isShuttingDown = false;
-    const shutdown = (signal: string) => {
+    const shutdown = async (signal: string) => {
       if (isShuttingDown) return; // Prevent double shutdown
       isShuttingDown = true;
       console.log(`Received ${signal}. Shutting down gracefully...`);
 
-      // Stop accepting new connections and background work
-      jobScheduler.stop();
-      stopHealthMonitoring();
-
-      // Stop accepting new connections; existing ones finish naturally
-      server.close(async () => {
-        console.log("All connections closed.");
-        try { await pool.end(); } catch {}
-        console.log("Database pool closed. Shutdown complete.");
-        process.exit(0);
-      });
-
-      // Give in-flight requests time to complete before force exit
+      // Hard deadline: if graceful drain/close hangs, force-exit. Armed first so
+      // it covers every path below.
       setTimeout(() => {
         console.error("Forced shutdown after 30s timeout.");
         process.exit(1);
       }, 30000).unref();
+
+      stopHealthMonitoring();
+
+      // Stop accepting new connections immediately; existing ones finish
+      // naturally. Resolves once all in-flight HTTP connections have drained.
+      const connectionsClosed = new Promise<void>((resolve) => {
+        server.close(() => {
+          console.log("All connections closed.");
+          resolve();
+        });
+      });
+
+      // In parallel, signal background jobs to stop and await in-flight work
+      // (bounded ~20s) so we never close the DB pool under a mid-write job.
+      // Abort-aware jobs (content queue) release claimed items back to 'pending'
+      // on this signal instead of stalling until the 90-min stale threshold.
+      const jobsDrained = jobScheduler.drain(20000).catch((err) => {
+        console.error("Error draining job scheduler:", err);
+      });
+
+      // Only close the pool once BOTH connections and jobs have settled.
+      await Promise.all([connectionsClosed, jobsDrained]);
+      try { await pool.end(); } catch {}
+      console.log("Database pool closed. Shutdown complete.");
+      process.exit(0);
     };
 
-    process.on("SIGTERM", () => shutdown("SIGTERM"));
-    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => { void shutdown("SIGTERM"); });
+    process.on("SIGINT", () => { void shutdown("SIGINT"); });
   }
 }
 
