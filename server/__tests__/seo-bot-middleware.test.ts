@@ -45,11 +45,20 @@ vi.mock("../db", () => {
 });
 
 // Body prerendering is exercised elsewhere; keep these tests about meta/status.
+// Default to a non-null body (a real route renders content); individual tests
+// set it to null to exercise the hard-404 branch.
+const bodyResult = vi.hoisted(() => ({
+  current: "<h1>Rendered body</h1>" as string | null,
+}));
 vi.mock("../middleware/seo-body-renderer", () => ({
-  renderPageBody: async () => null,
+  renderPageBody: async () => bodyResult.current,
 }));
 
-import { seoBotMiddleware, isBot } from "../middleware/seo-bot-middleware";
+import {
+  seoBotMiddleware,
+  isBot,
+  invalidateBotCache,
+} from "../middleware/seo-bot-middleware";
 
 const GOOGLEBOT =
   "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
@@ -69,6 +78,9 @@ beforeAll(() => {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Hydrogen Studies Research Database</title>
+    <link rel="stylesheet" href="/assets/index-abc123.css" />
+    <link rel="modulepreload" href="/assets/vendor-def456.js" />
+    <script type="module" src="/assets/index-abc123.js"></script>
   </head>
   <body>
     <div id="root"></div>
@@ -83,6 +95,8 @@ afterAll(() => {
 
 beforeEach(() => {
   dbRows.current = [];
+  bodyResult.current = "<h1>Rendered body</h1>";
+  invalidateBotCache();
   // Fresh middleware instance per test; the module-level bot HTML cache is
   // avoided by using a unique slug per test case.
   app = express();
@@ -179,14 +193,90 @@ describe("hard 404 for dead content URLs", () => {
     expect(hit.text).toContain("Late Published Study");
   });
 
-  it("still serves 200 fallback meta for unknown non-content paths", async () => {
+  it("returns 404 for unknown non-content paths with no renderable body", async () => {
+    // No static meta AND no prerenderable body => genuine soft-404: serve the
+    // hard-404 branch (noindex, no-cache) instead of homepage-meta fallback so
+    // junk paths aren't indexed as duplicate blank pages.
+    bodyResult.current = null;
     const res = await request(app)
       .get("/totally-fake-page-xyz")
       .set("User-Agent", GOOGLEBOT);
 
-    // Legit SPA routes aren't all in the static-meta map; only definitive
-    // content misses (study/blog slugs) may 404.
+    expect(res.status).toBe(404);
+    expect(res.text).toContain('content="noindex');
+    expect(res.headers["cache-control"]).toBe("no-cache");
+  });
+
+  it("still serves 200 for a legit SPA route that renders a body but has no static meta", async () => {
+    // Body renders (real route) but the path isn't in the static-meta map:
+    // fall back to homepage meta with a self-canonical, 200, but do NOT cache.
+    bodyResult.current = "<h1>Some real SPA route</h1>";
+    const res = await request(app)
+      .get("/some-legit-spa-route")
+      .set("User-Agent", GOOGLEBOT);
+
     expect(res.status).toBe(200);
+    expect(res.text).toContain("Some real SPA route");
+    expect(res.headers["cache-control"]).toBe("no-cache");
+    expect(res.headers["x-bot-cache"]).toBe("FALLBACK");
+  });
+});
+
+describe("head asset preservation (finding 239)", () => {
+  it("keeps the Vite JS bundle and CSS from the template <head>", async () => {
+    const res = await request(app).get("/about").set("User-Agent", GOOGLEBOT);
+
+    expect(res.status).toBe(200);
+    // The app JS, module preload, and stylesheet must survive head rebuild —
+    // otherwise bots get an unstyled page with an empty, un-hydratable #root.
+    expect(res.text).toContain('<script type="module" src="/assets/index-abc123.js"></script>');
+    expect(res.text).toContain('<link rel="stylesheet" href="/assets/index-abc123.css" />');
+    expect(res.text).toContain('<link rel="modulepreload" href="/assets/vendor-def456.js" />');
+  });
+});
+
+describe("Vary: User-Agent (finding 718)", () => {
+  it("sets Vary: User-Agent on rendered, 404, and cached responses", async () => {
+    // MISS (rendered + cached)
+    dbRows.current = [
+      { id: 7, slug: "vary-study", title: "Vary Study", summary100Words: "x", imageUrl: null },
+    ];
+    const miss = await request(app).get("/study/vary-study").set("User-Agent", GOOGLEBOT);
+    expect(miss.status).toBe(200);
+    expect(miss.headers["vary"]).toBe("User-Agent");
+    expect(miss.headers["x-bot-cache"]).toBe("MISS");
+
+    // HIT (served from LRU cache)
+    const hit = await request(app).get("/study/vary-study").set("User-Agent", GOOGLEBOT);
+    expect(hit.headers["x-bot-cache"]).toBe("HIT");
+    expect(hit.headers["vary"]).toBe("User-Agent");
+
+    // 404 branch
+    dbRows.current = [];
+    const notFound = await request(app).get("/study/nope-xyz").set("User-Agent", GOOGLEBOT);
+    expect(notFound.status).toBe(404);
+    expect(notFound.headers["vary"]).toBe("User-Agent");
+  });
+});
+
+describe("invalidateBotCache (finding 1444)", () => {
+  it("drops a cached entry so a stale page is not re-served", async () => {
+    dbRows.current = [
+      { id: 8, slug: "inv-study", title: "Original Title", summary100Words: "x", imageUrl: null },
+    ];
+    const first = await request(app).get("/study/inv-study").set("User-Agent", GOOGLEBOT);
+    expect(first.headers["x-bot-cache"]).toBe("MISS");
+
+    const cached = await request(app).get("/study/inv-study").set("User-Agent", GOOGLEBOT);
+    expect(cached.headers["x-bot-cache"]).toBe("HIT");
+
+    invalidateBotCache("/study/inv-study");
+
+    const afterInvalidation = await request(app)
+      .get("/study/inv-study")
+      .set("User-Agent", GOOGLEBOT);
+    // Cache was cleared — a fresh render (MISS), not a stale HIT.
+    expect(afterInvalidation.headers["x-bot-cache"]).toBe("MISS");
   });
 });
 

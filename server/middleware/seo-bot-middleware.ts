@@ -115,10 +115,21 @@ async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
     if (blogMatch) {
       const idOrSlug = blogMatch[1];
       let blog;
+      // Only published, non-archived articles are prerendered — drafts and
+      // soft-deleted posts must fall through to the hard-404 branch, matching
+      // the body renderer (seo-body-renderer.ts) and every other public query.
       if (/^\d+$/.test(idOrSlug)) {
-        [blog] = await db.select().from(blogArticles).where(eq(blogArticles.id, parseInt(idOrSlug))).limit(1);
+        [blog] = await db.select().from(blogArticles).where(and(
+          eq(blogArticles.id, parseInt(idOrSlug)),
+          eq(blogArticles.isPublished, true),
+          eq(blogArticles.isArchived, false),
+        )).limit(1);
       } else {
-        [blog] = await db.select().from(blogArticles).where(eq(blogArticles.slug, idOrSlug)).limit(1);
+        [blog] = await db.select().from(blogArticles).where(and(
+          eq(blogArticles.slug, idOrSlug),
+          eq(blogArticles.isPublished, true),
+          eq(blogArticles.isArchived, false),
+        )).limit(1);
       }
       if (blog) return buildBlogMeta(blog);
       return null;
@@ -417,6 +428,28 @@ function resolveStaticPageMeta(pathname: string): PageMeta | null {
   };
 }
 
+/**
+ * Extract the Vite entry <script> and <link rel="stylesheet"|"modulepreload">
+ * tags from the original template <head>. The production build places the app
+ * JS bundle and CSS inside <head>; injectMeta rebuilds <head> from scratch, so
+ * these must be re-appended or every bot-served page loses its CSS and has an
+ * empty #root with no script to hydrate it (a blank thin page).
+ */
+function extractHeadAssets(html: string): string {
+  const headMatch = html.match(/<head>([\s\S]*?)<\/head>/i);
+  if (!headMatch) return "";
+  const head = headMatch[1];
+  const assets: string[] = [];
+  const scriptRe = /<script\b[^>]*>[\s\S]*?<\/script>|<script\b[^>]*\/>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = scriptRe.exec(head)) !== null) assets.push(m[0]);
+  const linkRe = /<link\b[^>]*>/gi;
+  while ((m = linkRe.exec(head)) !== null) {
+    if (/rel=["'](?:stylesheet|modulepreload)["']/i.test(m[0])) assets.push(m[0]);
+  }
+  return assets.length ? "\n    " + assets.join("\n    ") : "";
+}
+
 /** Inject meta tags into HTML template */
 function injectMeta(html: string, meta: PageMeta): string {
   const title = escapeHtml(meta.title);
@@ -470,8 +503,11 @@ function injectMeta(html: string, meta: PageMeta): string {
     <!-- Ahrefs Analytics -->
     <script src="https://analytics.ahrefs.com/analytics.js" data-key="rjIt9UY/qFbTPzCzRK8BRg" async></script>`;
 
-  // Replace existing <head> tag content up to the closing </head> — but keep scripts/styles
-  return html.replace(/<head>[\s\S]*?(?=<\/head>)/, newHead);
+  // Replace existing <head> tag content up to the closing </head>, but preserve
+  // the original Vite JS bundle / CSS / modulepreload tags so the page stays
+  // styled and hydratable.
+  const preservedAssets = extractHeadAssets(html);
+  return html.replace(/<head>[\s\S]*?(?=<\/head>)/, `${newHead}${preservedAssets}\n  `);
 }
 
 /** Inject rendered body content into the empty #root div */
@@ -507,6 +543,21 @@ function setCachedBotHtml(key: string, html: string): void {
   botHtmlCache.set(key, { html, expiry: Date.now() + BOT_CACHE_TTL });
 }
 
+/**
+ * Invalidate cached bot HTML. Pass a specific path to drop just that entry —
+ * call this from study/blog delete, unpublish, and slug-change flows so a
+ * removed or changed page stops being served to crawlers with a stale 200
+ * (old canonical/JSON-LD) until the 2h TTL expires. Pass no argument to clear
+ * the entire cache.
+ */
+export function invalidateBotCache(path?: string): void {
+  if (path) {
+    botHtmlCache.delete(path);
+  } else {
+    botHtmlCache.clear();
+  }
+}
+
 // ── Middleware ─────────────────────────────────────────────────
 
 import { renderPageBody } from "./seo-body-renderer";
@@ -533,6 +584,9 @@ export function seoBotMiddleware(staticPath: string) {
     const cached = getCachedBotHtml(req.path);
     if (cached) {
       res.set("Content-Type", "text/html");
+      // Responses vary entirely by User-Agent (prerendered bot HTML vs SPA
+      // shell) — Vary keeps a shared/CDN cache from serving this to humans.
+      res.set("Vary", "User-Agent");
       res.set("Cache-Control", "public, max-age=3600");
       res.set("X-Bot-Cache", "HIT");
       return res.send(cached);
@@ -547,46 +601,68 @@ export function seoBotMiddleware(staticPath: string) {
         return next();
       }
     }
+    const template = htmlTemplate;
+
+    // Hard 404 (noindex, uncached so the URL recovers the moment content
+    // exists) for any recognized route with no real content to show.
+    const serve404 = () => {
+      const notFoundHtml = injectMeta(template, {
+        title: `Page Not Found | ${SITE_NAME}`,
+        description: "The page you're looking for doesn't exist or has moved.",
+        canonical: `${SITE_URL}${req.path}`,
+        ogType: "website",
+        ogImage: `${SITE_URL}/logo.png`,
+        robots: "noindex, follow",
+      });
+      res.status(404);
+      res.set("Content-Type", "text/html");
+      res.set("Vary", "User-Agent");
+      res.set("Cache-Control", "no-cache");
+      return res.send(notFoundHtml);
+    };
 
     try {
       const meta = await resolvePageMeta(req.path);
 
-      // DB-backed path with no matching row: real 404 (noindex, uncached so
-      // the URL recovers as soon as the content is published).
+      // DB-backed content path with no matching row: real 404. Resolved before
+      // rendering a body to avoid a second dead DB lookup for known-dead slugs.
       if (!meta && isContentPath(req.path)) {
-        const notFoundHtml = injectMeta(htmlTemplate, {
-          title: `Page Not Found | ${SITE_NAME}`,
-          description: "The page you're looking for doesn't exist or has moved.",
-          canonical: `${SITE_URL}${req.path}`,
-          ogType: "website",
-          ogImage: `${SITE_URL}/logo.png`,
-          robots: "noindex, follow",
-        });
-        res.status(404);
-        res.set("Content-Type", "text/html");
-        res.set("Cache-Control", "no-cache");
-        return res.send(notFoundHtml);
+        return serve404();
       }
 
-      const fallbackMeta = meta || resolveStaticPageMeta("/");
-      if (!fallbackMeta) return next();
-
-      const effectiveMeta = meta || { ...fallbackMeta, canonical: `${SITE_URL}${req.path}` };
-
-      // Inject meta tags into <head>
-      let enhancedHtml = injectMeta(htmlTemplate, effectiveMeta);
-
-      // Inject body content into <div id="root">
+      // Prerender the body. A recognized route that yields no body — a
+      // condition/body-system slug with zero matches, /this-week, /recent, or
+      // any unknown junk path — has no real content, so serve a hard 404 rather
+      // than a soft-404 blank 200 with homepage meta (a cloaking/soft-404
+      // signal that also fills the LRU with junk paths).
       const body = await renderPageBody(req.path);
-      if (body) {
-        enhancedHtml = injectBody(enhancedHtml, body);
+      if (!body) {
+        return serve404();
       }
 
-      // Cache and serve
-      setCachedBotHtml(req.path, enhancedHtml);
+      // Meta may still be null for a legit SPA route that rendered a body but
+      // is absent from the static-meta map: fall back to homepage meta with a
+      // self-referential canonical, but never cache the fallback (it is not a
+      // first-class page and must not evict prewarmed entries).
+      const fallbackMeta = resolveStaticPageMeta("/");
+      if (!meta && !fallbackMeta) return next();
+      const effectiveMeta = meta || { ...fallbackMeta!, canonical: `${SITE_URL}${req.path}` };
+
+      let enhancedHtml = injectMeta(template, effectiveMeta);
+      enhancedHtml = injectBody(enhancedHtml, body);
+
       res.set("Content-Type", "text/html");
-      res.set("Cache-Control", "public, max-age=3600");
-      res.set("X-Bot-Cache", "MISS");
+      res.set("Vary", "User-Agent");
+      if (meta) {
+        // First-class page with resolved meta — cache it.
+        setCachedBotHtml(req.path, enhancedHtml);
+        res.set("Cache-Control", "public, max-age=3600");
+        res.set("X-Bot-Cache", "MISS");
+      } else {
+        // Fallback meta — serve but do not cache.
+        res.set("Cache-Control", "no-cache");
+        res.set("X-Bot-Cache", "FALLBACK");
+      }
       res.send(enhancedHtml);
     } catch (err) {
       console.error("[SEO Bot] Middleware error:", err);

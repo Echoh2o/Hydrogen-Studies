@@ -31,6 +31,7 @@ import { useEffect } from "react";
 import { StudyInfoPanel } from "@/components/StudyInfoPanel";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import JsonLd, { generateMedicalArticleSchema } from "@/components/seo/JsonLd";
 
 interface Study {
   id: number;
@@ -80,7 +81,20 @@ interface Study {
   full_text?: string;
   fullTextHtml?: string;
   full_text_html?: string;
+  sourcePlatform?: string;
+  source_platform?: string;
 }
+
+// Map known data-source platforms to their attribution link-back URLs
+const SOURCE_ATTRIBUTION_LINKS: Record<string, string> = {
+  "semantic scholar": "https://www.semanticscholar.org",
+  semanticscholar: "https://www.semanticscholar.org",
+  "europe pmc": "https://europepmc.org",
+  europepmc: "https://europepmc.org",
+  biorxiv: "https://www.biorxiv.org",
+  medrxiv: "https://www.medrxiv.org",
+  crossref: "https://www.crossref.org",
+};
 
 export default function SEOStudyPage() {
   const params = useParams();
@@ -180,9 +194,21 @@ export default function SEOStudyPage() {
     ? `https://hydrogenstudies.com/study/${study.slug}`
     : `https://hydrogenstudies.com/study/id/${study.id}`;
 
+  // Data-source attribution (Semantic Scholar requires this; Europe PMC/bioRxiv request it)
+  const sourcePlatform = study.sourcePlatform || study.source_platform;
+  const sourceAttributionUrl = sourcePlatform
+    ? SOURCE_ATTRIBUTION_LINKS[sourcePlatform.trim().toLowerCase()]
+    : undefined;
+
   return (
     <>
       <SiteHeader />
+
+      {/* Structured Data */}
+      <JsonLd
+        type="MedicalScholarlyArticle"
+        data={generateMedicalArticleSchema(study)}
+      />
       <Helmet>
         <title>{pageTitle}</title>
         <meta
@@ -623,6 +649,25 @@ export default function SEOStudyPage() {
                         </Button>
                       )}
                     </div>
+
+                    {/* Data-source attribution */}
+                    {sourcePlatform && (
+                      <p className="mt-4 text-xs text-neutral-500">
+                        Data provided by{" "}
+                        {sourceAttributionUrl ? (
+                          <a
+                            href={sourceAttributionUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-primary"
+                          >
+                            {sourcePlatform}
+                          </a>
+                        ) : (
+                          sourcePlatform
+                        )}
+                      </p>
+                    )}
                   </div>
                 </article>
 

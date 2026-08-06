@@ -20,7 +20,8 @@ import { log } from "./vite";
 import { pool } from "./db";
 import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
-import { seoBotMiddleware, prewarmBotCache } from "./middleware/seo-bot-middleware";
+import { seoBotMiddleware, prewarmBotCache, isBot } from "./middleware/seo-bot-middleware";
+import { generalApiRateLimiter } from "./utils/rate-limiting";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -60,6 +61,18 @@ async function setupServer() {
       if (req.path.endsWith(".map")) {
         res.status(404).end();
         return;
+      }
+      next();
+    });
+
+    // Rate-limit bot requests before the SEO middleware runs any DB renders.
+    // isBot() trusts the User-Agent, so a spoofed crawler UA could otherwise
+    // drive unlimited unauthenticated per-request DB renders (uncached 404s on
+    // /study/<random>) and evict prewarmed LRU entries. Bots tolerate 429s;
+    // humans are unaffected (limiter only engages for bot GETs).
+    app.use((req, res, next) => {
+      if (req.method === "GET" && !req.path.startsWith("/api/") && isBot(req.headers["user-agent"] || "")) {
+        return generalApiRateLimiter(req, res, next);
       }
       next();
     });

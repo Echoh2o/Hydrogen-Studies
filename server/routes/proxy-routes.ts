@@ -315,6 +315,16 @@ function truncate(str: string | null, maxLen: number): string {
   return str.slice(0, maxLen).replace(/\s+\S*$/, "") + "...";
 }
 
+/**
+ * Normalize a query param to a single string. Express yields an array for
+ * repeated params (?q=a&q=b or ?q[]=a); calling .trim() on that array throws
+ * and 500s the page, so collapse to the first value first.
+ */
+function firstParam(val: unknown): string {
+  if (Array.isArray(val)) return val.length > 0 ? String(val[0] ?? "") : "";
+  return val == null ? "" : String(val);
+}
+
 function buildQueryString(params: Record<string, string | number | undefined>): string {
   const parts: string[] = [];
   for (const [key, val] of Object.entries(params)) {
@@ -415,9 +425,9 @@ function renderPagination(currentPage: number, totalPages: number, baseUrl: stri
 router.get("/", async (req: Request, res: Response) => {
   try {
     const page = Math.min(500, Math.max(1, parseInt(req.query.page as string, 10) || 1));
-    const search = (req.query.q as string || "").trim().slice(0, 200);
-    const conditionSlug = (req.query.condition as string || "").trim().slice(0, 100);
-    const studyType = (req.query.type as string || "").trim().slice(0, 50);
+    const search = firstParam(req.query.q).trim().slice(0, 200);
+    const conditionSlug = firstParam(req.query.condition).trim().slice(0, 100);
+    const studyType = firstParam(req.query.type).trim().slice(0, 50);
     const yearFrom = parseInt(req.query.yearFrom as string, 10) || 0;
     const yearTo = parseInt(req.query.yearTo as string, 10) || 0;
 
@@ -571,7 +581,7 @@ router.get("/", async (req: Request, res: Response) => {
       </form>
 
       ${totalStudies === 0 ? '<p class="h2r-text h2r-muted">No studies found matching your criteria. Try adjusting your filters.</p>' : ""}
-      ${search || conditionSlug || studyType ? `<p class="h2r-small h2r-muted">${totalStudies} study${totalStudies !== 1 ? "ies" : ""} found</p>` : ""}
+      ${search || conditionSlug || studyType ? `<p class="h2r-small h2r-muted">${totalStudies} ${totalStudies === 1 ? "study" : "studies"} found</p>` : ""}
 
       ${studyCards}
 
@@ -596,6 +606,7 @@ router.get("/", async (req: Request, res: Response) => {
     );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
     res.send(html);
   } catch (error) {
     console.error("Proxy main page error:", error);
@@ -613,10 +624,17 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
 
-    // Fetch study
-    const studyRows = await executeRawQuery(`
-      SELECT s.* FROM studies s WHERE s.slug = $1 LIMIT 1
-    `, [slug]);
+    // Fetch study. studies.slug is nullable, but list/related/embed cards link
+    // slug-less studies as /study/<id>. Accept a numeric id as a fallback so
+    // those links resolve instead of 404ing.
+    const numericId = /^\d+$/.test(slug) ? parseInt(slug, 10) : null;
+    const studyRows = numericId !== null
+      ? await executeRawQuery(`
+          SELECT s.* FROM studies s WHERE s.slug = $1 OR s.id = $2 LIMIT 1
+        `, [slug, numericId])
+      : await executeRawQuery(`
+          SELECT s.* FROM studies s WHERE s.slug = $1 LIMIT 1
+        `, [slug]);
 
     if (studyRows.length === 0) {
       res.status(404).send(renderErrorPage("Study not found.", 404));
@@ -625,6 +643,9 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
 
     const study = studyRows[0];
     const displayTitle = study.plain_language_title || study.title;
+    // Prefer the real slug for self-referencing URLs; fall back to the id path
+    // (which now resolves) only when the study has no slug.
+    const canonicalSlug = study.slug || String(study.id);
 
     // Fetch associated conditions
     const condRows = await executeRawQuery(`
@@ -656,7 +677,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
       "headline": study.title,
       "name": displayTitle,
       "description": study.meta_description || realContent(study.key_finding) || study.conclusion_short || truncate(study.abstract, 200),
-      "url": `${BASE_URL}/study/${slug}`,
+      "url": `${BASE_URL}/study/${canonicalSlug}`,
     };
     if (study.authors) {
       jsonLd.author = study.authors.split(",").map((a: string) => ({
@@ -819,12 +840,13 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
       `${displayTitle} — Hydrogen Research | Echo Water`,
       metaDesc,
       content,
-      `/study/${slug}`,
+      `/study/${canonicalSlug}`,
       jsonLd,
       ogImageUrl
     );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
     res.send(html);
   } catch (error) {
     console.error("Proxy study page error:", error);
@@ -910,7 +932,7 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
       ${condition.body_system_name ? `<p class="h2r-small h2r-muted">Body System: ${escapeHtml(condition.body_system_name)}</p>` : ""}
       ${condition.description ? `<p class="h2r-text">${escapeHtml(condition.description)}</p>` : ""}
 
-      <p class="h2r-text"><strong>${totalStudies}</strong> study${totalStudies !== 1 ? "ies" : ""} found for this condition.</p>
+      <p class="h2r-text"><strong>${totalStudies}</strong> ${totalStudies === 1 ? "study" : "studies"} found for this condition.</p>
 
       ${typeStats ? `
         <h2 class="h2r-h2">Studies by Type</h2>
@@ -949,10 +971,12 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
       `Hydrogen Research for ${condition.name} — Echo Water`,
       `Browse ${totalStudies} peer-reviewed studies on molecular hydrogen and ${condition.name}. Curated by Echo Water.`,
       content,
-      `/condition/${slug}`
+      `/condition/${slug}`,
+      { noIndex: page > 1 }
     );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
     res.send(html);
   } catch (error) {
     console.error("Proxy condition page error:", error);
@@ -1082,6 +1106,7 @@ router.get("/stats", async (_req: Request, res: Response) => {
     );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
     res.send(html);
   } catch (error) {
     console.error("Proxy stats page error:", error);
@@ -1191,6 +1216,7 @@ router.get("/methodology", async (_req: Request, res: Response) => {
     );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
     res.send(html);
   } catch (error) {
     console.error("Proxy methodology page error:", error);
@@ -1269,6 +1295,7 @@ router.get("/sitemap.xml", async (_req: Request, res: Response) => {
 </urlset>`;
 
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=60");
     res.send(xml);
   } catch (error) {
     console.error("Proxy sitemap error:", error);
@@ -1365,7 +1392,7 @@ router.get("/embed/:conditionSlug", async (req: Request, res: Response) => {
 
 router.get("/export", async (req: Request, res: Response) => {
   try {
-    const conditionSlug = (req.query.condition as string || "").trim();
+    const conditionSlug = firstParam(req.query.condition).trim();
 
     let query: string;
     let params: any[];
