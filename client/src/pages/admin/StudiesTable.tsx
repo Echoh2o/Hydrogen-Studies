@@ -63,6 +63,11 @@ export default function StudiesTable() {
   const [, navigate] = useLocation();
   // Filter and search state
   const [searchQuery, setSearchQuery] = useState("");
+  // Debounced copy of searchQuery that actually drives the query. Typing
+  // updates `searchQuery` instantly (controlled input) but only the settled
+  // value (300ms after the last keystroke) reaches the queryKey, so a
+  // multi-character search no longer fires one DB search per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -73,6 +78,12 @@ export default function StudiesTable() {
   const [showBulkDelete, setShowBulkDelete] = useState(false);
 
   const { toast } = useToast();
+
+  // Debounce the search input before it drives the query key.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,8 +96,8 @@ export default function StudiesTable() {
   queryParams.set("sortBy", sortBy);
   queryParams.set("sortOrder", sortOrder);
 
-  if (searchQuery) {
-    queryParams.set("search", searchQuery);
+  if (debouncedSearch) {
+    queryParams.set("search", debouncedSearch);
   }
 
   if (selectedCategory && selectedCategory !== "all") {
@@ -99,7 +110,7 @@ export default function StudiesTable() {
       "/api/studies",
       currentPage,
       pageSize,
-      searchQuery,
+      debouncedSearch,
       selectedCategory,
       sortBy,
       sortOrder,
@@ -119,7 +130,7 @@ export default function StudiesTable() {
   // Clear selection when filters/page change
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [currentPage, searchQuery, selectedCategory, sortBy, sortOrder]);
+  }, [currentPage, debouncedSearch, selectedCategory, sortBy, sortOrder]);
 
   // Extract data from the paginated response upfront so the helpers
   // below (toggleSelectAll, render code, etc.) close over a fresh value
@@ -358,19 +369,14 @@ export default function StudiesTable() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => toggleSort("publish_date")}>
+                <DropdownMenuItem onClick={() => toggleSort("date")}>
                   Date{" "}
-                  {sortBy === "publish_date" &&
+                  {sortBy === "date" &&
                     (sortOrder === "asc" ? "(Oldest)" : "(Newest)")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => toggleSort("title")}>
                   Title{" "}
                   {sortBy === "title" &&
-                    (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toggleSort("category")}>
-                  Category{" "}
-                  {sortBy === "category" &&
                     (sortOrder === "asc" ? "(A-Z)" : "(Z-A)")}
                 </DropdownMenuItem>
               </DropdownMenuContent>

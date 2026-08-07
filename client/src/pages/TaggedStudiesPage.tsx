@@ -153,6 +153,17 @@ export default function TaggedStudiesPage() {
     setLocation(`/study/tags/${category}`);
   };
 
+  // Allow keyboard users to activate onClick cards/badges via Enter/Space.
+  const handleActivateKey = (
+    e: React.KeyboardEvent,
+    action: () => void,
+  ) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      action();
+    }
+  };
+
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case "health_condition":
@@ -214,8 +225,16 @@ export default function TaggedStudiesPage() {
               {categories?.categories.map((category) => (
                 <Card
                   key={category.slug}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Browse ${category.name}`}
+                  className="cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   onClick={() => handleCategorySelect(category.slug)}
+                  onKeyDown={(e) =>
+                    handleActivateKey(e, () =>
+                      handleCategorySelect(category.slug),
+                    )
+                  }
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-center space-x-2">
@@ -309,8 +328,16 @@ export default function TaggedStudiesPage() {
                               <Badge
                                 key={tagId}
                                 variant="default"
-                                className="cursor-pointer"
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Remove tag ${tag.name}`}
+                                className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                 onClick={() => handleTagSelect(tagId)}
+                                onKeyDown={(e) =>
+                                  handleActivateKey(e, () =>
+                                    handleTagSelect(tagId),
+                                  )
+                                }
                               >
                                 {tag.name} ×
                               </Badge>
@@ -345,8 +372,16 @@ export default function TaggedStudiesPage() {
                         {filteredTags.map((tag) => (
                           <div
                             key={tag.id}
-                            className="flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Select tag ${tag.name}`}
+                            className="flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             onClick={() => handleTagSelect(tag.id)}
+                            onKeyDown={(e) =>
+                              handleActivateKey(e, () =>
+                                handleTagSelect(tag.id),
+                              )
+                            }
                           >
                             <div className="flex items-center space-x-2">
                               <span className="text-sm">{tag.name}</span>
@@ -497,8 +532,14 @@ export default function TaggedStudiesPage() {
                       {categoryGroup.tags.map((tag) => (
                         <div
                           key={tag.id}
-                          className="flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Select tag ${tag.name}`}
+                          className="flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           onClick={() => handleTagSelect(tag.id)}
+                          onKeyDown={(e) =>
+                            handleActivateKey(e, () => handleTagSelect(tag.id))
+                          }
                         >
                           <span className="text-sm font-medium">
                             {tag.name}

@@ -99,6 +99,16 @@ export default function EnhancedSearchPage() {
   });
 
   const [searchMode, setSearchMode] = useState<"simple" | "advanced">("simple");
+
+  // Debounce the free-text query before it enters any query key. Typing
+  // fires one fetch per keystroke otherwise, and /api/search/enhanced sits
+  // behind a 30 req/min rate limiter — a few keystrokes exhaust the bucket
+  // and the resulting 429s surface as silent empty results.
+  const [debouncedQuery, setDebouncedQuery] = useState(filters.query);
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedQuery(filters.query), 300);
+    return () => clearTimeout(handle);
+  }, [filters.query]);
   // Pagination state. Reset to page 1 whenever filters change so a
   // search like "hydrogen" doesn't try to display "page 47" from a
   // narrower previous query.
@@ -120,22 +130,36 @@ export default function EnhancedSearchPage() {
   // key must carry offset — sending `page` left every page showing the
   // first results. offset still changes per page, so the cache stays keyed
   // per (filters, page) tuple.
-  const { data: searchResults, isLoading: searchLoading } =
-    useQuery<SearchResponse>({
-      queryKey: [
-        "/api/search/enhanced",
-        { ...filters, offset: (page - 1) * RESULTS_PER_PAGE, limit: RESULTS_PER_PAGE },
-      ],
-      enabled: filters.query.length > 0 || filters.tags.length > 0,
-    });
+  const {
+    data: searchResults,
+    isLoading: searchLoading,
+    isError: searchError,
+    error: searchErrorObj,
+  } = useQuery<SearchResponse>({
+    queryKey: [
+      "/api/search/enhanced",
+      {
+        ...filters,
+        query: debouncedQuery,
+        offset: (page - 1) * RESULTS_PER_PAGE,
+        limit: RESULTS_PER_PAGE,
+      },
+    ],
+    enabled: debouncedQuery.length > 0 || filters.tags.length > 0,
+  });
+
+  // Detect rate-limit responses so we can show tailored messaging.
+  const isRateLimited = /\b429\b/.test(
+    searchErrorObj instanceof Error ? searchErrorObj.message : "",
+  );
 
   const totalPages = searchResults?.totalPages
     ?? (searchResults?.total ? Math.ceil(searchResults.total / RESULTS_PER_PAGE) : 1);
 
   // Get search suggestions as user types
   const { data: suggestions } = useQuery<string[]>({
-    queryKey: ["/api/search/suggestions", { query: filters.query }],
-    enabled: filters.query.length > 2,
+    queryKey: ["/api/search/suggestions", { query: debouncedQuery }],
+    enabled: debouncedQuery.length > 2,
   });
 
   // Popular searches and trending topics
@@ -347,7 +371,23 @@ export default function EnhancedSearchPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Search Results */}
           <div className="lg:col-span-3">
-            {searchResults?.data ? (
+            {searchError ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">
+                    {isRateLimited
+                      ? "Too many searches"
+                      : "Something went wrong"}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {isRateLimited
+                      ? "You've made a lot of searches in a short time. Please wait a minute and try again."
+                      : "We couldn't complete your search. Please try again in a moment."}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : searchResults?.data ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">
@@ -520,7 +560,7 @@ export default function EnhancedSearchPage() {
                   </div>
                 )}
               </div>
-            ) : !searchLoading && filters.query.length > 0 ? (
+            ) : !searchLoading && debouncedQuery.length > 0 ? (
               <Card>
                 <CardContent className="p-12 text-center">
                   <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

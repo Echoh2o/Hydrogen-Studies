@@ -117,6 +117,9 @@ export default function SiteHeader() {
             <button
               className="btn-tertiary btn-sm p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav"
             >
               {isMobileMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -127,18 +130,20 @@ export default function SiteHeader() {
           </div>
         </div>
 
-        <MobileNav
-          isOpen={isMobileMenuOpen}
-          isLoading={isLoading}
-          isAuthenticated={isAuthenticated}
-          user={user}
-          userRole={userRole}
-          isAdminOrEditor={isAdminOrEditor}
-          getUserInitials={getUserInitials}
-          handleLogout={handleLogout}
-          logoutIsPending={logoutMutation.isPending}
-          onClose={closeMobileMenu}
-        />
+        <div id="mobile-nav">
+          <MobileNav
+            isOpen={isMobileMenuOpen}
+            isLoading={isLoading}
+            isAuthenticated={isAuthenticated}
+            user={user}
+            userRole={userRole}
+            isAdminOrEditor={isAdminOrEditor}
+            getUserInitials={getUserInitials}
+            handleLogout={handleLogout}
+            logoutIsPending={logoutMutation.isPending}
+            onClose={closeMobileMenu}
+          />
+        </div>
       </div>
     </nav>
   );

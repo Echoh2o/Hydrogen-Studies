@@ -16,7 +16,6 @@ import {
   Download,
   Quote,
   Loader2,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +25,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Helmet } from "react-helmet";
@@ -59,47 +65,34 @@ function BuyersGuideModal({ open, onClose }: { open: boolean; onClose: () => voi
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-          aria-label="Close"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent className="max-w-md rounded-2xl p-8">
         {status === "success" ? (
           <div className="text-center py-4">
             <CheckCircle2 className="h-12 w-12 text-teal-500 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Check Your Inbox!</h3>
-            <p className="text-gray-600 mb-4">
+            <DialogTitle className="text-xl font-bold mb-2">Check Your Inbox!</DialogTitle>
+            <DialogDescription className="text-gray-600 mb-4">
               Your Hydrogen Delivery Methods Comparison Guide is on its way.
-            </p>
+            </DialogDescription>
             <Button onClick={onClose} className="bg-teal-600 hover:bg-teal-700">
               Continue Browsing
             </Button>
           </div>
         ) : (
           <>
-            <div className="text-center mb-6">
+            <DialogHeader className="text-center mb-6">
               <div className="mx-auto mb-4 p-3 rounded-full bg-teal-50 w-fit">
                 <Download className="h-8 w-8 text-teal-600" />
               </div>
-              <h3 className="text-xl font-bold mb-2">
+              <DialogTitle className="text-xl font-bold mb-2 text-center">
                 Free: Hydrogen Delivery Methods Guide
-              </h3>
-              <p className="text-gray-600 text-sm">
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 text-sm text-center">
                 Compare drinking, inhalation, and bathing methods side-by-side.
                 Learn which delivery method is best for your health goals.
-              </p>
-            </div>
+              </DialogDescription>
+            </DialogHeader>
             <ul className="space-y-2 mb-6 text-sm text-gray-700">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-teal-500 flex-shrink-0" />
@@ -147,8 +140,8 @@ function BuyersGuideModal({ open, onClose }: { open: boolean; onClose: () => voi
             </form>
           </>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
