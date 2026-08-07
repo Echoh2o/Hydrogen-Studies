@@ -19,6 +19,9 @@ import {
   searchHistory,
   auditLogs,
   studies,
+  userEngagement,
+  searchQueries,
+  chatFeedback,
 } from "../../shared/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 
@@ -291,6 +294,21 @@ router.get("/data-export", async (req: Request, res: Response) => {
       .where(eq(auditLogs.userId, userId))
       .orderBy(desc(auditLogs.createdAt));
 
+    const engagement = await db
+      .select()
+      .from(userEngagement)
+      .where(eq(userEngagement.userId, userId));
+
+    const queries = await db
+      .select()
+      .from(searchQueries)
+      .where(eq(searchQueries.userId, userId));
+
+    const feedback = await db
+      .select()
+      .from(chatFeedback)
+      .where(eq(chatFeedback.userId, userId));
+
     const exportData = {
       exportedAt: new Date().toISOString(),
       user: userData,
@@ -299,6 +317,9 @@ router.get("/data-export", async (req: Request, res: Response) => {
       readingHistory: history,
       searchHistory: searches,
       auditLogs: logs,
+      userEngagement: engagement,
+      searchQueries: queries,
+      chatFeedback: feedback,
     };
 
     res.setHeader("Content-Disposition", "attachment; filename=my-data-export.json");

@@ -32,6 +32,30 @@ export const db = drizzle(pool, {
   logger: process.env.NODE_ENV === "development" ? false : undefined,
 });
 
+// Dedicated pool for boot-time migrations and backfills. Unlike the request
+// `pool` above, statement_timeout is disabled (0) so a long migration — a
+// full-table backfill UPDATE or a GIN/index build on the grown studies table —
+// is never killed mid-statement. On the shared 30s-capped pool such a migration
+// throws, hits the FATAL `process.exit(1)` in app.ts, and crash-loops the
+// service under restartPolicyMaxRetries. Request queries keep the 30s cap.
+// Kept small and short-idle since it is only exercised during startup.
+export const migrationPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 3,
+  min: 0,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 10000,
+  application_name: "hydrogen-studies-migrations",
+  options: "-c statement_timeout=0", // no cap: migrations/backfills may exceed 30s
+});
+
+// Prevent unhandled pool errors from crashing the process
+migrationPool.on("error", (err) => {
+  console.error("Unexpected error on idle migration connection:", err);
+});
+
+export const migrationDb = drizzle(migrationPool, { schema });
+
 /**
  * Tagged template helper for raw SQL queries (replaces neon() function).
  * Returns rows array with rowCount property attached (matching neon's API).

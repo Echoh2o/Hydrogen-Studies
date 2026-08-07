@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import compression from "compression";
 import crypto from "crypto";
 // @ts-ignore - no type declarations available
 import cookieParser from "cookie-parser";
@@ -141,6 +142,12 @@ app.use(
     },
   }),
 );
+
+// HTTP compression (gzip) — mounted right after helmet so every downstream
+// response is covered: search/API JSON, sitemaps, robots.txt, and SSR HTML.
+// Static hashed chunks can additionally be served pre-compressed via
+// vite-plugin-compression + express-static-gzip if that is wired up later.
+app.use(compression());
 
 // Redirect middleware — must be very early (before routes) to intercept 301/302s
 import { redirectMiddleware, log404, ensureRedirectIndexes } from "./services/redirect-service";
@@ -873,7 +880,15 @@ app.post("/api/client-errors", (req, res) => {
 // Full health check (database, memory, request stats)
 app.get("/health", async (req, res) => {
   const health = await performHealthCheck();
-  const statusCode = health.status === "healthy" ? 200 : 503;
+  // Railway's healthcheck points here — a dead database MUST fail it so Railway
+  // stops routing to this instance. performHealthCheck only degrades status at
+  // 2+ errors, so a DB-down (a single error) would otherwise still report 200.
+  // Gate on DB connectivity directly (performHealthCheck already runs a
+  // lightweight `SELECT 1 FROM studies LIMIT 1` ping). Only hard connectivity
+  // loss returns 503 — slow latency or memory pressure alone don't, so a
+  // transient blip won't trigger restart loops.
+  const statusCode =
+    health.status === "healthy" && health.database.connected ? 200 : 503;
   res.status(statusCode).json(health);
 });
 

@@ -17,7 +17,7 @@ const router = Router();
 router.get("/recommendations", requireAdmin, async (req, res) => {
   try {
     console.log("Blog recommendations endpoint called");
-    const limit = parseInt(req.query.limit as string) || 10; // Reduced default limit
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10)); // Reduced default, clamped max
     const recommendations = await getBlogRecommendations(limit);
 
     console.log(`Returning ${recommendations.length} recommendations`);

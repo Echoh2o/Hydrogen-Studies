@@ -3,6 +3,7 @@
  */
 
 import { Router, Request, Response } from "express";
+import { z } from "zod";
 import {
   generateMultiFormatContent,
   getStudyMultiFormatContent,
@@ -319,10 +320,32 @@ router.get("/", requireAdmin, async (req: Request, res: Response) => {
 router.post("/:id/publish", requireAdmin, async (req: Request, res: Response) => {
   try {
     const contentId = parseInt(req.params.id);
-    const { isPublished } = req.body;
 
     if (isNaN(contentId)) {
       throw new AppError("Invalid content ID", 400, ErrorCode.VALIDATION_ERROR);
+    }
+
+    // Validate body: isPublished must be an explicit boolean so a missing
+    // field can't silently unpublish content.
+    const parsed = z
+      .object({ isPublished: z.boolean() })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(
+        "isPublished must be a boolean",
+        400,
+        ErrorCode.VALIDATION_ERROR,
+      );
+    }
+    const { isPublished } = parsed.data;
+
+    // Ensure the content exists so an unknown id returns 404, not a silent
+    // no-op success.
+    const existing = await db.query.multiFormatContent.findFirst({
+      where: eq(multiFormatContent.id, contentId),
+    });
+    if (!existing) {
+      throw new AppError("Content not found", 404, ErrorCode.NOT_FOUND);
     }
 
     await db
@@ -340,7 +363,8 @@ router.post("/:id/publish", requireAdmin, async (req: Request, res: Response) =>
     });
   } catch (error) {
     console.error("Error updating publish status:", error);
-    res.status(500).json({
+    const statusCode = error instanceof AppError ? error.statusCode : 500;
+    res.status(statusCode).json({
       success: false,
       message:
         error instanceof Error

@@ -192,9 +192,13 @@ async function generateTextWithAnthropic(
     { timeout, ...(signal ? { signal } : {}) },
   );
 
+  // Always attribute usage to a caller label so spend can be broken down by
+  // feature. Route-level call sites frequently omit `caller`; default to
+  // "unattributed" (never drop the key) so every usage row is greppable and
+  // aggregatable rather than silently anonymous.
   logger.info("Anthropic usage", "AIProvider", {
     model: resolvedModel,
-    ...(caller ? { caller } : {}),
+    caller: caller ?? "unattributed",
     inputTokens: response.usage.input_tokens,
     outputTokens: response.usage.output_tokens,
   });
@@ -212,6 +216,25 @@ async function generateTextWithAnthropic(
         `(blocks: [${blockTypes}], stop_reason: ${response.stop_reason})`,
     );
   }
+
+  // stop_reason === "max_tokens" means the model was cut off mid-generation and
+  // textBlock.text is truncated (e.g. a half-finished blog draft or malformed
+  // JSON). Returning it as success lets callers persist/publish incomplete
+  // content, and generateJSON callers only see a confusing parse error. Surface
+  // the truncation loudly so long-form callers can retry with a higher maxTokens.
+  if (response.stop_reason === "max_tokens") {
+    logger.warn(
+      "Anthropic response truncated: hit max_tokens cap — output is incomplete",
+      "AIProvider",
+      {
+        model: resolvedModel,
+        caller: caller ?? "unattributed",
+        maxTokens,
+        outputTokens: response.usage.output_tokens,
+      },
+    );
+  }
+
   return textBlock.text;
 }
 

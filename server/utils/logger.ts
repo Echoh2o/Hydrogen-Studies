@@ -15,6 +15,19 @@ interface LogEntry {
 
 const isProduction = process.env.NODE_ENV === "production";
 
+/**
+ * Keep the error message line plus the first `maxFrames` stack frames so logs
+ * stay debuggable without ballooning each line. Returns undefined for missing
+ * stacks.
+ */
+function truncateStack(stack?: string, maxFrames = 10): string | undefined {
+  if (!stack) return undefined;
+  const lines = stack.split("\n");
+  // lines[0] is the "Error: message" header; keep it plus up to maxFrames frames.
+  if (lines.length <= maxFrames + 1) return stack;
+  return lines.slice(0, maxFrames + 1).join("\n");
+}
+
 function formatLog(entry: LogEntry): string {
   if (isProduction) {
     return JSON.stringify(entry);
@@ -64,8 +77,10 @@ export const logger = {
     const entry = createLogEntry("error", message, context, {
       ...data,
       errorMessage: error instanceof Error ? error.message : String(error),
-      stack:
-        !isProduction && error instanceof Error ? error.stack : undefined,
+      // Include the stack in every environment (including production) — JSON
+      // logs handle multi-line strings fine, and prod errors are undebuggable
+      // without it. Bounded to the first ~10 frames to keep log lines small.
+      stack: error instanceof Error ? truncateStack(error.stack) : undefined,
     });
     console.error(formatLog(entry));
   },

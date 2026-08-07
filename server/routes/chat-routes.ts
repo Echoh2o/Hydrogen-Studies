@@ -57,7 +57,7 @@ router.post("/chat", async (req, res) => {
       title: study.title || "Untitled Study",
       doi: study.doi || "",
       authors: study.authors || "Unknown",
-      publishDate: study.publish_date || study.publication_date || "",
+      publishDate: study.publishDate || study.journalPublishDate || "",
       journal: study.journal || "",
       id: study.id,
     }));
@@ -361,7 +361,7 @@ router.post("/advanced-chat", async (req, res) => {
       title: study.title || "Untitled Study",
       doi: study.doi || "",
       authors: study.authors || "Unknown",
-      publishDate: study.publish_date || study.publication_date || "",
+      publishDate: study.publishDate || study.journalPublishDate || "",
       journal: study.journal || "",
       abstract: study.abstract?.substring(0, 200) + "..." || "",
       id: study.id,
@@ -386,11 +386,12 @@ router.post("/advanced-chat", async (req, res) => {
       data: response,
     });
   } catch (error) {
+    // Log the raw error server-side, but don't leak driver/AI-provider error
+    // strings (SQL fragments, table names, internal paths) to anonymous callers.
     console.error("Advanced chat API error:", error);
     res.status(500).json({
       success: false,
       error: "Failed to process advanced chat request",
-      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -398,10 +399,12 @@ router.post("/advanced-chat", async (req, res) => {
 // Submit feedback
 router.post("/chat/feedback", async (req, res) => {
   try {
-    const { messageId, rating, comment } = req.body;
+    const { messageId, rating } = req.body;
 
-    // Log feedback for now - can be stored in database later
-    console.log("Chat feedback received:", { messageId, rating, comment });
+    // Log only non-PII metadata; the free-text `comment` sits adjacent to
+    // health questions, so it must not be written to platform stdout logs.
+    // (Persist to a dedicated feedback table if durable storage is needed.)
+    console.log("Chat feedback received:", { messageId, rating });
 
     res.json({
       success: true,

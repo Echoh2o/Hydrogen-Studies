@@ -3,7 +3,7 @@ import { studyService } from "../services/study-service";
 import { getPersonalizedRecommendations } from "../services/recommendation-engine";
 import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiting";
 import { requireAdmin } from "../auth";
-import analyticsRoutes from "../routes/content-analytics-routes";
+import { invalidateBotCache } from "../middleware/seo-bot-middleware";
 import { logger } from "../utils/logger";
 
 export class StudiesController {
@@ -15,8 +15,10 @@ export class StudiesController {
   }
 
   private initializeRoutes() {
-    // Mount analytics routes (legacy support from studies-router)
-    this.router.use("/", analyticsRoutes);
+    // NOTE: The content-analytics router is intentionally NOT mounted here.
+    // It is served canonically at /api/analytics (see app.ts). Mounting it a
+    // second time under /api/studies duplicated the unauthenticated
+    // batch-track write surface, so the legacy mount has been removed.
 
     // Named routes MUST come before /:id to avoid being caught by the param route
     this.router.get("/content-queue/status", requireAdmin, this.getContentQueueStatus);
@@ -548,6 +550,11 @@ export class StudiesController {
 
           const updatedStudy = await studyService.updateStudy(studyId, parsed.data);
           if (!updatedStudy) return res.status(404).json({ error: "Study not found" });
+
+          // An edit can change the rendered page (title, abstract, canonical,
+          // publish state) — drop the crawler cache so bots re-fetch fresh HTML.
+          this.invalidateStudyBotCache(updatedStudy.slug);
+
           res.json(updatedStudy);
       } catch (error) {
           logger.error("Error updating study", error, "StudiesController");
@@ -634,15 +641,29 @@ export class StudiesController {
       }
   }
 
+  // Drop cached bot HTML for a study's public pages so crawlers stop being
+  // served a stale 200 (old canonical/JSON-LD) after a delete, unpublish, or
+  // content/slug change. Studies render at both /studies/:slug and /study/:slug.
+  private invalidateStudyBotCache = (slug?: string | null) => {
+      if (!slug) return;
+      invalidateBotCache(`/studies/${slug}`);
+      invalidateBotCache(`/study/${slug}`);
+  }
+
   private deleteStudy = async (req: Request, res: Response) => {
       try {
           const id = parseInt(req.params.id);
           if (isNaN(id)) return res.status(400).json({ error: "Invalid study ID" });
 
+          // Capture the slug before deletion so we can drop its crawler cache entry.
+          const existing = await studyService.getStudyById(id);
+
           const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
           const reason = req.body?.reason || null;
           const result = await studyService.deleteStudy(id, deletedBy, reason);
           if (!result) return res.status(404).json({ error: "Study not found" });
+
+          this.invalidateStudyBotCache(existing?.slug);
 
           res.json(result);
       } catch (error) {
@@ -666,9 +687,25 @@ export class StudiesController {
             return res.status(400).json({ error: "No valid study IDs provided" });
           }
 
+          // Capture slugs before deletion so we can drop crawler cache entries
+          // for the pages that actually get removed.
+          const { db } = await import("../db");
+          const { studies } = await import("../../shared/schema");
+          const { inArray } = await import("drizzle-orm");
+          const slugRows = await db
+            .select({ id: studies.id, slug: studies.slug })
+            .from(studies)
+            .where(inArray(studies.id, ids));
+          const slugById = new Map(slugRows.map((r) => [r.id, r.slug]));
+
           const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
           const reason = req.body?.reason || null;
           const result = await studyService.bulkDeleteStudies(ids, deletedBy, reason);
+
+          for (const deletedId of result.deleted) {
+            this.invalidateStudyBotCache(slugById.get(deletedId));
+          }
+
           res.json(result);
       } catch (error: any) {
           logger.error("Error bulk deleting studies", error, "StudiesController");
@@ -805,54 +842,76 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
       try {
           const limit = Math.min(parseInt(req.body.limit) || 10, 50);
 
-          const { db } = await import("../db");
-          const { studies } = await import("../../shared/schema");
-          const { isNull, sql } = await import("drizzle-orm");
+          // This loops up to `limit` sequential Claude calls, which easily
+          // exceeds the 30s request timeout. The timeout middleware sends a 504
+          // but does NOT cancel the handler, so completing inline meant burning
+          // AI spend after the response, then throwing ERR_HTTP_HEADERS_SENT.
+          // Run fire-and-forget and return 202 immediately (like the image /
+          // Shopify backfill endpoints); progress is written to the DB and logged.
+          void this.runBatchGenerateTldrs(limit).catch((err) => {
+            logger.error("Background batch TLDR generation failed", err, "StudiesController");
+          });
 
-          // Get studies without TLDRs
-          const studiesWithoutTldr = await db
-            .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
-            .from(studies)
-            .where(isNull(studies.tldr))
-            .limit(limit);
-
-          if (studiesWithoutTldr.length === 0) {
-            return res.json({ success: true, message: "All studies already have TLDRs", generated: 0 });
-          }
-
-          const { generateStudyTldr } = await import("../services/tldr-generator");
-          const { MODELS } = await import("../services/ai-provider");
-          const { eq } = await import("drizzle-orm");
-
-          let generated = 0;
-          const errors: string[] = [];
-
-          for (const study of studiesWithoutTldr) {
-            try {
-              const tldr = await generateStudyTldr(study, {
-                model: MODELS.SONNET,
-                effort: "low", // 1-2 sentence TLDR — no deep reasoning needed
-                caller: "StudiesController.batchTldr",
-              });
-              if (tldr) {
-                await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
-                generated++;
-              }
-            } catch (err: any) {
-              errors.push(`Study ${study.id}: ${err.message}`);
-            }
-          }
-
-          res.json({
+          res.status(202).json({
             success: true,
-            generated,
-            remaining: studiesWithoutTldr.length - generated,
-            errors: errors.length > 0 ? errors : undefined,
+            message: `Started generating TLDRs for up to ${limit} studies in the background. Check the studies for updated TLDRs.`,
+            limit,
           });
       } catch (error) {
           logger.error("Batch TLDR generation error", error, "StudiesController");
           res.status(500).json({ error: "Failed to batch generate TLDRs" });
       }
+  }
+
+  private runBatchGenerateTldrs = async (limit: number): Promise<void> => {
+      const { db } = await import("../db");
+      const { studies } = await import("../../shared/schema");
+      const { isNull } = await import("drizzle-orm");
+
+      // Get studies without TLDRs
+      const studiesWithoutTldr = await db
+        .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
+        .from(studies)
+        .where(isNull(studies.tldr))
+        .limit(limit);
+
+      if (studiesWithoutTldr.length === 0) {
+        logger.info("Batch TLDR generation: all studies already have TLDRs", "StudiesController");
+        return;
+      }
+
+      const { generateStudyTldr } = await import("../services/tldr-generator");
+      const { MODELS } = await import("../services/ai-provider");
+      const { eq } = await import("drizzle-orm");
+
+      let generated = 0;
+      const errors: string[] = [];
+
+      for (const study of studiesWithoutTldr) {
+        try {
+          const tldr = await generateStudyTldr(study, {
+            model: MODELS.SONNET,
+            effort: "low", // 1-2 sentence TLDR — no deep reasoning needed
+            caller: "StudiesController.batchTldr",
+          });
+          if (tldr) {
+            await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
+            generated++;
+          }
+        } catch (err: any) {
+          errors.push(`Study ${study.id}: ${err.message}`);
+        }
+      }
+
+      logger.info(
+        `Batch TLDR generation complete: generated ${generated} of ${studiesWithoutTldr.length}`,
+        "StudiesController",
+        {
+          generated,
+          remaining: studiesWithoutTldr.length - generated,
+          errors: errors.length > 0 ? errors : undefined,
+        } as Record<string, unknown>,
+      );
   }
 }
 

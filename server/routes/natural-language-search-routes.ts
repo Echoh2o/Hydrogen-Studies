@@ -394,35 +394,17 @@ router.post("/api/search/batch", async (req, res) => {
 /**
  * Save search endpoint
  * POST /api/search/save
+ *
+ * Not implemented: there is no saved_searches table yet, so this endpoint
+ * cannot persist anything. It previously returned { success: true } with an
+ * in-memory object, silently dropping every save. Until backing storage
+ * exists, respond 501 rather than faking success.
  */
-router.post("/api/search/save", async (req, res) => {
-  try {
-    const { query, name, filters, userId } = req.body;
-
-    if (!query || !name) {
-      return res.status(400).json({ error: "Query and name are required" });
-    }
-
-    // Save to database (simplified for now)
-    const saved = {
-      id: Date.now(),
-      query,
-      name,
-      filters: filters || {},
-      userId: userId || "anonymous",
-      createdAt: new Date(),
-    };
-
-    res.json({
-      success: true,
-      saved,
-    });
-  } catch (error) {
-    console.error("Save search error:", error);
-    res.status(500).json({
-      error: "Failed to save search",
-    });
-  }
+router.post("/api/search/save", (_req, res) => {
+  res.status(501).json({
+    error: "Not implemented",
+    message: "Saving searches is not yet supported.",
+  });
 });
 
 // Helper functions
