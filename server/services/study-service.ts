@@ -6,7 +6,7 @@ import {
   deletedStudies,
   type Study, type InsertStudy,
 } from "@shared/schema";
-import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray } from "drizzle-orm";
+import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray, getTableColumns } from "drizzle-orm";
 import { logger } from "../utils/logger";
 
 // Track whether full-text search is available (set after first successful/failed query)
@@ -185,12 +185,6 @@ export class StudyService {
       // Build WHERE clause
       const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-      // Count query
-      const countResult = whereClause
-        ? await db.select({ value: count() }).from(studies).where(whereClause)
-        : await db.select({ value: count() }).from(studies);
-      const total = countResult[0]?.value || 0;
-
       // Pagination
       const page = Math.max(1, parseInt(filters.page?.toString() || "1", 10));
       const pageSize = Math.min(100, Math.max(1, parseInt(filters.limit?.toString() || filters.pageSize?.toString() || "20", 10)));
@@ -219,10 +213,22 @@ export class StudyService {
         orderByClause = sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
       }
 
-      // Main query - build complete chain
-      const data = whereClause
-        ? await db.select().from(studies).where(whereClause).orderBy(orderByClause).limit(pageSize).offset(offset)
-        : await db.select().from(studies).orderBy(orderByClause).limit(pageSize).offset(offset);
+      // Main query - build complete chain.
+      // A `count(*) OVER()` window function returns the full match total on
+      // every row, collapsing what used to be a separate COUNT round-trip into
+      // this single page query.
+      const selection = {
+        ...getTableColumns(studies),
+        total: sql<number>`count(*) over()`.mapWith(Number),
+      };
+      const rows = whereClause
+        ? await db.select(selection).from(studies).where(whereClause).orderBy(orderByClause).limit(pageSize).offset(offset)
+        : await db.select(selection).from(studies).orderBy(orderByClause).limit(pageSize).offset(offset);
+
+      // Window total is 0 when there are no matching rows.
+      const total = rows.length > 0 ? rows[0].total : 0;
+      // Strip the injected `total` column so each row keeps its Study shape.
+      const data = rows.map(({ total: _total, ...study }) => study);
 
       return {
         data,
