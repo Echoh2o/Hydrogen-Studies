@@ -812,6 +812,11 @@ app.use("/api/admin/gsc", adminGscRoutes);
 import adminGa4Routes from "./routes/admin-ga4-routes";
 app.use("/api/admin/ga4", adminGa4Routes);
 
+// Content consolidation (corpus pruning: cluster/report/execute). Own
+// requireAdmin at router top; mounted before the /api/admin catch-all.
+import consolidationRoutes from "./routes/consolidation-routes";
+app.use("/api/admin/consolidation", consolidationRoutes);
+
 // Admin monitoring & process control
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
 app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes
