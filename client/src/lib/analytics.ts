@@ -91,3 +91,11 @@ export const trackEvent = (
     value: value,
   });
 };
+
+// Track clicks on outbound store links (echowater.com). `placement`
+// identifies where on the site the link lives (e.g. "footer", "chat",
+// "products-page") and doubles as the event category so GA4 reports can
+// segment by placement; the full href is kept as the label.
+export const trackOutboundClick = (href: string, placement: string) => {
+  trackEvent("outbound_click", placement, href);
+};

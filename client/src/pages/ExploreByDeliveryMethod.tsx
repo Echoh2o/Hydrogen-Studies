@@ -27,6 +27,15 @@ import {
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
+import { echoProductUrl, ECHO_PRODUCTS } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+const flaskPromoUrl = echoProductUrl(ECHO_PRODUCTS.flask, {
+  content: "delivery-method-promo",
+});
+const flaskDetailUrl = echoProductUrl(ECHO_PRODUCTS.flask, {
+  content: "delivery-method-detail",
+});
 
 const getDeliveryMethodIcon = (slug: string, className: string = "") => {
   switch (slug) {
@@ -243,9 +252,12 @@ const ExploreByDeliveryMethodPage: React.FC = () => {
                 <div>
                   <Button asChild>
                     <a
-                      href="https://echowater.com/products/echo-flask"
+                      href={flaskPromoUrl}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
+                      onClick={() =>
+                        trackOutboundClick(flaskPromoUrl, "delivery-method-promo")
+                      }
                     >
                       Learn More
                     </a>
@@ -343,9 +355,12 @@ export const DeliveryMethodDetailPage: React.FC = () => {
                   <div>
                     <Button asChild>
                       <a
-                        href="https://echowater.com/products/echo-flask"
+                        href={flaskDetailUrl}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
+                        onClick={() =>
+                          trackOutboundClick(flaskDetailUrl, "delivery-method-detail")
+                        }
                       >
                         Shop Echo Flask
                       </a>

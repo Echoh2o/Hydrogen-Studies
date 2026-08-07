@@ -1,4 +1,8 @@
 import { FadeInOnScroll } from "@/components/animations/ScrollAnimations";
+import { buildEchoUrl } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+const echoStoreUrl = buildEchoUrl("/", { content: "learn-delivery-methods" });
 
 const deliveryMethods = [
   {
@@ -554,9 +558,10 @@ export default function DeliveryMethodsSection() {
             the Echo Go+ portable bottle, to Echo Hydrogen Enriched Water powder
             at up to 16 ppm. Ready to explore?{" "}
             <a
-              href="https://echowater.com"
+              href={echoStoreUrl}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
+              onClick={() => trackOutboundClick(echoStoreUrl, "learn-delivery-methods")}
               style={{
                 color: "var(--lp-accent)",
                 fontWeight: 500,

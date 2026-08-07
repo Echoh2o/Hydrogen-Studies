@@ -33,6 +33,10 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
+import { buildEchoUrl } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+const echoStoreUrl = buildEchoUrl("/", { content: "hub-cta" });
 
 // Topic configuration mapping slugs to display data
 const TOPIC_CONFIG: Record<
@@ -616,9 +620,10 @@ export default function ContentHubPage() {
               technology for your home.
             </p>
             <a
-              href="https://www.echowater.com"
+              href={echoStoreUrl}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
+              onClick={() => trackOutboundClick(echoStoreUrl, "hub-cta")}
             >
               <Button
                 size="lg"

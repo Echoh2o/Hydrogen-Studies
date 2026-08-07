@@ -223,6 +223,13 @@ export class JobScheduler {
 
     logger.info("Starting...", "JobScheduler");
 
+    if (process.env.ENABLE_BLOG_BACKFILL !== "1") {
+      logger.info(
+        "Job 7 (batch-blog-generation) paused pending demand-ranked generation rework; set ENABLE_BLOG_BACKFILL=1 to enable",
+        "JobScheduler"
+      );
+    }
+
     // Fresh shutdown signal for this run (a prior stop() leaves it aborted).
     if (this.shutdownController.signal.aborted) {
       this.shutdownController = new AbortController();
@@ -487,19 +494,22 @@ export class JobScheduler {
 
       // Job 7: Batch Blog Auto-Generation (runs after pipeline, up to 5 per cycle)
       // Generates blog articles for pipeline-processed studies that don't have one yet.
-      try {
-        const start = Date.now();
-        await this.withTimeout(
-          () => this.runBatchBlogGenerationJob(),
-          30 * 60 * 1000,
-          "batch-blog-generation"
-        );
-        const elapsed = Date.now() - start;
-        if (elapsed > 1000) {
-          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "batch-blog-generation" });
+      // Gated behind ENABLE_BLOG_BACKFILL=1 pending the demand-ranked generation rework.
+      if (process.env.ENABLE_BLOG_BACKFILL === "1") {
+        try {
+          const start = Date.now();
+          await this.withTimeout(
+            () => this.runBatchBlogGenerationJob(),
+            30 * 60 * 1000,
+            "batch-blog-generation"
+          );
+          const elapsed = Date.now() - start;
+          if (elapsed > 1000) {
+            logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "batch-blog-generation" });
+          }
+        } catch (error) {
+          logger.error("Job 7 (batch-blog-generation) unexpected error", error, "JobScheduler");
         }
-      } catch (error) {
-        logger.error("Job 7 (batch-blog-generation) unexpected error", error, "JobScheduler");
       }
 
       // Job 8: Citation Network Building (runs once per week)

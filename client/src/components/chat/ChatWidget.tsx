@@ -39,6 +39,28 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import {
+  buildEchoUrl,
+  echoProductUrl,
+  ECHO_PRODUCTS,
+  type EchoProduct,
+} from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+// Route any echowater.com URL (e.g. from server-provided recommendations)
+// through buildEchoUrl so it always carries UTM attribution; leave other
+// hosts untouched.
+const withEchoAttribution = (url: string): string => {
+  try {
+    return new URL(url).hostname.endsWith("echowater.com")
+      ? buildEchoUrl(url, { content: "chat" })
+      : url;
+  } catch {
+    return url;
+  }
+};
+
+const echoChatHomeUrl = buildEchoUrl("/", { content: "chat" });
 
 // Types for the chat functionality
 interface ChatMessage {
@@ -389,19 +411,29 @@ export const ChatWidget: React.FC = () => {
     }
   };
 
-  // Helper function to generate fallback product recommendations
+  // Helper function to generate fallback product recommendations from the
+  // verified Echo Water catalog (shared/echo-products.ts).
   const generateFallbackProductRecommendations = (query: string) => {
     const lowerQuery = query.toLowerCase();
 
+    const toRecommendation = (
+      product: EchoProduct,
+      imageUrl: string,
+      relevanceScore: number,
+    ): ProductRecommendation => ({
+      name: product.title,
+      description: product.blurb,
+      url: echoProductUrl(product, { content: "chat" }),
+      imageUrl,
+      relevanceScore,
+    });
+
     // Always include the Echo Flask as a primary recommendation for every query
-    const echoFlask = {
-      name: "Echo H2 Flask",
-      description:
-        "Portable hydrogen-infusing water bottle for on-the-go hydrogen therapy with premium quality materials",
-      url: "https://echowater.com/products/echo-h2-flask",
-      imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-flask.jpg",
-      relevanceScore: 98,
-    };
+    const echoFlask = toRecommendation(
+      ECHO_PRODUCTS.flask,
+      "/images/products/echo-flask.webp",
+      98,
+    );
 
     if (
       lowerQuery.includes("skin") ||
@@ -413,14 +445,11 @@ export const ChatWidget: React.FC = () => {
       // Recommend bath system for skin conditions and Flask for drinking water benefits
       setProductRecommendations([
         echoFlask,
-        {
-          name: "Echo H2 Bath System",
-          description:
-            "Advanced hydrogen bath system for full-body hydrogen therapy and skin health",
-          url: "https://echowater.com/products/echo-h2-bath",
-          imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-bath.jpg",
-          relevanceScore: 95,
-        },
+        toRecommendation(
+          ECHO_PRODUCTS.revive,
+          "/images/products/echo-revive.webp",
+          95,
+        ),
       ]);
     } else if (
       lowerQuery.includes("breath") ||
@@ -428,18 +457,14 @@ export const ChatWidget: React.FC = () => {
       lowerQuery.includes("inhal") ||
       lowerQuery.includes("respiratory")
     ) {
-      // Recommend inhaler for respiratory conditions and Flask for drinking water benefits
+      // Recommend inhalation machine for respiratory conditions and Flask for drinking water benefits
       setProductRecommendations([
         echoFlask,
-        {
-          name: "Echo H2 Inhaler",
-          description:
-            "Premium molecular hydrogen inhalation device for respiratory and systemic benefits",
-          url: "https://echowater.com/products/echo-h2-inhaler",
-          imageUrl:
-            "https://echowater.com/cdn/shop/products/echo-h2-inhaler.jpg",
-          relevanceScore: 95,
-        },
+        toRecommendation(
+          ECHO_PRODUCTS.refresh,
+          "/images/products/echo-refresh.webp",
+          95,
+        ),
       ]);
     } else if (
       lowerQuery.includes("athletic") ||
@@ -448,18 +473,14 @@ export const ChatWidget: React.FC = () => {
       lowerQuery.includes("recovery") ||
       lowerQuery.includes("sport")
     ) {
-      // Recommend Flask and tablets for athletic performance
+      // Recommend Flask and stick packs for athletic performance
       setProductRecommendations([
         echoFlask,
-        {
-          name: "Echo H2 Tablet Maker",
-          description:
-            "Portable hydrogen tablets for creating hydrogen-rich water during training sessions and competitions",
-          url: "https://echowater.com/products/echo-h2-tablets-1",
-          imageUrl:
-            "https://echowater.com/cdn/shop/products/echo-h2-tablets.jpg",
-          relevanceScore: 90,
-        },
+        toRecommendation(
+          ECHO_PRODUCTS.prebiotic,
+          "/images/products/echo-drink-mix.webp",
+          90,
+        ),
       ]);
     } else if (
       lowerQuery.includes("travel") ||
@@ -469,28 +490,21 @@ export const ChatWidget: React.FC = () => {
     ) {
       // Flask is perfect for travel and portable use
       setProductRecommendations([
-        {
-          name: "Echo H2 Flask",
-          description:
-            "The ultimate portable hydrogen water solution for travel and on-the-go hydrogen therapy",
-          url: "https://echowater.com/products/echo-h2-flask",
-          imageUrl: "https://echowater.com/cdn/shop/products/echo-h2-flask.jpg",
-          relevanceScore: 100,
-        },
+        toRecommendation(
+          ECHO_PRODUCTS.flask,
+          "/images/products/echo-flask.webp",
+          100,
+        ),
       ]);
     } else {
       // Default to Flask and water machine for general queries
       setProductRecommendations([
         echoFlask,
-        {
-          name: "Echo H2 Machine",
-          description:
-            "Premium hydrogen water generator for home use - great companion to your Echo Flask for maximum benefits",
-          url: "https://echowater.com/products/echo-h2-machine",
-          imageUrl:
-            "https://echowater.com/cdn/shop/files/echo-h2-server-compressed-2_1024x1024.jpg",
-          relevanceScore: 85,
-        },
+        toRecommendation(
+          ECHO_PRODUCTS.h2Machine,
+          "/images/products/echo-h2.webp",
+          85,
+        ),
       ]);
     }
   };
@@ -882,12 +896,15 @@ export const ChatWidget: React.FC = () => {
                   Hydrogen Health
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {productRecommendations.map((product, index) => (
+                  {productRecommendations.map((product, index) => {
+                    const productHref = withEchoAttribution(product.url);
+                    return (
                     <a
                       key={index}
-                      href={product.url}
+                      href={productHref}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
+                      onClick={() => trackOutboundClick(productHref, "chat")}
                       className="flex gap-3 p-2 rounded-md hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors"
                     >
                       {product.imageUrl && (
@@ -908,7 +925,8 @@ export const ChatWidget: React.FC = () => {
                         </p>
                       </div>
                     </a>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -925,9 +943,10 @@ export const ChatWidget: React.FC = () => {
                   <p className="text-xs mt-1 mb-2 text-muted-foreground">
                     Visit{" "}
                     <a
-                      href="https://echowater.com"
+                      href={echoChatHomeUrl}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
+                      onClick={() => trackOutboundClick(echoChatHomeUrl, "chat")}
                       className="text-teal-600 dark:text-teal-400 font-medium"
                     >
                       Echo Water
@@ -938,9 +957,10 @@ export const ChatWidget: React.FC = () => {
                     variant="default"
                     size="sm"
                     className="w-full text-xs"
-                    onClick={() =>
-                      window.open("https://echowater.com", "_blank")
-                    }
+                    onClick={() => {
+                      trackOutboundClick(echoChatHomeUrl, "chat");
+                      window.open(echoChatHomeUrl, "_blank", "noopener");
+                    }}
                   >
                     View Products
                   </Button>

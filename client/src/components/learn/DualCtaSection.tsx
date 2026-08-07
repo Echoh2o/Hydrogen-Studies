@@ -1,5 +1,9 @@
 import { FadeInOnScroll } from "@/components/animations/ScrollAnimations";
 import { useQuery } from "@tanstack/react-query";
+import { buildEchoUrl } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+const echoStoreUrl = buildEchoUrl("/", { content: "learn-dual-cta" });
 
 const categoryChips = [
   "Brain",
@@ -247,9 +251,10 @@ export default function DualCtaSection() {
               </p>
 
               <a
-                href="https://echowater.com"
+                href={echoStoreUrl}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
+                onClick={() => trackOutboundClick(echoStoreUrl, "learn-dual-cta")}
                 className="block w-full"
                 style={{
                   background: "var(--lp-accent)",

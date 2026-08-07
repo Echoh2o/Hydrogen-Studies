@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import {
   ArrowLeft,
-  Star,
   ShoppingCart,
   Award,
   Droplets,
@@ -14,7 +13,6 @@ import {
   ChevronUp,
   Mail,
   Download,
-  Quote,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +36,10 @@ import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import JsonLd, { generateProductSchema } from "@/components/seo/JsonLd";
+import { buildEchoUrl, echoProductUrl, ECHO_PRODUCTS } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+const echoContactUrl = buildEchoUrl("/pages/contact", { content: "products-page" });
 
 // Buyer's Guide email capture modal
 function BuyersGuideModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -190,8 +192,6 @@ export default function ProductsPage() {
       name: "Echo Flask Hydrogen Water Bottle",
       price: "Visit Store",
       originalPrice: null,
-      rating: 4.9,
-      reviews: 256,
       description:
         "The Echo Flask: Smart hydrogen water bottle with up to 8 ppm hydrogen concentration. Track hydration, customize settings & fuel your cells. Safe & effective.",
       features: [
@@ -202,7 +202,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-flask.webp",
       badge: "Hydrogen Water Bottle",
-      url: "https://echowater.com/products/echo-flask",
+      url: echoProductUrl(ECHO_PRODUCTS.flask, { content: "products-page" }),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 8 PPM",
       bestFor: "Daily hydration, portability",
@@ -212,8 +212,6 @@ export default function ProductsPage() {
       name: "Hydrogen Prebiotic Stick Pack (30-pack)",
       price: "Visit Store",
       originalPrice: null,
-      rating: 4.7,
-      reviews: 189,
       description:
         "Boost energy, clarity, and gut health with Echo Hydrogen Prebiotic Stick Packs — instant hydration + prebiotics in one convenient packet.",
       features: [
@@ -224,7 +222,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-drink-mix.webp",
       badge: "Powdered Drink Mix",
-      url: "https://echowater.com/products/hydrogen-prebiotic-stick-pack-30-pack",
+      url: echoProductUrl(ECHO_PRODUCTS.prebiotic, { content: "products-page" }),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 16 PPM",
       bestFor: "Gut health, maximum concentration",
@@ -234,8 +232,6 @@ export default function ProductsPage() {
       name: "Echo H2\u00AE Hydrogen Water Machine",
       price: "Visit Store",
       originalPrice: null,
-      rating: 4.9,
-      reviews: 143,
       description:
         "The Echo H2 is a countertop hydrogen water machine that connects to your existing faucet. Produces hydrogen-enriched, filtered water on demand.",
       features: [
@@ -246,7 +242,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-h2.webp",
       badge: "Hydrogen Water Machine",
-      url: "https://echowater.com/products/echo-ultimate-hydrogen-water",
+      url: echoProductUrl(ECHO_PRODUCTS.h2Machine, { content: "products-page" }),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 1.5 PPM",
       bestFor: "Daily home use, consistent intake",
@@ -256,8 +252,6 @@ export default function ProductsPage() {
       name: "Echo Forty\u2122 Hydrogen Water Tumbler",
       price: "Visit Store",
       originalPrice: null,
-      rating: 4.8,
-      reviews: 97,
       description:
         "The Echo Forty is a smart hydrogen water tumbler with a built-in touchscreen display. Generates hydrogen-rich water anywhere with 40 oz capacity.",
       features: [
@@ -268,7 +262,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-forty.webp",
       badge: "Hydrogen Water Bottle",
-      url: "https://echowater.com/products/echo-forty",
+      url: echoProductUrl(ECHO_PRODUCTS.forty, { content: "products-page" }),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 4.5 PPM",
       bestFor: "On-the-go, large capacity",
@@ -278,8 +272,6 @@ export default function ProductsPage() {
       name: "Echo One\u2122 Hydrogen Water Machine",
       price: "Visit Store",
       originalPrice: null,
-      rating: 4.9,
-      reviews: 112,
       description:
         "The Echo One is a premium under-counter hydrogen water machine with sleek design and RGB lighting. Delivers high-concentration hydrogen water on demand.",
       features: [
@@ -290,7 +282,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-one.webp",
       badge: "Hydrogen Water Machine",
-      url: "https://echowater.com/products/echo-one",
+      url: echoProductUrl(ECHO_PRODUCTS.one, { content: "products-page" }),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 1.5 PPM",
       bestFor: "Premium home installation",
@@ -300,8 +292,6 @@ export default function ProductsPage() {
       name: "Echo Refresh\u2122 Hydrogen Inhalation Machine",
       price: "Visit Store",
       originalPrice: null,
-      rating: 4.8,
-      reviews: 97,
       description:
         "The Echo Refresh enables you to inhale hydrogen gas directly. It goes from your lungs into your bloodstream in a matter of seconds for rapid systemic delivery.",
       features: [
@@ -312,7 +302,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-refresh.webp",
       badge: "Inhalation",
-      url: "https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine",
+      url: echoProductUrl(ECHO_PRODUCTS.refresh, { content: "products-page" }),
       deliveryMethod: "inhalation",
       h2Concentration: "2% H2 gas",
       bestFor: "Respiratory support, rapid absorption",
@@ -322,8 +312,6 @@ export default function ProductsPage() {
       name: "Echo Revive\u2122 Hydrogen Bath Machine",
       price: "Visit Store",
       originalPrice: null,
-      rating: 4.6,
-      reviews: 78,
       description:
         "Upgrade your bath routine with the Echo Revive. Enjoy the benefits of hydrogen-rich bath water through skin absorption.",
       features: [
@@ -334,7 +322,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-revive.webp",
       badge: "Bathing",
-      url: "https://echowater.com/products/echo-revive",
+      url: echoProductUrl(ECHO_PRODUCTS.revive, { content: "products-page" }),
       deliveryMethod: "bathing",
       h2Concentration: "Up to 1.5 PPM",
       bestFor: "Skin health, muscle recovery, relaxation",
@@ -360,30 +348,6 @@ export default function ProductsPage() {
       icon: <Award className="h-6 w-6 text-teal-500" />,
       title: "Antioxidant Properties",
       description: "Selective antioxidant targeting harmful free radicals",
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: "Sarah M.",
-      role: "Fitness Coach",
-      quote: "After researching hydrogen water studies on this site, I got the Echo Flask. My recovery time between workouts has noticeably improved.",
-      rating: 5,
-      product: "Echo Flask",
-    },
-    {
-      name: "Dr. James L.",
-      role: "Naturopathic Physician",
-      quote: "I recommend the Echo Ultimate to my patients. The research behind molecular hydrogen is compelling, and the quality of this machine is excellent.",
-      rating: 5,
-      product: "Echo Ultimate",
-    },
-    {
-      name: "Maria K.",
-      role: "Wellness Enthusiast",
-      quote: "The Hydrogen Prebiotic Stick Packs are a game-changer for travel. I never miss my hydrogen intake now, even on the go.",
-      rating: 5,
-      product: "Prebiotic Stick Packs",
     },
   ];
 
@@ -436,8 +400,6 @@ export default function ProductsPage() {
             image: product.image,
             url: product.url,
             brand: "Echo Water",
-            reviewCount: product.reviews,
-            reviewRating: product.rating,
           })}
         />
       ))}
@@ -520,17 +482,6 @@ export default function ProductsPage() {
                     )}
                   </div>
                   <CardTitle className="text-xl">{product.name}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm font-medium ml-1">
-                        {product.rating}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      ({product.reviews} reviews)
-                    </span>
-                  </div>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="mb-4">
@@ -562,7 +513,12 @@ export default function ProductsPage() {
                     </div>
                   </div>
 
-                  <a href={product.url} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={product.url}
+                    target="_blank"
+                    rel="noopener"
+                    onClick={() => trackOutboundClick(product.url, "products-page")}
+                  >
                     <Button className="w-full mb-2">
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       View Product Details
@@ -618,57 +574,8 @@ export default function ProductsPage() {
                       <td key={p.id} className="text-center p-4 text-sm">{p.bestFor}</td>
                     ))}
                   </tr>
-                  <tr className="border-b bg-gray-50/50">
-                    <td className="p-4 text-sm font-medium text-gray-600">Rating</td>
-                    {products.map((p) => (
-                      <td key={p.id} className="text-center p-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="text-sm font-medium">{p.rating}</span>
-                        </div>
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="p-4 text-sm font-medium text-gray-600">Reviews</td>
-                    {products.map((p) => (
-                      <td key={p.id} className="text-center p-4 text-sm">{p.reviews}</td>
-                    ))}
-                  </tr>
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          {/* Testimonials Section */}
-          <div className="mb-16">
-            <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
-              What Our Community Says
-            </h2>
-            <p className="text-center text-gray-500 mb-8">
-              Real experiences from people who combined the research with the products
-            </p>
-            <div className="grid md:grid-cols-3 gap-6">
-              {testimonials.map((t, i) => (
-                <Card key={i} className="relative">
-                  <CardContent className="p-6">
-                    <Quote className="h-8 w-8 text-teal-100 absolute top-4 right-4" />
-                    <div className="flex items-center gap-1 mb-3">
-                      {Array.from({ length: t.rating }).map((_, j) => (
-                        <Star key={j} className="h-4 w-4 text-yellow-400 fill-current" />
-                      ))}
-                    </div>
-                    <p className="text-gray-700 text-sm mb-4 italic">"{t.quote}"</p>
-                    <div className="border-t pt-3">
-                      <p className="font-semibold text-sm">{t.name}</p>
-                      <p className="text-xs text-gray-500">{t.role}</p>
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {t.product}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </div>
 
@@ -725,7 +632,12 @@ export default function ProductsPage() {
                 solution based on your needs and budget.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="https://echowater.com/pages/contact" target="_blank" rel="noopener noreferrer">
+                <a
+                  href={echoContactUrl}
+                  target="_blank"
+                  rel="noopener"
+                  onClick={() => trackOutboundClick(echoContactUrl, "products-page")}
+                >
                   <Button variant="secondary" size="lg">
                     Free Consultation
                   </Button>
