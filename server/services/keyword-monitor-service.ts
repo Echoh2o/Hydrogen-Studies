@@ -206,7 +206,10 @@ async function runScheduledSearch(sources: string[], keywords: any[]) {
   };
 
   if (!sources || sources.length === 0) {
-    sources = ["pubmed", "crossref", "europepmc", "medrxiv", "biorxiv", "googlescholar"]; // Default sources (all available)
+    // googlescholar is excluded from the default set: it now no-ops without a
+    // SERPAPI_KEY (spoofed-UA scraping removed), so scheduling it by default
+    // just wastes a pass. Callers can still opt in explicitly when a key is set.
+    sources = ["pubmed", "crossref", "europepmc", "medrxiv", "biorxiv"];
   }
 
   // Create a list of all search terms
