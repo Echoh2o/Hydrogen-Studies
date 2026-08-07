@@ -25,6 +25,7 @@ interface PreprintResult {
   externalId: string;
   category?: string;
   version?: string;
+  license?: string; // per-preprint CC license (e.g. cc_by, cc_by_nc_nd); gates AI-derivative reuse
 }
 
 interface PreprintApiResponse {
@@ -168,6 +169,7 @@ export async function searchMedRxiv(
         externalId: item.doi,
         category: item.category,
         version: item.version,
+        license: item.license,
       })),
       total: filtered.length,
     };
@@ -212,6 +214,7 @@ export async function searchBioRxiv(
         externalId: item.doi,
         category: item.category,
         version: item.version,
+        license: item.license,
       })),
       total: filtered.length,
     };

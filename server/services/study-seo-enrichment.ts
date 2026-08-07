@@ -17,7 +17,7 @@
 import { ai } from "./ai-provider";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
-import { eq, isNull, sql, and, or } from "drizzle-orm";
+import { eq, isNull, sql, and, or, ne } from "drizzle-orm";
 
 const SITE_NAME = "Hydrogen Studies";
 
@@ -137,6 +137,31 @@ Return ONLY the JSON object, no markdown formatting.`;
 }
 
 /**
+ * Ensure a study slug is unique across studies.
+ *
+ * studies.slug has only a plain (non-unique) index, and similar studies
+ * routinely receive identical AI-generated plain-language titles, so the
+ * derived slug can collide. When another study already owns the candidate
+ * slug we append a numeric suffix (-2, -3, ...) until it is unique, so
+ * GET /api/studies/slug/:slug never resolves to the wrong study.
+ */
+async function ensureUniqueSlug(baseSlug: string, studyId: number): Promise<string> {
+  let candidate = baseSlug;
+  let suffix = 2;
+
+  // Loop until no *other* study owns the candidate slug.
+  while (true) {
+    const [existing] = await db.select({ id: studies.id })
+      .from(studies)
+      .where(and(eq(studies.slug, candidate), ne(studies.id, studyId)))
+      .limit(1);
+    if (!existing) return candidate;
+    candidate = `${baseSlug}-${suffix}`;
+    suffix++;
+  }
+}
+
+/**
  * Enrich a single study and save to database
  */
 export async function enrichAndSaveStudy(studyId: number): Promise<boolean> {
@@ -155,12 +180,14 @@ export async function enrichAndSaveStudy(studyId: number): Promise<boolean> {
       return false;
     }
 
-    // Build the slug from plain language title
-    const slug = study.slug || enrichment.plainLanguageTitle
+    // Build the slug from plain language title, then guarantee uniqueness
+    // (studies.slug is not DB-unique, so resolve collisions in code).
+    const baseSlug = study.slug || enrichment.plainLanguageTitle
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
       .substring(0, 100);
+    const slug = await ensureUniqueSlug(baseSlug, studyId);
 
     // Save enrichment data
     await db.update(studies).set({

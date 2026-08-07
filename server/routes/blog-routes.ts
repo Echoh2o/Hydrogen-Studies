@@ -858,6 +858,12 @@ router.post("/:id(\\d+)/promote-to-pillar", requireAdmin, async (req, res) => {
       .where(eq(blogArticles.id, id))
       .limit(1);
     if (!pillar) return res.status(404).json({ error: "Blog not found" });
+    if (pillar.studyId == null) {
+      return res.status(400).json({
+        error:
+          "Pillar has no source study — can't scope cluster generation. Attach the pillar to a study first.",
+      });
+    }
 
     const [pillarStudy] = await db
       .select({ id: studies.id, category: studies.category })

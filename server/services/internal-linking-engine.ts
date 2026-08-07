@@ -145,45 +145,49 @@ export async function generateBlogLinks(blogId: number): Promise<LinkSuggestion[
   // the same source study, or articles about studies in the same category.
   // Without this filter every blog linked to the same 5 lowest-id published
   // blogs regardless of subject.
-  const [blogStudy] = await db.select({ category: studies.category })
-    .from(studies)
-    .where(eq(studies.id, blog.studyId))
-    .limit(1);
+  // A blog with no source study has no study-scoped related set, so skip.
+  const studyId = blog.studyId;
+  if (studyId != null) {
+    const [blogStudy] = await db.select({ category: studies.category })
+      .from(studies)
+      .where(eq(studies.id, studyId))
+      .limit(1);
 
-  const topicMatch = blogStudy?.category
-    ? or(eq(blogArticles.studyId, blog.studyId), eq(studies.category, blogStudy.category))
-    : eq(blogArticles.studyId, blog.studyId);
+    const topicMatch = blogStudy?.category
+      ? or(eq(blogArticles.studyId, studyId), eq(studies.category, blogStudy.category))
+      : eq(blogArticles.studyId, studyId);
 
-  const relatedBlogs = await db.select({
-    id: blogArticles.id,
-    title: blogArticles.title,
-    slug: blogArticles.slug,
-    articleType: blogArticles.articleType,
-    studyId: blogArticles.studyId,
-  })
-    .from(blogArticles)
-    .innerJoin(studies, eq(blogArticles.studyId, studies.id))
-    .where(
-      and(
-        ne(blogArticles.id, blogId),
-        eq(blogArticles.isPublished, true),
-        topicMatch,
+    const relatedBlogs = await db.select({
+      id: blogArticles.id,
+      title: blogArticles.title,
+      slug: blogArticles.slug,
+      articleType: blogArticles.articleType,
+      studyId: blogArticles.studyId,
+    })
+      .from(blogArticles)
+      .innerJoin(studies, eq(blogArticles.studyId, studies.id))
+      .where(
+        and(
+          ne(blogArticles.id, blogId),
+          eq(blogArticles.isPublished, true),
+          topicMatch,
+        )
       )
-    )
-    .limit(5);
+      .limit(5);
 
-  for (const related of relatedBlogs) {
-    const sameStudy = related.studyId === blog.studyId;
-    links.push({
-      fromType: "blog",
-      fromId: blogId,
-      toType: "blog",
-      toId: related.id,
-      anchorText: related.title.substring(0, 80),
-      context: sameStudy ? "More on this study" : "Related reading",
-      relevanceScore: sameStudy ? 75 : 60,
-      linkType: "related",
-    });
+    for (const related of relatedBlogs) {
+      const sameStudy = related.studyId === studyId;
+      links.push({
+        fromType: "blog",
+        fromId: blogId,
+        toType: "blog",
+        toId: related.id,
+        anchorText: related.title.substring(0, 80),
+        context: sameStudy ? "More on this study" : "Related reading",
+        relevanceScore: sameStudy ? 75 : 60,
+        linkType: "related",
+      });
+    }
   }
 
   return links;

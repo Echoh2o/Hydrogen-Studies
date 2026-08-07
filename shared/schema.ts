@@ -401,6 +401,17 @@ export const studies = pgTable(
     limitations: text("limitations"),
     isHumanTrial: boolean("is_human_trial").default(false),
 
+    // PubMed / enrichment identifiers and authorship metadata
+    pmid: text("pmid"), // PubMed ID from the pubmed consumer
+    firstAuthor: text("first_author"),
+    lastAuthor: text("last_author"),
+    license: text("license"), // e.g. CC-BY, publisher license terms
+
+    // Audit / background-job tracking timestamps (NULL = never attempted)
+    h2ExtractionAttemptedAt: timestamp("h2_extraction_attempted_at"),
+    enrichmentAttemptedAt: timestamp("enrichment_attempted_at"),
+    imageBackfillFailedAt: timestamp("image_backfill_failed_at"),
+
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => {
@@ -933,8 +944,8 @@ export const blogArticles = pgTable(
   "blog_articles",
   {
     id: serial("id").primaryKey(),
+    // Nullable: content-factory articles may attach to no specific study.
     studyId: integer("study_id")
-      .notNull()
       .references(() => studies.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     slug: text("slug").notNull().unique(),

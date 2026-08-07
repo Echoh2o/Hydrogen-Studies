@@ -37,6 +37,32 @@ const TAG = "ImageBackfill";
 const failedStudyIds = new Set<number>();
 const failedBlogIds = new Set<number>();
 
+/**
+ * How long a study that failed image generation is excluded from the
+ * candidate query. Persisted via studies.imageBackfillFailedAt so the skip
+ * survives process restarts (unlike the in-memory set above), while still
+ * letting a genuinely-fixable row be retried once the window elapses.
+ */
+const STUDY_FAILURE_COOLDOWN_INTERVAL = sql`interval '7 days'`;
+
+/**
+ * Mark a study as having failed image generation: record it in the
+ * in-memory skip set for this process AND stamp imageBackfillFailedAt so the
+ * exclusion is durable across restarts. Stamp failures are swallowed (logged)
+ * so a transient DB write error never aborts the batch loop.
+ */
+async function markStudyFailed(id: number): Promise<void> {
+  failedStudyIds.add(id);
+  try {
+    await db
+      .update(studies)
+      .set({ imageBackfillFailedAt: new Date() })
+      .where(eq(studies.id, id));
+  } catch (err) {
+    logger.error("Failed to stamp imageBackfillFailedAt on study", err, TAG);
+  }
+}
+
 /** URLs that indicate a row "has the placeholder, not a real image". */
 const PLACEHOLDER_URLS = [
   "/images/fallback-study-image.svg",
@@ -175,13 +201,17 @@ export async function runImageBackfillBatch(opts: {
         count: excludedStudyIds.length,
       });
     }
+    // Durable cooldown: skip rows stamped as failed within the window, so a
+    // permanently-failing study no longer occupies a batch slot every cycle
+    // and the backlog behind it can drain (even across process restarts).
+    const notRecentlyFailed = sql`(${studies.imageBackfillFailedAt} IS NULL OR ${studies.imageBackfillFailedAt} < now() - ${STUDY_FAILURE_COOLDOWN_INTERVAL})`;
     const candidateStudies = await db
       .select({ id: studies.id })
       .from(studies)
       .where(
         excludedStudyIds.length > 0
-          ? and(isNull(studies.imageUrl), notInArray(studies.id, excludedStudyIds))
-          : isNull(studies.imageUrl),
+          ? and(isNull(studies.imageUrl), notRecentlyFailed, notInArray(studies.id, excludedStudyIds))
+          : and(isNull(studies.imageUrl), notRecentlyFailed),
       )
       .orderBy(sql`${studies.viewCount} DESC NULLS LAST, ${studies.id} ASC`)
       .limit(studyLimit);
@@ -194,7 +224,7 @@ export async function runImageBackfillBatch(opts: {
           const result = await generateImageForStudy(c.id);
           if (result?.success) studiesSucceeded++;
           else {
-            failedStudyIds.add(c.id);
+            await markStudyFailed(c.id);
             errors.push({
               kind: "study",
               id: c.id,
@@ -202,7 +232,7 @@ export async function runImageBackfillBatch(opts: {
             });
           }
         } catch (err) {
-          failedStudyIds.add(c.id);
+          await markStudyFailed(c.id);
           errors.push({
             kind: "study",
             id: c.id,

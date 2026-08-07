@@ -401,15 +401,14 @@ export async function saveGeneratedArticle(
       return existing.id;
     }
 
-    // Find a related study ID if not provided
-    if (!studyId) {
-      const [anyStudy] = await db.select({ id: studies.id }).from(studies).limit(1);
-      studyId = anyStudy?.id || 1;
-    }
-
+    // Attach to a genuinely related study when the caller supplies one;
+    // otherwise leave studyId null. blog_articles.study_id is nullable, so
+    // standalone SEO/marketing articles are no longer misattributed to an
+    // arbitrary (first-row / id 1) study and won't surface under its /:id/blogs
+    // tab or get flagged by the retraction monitor.
     try {
       const [inserted] = await db.insert(blogArticles).values({
-        studyId,
+        studyId: studyId ?? null,
         title: article.title,
         slug,
         summary: article.summary,

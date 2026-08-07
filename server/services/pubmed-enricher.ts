@@ -266,10 +266,10 @@ function mapPubMedDataToStudy(pubmedData: any, study: any): any {
   }
 
   // Extract publication year if missing
-  if (!study.year) {
+  if (!study.publishYear) {
     const yearMatch = xml.match(/<PubDate>[\s\S]*?<Year>([\s\S]*?)<\/Year>/);
     if (yearMatch && yearMatch[1]) {
-      enrichedData.year = parseInt(yearMatch[1]);
+      enrichedData.publishYear = parseInt(yearMatch[1]);
     }
   }
 
@@ -294,13 +294,13 @@ function mapPubMedDataToStudy(pubmedData: any, study: any): any {
       if (authorNames.length > 0) {
         enrichedData.authors = authorNames.join(", ");
 
-        // Additionally set first_author and last_author
+        // Additionally set firstAuthor and lastAuthor
         if (authorNames.length > 0) {
-          enrichedData.first_author = authorNames[0];
+          enrichedData.firstAuthor = authorNames[0];
         }
 
         if (authorNames.length > 1) {
-          enrichedData.last_author = authorNames[authorNames.length - 1];
+          enrichedData.lastAuthor = authorNames[authorNames.length - 1];
         }
       }
     }
@@ -336,7 +336,7 @@ function mapPubMedDataToStudy(pubmedData: any, study: any): any {
   enrichedData.pmid = pubmedData.pmid;
 
   // Update last-modified timestamp
-  enrichedData.updatedAt = new Date();
+  enrichedData.lastModified = new Date();
 
   return enrichedData;
 }

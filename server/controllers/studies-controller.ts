@@ -54,6 +54,7 @@ export class StudiesController {
     this.router.put("/:id", requireAdmin, this.updateStudy);
     this.router.post("/:id/view", this.recordView);
     this.router.get("/:id", this.getStudyById);
+    this.router.post("/", requireAdmin, this.createStudy);
     this.router.get("/", searchRateLimiter, this.getAllStudies);
   }
 
@@ -524,6 +525,33 @@ export class StudiesController {
       } catch (error) {
           logger.error("Error fetching study insights", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch study insights" });
+      }
+  }
+
+  private createStudy = async (req: Request, res: Response) => {
+      try {
+          // Validate + whitelist the body instead of passing raw req.body into
+          // db.insert(). This strips unknown keys and blocks mass-assignment of
+          // the view counter (id/createdAt/lastModified are already omitted by
+          // insertStudySchema; viewCount omitted here so a create can't seed a
+          // fake view count).
+          const { insertStudySchema } = await import("../../shared/schema");
+          const createSchema = insertStudySchema.omit({ viewCount: true });
+          const parsed = createSchema.safeParse(req.body);
+          if (!parsed.success) {
+              return res.status(400).json({ error: "Invalid study data", details: parsed.error.flatten() });
+          }
+
+          const study = await studyService.createStudy(parsed.data);
+
+          // A new published study adds a public page — drop any cached bot HTML
+          // for its slug so crawlers pick up fresh content.
+          this.invalidateStudyBotCache(study.slug);
+
+          res.status(201).json(study);
+      } catch (error) {
+          logger.error("Error creating study", error, "StudiesController");
+          res.status(500).json({ error: "Failed to create study" });
       }
   }
 

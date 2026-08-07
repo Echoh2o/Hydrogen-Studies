@@ -331,6 +331,11 @@ async function main() {
         }
       } else {
         // Full regeneration: content + image
+        if (blog.studyId == null) {
+          console.log(`  SKIPPED: blog has no source study.`);
+          stats.skipped++;
+          continue;
+        }
         const study = await fetchStudy(blog.studyId);
         if (!study) {
           console.log(`  SKIPPED: Study ${blog.studyId} not found in database.`);

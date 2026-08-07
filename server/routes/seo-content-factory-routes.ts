@@ -811,6 +811,7 @@ router.post("/blogs/fix-missing-images", aiGenerationRateLimiter, async (req: Re
     let fixed = 0;
     for (const blog of blogs) {
       try {
+        if (blog.studyId == null) continue;
         // Fetch the study to get category for default image
         const [study] = await db
           .select({ id: studies.id, title: studies.title, category: studies.category })

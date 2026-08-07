@@ -99,15 +99,24 @@ async function processEnrichmentBatches(batchSize: number): Promise<void> {
       })
       .from(studies)
       .where(
-        or(
-            isNull(studies.keywords),
-            sql`array_length(${studies.keywords}, 1) = 0`,
-            isNull(studies.healthConditions),
-            sql`array_length(${studies.healthConditions}, 1) = 0`,
-            isNull(studies.bodySystems),
-            sql`array_length(${studies.bodySystems}, 1) = 0`,
-            isNull(studies.conclusion),
-            eq(studies.conclusion, '')
+        and(
+          or(
+              isNull(studies.keywords),
+              sql`array_length(${studies.keywords}, 1) = 0`,
+              isNull(studies.healthConditions),
+              sql`array_length(${studies.healthConditions}, 1) = 0`,
+              isNull(studies.bodySystems),
+              sql`array_length(${studies.bodySystems}, 1) = 0`,
+              isNull(studies.conclusion),
+              eq(studies.conclusion, '')
+          ),
+          // Back off studies we already attempted recently. The AI often can't
+          // enrich abstract-less rows; without this they'd be re-selected every
+          // cycle and re-burn Haiku spend forever. Retry only after 30 days.
+          or(
+              isNull(studies.enrichmentAttemptedAt),
+              sql`${studies.enrichmentAttemptedAt} < now() - interval '30 days'`
+          )
         )
       )
       .limit(50); // Hard limit to avoid long running processes
@@ -147,7 +156,30 @@ async function processBatch(studies: any[]): Promise<void> {
     } catch (error) {
       console.error(`Error enriching study ${study.id}:`, error);
       enrichmentStats.errors++;
+    } finally {
+      // Stamp the attempt regardless of outcome (success, empty AI result, or
+      // error) so the candidate query can back off unenrichable rows instead of
+      // re-selecting them every cycle.
+      await markEnrichmentAttempted(study.id);
     }
+  }
+}
+
+/**
+ * Record that an enrichment attempt was made for a study, so recently-attempted
+ * rows are excluded from the candidate query for a cool-off window.
+ */
+async function markEnrichmentAttempted(studyId: number): Promise<void> {
+  try {
+    await db
+      .update(studies)
+      .set({ enrichmentAttemptedAt: new Date() })
+      .where(eq(studies.id, studyId));
+  } catch (error) {
+    console.error(
+      `Failed to stamp enrichmentAttemptedAt for study ${studyId}:`,
+      error,
+    );
   }
 }
 
