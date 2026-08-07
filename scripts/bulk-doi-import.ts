@@ -10,7 +10,7 @@
 import axios from "axios";
 import { db, pool } from "../server/db";
 import { studies, type InsertStudy } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // ============================================================
 // DOI LIST - parsed from user input
@@ -646,7 +646,19 @@ function slugify(title: string): string {
 
 async function checkDuplicateByDOI(doi: string): Promise<boolean> {
   if (!doi) return false;
-  const existing = await db.select({ id: studies.id }).from(studies).where(eq(studies.doi, doi)).limit(1);
+  // Case-insensitive to match the intended lower(doi) index and avoid
+  // re-inserting DOIs that differ only in letter case.
+  const existing = await db
+    .select({ id: studies.id })
+    .from(studies)
+    .where(sql`lower(${studies.doi}) = lower(${doi})`)
+    .limit(1);
+  return existing.length > 0;
+}
+
+async function checkDuplicateByPMID(pmid: string): Promise<boolean> {
+  if (!pmid) return false;
+  const existing = await db.select({ id: studies.id }).from(studies).where(eq(studies.pmid, pmid)).limit(1);
   return existing.length > 0;
 }
 
@@ -704,6 +716,14 @@ async function importByPMID(pmid: string, index: number, total: number): Promise
     return { success: false, error: "duplicate" };
   }
 
+  // When EuropePMC returns no DOI, the DOI check above can't dedupe. Guard
+  // against re-inserting the same PMID on every re-run by checking the stored
+  // pmid column (populated on insert below).
+  if (await checkDuplicateByPMID(pmid)) {
+    console.log(`${label} SKIP (duplicate): PMID ${pmid}`);
+    return { success: false, error: "duplicate" };
+  }
+
   const study = extractFromEuropePMC(europepmcData);
   if (!study) {
     console.log(`${label} FAIL (extract): PMID ${pmid}`);
@@ -719,6 +739,7 @@ async function importByPMID(pmid: string, index: number, total: number): Promise
     await db.insert(studies).values({
       ...study,
       slug,
+      pmid,
       citationUrl: doi ? `https://doi.org/${doi}` : `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
       createdAt: new Date(),
     } as InsertStudy);

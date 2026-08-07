@@ -5,39 +5,46 @@ import { test, expect } from "@playwright/test";
 // 2. Admin pages load correctly when authenticated
 
 test.describe("Admin Pages - Unauthenticated Access", () => {
-  test("admin dashboard redirects or blocks unauthenticated users", async ({ page }) => {
+  test("admin dashboard blocks unauthenticated users (no bypass)", async ({ page }) => {
     await page.goto("/admin");
     await page.waitForLoadState("networkidle");
     const url = page.url();
-    const body = await page.textContent("body");
-    // Should either redirect to login or show unauthorized message
-    const isProtected =
-      url.includes("/login") ||
-      body?.match(/login|sign in|unauthorized|access denied/i) ||
-      // Or it might show admin page if no auth is enforced
-      body?.match(/admin|dashboard/i);
-    expect(isProtected).toBeTruthy();
+    const body = (await page.textContent("body")) ?? "";
+
+    // ProtectedRoute must redirect an unauthenticated visitor to /login.
+    // Asserting the redirect (not just "some auth-ish word appears") is what
+    // makes this test capable of detecting an auth bypass.
+    expect(url).toContain("/login");
+    // The login surface must actually render.
+    expect(body).toMatch(/sign in|welcome back|password/i);
+    // And the gated admin dashboard content must NOT leak. "Quick actions" is
+    // rendered only by the authenticated AdminDashboard, so its presence would
+    // mean the guard was bypassed.
+    expect(body).not.toMatch(/quick actions/i);
   });
 
-  test("admin studies page access check", async ({ page }) => {
+  test("admin studies page redirects unauthenticated users to login", async ({ page }) => {
     await page.goto("/admin/studies");
     await page.waitForLoadState("networkidle");
-    // Should not show a 500 error
-    const body = await page.textContent("body");
+    const body = (await page.textContent("body")) ?? "";
+    // Gated route must send the visitor to /login, not crash or leak content.
+    expect(page.url()).toContain("/login");
     expect(body).not.toMatch(/internal server error|500/i);
   });
 
-  test("admin blogs page access check", async ({ page }) => {
+  test("admin blogs page redirects unauthenticated users to login", async ({ page }) => {
     await page.goto("/admin/blogs");
     await page.waitForLoadState("networkidle");
-    const body = await page.textContent("body");
+    const body = (await page.textContent("body")) ?? "";
+    expect(page.url()).toContain("/login");
     expect(body).not.toMatch(/internal server error|500/i);
   });
 
-  test("admin settings page access check", async ({ page }) => {
+  test("admin settings page redirects unauthenticated users to login", async ({ page }) => {
     await page.goto("/admin/settings");
     await page.waitForLoadState("networkidle");
-    const body = await page.textContent("body");
+    const body = (await page.textContent("body")) ?? "";
+    expect(page.url()).toContain("/login");
     expect(body).not.toMatch(/internal server error|500/i);
   });
 });
@@ -72,8 +79,30 @@ test.describe("Admin Pages - Layout & Navigation", () => {
 });
 
 test.describe("Admin API Endpoints", () => {
-  test("admin API endpoints don't crash (CSRF check)", async ({ request }) => {
-    // These should return 401/403 for unauthenticated requests, not 500
+  test("protected /api/admin/* endpoints reject unauthenticated requests with 401/403", async ({ request }) => {
+    // Every one of these is guarded by requireAdmin, which responds 401 for an
+    // anonymous session (403 for an authenticated non-admin). An auth bypass
+    // would surface here as a 200, so assert the exact rejection status.
+    const endpoints = [
+      "/api/admin/journal-date-stats",
+      "/api/admin/quality/monitor",
+      "/api/admin/settings",
+      "/api/admin/gsc/status",
+      "/api/admin/ga4/status",
+    ];
+
+    for (const endpoint of endpoints) {
+      const response = await request.get(endpoint);
+      expect(
+        [401, 403],
+        `${endpoint} should be auth-gated (got ${response.status()})`,
+      ).toContain(response.status());
+    }
+  });
+
+  test("public read endpoints don't crash for anonymous requests", async ({ request }) => {
+    // These are intentionally public reads; they must return a real response
+    // (not a 5xx) even without a session.
     const endpoints = [
       "/api/blogs",
       "/api/categories",

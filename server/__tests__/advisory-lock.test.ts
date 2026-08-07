@@ -21,7 +21,7 @@ const mockConnect = vi.fn(async () => mockClient);
 
 vi.mock("../db", () => ({
   pool: {
-    connect: (...args: unknown[]) => mockConnect(...args),
+    connect: () => mockConnect(),
   },
 }));
 

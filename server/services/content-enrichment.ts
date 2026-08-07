@@ -220,9 +220,17 @@ export async function enhanceStudyContent(
       logger.error("Error fetching Semantic Scholar data", error, "ContentEnrichment", { doi: study.doi });
     }
 
-    // Process image if one was found
+    // Process image if one was found.
+    //
+    // Article/journal figures are copyrighted artwork; even OA CC-ND/NC
+    // licenses prohibit reuse out of context or for commercial purposes, and
+    // none of these upstream sources expose a per-figure license we can check.
+    // So figure ingestion is DISABLED by default and only runs when a
+    // maintainer explicitly opts in via ENRICHMENT_INGEST_FIGURES=true. Study
+    // imagery should come from the existing AI image generator instead.
+    // Existing images are never touched (guarded by !study.imageUrl below).
     let imageUrl = study.imageUrl;
-    if (imageSrc && !study.imageUrl) {
+    if (imageSrc && !study.imageUrl && FIGURE_INGESTION_ENABLED) {
       try {
         imageUrl = await downloadImage(imageSrc, studyId);
         updates.images = !!imageUrl;
@@ -309,9 +317,18 @@ export async function batchEnhanceStudies(studyIds: number[]): Promise<{
   return results;
 }
 
+// Opt-in gate for downloading/storing publisher article figures. Off by
+// default because journal figures are copyrighted and no per-figure license is
+// available from these sources. Set ENRICHMENT_INGEST_FIGURES=true only if the
+// operator has confirmed reuse rights.
+const FIGURE_INGESTION_ENABLED =
+  process.env.ENRICHMENT_INGEST_FIGURES === "true";
+
+// NOTE: doi.org / dx.doi.org are intentionally NOT allowlisted. A doi.org URL
+// redirects to an arbitrary publisher site whose full text is copyrighted;
+// following those redirects and republishing Methods/Results/Conclusion is not
+// permitted. Only clearly OA/permitted first-party sources are kept here.
 const ALLOWED_ENRICHMENT_HOSTS = new Set([
-  "doi.org",
-  "dx.doi.org",
   "api.crossref.org",
   "www.crossref.org",
   "crossref.org",

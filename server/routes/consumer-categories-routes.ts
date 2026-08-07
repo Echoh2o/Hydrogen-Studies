@@ -13,6 +13,11 @@ let categoryCountsCache: any = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+// Cache for life-stage counts — these only change when studies are imported,
+// so a short TTL avoids re-running five full-table ILIKE scans on every hit.
+let lifeStagesCache: any = null;
+let lifeStagesCacheTimestamp = 0;
+
 // Get consumer categories' names - use specific path to avoid conflict with homepage
 router.get("/list", async (req, res) => {
   // Set content type to JSON explicitly
@@ -666,6 +671,13 @@ router.get("/studies", async (req, res) => {
 // Add life stage route
 router.get("/life-stages", async (req, res) => {
   try {
+    // Check cache first — counts only change on study import, so serve
+    // repeated hits without re-running the five full-table ILIKE scans.
+    const now = Date.now();
+    if (lifeStagesCache && now - lifeStagesCacheTimestamp < CACHE_TTL) {
+      return res.json(lifeStagesCache);
+    }
+
     const { pool } = await import("../db");
 
     // Keywords to search in title/abstract for each life stage
@@ -688,7 +700,13 @@ router.get("/life-stages", async (req, res) => {
       }),
     );
 
-    return res.json({ success: true, data: results });
+    const response = { success: true, data: results };
+
+    // Cache for fast subsequent requests.
+    lifeStagesCache = response;
+    lifeStagesCacheTimestamp = now;
+
+    return res.json(response);
   } catch (error) {
     console.error("Error fetching life stages:", error);
     return res.status(500).json({ success: false, error: "Failed to retrieve life stages" });

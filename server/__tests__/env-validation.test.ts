@@ -30,7 +30,7 @@ describe("validateEnvironment", () => {
     // Prevent process.exit from actually killing the test runner
     exitSpy = vi
       .spyOn(process, "exit")
-      .mockImplementation((() => {}) as unknown as (code?: number) => never);
+      .mockImplementation((() => {}) as unknown as typeof process.exit);
 
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
