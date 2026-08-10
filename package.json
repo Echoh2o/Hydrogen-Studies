@@ -98,6 +98,7 @@
     "input-otp": "^1.4.2",
     "jsdom": "^28.1.0",
     "lucide-react": "^0.453.0",
+    "marked": "^15.0.12",
     "memoizee": "^0.4.17",
     "memorystore": "^1.6.7",
     "multer": "^2.2.0",

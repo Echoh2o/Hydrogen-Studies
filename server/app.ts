@@ -817,6 +817,11 @@ app.use("/api/admin/ga4", adminGa4Routes);
 import consolidationRoutes from "./routes/consolidation-routes";
 app.use("/api/admin/consolidation", consolidationRoutes);
 
+// Shopify blog syndication (push reviewed articles into echowater's native
+// blog). requireAdmin at router top; no-ops until store env vars exist.
+import syndicationRoutes from "./routes/syndication-routes";
+app.use("/api/admin/syndication", syndicationRoutes);
+
 // Admin monitoring & process control
 app.use("/api/admin/monitoring", adminMonitoringRoutes);
 app.use("/api/admin", adminMonitoringRoutes); // Mounts /trigger/* and /stop-processes
@@ -960,6 +965,7 @@ pool.query("SELECT 1").then(async () => {
     const { addStudiesDoiIndex } = await import("./migrations/add-studies-doi-index");
     const { addRetractionCheckTracking } = await import("./migrations/add-retraction-check-tracking");
     const { addAuditTrackingFields } = await import("./migrations/add-audit-tracking-fields");
+    const { addSyndicationFields } = await import("./migrations/add-syndication-fields");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -980,6 +986,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "016_add_studies_doi_index", up: addStudiesDoiIndex },
       { name: "017_add_retraction_check_tracking", up: addRetractionCheckTracking },
       { name: "018_add_audit_tracking_fields", up: addAuditTrackingFields },
+      { name: "019_add_syndication_fields", up: addSyndicationFields },
     ]);
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted
