@@ -48,7 +48,9 @@ export class JobScheduler {
   private lastCitationBuildCheck: Date | null = null;
   private lastDigestCheck: Date | null = null;
   private lastFreshnessCheck: Date | null = null;
+  private lastOrganicHealthCheck: Date | null = null;
   private readonly LINK_BUILD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
+  private readonly ORGANIC_HEALTH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly DISCOVERY_INTERVAL_MS = 6 * 60 * 60 * 1000; // Every 6 hours
   private readonly CITATION_BUILD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly DIGEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
@@ -223,6 +225,13 @@ export class JobScheduler {
 
     logger.info("Starting...", "JobScheduler");
 
+    if (process.env.ENABLE_BLOG_BACKFILL !== "1") {
+      logger.info(
+        "Job 7 (batch-blog-generation) paused pending demand-ranked generation rework; set ENABLE_BLOG_BACKFILL=1 to enable",
+        "JobScheduler"
+      );
+    }
+
     // Fresh shutdown signal for this run (a prior stop() leaves it aborted).
     if (this.shutdownController.signal.aborted) {
       this.shutdownController = new AbortController();
@@ -362,6 +371,7 @@ export class JobScheduler {
         { name: "not-found-cleanup", lastRun: toISO(this.lastNotFoundCleanupCheck), intervalMs: this.NOT_FOUND_CLEANUP_INTERVAL_MS },
         { name: "shopify-customer-reconcile", lastRun: toISO(this.lastShopifyReconcileCheck), intervalMs: this.SHOPIFY_RECONCILE_INTERVAL_MS },
         { name: "stale-job-recovery", lastRun: toISO(this.lastStaleRecoveryCheck), intervalMs: this.STALE_RECOVERY_INTERVAL_MS },
+        { name: "organic-health", lastRun: toISO(this.lastOrganicHealthCheck), intervalMs: this.ORGANIC_HEALTH_INTERVAL_MS },
       ],
     };
   }
@@ -452,6 +462,22 @@ export class JobScheduler {
         logger.error("Job 4 (link-building) unexpected error", error, "JobScheduler");
       }
 
+      // Weekly organic-search health check (sync freshness, click decay)
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runOrganicHealthJob(),
+          2 * 60 * 1000,
+          "organic-health"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "organic-health" });
+        }
+      } catch (error) {
+        logger.error("Job (organic-health) unexpected error", error, "JobScheduler");
+      }
+
       // Job 5: Research Discovery (runs every 6 hours)
       try {
         const start = Date.now();
@@ -487,19 +513,22 @@ export class JobScheduler {
 
       // Job 7: Batch Blog Auto-Generation (runs after pipeline, up to 5 per cycle)
       // Generates blog articles for pipeline-processed studies that don't have one yet.
-      try {
-        const start = Date.now();
-        await this.withTimeout(
-          () => this.runBatchBlogGenerationJob(),
-          30 * 60 * 1000,
-          "batch-blog-generation"
-        );
-        const elapsed = Date.now() - start;
-        if (elapsed > 1000) {
-          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "batch-blog-generation" });
+      // Gated behind ENABLE_BLOG_BACKFILL=1 pending the demand-ranked generation rework.
+      if (process.env.ENABLE_BLOG_BACKFILL === "1") {
+        try {
+          const start = Date.now();
+          await this.withTimeout(
+            () => this.runBatchBlogGenerationJob(),
+            30 * 60 * 1000,
+            "batch-blog-generation"
+          );
+          const elapsed = Date.now() - start;
+          if (elapsed > 1000) {
+            logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "batch-blog-generation" });
+          }
+        } catch (error) {
+          logger.error("Job 7 (batch-blog-generation) unexpected error", error, "JobScheduler");
         }
-      } catch (error) {
-        logger.error("Job 7 (batch-blog-generation) unexpected error", error, "JobScheduler");
       }
 
       // Job 8: Citation Network Building (runs once per week)
@@ -1133,14 +1162,17 @@ export class JobScheduler {
   }
 
   /**
-   * Job 7: Batch Blog Auto-Generation
-   * Generates blog articles for pipeline-processed studies that don't have one yet.
-   * Runs every 15-minute cycle after pipeline processing. Max 5 studies per cycle
-   * to stay within AI API rate limits. Uses the enhanced blog generator which
-   * produces multiple article types with images and internal links.
+   * Job 7: Batch Blog Auto-Generation (demand-ranked)
+   * Generates blog articles for enriched studies that don't have one yet,
+   * ranked by search demand: studies whose pages have striking-distance GSC
+   * impressions (position 5-30, last 90d) go first, so generation follows
+   * demonstrated demand instead of table order. A cannibalization gate skips
+   * studies whose topic is already owned by a published article — the
+   * per-study firehose previously produced 253 near-identical articles for
+   * one topic. Gated behind ENABLE_BLOG_BACKFILL=1 (checked by the caller).
    */
   private async runBatchBlogGenerationJob() {
-    const MAX_BLOGS_PER_CYCLE = 50; // Aggressive rebuild — baseline content recovery
+    const MAX_BLOGS_PER_CYCLE = 50;
 
     try {
       // Throttle: only run every BLOG_GENERATION_INTERVAL_MS (not every scheduler tick)
@@ -1151,8 +1183,18 @@ export class JobScheduler {
         }
       }
       this.lastBlogGenerationCheck = new Date();
-      // Find studies that have been enriched (have plain_language_title and category)
-      // but don't have any blog article yet. Use a LEFT JOIN to check for missing blogs.
+      // Striking-distance opportunity for the study's own page: impressions
+      // where we already rank 5-30. Slugless studies score 0 (COALESCE).
+      const opportunityExpr = sql<number>`COALESCE((
+        SELECT SUM(g.impressions)
+        FROM gsc_query_metrics g
+        WHERE g.page = 'https://hydrogenstudies.com/study/' || ${studies.slug}
+          AND g.date::date > current_date - 90
+          AND g.position::numeric BETWEEN 5 AND 30
+      ), 0)`;
+
+      // Enriched studies (plain_language_title + category) with no blog yet,
+      // highest search demand first.
       const candidateStudies = await db
         .select({
           id: studies.id,
@@ -1163,12 +1205,14 @@ export class JobScheduler {
           publishDate: studies.publishDate,
           category: studies.category,
           plainLanguageTitle: studies.plainLanguageTitle,
+          gscOpportunity: sql<number>`${opportunityExpr}`.mapWith(Number),
         })
         .from(studies)
         .leftJoin(blogArticles, eq(studies.id, blogArticles.studyId))
         .where(
           sql`${studies.plainLanguageTitle} IS NOT NULL AND ${studies.category} IS NOT NULL AND ${blogArticles.id} IS NULL`
         )
+        .orderBy(sql`${opportunityExpr} DESC`, studies.id)
         .limit(MAX_BLOGS_PER_CYCLE);
 
       if (candidateStudies.length === 0) {
@@ -1177,10 +1221,16 @@ export class JobScheduler {
 
       logger.info("Starting batch blog generation", "JobScheduler", {
         candidates: candidateStudies.length,
+        topOpportunity: candidateStudies[0]?.gscOpportunity ?? 0,
       });
+
+      // Same normalization the consolidation engine clusters by, so the gate
+      // and the pruning agree on what "the same topic" means.
+      const { topicKeyFor } = await import("./content-consolidation");
 
       let generated = 0;
       let failed = 0;
+      let skippedOwnedTopics = 0;
 
       for (const candidate of candidateStudies) {
         try {
@@ -1195,9 +1245,42 @@ export class JobScheduler {
             continue;
           }
 
+          // Cannibalization gate: if a PUBLISHED article already owns this
+          // topic (stem-level match on the normalized title), skip — one
+          // strong page per topic beats another competing variant.
+          const expectedTitle = fullStudy.plainLanguageTitle || fullStudy.title;
+          const candidateKey = topicKeyFor({ title: expectedTitle, slug: null });
+          const stemWords = expectedTitle
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, " ")
+            .split(/\s+/)
+            .filter((w) => w.length > 3)
+            .slice(0, 3);
+          if (stemWords.length > 0) {
+            const likePattern = `%${stemWords.join("%")}%`;
+            const similar = await db
+              .select({ title: blogArticles.title, slug: blogArticles.slug })
+              .from(blogArticles)
+              .where(
+                sql`${blogArticles.isPublished} = true AND lower(${blogArticles.title}) LIKE ${likePattern}`
+              )
+              .limit(10);
+            const clash = similar.find((s) => topicKeyFor(s) === candidateKey);
+            if (clash) {
+              skippedOwnedTopics++;
+              logger.info("Skipping study — topic already owned by a published article", "JobScheduler", {
+                studyId: fullStudy.id,
+                topic: candidateKey,
+                existingSlug: clash.slug,
+              });
+              continue;
+            }
+          }
+
           logger.info("Generating blog for study", "JobScheduler", {
             studyId: fullStudy.id,
             title: fullStudy.plainLanguageTitle || fullStudy.title,
+            gscOpportunity: candidate.gscOpportunity,
           });
 
           const result = await generateBlogArticlesForStudy(fullStudy, {
@@ -1230,10 +1313,11 @@ export class JobScheduler {
         }
       }
 
-      if (generated > 0 || failed > 0) {
+      if (generated > 0 || failed > 0 || skippedOwnedTopics > 0) {
         logger.info("Batch blog generation complete", "JobScheduler", {
           generated,
           failed,
+          skippedOwnedTopics,
           total: candidateStudies.length,
         });
       }
@@ -1303,6 +1387,43 @@ export class JobScheduler {
       logger.info("Link building complete", "JobScheduler");
     } catch (error) {
       logger.error("Link building error", error, "JobScheduler");
+    }
+  }
+
+  /**
+   * Weekly organic-search health check. The GSC/GA4 OAuth token has expired
+   * silently twice (2026-05, 2026-06→08 — 47 days unnoticed); this job makes
+   * sync staleness and click decay page someone via Sentry.
+   */
+  private async runOrganicHealthJob() {
+    try {
+      if (this.lastOrganicHealthCheck) {
+        const elapsed = Date.now() - this.lastOrganicHealthCheck.getTime();
+        if (elapsed < this.ORGANIC_HEALTH_INTERVAL_MS) return;
+      }
+
+      logger.info("Running weekly organic health check", "JobScheduler");
+      const { runOrganicHealthCheck } = await import("./organic-health-monitor");
+      const report = await runOrganicHealthCheck();
+      this.lastOrganicHealthCheck = new Date();
+      logger.info("Organic health check complete", "JobScheduler", {
+        alerts: report.alerts.length,
+        ...report.summary,
+      });
+
+      const actionable = report.alerts.filter((a) => a.severity !== "info");
+      if (actionable.length > 0) {
+        const { reportError } = await import("../utils/error-reporting");
+        reportError(
+          new Error(
+            `Organic search health: ${actionable.length} alert(s) — ` +
+              actionable.map((a) => `[${a.severity}] ${a.message}`).join(" | "),
+          ),
+          { tags: { job: "organic-health" } },
+        );
+      }
+    } catch (error) {
+      logger.error("Organic health check error", error, "JobScheduler");
     }
   }
 

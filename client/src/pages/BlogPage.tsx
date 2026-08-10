@@ -15,6 +15,10 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import React, { Component, type ReactNode } from "react";
 import Markdown from "react-markdown";
+import { buildEchoUrl } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+const echoStoreUrl = buildEchoUrl("/", { content: "blog-cta" });
 
 // Error boundary for the entire blog page
 class BlogErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
@@ -442,7 +446,12 @@ function BlogPageContent() {
               Browse research-backed hydrogen water products from Echo Water.
             </p>
             <div className="flex gap-3">
-              <a href="https://echowater.com" target="_blank" rel="noopener">
+              <a
+                href={echoStoreUrl}
+                target="_blank"
+                rel="noopener"
+                onClick={() => trackOutboundClick(echoStoreUrl, "blog-cta")}
+              >
                 <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
                   Shop Echo Water
                 </Button>

@@ -15,6 +15,18 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { buildEchoUrl, echoProductUrl, ECHO_PRODUCTS } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+// Echo Water store links, tagged for attribution (utm_content=footer).
+const echoStoreLinks = [
+  { label: "Shop Hydrogen Water", href: buildEchoUrl("/", { content: "footer" }) },
+  { label: "Echo Flask", href: echoProductUrl(ECHO_PRODUCTS.flask, { content: "footer" }) },
+  { label: "Echo Ultimate", href: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "footer" }) },
+  { label: "Echo Refresh (Inhalation)", href: echoProductUrl(ECHO_PRODUCTS.refresh, { content: "footer" }) },
+];
+
+const echoHomeUrl = buildEchoUrl("/", { content: "footer-bottom" });
 
 export default function Footer() {
   const [email, setEmail] = React.useState("");
@@ -227,46 +239,19 @@ export default function Footer() {
               Echo Water
             </h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <a
-                  href="https://echowater.com"
-                  target="_blank"
-                  rel="noopener"
-                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
-                >
-                  Shop Hydrogen Water
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://echowater.com/products/echo-flask"
-                  target="_blank"
-                  rel="noopener"
-                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
-                >
-                  Echo Flask
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://echowater.com/products/echo-ultimate-hydrogen-water"
-                  target="_blank"
-                  rel="noopener"
-                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
-                >
-                  Echo Ultimate
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine"
-                  target="_blank"
-                  rel="noopener"
-                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
-                >
-                  Echo Refresh (Inhalation)
-                </a>
-              </li>
+              {echoStoreLinks.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener"
+                    onClick={() => trackOutboundClick(link.href, "footer")}
+                    className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -317,7 +302,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-400 text-center md:text-left">
               © {currentYear} Hydrogen Studies. Powered by{" "}
-              <a href="https://echowater.com" target="_blank" rel="noopener noreferrer" className="text-teal-400 hover:text-teal-300 transition-colors">Echo Water</a>.
+              <a href={echoHomeUrl} target="_blank" rel="noopener" onClick={() => trackOutboundClick(echoHomeUrl, "footer-bottom")} className="text-teal-400 hover:text-teal-300 transition-colors">Echo Water</a>.
               All rights reserved.
             </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">

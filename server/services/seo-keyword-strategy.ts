@@ -7,7 +7,7 @@
  * Three keyword categories:
  * 1. Product — Echo Water product keywords (commercial intent)
  * 2. Research — Hydrogen science legitimacy (informational intent)
- * 3. Competitor — Differentiation from cheap knockoffs (comparison intent)
+ * 3. Competitor — Differentiation on objective quality markers (comparison intent)
  */
 
 import { ai } from "./ai-provider";
@@ -49,8 +49,8 @@ const ECHO_PRODUCTS = [
   },
 ];
 
-const ECHO_BRAND_CONTEXT = `Echo Water is a premium hydrogen water technology company. Unlike cheap Chinese knockoff bottles that use low-quality materials and produce minimal hydrogen concentrations, Echo products are:
-- Built with medical-grade titanium-platinum electrode plates (not cheap stainless steel)
+const ECHO_BRAND_CONTEXT = `Echo Water is a premium hydrogen water technology company. Echo products are:
+- Built with medical-grade titanium-platinum electrode plates
 - Third-party lab tested for hydrogen concentration (verified PPM levels)
 - SPE/PEM technology that produces pure H2 without ozone or chlorine byproducts
 - Backed by partnerships with hydrogen therapy researchers
@@ -612,13 +612,16 @@ export async function generateKeywordPillarPage(clusterId: number): Promise<{
   // Build product context if applicable
   let productContext = "";
   if (cluster.includeProductCTA && echoProducts.length > 0) {
-    productContext = `\n\nPRODUCT CONTEXT (weave naturally into content where relevant, NOT as ads):
+    productContext = `\n\nPRODUCT CONTEXT (background only — see COMMERCIAL GUARDRAILS below):
 ${echoProducts.map((p: any) => `- ${p.product}: ${p.description} — [Learn more](${p.url})`).join("\n")}
 
 BRAND CONTEXT:
 ${ECHO_BRAND_CONTEXT}
 
-When mentioning products, be authentic. Reference Echo products as examples of quality hydrogen technology. Position them as the solution when discussing what to look for in hydrogen products. Never be overtly promotional — let the research speak and naturally lead to the product as a recommendation.`;
+COMMERCIAL GUARDRAILS:
+- Mention Echo Water products AT MOST ONCE in the entire article, as a single contextual example (e.g., in a "What to Look For" or practical-recommendations section).
+- Keep product references OUT of any section that presents scientific claims, study findings, or evidence summaries — the science must stand on its own.
+- Never disparage competitors or other brands; if a comparison is needed, compare on objective quality criteria only.`;
   }
 
   // Build cluster article context (what the supporting articles will cover)
@@ -661,7 +664,7 @@ REQUIREMENTS:
 9. Link to supporting cluster articles where natural
 10. Be honest about limitations — credibility builds trust
 11. Include a clear "Bottom Line" conclusion
-12. If relevant, include a brief product recommendation section
+12. If relevant, include a brief product recommendation section (respecting the COMMERCIAL GUARDRAILS above)
 
 Return JSON with: title, content (markdown), summary, metaTitle (60 chars), metaDescription (155 chars), ogTitle (65 chars), ogDescription (200 chars), semanticKeywords (array), questionAnswerPairs (array of {question, answer}), quickInsights (bulleted string)`;
 
@@ -794,9 +797,13 @@ export async function generateKeywordClusterPost(
 
   let productContext = "";
   if (cluster.includeProductCTA && echoProducts.length > 0) {
-    productContext = `\n\nPRODUCT CONTEXT (mention naturally where relevant):
+    productContext = `\n\nPRODUCT CONTEXT (background only — see COMMERCIAL GUARDRAILS below):
 ${echoProducts.map((p: any) => `- ${p.product}: ${p.description} — [Learn more](${p.url})`).join("\n")}
-Keep product mentions subtle and authentic — reference as examples when discussing quality, technology, or practical recommendations.`;
+
+COMMERCIAL GUARDRAILS:
+- Mention Echo Water products AT MOST ONCE in the entire article, as a single contextual example where genuinely relevant (e.g., a practical-recommendations section).
+- Keep product references OUT of any section that presents scientific claims, study findings, or evidence summaries — the science must stand on its own.
+- Never disparage competitors or other brands; if a comparison is needed, compare on objective quality criteria only.`;
   }
 
   const articleTypeInstructions: Record<string, string> = {

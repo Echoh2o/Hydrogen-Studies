@@ -15,10 +15,39 @@ import { studies, blogArticles } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 import { jsonLdSafe } from "../utils/html-safety";
 import { toAbsoluteUrl } from "../utils/absolute-url";
+import { ECHOWATER_ORIGIN } from "../../shared/echo-products";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 const SITE_NAME = "Hydrogen Studies";
+
+// ── Cross-domain canonicals (env-gated, OFF by default) ────────
+//
+// When ECHOWATER_CANONICAL=1, prerendered study and condition pages declare
+// their canonical URL (and JSON-LD url/mainEntityOfPage, and og:url — all
+// derive from PageMeta.canonical) as the echowater.com App Proxy equivalent,
+// consolidating search authority onto the store domain.
+//
+// IMPORTANT: flip this only after the App Proxy is verified live and indexed
+// (https://echowater.com/tools/hydrogen-research/...), otherwise we'd be
+// canonicalizing every study/condition page to a 404.
+//
+// Blog pages are intentionally NOT remapped — they stay canonical on
+// hydrogenstudies.com until native syndication exists on echowater.
+const ECHOWATER_CANONICAL = process.env.ECHOWATER_CANONICAL === "1";
+const ECHOWATER_PROXY_BASE = `${ECHOWATER_ORIGIN}/tools/hydrogen-research`;
+
+function canonicalForStudy(slug: string): string {
+  return ECHOWATER_CANONICAL
+    ? `${ECHOWATER_PROXY_BASE}/study/${slug}`
+    : `${SITE_URL}/study/${slug}`;
+}
+
+function canonicalForCondition(slug: string): string {
+  return ECHOWATER_CANONICAL
+    ? `${ECHOWATER_PROXY_BASE}/condition/${slug}`
+    : `${SITE_URL}/explore-by-condition/${slug}`;
+}
 
 // Bot user-agent patterns
 const BOT_PATTERNS = [
@@ -152,7 +181,7 @@ function buildStudyMeta(study: any): PageMeta {
     || study.summary50Words
     || stripHtml(study.abstract);
   const slug = study.slug || `id/${study.id}`;
-  const canonical = `${SITE_URL}/study/${slug}`;
+  const canonical = canonicalForStudy(slug);
   const ogImage = toAbsoluteUrl(study.ogImage || study.imageUrl || "/logo.png", SITE_URL);
 
   const jsonLd: any = {
@@ -371,7 +400,7 @@ function resolveStaticPageMeta(pathname: string): PageMeta | null {
     return {
       title: `Hydrogen Research for ${category} | ${SITE_NAME}`,
       description: `Explore peer-reviewed research studies on hydrogen therapy for ${category.toLowerCase()}. Evidence-based findings, study summaries, and clinical insights.`,
-      canonical: `${SITE_URL}${pathname}`,
+      canonical: canonicalForCondition(conditionMatch[1]),
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
     };

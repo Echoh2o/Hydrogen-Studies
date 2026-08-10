@@ -1002,6 +1002,13 @@ export const blogArticles = pgTable(
     promotedToPillarAt: timestamp("promoted_to_pillar_at"),
     editorNotes: text("editor_notes"),
     viewCount: integer("view_count").default(0),
+    /**
+     * Set when the article has been syndicated into echowater.com's native
+     * Shopify blog (all-in-on-echowater strategy). URL of the store copy;
+     * presence means "already syndicated — don't push again".
+     */
+    syndicatedUrl: text("syndicated_url"),
+    syndicatedAt: timestamp("syndicated_at"),
 
     // SEO Enhancement Fields for Blogs
     canonicalUrl: text("canonical_url"),

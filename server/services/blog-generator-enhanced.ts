@@ -38,6 +38,10 @@ import {
 
 const BLOG_TYPES = DEFAULT_ARTICLE_TYPE_IDS;
 
+// BLOG_AUTOPUBLISH: set to "0" or "false" to insert newly generated articles as drafts (isPublished: false) for human review; unset/any other value keeps the default publish-on-generate behavior.
+const shouldAutopublish = (): boolean =>
+  !["0", "false"].includes((process.env.BLOG_AUTOPUBLISH ?? "").toLowerCase());
+
 /**
  * Generate multiple blog articles for a study with comprehensive error handling
  */
@@ -211,9 +215,10 @@ async function generateSingleBlogArticle(
     }
 
     // 1. Generate content with fallback
+    const fallbackContent = generateFallbackContent(study, articleType);
     const blogContent = await handleOpenAIRequest(
       () => generateArticleContent(study, articleType, readingLevelOverride),
-      generateFallbackContent(study, articleType),
+      fallbackContent,
       {
         model: "claude-sonnet",
         prompt: `Generate ${articleType} article for study ${study.id}`,
@@ -221,11 +226,18 @@ async function generateSingleBlogArticle(
     );
 
     // 2. Generate title with fallback
+    const fallbackTitle = generateFallbackTitle(study, articleType);
     const blogTitle = await handleOpenAIRequest(
       () => generateArticleTitle(study, articleType, blogContent.summary),
-      generateFallbackTitle(study, articleType),
+      fallbackTitle,
       { model: "claude-sonnet", prompt: "Generate article title" },
     );
+
+    // Fallback boilerplate must NEVER go live: handleOpenAIRequest returns the
+    // fallback value as-is on AI failure, so if either the content or the title
+    // is the static fallback, force draft status regardless of BLOG_AUTOPUBLISH.
+    const usedFallback =
+      blogContent === fallbackContent || blogTitle === fallbackTitle;
 
     // 3. Generate unique slug
     const baseSlug = slugify(blogTitle, { lower: true, strict: true });
@@ -254,12 +266,13 @@ async function generateSingleBlogArticle(
       imageAlt: imageData?.imageUrl
         ? `Illustration for: ${blogTitle.substring(0, 110)}`
         : null,
-      isPublished: true,
+      isPublished: usedFallback ? false : shouldAutopublish(),
       articleType,
       metaDescription: blogContent.summary.substring(0, 160),
       semanticKeywords: extractKeywords(study, blogContent.summary),
-      editorNotes:
-        "AI-generated content with error handling. Review before publishing.",
+      editorNotes: usedFallback
+        ? "UNREVIEWED FALLBACK: AI generation failed, so this article contains boilerplate fallback content. Saved as a draft — requires human review and a rewrite before publishing."
+        : "AI-generated content with error handling. Review before publishing.",
       canonicalUrl: `https://hydrogenstudies.com/blog/${slug}`,
       ogTitle: blogTitle,
       ogDescription: blogContent.summary.substring(0, 200),
@@ -733,11 +746,14 @@ function generateBasicArticle(
     summary: content.summary,
     imageUrl: image.imageUrl,
     imageAlt: image.imageUrl ? `Illustration for: ${title.substring(0, 110)}` : image.imageAlt,
-    isPublished: true,
+    // Fallback boilerplate is NEVER auto-published — it stays a draft until a
+    // human reviews and rewrites it.
+    isPublished: false,
     articleType,
     metaDescription: content.summary.substring(0, 160),
     semanticKeywords: extractKeywords(study, content.summary),
-    editorNotes: "Fallback content generated due to API unavailability.",
+    editorNotes:
+      "UNREVIEWED FALLBACK: boilerplate generated because the AI provider was unavailable. Saved as a draft — requires human review and a rewrite before publishing.",
     canonicalUrl: `https://hydrogenstudies.com/blog/${slug}`,
     ogTitle: title,
     ogDescription: content.summary.substring(0, 200),

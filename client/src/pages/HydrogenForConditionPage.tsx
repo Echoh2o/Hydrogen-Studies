@@ -9,6 +9,10 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import JsonLd, { generateFaqSchema } from "@/components/seo/JsonLd";
+import { buildEchoUrl, echoProductUrl, ECHO_PRODUCTS } from "@shared/echo-products";
+import { trackOutboundClick } from "@/lib/analytics";
+
+const echoStoreUrl = buildEchoUrl("/", { content: "condition-cta" });
 
 // Map URL slugs to condition names, body systems, and recommended Echo Water products
 const conditionConfig: Record<string, {
@@ -23,8 +27,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Cardiovascular System",
     searchTerms: ["cardiovascular", "heart", "cardiac", "hypertension"],
     recommendedProducts: [
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Countertop hydrogen water for daily heart health support" },
-      { name: "Echo Flask Hydrogen Water Bottle", url: "https://echowater.com/products/echo-flask", reason: "Portable hydrogen water on the go" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Countertop hydrogen water for daily heart health support" },
+      { name: "Echo Flask Hydrogen Water Bottle", url: echoProductUrl(ECHO_PRODUCTS.flask, { content: "condition-products" }), reason: "Portable hydrogen water on the go" },
     ],
     faqs: [
       { question: "Can hydrogen water help with heart disease?", answer: "Multiple peer-reviewed studies suggest molecular hydrogen may support cardiovascular health by reducing oxidative stress, improving endothelial function, and lowering inflammation markers associated with heart disease. Always consult your cardiologist." },
@@ -37,8 +41,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Endocrine System",
     searchTerms: ["diabetes", "metabolic", "insulin", "blood sugar", "glucose"],
     recommendedProducts: [
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "High-concentration hydrogen water for daily metabolic support" },
-      { name: "Hydrogen Prebiotic Stick Pack", url: "https://echowater.com/products/hydrogen-prebiotic-stick-pack-30-pack", reason: "Combines hydrogen with prebiotics for gut-metabolic health" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "High-concentration hydrogen water for daily metabolic support" },
+      { name: "Hydrogen Prebiotic Stick Pack", url: echoProductUrl(ECHO_PRODUCTS.prebiotic, { content: "condition-products" }), reason: "Combines hydrogen with prebiotics for gut-metabolic health" },
     ],
     faqs: [
       { question: "Can hydrogen water help manage diabetes?", answer: "Several clinical studies have shown that hydrogen-rich water may help improve insulin sensitivity and reduce oxidative stress markers in patients with type 2 diabetes and metabolic syndrome. It is not a replacement for medication." },
@@ -50,8 +54,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Nervous System",
     searchTerms: ["brain", "cognitive", "neuro", "alzheimer", "parkinson", "neuroprotective"],
     recommendedProducts: [
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Daily hydrogen water for neuroprotective benefits" },
-      { name: "Echo Refresh Hydrogen Inhalation Machine", url: "https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine", reason: "Hydrogen inhalation for rapid bloodstream delivery to the brain" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Daily hydrogen water for neuroprotective benefits" },
+      { name: "Echo Refresh Hydrogen Inhalation Machine", url: echoProductUrl(ECHO_PRODUCTS.refresh, { content: "condition-products" }), reason: "Hydrogen inhalation for rapid bloodstream delivery to the brain" },
     ],
     faqs: [
       { question: "Can hydrogen therapy help with brain health?", answer: "Studies show molecular hydrogen can cross the blood-brain barrier and may provide neuroprotective effects. Research has explored its potential benefits for cognitive function, memory, and protection against neurodegenerative conditions." },
@@ -64,8 +68,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Immune System",
     searchTerms: ["inflammation", "arthritis", "anti-inflammatory", "rheumatoid", "joint"],
     recommendedProducts: [
-      { name: "Echo Revive Hydrogen Bath Water Machine", url: "https://echowater.com/products/echo-revive", reason: "Hydrogen baths for whole-body anti-inflammatory relief" },
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Daily hydrogen water for systemic inflammation reduction" },
+      { name: "Echo Revive Hydrogen Bath Water Machine", url: echoProductUrl(ECHO_PRODUCTS.revive, { content: "condition-products" }), reason: "Hydrogen baths for whole-body anti-inflammatory relief" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Daily hydrogen water for systemic inflammation reduction" },
     ],
     faqs: [
       { question: "Does hydrogen water reduce inflammation?", answer: "Multiple studies demonstrate that molecular hydrogen has anti-inflammatory properties. It may help modulate inflammatory responses by regulating pro-inflammatory cytokines and reducing oxidative stress." },
@@ -77,8 +81,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Immune System",
     searchTerms: ["cancer", "tumor", "chemotherapy", "radiation", "oncology"],
     recommendedProducts: [
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Quality-of-life support during cancer treatment" },
-      { name: "Echo Refresh Hydrogen Inhalation Machine", url: "https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine", reason: "Hydrogen inhalation studied for treatment side effect reduction" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Quality-of-life support during cancer treatment" },
+      { name: "Echo Refresh Hydrogen Inhalation Machine", url: echoProductUrl(ECHO_PRODUCTS.refresh, { content: "condition-products" }), reason: "Hydrogen inhalation studied for treatment side effect reduction" },
     ],
     faqs: [
       { question: "Can hydrogen water help cancer patients?", answer: "Research suggests molecular hydrogen may help reduce side effects of cancer treatments like chemotherapy and radiation. It is being studied as a complementary approach to improve quality of life during cancer therapy, not as a cancer treatment itself." },
@@ -90,8 +94,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Musculoskeletal System",
     searchTerms: ["exercise", "athlete", "performance", "recovery", "fatigue", "muscle"],
     recommendedProducts: [
-      { name: "Echo Flask Hydrogen Water Bottle", url: "https://echowater.com/products/echo-flask", reason: "Portable hydrogen water for pre/post-workout hydration" },
-      { name: "Echo Revive Hydrogen Bath Water Machine", url: "https://echowater.com/products/echo-revive", reason: "Hydrogen baths for muscle recovery and soreness relief" },
+      { name: "Echo Flask Hydrogen Water Bottle", url: echoProductUrl(ECHO_PRODUCTS.flask, { content: "condition-products" }), reason: "Portable hydrogen water for pre/post-workout hydration" },
+      { name: "Echo Revive Hydrogen Bath Water Machine", url: echoProductUrl(ECHO_PRODUCTS.revive, { content: "condition-products" }), reason: "Hydrogen baths for muscle recovery and soreness relief" },
     ],
     faqs: [
       { question: "Does hydrogen water improve athletic performance?", answer: "Several studies have shown that hydrogen-rich water may reduce exercise-induced fatigue, decrease blood lactate levels, and improve endurance capacity in athletes." },
@@ -103,8 +107,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Integumentary System",
     searchTerms: ["skin", "dermatology", "UV", "wrinkle", "aging", "collagen"],
     recommendedProducts: [
-      { name: "Echo Revive Hydrogen Bath Water Machine", url: "https://echowater.com/products/echo-revive", reason: "Hydrogen baths for whole-body skin rejuvenation" },
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Acidic water output for skincare applications" },
+      { name: "Echo Revive Hydrogen Bath Water Machine", url: echoProductUrl(ECHO_PRODUCTS.revive, { content: "condition-products" }), reason: "Hydrogen baths for whole-body skin rejuvenation" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Acidic water output for skincare applications" },
     ],
     faqs: [
       { question: "Can hydrogen water improve skin health?", answer: "Studies suggest molecular hydrogen may help protect skin from UV damage, reduce oxidative stress that contributes to aging, and promote better skin hydration and elasticity." },
@@ -116,8 +120,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Digestive System",
     searchTerms: ["digestive", "gut", "liver", "gastric", "intestinal", "microbiome"],
     recommendedProducts: [
-      { name: "Hydrogen Prebiotic Stick Pack", url: "https://echowater.com/products/hydrogen-prebiotic-stick-pack-30-pack", reason: "Hydrogen + prebiotics for gut health synergy" },
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Daily hydrogen water for digestive support" },
+      { name: "Hydrogen Prebiotic Stick Pack", url: echoProductUrl(ECHO_PRODUCTS.prebiotic, { content: "condition-products" }), reason: "Hydrogen + prebiotics for gut health synergy" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Daily hydrogen water for digestive support" },
     ],
     faqs: [
       { question: "Can hydrogen water improve gut health?", answer: "Research suggests molecular hydrogen may help protect the gastrointestinal lining, reduce digestive inflammation, and support gut barrier function. Some studies also show potential benefits for the gut microbiome." },
@@ -129,7 +133,7 @@ const conditionConfig: Record<string, {
     bodySystem: "Urinary System",
     searchTerms: ["kidney", "renal", "nephro"],
     recommendedProducts: [
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Filtered hydrogen water for renal support" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Filtered hydrogen water for renal support" },
     ],
     faqs: [
       { question: "Can hydrogen water help protect kidneys?", answer: "Research suggests molecular hydrogen may have renoprotective effects, helping to reduce oxidative damage to kidney tissue and potentially improving renal function markers." },
@@ -141,8 +145,8 @@ const conditionConfig: Record<string, {
     bodySystem: "Respiratory System",
     searchTerms: ["lung", "respiratory", "pulmonary", "asthma", "COPD"],
     recommendedProducts: [
-      { name: "Echo Refresh Hydrogen Inhalation Machine", url: "https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine", reason: "Direct hydrogen inhalation for respiratory support" },
-      { name: "Echo Ultimate™ Hydrogen Water Machine", url: "https://echowater.com/products/echo-ultimate-hydrogen-water", reason: "Complementary hydrogen water intake" },
+      { name: "Echo Refresh Hydrogen Inhalation Machine", url: echoProductUrl(ECHO_PRODUCTS.refresh, { content: "condition-products" }), reason: "Direct hydrogen inhalation for respiratory support" },
+      { name: "Echo Ultimate™ Hydrogen Water Machine", url: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "condition-products" }), reason: "Complementary hydrogen water intake" },
     ],
     faqs: [
       { question: "Can hydrogen therapy help with lung conditions?", answer: "Studies suggest hydrogen inhalation and hydrogen-rich water may help reduce lung inflammation and oxidative stress. Research has explored its potential benefits for various respiratory conditions." },
@@ -412,7 +416,12 @@ export default function HydrogenForConditionPage() {
                       ))}
                       <span className="text-sm text-gray-500">Top Rated</span>
                     </div>
-                    <a href={product.url} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={product.url}
+                      target="_blank"
+                      rel="noopener"
+                      onClick={() => trackOutboundClick(product.url, "condition-products")}
+                    >
                       <Button className="w-full">
                         <ShoppingCart className="h-4 w-4 mr-2" />
                         View on Echo Water
@@ -458,7 +467,12 @@ export default function HydrogenForConditionPage() {
                 The premier provider of research-backed hydrogen water solutions. Trusted by thousands worldwide.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="https://echowater.com" target="_blank" rel="noopener noreferrer">
+                <a
+                  href={echoStoreUrl}
+                  target="_blank"
+                  rel="noopener"
+                  onClick={() => trackOutboundClick(echoStoreUrl, "condition-cta")}
+                >
                   <Button variant="secondary" size="lg">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Shop Echo Water

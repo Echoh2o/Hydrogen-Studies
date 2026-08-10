@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../db";
 import { jsonLdSafe, safeUrl, escapeHtml, escapeAttr } from "../utils/html-safety";
+import { productsForDeliveryMethod, type EchoProduct } from "@shared/echo-products";
 
 const router = Router();
 
@@ -9,6 +10,9 @@ const router = Router();
 // ============================================================
 
 const BASE_URL = process.env.PROXY_BASE_URL || "https://echowater.com/tools/hydrogen-research";
+// Absolute origin for links back to the research/content site. These proxy
+// pages are served ON echowater.com, so relative /blog/... hrefs would 404.
+const HYDROGENSTUDIES_ORIGIN = "https://hydrogenstudies.com";
 const ITEMS_PER_PAGE = 20;
 
 // ============================================================
@@ -189,6 +193,21 @@ const CSS = `
     background:#f8f9fb;border:1px solid #e5e7eb;border-radius:6px;padding:12px 16px;
     text-align:center;min-width:120px;
   }
+
+  /* Product Module */
+  .h2r-products{
+    margin:32px 0 0;padding:18px 20px;background:#f8f9fb;
+    border:1px solid #e5e7eb;border-radius:8px;
+  }
+  .h2r-products-label{
+    font-size:0.75rem;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 4px;
+  }
+  .h2r-products-grid{display:flex;flex-wrap:wrap;gap:12px}
+  .h2r-product-card{
+    flex:1;min-width:220px;background:#fff;border:1px solid #e5e7eb;
+    border-radius:6px;padding:14px;
+  }
+  .h2r-product-title{font-size:0.93rem;font-weight:600;color:#0f0f23;margin:0 0 4px}
 
   /* Responsive */
   @media(max-width:640px){
@@ -414,6 +433,47 @@ function renderPagination(currentPage: number, totalPages: number, baseUrl: stri
   }
 
   return `<nav class="h2r-pagination" aria-label="Pagination">${links.join("")}</nav>`;
+}
+
+/**
+ * Relative product URL for the proxy pages. These pages are served ON
+ * echowater.com via App Proxy, so store links are same-domain navigation —
+ * do NOT use buildEchoUrl/echoProductUrl here (those emit absolute
+ * cross-domain referral URLs with utm_medium=referral).
+ */
+function proxyProductUrl(product: EchoProduct, placement: string): string {
+  return `/products/${product.handle}?utm_source=hydrogenstudies&utm_medium=proxy&utm_campaign=research&utm_content=${encodeURIComponent(placement)}`;
+}
+
+/**
+ * Small, honest product module matched to a study/condition's H2 delivery
+ * method. Max 2 products, visually separated from the research content, and
+ * deliberately free of any claims tying products to study outcomes.
+ */
+function renderProductModule(deliveryMethod: string | null | undefined, placement: string): string {
+  const products = productsForDeliveryMethod(deliveryMethod).slice(0, 2);
+  if (products.length === 0) return "";
+
+  const cards = products.map((p) => `
+    <div class="h2r-product-card">
+      <div class="h2r-product-title">${escapeHtml(p.title)}</div>
+      <p class="h2r-small h2r-muted" style="margin:0 0 10px">${escapeHtml(p.blurb)}</p>
+      <a href="${escapeAttr(proxyProductUrl(p, placement))}" class="h2r-link" style="font-weight:500">View product &rarr;</a>
+    </div>
+  `).join("");
+
+  return `
+    <div class="h2r-products">
+      <div class="h2r-products-label">From the Echo Water Store</div>
+      <h2 class="h2r-h3" style="margin:0 0 12px">Explore hydrogen products</h2>
+      <div class="h2r-products-grid">${cards}</div>
+      <p class="h2r-small h2r-muted" style="margin:12px 0 0">
+        Echo Water maintains this research database and sells hydrogen products.
+        Products are not tied to the findings of any individual study and are not
+        intended to diagnose, treat, cure, or prevent any disease.
+      </p>
+    </div>
+  `;
 }
 
 
@@ -822,6 +882,8 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
         </div>
       ` : ""}
 
+      ${renderProductModule(study.h2_delivery_method, "study-page")}
+
       <div class="h2r-disclaimer">
         <strong>Disclaimer:</strong> This summary is for informational purposes only and does not constitute medical advice.
         The research presented here is from peer-reviewed scientific literature. Always consult with a qualified healthcare
@@ -904,13 +966,30 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
     // Fetch studies for this condition
     const studyRows = await executeRawQuery(`
       SELECT s.id, s.title, s.plain_language_title, s.slug, s.authors, s.journal,
-             s.publish_year, s.study_type, s.results_short, s.conclusion_short, s.image_url
+             s.publish_year, s.study_type, s.results_short, s.conclusion_short, s.image_url,
+             s.h2_delivery_method
       FROM studies s
       JOIN study_health_conditions shc ON shc.study_id = s.id
       WHERE shc.health_condition_id = $1
       ORDER BY s.publish_year DESC NULLS LAST, s.id DESC
       LIMIT $2 OFFSET $3
     `, [condition.id, ITEMS_PER_PAGE, offset]);
+
+    // Most common H2 delivery method among the listed studies, used to pick
+    // which products to surface in the product module below.
+    const methodCounts = new Map<string, number>();
+    for (const s of studyRows) {
+      const m = (s.h2_delivery_method || "").trim().toLowerCase();
+      if (m) methodCounts.set(m, (methodCounts.get(m) || 0) + 1);
+    }
+    let dominantMethod: string | undefined;
+    let dominantCount = 0;
+    for (const [m, cnt] of methodCounts) {
+      if (cnt > dominantCount) {
+        dominantMethod = m;
+        dominantCount = cnt;
+      }
+    }
 
     // Study type stats
     const typeStats = typeCountRows.map((t: any) => `
@@ -955,8 +1034,11 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
           ORDER BY b.created_at DESC LIMIT 5
         `, [condition.id]);
         if (blogRows.length === 0) return "";
+        // These pages are served on echowater.com, where /blog/... does not
+        // exist — link back to hydrogenstudies.com absolutely, tagged so the
+        // reverse (store -> research site) flow is visible in analytics.
         const blogLinks = blogRows.map((b: any) =>
-          `<li><a href="/blog/${escapeAttr(b.slug)}" class="h2r-link">${escapeHtml(b.title)}</a>
+          `<li><a href="${escapeAttr(`${HYDROGENSTUDIES_ORIGIN}/blog/${b.slug}?utm_source=echowater&utm_medium=proxy`)}" class="h2r-link">${escapeHtml(b.title)}</a>
            <span class="h2r-small h2r-muted"> — ${escapeHtml(b.article_type?.replace(/_/g, " ") || "article")}</span></li>`
         ).join("");
         return `
@@ -965,6 +1047,8 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
           <ul class="h2r-related-list">${blogLinks}</ul>
         `;
       })()}
+
+      ${renderProductModule(dominantMethod, "condition-page")}
     `;
 
     const html = renderPage(
@@ -1240,42 +1324,47 @@ router.get("/sitemap.xml", async (_req: Request, res: Response) => {
       ORDER BY publish_year DESC NULLS LAST
     `, []);
 
-    // Fetch all condition slugs
+    // Fetch all condition slugs. health_conditions has no updated_at, so use
+    // the newest last_modified of the condition's studies as the honest
+    // lastmod (a condition page's content changes when its studies do).
     const conditionSlugs = await executeRawQuery(`
-      SELECT slug FROM health_conditions ORDER BY name ASC
+      SELECT hc.slug, MAX(s.last_modified) as last_modified
+      FROM health_conditions hc
+      LEFT JOIN study_health_conditions shc ON shc.health_condition_id = hc.id
+      LEFT JOIN studies s ON s.id = shc.study_id
+      GROUP BY hc.slug, hc.name
+      ORDER BY hc.name ASC
     `, []);
 
-    const now = new Date().toISOString().split("T")[0];
+    // Only emit <lastmod> when we have a real modification date — stamping
+    // today's date on every URL each generation makes the signal meaningless
+    // to crawlers.
+    const lastmodTag = (val: string | Date | null | undefined): string =>
+      val ? `
+    <lastmod>${new Date(val).toISOString().split("T")[0]}</lastmod>` : "";
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${BASE_URL}/</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>${BASE_URL}/stats</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>${BASE_URL}/methodology</loc>
-    <lastmod>${now}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>`;
 
     for (const study of studySlugs) {
-      const lastmod = study.last_modified
-        ? new Date(study.last_modified).toISOString().split("T")[0]
-        : now;
       xml += `
   <url>
-    <loc>${BASE_URL}/study/${escapeXml(study.slug)}</loc>
-    <lastmod>${lastmod}</lastmod>
+    <loc>${BASE_URL}/study/${escapeXml(study.slug)}</loc>${lastmodTag(study.last_modified)}
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`;
@@ -1284,8 +1373,7 @@ router.get("/sitemap.xml", async (_req: Request, res: Response) => {
     for (const cond of conditionSlugs) {
       xml += `
   <url>
-    <loc>${BASE_URL}/condition/${escapeXml(cond.slug)}</loc>
-    <lastmod>${now}</lastmod>
+    <loc>${BASE_URL}/condition/${escapeXml(cond.slug)}</loc>${lastmodTag(cond.last_modified)}
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`;
