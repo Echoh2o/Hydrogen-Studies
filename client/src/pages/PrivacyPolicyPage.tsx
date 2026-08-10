@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
           
           <div className="prose prose-gray max-w-none">
             <p className="text-sm text-gray-600 mb-6">
-              Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              Last Updated: August 4, 2026
             </p>
 
             <section className="mb-8">
@@ -125,9 +125,9 @@ export default function PrivacyPolicyPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Third-Party Services</h2>
               
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">OpenAI API</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">AI Providers (Anthropic, OpenAI, xAI)</h3>
               <p className="text-gray-700 mb-4">
-                We use OpenAI's API services to provide AI-powered features such as:
+                We use third-party AI providers to power features such as:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
                 <li>AI chat assistant for research queries</li>
@@ -135,22 +135,38 @@ export default function PrivacyPolicyPage() {
                 <li>Study analysis and insights</li>
               </ul>
               <p className="text-gray-700 mb-4">
-                When you use these features, your queries and interactions are processed by OpenAI in accordance with their privacy policy. We do not share your personal identification information with OpenAI beyond what is necessary for the service to function.
+                When you use these features, the text you enter (including any questions
+                you type into the chat assistant) is transmitted to and processed by our
+                AI providers: <strong>Anthropic</strong> (Claude) as the primary provider,{" "}
+                <strong>OpenAI</strong> as a fallback provider, and <strong>xAI</strong>{" "}
+                for image generation. Each processes data in accordance with its own
+                privacy policy (
+                <a href="https://www.anthropic.com/legal/privacy" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Anthropic</a>,{" "}
+                <a href="https://openai.com/policies/privacy-policy" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">OpenAI</a>,{" "}
+                <a href="https://x.ai/legal/privacy-policy" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">xAI</a>).
+                Please avoid entering sensitive personal or health information into the
+                chat assistant, as your queries leave our site to be processed by these
+                providers. We do not share your account identifiers with them beyond what
+                is necessary for the service to function.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Google Analytics</h3>
               <p className="text-gray-700 mb-4">
-                We use Google Analytics to analyze website traffic and usage patterns. Google Analytics collects information about your use of our website using cookies. This information is transmitted to and stored by Google on servers in the United States. Google uses this information to evaluate your use of our website, compile reports on website activity, and provide other services relating to website activity and internet usage.
+                We use Google Analytics to analyze website traffic and usage patterns. Google Analytics collects information about your use of our website using cookies. This information is transmitted to and stored by Google on servers in the United States. Google uses this information to evaluate your use of our website, compile reports on website activity, and provide other services relating to website activity and internet usage. Analytics cookies are only set after you grant consent via our cookie banner.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Other Third-Party Services</h3>
               <p className="text-gray-700 mb-4">
-                We may also use the following third-party services:
+                We also rely on the following service providers (sub-processors) to
+                operate the site:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
-                <li>SendGrid for email communications</li>
-                <li>PostgreSQL database hosted on Neon for data storage</li>
-                <li>Replit for hosting and deployment</li>
+                <li><strong>Klaviyo</strong> — newsletter delivery and customer/marketing profiles</li>
+                <li><strong>SendGrid</strong> — transactional email (e.g. account and contact-form messages)</li>
+                <li><strong>Ahrefs Web Analytics</strong> — privacy-friendly site analytics (loaded only after consent)</li>
+                <li><strong>Sentry</strong> — application error monitoring (client and server)</li>
+                <li><strong>Shopify</strong> — commerce and order fulfilment for product purchases</li>
+                <li><strong>Railway</strong> — application hosting and our PostgreSQL database</li>
               </ul>
             </section>
 

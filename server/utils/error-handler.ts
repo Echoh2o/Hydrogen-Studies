@@ -243,7 +243,12 @@ export function globalErrorHandler(
     handleApiError(res, err, mapErrorCodeToType(err.code), err.statusCode);
   } else if (err.name === "ValidationError") {
     handleValidationError(res, err);
-  } else if (err.name === "CastError" || err.name === "TypeError") {
+  } else if (err.name === "CastError") {
+    // NOTE: TypeError is intentionally NOT here. A TypeError reaching the
+    // global handler is almost always a server-side bug (reading a property of
+    // undefined in an unwrapped handler), not bad client input. Classifying it
+    // as 400 hid real 500-class defects from Sentry/5xx alerting. Let it fall
+    // through to the 500 UNKNOWN branch below.
     handleApiError(
       res,
       err,

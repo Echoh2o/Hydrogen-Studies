@@ -27,7 +27,7 @@ router.use((req, res, next) => {
  */
 router.get("/candidates", async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
 
     // Find studies with DOIs that have incomplete content
     const candidates = await db
@@ -70,7 +70,7 @@ router.get("/candidates", async (req, res) => {
  */
 router.get("/recent", async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
 
     // Find studies that have been enriched (have multiple completed fields)
     const recentStudies = await db

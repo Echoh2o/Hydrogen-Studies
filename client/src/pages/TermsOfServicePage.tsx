@@ -28,7 +28,7 @@ export default function TermsOfServicePage() {
           
           <div className="prose prose-gray max-w-none">
             <p className="text-sm text-gray-600 mb-6">
-              Effective Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              Effective Date: August 4, 2026
             </p>
 
             <section className="mb-8">

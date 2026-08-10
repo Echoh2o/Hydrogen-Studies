@@ -16,8 +16,9 @@ const router = express.Router();
 router.post("/find-needing-enhancement", async (req, res) => {
   try {
     const { limit = 50, requireDoi = true, minQualityScore = 0 } = req.body;
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
     const studies = await findStudiesNeedingEnhancement({
-      limit,
+      limit: limitNum,
       requireDoi,
       minQualityScore,
     });
@@ -49,7 +50,8 @@ router.get("/enhanceable-fields", async (_req, res) => {
 router.post("/enhance/batch", async (req, res) => {
   try {
     const { limit = 50 } = req.body;
-    const result = await batchEnhanceStudiesWithDoi(limit);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
+    const result = await batchEnhanceStudiesWithDoi(limitNum);
     res.json({ success: true, result });
   } catch (error) {
     console.error("Error in batch DOI enhancement:", error);

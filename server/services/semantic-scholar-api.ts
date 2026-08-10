@@ -28,8 +28,10 @@ export async function getSemanticScholarArticleByDOI(
     authors: paper.authors
       ? paper.authors.map((a: any) => a.name).join(", ")
       : "",
-    imageUrl:
-      paper.figures && paper.figures.length > 0 ? paper.figures[0].url : null,
+    // Do not populate imageUrl from paper.figures: journal figures are
+    // copyrighted artwork whose licenses (CC-ND / NC) prohibit republishing
+    // out of context. Study imagery is sourced from the AI image generator.
+    imageUrl: null,
     sections: paper.sections || [],
   };
 }
@@ -148,14 +150,12 @@ export function extractStudyFromSemanticScholar(
     peerReviewed: isPeerReviewed,
     hasFullText: Boolean(paperData.openAccessPdf),
     doi,
-    imageUrl:
-      paperData.figures && paperData.figures.length > 0
-        ? paperData.figures[0].url
-        : null,
-    imageAlt:
-      paperData.figures && paperData.figures.length > 0
-        ? paperData.figures[0].name || "Figure from study"
-        : null,
+    // Do not populate imageUrl/imageAlt from paperData.figures: journal
+    // figures are copyrighted artwork whose licenses (CC-ND / NC) prohibit
+    // republishing out of context. Study imagery is sourced from the AI
+    // image generator instead.
+    imageUrl: null,
+    imageAlt: null,
     pdfUrl: paperData.openAccessPdf?.url || null,
     citationUrl: doi ? `https://doi.org/${doi}` : null,
     sourcePlatform: "Semantic Scholar",

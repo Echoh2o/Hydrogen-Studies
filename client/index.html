@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1"
+      content="width=device-width, initial-scale=1.0"
     />
 
     <!-- Primary SEO Meta Tags -->
@@ -21,7 +21,7 @@
       property="og:description"
       content="Search and explore hydrogen gas research studies and their effects on health, with advanced filtering and categorization."
     />
-    <meta property="og:image" content="/logo.png" />
+    <meta property="og:image" content="https://hydrogenstudies.com/logo.png" />
     <meta property="og:url" content="https://hydrogenstudies.com/" />
     <meta property="og:site_name" content="Hydrogen Studies" />
 
@@ -32,7 +32,7 @@
       name="twitter:description"
       content="Search and explore hydrogen gas research studies and their effects on health, with advanced filtering and categorization."
     />
-    <meta name="twitter:image" content="/logo.png" />
+    <meta name="twitter:image" content="https://hydrogenstudies.com/logo.png" />
 
     <!-- Canonical URL to prevent duplicate content issues -->
     <link rel="canonical" href="https://hydrogenstudies.com/" />
@@ -40,8 +40,10 @@
     <!-- RSS Feed Discovery -->
     <link rel="alternate" type="application/rss+xml" title="Hydrogen Studies Blog" href="/rss.xml" />
 
-    <!-- Ahrefs Analytics -->
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="rjIt9UY/qFbTPzCzRK8BRg" async></script>
+    <!-- Ahrefs Analytics is injected at runtime by src/lib/analytics.ts, and
+         only after the visitor grants analytics consent (see initAhrefs).
+         Do NOT re-add a static <script> tag here — it would fire before
+         consent and bypass the cookie banner. -->
 
     <!-- Google Fonts: Montserrat for Echo Water brand alignment + Fraunces/Plus Jakarta Sans for Learn page -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

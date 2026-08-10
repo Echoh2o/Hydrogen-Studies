@@ -206,7 +206,10 @@ async function runScheduledSearch(sources: string[], keywords: any[]) {
   };
 
   if (!sources || sources.length === 0) {
-    sources = ["pubmed", "crossref", "europepmc", "medrxiv", "biorxiv", "googlescholar"]; // Default sources (all available)
+    // googlescholar is excluded from the default set: it now no-ops without a
+    // SERPAPI_KEY (spoofed-UA scraping removed), so scheduling it by default
+    // just wastes a pass. Callers can still opt in explicitly when a key is set.
+    sources = ["pubmed", "crossref", "europepmc", "medrxiv", "biorxiv"];
   }
 
   // Create a list of all search terms
@@ -339,19 +342,10 @@ async function saveSearchResults(results: any[], source: string, keywords: any[]
           if (processedDOIs.has(result.doi)) return null;
           processedDOIs.add(result.doi);
       }
-      
-      // Check if this result already exists in monitor_results by DOI
-      if (result.doi) {
-        const [existing] = await db
-          .select()
-          .from(monitorResults)
-          .where(eq(monitorResults.doi, result.doi));
 
-        if (existing) {
-          // console.log(`Result with DOI ${result.doi} already exists, skipping`);
-          return null;
-        }
-      }
+      // Cross-source/concurrent dedup is enforced by the partial unique index
+      // monitor_results_doi_unique (on doi WHERE doi IS NOT NULL) via the
+      // ON CONFLICT DO NOTHING below — no SELECT-then-INSERT race window.
 
       // Determine which keywords matched
       const matchedKeywords: string[] = [];
@@ -386,6 +380,10 @@ async function saveSearchResults(results: any[], source: string, keywords: any[]
           source,
           foundAt: new Date(),
         })
+        // Concurrent sources may return the same paper; the partial unique
+        // index on doi makes the duplicate insert a no-op (returning() is
+        // empty, so insertedResult is undefined and gets filtered out).
+        .onConflictDoNothing({ target: monitorResults.doi })
         .returning();
 
       return insertedResult;

@@ -97,7 +97,7 @@ export async function enrichH2Fields(
       })
       .from(studies)
       .where(
-        sql`${studies.h2DeliveryMethod} IS NULL AND ${studies.abstract} IS NOT NULL AND ${studies.abstract} != ''`,
+        sql`${studies.h2DeliveryMethod} IS NULL AND ${studies.h2ExtractionAttemptedAt} IS NULL AND ${studies.abstract} IS NOT NULL AND ${studies.abstract} != ''`,
       )
       .limit(batchSize);
 
@@ -187,12 +187,9 @@ Methods: ${study.methods || study.methodsShort || "Not available"}`;
     updates.isHumanTrial = result.is_human_trial;
   }
 
-  // Always set h2DeliveryMethod even if null, so we don't reprocess this study
-  if (updates.h2DeliveryMethod === undefined) {
-    updates.h2DeliveryMethod = null;
-  }
+  // Stamp the attempt time on every extraction (even when the result is null),
+  // so permanently-null rows are excluded from future candidate queries and not reprocessed.
+  updates.h2ExtractionAttemptedAt = new Date();
 
-  if (Object.keys(updates).length > 0) {
-    await db.update(studies).set(updates).where(eq(studies.id, study.id));
-  }
+  await db.update(studies).set(updates).where(eq(studies.id, study.id));
 }

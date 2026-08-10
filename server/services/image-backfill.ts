@@ -18,12 +18,50 @@
  * cron-throttled at the scheduler level.
  */
 
-import { sql, eq, isNull, or, and } from "drizzle-orm";
+import { sql, eq, isNull, or, and, notInArray } from "drizzle-orm";
 import { db } from "../db";
 import { blogArticles, studies } from "@shared/schema";
 import { logger } from "../utils/logger";
 
 const TAG = "ImageBackfill";
+
+/**
+ * In-memory record of rows that failed generation in this process. Without a
+ * persistent attempt/cooldown column (handled in a separate schema wave), a
+ * row that permanently fails (content-policy rejection, malformed title,
+ * provider 400) keeps its NULL imageUrl and would otherwise be re-selected at
+ * the head of every batch, starving the rest of the backlog and burning paid
+ * provider attempts each cycle. Excluding these ids lets the backlog drain
+ * across cycles; the sets reset on process restart, which retries them once.
+ */
+const failedStudyIds = new Set<number>();
+const failedBlogIds = new Set<number>();
+
+/**
+ * How long a study that failed image generation is excluded from the
+ * candidate query. Persisted via studies.imageBackfillFailedAt so the skip
+ * survives process restarts (unlike the in-memory set above), while still
+ * letting a genuinely-fixable row be retried once the window elapses.
+ */
+const STUDY_FAILURE_COOLDOWN_INTERVAL = sql`interval '7 days'`;
+
+/**
+ * Mark a study as having failed image generation: record it in the
+ * in-memory skip set for this process AND stamp imageBackfillFailedAt so the
+ * exclusion is durable across restarts. Stamp failures are swallowed (logged)
+ * so a transient DB write error never aborts the batch loop.
+ */
+async function markStudyFailed(id: number): Promise<void> {
+  failedStudyIds.add(id);
+  try {
+    await db
+      .update(studies)
+      .set({ imageBackfillFailedAt: new Date() })
+      .where(eq(studies.id, id));
+  } catch (err) {
+    logger.error("Failed to stamp imageBackfillFailedAt on study", err, TAG);
+  }
+}
 
 /** URLs that indicate a row "has the placeholder, not a real image". */
 const PLACEHOLDER_URLS = [
@@ -157,10 +195,24 @@ export async function runImageBackfillBatch(opts: {
   let studiesProcessed = 0;
   let studiesSucceeded = 0;
   try {
+    const excludedStudyIds = Array.from(failedStudyIds);
+    if (excludedStudyIds.length > 0) {
+      logger.info("Skipping studies that failed image generation earlier in this process", TAG, {
+        count: excludedStudyIds.length,
+      });
+    }
+    // Durable cooldown: skip rows stamped as failed within the window, so a
+    // permanently-failing study no longer occupies a batch slot every cycle
+    // and the backlog behind it can drain (even across process restarts).
+    const notRecentlyFailed = sql`(${studies.imageBackfillFailedAt} IS NULL OR ${studies.imageBackfillFailedAt} < now() - ${STUDY_FAILURE_COOLDOWN_INTERVAL})`;
     const candidateStudies = await db
       .select({ id: studies.id })
       .from(studies)
-      .where(isNull(studies.imageUrl))
+      .where(
+        excludedStudyIds.length > 0
+          ? and(isNull(studies.imageUrl), notRecentlyFailed, notInArray(studies.id, excludedStudyIds))
+          : and(isNull(studies.imageUrl), notRecentlyFailed),
+      )
       .orderBy(sql`${studies.viewCount} DESC NULLS LAST, ${studies.id} ASC`)
       .limit(studyLimit);
 
@@ -171,13 +223,16 @@ export async function runImageBackfillBatch(opts: {
         try {
           const result = await generateImageForStudy(c.id);
           if (result?.success) studiesSucceeded++;
-          else
+          else {
+            await markStudyFailed(c.id);
             errors.push({
               kind: "study",
               id: c.id,
               error: result?.message ?? "unknown failure",
             });
+          }
         } catch (err) {
+          await markStudyFailed(c.id);
           errors.push({
             kind: "study",
             id: c.id,
@@ -195,10 +250,20 @@ export async function runImageBackfillBatch(opts: {
   let blogsProcessed = 0;
   let blogsSucceeded = 0;
   try {
+    const excludedBlogIds = Array.from(failedBlogIds);
+    if (excludedBlogIds.length > 0) {
+      logger.info("Skipping blogs that failed image generation earlier in this process", TAG, {
+        count: excludedBlogIds.length,
+      });
+    }
     const candidateBlogs = await db
       .select({ id: blogArticles.id })
       .from(blogArticles)
-      .where(isNull(blogArticles.imageUrl))
+      .where(
+        excludedBlogIds.length > 0
+          ? and(isNull(blogArticles.imageUrl), notInArray(blogArticles.id, excludedBlogIds))
+          : isNull(blogArticles.imageUrl),
+      )
       .orderBy(sql`${blogArticles.viewCount} DESC NULLS LAST, ${blogArticles.id} ASC`)
       .limit(blogLimit);
 
@@ -209,13 +274,16 @@ export async function runImageBackfillBatch(opts: {
         try {
           const result = await generateBlogImage(c.id);
           if (result?.success) blogsSucceeded++;
-          else
+          else {
+            failedBlogIds.add(c.id);
             errors.push({
               kind: "blog",
               id: c.id,
               error: result?.message ?? "unknown failure",
             });
+          }
         } catch (err) {
+          failedBlogIds.add(c.id);
           errors.push({
             kind: "blog",
             id: c.id,

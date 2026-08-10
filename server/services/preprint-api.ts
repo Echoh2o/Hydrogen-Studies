@@ -25,6 +25,7 @@ interface PreprintResult {
   externalId: string;
   category?: string;
   version?: string;
+  license?: string; // per-preprint CC license (e.g. cc_by, cc_by_nc_nd); gates AI-derivative reuse
 }
 
 interface PreprintApiResponse {
@@ -61,7 +62,6 @@ async function fetchRecentPreprints(
   fromDate: string, // YYYY-MM-DD
   toDate: string,   // YYYY-MM-DD
   cursor: number = 0,
-  pageSize: number = 30,
 ): Promise<PreprintApiResponse> {
   const url = `https://api.biorxiv.org/details/${server}/${fromDate}/${toDate}/${cursor}`;
 
@@ -78,6 +78,59 @@ async function fetchRecentPreprints(
   return response.json();
 }
 
+// The biorxiv details endpoint returns fixed 100-record pages (oldest first)
+// with a cursor and a messages[0].total record count for the window. Page cap
+// bounds the scan for busy servers (medRxiv posts hundreds/day) so a 90-day
+// window doesn't fan out into an unbounded number of requests.
+const PREPRINT_PAGE_SIZE = 100;
+const PREPRINT_MAX_PAGES = 30;
+
+/**
+ * Fetch every record in the date window by advancing the cursor in steps of
+ * 100 until messages[0].total is exhausted (or the page cap is hit), applying
+ * the keyword filter per page so only matches are retained in memory.
+ */
+async function fetchAndFilterPreprints(
+  server: "medrxiv" | "biorxiv",
+  fromDate: string,
+  toDate: string,
+  terms: string[],
+): Promise<PreprintApiResponse["collection"]> {
+  const filtered: PreprintApiResponse["collection"] = [];
+  let cursor = 0;
+  let total = Infinity;
+
+  for (let pageCount = 0; pageCount < PREPRINT_MAX_PAGES && cursor < total; pageCount++) {
+    const data = await fetchRecentPreprints(server, fromDate, toDate, cursor);
+
+    if (!data.collection || data.collection.length === 0) {
+      break;
+    }
+
+    // messages[0].total reports the full record count for the window.
+    const reportedTotal = data.messages?.[0]?.total;
+    if (typeof reportedTotal === "number" && reportedTotal > 0) {
+      total = reportedTotal;
+    }
+
+    for (const item of data.collection) {
+      const text = `${item.title} ${item.abstract} ${item.category}`.toLowerCase();
+      if (terms.some(term => text.includes(term))) {
+        filtered.push(item);
+      }
+    }
+
+    cursor += data.collection.length;
+
+    // Guard against a non-advancing cursor if the API returns a short page.
+    if (data.collection.length < PREPRINT_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return filtered;
+}
+
 /**
  * Search medRxiv preprints by keywords (client-side filtering on recent preprints)
  */
@@ -91,18 +144,13 @@ export async function searchMedRxiv(
     const toDate = new Date().toISOString().split("T")[0];
     const fromDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-    const data = await fetchRecentPreprints("medrxiv", fromDate, toDate, 0, 100);
-
-    if (!data.collection || data.collection.length === 0) {
-      return { results: [], total: 0 };
-    }
-
     // Filter by query terms (case-insensitive)
     const terms = query.toLowerCase().split(/\s+or\s+|\s+/i).filter(t => t.length > 2);
-    const filtered = data.collection.filter(item => {
-      const text = `${item.title} ${item.abstract} ${item.category}`.toLowerCase();
-      return terms.some(term => text.includes(term));
-    });
+    const filtered = await fetchAndFilterPreprints("medrxiv", fromDate, toDate, terms);
+
+    if (filtered.length === 0) {
+      return { results: [], total: 0 };
+    }
 
     // Paginate
     const start = (page - 1) * pageSize;
@@ -121,6 +169,7 @@ export async function searchMedRxiv(
         externalId: item.doi,
         category: item.category,
         version: item.version,
+        license: item.license,
       })),
       total: filtered.length,
     };
@@ -142,17 +191,12 @@ export async function searchBioRxiv(
     const toDate = new Date().toISOString().split("T")[0];
     const fromDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-    const data = await fetchRecentPreprints("biorxiv", fromDate, toDate, 0, 100);
+    const terms = query.toLowerCase().split(/\s+or\s+|\s+/i).filter(t => t.length > 2);
+    const filtered = await fetchAndFilterPreprints("biorxiv", fromDate, toDate, terms);
 
-    if (!data.collection || data.collection.length === 0) {
+    if (filtered.length === 0) {
       return { results: [], total: 0 };
     }
-
-    const terms = query.toLowerCase().split(/\s+or\s+|\s+/i).filter(t => t.length > 2);
-    const filtered = data.collection.filter(item => {
-      const text = `${item.title} ${item.abstract} ${item.category}`.toLowerCase();
-      return terms.some(term => text.includes(term));
-    });
 
     const start = (page - 1) * pageSize;
     const paged = filtered.slice(start, start + pageSize);
@@ -170,6 +214,7 @@ export async function searchBioRxiv(
         externalId: item.doi,
         category: item.category,
         version: item.version,
+        license: item.license,
       })),
       total: filtered.length,
     };

@@ -3,6 +3,7 @@
  * Creates vector representations of studies and performs semantic similarity matching
  */
 
+import { createHash } from "crypto";
 import { ai } from "./ai-provider";
 import { db } from "../db";
 import { studies } from "@shared/schema";
@@ -11,6 +12,33 @@ import { ParsedQuery } from "./natural-language-parser";
 
 // Cache for embeddings to reduce API calls
 const embeddingCache = new Map<string, number[]>();
+
+// Candidate pool pulled from the DB (cheap read); embedding fan-out is bounded
+// to a top-K subset of these to cap OpenAI calls per query.
+const MAX_CANDIDATE_STUDIES = 200;
+const MAX_EMBEDDING_FANOUT = 50;
+const EMBEDDING_CONCURRENCY = 5;
+
+/**
+ * Run an async worker over items with a bounded number of in-flight promises.
+ */
+async function mapWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  let index = 0;
+  const runners = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (index < items.length) {
+        const current = items[index++];
+        await worker(current);
+      }
+    },
+  );
+  await Promise.all(runners);
+}
 
 export interface SemanticSearchResult {
   id: number;
@@ -64,8 +92,9 @@ export interface SemanticSearchResponse {
  * Generate embedding for text using OpenAI
  */
 async function generateEmbedding(text: string): Promise<number[]> {
-  // Check cache first
-  const cacheKey = text.slice(0, 100); // Use first 100 chars as key
+  // Check cache first — key on a hash of the FULL text so studies sharing a
+  // title/prefix don't collide and reuse the wrong embedding.
+  const cacheKey = createHash("sha1").update(text).digest("hex");
   if (embeddingCache.has(cacheKey)) {
     return embeddingCache.get(cacheKey)!;
   }
@@ -208,26 +237,49 @@ export async function performSemanticSearch(
       query = query.where(and(...conditions));
     }
 
-    // Get all matching studies (we'll sort by semantic similarity)
-    const allStudies = await query.limit(200); // Get more for semantic ranking
+    // Get candidate studies from the DB (cheap read); ranking is refined below.
+    const allStudies = await query.limit(MAX_CANDIDATE_STUDIES);
 
-    // Calculate semantic similarity for each study
-    const scoredStudies = await Promise.all(
-      allStudies.map(async (study) => {
-        const studyText = createStudySearchText(study);
-        let semanticScore = 0;
+    // Compute the cheap keyword score for every candidate (no API calls). This
+    // lets us bound the embedding fan-out to the most promising subset instead
+    // of firing one OpenAI embedding call per candidate on every query.
+    const keywordScored = allStudies.map((study) => ({
+      study,
+      keywordScore: calculateKeywordRelevance(study, parsedQuery),
+    }));
 
+    // Only embed the top-N candidates by keyword score, and do so with bounded
+    // concurrency so a query never issues an unbounded burst of embedding calls.
+    // NOTE: study embeddings should ideally be precomputed and persisted in a
+    // column (refresh on write) so no per-query embedding is needed — that part
+    // requires a schema change handled by a separate wave and is left as-is.
+    const embedTargets = [...keywordScored]
+      .sort((a, b) => b.keywordScore - a.keywordScore)
+      .slice(0, MAX_EMBEDDING_FANOUT);
+
+    const semanticScores = new Map<number, number>();
+    await mapWithConcurrency(
+      embedTargets,
+      EMBEDDING_CONCURRENCY,
+      async ({ study }) => {
         try {
-          // Generate embedding for study (this could be pre-computed and stored)
-          const studyEmbedding = await generateEmbedding(studyText);
-          semanticScore = cosineSimilarity(queryEmbedding, studyEmbedding);
+          const studyEmbedding = await generateEmbedding(
+            createStudySearchText(study),
+          );
+          semanticScores.set(
+            study.id,
+            cosineSimilarity(queryEmbedding, studyEmbedding),
+          );
         } catch (error) {
           console.error("Error calculating semantic similarity:", error);
-          semanticScore = 0;
         }
+      },
+    );
 
-        // Calculate keyword-based relevance score
-        const keywordScore = calculateKeywordRelevance(study, parsedQuery);
+    // Assemble scored results (studies outside the embedding subset keep a
+    // semantic score of 0 and are ranked by keyword relevance alone).
+    const scoredStudies = keywordScored.map(({ study, keywordScore }) => {
+        const semanticScore = semanticScores.get(study.id) ?? 0;
 
         // Combined relevance score
         const relevanceScore = semanticScore * 0.7 + keywordScore * 0.3;
@@ -263,8 +315,7 @@ export async function performSemanticSearch(
           keywords: study.keywords,
           tags: study.tags,
         } as SemanticSearchResult;
-      }),
-    );
+    });
 
     // Sort by relevance score
     scoredStudies.sort((a, b) => b.relevanceScore - a.relevanceScore);

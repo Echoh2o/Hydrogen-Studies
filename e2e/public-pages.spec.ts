@@ -22,9 +22,10 @@ test.describe("Public Pages - Navigation & Rendering", () => {
   test("search page loads and accepts queries", async ({ page }) => {
     await page.goto("/search");
     await page.waitForLoadState("networkidle");
-    // Search page should auto-load results
-    const body = await page.textContent("body");
-    expect(body).toBeTruthy();
+    // The search input must actually render (a broken/error page would not have it).
+    await expect(
+      page.getByPlaceholder(/search hydrogen research/i),
+    ).toBeVisible();
   });
 
   test("benefits page loads", async ({ page }) => {
@@ -77,8 +78,8 @@ test.describe("Public Pages - Navigation & Rendering", () => {
   test("recommendations page loads", async ({ page }) => {
     await page.goto("/recommendations");
     await page.waitForLoadState("networkidle");
-    const body = await page.textContent("body");
-    expect(body).toBeTruthy();
+    // The page's own heading must render, not just any non-empty body.
+    await expect(page.locator("body")).toContainText(/recommended for you/i);
   });
 
   test("learn basics page loads", async ({ page }) => {
@@ -98,8 +99,12 @@ test.describe("Public Pages - Navigation & Rendering", () => {
 
   test("404 page for unknown routes", async ({ page }) => {
     await page.goto("/this-page-does-not-exist");
-    const body = await page.textContent("body");
-    expect(body).toMatch(/not found|404|page/i);
+    await page.waitForLoadState("networkidle");
+    const body = (await page.textContent("body")) ?? "";
+    // Assert the NotFound page's specific markers. Dropped the loose "page"
+    // alternative from the old regex, which matched almost any content.
+    expect(body).toMatch(/404/);
+    expect(body).toMatch(/not found/i);
   });
 });
 
@@ -125,50 +130,50 @@ test.describe("Explore Pages", () => {
   test("explore by benefit loads", async ({ page }) => {
     await page.goto("/explore-by-benefit");
     await page.waitForLoadState("networkidle");
-    const body = await page.textContent("body");
-    expect(body).toBeTruthy();
+    await expect(page.locator("body")).toContainText(/health benefit/i);
   });
 
   test("explore by mechanism loads", async ({ page }) => {
     await page.goto("/explore-by-mechanism");
     await page.waitForLoadState("networkidle");
-    const body = await page.textContent("body");
-    expect(body).toBeTruthy();
+    await expect(page.locator("body")).toContainText(/explore by mechanism/i);
   });
 
   test("explore by delivery method loads", async ({ page }) => {
     await page.goto("/explore-by-delivery-method");
     await page.waitForLoadState("networkidle");
-    const body = await page.textContent("body");
-    expect(body).toBeTruthy();
+    await expect(page.locator("body")).toContainText(/delivery method/i);
   });
 
   test("explore condition category links go to search", async ({ page }) => {
     await page.goto("/explore-by-condition");
     await page.waitForLoadState("networkidle");
-    // Click first category link if available
+    // The condition index must render at least one navigable category link.
+    // A hard expectation (not an if-count guard) so an empty/broken page fails.
     const links = page.locator('a[href*="/search"], a[href*="/explore-by-condition/"]');
-    if ((await links.count()) > 0) {
-      const href = await links.first().getAttribute("href");
-      expect(href).toBeTruthy();
-    }
+    await expect(links.first()).toBeVisible();
+    const href = await links.first().getAttribute("href");
+    expect(href).toMatch(/\/search|\/explore-by-condition\//);
   });
 });
 
 test.describe("Study Detail Pages", () => {
-  test("study by slug loads or shows not found", async ({ page }) => {
+  test("study detail loads from the studies listing", async ({ page }) => {
     // First get a study slug from the studies listing
     await page.goto("/studies");
     await page.waitForLoadState("networkidle");
 
+    // The listing must expose at least one study link (hard expectation, not a
+    // silent skip) so this test actually exercises the detail route.
     const studyLink = page.locator('a[href*="/study/"]').first();
-    if ((await studyLink.count()) > 0) {
-      await studyLink.click();
-      await page.waitForLoadState("networkidle");
-      const body = await page.textContent("body");
-      // Should show study content, not an error
-      expect(body).not.toMatch(/error.*failed.*load/i);
-    }
+    await expect(studyLink).toBeVisible();
+    await studyLink.click();
+    await page.waitForLoadState("networkidle");
+    // We should have navigated onto a /study/ detail URL...
+    expect(page.url()).toContain("/study/");
+    // ...and it must render study content, not a load error.
+    const body = (await page.textContent("body")) ?? "";
+    expect(body).not.toMatch(/error.*failed.*load/i);
   });
 });
 
@@ -177,14 +182,16 @@ test.describe("Blog Detail Pages", () => {
     await page.goto("/blog");
     await page.waitForLoadState("networkidle");
 
+    // The listing must expose at least one article link so the detail route is
+    // actually exercised (previously a silent skip when the selector matched 0).
     const blogLink = page.locator('a[href*="/blog/"]').first();
-    if ((await blogLink.count()) > 0) {
-      await blogLink.click();
-      await page.waitForLoadState("networkidle");
-      const body = await page.textContent("body");
-      // Should NOT show the error message
-      expect(body).not.toMatch(/error.*failed.*load.*article/i);
-    }
+    await expect(blogLink).toBeVisible();
+    await blogLink.click();
+    await page.waitForLoadState("networkidle");
+    expect(page.url()).toContain("/blog/");
+    const body = (await page.textContent("body")) ?? "";
+    // Should NOT show the error message
+    expect(body).not.toMatch(/error.*failed.*load.*article/i);
   });
 });
 

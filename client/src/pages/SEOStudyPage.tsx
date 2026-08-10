@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { formatAuthors } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/components/auth/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +14,9 @@ import {
   HiBookOpen,
   HiCalendar,
   HiDocumentText,
+  HiLink,
+  HiBookmark,
+  HiOutlineBookmark,
 } from "react-icons/hi";
 import { Helmet } from "react-helmet";
 import DOMPurify from "dompurify";
@@ -31,6 +36,7 @@ import { useEffect } from "react";
 import { StudyInfoPanel } from "@/components/StudyInfoPanel";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import JsonLd, { generateMedicalArticleSchema } from "@/components/seo/JsonLd";
 
 interface Study {
   id: number;
@@ -80,7 +86,28 @@ interface Study {
   full_text?: string;
   fullTextHtml?: string;
   full_text_html?: string;
+  sourcePlatform?: string;
+  source_platform?: string;
 }
+
+// Shape returned by GET /api/explorer/study-connections
+interface StudyConnection {
+  source: number;
+  target: number;
+  strength: number;
+  type: string;
+}
+
+// Map known data-source platforms to their attribution link-back URLs
+const SOURCE_ATTRIBUTION_LINKS: Record<string, string> = {
+  "semantic scholar": "https://www.semanticscholar.org",
+  semanticscholar: "https://www.semanticscholar.org",
+  "europe pmc": "https://europepmc.org",
+  europepmc: "https://europepmc.org",
+  biorxiv: "https://www.biorxiv.org",
+  medrxiv: "https://www.medrxiv.org",
+  crossref: "https://www.crossref.org",
+};
 
 export default function SEOStudyPage() {
   const params = useParams();
@@ -115,6 +142,43 @@ export default function SEOStudyPage() {
       navigate(`/study/${study.slug}`, { replace: true });
     }
   }, [study, isSlugRoute, location, navigate]);
+
+  // Citation-connections panel (enh-10): fetch related studies for this id.
+  // The default query fn appends studyId as a query param. Degrades to an
+  // empty/undefined list on error so the panel simply renders nothing.
+  const { data: connections } = useQuery<StudyConnection[]>({
+    queryKey: ["/api/explorer/study-connections", { studyId: study?.id }],
+    enabled: !!study?.id,
+  });
+  const relatedStudyIds = Array.from(
+    new Set(
+      (connections ?? []).map((c) =>
+        c.source === study?.id ? c.target : c.source,
+      ),
+    ),
+  )
+    .filter((id) => id !== study?.id)
+    .slice(0, 8);
+
+  // Save/bookmark (enh-5): only meaningful for authenticated users.
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+  const { data: savedData } = useQuery<{ savedStudyIds: number[] }>({
+    queryKey: ["/api/me/saved-studies"],
+    enabled: isAuthenticated,
+  });
+  const isSaved = !!(
+    study?.id && savedData?.savedStudyIds?.includes(study.id)
+  );
+  const saveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/me/save-study/${id}`);
+      return (await res.json()) as { saved: boolean };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/me/saved-studies"] });
+    },
+  });
 
   if (isLoading) {
     return (
@@ -180,9 +244,21 @@ export default function SEOStudyPage() {
     ? `https://hydrogenstudies.com/study/${study.slug}`
     : `https://hydrogenstudies.com/study/id/${study.id}`;
 
+  // Data-source attribution (Semantic Scholar requires this; Europe PMC/bioRxiv request it)
+  const sourcePlatform = study.sourcePlatform || study.source_platform;
+  const sourceAttributionUrl = sourcePlatform
+    ? SOURCE_ATTRIBUTION_LINKS[sourcePlatform.trim().toLowerCase()]
+    : undefined;
+
   return (
     <>
       <SiteHeader />
+
+      {/* Structured Data */}
+      <JsonLd
+        type="MedicalScholarlyArticle"
+        data={generateMedicalArticleSchema(study)}
+      />
       <Helmet>
         <title>{pageTitle}</title>
         <meta
@@ -586,6 +662,41 @@ export default function SEOStudyPage() {
 
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-3 pt-6 border-t border-neutral-200">
+                      {/* Save/bookmark (enh-5) */}
+                      {isAuthenticated ? (
+                        <Button
+                          variant={isSaved ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => saveMutation.mutate(study.id)}
+                          disabled={saveMutation.isPending}
+                          aria-pressed={isSaved}
+                          aria-label={
+                            isSaved
+                              ? "Remove this study from your saved list"
+                              : "Save this study to your list"
+                          }
+                        >
+                          {isSaved ? (
+                            <HiBookmark className="mr-2 w-4 h-4" />
+                          ) : (
+                            <HiOutlineBookmark className="mr-2 w-4 h-4" />
+                          )}
+                          {isSaved ? "Saved" : "Save"}
+                        </Button>
+                      ) : (
+                        <Link
+                          href={`/login?redirect=${encodeURIComponent(location)}`}
+                        >
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label="Sign in to save this study"
+                          >
+                            <HiOutlineBookmark className="mr-2 w-4 h-4" />
+                            Sign in to save
+                          </Button>
+                        </Link>
+                      )}
                       {study.doi && (
                         <Button variant="outline" size="sm" asChild>
                           <a
@@ -623,8 +734,69 @@ export default function SEOStudyPage() {
                         </Button>
                       )}
                     </div>
+
+                    {/* Data-source attribution */}
+                    {sourcePlatform && (
+                      <p className="mt-4 text-xs text-neutral-500">
+                        Data provided by{" "}
+                        {sourceAttributionUrl ? (
+                          <a
+                            href={sourceAttributionUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-primary"
+                          >
+                            {sourcePlatform}
+                          </a>
+                        ) : (
+                          sourcePlatform
+                        )}
+                      </p>
+                    )}
                   </div>
                 </article>
+
+                {/* Citation-connections panel (enh-10) */}
+                {relatedStudyIds.length > 0 && (
+                  <section
+                    className="mb-6 md:mb-10"
+                    aria-labelledby="related-studies-heading"
+                  >
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <h2
+                          id="related-studies-heading"
+                          className="text-lg font-semibold mb-2 flex items-center"
+                        >
+                          <HiLink
+                            className="mr-2 w-5 h-5 text-primary"
+                            aria-hidden="true"
+                          />
+                          Related Studies
+                        </h2>
+                        <p className="text-sm text-neutral-500 mb-4">
+                          Other studies connected to this research by topic and
+                          shared terminology.
+                        </p>
+                        <ul className="space-y-2">
+                          {relatedStudyIds.map((id) => (
+                            <li key={id}>
+                              <Link href={`/study/id/${id}`}>
+                                <span className="text-primary hover:underline cursor-pointer text-sm inline-flex items-center">
+                                  <HiExternalLink
+                                    className="mr-2 w-4 h-4 flex-shrink-0"
+                                    aria-hidden="true"
+                                  />
+                                  View related study #{id}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </section>
+                )}
 
                 {/* Back to studies */}
                 <div className="text-center">

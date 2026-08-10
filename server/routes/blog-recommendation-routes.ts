@@ -14,10 +14,10 @@ const router = Router();
 /**
  * Get blog article recommendations
  */
-router.get("/recommendations", async (req, res) => {
+router.get("/recommendations", requireAdmin, async (req, res) => {
   try {
     console.log("Blog recommendations endpoint called");
-    const limit = parseInt(req.query.limit as string) || 10; // Reduced default limit
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10)); // Reduced default, clamped max
     const recommendations = await getBlogRecommendations(limit);
 
     console.log(`Returning ${recommendations.length} recommendations`);
@@ -252,7 +252,7 @@ router.post("/jobs", requireAdmin, async (req, res) => {
  * List all jobs
  * GET /api/blog-recommendations/jobs
  */
-router.get("/jobs", async (req, res) => {
+router.get("/jobs", requireAdmin, async (req, res) => {
   try {
     const jobs = await listJobs();
     const worker = getWorkerState();
@@ -267,7 +267,7 @@ router.get("/jobs", async (req, res) => {
  * Get job status
  * GET /api/blog-recommendations/jobs/:id
  */
-router.get("/jobs/:id", async (req, res) => {
+router.get("/jobs/:id", requireAdmin, async (req, res) => {
   try {
     const jobId = parseInt(req.params.id);
     if (isNaN(jobId)) return res.status(400).json({ error: "Invalid job ID" });

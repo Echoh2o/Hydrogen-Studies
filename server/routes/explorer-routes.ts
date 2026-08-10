@@ -4,15 +4,24 @@ import { explorerDataService } from "../services/explorer-data-service";
 
 const router = Router();
 
+// Coerce a year query param to an integer, falling back to `fallback` on
+// missing/non-numeric input and clamping to a sane range so invalid values
+// never propagate into DB queries.
+function clampYear(value: string | undefined, fallback: number): number {
+  const parsed = parseInt(String(value ?? ""), 10);
+  if (Number.isNaN(parsed)) return fallback;
+  return Math.min(new Date().getFullYear() + 1, Math.max(1900, parsed));
+}
+
 // Get timeline data
 router.get("/api/explorer/timeline-data", async (req, res) => {
   try {
-    const startYear = req.query.startYear
-      ? parseInt(req.query.startYear as string)
-      : 2000;
-    const endYear = req.query.endYear
-      ? parseInt(req.query.endYear as string)
-      : new Date().getFullYear();
+    // Coerce/clamp year params: fall back to defaults on NaN, keep within a sane range
+    const startYear = clampYear(req.query.startYear as string | undefined, 2000);
+    const endYear = clampYear(
+      req.query.endYear as string | undefined,
+      new Date().getFullYear(),
+    );
 
     const data = await explorerDataService.getTimelineData(startYear, endYear);
     res.json(data);
@@ -50,9 +59,7 @@ router.get("/api/explorer/study-connections", async (req, res) => {
 // Get research evolution data
 router.get("/api/explorer/research-evolution", async (req, res) => {
   try {
-    const startYear = req.query.startYear
-      ? parseInt(req.query.startYear as string)
-      : 2000;
+    const startYear = clampYear(req.query.startYear as string | undefined, 2000);
     const data = await explorerDataService.getResearchEvolution(startYear);
     res.json(data);
   } catch (error) {

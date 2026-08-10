@@ -68,7 +68,7 @@ export default function ProtectedRoute({
   });
 
   // Fetch user details if authenticated
-  const { data: userDetails, isLoading: userLoading } = useQuery<UserDetails>({
+  const { data: userDetails, isLoading: userLoading, isError: userError } = useQuery<UserDetails>({
     queryKey: ["/api/auth/me"],
     enabled: !!session?.authenticated,
     staleTime: 5 * 60 * 1000,
@@ -103,8 +103,11 @@ export default function ProtectedRoute({
     );
   }
 
-  // Handle authentication error
-  if (error) {
+  // Handle authentication error — including a failed /api/auth/me. Previously
+  // a me-query error left userDetails undefined and the role/permission checks
+  // below were simply skipped (fail-open), rendering the gated UI to a user
+  // whose role we never confirmed. Treat it as an auth error instead.
+  if (error || (session?.authenticated && userError)) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-md mx-auto">
@@ -146,10 +149,11 @@ export default function ProtectedRoute({
     return null;
   }
 
-  // Check role requirements
-  if (requiredRoles.length > 0 && userDetails?.user) {
-    const userRole = userDetails.user.role;
-    const hasRequiredRole = requiredRoles.includes(userRole);
+  // Check role requirements. Fail CLOSED: a missing userDetails.user (me-query
+  // returned no user) denies rather than skipping the check.
+  if (requiredRoles.length > 0) {
+    const userRole = userDetails?.user?.role;
+    const hasRequiredRole = !!userRole && requiredRoles.includes(userRole);
 
     if (!hasRequiredRole) {
       return (
@@ -211,12 +215,12 @@ export default function ProtectedRoute({
     }
   }
 
-  // Check permission requirements
-  if (requiredPermissions.length > 0 && userDetails?.user) {
-    const userPermissions = userDetails.user.permissions || [];
-    const hasRequiredPermissions = requiredPermissions.every((permission) =>
-      userPermissions.includes(permission),
-    );
+  // Check permission requirements. Fail CLOSED like the role check above.
+  if (requiredPermissions.length > 0) {
+    const userPermissions = userDetails?.user?.permissions || [];
+    const hasRequiredPermissions =
+      !!userDetails?.user &&
+      requiredPermissions.every((permission) => userPermissions.includes(permission));
 
     if (!hasRequiredPermissions) {
       return (

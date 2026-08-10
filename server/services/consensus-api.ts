@@ -68,27 +68,60 @@ interface CacheEntry<T> {
   data: T;
   timestamp: number;
   queryHash: string;
+  ttl: number;
 }
 
 const cache = new Map<string, CacheEntry<any>>();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+// Brief TTL for AI-failure fallbacks: cache them so a burst of misses during an
+// outage doesn't re-fire Opus/Consensus on every request, but expire quickly so
+// a real synthesis is retried soon after the provider recovers.
+const FALLBACK_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// LRU cap so unique-query floods (public search path) can't grow the heap for
+// the life of the process. Oldest entry is evicted on insert once full.
+const CACHE_MAX_ENTRIES = 500;
+
+/** Normalize a value so semantically-equal public queries share one cache entry. */
+function normalizeCacheValue(value: unknown): unknown {
+  if (typeof value === "string") {
+    return value.trim().toLowerCase().replace(/\s+/g, " ");
+  }
+  return value;
+}
 
 function getCacheKey(prefix: string, params: Record<string, any>): string {
-  return `${prefix}:${JSON.stringify(params)}`;
+  const normalized: Record<string, unknown> = {};
+  for (const key of Object.keys(params).sort()) {
+    normalized[key] = normalizeCacheValue(params[key]);
+  }
+  return `${prefix}:${JSON.stringify(normalized)}`;
 }
 
 function getFromCache<T>(key: string): T | null {
   const entry = cache.get(key);
   if (!entry) return null;
-  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+  if (Date.now() - entry.timestamp > entry.ttl) {
     cache.delete(key);
     return null;
   }
+  // Move to end (most recently used) so eviction drops genuinely cold entries.
+  cache.delete(key);
+  cache.set(key, entry);
   return entry.data as T;
 }
 
-function setCache<T>(key: string, data: T, queryHash: string): void {
-  cache.set(key, { data, timestamp: Date.now(), queryHash });
+function setCache<T>(
+  key: string,
+  data: T,
+  queryHash: string,
+  ttl: number = CACHE_TTL_MS,
+): void {
+  cache.delete(key);
+  if (cache.size >= CACHE_MAX_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey) cache.delete(oldestKey);
+  }
+  cache.set(key, { data, timestamp: Date.now(), queryHash, ttl });
 }
 
 // --- API Client ---
@@ -220,7 +253,10 @@ Return ONLY valid JSON with these fields:
 
   try {
     const text = await ai.generateText("", prompt, {
-      model: MODELS.OPUS,
+      // Cheap tier: single-abstract structured extraction, matching the rest of
+      // the codebase's per-study enrichment. Opus is reserved for cross-paper
+      // synthesis (synthesizeTopicEvidence / generateBlogOutline).
+      model: MODELS.HAIKU,
       maxTokens: 1000,
       temperature: null,
       caller: "ConsensusApi.summarizeSingleStudy",
@@ -251,6 +287,10 @@ Return ONLY valid JSON with these fields:
   }
 }
 
+// Coalesce concurrent misses for the same topic so a burst of public requests
+// fires a single Opus synthesis instead of stampeding the AI/Consensus APIs.
+const pendingSynthesis = new Map<string, Promise<TopicSynthesis>>();
+
 /**
  * Synthesize evidence across multiple papers for a topic
  */
@@ -263,6 +303,23 @@ export async function synthesizeTopicEvidence(
   const cached = getFromCache<TopicSynthesis>(cacheKey);
   if (cached) return cached;
 
+  const inFlight = pendingSynthesis.get(cacheKey);
+  if (inFlight) return inFlight;
+
+  const work = doSynthesizeTopicEvidence(cacheKey, searchQuery, topicTitle);
+  pendingSynthesis.set(cacheKey, work);
+  try {
+    return await work;
+  } finally {
+    pendingSynthesis.delete(cacheKey);
+  }
+}
+
+async function doSynthesizeTopicEvidence(
+  cacheKey: string,
+  searchQuery: string,
+  topicTitle: string,
+): Promise<TopicSynthesis> {
   // Search for papers on this topic
   const { papers } = await searchConsensus(searchQuery);
 
@@ -353,12 +410,13 @@ Important:
     if (!jsonMatch) throw new Error("No JSON in AI response");
 
     const synthesis: TopicSynthesis = JSON.parse(jsonMatch[0]);
-    setCache(cacheKey, synthesis, topicSlug);
+    setCache(cacheKey, synthesis, cacheKey);
     return synthesis;
   } catch (error) {
     console.error("Topic synthesis error:", error);
-    // Fallback
-    return {
+    // Fallback — cached briefly so an AI outage doesn't re-fire Opus on every
+    // concurrent/subsequent request, while still retrying once it expires.
+    const fallback: TopicSynthesis = {
       topic_scope: topicTitle,
       number_of_human_studies: papers.length,
       number_of_animal_studies: 0,
@@ -375,6 +433,8 @@ Important:
         summary: p.abstract.substring(0, 150) + "...",
       })),
     };
+    setCache(cacheKey, fallback, cacheKey, FALLBACK_TTL_MS);
+    return fallback;
   }
 }
 

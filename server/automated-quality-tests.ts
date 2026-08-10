@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { sqlQuery } from "./db";
 
 export class AutomatedQualityTests {
   async runAllTests(): Promise<{
@@ -54,17 +54,15 @@ export class AutomatedQualityTests {
   }
 
   private async testDatabaseConnection(): Promise<void> {
-    const sql = neon(process.env.DATABASE_URL!);
-    const result = await sql`SELECT 1 as test`;
+    const result = await sqlQuery`SELECT 1 as test`;
     if (!result || result.length === 0) {
       throw new Error("Database connection failed");
     }
   }
 
   private async testSearchFunctionality(): Promise<void> {
-    const sql = neon(process.env.DATABASE_URL!);
-    const result = await sql`
-      SELECT COUNT(*) as count FROM studies 
+    const result = await sqlQuery`
+      SELECT COUNT(*) as count FROM studies
       WHERE title ILIKE '%hydrogen%' 
       LIMIT 10
     `;
@@ -76,8 +74,7 @@ export class AutomatedQualityTests {
 
   private async testAPIResponseTimes(): Promise<void> {
     const start = Date.now();
-    const sql = neon(process.env.DATABASE_URL!);
-    await sql`SELECT COUNT(*) FROM studies LIMIT 1`;
+    await sqlQuery`SELECT COUNT(*) FROM studies LIMIT 1`;
     const duration = Date.now() - start;
 
     if (duration > 1000) {
@@ -96,8 +93,7 @@ export class AutomatedQualityTests {
 
   private async testErrorHandling(): Promise<void> {
     try {
-      const sql = neon(process.env.DATABASE_URL!);
-      await sql`SELECT * FROM nonexistent_table`;
+      await sqlQuery`SELECT * FROM nonexistent_table`;
       throw new Error(
         "Error handling test failed - should have thrown an error",
       );
@@ -113,10 +109,8 @@ export class AutomatedQualityTests {
   }
 
   private async testDataConsistency(): Promise<void> {
-    const sql = neon(process.env.DATABASE_URL!);
-
     // Check for orphaned records or data inconsistencies
-    const orphanedBlogs = await sql`
+    const orphanedBlogs = await sqlQuery`
       SELECT COUNT(*) as count FROM blogs 
       WHERE study_id IS NOT NULL 
       AND study_id NOT IN (SELECT id FROM studies)

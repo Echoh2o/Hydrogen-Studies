@@ -30,6 +30,108 @@ function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Sentinel written to keyFinding when the AI returns nothing useful. Mirrors
+// study-summary-enrichment.ts's PROCESSED_SENTINEL: non-NULL (so the batch
+// candidate query's `keyFinding IS NULL` skips it) but falsy in JS templates.
+const SUMMARY_PROCESSED_SENTINEL = "__no_content__";
+
+// Copy of study-summary-enrichment.ts's SYSTEM_PROMPT. The batch
+// enrichStudySummaries() selects an unbounded `LIMIT 1` candidate with no id
+// filter, so it enriches an arbitrary row — not the study being processed. The
+// worker enriches THIS study by id instead (WHERE id = studyId).
+const SUMMARY_SYSTEM_PROMPT = `You are a science writer who translates academic hydrogen research into clear, accurate language for health-conscious consumers.
+
+Given a study's title, abstract, and any available metadata, generate three pieces of content:
+
+1. **plain_summary** (2-4 sentences): A plain-language explanation of what the study investigated and what it found. Write at a 10th-grade reading level. Avoid jargon — if you must use a technical term, define it in parentheses. Do NOT editorialize or make health claims beyond what the study supports.
+
+2. **key_finding** (1-2 sentences): The single most important result of this study, stated clearly and factually. This will appear as a highlighted callout. Start with the finding, not "This study found that...".
+
+3. **practical_takeaway** (1-3 sentences): What this study might mean for someone interested in hydrogen water. Be honest about limitations — if the study is animal-only or very small, say so. Never make definitive health claims. Use phrases like "suggests that", "may support", "early evidence indicates".
+
+Return JSON with these exact fields:
+{
+  "plain_summary": string or null,
+  "key_finding": string or null,
+  "practical_takeaway": string or null
+}
+
+If the abstract is too vague or incomplete to generate a reliable summary, return null for that field. Accuracy matters more than completeness.`;
+
+/**
+ * Enrich a SINGLE study's summary fields by id (plainSummary, keyFinding,
+ * practicalTakeaway). Unlike the batch enrichStudySummaries(), this targets the
+ * exact study being processed so the waterfall never marks 'summaries' complete
+ * for a study that was never actually enriched.
+ */
+async function enrichSummaryForStudyId(studyId: number): Promise<void> {
+  const [study] = await db
+    .select({
+      id: studies.id,
+      title: studies.title,
+      abstract: studies.abstract,
+      studyType: studies.studyType,
+      resultsShort: studies.resultsShort,
+      conclusionShort: studies.conclusionShort,
+      conclusion: studies.conclusion,
+      results: studies.results,
+      sampleSize: studies.sampleSize,
+      duration: studies.duration,
+      isHumanTrial: studies.isHumanTrial,
+      h2DeliveryMethod: studies.h2DeliveryMethod,
+      keyFinding: studies.keyFinding,
+    })
+    .from(studies)
+    .where(eq(studies.id, studyId))
+    .limit(1);
+
+  // Nothing to enrich without an abstract; and keyFinding non-NULL means this
+  // study was already processed (real content or sentinel) — don't re-spend AI.
+  if (!study || !study.abstract || study.keyFinding) return;
+
+  const { ai, MODELS } = await import("./ai-provider");
+
+  const userPrompt = `Title: ${study.title || "Not available"}
+Abstract: ${study.abstract || "Not available"}
+Study Type: ${study.studyType || "Not available"}
+Results: ${study.resultsShort || study.results || "Not available"}
+Conclusion: ${study.conclusionShort || study.conclusion || "Not available"}
+Sample Size: ${study.sampleSize ?? "Not reported"}
+Duration: ${study.duration ? `${study.duration} days` : "Not reported"}
+Human Trial: ${study.isHumanTrial ? "Yes" : "No/Unknown"}
+H2 Delivery: ${study.h2DeliveryMethod || "Not specified"}`;
+
+  const raw = await ai.generateJSON<{
+    plain_summary?: unknown;
+    key_finding?: unknown;
+    practical_takeaway?: unknown;
+  }>(SUMMARY_SYSTEM_PROMPT, userPrompt, {
+    model: MODELS.HAIKU,
+    maxTokens: 1500,
+    temperature: 0.4,
+    caller: "ContentWorker.summaries",
+  });
+
+  const updates: Record<string, string> = {};
+  if (raw && typeof raw.plain_summary === "string" && raw.plain_summary.trim()) {
+    updates.plainSummary = raw.plain_summary.trim();
+  }
+  if (raw && typeof raw.key_finding === "string" && raw.key_finding.trim()) {
+    updates.keyFinding = raw.key_finding.trim();
+  }
+  if (raw && typeof raw.practical_takeaway === "string" && raw.practical_takeaway.trim()) {
+    updates.practicalTakeaway = raw.practical_takeaway.trim();
+  }
+
+  // Always mark processed: write the sentinel when AI produced no keyFinding so
+  // the row won't be re-selected on a later batch run.
+  if (!updates.keyFinding) {
+    updates.keyFinding = SUMMARY_PROCESSED_SENTINEL;
+  }
+
+  await db.update(studies).set(updates).where(eq(studies.id, studyId));
+}
+
 /**
  * Enqueue a single study for content generation. Idempotent — skips if already queued.
  */
@@ -383,11 +485,11 @@ async function executeStep(step: WaterfallStep, studyId: number): Promise<void> 
       if (studyForSummary.tldr && studyForSummary.plainSummary && studyForSummary.keyFinding) break;
 
       try {
-        // Use the existing summary enrichment service
-        const { enrichStudySummaries } = await import("./study-summary-enrichment");
-        // This enriches studies that are missing summaries — it will pick up this study
-        // if it's missing any of: plainSummary, keyFinding, practicalTakeaway
-        await enrichStudySummaries(1); // Process just 1 study (this one should be the candidate)
+        // Enrich THIS study by id. The batch enrichStudySummaries() selects an
+        // unbounded `LIMIT 1` candidate with no id filter, so it enriches an
+        // arbitrary row — leaving the target study unenriched while the worker
+        // marks its 'summaries' step complete.
+        await enrichSummaryForStudyId(studyId);
 
         // Also generate TLDR if missing (summary enrichment doesn't cover TLDR)
         if (!studyForSummary.tldr) {
@@ -439,24 +541,23 @@ async function executeStep(step: WaterfallStep, studyId: number): Promise<void> 
       try {
         const { ai, MODELS } = await import("./ai-provider");
 
-        const text = (
-          await ai.generateText(
-            "",
-            `Generate 5-8 consumer-friendly tags for this hydrogen study. Tags should be simple, lowercase phrases that a health-conscious consumer would search for. Focus on conditions, benefits, and delivery methods.
+        // Use generateJSON (not generateText): Haiku frequently wraps arrays in
+        // ```json fences, which made the previous JSON.parse(text) throw, get
+        // swallowed as "nice-to-have", and leave the study permanently untagged
+        // while the step was marked complete. generateJSON strips fences.
+        const tags = await ai.generateJSON<string[]>(
+          "",
+          `Generate 5-8 consumer-friendly tags for this hydrogen study. Tags should be simple, lowercase phrases that a health-conscious consumer would search for. Focus on conditions, benefits, and delivery methods.
 
 Title: ${study.title}
 Abstract: ${study.abstract}
 Category: ${study.category || "General"}
 
 Return ONLY a JSON array of strings, nothing else. Example: ["gut health", "inflammation", "hydrogen water", "antioxidant"]`,
-            { model: MODELS.HAIKU, maxTokens: 300, temperature: null, caller: "ContentWorker.tags" },
-          )
-        ).trim();
-        if (text) {
-          const tags = JSON.parse(text);
-          if (Array.isArray(tags) && tags.length > 0) {
-            await db.update(studies).set({ tags }).where(eq(studies.id, studyId));
-          }
+          { model: MODELS.HAIKU, maxTokens: 300, temperature: null, caller: "ContentWorker.tags" },
+        );
+        if (Array.isArray(tags) && tags.length > 0) {
+          await db.update(studies).set({ tags }).where(eq(studies.id, studyId));
         }
       } catch (tagError: any) {
         // Non-fatal: tags are nice-to-have

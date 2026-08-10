@@ -7,10 +7,11 @@
 
 import { Router, Request, Response } from "express";
 import { db } from "../db";
-import { studies, blogArticles, categories } from "../../shared/schema";
+import { studies, blogArticles, healthConditions } from "../../shared/schema";
 import { eq, desc, isNotNull, isNull, sql, and, count, inArray, gt } from "drizzle-orm";
 import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
+import { toAbsoluteUrl } from "../utils/absolute-url";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -149,10 +150,6 @@ router.get(["/sitemap.xml", "/sitemap-index.xml"], (req: Request, res: Response)
     <loc>${SITE_URL}/sitemap-explore.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
-  <sitemap>
-    <loc>${SITE_URL}/proxy/sitemap.xml</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
 </sitemapindex>`;
 
   res.set("Content-Type", "application/xml");
@@ -253,7 +250,7 @@ router.get("/sitemap-studies.xml", async (req: Request, res: Response) => {
       const lastmod = formatDate(s.lastModified || s.createdAt);
       const imageTag = s.imageUrl ? `
     <image:image>
-      <image:loc>${escapeXml(s.imageUrl)}</image:loc>
+      <image:loc>${escapeXml(toAbsoluteUrl(s.imageUrl, SITE_URL))}</image:loc>
       <image:title>${escapeXml(s.title)}</image:title>
     </image:image>` : "";
       return `  <url>
@@ -307,7 +304,7 @@ router.get("/sitemap-blog.xml", async (req: Request, res: Response) => {
       const lastmod = formatDate(b.updatedAt || b.createdAt);
       const imageTag = b.imageUrl ? `
     <image:image>
-      <image:loc>${escapeXml(b.imageUrl)}</image:loc>
+      <image:loc>${escapeXml(toAbsoluteUrl(b.imageUrl, SITE_URL))}</image:loc>
       <image:title>${escapeXml(b.title)}</image:title>
     </image:image>` : "";
       return `  <url>
@@ -345,16 +342,19 @@ router.get("/sitemap-categories.xml", async (req: Request, res: Response) => {
       return res.send(cached);
     }
 
-    const allCategories = await db.select({
-      id: categories.id,
-      name: categories.name,
-    }).from(categories);
+    // Generate condition URLs from health_conditions — the same table the
+    // crawler-facing renderer validates slugs against — so every URL here
+    // resolves to a real page (see seo-body-renderer.ts).
+    const conditions = await db.select({
+      slug: healthConditions.slug,
+      createdAt: healthConditions.createdAt,
+    }).from(healthConditions);
 
-    const urls = allCategories.map(c => {
-      const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const urls = conditions.map(c => {
+      const lastmod = formatDate(c.createdAt);
       return `  <url>
-    <loc>${SITE_URL}/explore-by-condition/${encodeURIComponent(slug)}</loc>
-    <lastmod>${formatDate(new Date())}</lastmod>
+    <loc>${SITE_URL}/explore-by-condition/${encodeURIComponent(c.slug)}</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`;
@@ -550,7 +550,7 @@ router.get("/rss/blog.xml", async (req: Request, res: Response) => {
       const link = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`;
       const description = post.summary || (post.content ? post.content.substring(0, 300) : "");
       const enclosureTag = post.imageUrl
-        ? `\n      <enclosure url="${escapeXml(post.imageUrl)}" type="image/jpeg" length="0" />`
+        ? `\n      <enclosure url="${escapeXml(toAbsoluteUrl(post.imageUrl, SITE_URL))}" type="${mimeTypeFromUrl(post.imageUrl)}" length="0" />`
         : "";
       return `    <item>
       <title>${escapeXml(post.title)}</title>
@@ -587,6 +587,20 @@ ${items}
     res.status(500).send("Error generating RSS feed");
   }
 });
+
+// Derive an image MIME type from a URL's file extension for RSS enclosures.
+// Feed parsers reject a hardcoded image/jpeg on png/webp/gif images.
+function mimeTypeFromUrl(url: string): string {
+  const ext = url.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "png": return "image/png";
+    case "webp": return "image/webp";
+    case "gif": return "image/gif";
+    case "svg": return "image/svg+xml";
+    case "avif": return "image/avif";
+    default: return "image/jpeg";
+  }
+}
 
 function escapeXml(str: string): string {
   if (!str) return "";
@@ -853,10 +867,8 @@ seoAdminRouter.post("/blogs/generate-batch", requireAdmin, async (req: Request, 
         const result = await generateBlogArticlesForStudy(study, { count: 1, fallbackToBasic: true });
 
         if (result.articles.length > 0) {
-          // Insert generated articles into the database
-          for (const article of result.articles) {
-            await db.insert(blogArticles).values(article);
-          }
+          // Articles are already persisted by the generator — do not re-insert
+          // (that collided on the unique slug).
           generated++;
         } else {
           failed++;

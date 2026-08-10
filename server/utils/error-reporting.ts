@@ -1,14 +1,18 @@
 /**
  * Error Reporting Service
- * Centralized error tracking that can be backed by Sentry, Datadog, or console logging.
+ * Centralized error tracking backed by Sentry (when initialized) or structured
+ * console logging.
  *
- * To enable Sentry:
- *   1. npm install @sentry/node
- *   2. Set SENTRY_DSN environment variable
- *   3. The service will auto-detect and use Sentry
+ * Sentry is initialized exactly once, in `initSentry()` (server/utils/sentry.ts).
+ * This module REUSES that client rather than calling `Sentry.init` again — a
+ * second init would replace the client and silently discard the sampling/
+ * scrubbing config from sentry.ts.
  *
- * Without Sentry, errors are logged with structured JSON for log aggregation tools.
+ * Without an initialized Sentry client, errors are logged with structured JSON
+ * for log aggregation tools (Railway, Datadog, etc.).
  */
+
+import { Sentry } from "./sentry";
 
 interface ErrorContext {
   requestId?: string;
@@ -29,69 +33,24 @@ interface ErrorReport {
   timestamp: string;
 }
 
-let sentryModule: any = null;
-let sentryInitialized = false;
+let sentryEnabled = false;
 
 /**
- * Initialize error reporting. Call once at server startup.
+ * Initialize error reporting. Call once at server startup, AFTER initSentry().
+ *
+ * This does NOT init Sentry itself — it detects whether initSentry() already
+ * created a client and, if so, routes reports through it. Otherwise it falls
+ * back to structured console logging.
  */
 export function initErrorReporting(): void {
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) {
-    console.log("Error reporting: using structured console logging (set SENTRY_DSN for Sentry)");
-    return;
-  }
-
-  try {
-    // Dynamic import — only loads if @sentry/node is installed
-    import("@sentry/node")
-      .then((Sentry) => {
-        Sentry.init({
-          dsn,
-          environment: process.env.NODE_ENV || "development",
-          // Tag events with the deployed commit so issues are attributed to a
-          // release (enables regression detection + "Fixes <ID>" auto-resolve).
-          // Must match the client release name set in vite.config.ts.
-          release:
-            process.env.SENTRY_RELEASE ||
-            process.env.RAILWAY_GIT_COMMIT_SHA ||
-            process.env.npm_package_version,
-          tracesSampleRate: 0.1,
-          // Don't send PII by default
-          sendDefaultPii: false,
-          beforeSend(event) {
-            // Strip sensitive headers
-            if (event.request?.headers) {
-              delete event.request.headers.authorization;
-              delete event.request.headers.cookie;
-              delete event.request.headers["x-csrf-token"];
-              delete event.request.headers["x-admin-token"];
-            }
-            // Strip sensitive data from request body
-            if (event.request?.data && typeof event.request.data === "object") {
-              const data = event.request.data as Record<string, unknown>;
-              const sensitiveKeys = ["password", "token", "secret", "creditCard", "ssn"];
-              for (const key of sensitiveKeys) {
-                if (key in data) {
-                  data[key] = "[REDACTED]";
-                }
-              }
-            }
-            return event;
-          },
-        });
-        sentryModule = Sentry;
-        sentryInitialized = true;
-        console.log("Error reporting: Sentry initialized");
-      })
-      .catch(() => {
-        console.log(
-          "Error reporting: SENTRY_DSN set but @sentry/node not installed. " +
-          "Run `npm install @sentry/node` to enable Sentry.",
-        );
-      });
-  } catch {
-    // Module not available — fall through to console logging
+  if (Sentry.getClient()) {
+    sentryEnabled = true;
+    console.log("Error reporting: using Sentry client initialized by initSentry()");
+  } else {
+    console.log(
+      "Error reporting: using structured console logging " +
+      "(set SENTRY_DSN in production to enable Sentry)",
+    );
   }
 }
 
@@ -109,8 +68,8 @@ export function reportError(error: Error | unknown, context: ErrorContext = {}):
     timestamp: new Date().toISOString(),
   };
 
-  if (sentryInitialized && sentryModule) {
-    sentryModule.withScope((scope: any) => {
+  if (sentryEnabled) {
+    Sentry.withScope((scope) => {
       if (context.requestId) scope.setTag("requestId", context.requestId);
       if (context.userId) scope.setUser({ id: context.userId });
       if (context.url) scope.setTag("url", context.url);
@@ -120,7 +79,7 @@ export function reportError(error: Error | unknown, context: ErrorContext = {}):
       if (context.extra) {
         Object.entries(context.extra).forEach(([k, v]) => scope.setExtra(k, v));
       }
-      sentryModule.captureException(err);
+      Sentry.captureException(err);
     });
   } else {
     // Structured JSON logging for log aggregation (Railway, Datadog, etc.)
@@ -139,12 +98,12 @@ export function reportWarning(message: string, context: ErrorContext = {}): void
     timestamp: new Date().toISOString(),
   };
 
-  if (sentryInitialized && sentryModule) {
-    sentryModule.withScope((scope: any) => {
+  if (sentryEnabled) {
+    Sentry.withScope((scope) => {
       if (context.tags) {
         Object.entries(context.tags).forEach(([k, v]) => scope.setTag(k, v));
       }
-      sentryModule.captureMessage(message, "warning");
+      Sentry.captureMessage(message, "warning");
     });
   } else {
     console.warn(JSON.stringify(report));
@@ -157,15 +116,17 @@ export function reportWarning(message: string, context: ErrorContext = {}): void
  */
 export function errorReportingMiddleware() {
   return (req: any, res: any, next: any) => {
-    if (sentryInitialized && sentryModule) {
-      sentryModule.withScope((scope: any) => {
-        scope.setTag("requestId", req.requestId);
-        scope.setTag("method", req.method);
-        scope.setTag("url", req.url);
-        if (req.session?.userId) {
-          scope.setUser({ id: req.session.userId });
-        }
-      });
+    if (sentryEnabled) {
+      // Set tags on the per-request isolation scope so they persist onto any
+      // event captured later during this request. withScope() would pop its
+      // scope as soon as the callback returned, so the tags never attached.
+      const scope = Sentry.getIsolationScope();
+      scope.setTag("requestId", req.requestId);
+      scope.setTag("method", req.method);
+      scope.setTag("url", req.url);
+      if (req.session?.userId) {
+        scope.setUser({ id: req.session.userId });
+      }
     }
     next();
   };

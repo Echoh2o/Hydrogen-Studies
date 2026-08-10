@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { db } from "../db";
 import { users, auditLogs, passwordResetTokens, UserRole } from "../../shared/schema";
-import { eq, and, gt, isNull, sql } from "drizzle-orm";
+import { eq, and, gt, isNull, sql, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { isAuthenticated, requireRole, hasPermission } from "../auth";
 import { authRateLimiter } from "../utils/rate-limiting";
@@ -626,7 +626,8 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const userId = req.query.userId as string;
-      const limit = parseInt(req.query.limit as string) || 100;
+      const requestedLimit = parseInt(req.query.limit as string) || 100;
+      const limit = Math.min(Math.max(requestedLimit, 1), 1000);
 
       let logs;
       if (userId) {
@@ -634,13 +635,13 @@ router.get(
           .select()
           .from(auditLogs)
           .where(eq(auditLogs.userId, userId))
-          .orderBy(auditLogs.createdAt)
+          .orderBy(desc(auditLogs.createdAt))
           .limit(limit);
       } else {
         logs = await db
           .select()
           .from(auditLogs)
-          .orderBy(auditLogs.createdAt)
+          .orderBy(desc(auditLogs.createdAt))
           .limit(limit);
       }
 

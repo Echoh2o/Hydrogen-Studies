@@ -95,4 +95,15 @@ describe("verifyShopifyWebhook (real implementation)", () => {
     const flipped = (hmac[0] === "A" ? "B" : "A") + hmac.slice(1);
     expect(verifyShopifyWebhook(testBody, flipped)).toBe(false);
   });
+
+  it("returns false (does not throw) for a wrong-length signature", () => {
+    // Previously timingSafeEqual threw RangeError on unequal lengths, which a
+    // handler's catch turned into a 200 ack. Must be a clean false now.
+    expect(() => verifyShopifyWebhook(testBody, "short")).not.toThrow();
+    expect(verifyShopifyWebhook(testBody, "short")).toBe(false);
+  });
+
+  it("returns false for a missing/empty signature header", () => {
+    expect(verifyShopifyWebhook(testBody, "")).toBe(false);
+  });
 });

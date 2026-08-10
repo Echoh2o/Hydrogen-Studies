@@ -52,13 +52,16 @@ export class SearchController {
 
   // Corresponds to /api/advanced-search from index.ts
   private async advancedSearch(req: Request, res: Response) {
+    // Clamp pagination to sane bounds (these values drive DB work)
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10) || 20));
+    const offset = Math.max(0, parseInt(String(req.query.offset ?? "0"), 10) || 0);
     const filters = {
        search: String(req.query.search || "").trim(),
        category: String(req.query.category || "").trim(),
        country: String(req.query.country || "").trim(),
        sortBy: String(req.query.sort_by || "id"),
-       limit:  Math.min(50, Math.max(1, parseInt(String(req.query.limit || "20")))),
-       page: Math.max(1, (parseInt(String(req.query.offset || "0")) / parseInt(String(req.query.limit || "20"))) + 1)
+       limit,
+       page: Math.max(1, Math.floor(offset / limit) + 1)
     };
 
     const result = await studyService.getStudies(filters);
@@ -74,8 +77,9 @@ export class SearchController {
   // Corresponds to /api/search/enhanced from routes.ts
   private async enhancedSearch(req: Request, res: Response) {
       const query = String(req.query.query || "").trim();
-      const limit = Math.min(100, parseInt(String(req.query.limit || "20")));
-      const offset = parseInt(String(req.query.offset || "0"));
+      // Clamp pagination to sane bounds (these values drive DB work)
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10) || 20));
+      const offset = Math.max(0, parseInt(String(req.query.offset ?? "0"), 10) || 0);
       const page = Math.floor(offset / limit) + 1;
 
       // Same logic as before: if no query, return recent studies
@@ -129,8 +133,9 @@ export class SearchController {
   // Corresponds to /api/search from index.ts
   private async simpleSearch(req: Request, res: Response) {
       const query = String(req.query.q || "").trim();
-      const limit = Math.min(50, parseInt(String(req.query.limit || "20")));
-      const offset = Math.max(0, parseInt(String(req.query.offset || "0")));
+      // Clamp pagination to sane bounds (these values drive DB work)
+      const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10) || 20));
+      const offset = Math.max(0, parseInt(String(req.query.offset ?? "0"), 10) || 0);
       const page = Math.floor(offset / limit) + 1;
 
       if (!query) {

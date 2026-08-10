@@ -54,7 +54,6 @@ router.get("/emerging-topics", async (req, res) => {
     logger.error("Error fetching emerging topics", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch emerging topics",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -95,7 +94,6 @@ router.get("/breakthrough-studies", async (req, res) => {
     logger.error("Error fetching breakthrough studies", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch breakthrough studies",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -145,7 +143,6 @@ router.get("/momentum", async (req, res) => {
     logger.error("Error fetching research momentum", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch research momentum",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -187,7 +184,6 @@ router.get("/keyword-trends", async (req, res) => {
     logger.error("Error fetching keyword trends", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch keyword trends",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -326,7 +322,6 @@ router.get("/report", async (req, res) => {
     logger.error("Error generating trend report", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to generate trend report",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -383,7 +378,6 @@ router.post("/analyze", requireAdmin, async (req, res) => {
     logger.error("Error triggering analysis", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to trigger analysis",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -416,7 +410,6 @@ router.get("/status", async (req, res) => {
     logger.error("Error fetching analysis status", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch analysis status",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -425,15 +418,16 @@ router.get("/status", async (req, res) => {
  * GET /api/trends/alerts
  * Get trend alerts
  */
-router.get("/alerts", async (req, res) => {
+router.get("/alerts", requireAdmin, async (req, res) => {
   try {
     const { unacknowledged = "false", limit = "20" } = req.query;
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
 
     let query = db
       .select()
       .from(trendAlerts)
       .orderBy(desc(trendAlerts.createdAt))
-      .limit(parseInt(limit as string))
+      .limit(limitNum)
       .$dynamic();
 
     if (unacknowledged === "true") {
@@ -461,7 +455,6 @@ router.get("/alerts", async (req, res) => {
     logger.error("Error fetching alerts", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch alerts",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -498,7 +491,6 @@ router.put("/alerts/:id/acknowledge", requireAdmin, async (req, res) => {
     logger.error("Error acknowledging alert", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to acknowledge alert",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -507,12 +499,13 @@ router.put("/alerts/:id/acknowledge", requireAdmin, async (req, res) => {
  * GET /api/trends/search-queries
  * Get popular search queries
  */
-router.get("/search-queries", async (req, res) => {
+router.get("/search-queries", requireAdmin, async (req, res) => {
   try {
     const { limit = "10" } = req.query;
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 10));
 
     const queries = await trendDetectionService.getPopularSearchQueries(
-      parseInt(limit as string),
+      limitNum,
     );
 
     res.json({
@@ -524,7 +517,6 @@ router.get("/search-queries", async (req, res) => {
     logger.error("Error fetching search queries", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch search queries",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -560,7 +552,6 @@ router.post("/track-search", requireAdmin, async (req, res) => {
     logger.error("Error tracking search query", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to track search query",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -590,7 +581,6 @@ router.post("/track-metrics", requireAdmin, async (req, res) => {
     logger.error("Error tracking metrics", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to track metrics",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -643,7 +633,6 @@ router.get("/study-metrics/:id", async (req, res) => {
     logger.error("Error fetching study metrics", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch study metrics",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -713,7 +702,6 @@ router.get("/dashboard", async (req, res) => {
     logger.error("Error fetching dashboard data", error, "TrendsRoutes");
     res.status(500).json({
       error: "Failed to fetch dashboard data",
-      message: error instanceof Error ? error.message : String(error),
     });
   }
 });

@@ -42,6 +42,26 @@ export default defineConfig({
           },
         },
       },
+      {
+        test: {
+          name: "client-dom",
+          // Component/page/hook tests need a DOM. Run every *.test.tsx
+          // under client/src in jsdom so React Testing Library works.
+          environment: "jsdom",
+          include: ["client/src/**/*.test.tsx"],
+          // Extends `expect` with @testing-library/jest-dom matchers
+          // (toBeInTheDocument, etc.). Resolved from node_modules.
+          setupFiles: ["@testing-library/jest-dom/vitest"],
+          globals: true,
+        },
+        resolve: {
+          alias: {
+            "@": path.resolve(import.meta.dirname, "client", "src"),
+            "@shared": path.resolve(import.meta.dirname, "shared"),
+            "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+          },
+        },
+      },
     ],
     coverage: {
       provider: "v8",
@@ -51,6 +71,15 @@ export default defineConfig({
         "server/__tests__/**",
         "client/src/__tests__/**",
       ],
+      // Ratchet floor, not an aspirational target: current coverage is
+      // ~9%, so these modest thresholds fail the run only on a real
+      // regression toward zero. Raise them as coverage improves.
+      thresholds: {
+        lines: 8,
+        statements: 8,
+        functions: 8,
+        branches: 8,
+      },
     },
   },
 });

@@ -365,6 +365,11 @@ export const studies = pgTable(
     citationFormats: text("citation_formats"), // JSON with multiple citation formats (APA, MLA, etc.)
     impactMetrics: text("impact_metrics"), // Academic ranking and impact scores
     peerReviewStatus: text("peer_review_status"), // Peer review credibility status
+    // When this study was last screened for retraction/correction by the
+    // retraction monitor. Used to rotate the daily batch through the whole
+    // catalog (ORDER BY ... ASC NULLS FIRST) instead of re-checking the same
+    // rows forever.
+    lastRetractionCheckAt: timestamp("last_retraction_check_at"),
     conflictOfInterest: text("conflict_of_interest"), // Trust signal declarations
 
     // AI Comprehension Fields
@@ -395,6 +400,17 @@ export const studies = pgTable(
     methodologySummary: text("methodology_summary"),
     limitations: text("limitations"),
     isHumanTrial: boolean("is_human_trial").default(false),
+
+    // PubMed / enrichment identifiers and authorship metadata
+    pmid: text("pmid"), // PubMed ID from the pubmed consumer
+    firstAuthor: text("first_author"),
+    lastAuthor: text("last_author"),
+    license: text("license"), // e.g. CC-BY, publisher license terms
+
+    // Audit / background-job tracking timestamps (NULL = never attempted)
+    h2ExtractionAttemptedAt: timestamp("h2_extraction_attempted_at"),
+    enrichmentAttemptedAt: timestamp("enrichment_attempted_at"),
+    imageBackfillFailedAt: timestamp("image_backfill_failed_at"),
 
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
@@ -928,8 +944,8 @@ export const blogArticles = pgTable(
   "blog_articles",
   {
     id: serial("id").primaryKey(),
+    // Nullable: content-factory articles may attach to no specific study.
     studyId: integer("study_id")
-      .notNull()
       .references(() => studies.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     slug: text("slug").notNull().unique(),

@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, lazy, Suspense, startTransition } from "react";
 import CookieConsent from "@/components/ui/cookie-consent";
 import MedicalDisclaimer from "@/components/MedicalDisclaimer";
-import { initGA } from "./lib/analytics";
+import { initGA, initAhrefs } from "./lib/analytics";
 import { initErrorTracking, trackError } from "./lib/error-tracking";
 import { useAnalytics } from "./hooks/use-analytics";
 import PageLoader from "@/components/ui/page-loader";
@@ -220,6 +220,9 @@ function Router() {
         <Route path="/studies" component={Studies} />
         <Route path="/study/id/:id" component={StudyPage} />
         <Route path="/study/:slug" component={SEOStudyPage} />
+        {/* Tag routes must precede /studies/:slug so the :slug param does not shadow them */}
+        <Route path="/studies/tags" component={TaggedStudiesPage} />
+        <Route path="/studies/tags/:category" component={TaggedStudiesPage} />
         <Route path="/studies/:slug" component={SEOStudyPage} />
         <Route path="/search" component={SearchPage} />
         <Route
@@ -553,9 +556,7 @@ function Router() {
         <Route path="/hub" component={ContentHubIndexPage} />
         <Route path="/hub/:topic" component={ContentHubPage} />
 
-        {/* Tag-based Navigation */}
-        <Route path="/studies/tags" component={TaggedStudiesPage} />
-        <Route path="/studies/tags/:category" component={TaggedStudiesPage} />
+        {/* Tag-based Navigation (/studies/tags routes are declared above /studies/:slug) */}
         <Route path="/browse-by-tags" component={TaggedStudiesPage} />
 
         {/* Legacy route redirects */}
@@ -582,6 +583,7 @@ function App() {
     initErrorTracking();
     startTransition(() => {
       initGA();
+      initAhrefs();
     });
 
     // Global error handling

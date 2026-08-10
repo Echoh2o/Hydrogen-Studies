@@ -28,6 +28,13 @@ export class JobScheduler {
   private fastCheckInterval: NodeJS.Timeout | null = null;
   private isFastJobRunning: boolean = false;
   private readonly FAST_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
+  // Graceful-shutdown coordination. `shutdownController` is aborted in stop();
+  // withTimeout forwards its signal to each job's AbortSignal so abort-aware
+  // jobs (e.g. the content queue) release claimed work and stop promptly.
+  // `activeJobs` tracks in-flight withTimeout promises so drain() can await
+  // them (bounded) before the process closes the DB pool.
+  private shutdownController = new AbortController();
+  private readonly activeJobs = new Set<Promise<unknown>>();
   private lastRetractionCheck: Date | null = null;
   private lastLinkBuildCheck: Date | null = null;
   private lastDiscoveryCheck: Date | null = null;
@@ -128,41 +135,74 @@ export class JobScheduler {
    * (The content queue's per-item claims are already atomic; this lock only
    * serializes the scheduling/drain runs, not queue item claims.)
    */
-  private async withTimeout<T>(
+  private withTimeout<T>(
     fn: (signal: AbortSignal) => Promise<T>,
     timeoutMs: number,
     jobName: string,
     onSuccess?: () => void,
   ): Promise<T | null> {
-    return new Promise<T | null>((resolve) => {
+    const promise = new Promise<T | null>((resolve) => {
       let settled = false;
       const controller = new AbortController();
+      // Forward a scheduler-wide shutdown to this job's signal so abort-aware
+      // jobs stop at their next checkpoint on SIGTERM, not just on timeout.
+      const onShutdown = () => controller.abort();
+      if (this.shutdownController.signal.aborted) {
+        controller.abort();
+      } else {
+        this.shutdownController.signal.addEventListener("abort", onShutdown, { once: true });
+      }
+      const cleanup = () => {
+        clearTimeout(timer);
+        this.shutdownController.signal.removeEventListener("abort", onShutdown);
+      };
       const timer = setTimeout(() => {
         if (settled) return;
         settled = true;
+        cleanup();
         // Cooperative cancellation: abort-aware jobs (e.g. the content queue)
         // observe this signal and stop at their next checkpoint instead of
         // running on as an orphan and writing results after we've given up on
         // them. Jobs that ignore the signal behave exactly as before.
         controller.abort();
         logger.warn(`Job timed out after ${timeoutMs}ms`, "JobScheduler", { job: jobName });
+        this.reportJobFailure(jobName, new Error(`Job timed out after ${timeoutMs}ms`));
         resolve(null);
       }, timeoutMs);
 
       withAdvisoryLock(`job:${jobName}`, () => fn(controller.signal)).then((result) => {
         if (settled) return;
         settled = true;
-        clearTimeout(timer);
+        cleanup();
         try { onSuccess?.(); } catch { /* liveness bookkeeping must never break the job loop */ }
         resolve(result);
       }).catch((error) => {
         if (settled) return;
         settled = true;
-        clearTimeout(timer);
+        cleanup();
         logger.error(`Job failed: ${jobName}`, error, "JobScheduler");
+        // withTimeout never rejects — it resolves(null) here — so the per-job
+        // try/catch around each call can never fire. This is the single choke
+        // point where background-job failures reach Sentry.
+        this.reportJobFailure(jobName, error);
         resolve(null);
       });
     });
+    // Track in-flight work so drain() can await it on shutdown.
+    this.activeJobs.add(promise);
+    void promise.finally(() => { this.activeJobs.delete(promise); });
+    return promise;
+  }
+
+  /**
+   * Surface a background-job failure/timeout to the error-reporting backend
+   * (Sentry when configured). Best-effort: the dynamic import and report must
+   * never break the job loop.
+   */
+  private reportJobFailure(jobName: string, error: unknown): void {
+    import("../utils/error-reporting")
+      .then(({ reportError }) => reportError(error, { tags: { job: jobName } }))
+      .catch(() => { /* error reporting is best-effort */ });
   }
 
   public static getInstance(): JobScheduler {
@@ -182,6 +222,11 @@ export class JobScheduler {
     }
 
     logger.info("Starting...", "JobScheduler");
+
+    // Fresh shutdown signal for this run (a prior stop() leaves it aborted).
+    if (this.shutdownController.signal.aborted) {
+      this.shutdownController = new AbortController();
+    }
 
     // Delay first run by 10s to let the app fully initialize (DB, routes, etc.)
     setTimeout(() => {
@@ -230,8 +275,46 @@ export class JobScheduler {
       clearInterval(this.fastCheckInterval);
       this.fastCheckInterval = null;
     }
+    // Signal in-flight jobs to abort at their next checkpoint.
+    if (!this.shutdownController.signal.aborted) {
+      this.shutdownController.abort();
+    }
     if (wasRunning) {
       logger.info("Stopped", "JobScheduler");
+    }
+  }
+
+  /**
+   * Graceful drain for process shutdown. Stops the scheduling loops, signals
+   * in-flight jobs to abort (abort-aware jobs release claimed work back to
+   * 'pending'), then awaits their completion up to `graceMs` before returning.
+   * Callers should await this BEFORE closing the DB pool so jobs aren't torn
+   * down mid-write. Bounded so a stuck job can't block shutdown indefinitely —
+   * the caller's own hard-exit timer is the final backstop.
+   */
+  public async drain(graceMs = 20000): Promise<void> {
+    this.stop();
+    if (this.activeJobs.size === 0) return;
+
+    logger.info("Draining in-flight jobs", "JobScheduler", {
+      active: this.activeJobs.size,
+      graceMs,
+    });
+
+    let timer: NodeJS.Timeout | undefined;
+    const deadline = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, graceMs);
+      timer.unref();
+    });
+    await Promise.race([Promise.allSettled(Array.from(this.activeJobs)), deadline]);
+    if (timer) clearTimeout(timer);
+
+    if (this.activeJobs.size > 0) {
+      logger.warn("Drain grace period elapsed with jobs still in flight", "JobScheduler", {
+        active: this.activeJobs.size,
+      });
+    } else {
+      logger.info("All in-flight jobs drained", "JobScheduler");
     }
   }
 
@@ -312,9 +395,9 @@ export class JobScheduler {
           logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "discovery" });
         }
       } catch (error) {
+        // Unreachable in practice — withTimeout resolves(null) on failure and
+        // reports to Sentry itself. Kept only as a defensive boundary.
         logger.error("Job 1 (discovery) unexpected error", error, "JobScheduler");
-        const { reportError } = await import("../utils/error-reporting");
-        reportError(error, { tags: { job: "keyword-discovery" } });
       }
 
       // Job 2: Intelligent Content Enrichment
@@ -335,8 +418,6 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 2 (enrichment) unexpected error", error, "JobScheduler");
-        const { reportError } = await import("../utils/error-reporting");
-        reportError(error, { tags: { job: "enrichment" } });
       }
 
       // Job 3: Retraction & Correction Monitoring (runs once per day)
@@ -402,8 +483,6 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 6 (pipeline-processing) unexpected error", error, "JobScheduler");
-        const { reportError } = await import("../utils/error-reporting");
-        reportError(error, { tags: { job: "pipeline-processing" } });
       }
 
       // Job 7: Batch Blog Auto-Generation (runs after pipeline, up to 5 per cycle)
@@ -486,8 +565,6 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 11 (tldr-generation) unexpected error", error, "JobScheduler");
-        const { reportError } = await import("../utils/error-reporting");
-        reportError(error, { tags: { job: "tldr-generation" } });
       }
 
       // Job 12: Generate consumer-facing summaries (plain_summary, key_finding, practical_takeaway)
@@ -505,8 +582,6 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 12 (summary-enrichment) unexpected error", error, "JobScheduler");
-        const { reportError } = await import("../utils/error-reporting");
-        reportError(error, { tags: { job: "summary-enrichment" } });
       }
 
       // Job 13 (content-generation queue) moved to the fast loop — see runFastJobs().
@@ -1392,6 +1467,7 @@ export class JobScheduler {
           authors: studies.authors,
           journal: studies.journal,
           publishDate: studies.publishDate,
+          journalPublishDate: studies.journalPublishDate,
           doi: studies.doi,
         })
         .from(studies)
@@ -1507,17 +1583,29 @@ export class JobScheduler {
             }
           }
 
-          // Compare publication date
+          // Compare publication date.
+          //
+          // CrossRef frequently returns year-only or year-month date-parts.
+          // Padding those to '-01-01'/'-01' and writing them over a stored
+          // value silently DOWNGRADES precision (e.g. 2020-06-15 -> 2020-01-01).
+          // So only accept a FULL year-month-day date-part.
+          //
+          // Write to journalPublishDate (original publication date in the
+          // journal), NOT publishDate — publishDate records when the study was
+          // added to our site (shared/schema.ts:277), a different semantic that
+          // CrossRef's publication date must never clobber.
           if (crossrefData.published?.["date-parts"]?.[0]) {
             const dateParts = crossrefData.published["date-parts"][0];
-            if (dateParts && dateParts.length >= 1) {
+            if (dateParts && dateParts.length >= 3) {
               const year = dateParts[0];
-              const month = dateParts.length >= 2 ? String(dateParts[1]).padStart(2, "0") : "01";
-              const day = dateParts.length >= 3 ? String(dateParts[2]).padStart(2, "0") : "01";
+              const month = String(dateParts[1]).padStart(2, "0");
+              const day = String(dateParts[2]).padStart(2, "0");
               const fetchedDate = `${year}-${month}-${day}`;
-              if (study.publishDate && fetchedDate !== study.publishDate) {
-                changes.publishDate = fetchedDate;
-                changedFields.push("publishDate");
+              // Only write when it actually adds/changes information — either the
+              // column is empty or the precise date differs from what's stored.
+              if (fetchedDate !== study.journalPublishDate) {
+                changes.journalPublishDate = fetchedDate;
+                changedFields.push("journalPublishDate");
               }
             }
           }

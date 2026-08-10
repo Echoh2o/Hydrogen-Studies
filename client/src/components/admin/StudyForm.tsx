@@ -31,6 +31,23 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+// Parse a stored publishDate without timezone drift. Values are stored as
+// plain 'yyyy-MM-dd' calendar dates (shared/schema.ts). new Date("yyyy-MM-dd")
+// interprets them as UTC midnight, which formats back to the previous day in
+// UTC-negative timezones; construct the date in local time instead so
+// re-saving an untouched form does not shift the day.
+function parsePublishDate(value: Date | string | number): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === "string") {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+    if (match) {
+      const [, year, month, day] = match;
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+  }
+  return new Date(value);
+}
+
 // Form schema
 const studyFormSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters" }),
@@ -76,7 +93,7 @@ export default function StudyForm({
     authors: initialData?.authors || "",
     journal: initialData?.journal || "",
     publishDate: initialData?.publishDate
-      ? new Date(initialData.publishDate)
+      ? parsePublishDate(initialData.publishDate)
       : new Date(),
     peerReviewed: initialData?.peerReviewed || false,
     category: initialData?.category || "",

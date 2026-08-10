@@ -11,7 +11,7 @@
 
 import { db } from "../db";
 import { studies, userPreferences, categories, userReadingHistory } from "@shared/schema";
-import { eq, and, or, desc, asc, sql, inArray, ne, gt, gte } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql, inArray, notInArray, ne, gt, gte } from "drizzle-orm";
 
 interface UserProfile {
   userId?: number;
@@ -219,9 +219,7 @@ async function getPersonalizedStudies(
 
   // Exclude already viewed studies
   if (viewedStudies.length > 0) {
-    whereConditions.push(
-      sql`${studies.id} NOT IN (${viewedStudies.join(",")})`,
-    );
+    whereConditions.push(notInArray(studies.id, viewedStudies));
   }
 
   // Apply user preferences if available
@@ -229,21 +227,21 @@ async function getPersonalizedStudies(
     // Prefer studies matching health benefits
     if (profile.preferredHealthBenefits?.length) {
       whereConditions.push(
-        sql`${studies.healthBenefits} && ARRAY[${profile.preferredHealthBenefits.map((b) => `'${b}'`).join(",")}]`,
+        sql`${studies.healthBenefits} && ARRAY[${sql.join(profile.preferredHealthBenefits.map((b) => sql`${b}`), sql`,`)}]::text[]`,
       );
     }
 
     // Prefer studies matching health conditions
     if (profile.preferredHealthConditions?.length) {
       whereConditions.push(
-        sql`${studies.healthConditions} && ARRAY[${profile.preferredHealthConditions.map((c) => `'${c}'`).join(",")}]`,
+        sql`${studies.healthConditions} && ARRAY[${sql.join(profile.preferredHealthConditions.map((c) => sql`${c}`), sql`,`)}]::text[]`,
       );
     }
 
     // Prefer studies matching body systems
     if (profile.preferredBodySystems?.length) {
       whereConditions.push(
-        sql`${studies.bodySystems} && ARRAY[${profile.preferredBodySystems.map((s) => `'${s}'`).join(",")}]`,
+        sql`${studies.bodySystems} && ARRAY[${sql.join(profile.preferredBodySystems.map((s) => sql`${s}`), sql`,`)}]::text[]`,
       );
     }
 
@@ -257,7 +255,7 @@ async function getPersonalizedStudies(
     // Exclude unwanted topics
     if (profile.excludedTopics?.length) {
       whereConditions.push(
-        sql`NOT (${studies.tags} && ARRAY[${profile.excludedTopics.map((t) => `'${t}'`).join(",")}])`,
+        sql`NOT (${studies.tags} && ARRAY[${sql.join(profile.excludedTopics.map((t) => sql`${t}`), sql`,`)}]::text[])`,
       );
     }
   }
@@ -318,9 +316,7 @@ async function getSimilarStudies(
 
   // Exclude viewed studies
   if (viewedStudies.length > 0) {
-    whereConditions.push(
-      sql`${studies.id} NOT IN (${viewedStudies.join(",")})`,
-    );
+    whereConditions.push(notInArray(studies.id, viewedStudies));
   }
 
   // Find studies with similar health benefits, conditions, or body systems
@@ -328,19 +324,19 @@ async function getSimilarStudies(
 
   if (target.healthBenefits?.length) {
     similarityConditions.push(
-      sql`${studies.healthBenefits} && ARRAY[${target.healthBenefits.map((b) => `'${b}'`).join(",")}]`,
+      sql`${studies.healthBenefits} && ARRAY[${sql.join(target.healthBenefits.map((b) => sql`${b}`), sql`,`)}]::text[]`,
     );
   }
 
   if (target.healthConditions?.length) {
     similarityConditions.push(
-      sql`${studies.healthConditions} && ARRAY[${target.healthConditions.map((c) => `'${c}'`).join(",")}]`,
+      sql`${studies.healthConditions} && ARRAY[${sql.join(target.healthConditions.map((c) => sql`${c}`), sql`,`)}]::text[]`,
     );
   }
 
   if (target.bodySystems?.length) {
     similarityConditions.push(
-      sql`${studies.bodySystems} && ARRAY[${target.bodySystems.map((s) => `'${s}'`).join(",")}]`,
+      sql`${studies.bodySystems} && ARRAY[${sql.join(target.bodySystems.map((s) => sql`${s}`), sql`,`)}]::text[]`,
     );
   }
 
@@ -387,9 +383,7 @@ async function getTrendingStudies(
 
   // Exclude viewed studies
   if (viewedStudies.length > 0) {
-    whereConditions.push(
-      sql`${studies.id} NOT IN (${viewedStudies.join(",")})`,
-    );
+    whereConditions.push(notInArray(studies.id, viewedStudies));
   }
 
   // Prefer AI-enhanced studies with high popularity
@@ -430,9 +424,7 @@ async function getRecentStudies(
 
   // Exclude viewed studies
   if (viewedStudies.length > 0) {
-    whereConditions.push(
-      sql`${studies.id} NOT IN (${viewedStudies.join(",")})`,
-    );
+    whereConditions.push(notInArray(studies.id, viewedStudies));
   }
 
   // Get studies from the last 3 years

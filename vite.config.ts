@@ -74,12 +74,30 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("react-dom")) return "vendor";
-            if (id.includes("react/")) return "vendor";
+            // Anchor the react core matches to node_modules/react(-dom)/ so a
+            // bare "react/" substring does not also swallow lucide-react,
+            // @sentry/react, etc. into the eager vendor chunk (those have their
+            // own chunk rules / colocation below).
+            if (id.includes("node_modules/react-dom/")) return "vendor";
+            if (id.includes("node_modules/react/")) return "vendor";
+            // cn() (client/src/lib/utils.ts) pulls clsx + tailwind-merge, and
+            // cva is used by eagerly-rendered UI, so these tiny shared utils are
+            // reachable from the entry. Pin them into the eager vendor chunk so
+            // Rollup does not colocate them into the async "charts" chunk and
+            // thereby force the entry (and every page) to statically import
+            // recharts on first paint.
+            if (
+              id.includes("node_modules/clsx/") ||
+              id.includes("node_modules/tailwind-merge/") ||
+              id.includes("node_modules/class-variance-authority/")
+            )
+              return "vendor";
             if (id.includes("wouter")) return "router";
             if (id.includes("@tanstack/react-query")) return "query";
             if (id.includes("@radix-ui/")) return "ui";
             if (id.includes("lucide-react")) return "icons";
+            // recharts (+ d3 + its lodash copy) stays in its own async chunk,
+            // only imported by the lazy-loaded chart routes — never the entry.
             if (id.includes("recharts")) return "charts";
             if (id.includes("framer-motion")) return "animation";
             if (id.includes("dompurify") || id.includes("react-helmet")) return "seo";

@@ -92,6 +92,12 @@ export const ChatWidget: React.FC = () => {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  // Conversations are not persisted server-side (the conversation/feedback
+  // endpoints are stubs), so we keep per-conversation message history in memory
+  // for the current session only.
+  const [conversationMessages, setConversationMessages] = useState<
+    Record<number, ChatMessage[]>
+  >({});
   const [showConversations, setShowConversations] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
@@ -164,24 +170,16 @@ export const ChatWidget: React.FC = () => {
     loadInitialData();
   }, []);
 
-  // Load conversation history when a conversation is selected
-  const loadConversation = async (id: number) => {
-    try {
-      setIsLoading(true);
-      const res = await apiRequest("GET", `/api/chat/conversation/${id}`);
-      const response: { success: boolean; data: ChatMessage[] } = await res.json();
-
-      if (response.success && response.data) {
-        setMessages(response.data);
-        setConversationId(id);
-        setShowConversations(false);
-      }
-    } catch (err: any) {
-      setError("Failed to load conversation history");
-      console.error("Error loading conversation:", err);
-    } finally {
-      setIsLoading(false);
+  // Restore a conversation when selected. There is no server-side persistence
+  // for conversation history, so we degrade to the in-memory session state
+  // instead of hitting a nonexistent endpoint.
+  const loadConversation = (id: number) => {
+    const stored = conversationMessages[id];
+    if (stored) {
+      setMessages(stored);
     }
+    setConversationId(id);
+    setShowConversations(false);
   };
 
   // Submit feedback for an assistant message
@@ -289,8 +287,20 @@ export const ChatWidget: React.FC = () => {
             id: Math.floor(Math.random() * 10000), // Temporary ID for testing feedback
           };
 
-          setMessages([...newMessages, assistantMessage]);
+          const updatedMessages = [...newMessages, assistantMessage];
+          setMessages(updatedMessages);
           setLastMessageId(assistantMessage.id || null);
+
+          // Persist this exchange locally so the conversation can be restored
+          // within the session (no server-side persistence exists).
+          const activeConversationId =
+            responseData.conversationId || conversationId;
+          if (activeConversationId) {
+            setConversationMessages((prev) => ({
+              ...prev,
+              [activeConversationId]: updatedMessages,
+            }));
+          }
 
           // Update sources, related questions, and product recommendations
           setCurrentSources(responseData.sources || []);
@@ -819,8 +829,13 @@ export const ChatWidget: React.FC = () => {
                   <div key={index} className="text-xs">
                     <div className="font-medium">{source.title}</div>
                     <div className="text-muted-foreground">
-                      {source.authors} (
-                      {new Date(source.publishDate).getFullYear()})
+                      {source.authors}
+                      {(() => {
+                        const year = source.publishDate
+                          ? new Date(source.publishDate).getFullYear()
+                          : NaN;
+                        return Number.isFinite(year) ? ` (${year})` : "";
+                      })()}
                       {source.doi && source.doi !== "No DOI available" && (
                         <>
                           {" "}
@@ -934,7 +949,7 @@ export const ChatWidget: React.FC = () => {
           </div>
         )}
 
-        <CardFooter className="p-4 border-t mt-auto">
+        <CardFooter className="p-4 border-t mt-auto flex-col items-stretch gap-2">
           <form onSubmit={handleSubmit} className="w-full flex gap-2">
             <Textarea
               value={input}
@@ -947,6 +962,11 @@ export const ChatWidget: React.FC = () => {
               <Send className="h-4 w-4" />
             </Button>
           </form>
+          <p className="text-[11px] leading-tight text-muted-foreground text-center">
+            Your questions are sent to third-party AI providers (Anthropic,
+            OpenAI, and xAI) to generate responses. Avoid sharing personal or
+            sensitive health information.
+          </p>
         </CardFooter>
       </Card>
     </div>

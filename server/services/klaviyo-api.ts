@@ -89,9 +89,14 @@ export async function subscribeToNewsletter(email: string, options: {
     }
 
     if (!profileId) {
-      // Try to look up by email
+      // Try to look up by email. Build the filter raw and encode the whole
+      // query-param value once via URLSearchParams — encoding the address
+      // inside the filter double-encodes it and never matches.
+      const lookupParams = new URLSearchParams({
+        filter: `equals(email,"${email.toLowerCase().trim()}")`,
+      });
       const lookupResponse = await fetchWithTimeout(
-        `${KLAVIYO_API_URL}/profiles/?filter=equals(email,"${encodeURIComponent(email.toLowerCase().trim())}")`,
+        `${KLAVIYO_API_URL}/profiles/?${lookupParams.toString()}`,
         { headers: getHeaders() },
       );
       if (lookupResponse.ok) {
@@ -104,19 +109,42 @@ export async function subscribeToNewsletter(email: string, options: {
       return { success: false, error: "Could not find or create profile" };
     }
 
-    // Step 2: Subscribe the profile to the list
-    const subscribeResponse = await fetchWithTimeout(`${KLAVIYO_API_URL}/lists/${listId}/relationships/profiles/`, {
+    // Step 2: Subscribe the profile to the list WITH explicit email marketing
+    // consent. The bare /lists/{id}/relationships/profiles/ add only sets list
+    // membership, leaving the profile "never subscribed" and out of campaigns;
+    // the subscription-bulk-create job records marketing consent.
+    const subscribeResponse = await fetchWithTimeout(`${KLAVIYO_API_URL}/profile-subscription-bulk-create-jobs/`, {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
-        data: [{
-          type: "profile",
-          id: profileId,
-        }],
+        data: {
+          type: "profile-subscription-bulk-create-job",
+          attributes: {
+            profiles: {
+              data: [{
+                type: "profile",
+                id: profileId,
+                attributes: {
+                  email: email.toLowerCase().trim(),
+                  subscriptions: {
+                    email: {
+                      marketing: { consent: "SUBSCRIBED" },
+                    },
+                  },
+                },
+              }],
+            },
+          },
+          relationships: {
+            list: {
+              data: { type: "list", id: listId },
+            },
+          },
+        },
       }),
     });
 
-    if (subscribeResponse.ok || subscribeResponse.status === 204) {
+    if (subscribeResponse.ok || subscribeResponse.status === 202 || subscribeResponse.status === 204) {
       console.log(`[Klaviyo] Subscribed ${email} to newsletter (profile: ${profileId})`);
       return { success: true, profileId };
     }

@@ -3,7 +3,7 @@ import { studyService } from "../services/study-service";
 import { getPersonalizedRecommendations } from "../services/recommendation-engine";
 import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiting";
 import { requireAdmin } from "../auth";
-import analyticsRoutes from "../routes/content-analytics-routes";
+import { invalidateBotCache } from "../middleware/seo-bot-middleware";
 import { logger } from "../utils/logger";
 
 export class StudiesController {
@@ -15,8 +15,10 @@ export class StudiesController {
   }
 
   private initializeRoutes() {
-    // Mount analytics routes (legacy support from studies-router)
-    this.router.use("/", analyticsRoutes);
+    // NOTE: The content-analytics router is intentionally NOT mounted here.
+    // It is served canonically at /api/analytics (see app.ts). Mounting it a
+    // second time under /api/studies duplicated the unauthenticated
+    // batch-track write surface, so the legacy mount has been removed.
 
     // Named routes MUST come before /:id to avoid being caught by the param route
     this.router.get("/content-queue/status", requireAdmin, this.getContentQueueStatus);
@@ -52,6 +54,7 @@ export class StudiesController {
     this.router.put("/:id", requireAdmin, this.updateStudy);
     this.router.post("/:id/view", this.recordView);
     this.router.get("/:id", this.getStudyById);
+    this.router.post("/", requireAdmin, this.createStudy);
     this.router.get("/", searchRateLimiter, this.getAllStudies);
   }
 
@@ -332,31 +335,42 @@ export class StudiesController {
         return res.status(400).json({ success: false, message: "Model and category parameters are required" });
       }
 
-      // Mock Data Generation
-      const generateMockStudies = (categoryName: string) => {
-        const studyTemplates = [
-            { title: `Effects of hydrogen-rich water on ${categoryName}`, abstract: `This study investigates the effects of hydrogen-rich water consumption on markers of ${categoryName.toLowerCase()}.`, journal: "Journal of Hydrogen Medicine", authors: "Smith J, Johnson A" },
-            { title: `Hydrogen inhalation therapy for ${categoryName}`, abstract: `A clinical trial evaluating hydrogen gas inhalation therapy for ${categoryName.toLowerCase()} conditions.`, journal: "Molecular Hydrogen Research", authors: "Chen L, Wang H" },
-            { title: `Comparative study of hydrogen applications in ${categoryName}`, abstract: `This comparative analysis examines various hydrogen delivery methods for addressing ${categoryName.toLowerCase()}-related health challenges.`, journal: "International Journal of Hydrogen Medicine", authors: "Yamamoto K, Suzuki T" },
-            { title: `Long-term hydrogen supplementation effects on ${categoryName}`, abstract: `A longitudinal investigation into how sustained hydrogen therapy affects ${categoryName.toLowerCase()} over a 2-year period.`, journal: "Clinical Hydrogen Applications", authors: "Brown R, Miller J" },
-            { title: `Molecular mechanisms of hydrogen in ${categoryName}`, abstract: `This research explores the cellular and molecular pathways through which hydrogen gas provides benefits for ${categoryName.toLowerCase()}.`, journal: "Biochemical Research International", authors: "Garcia M, Thompson L" },
-        ];
-        return studyTemplates.map((template, index) => ({
-            id: 1000 + index,
-            title: template.title,
-            abstract: template.abstract,
-            category: categoryName,
-            publishDate: `2023-${(index + 1).toString().padStart(2, "0")}-15`,
-            journal: template.journal,
-            authors: template.authors,
-            doi: `10.1234/hydro.2023.${(index + 10).toString().padStart(3, "0")}`,
-            imageUrl: `https://placehold.co/600x400/e2f3ff/003366?text=Hydrogen+${categoryName.toLowerCase().replace(/\s+/g, "+").replace(/&/g, "and")}`,
-        }));
-      };
+      // Query REAL studies for this category. This endpoint previously
+      // returned hardcoded fabricated studies with invented DOIs
+      // (10.1234/hydro.2023.*) — unacceptable on an evidence database.
+      const { db } = await import("../db");
+      const { studies } = await import("../../shared/schema");
+      const { sql, desc } = await import("drizzle-orm");
 
-      const mockStudies = generateMockStudies(category);
-      res.json({ success: true, data: mockStudies });
+      const cat = category.trim();
+      const contains = `%${cat}%`;
 
+      let matchCondition;
+      if (model === "body_system") {
+        matchCondition = sql`(
+          ${studies.category} ILIKE ${contains}
+          OR EXISTS (SELECT 1 FROM unnest(coalesce(${studies.bodySystems}, ARRAY[]::text[])) v WHERE v ILIKE ${cat})
+        )`;
+      } else if (model === "condition") {
+        matchCondition = sql`(
+          ${studies.category} ILIKE ${contains}
+          OR EXISTS (SELECT 1 FROM unnest(coalesce(${studies.healthConditions}, ARRAY[]::text[])) v WHERE v ILIKE ${cat})
+          OR coalesce(${studies.consumerCategories}, '') ILIKE ${contains}
+        )`;
+      } else {
+        // life_stage (and any unknown model) has no backing column on studies.
+        // Return an honest empty result rather than fabricating studies.
+        return res.json({ success: true, data: [] });
+      }
+
+      const rows = await db
+        .select()
+        .from(studies)
+        .where(matchCondition)
+        .orderBy(desc(studies.id))
+        .limit(50);
+
+      res.json({ success: true, data: rows });
     } catch (error) {
       logger.error("Error fetching studies by consumer category", error, "StudiesController");
       res.status(500).json({ success: false, message: "Failed to fetch studies by consumer category" });
@@ -514,12 +528,61 @@ export class StudiesController {
       }
   }
 
+  private createStudy = async (req: Request, res: Response) => {
+      try {
+          // Validate + whitelist the body instead of passing raw req.body into
+          // db.insert(). This strips unknown keys and blocks mass-assignment of
+          // the view counter (id/createdAt/lastModified are already omitted by
+          // insertStudySchema; viewCount omitted here so a create can't seed a
+          // fake view count).
+          const { insertStudySchema } = await import("../../shared/schema");
+          const createSchema = insertStudySchema.omit({ viewCount: true });
+          const parsed = createSchema.safeParse(req.body);
+          if (!parsed.success) {
+              return res.status(400).json({ error: "Invalid study data", details: parsed.error.flatten() });
+          }
+
+          const study = await studyService.createStudy(parsed.data);
+
+          // A new published study adds a public page — drop any cached bot HTML
+          // for its slug so crawlers pick up fresh content.
+          this.invalidateStudyBotCache(study.slug);
+
+          res.status(201).json(study);
+      } catch (error) {
+          logger.error("Error creating study", error, "StudiesController");
+          res.status(500).json({ error: "Failed to create study" });
+      }
+  }
+
   private updateStudy = async (req: Request, res: Response) => {
       try {
           const studyId = parseInt(req.params.id);
           if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
 
-          const updatedStudy = await studyService.updateStudy(studyId, req.body);
+          // Validate + whitelist the body instead of passing raw req.body into
+          // db.update().set(). This strips unknown keys, blocks mass-assignment
+          // of protected columns (id/createdAt/lastModified are already omitted
+          // by insertStudySchema; slug/viewCount omitted here to protect
+          // canonical URLs, the redirect system, and the view counter), and
+          // rejects an empty update (which otherwise threw "No values to set").
+          const { insertStudySchema } = await import("../../shared/schema");
+          const updateSchema = insertStudySchema.partial().omit({ slug: true, viewCount: true });
+          const parsed = updateSchema.safeParse(req.body);
+          if (!parsed.success) {
+              return res.status(400).json({ error: "Invalid study data", details: parsed.error.flatten() });
+          }
+          if (Object.keys(parsed.data).length === 0) {
+              return res.status(400).json({ error: "No valid fields to update" });
+          }
+
+          const updatedStudy = await studyService.updateStudy(studyId, parsed.data);
+          if (!updatedStudy) return res.status(404).json({ error: "Study not found" });
+
+          // An edit can change the rendered page (title, abstract, canonical,
+          // publish state) — drop the crawler cache so bots re-fetch fresh HTML.
+          this.invalidateStudyBotCache(updatedStudy.slug);
+
           res.json(updatedStudy);
       } catch (error) {
           logger.error("Error updating study", error, "StudiesController");
@@ -606,15 +669,29 @@ export class StudiesController {
       }
   }
 
+  // Drop cached bot HTML for a study's public pages so crawlers stop being
+  // served a stale 200 (old canonical/JSON-LD) after a delete, unpublish, or
+  // content/slug change. Studies render at both /studies/:slug and /study/:slug.
+  private invalidateStudyBotCache = (slug?: string | null) => {
+      if (!slug) return;
+      invalidateBotCache(`/studies/${slug}`);
+      invalidateBotCache(`/study/${slug}`);
+  }
+
   private deleteStudy = async (req: Request, res: Response) => {
       try {
           const id = parseInt(req.params.id);
           if (isNaN(id)) return res.status(400).json({ error: "Invalid study ID" });
 
+          // Capture the slug before deletion so we can drop its crawler cache entry.
+          const existing = await studyService.getStudyById(id);
+
           const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
           const reason = req.body?.reason || null;
           const result = await studyService.deleteStudy(id, deletedBy, reason);
           if (!result) return res.status(404).json({ error: "Study not found" });
+
+          this.invalidateStudyBotCache(existing?.slug);
 
           res.json(result);
       } catch (error) {
@@ -638,9 +715,25 @@ export class StudiesController {
             return res.status(400).json({ error: "No valid study IDs provided" });
           }
 
+          // Capture slugs before deletion so we can drop crawler cache entries
+          // for the pages that actually get removed.
+          const { db } = await import("../db");
+          const { studies } = await import("../../shared/schema");
+          const { inArray } = await import("drizzle-orm");
+          const slugRows = await db
+            .select({ id: studies.id, slug: studies.slug })
+            .from(studies)
+            .where(inArray(studies.id, ids));
+          const slugById = new Map(slugRows.map((r) => [r.id, r.slug]));
+
           const deletedBy = (req as any).user?.username || (req as any).user?.id || "admin";
           const reason = req.body?.reason || null;
           const result = await studyService.bulkDeleteStudies(ids, deletedBy, reason);
+
+          for (const deletedId of result.deleted) {
+            this.invalidateStudyBotCache(slugById.get(deletedId));
+          }
+
           res.json(result);
       } catch (error: any) {
           logger.error("Error bulk deleting studies", error, "StudiesController");
@@ -699,33 +792,15 @@ export class StudiesController {
 
           const result = await generateBlogArticlesForStudy(study, options);
 
-          // Save generated articles to database
-          const { db } = await import("../db");
-          const { blogArticles } = await import("../../shared/schema");
-
-          const savedArticles = [];
-          for (const article of result.articles) {
-            try {
-              const [saved] = await db
-                .insert(blogArticles)
-                .values(article)
-                .returning();
-              savedArticles.push(saved);
-            } catch (dbError: any) {
-              // Skip duplicates
-              if (dbError.code === "23505") {
-                result.warnings.push(`Skipped duplicate: ${article.title}`);
-              } else {
-                result.errors.push({ type: "db", error: dbError.message });
-              }
-            }
-          }
-
+          // generateBlogArticlesForStudy already persists every returned
+          // article (see its contract) — re-inserting here collided on the
+          // unique slug and made the endpoint always report saved: 0. The
+          // returned rows are the saved rows.
           res.json({
             success: true,
-            articles: savedArticles,
+            articles: result.articles,
             generated: result.articles.length,
-            saved: savedArticles.length,
+            saved: result.articles.length,
             errors: result.errors,
             warnings: result.warnings,
           });
@@ -795,54 +870,76 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
       try {
           const limit = Math.min(parseInt(req.body.limit) || 10, 50);
 
-          const { db } = await import("../db");
-          const { studies } = await import("../../shared/schema");
-          const { isNull, sql } = await import("drizzle-orm");
+          // This loops up to `limit` sequential Claude calls, which easily
+          // exceeds the 30s request timeout. The timeout middleware sends a 504
+          // but does NOT cancel the handler, so completing inline meant burning
+          // AI spend after the response, then throwing ERR_HTTP_HEADERS_SENT.
+          // Run fire-and-forget and return 202 immediately (like the image /
+          // Shopify backfill endpoints); progress is written to the DB and logged.
+          void this.runBatchGenerateTldrs(limit).catch((err) => {
+            logger.error("Background batch TLDR generation failed", err, "StudiesController");
+          });
 
-          // Get studies without TLDRs
-          const studiesWithoutTldr = await db
-            .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
-            .from(studies)
-            .where(isNull(studies.tldr))
-            .limit(limit);
-
-          if (studiesWithoutTldr.length === 0) {
-            return res.json({ success: true, message: "All studies already have TLDRs", generated: 0 });
-          }
-
-          const { generateStudyTldr } = await import("../services/tldr-generator");
-          const { MODELS } = await import("../services/ai-provider");
-          const { eq } = await import("drizzle-orm");
-
-          let generated = 0;
-          const errors: string[] = [];
-
-          for (const study of studiesWithoutTldr) {
-            try {
-              const tldr = await generateStudyTldr(study, {
-                model: MODELS.SONNET,
-                effort: "low", // 1-2 sentence TLDR — no deep reasoning needed
-                caller: "StudiesController.batchTldr",
-              });
-              if (tldr) {
-                await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
-                generated++;
-              }
-            } catch (err: any) {
-              errors.push(`Study ${study.id}: ${err.message}`);
-            }
-          }
-
-          res.json({
+          res.status(202).json({
             success: true,
-            generated,
-            remaining: studiesWithoutTldr.length - generated,
-            errors: errors.length > 0 ? errors : undefined,
+            message: `Started generating TLDRs for up to ${limit} studies in the background. Check the studies for updated TLDRs.`,
+            limit,
           });
       } catch (error) {
           logger.error("Batch TLDR generation error", error, "StudiesController");
           res.status(500).json({ error: "Failed to batch generate TLDRs" });
       }
+  }
+
+  private runBatchGenerateTldrs = async (limit: number): Promise<void> => {
+      const { db } = await import("../db");
+      const { studies } = await import("../../shared/schema");
+      const { isNull } = await import("drizzle-orm");
+
+      // Get studies without TLDRs
+      const studiesWithoutTldr = await db
+        .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
+        .from(studies)
+        .where(isNull(studies.tldr))
+        .limit(limit);
+
+      if (studiesWithoutTldr.length === 0) {
+        logger.info("Batch TLDR generation: all studies already have TLDRs", "StudiesController");
+        return;
+      }
+
+      const { generateStudyTldr } = await import("../services/tldr-generator");
+      const { MODELS } = await import("../services/ai-provider");
+      const { eq } = await import("drizzle-orm");
+
+      let generated = 0;
+      const errors: string[] = [];
+
+      for (const study of studiesWithoutTldr) {
+        try {
+          const tldr = await generateStudyTldr(study, {
+            model: MODELS.SONNET,
+            effort: "low", // 1-2 sentence TLDR — no deep reasoning needed
+            caller: "StudiesController.batchTldr",
+          });
+          if (tldr) {
+            await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
+            generated++;
+          }
+        } catch (err: any) {
+          errors.push(`Study ${study.id}: ${err.message}`);
+        }
+      }
+
+      logger.info(
+        `Batch TLDR generation complete: generated ${generated} of ${studiesWithoutTldr.length}`,
+        "StudiesController",
+        {
+          generated,
+          remaining: studiesWithoutTldr.length - generated,
+          errors: errors.length > 0 ? errors : undefined,
+        } as Record<string, unknown>,
+      );
   }
 }
 

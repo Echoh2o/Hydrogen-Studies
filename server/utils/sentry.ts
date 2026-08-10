@@ -16,12 +16,24 @@ export function initSentry() {
       tracesSampleRate: 0.3, // 30% of transactions for performance monitoring
       sampleRate: 1.0, // Capture 100% of errors (never drop errors)
       beforeSend(event) {
-        // Strip sensitive data
+        // Strip sensitive headers/cookies
         if (event.request?.cookies) delete event.request.cookies;
-        if (event.request?.headers?.authorization)
+        if (event.request?.headers) {
           delete event.request.headers.authorization;
-        if (event.request?.headers?.cookie)
           delete event.request.headers.cookie;
+          delete event.request.headers["x-csrf-token"];
+          delete event.request.headers["x-admin-token"];
+        }
+        // Redact sensitive fields from the request body
+        if (event.request?.data && typeof event.request.data === "object") {
+          const data = event.request.data as Record<string, unknown>;
+          const sensitiveKeys = ["password", "token", "secret", "creditCard", "ssn"];
+          for (const key of sensitiveKeys) {
+            if (key in data) {
+              data[key] = "[REDACTED]";
+            }
+          }
+        }
         return event;
       },
     });

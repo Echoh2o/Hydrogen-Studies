@@ -20,6 +20,9 @@ export async function runStoredImagesMigration() {
     `);
     logger.info("stored_images table ready", "Migration");
   } catch (err) {
+    // Rethrow so the migration runner does not record this migration as applied
+    // on failure (e.g. a transient DB error at boot) — otherwise it would never retry.
     logger.error("stored_images migration failed", err, "Migration");
+    throw err;
   }
 }

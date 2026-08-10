@@ -14,15 +14,21 @@ import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
 
 /**
- * Get the Monday and Sunday of the current week
+ * Get the Monday and Sunday of the previous completed week.
+ *
+ * The scheduler runs the digest job on Mondays, so summarizing the week
+ * containing 'now' would cover a week that has barely started (near-zero
+ * studies) and permanently lock an empty digest. Instead we look back to the
+ * previous week — which has fully ended — so the digest summarizes real studies.
  */
-function getCurrentWeekBounds(): { weekStart: string; weekEnd: string } {
+function getPreviousWeekBounds(): { weekStart: string; weekEnd: string } {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = Sunday
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
   const monday = new Date(now);
-  monday.setDate(now.getDate() + mondayOffset);
+  // Shift to this week's Monday, then subtract 7 days for the previous week.
+  monday.setDate(now.getDate() + mondayOffset - 7);
   monday.setHours(0, 0, 0, 0);
 
   const sunday = new Date(monday);
@@ -57,7 +63,7 @@ async function digestExistsForWeek(weekStart: string): Promise<ResearchDigest | 
  * Idempotent — returns existing digest if one already exists for this week.
  */
 export async function generateWeeklyDigest(): Promise<ResearchDigest> {
-  const { weekStart, weekEnd } = getCurrentWeekBounds();
+  const { weekStart, weekEnd } = getPreviousWeekBounds();
 
   // Check idempotency
   const existing = await digestExistsForWeek(weekStart);

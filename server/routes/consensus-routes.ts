@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from "express";
 import { requireAdmin } from "../auth";
-import { aiGenerationRateLimiter } from "../utils/rate-limiting";
+import { aiGenerationRateLimiter, searchRateLimiter } from "../utils/rate-limiting";
 import {
   searchHydrogenPapers,
   summarizeSingleStudy,
@@ -23,6 +23,12 @@ import {
 } from "../config/hydrogen-topics";
 
 const router = Router();
+
+// These endpoints hit the paid Consensus API and, for /topics/:slug, fire an
+// Opus synthesis on every cache miss. They were mounted with no limiter, so an
+// anonymous caller could drive unbounded external-API/AI spend. searchRateLimiter
+// skips admins, so the admin import UI is unaffected.
+router.use(searchRateLimiter);
 
 /**
  * GET /api/consensus/search

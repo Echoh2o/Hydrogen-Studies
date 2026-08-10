@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import compression from "compression";
 import crypto from "crypto";
 // @ts-ignore - no type declarations available
 import cookieParser from "cookie-parser";
@@ -141,6 +142,12 @@ app.use(
     },
   }),
 );
+
+// HTTP compression (gzip) — mounted right after helmet so every downstream
+// response is covered: search/API JSON, sitemaps, robots.txt, and SSR HTML.
+// Static hashed chunks can additionally be served pre-compressed via
+// vite-plugin-compression + express-static-gzip if that is wired up later.
+app.use(compression());
 
 // Redirect middleware — must be very early (before routes) to intercept 301/302s
 import { redirectMiddleware, log404, ensureRedirectIndexes } from "./services/redirect-service";
@@ -363,7 +370,13 @@ function shopifyProxyAuth(
 
   const secret = process.env.SHOPIFY_APP_SECRET;
   if (!secret) {
-    // No secret configured — skip verification (local dev)
+    // Fail CLOSED in production: a prod deploy with the secret unset (rotation,
+    // fresh environment) must not serve the whole /proxy surface unverified.
+    // Only skip verification in non-production for local dev convenience.
+    if (process.env.NODE_ENV === "production") {
+      console.error("SHOPIFY_APP_SECRET is unset in production — rejecting /proxy request");
+      return res.status(503).send("Service unavailable");
+    }
     return next();
   }
 
@@ -867,7 +880,15 @@ app.post("/api/client-errors", (req, res) => {
 // Full health check (database, memory, request stats)
 app.get("/health", async (req, res) => {
   const health = await performHealthCheck();
-  const statusCode = health.status === "healthy" ? 200 : 503;
+  // Railway's healthcheck points here — a dead database MUST fail it so Railway
+  // stops routing to this instance. performHealthCheck only degrades status at
+  // 2+ errors, so a DB-down (a single error) would otherwise still report 200.
+  // Gate on DB connectivity directly (performHealthCheck already runs a
+  // lightweight `SELECT 1 FROM studies LIMIT 1` ping). Only hard connectivity
+  // loss returns 503 — slow latency or memory pressure alone don't, so a
+  // transient blip won't trigger restart loops.
+  const statusCode =
+    health.status === "healthy" && health.database.connected ? 200 : 503;
   res.status(statusCode).json(health);
 });
 
@@ -932,6 +953,8 @@ pool.query("SELECT 1").then(async () => {
     const { applyFkOnDeletePolicies } = await import("./migrations/add-fk-on-delete-policies");
     const { dropLegacyPasswordColumn } = await import("./migrations/drop-legacy-password-column");
     const { addStudiesDoiIndex } = await import("./migrations/add-studies-doi-index");
+    const { addRetractionCheckTracking } = await import("./migrations/add-retraction-check-tracking");
+    const { addAuditTrackingFields } = await import("./migrations/add-audit-tracking-fields");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -950,6 +973,8 @@ pool.query("SELECT 1").then(async () => {
       { name: "014_fk_on_delete_policies", up: applyFkOnDeletePolicies },
       { name: "015_drop_legacy_password_column", up: dropLegacyPasswordColumn },
       { name: "016_add_studies_doi_index", up: addStudiesDoiIndex },
+      { name: "017_add_retraction_check_tracking", up: addRetractionCheckTracking },
+      { name: "018_add_audit_tracking_fields", up: addAuditTrackingFields },
     ]);
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted

@@ -352,6 +352,18 @@ router.post(
         );
       }
 
+      // Cap batch size: this endpoint is unauthenticated and inserts one row
+      // per event, so an uncapped array let an anonymous client force millions
+      // of analytics rows per hour.
+      const MAX_EVENTS_PER_BATCH = 50;
+      if (events.length > MAX_EVENTS_PER_BATCH) {
+        throw new AppError(
+          `Too many events in one batch (max ${MAX_EVENTS_PER_BATCH})`,
+          400,
+          ErrorCode.VALIDATION_ERROR,
+        );
+      }
+
       const results = {
         processed: 0,
         failed: 0,
@@ -366,7 +378,9 @@ router.post(
               ...validatedData,
               contentType: validatedData.contentType as ContentType,
               sessionId: event.data.sessionId || req.session?.id || uuidv4(),
-              userId: event.data.userId || req.session?.userId,
+              // Never trust a body-supplied userId — it let anyone attribute
+              // views/engagement to arbitrary users. Use the session only.
+              userId: req.session?.userId,
             });
           } else if (event.type === "engagement") {
             const validatedData = trackEngagementSchema.parse(event.data);
@@ -375,7 +389,8 @@ router.post(
               contentType: validatedData.contentType as ContentType,
               action: validatedData.action as EngagementAction,
               sessionId: event.data.sessionId || req.session?.id || uuidv4(),
-              userId: event.data.userId || req.session?.userId,
+              // Session-derived userId only; ignore any body-supplied userId.
+              userId: req.session?.userId,
             });
           }
           results.processed++;

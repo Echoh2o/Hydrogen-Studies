@@ -9,6 +9,7 @@ import { db } from "../db";
 import { blogGenerationJobs, blogArticles, studies } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { ai, getImageModel } from "./ai-provider";
+import { withAdvisoryLock } from "../utils/advisory-lock";
 
 // Worker state
 let isProcessing = false;
@@ -217,6 +218,45 @@ async function processJob(jobId: number) {
   currentJobId = jobId;
 
   try {
+    // Cross-process exclusion: a second Railway replica (or old+new overlap
+    // during a rolling deploy) must not process the same job concurrently —
+    // that doubles AI spend and races the per-article dedupe check. The
+    // in-process isProcessing flag only guards this instance; the advisory
+    // lock guards across instances. If another instance holds it, skip.
+    const ran = await withAdvisoryLock(`blog-job:${jobId}`, () => runJob(jobId));
+    if (ran === null) {
+      console.warn(`[BlogWorker] Job #${jobId} is already running on another instance — skipping`);
+    }
+  } finally {
+    isProcessing = false;
+    currentJobId = null;
+    shouldStop = false;
+  }
+}
+
+/**
+ * Determine whether the running job should stop, and with what final status.
+ * Re-reads the DB so a cancellation issued on ANOTHER instance is honored
+ * (cross-process), and so an in-process cancel (which set status='cancelled')
+ * is never resurrected as a resumable 'paused'.
+ */
+async function getStopAction(jobId: number): Promise<"cancelled" | "paused" | null> {
+  const [current] = await db
+    .select({ status: blogGenerationJobs.status })
+    .from(blogGenerationJobs)
+    .where(eq(blogGenerationJobs.id, jobId));
+  const status = current?.status;
+  // A cancel (this instance or another) writes status='cancelled' — preserve it.
+  if (status === "cancelled") return "cancelled";
+  // An in-process pause request stops only while the job is still running.
+  if (shouldStop && status === "running") return "paused";
+  return null;
+}
+
+/**
+ * Main processing loop — runs inside the advisory lock (see processJob).
+ */
+async function runJob(jobId: number) {
     const [job] = await db
       .select()
       .from(blogGenerationJobs)
@@ -269,10 +309,13 @@ async function processJob(jobId: number) {
       const startType = si === currentStudyIndex ? currentTypeIndex : 0;
 
       for (let ti = startType; ti < articleTypes.length; ti++) {
-        // Check for stop signal
-        if (shouldStop) {
+        // Check for stop signal. Re-reads DB status each article so a cancel
+        // issued on another instance is honored (cross-process) and a cancel
+        // is never overwritten back to a resumable 'paused'.
+        const stopAction = await getStopAction(jobId);
+        if (stopAction) {
           await db.update(blogGenerationJobs).set({
-            status: "paused",
+            status: stopAction,
             currentStudyIndex: si,
             currentTypeIndex: ti,
             completedItems,
@@ -282,7 +325,7 @@ async function processJob(jobId: number) {
             updatedAt: new Date(),
           }).where(eq(blogGenerationJobs.id, jobId));
 
-          console.log(`[BlogWorker] Job #${jobId} paused at study ${si}/${studyIds.length}, type ${ti}/${articleTypes.length}`);
+          console.log(`[BlogWorker] Job #${jobId} ${stopAction} at study ${si}/${studyIds.length}, type ${ti}/${articleTypes.length}`);
           return;
         }
 
@@ -397,11 +440,6 @@ async function processJob(jobId: number) {
     }).where(eq(blogGenerationJobs.id, jobId));
 
     console.log(`[BlogWorker] Job #${jobId} completed: ${completedItems} succeeded, ${failedItems} failed, ${savedItems} saved`);
-  } finally {
-    isProcessing = false;
-    currentJobId = null;
-    shouldStop = false;
-  }
 }
 
 /**

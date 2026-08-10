@@ -282,8 +282,8 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
   try {
     const isNumeric = /^\d+$/.test(slugOrId);
     const r = isNumeric
-      ? await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE id = ${parseInt(slugOrId)} LIMIT 1`)
-      : await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE slug = ${slugOrId} LIMIT 1`);
+      ? await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE id = ${parseInt(slugOrId)} AND is_published = true AND is_archived = false LIMIT 1`)
+      : await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE slug = ${slugOrId} AND is_published = true AND is_archived = false LIMIT 1`);
     const b: any = r.rows?.[0];
     if (!b) return null;
 

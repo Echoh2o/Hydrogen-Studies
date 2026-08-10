@@ -141,33 +141,53 @@ export async function generateBlogLinks(blogId: number): Promise<LinkSuggestion[
     }
   }
 
-  // Find related blog posts (same study topic, different article type)
-  const relatedBlogs = await db.select({
-    id: blogArticles.id,
-    title: blogArticles.title,
-    slug: blogArticles.slug,
-    articleType: blogArticles.articleType,
-  })
-    .from(blogArticles)
-    .where(
-      and(
-        ne(blogArticles.id, blogId),
-        eq(blogArticles.isPublished, true),
-      )
-    )
-    .limit(5);
+  // Find related blog posts scoped to the same topic — either articles about
+  // the same source study, or articles about studies in the same category.
+  // Without this filter every blog linked to the same 5 lowest-id published
+  // blogs regardless of subject.
+  // A blog with no source study has no study-scoped related set, so skip.
+  const studyId = blog.studyId;
+  if (studyId != null) {
+    const [blogStudy] = await db.select({ category: studies.category })
+      .from(studies)
+      .where(eq(studies.id, studyId))
+      .limit(1);
 
-  for (const related of relatedBlogs) {
-    links.push({
-      fromType: "blog",
-      fromId: blogId,
-      toType: "blog",
-      toId: related.id,
-      anchorText: related.title.substring(0, 80),
-      context: "Related reading",
-      relevanceScore: 60,
-      linkType: "related",
-    });
+    const topicMatch = blogStudy?.category
+      ? or(eq(blogArticles.studyId, studyId), eq(studies.category, blogStudy.category))
+      : eq(blogArticles.studyId, studyId);
+
+    const relatedBlogs = await db.select({
+      id: blogArticles.id,
+      title: blogArticles.title,
+      slug: blogArticles.slug,
+      articleType: blogArticles.articleType,
+      studyId: blogArticles.studyId,
+    })
+      .from(blogArticles)
+      .innerJoin(studies, eq(blogArticles.studyId, studies.id))
+      .where(
+        and(
+          ne(blogArticles.id, blogId),
+          eq(blogArticles.isPublished, true),
+          topicMatch,
+        )
+      )
+      .limit(5);
+
+    for (const related of relatedBlogs) {
+      const sameStudy = related.studyId === studyId;
+      links.push({
+        fromType: "blog",
+        fromId: blogId,
+        toType: "blog",
+        toId: related.id,
+        anchorText: related.title.substring(0, 80),
+        context: sameStudy ? "More on this study" : "Related reading",
+        relevanceScore: sameStudy ? 75 : 60,
+        linkType: "related",
+      });
+    }
   }
 
   return links;
@@ -226,9 +246,19 @@ export async function buildAllStudyLinks(options: {
 } = {}): Promise<{ processed: number; linksCreated: number }> {
   const { batchSize = 100, onProgress } = options;
 
+  // Rotate coverage across the whole catalog instead of re-scanning the same
+  // lowest-id rows every run. Order by least-recently-linked: studies that have
+  // never been linked (no smartLinks row → NULL) come first, then the ones whose
+  // most recent link is oldest. New links push a study to the back of the queue,
+  // so the long tail is eventually processed.
   const allStudyIds = await db.select({ id: studies.id })
     .from(studies)
-    .orderBy(studies.id)
+    .leftJoin(
+      smartLinks,
+      and(eq(smartLinks.fromType, "study"), eq(smartLinks.fromId, studies.id)),
+    )
+    .groupBy(studies.id)
+    .orderBy(sql`max(${smartLinks.createdAt}) asc nulls first`, studies.id)
     .limit(batchSize);
 
   let linksCreated = 0;
@@ -251,10 +281,17 @@ export async function buildAllBlogLinks(options: {
 } = {}): Promise<{ processed: number; linksCreated: number }> {
   const { batchSize = 100, onProgress } = options;
 
+  // Rotate coverage least-recently-linked first (see buildAllStudyLinks) so the
+  // scheduler doesn't re-scan the same 200 oldest published blogs every week.
   const allBlogIds = await db.select({ id: blogArticles.id })
     .from(blogArticles)
+    .leftJoin(
+      smartLinks,
+      and(eq(smartLinks.fromType, "blog"), eq(smartLinks.fromId, blogArticles.id)),
+    )
     .where(eq(blogArticles.isPublished, true))
-    .orderBy(blogArticles.id)
+    .groupBy(blogArticles.id)
+    .orderBy(sql`max(${smartLinks.createdAt}) asc nulls first`, blogArticles.id)
     .limit(batchSize);
 
   let linksCreated = 0;

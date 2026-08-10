@@ -3,18 +3,19 @@ import { db } from "../db";
 import { blogArticles, studies, insertBlogArticleSchema } from "@shared/schema";
 import { sql, count, desc, eq, isNotNull, and } from "drizzle-orm";
 import { z } from "zod";
-import { isAuthenticated, requireAdmin } from "../auth";
+import { isAuthenticated, requireAdmin, isElevatedRequest } from "../auth";
 import {
   aiGenerationRateLimiter,
   generalApiRateLimiter,
 } from "../utils/rate-limiting";
+import { invalidateBotCache } from "../middleware/seo-bot-middleware";
 
 const router = Router();
 
 /**
  * Get blog statistics for dashboard
  */
-router.get("/stats/dashboard", async (req, res) => {
+router.get("/stats/dashboard", requireAdmin, async (req, res) => {
   try {
     // Get total blog count
     const [totalResult] = await db
@@ -98,14 +99,49 @@ router.get("/", async (req, res) => {
     } as const;
     const sortColumn = (SORT_COLUMNS as any)[sortField] ?? blogArticles.createdAt;
 
-    // Build query with filters
-    let baseQuery = db.select().from(blogArticles).$dynamic();
+    // This endpoint is shared by the public /blog page and the admin
+    // dashboard. Anonymous (or non-admin/editor) callers must only ever see
+    // published, non-archived rows — the isPublished filter and the
+    // draft/scheduled/archived/all filterStatus values are privileged.
+    const elevated = await isElevatedRequest(req);
+
+    // Public list only renders title/summary/image/date cards, so project
+    // just the columns the list needs — never ship the full content,
+    // faqSchema, hierarchicalStructure or internal editorNotes payload
+    // (measured at 411 KB/50 rows). Admins/editors still get the full row
+    // for the dashboard; full content lives on the detail endpoints.
+    const LIST_COLUMNS = {
+      id: blogArticles.id,
+      slug: blogArticles.slug,
+      title: blogArticles.title,
+      summary: blogArticles.summary,
+      imageUrl: blogArticles.imageUrl,
+      imageAlt: blogArticles.imageAlt,
+      articleType: blogArticles.articleType,
+      publishedAt: blogArticles.publishedAt,
+      createdAt: blogArticles.createdAt,
+      isPublished: blogArticles.isPublished,
+      viewCount: blogArticles.viewCount,
+    } as const;
+
+    // Build query with filters. Typed `any` because the projected vs. full
+    // select produce different row shapes (a union that trips the dynamic
+    // query-builder chaining below).
+    let baseQuery: any = (elevated ? db.select() : db.select(LIST_COLUMNS))
+      .from(blogArticles)
+      .$dynamic();
     let countQuery = db.select({ count: count() }).from(blogArticles).$dynamic();
 
     const conditions: any[] = [];
 
-    // Default: hide archived rows unless filterStatus explicitly requests them.
-    if (filterStatus !== "archived" && filterStatus !== "all") {
+    if (!elevated) {
+      // Force the public contract regardless of query params: published only,
+      // never archived. filterStatus overrides below are gated behind
+      // `elevated` so a crafted ?filterStatus=draft can't leak unpublished rows.
+      conditions.push(eq(blogArticles.isPublished, true));
+      conditions.push(eq(blogArticles.isArchived, false));
+    } else if (filterStatus !== "archived" && filterStatus !== "all") {
+      // Admin default: hide archived rows unless explicitly requested.
       conditions.push(eq(blogArticles.isArchived, false));
     }
 
@@ -117,7 +153,10 @@ router.get("/", async (req, res) => {
     if (filterType && filterType !== "all") {
       conditions.push(eq(blogArticles.articleType, filterType));
     }
-    if (filterStatus === "published") {
+    if (!elevated) {
+      // Public callers already constrained to published above; ignore any
+      // filterStatus they supplied.
+    } else if (filterStatus === "published") {
       conditions.push(eq(blogArticles.isPublished, true));
     } else if (filterStatus === "draft") {
       // "draft" = unpublished AND not scheduled. Scheduled posts get their own bucket.
@@ -195,8 +234,11 @@ router.get("/", async (req, res) => {
     const enriched = blogs.map((b: any) => {
       const path = `/blog/${b.slug}`;
       const gsc = gscMap.get(path);
+      // editorNotes is an internal admin-only field; never expose it to
+      // public callers.
+      const { editorNotes, ...rest } = b;
       return {
-        ...b,
+        ...(elevated ? b : rest),
         ga4Sessions30d: ga4Map.get(path) ?? null,
         gscClicks30d: gsc?.clicks ?? null,
         gscImpressions30d: gsc?.impressions ?? null,
@@ -504,16 +546,21 @@ router.get("/slug/:slug", async (req, res) => {
       .from(blogArticles)
       .where(eq(blogArticles.slug, slug));
 
-    if (!blog) {
+    // Return 404 for unpublished/archived rows to anonymous callers — an
+    // indistinguishable "not found" avoids leaking draft slugs. Admins and
+    // editors get the full row.
+    const elevated = await isElevatedRequest(req);
+    if (!blog || (!elevated && (!blog.isPublished || blog.isArchived))) {
       return res.status(404).json({
         success: false,
         error: "Blog article not found",
       });
     }
 
+    const { editorNotes, ...publicBlog } = blog as any;
     res.json({
       success: true,
-      data: blog,
+      data: elevated ? blog : publicBlog,
     });
   } catch (error) {
     console.error("Error fetching blog by slug:", error);
@@ -543,16 +590,19 @@ router.get("/:id(\\d+)", async (req, res) => {
       .from(blogArticles)
       .where(eq(blogArticles.id, id));
 
-    if (!blog) {
+    // Same gating as /slug/:slug — unpublished/archived rows are 404 to the public.
+    const elevated = await isElevatedRequest(req);
+    if (!blog || (!elevated && (!blog.isPublished || blog.isArchived))) {
       return res.status(404).json({
         success: false,
         error: "Blog article not found",
       });
     }
 
+    const { editorNotes, ...publicBlog } = blog as any;
     res.json({
       success: true,
-      data: blog,
+      data: elevated ? blog : publicBlog,
     });
   } catch (error) {
     console.error("Error fetching blog:", error);
@@ -728,6 +778,10 @@ router.put("/:id(\\d+)", requireAdmin, async (req, res) => {
       });
     }
 
+    // Publish/unpublish or slug change — drop the crawler cache for this
+    // path so bots stop being served a stale 200 until the TTL expires.
+    invalidateBotCache(`/blog/${updatedBlog.slug}`);
+
     res.json({
       success: true,
       data: updatedBlog,
@@ -761,10 +815,12 @@ router.delete("/:id(\\d+)", requireAdmin, async (req, res) => {
     const result = await db
       .delete(blogArticles)
       .where(eq(blogArticles.id, id))
-      .returning({ id: blogArticles.id });
+      .returning({ id: blogArticles.id, slug: blogArticles.slug });
     if (result.length === 0) {
       return res.status(404).json({ error: "Blog not found" });
     }
+    // Drop the crawler cache so the deleted page stops being served to bots.
+    invalidateBotCache(`/blog/${result[0].slug}`);
     res.json({ success: true });
   } catch (error) {
     console.error("Error deleting blog:", error);
@@ -802,6 +858,12 @@ router.post("/:id(\\d+)/promote-to-pillar", requireAdmin, async (req, res) => {
       .where(eq(blogArticles.id, id))
       .limit(1);
     if (!pillar) return res.status(404).json({ error: "Blog not found" });
+    if (pillar.studyId == null) {
+      return res.status(400).json({
+        error:
+          "Pillar has no source study — can't scope cluster generation. Attach the pillar to a study first.",
+      });
+    }
 
     const [pillarStudy] = await db
       .select({ id: studies.id, category: studies.category })
@@ -898,29 +960,26 @@ router.post("/:id(\\d+)/promote-to-pillar", requireAdmin, async (req, res) => {
           continue;
         }
 
-        // Persist each generated article as an unpublished cluster post
-        // tagged to this pillar. Generator returns Insert objects, not yet
-        // saved — we add the pillar fields here.
+        // The generator already persisted each article (published, untagged).
+        // Re-tag them here as unpublished cluster posts under this pillar by
+        // UPDATING the saved rows — the previous code re-inserted, collided on
+        // the unique slug, and silently left clusters published and untagged.
         for (const article of result.articles) {
           try {
-            const [saved] = await db
-              .insert(blogArticles)
-              .values({
-                ...article,
+            await db
+              .update(blogArticles)
+              .set({
                 pillarBlogId: id,
                 isPublished: false,
                 isArchived: false,
               })
-              .returning({ id: blogArticles.id });
-            clusterIds.push(saved.id);
+              .where(eq(blogArticles.id, article.id));
+            clusterIds.push(article.id);
           } catch (dbErr: any) {
-            // 23505 = duplicate slug — generator collided. Skip.
-            if (dbErr?.code !== "23505") {
-              generationErrors.push({
-                studyId: candidate.id,
-                error: dbErr?.message ?? "DB insert failed",
-              });
-            }
+            generationErrors.push({
+              studyId: candidate.id,
+              error: dbErr?.message ?? "DB update failed",
+            });
           }
         }
       } catch (err: any) {
@@ -1284,6 +1343,9 @@ router.patch("/:id(\\d+)/status", requireAdmin, async (req, res) => {
       .where(eq(blogArticles.id, id))
       .returning();
     if (!row) return res.status(404).json({ error: "Blog not found" });
+    // Publish/unpublish/archive changed visibility — drop the stale crawler
+    // cache entry for this path.
+    invalidateBotCache(`/blog/${row.slug}`);
     res.json({ success: true, data: row });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -1321,11 +1383,13 @@ router.post("/bulk-update", requireAdmin, async (req, res) => {
     )})`;
 
     let affected = 0;
+    let affectedRows: Array<{ id: number; slug: string }> = [];
     if (action === "delete") {
       const result = await db
         .delete(blogArticles)
         .where(inIds)
-        .returning({ id: blogArticles.id });
+        .returning({ id: blogArticles.id, slug: blogArticles.slug });
+      affectedRows = result;
       affected = result.length;
     } else {
       const set: any = { updatedAt: new Date() };
@@ -1357,8 +1421,15 @@ router.post("/bulk-update", requireAdmin, async (req, res) => {
         .update(blogArticles)
         .set(set)
         .where(inIds)
-        .returning({ id: blogArticles.id });
+        .returning({ id: blogArticles.id, slug: blogArticles.slug });
+      affectedRows = result;
       affected = result.length;
+    }
+
+    // Every bulk action changes visibility (publish/unpublish/archive/delete/
+    // schedule) — drop each affected path from the crawler cache.
+    for (const row of affectedRows) {
+      invalidateBotCache(`/blog/${row.slug}`);
     }
 
     res.json({ success: true, affected });

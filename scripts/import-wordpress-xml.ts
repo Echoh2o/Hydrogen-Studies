@@ -10,7 +10,7 @@
 import { readFileSync, existsSync } from "fs";
 import { db, pool } from "../server/db";
 import { studies, type InsertStudy } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { count } from "drizzle-orm";
 
 // ============================================================
 // XML Parsing helpers (no external XML lib needed)
@@ -54,6 +54,25 @@ function extractMeta(itemXml: string, metaKey: string): string {
   return match ? match[1].trim() : "";
 }
 
+// Normalize the `doi_pmid_link` meta into a bare, lowercased DOI so it dedupes
+// against DOIs stored by the bulk-doi-import and discovery engine, and so
+// citationUrl construction (`https://doi.org/${doi}`) yields a valid link.
+// PubMed/PMID links are not DOIs, so return null for them.
+function normalizeDoi(raw: string): string | null {
+  let value = (raw || "").trim();
+  if (!value) return null;
+  // PubMed / PMID links are not DOIs — drop them rather than storing a bad DOI.
+  if (/pubmed|ncbi\.nlm\.nih\.gov/i.test(value)) return null;
+  // Strip a leading doi.org (or dx.doi.org) URL prefix, with or without scheme.
+  value = value.replace(/^https?:\/\/(dx\.)?doi\.org\//i, "");
+  // Strip a bare "doi:" prefix.
+  value = value.replace(/^doi:\s*/i, "");
+  value = value.trim().toLowerCase();
+  // A real DOI always starts with "10." — anything else isn't a usable DOI.
+  if (!value.startsWith("10.")) return null;
+  return value;
+}
+
 // ============================================================
 // Study extraction from WordPress item
 // ============================================================
@@ -63,7 +82,7 @@ interface WPStudy {
   content: string; // abstract
   slug: string;
   publishDate: string;
-  doi: string;
+  doi: string | null;
   journal: string;
   year: number | null;
   authors: string[];
@@ -96,7 +115,7 @@ function parseItem(itemXml: string): WPStudy | null {
   const postDate = extractCDATA(itemXml, "wp:post_date");
 
   // Custom fields
-  const doi = extractMeta(itemXml, "doi_pmid_link");
+  const doi = normalizeDoi(extractMeta(itemXml, "doi_pmid_link"));
   const journal = extractMeta(itemXml, "journal");
   const yearStr = extractMeta(itemXml, "year_of_publication");
   const vehicle = extractMeta(itemXml, "vehicle");
@@ -264,15 +283,22 @@ function wpStudyToInsert(wp: WPStudy): InsertStudy {
   const bodySystems: string[] = [];
   if (wp.bodyPart) bodySystems.push(wp.bodyPart);
 
-  // Clean abstract - remove HTML tags if any
-  const abstract = wp.content
-    .replace(/<[^>]*>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .trim();
+  // Clean abstract - decode HTML entities first, then strip tags, looping to a
+  // fixpoint so entity-escaped markup (e.g. `&lt;i&gt;in vivo&lt;/i&gt;`) can't
+  // survive as literal tags. Decode &amp; last to avoid resurrecting markup from
+  // double-escaped input (`&amp;lt;` stays escaped rather than becoming `<`).
+  let abstract = wp.content;
+  let previousAbstract: string;
+  do {
+    previousAbstract = abstract;
+    abstract = abstract
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/<[^>]*>/g, "");
+  } while (abstract !== previousAbstract);
+  abstract = abstract.replace(/&amp;/g, "&").trim();
 
   return {
     title: wp.title,
@@ -432,8 +458,8 @@ async function main() {
   });
 
   // Final count
-  const [{ count }] = await db.select({ count: studies.id }).from(studies);
-  console.log(`\nTotal studies in database: ${count}`);
+  const [{ total }] = await db.select({ total: count() }).from(studies);
+  console.log(`\nTotal studies in database: ${total}`);
 
   await pool.end();
 }

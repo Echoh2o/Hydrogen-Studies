@@ -260,7 +260,12 @@ export async function batchRetractionCheck(options: {
 }> {
   const { batchSize = 50, delayMs = 500, onProgress } = options;
 
-  // Get all studies with DOIs (only studies not already marked)
+  // Rotate the batch through the whole catalog: least-recently-checked
+  // (NULLS FIRST = never checked) first, and stamp each study after checking
+  // (below) so the next run picks up where this one left off. Previously there
+  // was no ORDER BY or tracking, so the same ~50 rows were re-checked forever.
+  // Also exclude studies already flagged as retracted/withdrawn/corrected/
+  // expression_of_concern — re-checking those produced duplicate notifications.
   const studiesWithDois = await db.select({
     id: studies.id,
     doi: studies.doi,
@@ -272,12 +277,12 @@ export async function batchRetractionCheck(options: {
       and(
         isNotNull(studies.doi),
         or(
-          // Don't re-check studies already marked as retracted
           sql`${studies.peerReviewStatus} IS NULL`,
-          sql`${studies.peerReviewStatus} NOT IN ('retracted', 'withdrawn')`,
+          sql`${studies.peerReviewStatus} NOT IN ('retracted', 'withdrawn', 'corrected', 'expression_of_concern')`,
         )
       )
     )
+    .orderBy(sql`${studies.lastRetractionCheckAt} ASC NULLS FIRST`)
     .limit(batchSize);
 
   const allResults: RetractionCheckResult[] = [];
@@ -293,6 +298,16 @@ export async function batchRetractionCheck(options: {
       doi: study.doi,
       title: study.title,
     });
+
+    // Stamp the check time regardless of outcome so this study rotates to the
+    // back of the queue and the batch advances through the whole catalog.
+    await db
+      .update(studies)
+      .set({ lastRetractionCheckAt: new Date() })
+      .where(eq(studies.id, study.id))
+      .catch((err) =>
+        console.warn(`[RetractionMonitor] failed to stamp study ${study.id}:`, err),
+      );
 
     if (result) {
       allResults.push(result);

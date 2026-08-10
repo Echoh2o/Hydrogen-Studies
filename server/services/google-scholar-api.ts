@@ -2,12 +2,15 @@
  * Google Scholar Search Integration
  *
  * Google Scholar doesn't have an official API. We use the SerpAPI service
- * if a SERPAPI_KEY is configured, otherwise fall back to a lightweight
- * scraping approach via the scholarly JSON proxy.
+ * if a SERPAPI_KEY is configured. When no key is present the Scholar source
+ * is a no-op — we deliberately do NOT scrape scholar.google.com directly.
+ * Direct HTML scraping (with a spoofed browser User-Agent) violates Google's
+ * ToS, gets the production egress IP blocked, and is unreliable, so that path
+ * has been removed.
  *
  * Supported strategies:
  * 1. SerpAPI (preferred, reliable, paid) — env: SERPAPI_KEY
- * 2. Scholarly proxy (free, rate-limited) — no key needed
+ *    Without SERPAPI_KEY, searches return no results.
  *
  * Google Scholar is valuable because it indexes:
  * - Published journal articles
@@ -103,96 +106,11 @@ async function searchViaSerpApi(
 }
 
 /**
- * Search Google Scholar via direct HTTP (fallback, rate-limited)
+ * Main search function — uses SerpAPI when SERPAPI_KEY is configured.
  *
- * This makes a direct request to Google Scholar and parses the response.
- * WARNING: Google aggressively rate-limits this. Use sparingly (< 10 req/hour).
- * SerpAPI is strongly recommended for production use.
- */
-async function searchViaDirectHttp(
-  query: string,
-  start: number = 0,
-): Promise<ScholarResult[]> {
-  try {
-    const params = new URLSearchParams({
-      q: query,
-      start: String(start),
-      hl: "en",
-    });
-
-    const response = await fetchWithTimeout(`https://scholar.google.com/scholar?${params}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        console.warn("[Google Scholar] Rate limited (429). Use SERPAPI_KEY for reliable access.");
-      }
-      return [];
-    }
-
-    const html = await response.text();
-
-    // Parse results from HTML (lightweight extraction)
-    const results: ScholarResult[] = [];
-    const articleRegex = /<div class="gs_ri">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/g;
-    let match;
-
-    while ((match = articleRegex.exec(html)) !== null) {
-      const block = match[1];
-
-      // Title and URL
-      const titleMatch = block.match(/<h3[^>]*>.*?<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/);
-      const title = titleMatch ? titleMatch[2].replace(/<[^>]*>/g, "").trim() : "";
-      const url = titleMatch ? titleMatch[1] : "";
-
-      // Authors and journal info
-      const infoMatch = block.match(/<div class="gs_a">([\s\S]*?)<\/div>/);
-      const info = infoMatch ? infoMatch[1].replace(/<[^>]*>/g, "").trim() : "";
-      const infoParts = info.split(" - ");
-      const authors = infoParts[0]?.trim() || "";
-      const journalInfo = infoParts[1]?.trim() || "";
-
-      // Snippet/abstract
-      const snippetMatch = block.match(/<div class="gs_rs">([\s\S]*?)<\/div>/);
-      const abstract = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, "").trim() : "";
-
-      // Citation count
-      const citeMatch = block.match(/Cited by (\d+)/);
-      const citationCount = citeMatch ? parseInt(citeMatch[1]) : 0;
-
-      // Year
-      const yearMatch = info.match(/(\d{4})/);
-
-      if (title) {
-        results.push({
-          title,
-          abstract,
-          authors,
-          journal: journalInfo,
-          publishDate: yearMatch ? `${yearMatch[1]}-01-01` : "",
-          doi: "",
-          url,
-          source: "google_scholar",
-          externalId: url,
-          citationCount,
-        });
-      }
-    }
-
-    return results;
-  } catch (error) {
-    console.error("[Google Scholar] Direct HTTP search error:", error);
-    return [];
-  }
-}
-
-/**
- * Main search function — uses SerpAPI if available, falls back to direct HTTP
+ * When no key is present this is a deliberate no-op: we do not scrape
+ * scholar.google.com directly (ToS violation + IP-block risk), so the source
+ * simply returns no results with a warning.
  */
 export async function searchGoogleScholar(
   query: string,
@@ -201,16 +119,18 @@ export async function searchGoogleScholar(
 ): Promise<{ results: ScholarResult[]; total: number; method: string }> {
   const start = (page - 1) * pageSize;
 
-  // Prefer SerpAPI
+  // SerpAPI is the only supported strategy.
   if (process.env.SERPAPI_KEY) {
     const results = await searchViaSerpApi(query, start, pageSize);
     return { results, total: results.length, method: "serpapi" };
   }
 
-  // Fallback to direct HTTP (rate-limited)
-  console.warn("[Google Scholar] No SERPAPI_KEY set. Using direct HTTP (rate-limited, unreliable).");
-  const results = await searchViaDirectHttp(query, start);
-  return { results, total: results.length, method: "direct_http" };
+  // No key: return empty. Direct HTML scraping has been removed.
+  console.warn(
+    "[Google Scholar] SERPAPI_KEY not set — Google Scholar source disabled (returning no results). " +
+      "Configure SERPAPI_KEY to enable Scholar searches.",
+  );
+  return { results: [], total: 0, method: "disabled" };
 }
 
 /**

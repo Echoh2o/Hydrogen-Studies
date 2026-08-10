@@ -8,6 +8,27 @@ declare global {
 }
 
 let gaInitialized = false;
+let ahrefsInitialized = false;
+
+// The Ahrefs Web Analytics site key. Public by design (it ships in the
+// client bundle either way); kept here so the script is only ever attached
+// after consent rather than statically in index.html.
+const AHREFS_DATA_KEY = "rjIt9UY/qFbTPzCzRK8BRg";
+
+// Initialize Ahrefs analytics — only if the user has given consent.
+// Mirrors initGA: previously this loaded unconditionally from index.html,
+// firing before the cookie banner. Now it is attached at runtime and gated.
+export const initAhrefs = () => {
+  if (!hasAnalyticsConsent() || ahrefsInitialized) return;
+  if (typeof document === "undefined") return;
+
+  const script = document.createElement("script");
+  script.src = "https://analytics.ahrefs.com/analytics.js";
+  script.dataset.key = AHREFS_DATA_KEY;
+  script.async = true;
+  document.head.appendChild(script);
+  ahrefsInitialized = true;
+};
 
 // Initialize Google Analytics — only if user has given consent
 export const initGA = () => {
@@ -35,8 +56,9 @@ export const initGA = () => {
 // Re-check consent when cookie preferences change
 if (typeof window !== "undefined") {
   window.addEventListener("cookie-consent-updated", () => {
-    if (hasAnalyticsConsent() && !gaInitialized) {
-      initGA();
+    if (hasAnalyticsConsent()) {
+      if (!gaInitialized) initGA();
+      if (!ahrefsInitialized) initAhrefs();
     }
   });
 }

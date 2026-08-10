@@ -10,7 +10,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HiSearch, HiClock, HiFire, HiBookmark, HiX } from "react-icons/hi";
 import { useQuery } from "@tanstack/react-query";
-import { debounce } from "lodash";
+
+/**
+ * Minimal trailing-edge debounce. Replaces the former `lodash` import,
+ * which was a phantom dependency (resolved only via hoisting) and pulled
+ * the whole library in for one function.
+ */
+function debounce<Args extends unknown[]>(
+  fn: (...args: Args) => void,
+  wait: number,
+): (...args: Args) => void {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  return (...args: Args) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), wait);
+  };
+}
 
 interface SearchAutocompleteProps {
   value: string;

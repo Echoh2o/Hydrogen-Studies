@@ -55,13 +55,26 @@ interface DashboardData {
 }
 
 export default function MyDashboardPage() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   const { data: dashboard, isLoading } = useQuery<DashboardData>({
     queryKey: ["/api/me/dashboard"],
     enabled: !!user,
   });
+
+  // Wait for auth to resolve before deciding between the sign-in wall and the
+  // dashboard, so authenticated users don't see a sign-in flash on cold load.
+  if (isAuthLoading) {
+    return (
+      <>
+      <SiteHeader />
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+      </>
+    );
+  }
 
   if (!user) {
     return (
