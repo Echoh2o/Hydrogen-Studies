@@ -966,6 +966,7 @@ pool.query("SELECT 1").then(async () => {
     const { addRetractionCheckTracking } = await import("./migrations/add-retraction-check-tracking");
     const { addAuditTrackingFields } = await import("./migrations/add-audit-tracking-fields");
     const { addSyndicationFields } = await import("./migrations/add-syndication-fields");
+    const { addTaxonomyAndPasswordReset } = await import("./migrations/add-taxonomy-and-password-reset");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -987,6 +988,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "017_add_retraction_check_tracking", up: addRetractionCheckTracking },
       { name: "018_add_audit_tracking_fields", up: addAuditTrackingFields },
       { name: "019_add_syndication_fields", up: addSyndicationFields },
+      { name: "020_add_taxonomy_and_password_reset", up: addTaxonomyAndPasswordReset },
     ]);
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted

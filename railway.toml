@@ -3,12 +3,18 @@ builder = "nixpacks"
 buildCommand = "npm run build"
 
 [deploy]
-# DB migrations run once per deployment here (not once per instance/restart),
-# with the service's env vars, before the new instance starts. Pre-deploy has
-# no TTY: if drizzle-kit push hits an ambiguous schema diff it fails
-# non-interactively (deploy fails visibly) instead of hanging boot. Resolve
-# such diffs by running `npm run db:push` locally before deploying.
-preDeployCommand = "npm run db:push"
+# NO preDeployCommand: schema changes are applied by the app's own versioned,
+# idempotent boot migrations (server/migrations/*, tracked in the `_migrations`
+# table; see runMigrations in server/app.ts). Those migrations own the live
+# schema — including the runtime-managed full-text `search_vector` column and
+# trigram/GIN search indexes.
+#
+# `drizzle-kit push` was previously run here and is intentionally gone: it
+# reconciles the DB to shared/schema.ts exactly, which does NOT model those
+# runtime-managed objects, so push wants to DROP search_vector (+ its indexes)
+# and rename ~25 FKs. It also can't run unattended — adding a unique constraint
+# to a non-empty table opens an interactive prompt that has no TTY in
+# pre-deploy. To evolve schema, add a new server/migrations/* entry (not push).
 startCommand = "node start-production.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
