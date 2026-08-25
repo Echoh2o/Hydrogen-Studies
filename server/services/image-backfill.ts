@@ -70,6 +70,17 @@ const PLACEHOLDER_URLS = [
   "/images/default-blog-image.svg",
 ];
 
+/**
+ * A Postgres `ARRAY['a','b',...]` literal for use with `= ANY(...)`.
+ * Interpolating the JS array directly renders a param list `($1,$2,$3)`, which
+ * Postgres rejects on the right of `ANY` ("op ANY requires array"); wrapping it
+ * in ARRAY[...] produces the array type the operator expects.
+ */
+const PLACEHOLDER_URL_ARRAY = sql`ARRAY[${sql.join(
+  PLACEHOLDER_URLS.map((url) => sql`${url}`),
+  sql`, `,
+)}]`;
+
 let cleanupPromise: Promise<void> | null = null;
 
 /**
@@ -88,14 +99,14 @@ export function cleanupPlaceholderImageRows(): Promise<void> {
         SET image_url = NULL,
             image_alt = NULL,
             og_image = NULL
-        WHERE image_url = ANY(${PLACEHOLDER_URLS})
+        WHERE image_url = ANY(${PLACEHOLDER_URL_ARRAY})
         RETURNING id
       `);
       const studyResult = await db.execute(sql`
         UPDATE studies
         SET image_url = NULL,
             image_alt = NULL
-        WHERE image_url = ANY(${PLACEHOLDER_URLS})
+        WHERE image_url = ANY(${PLACEHOLDER_URL_ARRAY})
         RETURNING id
       `);
       const blogCount = ((blogResult as any).rows ?? blogResult).length;
@@ -129,7 +140,7 @@ export async function getImageBackfillStats(): Promise<ImageBackfillStats> {
       COUNT(*)::int AS total,
       COUNT(*) FILTER (
         WHERE image_url IS NULL
-        OR image_url = ANY(${PLACEHOLDER_URLS})
+        OR image_url = ANY(${PLACEHOLDER_URL_ARRAY})
       )::int AS missing
     FROM blog_articles
   `).then((r: any) => r.rows ?? r);
@@ -142,7 +153,7 @@ export async function getImageBackfillStats(): Promise<ImageBackfillStats> {
       COUNT(*)::int AS total,
       COUNT(*) FILTER (
         WHERE image_url IS NULL
-        OR image_url = ANY(${PLACEHOLDER_URLS})
+        OR image_url = ANY(${PLACEHOLDER_URL_ARRAY})
       )::int AS missing
     FROM studies
   `).then((r: any) => r.rows ?? r);

@@ -6,10 +6,47 @@
 import cors from "cors";
 
 /**
+ * The app's own canonical origins, derived from platform env vars. These must
+ * ALWAYS be allowed: Vite marks its module scripts `crossorigin`, so browsers
+ * send an `Origin` header even on same-origin asset requests. If the site's own
+ * origin isn't in the allowlist, CORS rejects those requests and the SPA fails
+ * to boot. Deriving them here means a misconfigured/missing ALLOWED_ORIGINS can
+ * never lock the app out of itself.
+ */
+function getSelfOrigins(): string[] {
+  const candidates: string[] = [];
+
+  const appUrl = process.env.APP_URL?.trim();
+  if (appUrl) candidates.push(appUrl);
+
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
+  if (railwayDomain) candidates.push(`https://${railwayDomain}`);
+
+  const origins = new Set<string>();
+  for (const candidate of candidates) {
+    try {
+      const url = new URL(candidate);
+      const host = url.hostname;
+      origins.add(`${url.protocol}//${url.host}`);
+      // Cover apex <-> www so visitors on either variant aren't blocked.
+      if (host.startsWith("www.")) {
+        origins.add(`${url.protocol}//${host.slice(4)}`);
+      } else {
+        origins.add(`${url.protocol}//www.${host}`);
+      }
+    } catch {
+      // Ignore malformed values.
+    }
+  }
+  return [...origins];
+}
+
+/**
  * Gets allowed origins based on environment
  */
 function getAllowedOrigins(): string[] {
   const isProduction = process.env.NODE_ENV === "production";
+  const selfOrigins = getSelfOrigins();
 
   if (isProduction) {
     const allowedOrigins = process.env.ALLOWED_ORIGINS || "";
@@ -19,13 +56,15 @@ function getAllowedOrigins(): string[] {
       console.warn(
         "CORS will be restrictive. Set ALLOWED_ORIGINS environment variable.",
       );
-      return [];
+      return [...selfOrigins];
     }
 
-    return allowedOrigins
+    const configured = allowedOrigins
       .split(",")
       .map((origin) => origin.trim())
       .filter((origin) => origin.length > 0);
+
+    return [...new Set([...configured, ...selfOrigins])];
   } else {
     // Development: Allow localhost origins
     const origins = [
@@ -44,7 +83,8 @@ function getAllowedOrigins(): string[] {
       origins.push(...additionalOrigins);
     }
 
-    return origins;
+    origins.push(...selfOrigins);
+    return [...new Set(origins)];
   }
 }
 
