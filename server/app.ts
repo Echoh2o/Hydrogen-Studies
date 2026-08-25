@@ -368,6 +368,14 @@ function shopifyProxyAuth(
     return next();
   }
 
+  // E2E test hook: the Playwright suite drives /proxy/* directly and cannot
+  // produce Shopify's HMAC signature. This bypass is gated on an explicit
+  // opt-in env var that is set ONLY in CI (.github/workflows/ci.yml) and never
+  // in any deployed environment, so production proxy auth is unaffected.
+  if (process.env.E2E_PROXY_BYPASS === "1") {
+    return next();
+  }
+
   const secret = process.env.SHOPIFY_APP_SECRET;
   if (!secret) {
     // Fail CLOSED in production: a prod deploy with the secret unset (rotation,
@@ -409,17 +417,21 @@ function shopifyProxyAuth(
   return res.status(401).send("Unauthorized");
 }
 
+// E2E runs bypass rate limiting (set only in CI); see rate-limiting.ts.
+const skipRateLimitInE2E = () => process.env.E2E_DISABLE_RATE_LIMIT === "1";
 const proxyRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60, // 60 req/min per IP for HTML pages
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimitInE2E,
 });
 const proxyExportRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5, // 5 CSV downloads per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimitInE2E,
 });
 app.use("/proxy/export", proxyExportRateLimiter);
 app.use("/proxy", shopifyProxyAuth, proxyRateLimiter, proxyRoutes);

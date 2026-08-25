@@ -23,6 +23,16 @@ export const skipForAdmin = (req: Request): boolean => {
 };
 
 /**
+ * Shared skip predicate for all limiters: bypass entirely when E2E_DISABLE_RATE_LIMIT
+ * is set (Playwright drives hundreds of same-IP requests and its HeadlessChrome UA
+ * trips isBot(), so the page-GET limiter would 429 the SPA shell mid-run). This env
+ * var is set ONLY in CI (.github/workflows/ci.yml), never in a deployed environment.
+ * Otherwise defer to the admin skip.
+ */
+const skipRateLimit = (req: Request): boolean =>
+  process.env.E2E_DISABLE_RATE_LIMIT === "1" || skipForAdmin(req);
+
+/**
  * Strictest rate limit for AI/Generation endpoints
  * 5 requests per minute per IP
  */
@@ -34,7 +44,7 @@ export const aiGenerationRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   handler: rateLimitHandler,
-  skip: skipForAdmin,
+  skip: skipRateLimit,
 });
 
 /**
@@ -52,7 +62,7 @@ export const aiSearchRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
-  skip: skipForAdmin,
+  skip: skipRateLimit,
 });
 
 /**
@@ -70,7 +80,7 @@ export const nlSuggestionsRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
-  skip: skipForAdmin,
+  skip: skipRateLimit,
 });
 
 /**
@@ -85,7 +95,7 @@ export const searchRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
-  skip: skipForAdmin,
+  skip: skipRateLimit,
 });
 
 /**
@@ -108,6 +118,7 @@ export const generalApiRateLimiter = rateLimit({
       retryAfter: res.getHeader("Retry-After"),
     });
   },
+  skip: skipRateLimit,
 });
 
 /**
@@ -122,7 +133,7 @@ export const imageGenerationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
-  skip: skipForAdmin,
+  skip: skipRateLimit,
 });
 
 /**
@@ -137,7 +148,7 @@ export const blogGenerationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
-  skip: skipForAdmin,
+  skip: skipRateLimit,
 });
 
 /**
@@ -155,6 +166,7 @@ export function createCustomRateLimiter(
     standardHeaders: true,
     legacyHeaders: false,
     handler: rateLimitHandler,
+    skip: skipRateLimit,
   });
 }
 
@@ -170,6 +182,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  skip: skipRateLimit,
 });
 
 // Export rate limit configurations for logging/monitoring
