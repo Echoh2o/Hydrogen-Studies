@@ -91,6 +91,16 @@ jobs:
       # so its same-origin API writes carry Origin: http://localhost:5000 and
       # were all blocked ("Not allowed by CORS"). Allowlist the test origin.
       ALLOWED_ORIGINS: http://localhost:5000
+      # Bypass Shopify App Proxy HMAC verification for /proxy/* so the E2E suite
+      # can drive those routes directly (it can't forge Shopify's signature).
+      # Read ONLY by shopifyProxyAuth in server/app.ts; set ONLY here in CI,
+      # never in any deployed environment.
+      E2E_PROXY_BYPASS: "1"
+      # Disable rate limiting during E2E: Playwright drives hundreds of same-IP
+      # requests and its HeadlessChrome UA trips isBot(), so the page-GET limiter
+      # would 429 the SPA shell mid-run. Read only by the limiters' skip
+      # predicate; set ONLY here in CI, never in a deployed environment.
+      E2E_DISABLE_RATE_LIMIT: "1"
       NODE_ENV: test
 
     steps:
@@ -109,6 +119,12 @@ jobs:
 
       - name: Push database schema
         run: npm run db:push
+
+      - name: Seed test data
+        # E2E asserts on real content (study/blog listings, detail pages,
+        # search, proxy sitemap/CSV). Seed a deterministic dataset so those
+        # tests exercise populated pages instead of empty-state fallbacks.
+        run: npm run db:seed
 
       - name: Build
         run: npm run build
