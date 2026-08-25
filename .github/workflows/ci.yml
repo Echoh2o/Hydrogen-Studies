@@ -85,6 +85,12 @@ jobs:
       # E2E tests" step), and the production guard rejects shorter secrets —
       # which crashed the Playwright webServer on startup before any test ran.
       SESSION_SECRET: 217b9cbb59d60f45f3ea428a2fedb37b01767849c3d4d9f8
+      # The E2E server runs with NODE_ENV=production, whose CORS policy rejects
+      # any origin not on the allowlist (it does NOT auto-allow localhost the
+      # way development mode does). Playwright drives the app at localhost:5000,
+      # so its same-origin API writes carry Origin: http://localhost:5000 and
+      # were all blocked ("Not allowed by CORS"). Allowlist the test origin.
+      ALLOWED_ORIGINS: http://localhost:5000
       NODE_ENV: test
 
     steps:
