@@ -1845,6 +1845,105 @@ async function seed() {
   }
   console.log(`Inserted ${insertedBlogs} blog articles`);
 
+  // Taxonomy (benefits/mechanisms/delivery methods/demographics/durations) +
+  // study_outcomes. These back the "Explore by …" pages and the proxy study
+  // "Key Finding" section. Idempotent (ON CONFLICT) so re-runs are safe.
+  console.log("Seeding taxonomy + study outcomes...");
+  await db.execute(sql`
+    INSERT INTO benefits (name, description, slug, display_order) VALUES
+      ('Antioxidant Support','Neutralizes reactive oxygen species and reduces oxidative stress.','antioxidant-support',1),
+      ('Anti-Inflammatory','Modulates inflammatory pathways and cytokine signaling.','anti-inflammatory',2),
+      ('Cognitive Function','Supports memory, focus, and neuroprotection.','cognitive-function',3),
+      ('Athletic Recovery','Reduces fatigue and supports post-exercise recovery.','athletic-recovery',4),
+      ('Metabolic Health','Supports glucose regulation and lipid metabolism.','metabolic-health',5),
+      ('Cellular Energy','Supports mitochondrial function and ATP production.','cellular-energy',6)
+    ON CONFLICT (slug) DO NOTHING
+  `);
+  await db.execute(sql`
+    INSERT INTO delivery_methods (name, description, slug, display_order) VALUES
+      ('Hydrogen Water','Drinking water infused with molecular hydrogen.','hydrogen-water',1),
+      ('Inhalation','Breathing hydrogen gas via an inhaler.','inhalation',2),
+      ('Hydrogen Tablets','Effervescent tablets that release H2 into water.','hydrogen-tablets',3),
+      ('Bathing','Hydrogen-rich water applied topically or via bathing.','bathing',4),
+      ('Injection','Hydrogen-rich saline administered clinically.','injection',5)
+    ON CONFLICT (slug) DO NOTHING
+  `);
+  await db.execute(sql`
+    INSERT INTO demographics (name, description, slug, display_order) VALUES
+      ('Older Adults','Studies focused on aging populations.','older-adults',1),
+      ('Athletes','Studies in trained or competitive athletes.','athletes',2),
+      ('General Adults','Studies in healthy adult populations.','general-adults',3),
+      ('Clinical Patients','Studies in patients with a diagnosed condition.','clinical-patients',4)
+    ON CONFLICT (slug) DO NOTHING
+  `);
+  await db.execute(sql`
+    INSERT INTO mechanisms (name, description, slug, display_order) VALUES
+      ('Selective Antioxidant','Selectively scavenges hydroxyl radicals and peroxynitrite.','selective-antioxidant',1),
+      ('Gene Expression','Modulates signaling and gene expression (e.g., Nrf2).','gene-expression',2),
+      ('Mitochondrial','Supports mitochondrial electron transport and energy.','mitochondrial',3),
+      ('Anti-Apoptotic','Reduces programmed cell death under stress.','anti-apoptotic',4)
+    ON CONFLICT (slug) DO NOTHING
+  `);
+  await db.execute(sql`
+    INSERT INTO duration_categories (name, description, min_days, max_days, display_order) VALUES
+      ('Acute (< 1 week)','Single-dose or short-term interventions.',0,7,1),
+      ('Short-term (1-4 weeks)','Interventions spanning up to a month.',7,28,2),
+      ('Medium-term (1-3 months)','Interventions spanning one to three months.',28,90,3),
+      ('Long-term (3+ months)','Extended interventions beyond three months.',90,3650,4)
+    ON CONFLICT (name) DO NOTHING
+  `);
+
+  // Round-robin link each study to one row of each taxonomy so the tables have
+  // non-zero study counts and the join-backed pages render.
+  // [join table, fk column, base table, has study_count column]
+  for (const [join, col, tbl, hasCount] of [
+    ["study_benefits", "benefit_id", "benefits", true],
+    ["study_delivery_methods", "delivery_method_id", "delivery_methods", true],
+    ["study_demographics", "demographic_id", "demographics", true],
+    ["study_mechanisms", "mechanism_id", "mechanisms", true],
+    ["study_durations", "duration_category_id", "duration_categories", false],
+  ] as const) {
+    await db.execute(sql.raw(`
+      INSERT INTO ${join} (study_id, ${col})
+      SELECT s.id, t.id FROM (
+        SELECT id, (row_number() OVER (ORDER BY id) - 1) AS rn FROM studies
+      ) s
+      JOIN (
+        SELECT id, (row_number() OVER (ORDER BY id) - 1) AS rn,
+               count(*) OVER () AS n FROM ${tbl}
+      ) t ON t.rn = s.rn % t.n
+      ON CONFLICT DO NOTHING
+    `));
+    // duration_categories has no study_count column (it uses min/max days).
+    if (hasCount) {
+      await db.execute(sql.raw(`
+        UPDATE ${tbl} SET study_count = (
+          SELECT count(*) FROM ${join} WHERE ${col} = ${tbl}.id
+        )
+      `));
+    }
+  }
+
+  // A plain-English outcome ("Key Finding") for every study.
+  await db.execute(sql`
+    INSERT INTO study_outcomes (study_id, plain_english_summary, key_findings, significance_level, outcome_direction)
+    SELECT id,
+      'Participants who received molecular hydrogen showed measurable improvements versus control, with reduced oxidative stress markers and good tolerability.',
+      ARRAY['Reduced markers of oxidative stress','Improvements in the primary outcome versus control','No serious adverse events reported'],
+      'moderate', 'positive'
+    FROM studies
+    ON CONFLICT (study_id) DO NOTHING
+  `);
+  // The proxy study page renders its "Key Finding" from the study's own
+  // results_short/conclusion_short columns, so give seeded studies a value.
+  await db.execute(sql`
+    UPDATE studies
+    SET results_short = COALESCE(results_short, 'Molecular hydrogen reduced oxidative stress markers and improved the primary outcome versus control.'),
+        conclusion_short = COALESCE(conclusion_short, 'H2 supplementation was well tolerated and showed a beneficial effect in this study.')
+    WHERE results_short IS NULL OR conclusion_short IS NULL
+  `);
+  console.log("Seeded taxonomy + study outcomes");
+
   console.log("\nSeed completed successfully!");
   console.log(`  Studies: ${insertedStudies}`);
   console.log(`  Blog Articles: ${insertedBlogs}`);

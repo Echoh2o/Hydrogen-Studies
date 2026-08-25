@@ -24,7 +24,9 @@ test.describe("End-to-End Navigation Flows", () => {
     if (await benefitsLink.isVisible()) {
       await benefitsLink.click();
       await page.waitForLoadState("networkidle");
-      expect(page.url()).toContain("/benefits");
+      // A "benefits" link may point at /benefits (which now redirects to the
+      // real /learn page) or straight at /learn — accept either destination.
+      expect(page.url()).toMatch(/\/benefits|\/learn/);
 
       // Click a "browse studies" or similar link
       const browseLink = page.locator('a[href*="/studies"], a[href*="/search"]').first();
