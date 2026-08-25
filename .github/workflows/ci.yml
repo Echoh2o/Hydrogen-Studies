@@ -80,7 +80,11 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/hydrogen_test
-      SESSION_SECRET: ci-e2e-session-secret
+      # Throwaway CI-only secret (ephemeral CI Postgres, never prod). Must be
+      # >=32 chars: the E2E server runs with NODE_ENV=production (see the "Run
+      # E2E tests" step), and the production guard rejects shorter secrets —
+      # which crashed the Playwright webServer on startup before any test ran.
+      SESSION_SECRET: 217b9cbb59d60f45f3ea428a2fedb37b01767849c3d4d9f8
       NODE_ENV: test
 
     steps:
