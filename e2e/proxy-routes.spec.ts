@@ -272,7 +272,8 @@ test.describe("Proxy Routes — Condition Page (GET /proxy/condition/:slug)", ()
     // Title format is "Hydrogen & <condition name>"
     expect(html).toContain("Hydrogen &amp;");
     // Should show study count: "<N> study/studies found for this condition"
-    expect(html).toMatch(/\d+ stud(y|ies) found for this condition/);
+    // The count is wrapped in <strong>, so allow markup between number and unit.
+    expect(html).toMatch(/\d+<\/strong>\s*stud(y|ies) found for this condition/);
   });
 
   test("has study cards", async ({ request }) => {

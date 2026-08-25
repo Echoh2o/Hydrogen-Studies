@@ -87,8 +87,10 @@ test.describe("API Endpoints", () => {
     expect([200, 404]).toContain(response.status());
   });
 
-  test("GET /api/search/advanced works", async ({ request }) => {
-    const response = await request.get("/api/search/advanced?search=hydrogen&limit=5");
+  test("GET /api/advanced-search works", async ({ request }) => {
+    // The advanced search endpoint is mounted at /api/advanced-search
+    // (searchController.router), not /api/search/advanced.
+    const response = await request.get("/api/advanced-search?search=hydrogen&limit=5");
     expect(response.status()).toBe(200);
     const data = await response.json();
     expect(data).toBeTruthy();

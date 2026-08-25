@@ -1025,8 +1025,11 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
 
       ${await (async () => {
         // Fetch related blog articles about this condition's studies
+        // created_at is in the SELECT list because Postgres requires ORDER BY
+        // expressions to appear there under SELECT DISTINCT. It's constant per
+        // blog, so it doesn't change which rows are deduped.
         const blogRows = await executeRawQuery(`
-          SELECT DISTINCT b.title, b.slug, b.summary, b.article_type
+          SELECT DISTINCT b.title, b.slug, b.summary, b.article_type, b.created_at
           FROM blog_articles b
           JOIN studies s ON s.id = b.study_id
           JOIN study_health_conditions shc ON shc.study_id = s.id

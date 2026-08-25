@@ -4,8 +4,8 @@ test.describe("Public Pages - Navigation & Rendering", () => {
   test("homepage loads with key elements", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/hydrogen/i);
-    // Header should be visible
-    await expect(page.locator("header")).toBeVisible();
+    // Site header is a sticky <nav> (SiteHeader.tsx), not a <header> element.
+    await expect(page.locator("nav").first()).toBeVisible();
     // Should have navigation links
     await expect(page.getByRole("link", { name: /studies/i }).first()).toBeVisible();
   });
@@ -208,9 +208,11 @@ test.describe("Legacy Route Redirects", () => {
     expect(page.url()).toContain("/recommendations");
   });
 
-  test("/learn redirects to about", async ({ page }) => {
+  test("/learn loads as a real page", async ({ page }) => {
+    // /learn used to redirect to /about; it is now a real page (see App.tsx).
     await page.goto("/learn");
     await page.waitForLoadState("networkidle");
-    expect(page.url()).toContain("/about");
+    expect(page.url()).toContain("/learn");
+    await expect(page.locator("body")).toContainText(/hydrogen|learn|basics|research/i);
   });
 });
