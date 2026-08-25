@@ -297,6 +297,24 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Medical Disclaimer */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="flex items-start gap-3 rounded-lg bg-gray-800/50 p-4 text-xs text-gray-400 leading-relaxed">
+            <Shield className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <p>
+              <span className="font-semibold text-gray-300">Medical Disclaimer:</span>{" "}
+              The information on this website is for educational and informational purposes only and is
+              not intended as medical advice, diagnosis, or treatment. The research presented represents
+              published scientific studies; individual results may vary. Always consult a qualified
+              healthcare provider before making health decisions. Hydrogen Studies is not affiliated with
+              any medical institution.{" "}
+              <Link href="/disclaimer" className="text-teal-400 hover:text-teal-300 underline transition-colors">
+                Read our full medical disclaimer
+              </Link>.
+            </p>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">

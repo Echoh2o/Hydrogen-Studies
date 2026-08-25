@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, lazy, Suspense, startTransition } from "react";
 import CookieConsent from "@/components/ui/cookie-consent";
-import MedicalDisclaimer from "@/components/MedicalDisclaimer";
 import { initGA, initAhrefs } from "./lib/analytics";
 import { initErrorTracking, trackError } from "./lib/error-tracking";
 import { useAnalytics } from "./hooks/use-analytics";
@@ -650,7 +649,6 @@ function App() {
           </a>
           <div className="flex min-h-screen flex-col">
             {!isAdminRoute && <CookieConsent />}
-            {!isAdminRoute && <MedicalDisclaimer />}
             <main id="main-content" className={`flex-1 ${isAdminRoute ? "p-0" : ""}`}>
               <AsyncErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
