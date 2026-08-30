@@ -162,8 +162,10 @@ router.put("/update-journal-date/:doi", requireAdmin, async (req, res) => {
       });
     }
 
-    // Get article data from CrossRef
-    const articleData = await getCrossRefArticleByDOI(doi);
+    // Get article data from CrossRef — unwrap the {status, message} envelope;
+    // `published`/`published-print` live under .message (reading them off the
+    // envelope meant this endpoint never found a date).
+    const articleData = (await getCrossRefArticleByDOI(doi))?.message;
 
     if (!articleData) {
       return res.status(404).json({

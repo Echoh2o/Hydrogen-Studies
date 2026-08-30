@@ -439,20 +439,30 @@ async function generateSingleBlogContent(
 
     const systemPrompt = `You are an expert medical content writer. Write concise, engaging content about hydrogen therapy research.`;
 
+    // Sonnet (wrapper default), not Haiku: this writes a full 600-1,200-word
+    // user-facing article — Haiku is for extraction/parsing per the tier
+    // policy, and its output here read as noticeably "dumb". 4096 tokens so
+    // an 800-1,200-word piece isn't truncated mid-sentence (2048 was too
+    // small for the prompt's own spec); 150s race accommodates the provider
+    // wrapper's 120s long-form budget.
     const contentResponse = await Promise.race([
       ai.generateText(systemPrompt, contentPrompt, {
         temperature: 0.7,
-        maxTokens: 2048,
-        model: "claude-haiku-4-5",
+        maxTokens: 4096,
+        caller: "BlogRecommendation.article",
       }),
       new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error("AI provider timeout")), 45000),
+        setTimeout(() => reject(new Error("AI provider timeout")), 150000),
       ),
     ]);
 
-    const content =
-      contentResponse ||
-      `This is a ${articleType} article about ${study.title}. ${study.abstract || "Research findings on hydrogen therapy applications."}`;
+    // No canned fallback: persisting "This is a ${articleType} article about…"
+    // boilerplate as if it were the article is exactly the "dumb content" bug.
+    // Throw instead — the caller's per-type catch records the failure honestly.
+    if (!contentResponse || !contentResponse.trim()) {
+      throw new Error("AI returned empty article content");
+    }
+    const content = contentResponse;
 
     // Generate optimized metadata quickly
     const baseTitle = `${study.title.split(" ").slice(0, 8).join(" ")}`;
@@ -479,21 +489,10 @@ async function generateSingleBlogContent(
     return result;
   } catch (error) {
     console.error("Error generating blog content:", error);
-    // Return simple fallback content
-    const baseTitle = study.title.split(" ").slice(0, 8).join(" ");
-    return {
-      title:
-        baseTitle.length > 60 ? baseTitle.substring(0, 60) + "..." : baseTitle,
-      slug: baseTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .substring(0, 60),
-      summary: `Research findings on ${study.title.toLowerCase().substring(0, 100)}...`,
-      content: `This study titled "${study.title}" presents important findings in ${study.category}. ${study.abstract || "The research contributes to our understanding of hydrogen therapy applications."}`,
-      articleType: articleType,
-      readingLevel: readingLevel,
-    };
+    // Propagate — the caller records the failure per article type. Returning
+    // two-sentence template text here used to ship boilerplate as a real
+    // "generated" article, which is worse than an honest failure.
+    throw error;
   }
 }
 

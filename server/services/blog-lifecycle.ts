@@ -15,7 +15,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { blogArticles, blogGenerationJobs } from "@shared/schema";
-import { eq, and, lte, isNotNull } from "drizzle-orm";
+import { eq, and, lte, isNotNull, asc } from "drizzle-orm";
 import { logger } from "../utils/logger";
 
 const TAG = "BlogLifecycle";
@@ -72,13 +72,30 @@ export function ensureBlogLifecycleColumns(): Promise<void> {
  * makes the explicit decision to continue. If we auto-resumed and the
  * crash was caused by a poison row, we'd just crash again.
  */
+/**
+ * Marker written when a restart interrupts a running job. autoResume below
+ * matches on this exact prefix, and encodes its attempt counter after it —
+ * keep the two in sync.
+ */
+const RESTART_MARKER = "Worker was interrupted (server restart). Resume to continue.";
+/** Give up auto-resuming after this many restart interruptions (poison-input guard). */
+const MAX_AUTO_RESUMES = 3;
+
 export async function recoverStuckBlogJobs(): Promise<void> {
   try {
     const result = await db
       .update(blogGenerationJobs)
       .set({
         status: "paused",
-        lastError: "Worker was interrupted (server restart). Resume to continue.",
+        // Preserve+increment the interruption counter across restarts:
+        // "…Resume to continue. [interruption N]". autoResumeInterruptedBlogJobs
+        // parses N and stops resuming after MAX_AUTO_RESUMES so a job whose
+        // input crashes the process can't restart-loop forever.
+        lastError: sql`${RESTART_MARKER} || ' [interruption ' || (
+          CASE WHEN ${blogGenerationJobs.lastError} LIKE ${RESTART_MARKER + "%"}
+            THEN COALESCE(NULLIF(regexp_replace(${blogGenerationJobs.lastError}, '[^0-9]', '', 'g'), ''), '0')::int
+            ELSE 0
+          END + 1) || ']'`,
         updatedAt: new Date(),
       })
       .where(eq(blogGenerationJobs.status, "running"))
@@ -93,6 +110,78 @@ export async function recoverStuckBlogJobs(): Promise<void> {
     }
   } catch (err) {
     logger.error("Failed to recover stuck blog jobs", err, TAG);
+  }
+}
+
+/**
+ * Auto-resume blog-generation jobs that were paused by a server restart, and
+ * start the oldest still-pending job when the worker is idle.
+ *
+ * Why: recoverStuckBlogJobs() pauses running jobs on EVERY boot, and with a
+ * frequent deploy cadence a long job could never finish — it sat "paused"
+ * until an admin happened to visit /admin/jobs. Similarly, a job created
+ * while the single-flight worker was busy stayed "pending" forever because
+ * nothing polls the table. Called from the scheduler fast loop (5 min).
+ *
+ * Poison-input guard: a job interrupted more than MAX_AUTO_RESUMES times is
+ * left paused for a human — its lastError carries the interruption count.
+ * The worker is single-flight, so at most one job is (re)started per tick;
+ * startJob() itself refuses when busy.
+ */
+export async function autoResumeInterruptedBlogJobs(): Promise<{ resumed: number }> {
+  try {
+    // Lazy import to keep this module free of a static cycle with the worker.
+    const { startJob } = await import("./blog-generation-worker");
+
+    const interrupted = await db
+      .select()
+      .from(blogGenerationJobs)
+      .where(
+        and(
+          eq(blogGenerationJobs.status, "paused"),
+          sql`${blogGenerationJobs.lastError} LIKE ${RESTART_MARKER + "%"}`,
+        ),
+      )
+      .orderBy(asc(blogGenerationJobs.id));
+
+    for (const job of interrupted) {
+      const attempts = parseInt(job.lastError?.match(/interruption (\d+)/)?.[1] ?? "1", 10);
+      if (attempts > MAX_AUTO_RESUMES) {
+        logger.warn(
+          `Blog job #${job.id} interrupted ${attempts}x — leaving paused for manual review`,
+          TAG,
+        );
+        continue;
+      }
+      const res = await startJob(job.id);
+      if (res.success) {
+        logger.info(`Auto-resumed restart-interrupted blog job #${job.id}`, TAG, {
+          attempt: attempts,
+        });
+        return { resumed: 1 };
+      }
+      // Worker busy — no point trying further jobs this tick.
+      return { resumed: 0 };
+    }
+
+    // Nothing interrupted to resume — drain the oldest pending job, if any.
+    const [pending] = await db
+      .select()
+      .from(blogGenerationJobs)
+      .where(eq(blogGenerationJobs.status, "pending"))
+      .orderBy(asc(blogGenerationJobs.id))
+      .limit(1);
+    if (pending) {
+      const res = await startJob(pending.id);
+      if (res.success) {
+        logger.info(`Started pending blog job #${pending.id} from queue poller`, TAG);
+        return { resumed: 1 };
+      }
+    }
+    return { resumed: 0 };
+  } catch (err) {
+    logger.error("Auto-resume of blog jobs failed", err, TAG);
+    return { resumed: 0 };
   }
 }
 

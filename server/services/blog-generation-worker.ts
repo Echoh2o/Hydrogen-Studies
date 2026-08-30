@@ -19,7 +19,11 @@ let tableExists: boolean | null = null; // cached after first check
 
 // Configurable settings
 const DELAY_BETWEEN_ARTICLES_MS = 2000; // 2s between articles to avoid rate limits
-const AI_TIMEOUT_MS = 30000; // 30s timeout for AI calls
+// 150s (was 30s): a 4096-token Sonnet article routinely takes 40-90s; at 30s
+// every generation raced its own timeout, so jobs "completed" with
+// failedItems == totalItems and zero articles saved. The provider wrapper
+// itself allows 120s for long-form calls — this must exceed that.
+const AI_TIMEOUT_MS = 150000;
 const MAX_RETRIES = 2;
 
 /**
@@ -486,7 +490,11 @@ Write 800-1200 words with clear sections. Include: Introduction, Key Findings, P
       content = await Promise.race([
         ai.generateText(systemPrompt, userPrompt, {
           temperature: 0.7,
-          maxTokens: 2048,
+          // 4096 (was 2048): the prompt asks for 800-1,200 words of sectioned
+          // HTML, which overflows 2048 tokens — articles were being saved
+          // truncated mid-sentence/mid-tag.
+          maxTokens: 4096,
+          caller: "BlogGenerationWorker.article",
         }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("AI timeout")), AI_TIMEOUT_MS),

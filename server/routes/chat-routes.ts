@@ -46,7 +46,10 @@ router.post("/chat", async (req, res) => {
         aiResponse = await generateAIResponse(query, relevantStudies);
       } catch (error) {
         console.error("Error generating AI response, using fallback:", error);
-        aiResponse = generateFallbackResponse(query, relevantStudies);
+        // Honest degraded mode — see the advanced-chat handler for rationale.
+        aiResponse =
+          `*Our AI assistant couldn't generate a full answer right now — here are the most relevant studies from our database instead:*\n\n` +
+          generateFallbackResponse(query, relevantStudies);
       }
     } else {
       aiResponse = generateFallbackResponse(query, relevantStudies);
@@ -342,15 +345,21 @@ router.post("/advanced-chat", async (req, res) => {
           temperature: 0.7,
         });
 
+        // When the AI answer is missing/failed, serve the study-list fallback
+        // but SAY SO — presenting canned template text as if it were the
+        // assistant's answer erodes trust far more than an honest notice.
         aiResponse =
           response ||
-          generateFallbackResponse(query, relevantStudies);
+          `*Our AI assistant couldn't generate a full answer right now — here are the most relevant studies from our database instead:*\n\n` +
+            generateFallbackResponse(query, relevantStudies);
       } catch (error) {
         console.error(
           "Error generating advanced AI response, using fallback:",
           error,
         );
-        aiResponse = generateFallbackResponse(query, relevantStudies);
+        aiResponse =
+          `*Our AI assistant couldn't generate a full answer right now — here are the most relevant studies from our database instead:*\n\n` +
+          generateFallbackResponse(query, relevantStudies);
       }
     } else {
       aiResponse = generateFallbackResponse(query, relevantStudies);

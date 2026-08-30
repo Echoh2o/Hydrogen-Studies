@@ -5,7 +5,7 @@
  * Note: CrossRef recommends identifying your application with a proper User-Agent header
  * to prevent being rate-limited as anonymous users.
  */
-import { externalApi } from "../utils/http";
+import { externalApi, describeHttpError } from "../utils/http";
 
 // Base URL for CrossRef API
 const CROSSREF_API_BASE_URL = "https://api.crossref.org";
@@ -37,7 +37,7 @@ export async function searchCrossRef(
 
     return response.data;
   } catch (error) {
-    console.error(`Error searching CrossRef for query "${query}":`, error);
+    console.error(`Error searching CrossRef for query "${query}": ${describeHttpError(error)}`);
     throw error;
   }
 }
@@ -64,7 +64,9 @@ export async function getCrossRefArticleByDOI(doi: string): Promise<any> {
 
     return response.data;
   } catch (error) {
-    console.error(`Error fetching CrossRef data for DOI ${doi}:`, error);
+    // A 404 here is routine (DOI not indexed by CrossRef) — one concise line,
+    // not the full axios object.
+    console.error(`Error fetching CrossRef data for DOI ${doi}: ${describeHttpError(error)}`);
     throw error;
   }
 }

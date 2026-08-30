@@ -99,7 +99,9 @@ export async function updateJournalPublicationDates(
 async function findJournalPublicationDate(doi: string): Promise<string | null> {
   // Try CrossRef first
   try {
-    const crossRefData = await getCrossRefArticleByDOI(doi);
+    // Unwrap the CrossRef envelope — published/created date-parts live under
+    // .message; reading them off the envelope always returned null.
+    const crossRefData = (await getCrossRefArticleByDOI(doi))?.message;
     const crossRefDate = extractCrossRefDate(crossRefData);
     if (crossRefDate) {
       return crossRefDate;

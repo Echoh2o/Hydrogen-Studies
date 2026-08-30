@@ -499,7 +499,10 @@ export class JobScheduler {
         const start = Date.now();
         await this.withTimeout(
           () => this.runPipelineProcessingJob(),
-          3 * 60 * 1000,
+          // 6 min (was 3): headroom for MAX_ITEMS_PER_CYCLE items × 6 AI steps
+          // so a slow-but-healthy run isn't reported as a timeout (see the 16
+          // Sentry "Job timed out after 180000ms" events).
+          6 * 60 * 1000,
           "pipeline-processing",
           () => { this.lastPipelineProcessingCheck = new Date(); }
         );
@@ -823,6 +826,28 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 23 (stale-job-recovery) unexpected error", error, "JobScheduler");
+      }
+
+      // Job 24: Blog-job resume/poller — restarts jobs paused by a deploy
+      // (deploys pause every running job; without this, only a manual visit
+      // to /admin/jobs could resume them) and drains pending jobs when the
+      // worker is idle. Cheap; startJob() itself refuses when busy.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          async () => {
+            const { autoResumeInterruptedBlogJobs } = await import("./blog-lifecycle");
+            await autoResumeInterruptedBlogJobs();
+          },
+          60 * 1000,
+          "blog-jobs-resume"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "blog-jobs-resume" });
+        }
+      } catch (error) {
+        logger.error("Job 24 (blog-jobs-resume) unexpected error", error, "JobScheduler");
       }
 
       // Job 13: Content Generation Queue — heaviest fast-loop job (10-min

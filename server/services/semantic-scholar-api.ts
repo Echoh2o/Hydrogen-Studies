@@ -7,6 +7,7 @@
  */
 
 import axios from "axios";
+import { describeHttpError } from "../utils/http";
 import type { InsertStudy } from "@shared/schema";
 
 // Using public Semantic Scholar API without authentication
@@ -47,8 +48,12 @@ export async function getSemanticScholarPaper(doi: string): Promise<any> {
       `https://api.semanticscholar.org/graph/v1/paper/DOI:${doi}`,
       {
         params: {
+          // NOTE: do NOT request `sections`, `figures`, or `equations` — the
+          // S2 Graph API rejects them ("Unrecognized or unsupported fields",
+          // HTTP 400, verified live), which made EVERY call here fail and
+          // return null since the fields were added.
           fields:
-            "title,abstract,url,journal,year,authors,venue,publicationDate,referenceCount,citationCount,influentialCitationCount,tldr,publicationTypes,publicationVenue,fieldsOfStudy,s2FieldsOfStudy,paperId,externalIds,isOpenAccess,openAccessPdf,citationStyles,embedding,sections,figures,equations",
+            "title,abstract,url,journal,year,authors,venue,publicationDate,referenceCount,citationCount,influentialCitationCount,tldr,publicationTypes,publicationVenue,fieldsOfStudy,s2FieldsOfStudy,paperId,externalIds,isOpenAccess,openAccessPdf,citationStyles,embedding",
         },
         headers: {},
         timeout: 10000,
@@ -58,8 +63,7 @@ export async function getSemanticScholarPaper(doi: string): Promise<any> {
     return response.data;
   } catch (error) {
     console.error(
-      `Error fetching paper from Semantic Scholar by DOI ${doi}:`,
-      error,
+      `Error fetching paper from Semantic Scholar by DOI ${doi}: ${describeHttpError(error)}`,
     );
     return null;
   }
@@ -95,7 +99,7 @@ export async function searchSemanticScholar(
 
     return response.data;
   } catch (error) {
-    console.error(`Error searching Semantic Scholar for "${query}":`, error);
+    console.error(`Error searching Semantic Scholar for "${query}": ${describeHttpError(error)}`);
     return { data: [], total: 0, offset, next: null };
   }
 }

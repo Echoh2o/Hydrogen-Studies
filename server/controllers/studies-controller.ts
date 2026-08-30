@@ -796,6 +796,23 @@ export class StudiesController {
           // article (see its contract) — re-inserting here collided on the
           // unique slug and made the endpoint always report saved: 0. The
           // returned rows are the saved rows.
+          //
+          // Zero articles is a FAILURE, not a success: the old unconditional
+          // success:true made the UI toast "generated successfully — Created 0
+          // blog posts" while the errors array went unrendered.
+          if (result.articles.length === 0) {
+            return res.status(502).json({
+              success: false,
+              articles: [],
+              generated: 0,
+              saved: 0,
+              errors: result.errors,
+              warnings: result.warnings,
+              error:
+                result.errors?.[0]?.error ||
+                "Blog generation produced no articles — check server logs",
+            });
+          }
           res.json({
             success: true,
             articles: result.articles,

@@ -84,7 +84,11 @@ export async function enhanceStudyContent(
     // Try CrossRef first
     try {
       logger.info("Fetching CrossRef data", "ContentEnrichment", { doi: study.doi });
-      const crossRefData = await getCrossRefArticleByDOI(study.doi);
+      // CrossRef returns an envelope {status, "message-type", message: {...}};
+      // the article fields (abstract, URL, title, ...) live under .message.
+      // Reading them off the envelope directly (the old code) yielded undefined
+      // on every call, so CrossRef contributed zero data to enrichment.
+      const crossRefData = (await getCrossRefArticleByDOI(study.doi))?.message;
 
       if (crossRefData && crossRefData.abstract) {
         if (

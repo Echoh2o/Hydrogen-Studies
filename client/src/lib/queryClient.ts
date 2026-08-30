@@ -36,17 +36,33 @@ async function throwIfResNotOk(res: Response) {
   throw new ApiError(res.status, message, parsed ?? raw);
 }
 
+/**
+ * AI-generation endpoints run for minutes, not seconds. The blanket 30s abort
+ * used to kill every "Generate"/"Enrich" request client-side (while the server
+ * kept working and saved results invisibly later) — the admin only ever saw a
+ * failure toast. Mirror of the server-side allowlist in
+ * server/utils/error-handler.ts (LONG_RUNNING_PATH_RE); keep the two in sync.
+ */
+const LONG_RUNNING_PATH_RE =
+  /^\/api\/(studies\/[^/]+\/generate|studies\/generate|blogs\/(generate|improve)|multi-format\/|content-enrichment\/|enrichment\/|doi\/enhance|seo\/|image-generation\/|images\/generate|content-optimization\/|review-assistant\/|blog-recommendations\/)/;
+const DEFAULT_TIMEOUT_MS = 30_000;
+const LONG_RUNNING_TIMEOUT_MS = 10 * 60 * 1000;
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
   throwOnError: boolean = true,
+  timeoutMs?: number,
 ): Promise<Response> {
   // Make sure method is a valid HTTP method
   const validMethod = method.toUpperCase();
 
+  const effectiveTimeout =
+    timeoutMs ??
+    (LONG_RUNNING_PATH_RE.test(url) ? LONG_RUNNING_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+  const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
   const res = await fetch(url, {
     method: validMethod,

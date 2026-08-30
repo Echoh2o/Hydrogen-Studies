@@ -156,13 +156,16 @@ export async function generatePillarPage(cluster: TopicCluster): Promise<Generat
   }
 
   // Build study summaries for the prompt
+  // Null-guard every interpolation: `s.authors?.substring(...)` renders the
+  // literal string "undefined" into the evidence block when the field is null,
+  // polluting the source material the article is generated from.
   const studySummaries = relatedStudies.map((s, i) => {
     const link = s.slug ? `/study/${s.slug}` : `/study/id/${s.id}`;
     return `[Study ${i + 1}] "${s.plainLanguageTitle || s.title}" (${s.publishYear || "N/A"})
-    Authors: ${s.authors?.substring(0, 100)}
-    Journal: ${s.journal}
+    Authors: ${s.authors?.substring(0, 100) || "Not listed"}
+    Journal: ${s.journal || "Not listed"}
     Type: ${s.studyType || "Unknown"} | Outcome: ${s.outcome || "Unknown"} | N=${s.sampleSize || "N/A"}
-    ${s.summary100Words || s.abstract?.substring(0, 300)}
+    ${s.summary100Words || s.abstract?.substring(0, 300) || "No summary available."}
     Link: ${SITE_URL}${link}`;
   }).join("\n\n");
 
@@ -225,13 +228,28 @@ Return a JSON object with these fields:
 
     const data = await ai.generateJSON(systemPrompt, prompt, {
       temperature: 0.7,
-      maxTokens: 8000,
+      // 12000 (was 8000): the prompt asks for 3,000-4,000 words PLUS ~10
+      // metadata fields in one JSON payload — 4,000 words alone is ~5,300
+      // tokens before JSON-escaping overhead, so 8000 forced the model to
+      // self-compress into shallow articles or truncate mid-JSON (parse fail
+      // → silent null). The provider wrapper gives >6000-token calls 300s.
+      maxTokens: 12000,
     });
+
+    // Refuse to return a pillar page without a real body — downstream saves
+    // it published, and content:"" made a live empty page.
+    if (typeof data.content !== "string" || data.content.trim().length < 500) {
+      console.error(
+        `[ContentFactory] Pillar page for ${cluster.condition} came back with ` +
+          `no/too-short content — refusing to persist a stub`,
+      );
+      return null;
+    }
 
     return {
       title: data.title || cluster.pillarTitle,
       slug: cluster.slug + "-hydrogen-therapy-research",
-      content: data.content || "",
+      content: data.content,
       summary: data.summary || "",
       metaTitle: data.metaTitle || cluster.pillarTitle.substring(0, 60),
       metaDescription: data.metaDescription || "",
@@ -356,10 +374,20 @@ Return JSON with these fields:
       maxTokens: 4000,
     });
 
+    // Same stub gate as the pillar generator — never hand back a body-less
+    // article for publishing.
+    if (typeof data.content !== "string" || data.content.trim().length < 500) {
+      console.error(
+        `[ContentFactory] Cluster post ${clusterKeyword.slug} came back with ` +
+          `no/too-short content — refusing to persist a stub`,
+      );
+      return null;
+    }
+
     return {
       title: data.title || clusterKeyword.title,
       slug: clusterKeyword.slug,
-      content: data.content || "",
+      content: data.content,
       summary: data.summary || "",
       metaTitle: data.metaTitle || clusterKeyword.title.substring(0, 60),
       metaDescription: data.metaDescription || "",
@@ -389,6 +417,16 @@ export async function saveGeneratedArticle(
   studyId?: number,
 ): Promise<number | null> {
   try {
+    // Choke-point guard: this function publishes (isPublished: true) — refuse
+    // stub bodies here too in case a future generator forgets its own gate.
+    if (!article.content || article.content.trim().length < 500) {
+      console.error(
+        `[ContentFactory] Refusing to publish "${article.title}" — content is ` +
+          `${article.content?.trim().length ?? 0} chars`,
+      );
+      return null;
+    }
+
     // Check if slug already exists
     let slug = article.slug;
     const [existing] = await db.select({ id: blogArticles.id })

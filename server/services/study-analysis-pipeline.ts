@@ -21,7 +21,13 @@ import { eq, and, sql } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
 
-const MAX_ITEMS_PER_CYCLE = 10;
+// 3 (was 10): each item runs 6 sequential AI steps (~20-60s/item), and the
+// scheduler caps this job's whole run (see job-scheduler "pipeline-processing").
+// At 10 items the run overflowed its budget every cycle — 16 Sentry
+// "Job timed out after 180000ms" events — leaving an uncancelled orphan
+// holding the advisory lock so subsequent ticks no-op'd. 3 items/15min still
+// clears ~288 studies/day, far above the discovery rate.
+const MAX_ITEMS_PER_CYCLE = 3;
 const TOTAL_STEPS = 6; // Steps 0-5
 
 // Cost-efficient model for pipeline processing
