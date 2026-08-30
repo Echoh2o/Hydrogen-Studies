@@ -15,7 +15,30 @@ export function initSentry() {
       release: process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA,
       tracesSampleRate: 0.3, // 30% of transactions for performance monitoring
       sampleRate: 1.0, // Capture 100% of errors (never drop errors)
-      beforeSend(event) {
+      beforeSend(event, hint) {
+        // Drop known-operational errors — expected states, not bugs. They were
+        // burying real issues and burning quota (hundreds of events each), and
+        // are surfaced elsewhere (the /health probe reports GA4/GSC as degraded;
+        // the admin UI shows the disconnected integration):
+        //   • invalid_grant — an expired/revoked GA4/GSC OAuth refresh token.
+        //     Fired every scheduler cycle. Fix is reconnecting in the admin UI.
+        //   • "Not allowed by CORS" — scanners/bots sending a foreign Origin
+        //     (now denied cleanly upstream; kept here as a backstop).
+        const original = hint?.originalException as
+          | { message?: unknown; error?: unknown; error_description?: unknown }
+          | undefined;
+        const msg =
+          (original &&
+            (original.message || original.error_description || original.error)) ||
+          event.exception?.values?.[0]?.value ||
+          "";
+        if (
+          typeof msg === "string" &&
+          (msg.includes("invalid_grant") || msg.includes("Not allowed by CORS"))
+        ) {
+          return null;
+        }
+
         // Strip sensitive headers/cookies
         if (event.request?.cookies) delete event.request.cookies;
         if (event.request?.headers) {

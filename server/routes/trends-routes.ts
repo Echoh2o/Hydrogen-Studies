@@ -3,7 +3,7 @@
  */
 
 import express from "express";
-import { requireAdmin } from "../auth";
+import { requireAdmin, isElevatedRequest } from "../auth";
 import { logger } from "../utils/logger";
 import { trendDetectionService } from "../services/trend-detection-service";
 import { db } from "../db";
@@ -247,6 +247,19 @@ router.get("/report", async (req, res) => {
         },
       });
     } else {
+      // No fresh cached report. Generating one runs an expensive AI pipeline
+      // AND inserts rows, so only trusted (admin/editor) callers may trigger it
+      // — anonymous requests get a cache-miss response instead of an unauthenticated
+      // cost/DoS lever. (The mutating twin POST /api/trends/analyze is admin-only.)
+      if (!(await isElevatedRequest(req))) {
+        return res.json({
+          success: true,
+          cached: false,
+          report: null,
+          message: "No recent trend report is available yet. Please check back later.",
+        });
+      }
+
       // Generate new report
       const report = await trendDetectionService.generateTrendReport(
         period as "weekly" | "monthly" | "quarterly",

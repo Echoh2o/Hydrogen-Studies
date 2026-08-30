@@ -60,8 +60,10 @@ export function installCsrfInterceptor(): void {
   };
 
   // Prime the token with a lightweight GET so the first mutation isn't sent
-  // before any GET response has populated it.
-  void nativeFetch("/api/stats", { credentials: "include" })
+  // before any GET response has populated it. Must hit a REAL /api/* GET route
+  // (the CSRF token is attached to GET /api/* responses); the old target
+  // /api/stats does not exist and 404'd on every page load.
+  void nativeFetch("/api/auth/check-session", { credentials: "include" })
     .then((res) => {
       const fresh = res.headers.get("X-CSRF-Token");
       if (fresh) csrfToken = fresh;
