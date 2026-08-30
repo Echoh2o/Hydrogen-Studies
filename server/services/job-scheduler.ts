@@ -55,7 +55,11 @@ export class JobScheduler {
   private readonly CITATION_BUILD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly DIGEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly FRESHNESS_CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
-  private readonly BLOG_GENERATION_INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes — aggressive rebuild
+  // Hourly (was every 10 min "aggressive rebuild"): with the backfill flag on,
+  // this bounds autonomous output to MAX_BLOGS_PER_CYCLE/hour — the corpus is
+  // already dup-heavy (SEO review 2026-08), so throttled + demand-ranked beats
+  // flooding. Raise deliberately if a faster rebuild is ever wanted.
+  private readonly BLOG_GENERATION_INTERVAL_MS = 60 * 60 * 1000;
   private lastBlogGenerationCheck: Date | null = null;
   private readonly CONTENT_QUEUE_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
   private lastContentQueueCheck: Date | null = null;
@@ -1197,7 +1201,11 @@ export class JobScheduler {
    * one topic. Gated behind ENABLE_BLOG_BACKFILL=1 (checked by the caller).
    */
   private async runBatchBlogGenerationJob() {
-    const MAX_BLOGS_PER_CYCLE = 50;
+    // 5 (was 50): matches the "up to 5 per cycle" design note where this job
+    // is invoked. At the hourly interval that caps autonomous generation at
+    // ~120 articles/day worst case, demand-ranked (GSC striking-distance)
+    // first — deliberate throttle while the dup-heavy corpus is consolidated.
+    const MAX_BLOGS_PER_CYCLE = 5;
 
     try {
       // Throttle: only run every BLOG_GENERATION_INTERVAL_MS (not every scheduler tick)
