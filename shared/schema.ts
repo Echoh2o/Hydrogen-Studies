@@ -10,6 +10,7 @@ import {
   varchar,
   unique,
   index,
+  uniqueIndex,
   customType,
   jsonb,
 } from "drizzle-orm/pg-core";
@@ -165,7 +166,11 @@ export const userPreferences = pgTable("user_preferences", {
   notificationFrequency: text("notification_frequency").default("weekly"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  // One preferences row per user (backs the recommendation-engine upsert whose
+  // conflict target is user_id). Created in prod by migration 021.
+  userIdUnique: uniqueIndex("user_preferences_user_id_unique").on(table.userId),
+}));
 
 // Search history table schema
 export const searchHistory = pgTable("search_history", {
@@ -485,6 +490,29 @@ export const contentGenerationQueue = pgTable("content_generation_queue", {
 }, (table) => ({
   statusIdx: index("cgq_status_idx").on(table.status),
   studyIdIdx: index("cgq_study_id_idx").on(table.studyId),
+  // At most ONE active (pending/processing) queue row per study — the dedup
+  // the worker's onConflictDoNothing() has always assumed. Partial index;
+  // created in prod by migration 021.
+  activeStudyUnique: uniqueIndex("uq_cgq_active_study")
+    .on(table.studyId)
+    .where(sql`status IN ('pending', 'processing')`),
+}));
+
+// Restart-safe state for background jobs that used to live only in in-memory
+// Maps (SEO factory generation runs, image-gen batches). A deploy mid-run
+// previously erased all progress and the admin UI read the vanished job as
+// finished. Written through by server/services/job-state-store.ts; rows are
+// pruned by the writer. Created in prod by migration 021.
+export const transientJobs = pgTable("transient_jobs", {
+  id: text("id").primaryKey(),
+  kind: text("kind").notNull(), // e.g. "seo-factory", "image-generation"
+  status: text("status").notNull(), // running | completed | failed | interrupted
+  progress: jsonb("progress"),
+  error: text("error"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  kindIdx: index("transient_jobs_kind_idx").on(table.kind, table.updatedAt),
 }));
 
 // Categories table schema
@@ -1297,7 +1325,13 @@ export const keywordGroupMappings = pgTable("keyword_group_mappings", {
   groupId: integer("group_id")
     .references(() => keywordGroups.id, { onDelete: "cascade" })
     .notNull(),
-});
+}, (table) => ({
+  // A keyword belongs to a group at most once — makes the add-to-group
+  // route's onConflictDoNothing() real (it was a no-op without this, letting
+  // duplicate mapping rows pile up). Created in prod by migration 021.
+  keywordGroupUnique: uniqueIndex("keyword_group_mappings_keyword_group_unique")
+    .on(table.keywordId, table.groupId),
+}));
 
 export const monitorSchedule = pgTable("monitor_schedule", {
   id: serial("id").primaryKey(),

@@ -3,12 +3,16 @@ import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { sql, isNull, or, eq } from "drizzle-orm";
 import { logger } from "../utils/logger";
+import { saveJobState, getJobState, listJobStates } from "../services/job-state-store";
 
 const router = Router();
 
 // Tracks in-flight async batch/auto-generate jobs so the UI can poll status.
 // Each image takes ~15-30s and the server has a 30s request timeout, so any
 // batch of 2+ studies has to run in the background, not within the request.
+// State is ALSO write-through-persisted to transient_jobs (migration 021) so
+// a deploy mid-batch leaves an "interrupted" record instead of the job
+// vanishing from the poller (which the UI used to read as success).
 interface BatchJobStatus {
   total: number;
   completed: number;
@@ -18,7 +22,32 @@ interface BatchJobStatus {
   finishedAt?: Date;
 }
 const imageBatchJobs = new Map<string, BatchJobStatus>();
+// Boot-unique prefix: the old plain counter restarted at 1 on every deploy,
+// so persisted job IDs from a previous process would collide with new ones.
+const JOB_ID_EPOCH = Date.now().toString(36);
 let nextJobId = 1;
+function newJobId(kind: "batch" | "auto"): string {
+  return `${kind}-${JOB_ID_EPOCH}-${nextJobId++}`;
+}
+
+function persistBatchStatus(jobId: string, status: BatchJobStatus): void {
+  void saveJobState({
+    id: `image-gen:${jobId}`,
+    kind: "image-generation",
+    status: status.finishedAt
+      ? status.succeeded > 0 || status.failed === 0
+        ? "completed"
+        : "failed"
+      : "running",
+    progress: {
+      total: status.total,
+      completed: status.completed,
+      succeeded: status.succeeded,
+      failed: status.failed,
+    },
+    error: status.finishedAt && status.failed > 0 ? `${status.failed} image(s) failed` : null,
+  });
+}
 
 async function runImageBatchInBackground(jobId: string, studyIds: number[]): Promise<void> {
   const status = imageBatchJobs.get(jobId);
@@ -41,8 +70,10 @@ async function runImageBatchInBackground(jobId: string, studyIds: number[]): Pro
       logger.error(`Image gen threw for study ${studyId}`, err, "ImageGen");
     }
     status.completed++;
+    persistBatchStatus(jobId, status); // per-item write-through (~1 tiny upsert / 15-30s image)
   }
   status.finishedAt = new Date();
+  persistBatchStatus(jobId, status);
   logger.info(
     `Image batch ${jobId} complete: ${status.succeeded} succeeded, ${status.failed} failed`,
     "ImageGen",
@@ -104,14 +135,16 @@ router.post("/batch-generate", async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "No study IDs provided" });
     }
     const ids = studyIds.slice(0, 50) as number[];
-    const jobId = `batch-${nextJobId++}`;
-    imageBatchJobs.set(jobId, {
+    const jobId = newJobId("batch");
+    const initial = {
       total: ids.length,
       completed: 0,
       succeeded: 0,
       failed: 0,
       startedAt: new Date(),
-    });
+    };
+    imageBatchJobs.set(jobId, initial);
+    persistBatchStatus(jobId, initial);
     void runImageBatchInBackground(jobId, ids);
     res.status(202).json({
       success: true,
@@ -144,14 +177,16 @@ router.post("/auto-generate-all", async (req: Request, res: Response) => {
     }
 
     const ids = rows.map((r) => r.id);
-    const jobId = `auto-${nextJobId++}`;
-    imageBatchJobs.set(jobId, {
+    const jobId = newJobId("auto");
+    const initial = {
       total: ids.length,
       completed: 0,
       succeeded: 0,
       failed: 0,
       startedAt: new Date(),
-    });
+    };
+    imageBatchJobs.set(jobId, initial);
+    persistBatchStatus(jobId, initial);
     void runImageBatchInBackground(jobId, ids);
     res.status(202).json({
       success: true,
@@ -168,9 +203,23 @@ router.post("/auto-generate-all", async (req: Request, res: Response) => {
 /**
  * GET /jobs/:id — poll status of a batch/auto job.
  */
-router.get("/jobs/:id", (req: Request, res: Response) => {
+router.get("/jobs/:id", async (req: Request, res: Response) => {
   const status = imageBatchJobs.get(req.params.id);
   if (!status) {
+    // Fall back to the persisted row — after a restart the Map is empty, but
+    // the DB still knows whether the job completed, failed, or was interrupted.
+    const persisted = await getJobState(`image-gen:${req.params.id}`);
+    if (persisted) {
+      const p = (persisted.progress ?? {}) as Record<string, unknown>;
+      return res.json({
+        success: true,
+        jobId: req.params.id,
+        ...p,
+        status: persisted.status,
+        error: persisted.error,
+        done: persisted.status !== "running",
+      });
+    }
     return res.status(404).json({ success: false, message: "Job not found or expired" });
   }
   res.json({
@@ -182,15 +231,23 @@ router.get("/jobs/:id", (req: Request, res: Response) => {
 });
 
 /**
- * GET /jobs — list all in-flight + recently-finished jobs.
+ * GET /jobs — list all in-flight + recently-finished jobs (memory), plus
+ * persisted history that survives restarts (completed/failed/interrupted).
  */
-router.get("/jobs", (_req: Request, res: Response) => {
+router.get("/jobs", async (_req: Request, res: Response) => {
   const jobs = Array.from(imageBatchJobs.entries()).map(([id, s]) => ({
     jobId: id,
     ...s,
     done: !!s.finishedAt,
   }));
-  res.json({ jobs });
+  const history = (await listJobStates("image-generation", 10)).map((row) => ({
+    jobId: row.id.replace(/^image-gen:/, ""),
+    status: row.status,
+    error: row.error,
+    updatedAt: row.updatedAt,
+    ...(typeof row.progress === "object" && row.progress ? row.progress : {}),
+  }));
+  res.json({ jobs, history });
 });
 
 /**

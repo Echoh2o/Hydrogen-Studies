@@ -13,6 +13,7 @@ import { Router, Request, Response } from "express";
 import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
 import { aiGenerationRateLimiter } from "../utils/rate-limiting";
+import { saveJobState, listJobStates } from "../services/job-state-store";
 import {
   enrichAndSaveStudy,
   batchEnrichStudies,
@@ -550,6 +551,9 @@ router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, as
   }
 
   inFlightClusterJobs.set(clusterId, { kind: "pillar", startedAt: new Date() });
+  // Write-through to transient_jobs (migration 021) so a deploy mid-run leaves
+  // an "interrupted" record instead of the job silently vanishing from /jobs.
+  void saveJobState({ id: `seo-factory:${clusterId}`, kind: "seo-factory", status: "running", progress: { kind: "pillar", clusterId } });
 
   // Fire and forget — don't block the response on generation
   (async () => {
@@ -559,8 +563,22 @@ router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, as
         `Pillar generation finished for cluster ${clusterId}: success=${result.success}`,
         "SEO API",
       );
+      void saveJobState({
+        id: `seo-factory:${clusterId}`,
+        kind: "seo-factory",
+        status: result.success ? "completed" : "failed",
+        progress: { kind: "pillar", clusterId },
+        error: result.success ? null : result.message,
+      });
     } catch (error) {
       logger.error(`Pillar generation failed for cluster ${clusterId}`, error, "SEO API");
+      void saveJobState({
+        id: `seo-factory:${clusterId}`,
+        kind: "seo-factory",
+        status: "failed",
+        progress: { kind: "pillar", clusterId },
+        error: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       inFlightClusterJobs.delete(clusterId);
     }
@@ -617,6 +635,7 @@ router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimit
 
   const { delayMs = 3000 } = req.body;
   inFlightClusterJobs.set(clusterId, { kind: "full", startedAt: new Date() });
+  void saveJobState({ id: `seo-factory:${clusterId}`, kind: "seo-factory", status: "running", progress: { kind: "full", clusterId } });
 
   (async () => {
     try {
@@ -625,8 +644,22 @@ router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimit
         `Full cluster finished for ${clusterId}: ${result.totalGenerated} generated, ${result.totalFailed} failed`,
         "SEO API",
       );
+      void saveJobState({
+        id: `seo-factory:${clusterId}`,
+        kind: "seo-factory",
+        status: result.totalFailed > 0 && result.totalGenerated === 0 ? "failed" : "completed",
+        progress: { kind: "full", clusterId, generated: result.totalGenerated, failed: result.totalFailed },
+        error: result.totalFailed > 0 ? `${result.totalFailed} post(s) failed` : null,
+      });
     } catch (error) {
       logger.error(`Full cluster generation failed for ${clusterId}`, error, "SEO API");
+      void saveJobState({
+        id: `seo-factory:${clusterId}`,
+        kind: "seo-factory",
+        status: "failed",
+        progress: { kind: "full", clusterId },
+        error: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       inFlightClusterJobs.delete(clusterId);
     }
@@ -643,12 +676,22 @@ router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimit
  * GET /api/seo/keyword-strategy/jobs
  * List in-flight cluster generation jobs (for client polling UI).
  */
-router.get("/keyword-strategy/jobs", (_req: Request, res: Response) => {
+router.get("/keyword-strategy/jobs", async (_req: Request, res: Response) => {
   const jobs = Array.from(inFlightClusterJobs.entries()).map(([id, job]) => ({
     clusterId: id,
     ...job,
   }));
-  res.json({ jobs });
+  // Recent persisted outcomes (completed/failed/interrupted) — survives
+  // restarts, so the UI can show what happened to a job that's no longer
+  // in the in-memory list instead of treating the vanish as success.
+  const history = (await listJobStates("seo-factory", 10)).map((row) => ({
+    clusterId: Number(row.id.split(":")[1] ?? -1),
+    status: row.status,
+    error: row.error,
+    updatedAt: row.updatedAt,
+    ...(typeof row.progress === "object" && row.progress ? row.progress : {}),
+  }));
+  res.json({ jobs, history });
 });
 
 // ============================================================

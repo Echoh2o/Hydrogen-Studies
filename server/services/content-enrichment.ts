@@ -159,9 +159,19 @@ export async function enhanceStudyContent(
           updates.abstract = true;
         }
 
-        // Check for better methods, results, conclusions
-        if (europePmcData.fullTextXML) {
-          const sections = extractSectionsFromXml(europePmcData.fullTextXML);
+        // Check for better methods, results, conclusions.
+        // Full text lives behind a SEPARATE endpoint — search responses never
+        // carry it (the old `europePmcData.fullTextXML` read was always
+        // undefined, which is why enrichment could only ever improve
+        // abstracts). Fetch it for articles Europe PMC actually hosts.
+        let fullTextXml: string | null = null;
+        if (europePmcData.pmcid) {
+          const { getFullTextXML } = await import("./europepmc-api");
+          fullTextXml = await getFullTextXML(europePmcData.pmcid);
+        }
+        if (fullTextXml) {
+          updates.fullText = true;
+          const sections = extractSectionsFromXml(fullTextXml);
 
           if (
             sections.methods &&
