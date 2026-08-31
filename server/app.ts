@@ -1002,6 +1002,7 @@ pool.query("SELECT 1").then(async () => {
     const { addAuditTrackingFields } = await import("./migrations/add-audit-tracking-fields");
     const { addSyndicationFields } = await import("./migrations/add-syndication-fields");
     const { addTaxonomyAndPasswordReset } = await import("./migrations/add-taxonomy-and-password-reset");
+    const { addUniquenessAndJobState } = await import("./migrations/add-uniqueness-and-job-state");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1024,6 +1025,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "018_add_audit_tracking_fields", up: addAuditTrackingFields },
       { name: "019_add_syndication_fields", up: addSyndicationFields },
       { name: "020_add_taxonomy_and_password_reset", up: addTaxonomyAndPasswordReset },
+      { name: "021_add_uniqueness_and_job_state", up: addUniquenessAndJobState },
     ]);
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted
@@ -1035,6 +1037,16 @@ pool.query("SELECT 1").then(async () => {
       await resetStaleProcessingJobs();
     } catch (err: any) {
       console.warn("Stale-job recovery skipped:", err?.message ?? err);
+    }
+
+    // Flag transient_jobs rows orphaned by the previous process ('running'
+    // can't survive a restart) so admin UIs report "interrupted" instead of a
+    // phantom in-progress job. After migrations so the table exists.
+    try {
+      const { markInterruptedJobs } = await import("./services/job-state-store");
+      await markInterruptedJobs();
+    } catch (err: any) {
+      console.warn("Interrupted-job sweep skipped:", err?.message ?? err);
     }
   } catch (err: any) {
     console.error("FATAL: Migration failed:", err.message);

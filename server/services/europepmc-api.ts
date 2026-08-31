@@ -1,4 +1,4 @@
-import { externalApi } from "../utils/http";
+import { externalApi, describeHttpError } from "../utils/http";
 import type { InsertStudy } from "@shared/schema";
 
 /**
@@ -128,6 +128,47 @@ export async function getEuropePmcArticleByDOI(doi: string): Promise<any> {
 }
 
 /**
+ * Fetch the full-text JATS XML for an article that Europe PMC hosts
+ * (search result has a `pmcid`). This is a SEPARATE endpoint from search —
+ * search results never include the text, which is why enrichment historically
+ * could not fill methods/results/conclusion: it read a `fullTextXML` field
+ * that does not exist on search responses.
+ *
+ * URL form verified against the live API (2026-08-31): the working shape is
+ * `/rest/{PMCID}/fullTextXML` with the PMCID directly — both
+ * `/rest/MED/{id}/fullTextXML` and `/rest/PMC/{pmcid}/fullTextXML` return 404
+ * even for articles that serve XML under the bare-PMCID form.
+ *
+ * @param pmcid PubMed Central id from the search result, e.g. "PMC7885711"
+ * @returns JATS XML string, or null when full text isn't available (404s are
+ *          routine — not every hosted article exposes XML).
+ */
+export async function getFullTextXML(pmcid: string): Promise<string | null> {
+  const cleanId = pmcid.startsWith("PMC") ? pmcid : `PMC${pmcid}`;
+  try {
+    const response = await externalApi.get(
+      `https://www.ebi.ac.uk/europepmc/webservices/rest/${encodeURIComponent(cleanId)}/fullTextXML`,
+      {
+        responseType: "text",
+        // Full papers run to megabytes; the shared 10s default is too tight.
+        timeout: 25_000,
+      },
+    );
+    const xml = typeof response.data === "string" ? response.data : String(response.data ?? "");
+    return xml.length > 200 ? xml : null;
+  } catch (error) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (status === 404) return null; // no full text for this article — expected
+    console.error(
+      `Error fetching Europe PMC fullTextXML for ${cleanId}: ${
+        status ? `HTTP ${status}` : (error as Error)?.message ?? error
+      }`,
+    );
+    return null;
+  }
+}
+
+/**
  * Get article details by DOI (original function)
  * @param doi Digital Object Identifier
  * @returns Article data
@@ -154,7 +195,7 @@ export async function getArticleByDOI(doi: string): Promise<any> {
 
     return null;
   } catch (error) {
-    console.error(`Error fetching article by DOI ${doi}:`, error);
+    console.error(`Error fetching article by DOI ${doi}: ${describeHttpError(error)}`);
     throw error;
   }
 }
@@ -186,7 +227,7 @@ export async function getArticleByPMID(pmid: string): Promise<any> {
 
     return null;
   } catch (error) {
-    console.error(`Error fetching article by PMID ${pmid}:`, error);
+    console.error(`Error fetching article by PMID ${pmid}: ${describeHttpError(error)}`);
     throw error;
   }
 }
@@ -221,7 +262,7 @@ export async function getArticleByPMCID(pmcid: string): Promise<any> {
 
     return null;
   } catch (error) {
-    console.error(`Error fetching article by PMCID ${pmcid}:`, error);
+    console.error(`Error fetching article by PMCID ${pmcid}: ${describeHttpError(error)}`);
     throw error;
   }
 }
