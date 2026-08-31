@@ -81,10 +81,14 @@ beforeAll(async () => {
       WHERE status IN ('pending','processing')
   `));
   // Minimal pipeline_queue — only the columns resetStaleProcessingJobs touches
+  // (the sweep now also does retry accounting: retry_count/max_retries/error_message)
   await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS pipeline_queue (
       id SERIAL PRIMARY KEY,
       status TEXT NOT NULL DEFAULT 'pending',
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      max_retries INTEGER NOT NULL DEFAULT 3,
+      error_message TEXT,
       updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `));
@@ -205,16 +209,29 @@ describe("resetStaleProcessingJobs — orphaned 'processing' recovery", () => {
 
   it("also sweeps pipeline_queue on its 30-min threshold (and only that)", async () => {
     await db.execute(sql.raw(`
-      INSERT INTO pipeline_queue (status, updated_at) VALUES
-        ('processing', NOW() - INTERVAL '45 minutes'),
-        ('processing', NOW() - INTERVAL '5 minutes'),
-        ('completed',  NOW() - INTERVAL '45 minutes')
+      INSERT INTO pipeline_queue (status, retry_count, updated_at) VALUES
+        ('processing', 0, NOW() - INTERVAL '45 minutes'),
+        ('processing', 0, NOW() - INTERVAL '5 minutes'),
+        ('completed',  0, NOW() - INTERVAL '45 minutes'),
+        ('processing', 2, NOW() - INTERVAL '45 minutes')
     `));
 
     await resetStaleProcessingJobs();
 
-    const found = await rows("SELECT id, status FROM pipeline_queue ORDER BY id");
-    expect(found.map((r) => r.status)).toEqual(["pending", "processing", "completed"]);
+    const found = await rows(
+      "SELECT id, status, retry_count FROM pipeline_queue ORDER BY id",
+    );
+    // Row 1: stale, first reset → pending, retry_count bumped.
+    // Row 2: recent → untouched. Row 3: completed → untouched.
+    // Row 4: stale at retry_count 2 (+1 reaches max_retries 3) → FAILS OUT
+    // instead of resetting forever — retry accounting added 2026-08-31.
+    expect(found.map((r) => r.status)).toEqual([
+      "pending",
+      "processing",
+      "completed",
+      "failed",
+    ]);
+    expect(found.map((r) => Number(r.retry_count))).toEqual([1, 0, 0, 3]);
   });
 
   it("does not touch pending/completed/failed content rows regardless of age", async () => {

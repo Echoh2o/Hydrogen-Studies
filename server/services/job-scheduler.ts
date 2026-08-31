@@ -525,8 +525,13 @@ export class JobScheduler {
 
       // Job 7: Batch Blog Auto-Generation (runs after pipeline, up to 5 per cycle)
       // Generates blog articles for pipeline-processed studies that don't have one yet.
-      // Gated behind ENABLE_BLOG_BACKFILL=1 pending the demand-ranked generation rework.
-      if (process.env.ENABLE_BLOG_BACKFILL === "1") {
+      // Two gates: ENABLE_BLOG_BACKFILL=1 opts in, and GENERATION_ENABLED=false is
+      // the docs/PLAN.md master kill-switch ("Generation is paused") that wins
+      // regardless — autonomous article generation must not outrun corpus cleanup.
+      if (
+        process.env.ENABLE_BLOG_BACKFILL === "1" &&
+        process.env.GENERATION_ENABLED !== "false"
+      ) {
         try {
           const start = Date.now();
           await this.withTimeout(

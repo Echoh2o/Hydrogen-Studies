@@ -129,6 +129,12 @@ export async function recoverStuckBlogJobs(): Promise<void> {
  * startJob() itself refuses when busy.
  */
 export async function autoResumeInterruptedBlogJobs(): Promise<{ resumed: number }> {
+  // Master kill-switch (docs/PLAN.md): while generation is paused, do NOT
+  // auto-resume or drain generation jobs — leave them paused/pending for a
+  // deliberate human decision when the pause lifts.
+  if (process.env.GENERATION_ENABLED === "false") {
+    return { resumed: 0 };
+  }
   try {
     // Lazy import to keep this module free of a static cycle with the worker.
     const { startJob } = await import("./blog-generation-worker");
