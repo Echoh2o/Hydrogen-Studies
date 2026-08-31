@@ -16,21 +16,45 @@ import { test, expect } from "@playwright/test";
  */
 test.describe("Admin blog editor (TipTap)", () => {
   test("editor mounts, accepts typing, and toolbar renders for an admin", async ({ page }) => {
-    const unique = `${Date.now()}`;
-    const reg = await page.request.post("/api/auth/register", {
-      data: {
-        username: `e2e-admin-${unique}`,
-        email: `e2e-admin-${unique}@example.com`,
-        password: "e2e-test-password-123",
-        confirmPassword: "e2e-test-password-123",
-      },
+    // FIXED credentials (not per-run unique): on a Playwright retry the first
+    // attempt's user already exists and already claimed the admin role, so a
+    // fresh registration would come back "customer" and cascade-fail. Instead:
+    // log in if the account exists, register it otherwise.
+    //
+    // Auth calls run INSIDE the page (page.evaluate + fetch) rather than via
+    // page.request: the CI server runs NODE_ENV=production with Secure session
+    // cookies, and Chromium's trustworthy-localhost exception for Secure
+    // cookies applies reliably to the page's own network stack.
+    await page.goto("/");
+    const auth = await page.evaluate(async () => {
+      const creds = { username: "e2e-admin-editor", password: "e2e-test-password-123" };
+      const login = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ usernameOrEmail: creds.username, password: creds.password }),
+      });
+      if (login.ok) {
+        const b = await login.json();
+        return { via: "login", role: b.user?.role };
+      }
+      const reg = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          username: creds.username,
+          email: "e2e-admin-editor@example.com",
+          password: creds.password,
+          confirmPassword: creds.password,
+        }),
+      });
+      const b = await reg.json();
+      return { via: "register", status: reg.status, role: b.user?.role };
     });
-    expect(reg.ok()).toBeTruthy();
-    const body = await reg.json();
-    // First registered user in an empty-users DB must be admin — if this
-    // fails, either seeding changed or another spec started registering
-    // users (revisit the strategy note above).
-    expect(body.user?.role).toBe("admin");
+    // First user registered in the seeded (user-less) CI DB becomes admin;
+    // on retry the login path reuses that same admin account.
+    expect(auth.role).toBe("admin");
 
     await page.goto("/admin/blogs/add");
     await page.waitForLoadState("networkidle");
