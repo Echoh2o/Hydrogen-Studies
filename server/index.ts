@@ -70,8 +70,25 @@ async function setupServer() {
     // drive unlimited unauthenticated per-request DB renders (uncached 404s on
     // /study/<random>) and evict prewarmed LRU entries. Bots tolerate 429s;
     // humans are unaffected (limiter only engages for bot GETs).
+    //
+    // SCOPE (audit 2026-08-31): only DB-backed page renders are limited.
+    // Previously EVERY non-API bot GET counted against the 100/min/IP bucket —
+    // including robots.txt, the 5,000+ URL sitemap set, hashed /assets/ JS/CSS,
+    // and images that Googlebot's renderer fetches under the same UA/IP. Legit
+    // crawlers burned the budget on cheap static files, got 429'd on real
+    // pages, and backed off crawling — directly suppressing indexation. The
+    // paths exempted here are static/streamed (no per-request DB render), so
+    // they aren't the DoS vector this limiter exists for.
+    const BOT_LIMIT_EXEMPT_RE =
+      /^\/(robots\.txt|llms\.txt|sitemap[^/]*\.xml|rss[^/]*\.xml|feed\.xml|rss\/|assets\/|images\/|favicon\.ico|logo\.png|manifest\.webmanifest)/;
     app.use((req, res, next) => {
-      if (req.method === "GET" && !req.path.startsWith("/api/") && isBot(req.headers["user-agent"] || "")) {
+      if (
+        req.method === "GET" &&
+        !req.path.startsWith("/api/") &&
+        !BOT_LIMIT_EXEMPT_RE.test(req.path) &&
+        !/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|webp|avif)$/i.test(req.path) &&
+        isBot(req.headers["user-agent"] || "")
+      ) {
         return generalApiRateLimiter(req, res, next);
       }
       next();

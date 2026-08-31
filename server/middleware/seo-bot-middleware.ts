@@ -63,6 +63,21 @@ const BOT_PATTERNS = [
   /gptbot/i, /oai-searchbot/i, /chatgpt-user/i, /claudebot/i, /claude-web/i,
   /anthropic-ai/i, /perplexitybot/i, /perplexity-user/i, /ccbot/i,
   /meta-externalagent/i,
+  // Previously-missing crawlers (audit 2026-08-31): each of these got the
+  // empty SPA shell instead of prerendered HTML — invisible content to any
+  // fetcher that doesn't execute JS.
+  /googleother/i,        // Google R&D/AI fetcher (feeds Gemini) — NOT matched by /googlebot/
+  /google-cloudvertexbot/i,
+  /duckassistbot/i,      // DuckDuckGo AI answers — NOT matched by /duckduckbot/
+  /bingpreview/i, /adidxbot/i, // Bing snapshot + ads crawlers
+  /bytespider/i,         // ByteDance — one of the highest-volume AI crawlers
+  /amazonbot/i, /mistralai-user/i, /cohere/i, /youbot/i, /diffbot/i,
+  /yeti/i,               // Naver (Korea)
+  /seznambot/i, /qwant/i, /mojeekbot/i, /coccocbot/i,
+  // Generic tail: catches well-behaved crawlers we haven't named. Real browser
+  // UAs never contain these tokens, and a false positive is harmless — the
+  // "penalty" is being served real prerendered content.
+  /crawler/i, /spider/i,
 ];
 
 export function isBot(userAgent: string): boolean {
