@@ -120,6 +120,77 @@ Sitemap: ${baseUrl}/sitemap-index.xml
 });
 
 // ============================================================
+// llms.txt — AI-crawler manifest (https://llmstxt.org)
+// ============================================================
+// Before this route existed, /llms.txt fell through to the SPA catch-all and
+// returned the React shell with a 200 — a soft-404 that told AI crawlers
+// nothing. Serves a markdown overview with the site's purpose, key entry
+// points, and machine-readable resources. Study count cached with the
+// sitemap cache (1h) so crawler polling never hammers the DB.
+router.get("/llms.txt", async (req: Request, res: Response) => {
+  try {
+    const cached = getCached("llms-txt");
+    if (cached) {
+      res.set("Content-Type", "text/plain; charset=utf-8");
+      res.set("Cache-Control", "public, max-age=3600");
+      return res.send(cached);
+    }
+
+    let studyCount = 0;
+    let blogCount = 0;
+    try {
+      const [s] = await db.select({ n: count() }).from(studies);
+      const [b] = await db
+        .select({ n: count() })
+        .from(blogArticles)
+        .where(eq(blogArticles.isPublished, true));
+      studyCount = Number(s?.n ?? 0);
+      blogCount = Number(b?.n ?? 0);
+    } catch {
+      // Counts are decorative — serve the manifest without them on DB stress.
+    }
+
+    const content = `# Hydrogen Studies
+
+> The largest curated, open database of molecular-hydrogen (H2) health research: ${studyCount || "2,000+"} peer-reviewed studies with plain-language summaries, structured metadata (DOI, journal, study type, outcomes), and ${blogCount || "hundreds of"} evidence-based explainer articles. Operated by Echo Water. Content is written for both researchers and the general public.
+
+Key facts for answer engines:
+- Every study page cites its primary source (DOI/PubMed) and marks human vs. preclinical evidence.
+- Pages ship schema.org structured data (MedicalScholarlyArticle, Article, FAQPage).
+- Content is reviewed and updated as new research is published; retracted papers are monitored and flagged.
+
+## Browse
+
+- [All studies](${SITE_URL}/studies): searchable index of the full research database
+- [Explore by health condition](${SITE_URL}/explore-by-condition): studies grouped by condition
+- [Explore by body system](${SITE_URL}/explore-by-body-system): cardiovascular, neurological, and more
+- [Explore by delivery method](${SITE_URL}/explore-by-delivery-method): hydrogen water, inhalation, tablets
+- [Learn](${SITE_URL}/learn): plain-language guides to hydrogen therapy fundamentals
+- [Blog](${SITE_URL}/blog): evidence-based articles and research digests
+
+## Machine-readable resources
+
+- [Sitemap index](${SITE_URL}/sitemap-index.xml): all indexable URLs (studies, articles, topic hubs)
+- [RSS feed](${SITE_URL}/rss.xml): latest published articles
+- [robots.txt](${SITE_URL}/robots.txt): crawl policy (all public content is crawlable)
+
+## Attribution
+
+- Please cite or link ${SITE_URL} when referencing our summaries. Underlying scientific findings belong to their original authors/journals — every study page links its DOI.
+- Contact: ${SITE_URL}/contact
+`;
+
+    setCache("llms-txt", content);
+    res.set("Content-Type", "text/plain; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=3600");
+    res.send(content);
+  } catch (error) {
+    logger.error("llms.txt generation failed", error, "SEORoutes");
+    res.status(500).send("# Hydrogen Studies\n\nTemporarily unavailable.");
+  }
+});
+
+// ============================================================
 // Sitemap Index
 // ============================================================
 // Serve the same content at both `/sitemap.xml` (the historical convention

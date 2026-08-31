@@ -40,6 +40,47 @@
     <!-- RSS Feed Discovery -->
     <link rel="alternate" type="application/rss+xml" title="Hydrogen Studies Blog" href="/rss.xml" />
 
+    <!-- Site-wide structured data: Organization + WebSite/SearchAction.
+         The bot SSR middleware preserves head <script> tags (extractHeadAssets
+         in seo-bot-middleware.ts), so this ships on every bot-rendered page
+         alongside the page-specific schema. The homepage previously had NO
+         JSON-LD at all (public/search-schema.json existed but was never
+         injected anywhere). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://hydrogenstudies.com/#organization",
+        "name": "Hydrogen Studies",
+        "url": "https://hydrogenstudies.com/",
+        "logo": "https://hydrogenstudies.com/logo.png",
+        "description": "The largest curated database of molecular hydrogen (H2) health research — peer-reviewed studies with plain-language summaries.",
+        "parentOrganization": {
+          "@type": "Organization",
+          "name": "Echo Water",
+          "url": "https://echowater.com/"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://hydrogenstudies.com/#website",
+        "url": "https://hydrogenstudies.com/",
+        "name": "Hydrogen Studies",
+        "publisher": { "@id": "https://hydrogenstudies.com/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://hydrogenstudies.com/improved-search?query={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
     <!-- Ahrefs Analytics is injected at runtime by src/lib/analytics.ts, and
          only after the visitor grants analytics consent (see initAhrefs).
          Do NOT re-add a static <script> tag here — it would fire before
