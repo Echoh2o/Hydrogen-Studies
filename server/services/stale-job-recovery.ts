@@ -27,18 +27,37 @@ const PIPELINE_STALE_THRESHOLD = "30 minutes";
 const CONTENT_STALE_THRESHOLD = "90 minutes";
 
 export async function resetStaleProcessingJobs(): Promise<void> {
-  // Pipeline queue — core AI analysis
+  // Pipeline queue — core AI analysis.
+  // Each reset now counts against retry_count, and items past max_retries
+  // fail out instead of resetting: previously an item whose processing ALWAYS
+  // died (poison input, OOM) bounced back to 'pending' forever — churning AI
+  // spend with no terminal state and never surfacing as 'failed'.
   try {
     const pq = await db.execute(sql`
       UPDATE pipeline_queue
-      SET status = 'pending', updated_at = NOW()
+      SET retry_count = retry_count + 1,
+          status = CASE
+            WHEN retry_count + 1 >= COALESCE(max_retries, 3) THEN 'failed'
+            ELSE 'pending'
+          END,
+          error_message = CASE
+            WHEN retry_count + 1 >= COALESCE(max_retries, 3)
+              THEN 'Failed after repeated stale-recovery resets (processing died without completing)'
+            ELSE error_message
+          END,
+          updated_at = NOW()
       WHERE status = 'processing'
         AND updated_at < NOW() - INTERVAL '${sql.raw(PIPELINE_STALE_THRESHOLD)}'
-      RETURNING id
+      RETURNING id, status
     `);
-    const n = pq.rows?.length ?? 0;
-    if (n > 0) {
-      logger.info(`Reset ${n} stale pipeline_queue items to pending`, "JobRecovery");
+    const rows = (pq.rows ?? []) as Array<{ id: number; status: string }>;
+    if (rows.length > 0) {
+      const failed = rows.filter((r) => r.status === "failed").length;
+      logger.info(
+        `Reset ${rows.length - failed} stale pipeline_queue items to pending` +
+          (failed > 0 ? `, failed-out ${failed} past max retries` : ""),
+        "JobRecovery",
+      );
     }
   } catch (err) {
     // Table may not exist in a fresh dev DB
@@ -48,19 +67,31 @@ export async function resetStaleProcessingJobs(): Promise<void> {
     );
   }
 
-  // Content generation queue — blog/summary/tag waterfall
+  // Content generation queue — blog/summary/tag waterfall. Same retry-count
+  // accounting as above (worker's MAX_RETRIES is 3 — mirror it here).
   try {
     const cg = await db.execute(sql`
       UPDATE content_generation_queue
-      SET status = 'pending'
+      SET retry_count = retry_count + 1,
+          status = CASE
+            WHEN retry_count + 1 >= 3 THEN 'failed'
+            ELSE 'pending'
+          END,
+          error_message = CASE
+            WHEN retry_count + 1 >= 3
+              THEN 'Failed after repeated stale-recovery resets (processing died without completing)'
+            ELSE error_message
+          END
       WHERE status = 'processing'
         AND started_at < NOW() - INTERVAL '${sql.raw(CONTENT_STALE_THRESHOLD)}'
-      RETURNING id
+      RETURNING id, status
     `);
-    const n = cg.rows?.length ?? 0;
-    if (n > 0) {
+    const rows = (cg.rows ?? []) as Array<{ id: number; status: string }>;
+    if (rows.length > 0) {
+      const failed = rows.filter((r) => r.status === "failed").length;
       logger.info(
-        `Reset ${n} stale content_generation_queue items to pending`,
+        `Reset ${rows.length - failed} stale content_generation_queue items to pending` +
+          (failed > 0 ? `, failed-out ${failed} past max retries` : ""),
         "JobRecovery",
       );
     }
