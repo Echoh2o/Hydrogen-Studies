@@ -22,6 +22,8 @@ export interface EnrichmentStats {
   errors: number;
   startTime: Date;
   isRunning: boolean;
+  /** How many candidates the current/last run selected — real progress denominator for the admin UI. */
+  totalToProcess: number;
 }
 
 let enrichmentStats: EnrichmentStats = {
@@ -33,7 +35,22 @@ let enrichmentStats: EnrichmentStats = {
   errors: 0,
   startTime: new Date(),
   isRunning: false,
+  totalToProcess: 0,
 };
+
+/** Cooperative stop flag — set by stopTargetedEnrichment(), checked between studies. */
+let stopRequested = false;
+
+/**
+ * Request the in-flight enrichment run to stop after the current study.
+ * Returns whether a run was actually in progress. (The admin "Stop" button
+ * used to be a pure no-op that replied "stopped successfully".)
+ */
+export function stopTargetedEnrichment(): boolean {
+  if (!enrichmentStats.isRunning) return false;
+  stopRequested = true;
+  return true;
+}
 
 /**
  * Start targeted enrichment of critical missing fields
@@ -55,6 +72,8 @@ export async function startTargetedEnrichment(
   enrichmentStats.bodySystemsAdded = 0;
   enrichmentStats.conclusionsAdded = 0;
   enrichmentStats.errors = 0;
+  enrichmentStats.totalToProcess = 0;
+  stopRequested = false;
 
   // Run enrichment (not in background, so we can await it if needed for scheduler)
   try {
@@ -73,6 +92,34 @@ export async function startTargetedEnrichment(
  */
 export async function checkAndEnrichStudies() {
     return startTargetedEnrichment(5); // Process small batches periodically
+}
+
+/**
+ * Enrich one specific study on demand (admin "Single Study" button — which
+ * used to POST to a route that didn't exist and always 404'd). Returns
+ * whether the study was found; enrichment errors propagate to the caller.
+ */
+export async function enrichStudyById(studyId: number): Promise<boolean> {
+  const [study] = await db
+    .select({
+      id: studies.id,
+      title: studies.title,
+      abstract: studies.abstract,
+      methods: studies.methods,
+      results: studies.results,
+    })
+    .from(studies)
+    .where(eq(studies.id, studyId))
+    .limit(1);
+
+  if (!study) return false;
+
+  try {
+    await enrichSingleStudy(study);
+  } finally {
+    await markEnrichmentAttempted(study.id);
+  }
+  return true;
 }
 
 /**
@@ -125,12 +172,17 @@ async function processEnrichmentBatches(batchSize: number): Promise<void> {
         return;
     }
 
+    enrichmentStats.totalToProcess = studiesNeedingEnrichment.length;
     console.log(
       `🚀 Enrichment: found ${studiesNeedingEnrichment.length} studies needing enrichment`,
     );
 
     // Process in batches
     for (let i = 0; i < studiesNeedingEnrichment.length; i += batchSize) {
+      if (stopRequested) {
+        console.log("Targeted enrichment stopped by request");
+        break;
+      }
       const batch = studiesNeedingEnrichment.slice(i, i + batchSize);
       await processBatch(batch);
 
@@ -150,6 +202,7 @@ async function processEnrichmentBatches(batchSize: number): Promise<void> {
  */
 async function processBatch(studies: any[]): Promise<void> {
   for (const study of studies) {
+    if (stopRequested) break;
     try {
       await enrichSingleStudy(study);
       enrichmentStats.totalProcessed++;

@@ -400,10 +400,25 @@ export function errorRecoveryMiddleware(
 }
 
 /**
+ * AI-generation endpoints that legitimately run for minutes (blog/article
+ * generation, enrichment batches, multi-format, SEO factory, image gen).
+ * The global 30s timeout was 504-ing every one of these while the handler
+ * kept running — the admin saw "Failed" and the work finished invisibly
+ * minutes later, which read as "content creation does nothing".
+ * These get a 10-minute budget instead; everything else keeps 30s.
+ */
+const LONG_RUNNING_PATH_RE =
+  /^\/api\/(studies\/[^/]+\/generate|studies\/generate|blogs\/(generate|improve)|multi-format\/|content-enrichment\/|enrichment\/|doi\/enhance|seo\/|image-generation\/|images\/generate|content-optimization\/|review-assistant\/|blog-recommendations\/)/;
+const LONG_RUNNING_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
  * Timeout middleware to prevent hanging requests
  */
 export function timeoutMiddleware(timeout = 30000) {
   return (req: Request, res: Response, next: NextFunction) => {
+    const effectiveTimeout = LONG_RUNNING_PATH_RE.test(req.path)
+      ? LONG_RUNNING_TIMEOUT_MS
+      : timeout;
     const timer = setTimeout(() => {
       if (!res.headersSent) {
         res.status(504).json({
@@ -412,7 +427,7 @@ export function timeoutMiddleware(timeout = 30000) {
           requestId: (req as any).requestId,
         });
       }
-    }, timeout);
+    }, effectiveTimeout);
 
     // Clear timer when response is sent
     res.on("finish", () => clearTimeout(timer));

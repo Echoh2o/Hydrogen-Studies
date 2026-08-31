@@ -127,7 +127,11 @@ export function getCorsConfig(): cors.CorsOptions {
       } else {
         console.warn(`CORS blocked origin: ${origin}`);
       }
-      return callback(new Error("Not allowed by CORS"), false);
+      // Deny cleanly: omit CORS headers (the browser still blocks the response)
+      // WITHOUT throwing. Passing an Error here propagates to the global error
+      // handler, which returns a 500 AND reports every scanner/bot with a
+      // random Origin to Sentry (497 events observed) — burying real errors.
+      return callback(null, false);
     },
 
     credentials: true,

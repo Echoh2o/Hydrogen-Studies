@@ -5,7 +5,7 @@
  * using identifiers like PMID, DOI, or other search criteria.
  */
 
-import { externalApi } from "../utils/http";
+import { externalApi, describeHttpError } from "../utils/http";
 import { db } from "../db";
 import { studies } from "../../shared/schema";
 import { eq, or, isNull } from "drizzle-orm";
@@ -184,7 +184,7 @@ async function searchPubMedByTitle(title: string): Promise<string | null> {
 
     return null;
   } catch (error) {
-    console.error("Error searching PubMed by title:", error);
+    console.error(`Error searching PubMed by title: ${describeHttpError(error)}`);
     return null;
   }
 }
@@ -220,7 +220,7 @@ async function fetchPubMedArticle(pmid: string): Promise<any> {
       pmid,
     };
   } catch (error) {
-    console.error("Error fetching PubMed article:", error);
+    console.error(`Error fetching PubMed article: ${describeHttpError(error)}`);
     return null;
   }
 }

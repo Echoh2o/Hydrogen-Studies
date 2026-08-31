@@ -576,12 +576,18 @@ router.get("/studies", async (req, res) => {
         console.log(`No results from primary query for ${categoryName}, trying health_conditions + keyword fallback`);
 
         // First try exact match on health_conditions column
+        // `health_conditions` is a text[] column, so a scalar LOWER() on it
+        // errors ("function lower(text[]) does not exist"). Match instead when
+        // ANY array element equals the requested condition, case-insensitively.
         const hcQuery = `
           SELECT DISTINCT id, title, abstract, authors, journal,
                  publish_date as "publishDate", publish_year, category, doi,
                  image_url as "imageUrl", slug, consumer_categories
           FROM studies
-          WHERE LOWER(health_conditions) = LOWER($1)
+          WHERE EXISTS (
+            SELECT 1 FROM unnest(health_conditions) AS hc
+            WHERE LOWER(hc) = LOWER($1)
+          )
           ORDER BY publish_year DESC NULLS LAST, id DESC
           LIMIT 50
         `;

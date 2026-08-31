@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { keywords, monitorSchedule, monitorResults } from "@shared/schema";
 import { searchPubMedWithPagination } from "../routes/research-routes";
 import { searchCrossRef } from "./crossref-api";
@@ -383,7 +383,14 @@ async function saveSearchResults(results: any[], source: string, keywords: any[]
         // Concurrent sources may return the same paper; the partial unique
         // index on doi makes the duplicate insert a no-op (returning() is
         // empty, so insertedResult is undefined and gets filtered out).
-        .onConflictDoNothing({ target: monitorResults.doi })
+        // The `where` predicate MUST mirror the index's predicate
+        // (monitor_results_doi_unique ... WHERE doi IS NOT NULL) so Postgres
+        // can infer the partial index — without it, `ON CONFLICT (doi)` matches
+        // no constraint and every insert throws 42P10.
+        .onConflictDoNothing({
+          target: monitorResults.doi,
+          where: sql`${monitorResults.doi} IS NOT NULL`,
+        })
         .returning();
 
       return insertedResult;

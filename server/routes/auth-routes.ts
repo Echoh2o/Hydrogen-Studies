@@ -9,13 +9,60 @@ import { z } from "zod";
 import { db } from "../db";
 import { users, auditLogs, passwordResetTokens, UserRole } from "../../shared/schema";
 import { eq, and, gt, isNull, sql, desc } from "drizzle-orm";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { isAuthenticated, requireRole, hasPermission } from "../auth";
 import { authRateLimiter } from "../utils/rate-limiting";
 import { addCustomerProfile } from "../services/klaviyo-api";
 import { logger } from "../utils/logger";
 
 const router = Router();
+
+// A valid bcrypt hash used ONLY to equalize response timing on the login
+// "user not found" and "no password on file" paths, so an attacker can't
+// distinguish real accounts by how fast the endpoint replies. Computed once
+// at module load; the plaintext is irrelevant (nothing ever matches it).
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
+  "timing-equalizer-not-a-real-password",
+  10,
+);
+
+/**
+ * Verify a plaintext password against a stored bcrypt hash without ever
+ * throwing. bcrypt.compare REJECTS when the stored hash is null/empty/malformed
+ * (e.g. an account provisioned via import or Shopify sync that never had a
+ * password set), which — if unguarded — turns a normal failed login into a 500
+ * for that specific account. Fail closed: any missing/invalid hash or compare
+ * error is treated as an incorrect password, and a dummy compare is run on the
+ * absent-hash path to keep timing uniform.
+ */
+export async function verifyPassword(
+  password: string,
+  storedHash: string | null | undefined,
+): Promise<boolean> {
+  if (!storedHash) {
+    await bcrypt.compare(password, DUMMY_PASSWORD_HASH).catch(() => false);
+    return false;
+  }
+  try {
+    return await bcrypt.compare(password, storedHash);
+  } catch (err) {
+    logger.warn("Password comparison failed (malformed stored hash?)", "AuthRoutes", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
+}
+
+/**
+ * Hash a password-reset token for storage. The raw 32-byte token is emailed to
+ * the user, but only its SHA-256 is persisted and compared — so a database read
+ * (backup exfil, SQLi, replica/log exposure) yields no usable tokens. SHA-256
+ * (not bcrypt) is appropriate here: the token is already high-entropy random,
+ * and lookups must be a fast indexed equality match.
+ */
+function hashResetToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
 
 /**
  * Regenerate the Express session, returning a promise. Used at the
@@ -257,6 +304,9 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
       .limit(1);
 
     if (!user) {
+      // Run a dummy compare so a non-existent account takes the same time as a
+      // real one — otherwise response latency leaks which usernames exist.
+      await verifyPassword(validatedData.password, null);
       return res.status(401).json({
         error: "Invalid credentials",
       });
@@ -269,10 +319,11 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
       });
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(
+    // Verify password — never throws (see verifyPassword): a missing/corrupt
+    // hash fails closed as invalid credentials instead of 500-ing this account.
+    const isPasswordValid = await verifyPassword(
       validatedData.password,
-      user.passwordHash || "",
+      user.passwordHash,
     );
 
     if (!isPasswordValid) {
@@ -764,9 +815,10 @@ router.post(
       const token = randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
+      // Store only the hash; the raw token lives solely in the emailed link.
       await db.insert(passwordResetTokens).values({
         userId: user.id,
-        token,
+        token: hashResetToken(token),
         expiresAt,
       });
 
@@ -859,7 +911,8 @@ export async function executePasswordReset(
       .from(passwordResetTokens)
       .where(
         and(
-          eq(passwordResetTokens.token, token),
+          // Compare against the stored SHA-256, not the raw token.
+          eq(passwordResetTokens.token, hashResetToken(token)),
           gt(passwordResetTokens.expiresAt, sql`now()`),
           isNull(passwordResetTokens.usedAt),
         ),

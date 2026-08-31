@@ -117,6 +117,26 @@ externalApi.interceptors.response.use(undefined, async (error: AxiosError) => {
 });
 
 /**
+ * One-line description of an HTTP/axios/fetch failure for logs.
+ *
+ * Logging a raw axios error object dumps the entire request/response/socket
+ * graph — observed at thousands of Railway log lines for one routine CrossRef
+ * DOI 404 — which drowns real errors. Use this in catch-block logs instead of
+ * passing the error object itself; rethrow the original error unchanged.
+ */
+export function describeHttpError(error: unknown): string {
+  const e = error as {
+    response?: { status?: number; statusText?: string };
+    code?: string;
+    message?: string;
+  };
+  if (e?.response?.status) {
+    return `HTTP ${e.response.status} ${e.response.statusText ?? ""}`.trim();
+  }
+  return e?.code || e?.message || String(error);
+}
+
+/**
  * `fetch` with an enforced timeout (default 10s).
  *
  * If the caller already passes `init.signal`, both signals are honored via

@@ -147,7 +147,11 @@ export async function enhanceStudyWithDoi(studyId: number): Promise<{
     // First, try CrossRef (most academic sources use this)
     let enhancedData = {};
     try {
-      const crossrefData = await getCrossRefArticleByDOI(doi);
+      // CrossRef wraps the article in an envelope — the fields extractCrossRefData
+      // reads (title/abstract/author/container-title/...) live under .message.
+      // Passing the envelope (the old code) made every extraction come back
+      // empty, so DOI enhancement never enhanced anything.
+      const crossrefData = (await getCrossRefArticleByDOI(doi))?.message;
       if (crossrefData) {
         enhancedData = extractCrossRefData(
           crossrefData,
@@ -163,7 +167,9 @@ export async function enhanceStudyWithDoi(studyId: number): Promise<{
         });
       }
     } catch (error) {
-      console.warn(`CrossRef enhancement failed for DOI ${doi}:`, error);
+      console.warn(
+        `CrossRef enhancement failed for DOI ${doi}: ${(error as Error)?.message ?? error}`,
+      );
       // Continue to next source
     }
 

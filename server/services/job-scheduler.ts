@@ -55,7 +55,11 @@ export class JobScheduler {
   private readonly CITATION_BUILD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly DIGEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
   private readonly FRESHNESS_CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // Weekly
-  private readonly BLOG_GENERATION_INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes — aggressive rebuild
+  // Hourly (was every 10 min "aggressive rebuild"): with the backfill flag on,
+  // this bounds autonomous output to MAX_BLOGS_PER_CYCLE/hour — the corpus is
+  // already dup-heavy (SEO review 2026-08), so throttled + demand-ranked beats
+  // flooding. Raise deliberately if a faster rebuild is ever wanted.
+  private readonly BLOG_GENERATION_INTERVAL_MS = 60 * 60 * 1000;
   private lastBlogGenerationCheck: Date | null = null;
   private readonly CONTENT_QUEUE_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
   private lastContentQueueCheck: Date | null = null;
@@ -499,7 +503,10 @@ export class JobScheduler {
         const start = Date.now();
         await this.withTimeout(
           () => this.runPipelineProcessingJob(),
-          3 * 60 * 1000,
+          // 6 min (was 3): headroom for MAX_ITEMS_PER_CYCLE items × 6 AI steps
+          // so a slow-but-healthy run isn't reported as a timeout (see the 16
+          // Sentry "Job timed out after 180000ms" events).
+          6 * 60 * 1000,
           "pipeline-processing",
           () => { this.lastPipelineProcessingCheck = new Date(); }
         );
@@ -823,6 +830,28 @@ export class JobScheduler {
         }
       } catch (error) {
         logger.error("Job 23 (stale-job-recovery) unexpected error", error, "JobScheduler");
+      }
+
+      // Job 24: Blog-job resume/poller — restarts jobs paused by a deploy
+      // (deploys pause every running job; without this, only a manual visit
+      // to /admin/jobs could resume them) and drains pending jobs when the
+      // worker is idle. Cheap; startJob() itself refuses when busy.
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          async () => {
+            const { autoResumeInterruptedBlogJobs } = await import("./blog-lifecycle");
+            await autoResumeInterruptedBlogJobs();
+          },
+          60 * 1000,
+          "blog-jobs-resume"
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "blog-jobs-resume" });
+        }
+      } catch (error) {
+        logger.error("Job 24 (blog-jobs-resume) unexpected error", error, "JobScheduler");
       }
 
       // Job 13: Content Generation Queue — heaviest fast-loop job (10-min
@@ -1172,7 +1201,11 @@ export class JobScheduler {
    * one topic. Gated behind ENABLE_BLOG_BACKFILL=1 (checked by the caller).
    */
   private async runBatchBlogGenerationJob() {
-    const MAX_BLOGS_PER_CYCLE = 50;
+    // 5 (was 50): matches the "up to 5 per cycle" design note where this job
+    // is invoked. At the hourly interval that caps autonomous generation at
+    // ~120 articles/day worst case, demand-ranked (GSC striking-distance)
+    // first — deliberate throttle while the dup-heavy corpus is consolidated.
+    const MAX_BLOGS_PER_CYCLE = 5;
 
     try {
       // Throttle: only run every BLOG_GENERATION_INTERVAL_MS (not every scheduler tick)

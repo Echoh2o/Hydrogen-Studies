@@ -672,7 +672,9 @@ Return JSON with: title, content (markdown), summary, metaTitle (60 chars), meta
     const data = await ai.generateJSON(
       "You are an expert health science and SEO writer. Return only valid JSON.",
       prompt,
-      { temperature: 0.7, maxTokens: 10000 }
+      // 12000 (was 10000): 3,000-5,000 words + metadata in one JSON payload
+      // needs the headroom; the provider wrapper gives >6000-token calls 300s.
+      { temperature: 0.7, maxTokens: 12000 }
     );
 
     const slug = cluster.slug + "-pillar";
@@ -853,6 +855,17 @@ Return JSON: title, content (markdown), summary, metaTitle (60 chars), metaDescr
       { temperature: 0.7, maxTokens: 5000 }
     );
 
+    // Never publish an article whose body is missing/stub-length. A response
+    // that parsed but lacked `content` used to be inserted with content:""
+    // and isPublished:true — a live, empty page (part of the thin-content
+    // corpus hurting SEO). Fail the generation instead.
+    if (typeof data.content !== "string" || data.content.trim().length < 500) {
+      throw new Error(
+        `Generated cluster post for "${ckw.keyword}" has no/too-short content ` +
+          `(${typeof data.content === "string" ? data.content.trim().length : 0} chars) — not publishing`,
+      );
+    }
+
     const studyId = relatedStudies[0]?.id || 1;
 
     const [article] = await db.insert(blogArticles).values({
@@ -860,7 +873,7 @@ Return JSON: title, content (markdown), summary, metaTitle (60 chars), metaDescr
       title: data.title || ckw.title,
       slug: ckw.slug,
       summary: data.summary || "",
-      content: data.content || "",
+      content: data.content,
       quickInsights: data.quickInsights || "",
       readingLevel: "general",
       articleType: `cluster_${ckw.articleType}`,

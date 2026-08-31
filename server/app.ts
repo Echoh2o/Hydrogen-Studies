@@ -104,6 +104,19 @@ if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
+// Canonical host: 301 www.hydrogenstudies.com → hydrogenstudies.com (apex is
+// canonical per search-schema.json/SEO). Scoped to EXACTLY this www host so the
+// Railway domain, the Shopify App Proxy host, and health probes are untouched.
+// Also fixes a session/CSRF split: the cookie is host-only (no COOKIE_DOMAIN),
+// so a login on www wasn't sent to the apex host, appearing logged-out. Keeping
+// everyone on one host makes the session consistent. Preserves path + query.
+app.use((req, res, next) => {
+  if (req.headers.host === "www.hydrogenstudies.com") {
+    return res.redirect(301, `https://hydrogenstudies.com${req.originalUrl}`);
+  }
+  next();
+});
+
 // Security headers via helmet (CSP, HSTS, X-Frame-Options, etc.)
 app.use(
   helmet({
@@ -115,6 +128,9 @@ app.use(
           "https://www.googletagmanager.com",
           "https://www.google-analytics.com",
           "https://analytics.ahrefs.com",
+          // Cloudflare Web Analytics beacon (injected by the CF proxy in front
+          // of the site). Without this the beacon script is CSP-blocked.
+          "https://static.cloudflareinsights.com",
         ],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -124,6 +140,13 @@ app.use(
           "https://www.google-analytics.com",
           "https://api.anthropic.com",
           "https://analytics.ahrefs.com",
+          // Sentry browser SDK error/session ingest. Missing here, the frontend
+          // could not report ANY errors (client project showed 0 issues) — the
+          // DSN host is o<org>.ingest.us.sentry.io.
+          "https://*.ingest.us.sentry.io",
+          "https://*.ingest.sentry.io",
+          // Cloudflare Web Analytics beacon POST target.
+          "https://cloudflareinsights.com",
         ],
         // youtube-nocookie.com is the privacy-respecting embed host that
         // doesn't set a tracking cookie until the user clicks play. Used

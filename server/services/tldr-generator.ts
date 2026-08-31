@@ -44,7 +44,13 @@ export async function generateStudyTldr(
   study: TldrStudyInput,
   options: TldrOptions = {},
 ): Promise<string | null> {
-  const { model = MODELS.HAIKU, effort, includePersona = true, caller } = options;
+  // Default SONNET + effort:"low", not Haiku: the TL;DR is user-facing prose
+  // on every study page, and the MODELS tier policy assigns TLDRs to Sonnet.
+  // The interactive call sites already did this; the bulk/backfill paths
+  // (scheduler, content-generation-worker) inherited the old Haiku default,
+  // so most TLDRs on the site were generated a tier below policy. At 200
+  // maxTokens the cost difference is negligible.
+  const { model = MODELS.SONNET, effort = "low", includePersona = true, caller } = options;
 
   const persona = includePersona ? "You are a science communicator. " : "";
   const prompt = `${persona}Write a TL;DR summary of this study in 1-2 simple sentences. Use plain language a 6th grader could understand. Focus on the key finding and why it matters. No jargon. Be conversational.\n\nStudy title: ${study.title}\nAbstract: ${study.abstract}\n${study.conclusion ? `Conclusion: ${study.conclusion}` : ""}\n\nWrite ONLY the TL;DR text, nothing else.`;
@@ -54,7 +60,7 @@ export async function generateStudyTldr(
     maxTokens: 200,
     // Direct SDK call sites never sent a temperature — keep provider default.
     temperature: null,
-    ...(effort ? { effort } : {}),
+    effort,
     ...(caller ? { caller } : {}),
   });
 

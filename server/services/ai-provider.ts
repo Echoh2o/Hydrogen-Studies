@@ -177,8 +177,11 @@ async function generateTextWithAnthropic(
   const { temperature: acceptsTemperature, effort: acceptsEffort } =
     MODEL_CAPABILITIES[resolvedModel] ?? DEFAULT_MODEL_CAPABILITIES;
   // Long-form outputs (blog drafts, Opus synthesis) legitimately run past 60s;
-  // give those requests 120s while keeping the tight 60s default for short calls.
-  const timeout = maxTokens > 2048 ? 120_000 : 60_000;
+  // give those requests 120s while keeping the tight 60s default for short
+  // calls. Very-long-form (pillar pages at 8-12K tokens ≈ 3-5K words) needs
+  // more still — at typical output speeds those take 2-4 minutes, and the old
+  // flat 120s cap silently killed every pillar-page generation.
+  const timeout = maxTokens > 6000 ? 300_000 : maxTokens > 2048 ? 120_000 : 60_000;
 
   const response = await claude.messages.create(
     {
@@ -247,6 +250,11 @@ async function generateTextWithOpenAI(
   const oai = getOpenAI();
   if (!oai) throw new Error("No AI provider configured (set ANTHROPIC_API_KEY or OPENAI_API_KEY)");
 
+  // Scale the timeout with output size like the Anthropic path does — the
+  // client-level 30s default killed long-form fallbacks (the very requests
+  // most likely to arrive here after an Anthropic 429/5xx).
+  const timeout = maxTokens > 6000 ? 300_000 : maxTokens > 2048 ? 120_000 : 30_000;
+
   const response = await oai.chat.completions.create(
     {
       model: "gpt-4o",
@@ -257,7 +265,7 @@ async function generateTextWithOpenAI(
       max_tokens: maxTokens,
       ...(temperature !== null ? { temperature } : {}),
     },
-    signal ? { signal } : undefined,
+    { timeout, ...(signal ? { signal } : {}) },
   );
   return response.choices[0].message.content || "";
 }
@@ -304,15 +312,8 @@ async function generateText(
  * Generate a JSON response from AI.
  * Automatically instructs the model to return valid JSON and parses the result.
  */
-async function generateJSON<T = any>(
-  systemPrompt: string,
-  userPrompt: string,
-  options: AIGenerateOptions = {},
-): Promise<T> {
-  const jsonSystemPrompt = `${systemPrompt}\n\nIMPORTANT: You must respond with ONLY valid JSON. No markdown, no code fences, no explanation outside the JSON.`;
-
-  const raw = await generateText(jsonSystemPrompt, userPrompt, options);
-
+/** Parse a model response as JSON: strip fences, then greedy {...} rescue. Throws on failure. */
+function parseModelJSON<T>(raw: string): T {
   // Strip markdown code fences if present
   const cleaned = raw.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
 
@@ -330,6 +331,37 @@ async function generateJSON<T = any>(
       }
     }
     throw new Error(`AI returned invalid JSON: ${(parseError as Error).message}`);
+  }
+}
+
+async function generateJSON<T = any>(
+  systemPrompt: string,
+  userPrompt: string,
+  options: AIGenerateOptions = {},
+): Promise<T> {
+  const jsonSystemPrompt = `${systemPrompt}\n\nIMPORTANT: You must respond with ONLY valid JSON. No markdown, no code fences, no explanation outside the JSON.`;
+
+  const raw = await generateText(jsonSystemPrompt, userPrompt, options);
+
+  try {
+    return parseModelJSON<T>(raw);
+  } catch (firstError) {
+    // One regeneration retry on a parse failure. Long articles embedded in
+    // JSON strings are the highest-risk shape for escaping errors, and most
+    // parse failures are sampling flukes — a single retry recovers the large
+    // majority instead of bubbling into callers' catch → null (which silently
+    // dropped whole generations).
+    logger.warn("AI JSON parse failed — retrying generation once", "AIProvider", {
+      caller: options.caller ?? "unattributed",
+      error: firstError instanceof Error ? firstError.message : String(firstError),
+    });
+    const retryRaw = await generateText(
+      jsonSystemPrompt +
+        "\n\nREMINDER: Your previous attempt was not parseable as JSON. Respond with ONLY a single valid JSON object — escape all quotes and newlines inside string values.",
+      userPrompt,
+      options,
+    );
+    return parseModelJSON<T>(retryRaw);
   }
 }
 

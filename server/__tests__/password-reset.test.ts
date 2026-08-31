@@ -18,6 +18,7 @@
  * here; we only pin that the query still requests that lock mode.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createHash } from "crypto";
 
 const h = vi.hoisted(() => {
   const updateCalls: Array<{ table: unknown; values: Record<string, unknown>; where: unknown }> =
@@ -161,9 +162,10 @@ describe("executePasswordReset — successful reset", () => {
     // The whole consume runs inside one transaction.
     expect(db.transaction).toHaveBeenCalledTimes(1);
 
-    // Token lookup binds the presented token and keeps FOR UPDATE SKIP LOCKED
-    // (single-use semantics under concurrency).
-    expect(collectParamValues(h.selectWhereArgs[0])).toContain("tok-abc");
+    // Token lookup binds the SHA-256 of the presented token (tokens are stored
+    // hashed at rest) and keeps FOR UPDATE SKIP LOCKED (single-use under concurrency).
+    const expectedTokenHash = createHash("sha256").update("tok-abc").digest("hex");
+    expect(collectParamValues(h.selectWhereArgs[0])).toContain(expectedTokenHash);
     expect(h.selectForArgs[0]).toEqual(["update", { skipLocked: true }]);
 
     // Two updates, in order: mark token used (prevents concurrent reuse),

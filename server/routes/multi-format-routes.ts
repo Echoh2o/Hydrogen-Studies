@@ -61,9 +61,22 @@ router.post("/generate", requireAdmin, async (req: Request, res: Response) => {
       options || {},
     );
 
+    // Honest status: all-formats-failed is an error (502), partial failure is
+    // called out in the message instead of the old blanket "successfully".
+    const failedCount = results.errors.length;
+    if (results.contents.length === 0 && failedCount > 0) {
+      return res.status(502).json({
+        success: false,
+        message: `All ${failedCount} format(s) failed to generate — first error: ${results.errors[0].error}`,
+        data: { generated: [], errors: results.errors, warnings: results.warnings },
+      });
+    }
     res.json({
       success: true,
-      message: `Generated ${results.contents.length} format(s) successfully`,
+      message:
+        failedCount > 0
+          ? `Generated ${results.contents.length} format(s); ${failedCount} failed (see errors)`
+          : `Generated ${results.contents.length} format(s) successfully`,
       data: {
         generated: results.contents,
         errors: results.errors,

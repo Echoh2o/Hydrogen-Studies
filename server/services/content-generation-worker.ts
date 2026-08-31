@@ -106,9 +106,12 @@ H2 Delivery: ${study.h2DeliveryMethod || "Not specified"}`;
     key_finding?: unknown;
     practical_takeaway?: unknown;
   }>(SUMMARY_SYSTEM_PROMPT, userPrompt, {
-    model: MODELS.HAIKU,
+    // Sonnet + effort:low, not Haiku — these are user-facing study-page fields;
+    // see study-summary-enrichment.ts (same rationale, kept in sync).
+    model: MODELS.SONNET,
     maxTokens: 1500,
     temperature: 0.4,
+    effort: "low",
     caller: "ContentWorker.summaries",
   });
 

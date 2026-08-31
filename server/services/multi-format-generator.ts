@@ -73,7 +73,11 @@ export async function generateMultiFormatContent(
       );
     }
 
-    const fallbackToBasic = options.fallbackToBasic ?? true;
+    // Default FALSE (was true): with the old default any AI failure silently
+    // shipped generateBasicContent() template boilerplate into the database as
+    // if it were generated content. Callers that genuinely want placeholder
+    // output must now opt in explicitly.
+    const fallbackToBasic = options.fallbackToBasic ?? false;
 
     // Check AI provider availability
     if (ai.getProviderStatus().primary === "none") {
@@ -234,18 +238,10 @@ Format the response as JSON with these fields:
       temperature: 0.7,
     });
   } catch (error) {
-    podcastData = {
-      intro: `Welcome to our health science podcast! Today we're exploring fascinating research about ${study.title.substring(0, 100)}...`,
-      mainScript: `This study investigates ${study.abstract.substring(0, 500)}...`,
-      qaSegment: [
-        { question: "What does this mean for everyday health?", answer: "This research suggests practical applications..." },
-        { question: "How was this study conducted?", answer: "Researchers used scientific methods to..." },
-        { question: "What are the next steps?", answer: "Future research will explore..." },
-      ],
-      outro: "Thanks for listening! Remember, science is always evolving. Stay curious!",
-      showNotes: [`Study: ${study.title}`, "Key findings discussed", "Practical applications", "Future research directions"],
-      estimatedDuration: 720,
-    };
+    // No canned fallback: persisting hardcoded template text as if it were
+    // AI-generated content is the "dumb content" bug. Rethrow — the batch
+    // handler records this format in results.errors honestly.
+    throw error;
   }
 
   return {
@@ -308,16 +304,10 @@ Format as JSON with:
       temperature: 0.6,
     });
   } catch (error) {
-    infographicData = {
-      title: `Key Findings: ${study.title.substring(0, 50)}`,
-      subheadings: ["Research Overview", "Key Results", "Impact"],
-      keyStatistics: [
-        { label: "Sample Size", value: study.sampleSize?.toString() || "N/A", context: "participants studied" },
-        { label: "Duration", value: study.duration?.toString() || "N/A", context: "days of research" },
-      ],
-      comparisons: [],
-      visualSuggestions: [{ type: "bar_chart", data: "results", description: "Compare key outcomes" }],
-    };
+    // No canned fallback: persisting hardcoded template text as if it were
+    // AI-generated content is the "dumb content" bug. Rethrow — the batch
+    // handler records this format in results.errors honestly.
+    throw error;
   }
 
   return {
@@ -410,21 +400,10 @@ ${
       temperature: 0.8,
     });
   } catch (error) {
-    socialData = isTwitter
-      ? {
-          thread: [
-            `New research reveals: ${study.title.substring(0, 200)}...`,
-            `Key finding: ${study.abstract.substring(0, 250)}...`,
-            `What this means for you: Better understanding leads to better health choices!`,
-          ],
-          hashtags: ["HealthResearch", "Science", "Wellness"],
-          callToAction: "Follow for more health insights!",
-        }
-      : {
-          content: `Exciting research update! ${study.title.substring(0, 200)}... ${study.abstract.substring(0, 300)}`,
-          hashtags: ["HealthResearch", "Science", "Wellness", "HealthyLiving"],
-          callToAction: "Learn more about this breakthrough research!",
-        };
+    // No canned fallback: persisting hardcoded template text as if it were
+    // AI-generated content is the "dumb content" bug. Rethrow — the batch
+    // handler records this format in results.errors honestly.
+    throw error;
   }
 
   return {
@@ -492,16 +471,10 @@ Format as JSON:
       temperature: 0.7,
     });
   } catch (error) {
-    videoData = {
-      script: `Have you ever wondered about ${study.title}? Today we'll explore groundbreaking research that could change how we think about health...`,
-      storyboard: [
-        { time: "0:00-0:10", scene: "Opening", visuals: "Title card with study topic", narration: "Introduction hook" },
-        { time: "0:10-0:40", scene: "Main content", visuals: "Data visualizations", narration: "Key findings explained" },
-        { time: "0:40-0:60", scene: "Conclusion", visuals: "Summary points", narration: "Call to action" },
-      ],
-      duration: duration,
-      visualCues: ["Use animations for data", "Include b-roll footage", "Add text overlays for key points"],
-    };
+    // No canned fallback: persisting hardcoded template text as if it were
+    // AI-generated content is the "dumb content" bug. Rethrow — the batch
+    // handler records this format in results.errors honestly.
+    throw error;
   }
 
   return {
@@ -565,29 +538,10 @@ Format as JSON:
       temperature: 0.7,
     });
   } catch (error) {
-    newsletterData = {
-      subjectLine: `New Research: ${study.title.substring(0, 30)}...`,
-      preheader: `Discover the latest findings about ${study.category || "health"}`,
-      htmlContent: `
-        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-          <h1 style="color: #333; font-size: 24px;">${study.title}</h1>
-          <p style="color: #666; line-height: 1.6;">${study.abstract.substring(0, 300)}...</p>
-          <h2 style="color: #333; font-size: 18px;">Key Takeaways:</h2>
-          <ul style="color: #666;">
-            <li>Important finding from the research</li>
-            <li>Practical application for readers</li>
-            <li>Future implications</li>
-          </ul>
-          <a href="#" style="display: inline-block; background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Read Full Study</a>
-        </div>
-      `,
-      plainText: `${study.title}\n\n${study.abstract.substring(0, 300)}...\n\nKey Takeaways:\n- Important finding\n- Practical application\n- Future implications\n\nRead more at our website.`,
-      keyTakeaways: [
-        "Important finding from the research",
-        "Practical application for readers",
-        "Future implications of this study",
-      ],
-    };
+    // No canned fallback: persisting hardcoded template text as if it were
+    // AI-generated content is the "dumb content" bug. Rethrow — the batch
+    // handler records this format in results.errors honestly.
+    throw error;
   }
 
   return {

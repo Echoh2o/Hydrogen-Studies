@@ -151,17 +151,25 @@ export async function enrichStudySummaries(
           title: study.title?.substring(0, 60),
         });
 
-        // CRITICAL: Mark the study as processed even on error so it isn't
-        // retried forever (e.g., if this study always triggers invalid JSON).
-        try {
-          await db
-            .update(studies)
-            .set({ keyFinding: PROCESSED_SENTINEL })
-            .where(eq(studies.id, study.id));
-        } catch (dbError) {
-          logger.error("Failed to mark study as processed after error", dbError, TAG, {
-            studyId: study.id,
-          });
+        // Mark as processed ONLY for study-specific failures (invalid JSON —
+        // this study's content reliably breaks parsing), so it isn't retried
+        // forever. Transient provider errors (429/5xx/timeout) must NOT write
+        // the sentinel: doing so permanently un-enriched every study in a
+        // batch that happened to hit a one-off Anthropic blip. Those rows stay
+        // NULL and are retried on a later cycle.
+        const isStudySpecific =
+          error instanceof Error && error.message.includes("invalid JSON");
+        if (isStudySpecific) {
+          try {
+            await db
+              .update(studies)
+              .set({ keyFinding: PROCESSED_SENTINEL })
+              .where(eq(studies.id, study.id));
+          } catch (dbError) {
+            logger.error("Failed to mark study as processed after error", dbError, TAG, {
+              studyId: study.id,
+            });
+          }
         }
       }
 
@@ -238,10 +246,14 @@ Duration: ${study.duration ? `${study.duration} days` : "Not reported"}
 Human Trial: ${study.isHumanTrial ? "Yes" : "No/Unknown"}
 H2 Delivery: ${study.h2DeliveryMethod || "Not specified"}`;
 
+  // Sonnet + effort:low, not Haiku: plain_summary / key_finding /
+  // practical_takeaway are user-facing prose on study pages. The interactive
+  // enrichment path (study-analysis-pipeline) generates equivalent fields on
+  // Sonnet — this bulk path produced the noticeably worse copy on most studies.
   const rawResult = await ai.generateJSON<SummaryExtractionResult>(
     SYSTEM_PROMPT,
     userPrompt,
-    { maxTokens: 1500, temperature: 0.4, model: "claude-haiku-4-5" },
+    { maxTokens: 1500, temperature: 0.4, effort: "low", caller: "SummaryEnrichment" },
   );
 
   const result = validateResponse(rawResult);

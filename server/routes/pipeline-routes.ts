@@ -188,6 +188,20 @@ router.post("/approve/:id", async (req, res) => {
     const { createStudyFromPipelineItem } = await import("../services/study-analysis-pipeline");
     const studyId = await createStudyFromPipelineItem(id);
 
+    // Enqueue into the content-generation waterfall queue. Pipeline creation
+    // uses a raw insert (bypassing studyService.createStudy), so without this
+    // an approved study NEVER entered content_generation_queue — and the
+    // fire-and-forget waterfall below silently skips un-enriched studies —
+    // leaving approved studies permanently content-less. The queue is the
+    // durable path (retried by the scheduler); the waterfall is best-effort
+    // fast-path on top.
+    try {
+      const { enqueueStudy } = await import("../services/content-generation-worker");
+      await enqueueStudy(studyId);
+    } catch (err) {
+      logger.error("Failed to enqueue approved study for content generation", err, "PipelineRoutes", { studyId });
+    }
+
     // Trigger content generation immediately (blog, images) — don't wait for 6-hour batch timer
     triggerContentWaterfall(studyId).catch((err) =>
       logger.error("Content waterfall failed for approved study", err, "PipelineRoutes", { studyId })
