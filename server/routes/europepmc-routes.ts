@@ -14,7 +14,16 @@ const router = express.Router();
 
 // Public proxy to Europe PMC's REST API — throttle so an anonymous caller
 // can't burn the upstream quota or get the server IP rate-banned. Admins skip.
-router.use(searchRateLimiter);
+//
+// SCOPED to this router's own path family (PLAN.md 0.2b). This router is
+// mounted at the app root (`app.use(europePmcRoutes)`) because its routes
+// declare full /api/europepmc/* paths — so the previous bare
+// `router.use(searchRateLimiter)` silently rate-limited EVERY request on the
+// site at 30/min/IP. That was the site-wide "app limiter" the growth plan
+// flagged: a plain-UA crawl got 429s on 5,467 of 5,525 pages (verified
+// 2026-09-01), and with the old Cloudflare-colo bucket keying it throttled
+// real crawlers too.
+router.use("/api/europepmc", searchRateLimiter);
 
 /**
  * Search Europe PMC for studies
