@@ -1092,6 +1092,10 @@ export class JobScheduler {
       }
     } catch (err) {
       logger.error("GA4 sync error", err, "JobScheduler");
+      // Same invalid_grant backoff as the GSC job above.
+      if (err instanceof Error && err.message.includes("invalid_grant")) {
+        this.lastGa4SyncCheck = new Date();
+      }
       const { reportError } = await import("../utils/error-reporting");
       reportError(err, { tags: { job: "ga4-sync" } });
     }
@@ -1123,6 +1127,14 @@ export class JobScheduler {
       }
     } catch (err) {
       logger.error("GSC sync error", err, "JobScheduler");
+      // invalid_grant = the refresh token is dead (revoked / expired — see
+      // the 7-day lifetime of Google OAuth apps left in "Testing" status).
+      // Retrying every 15-min cycle can't succeed and just spams the logs;
+      // stamp the check so we back off to the normal 6h cadence. Fix is a
+      // human reconnect (and publishing the OAuth app to production mode).
+      if (err instanceof Error && err.message.includes("invalid_grant")) {
+        this.lastGscSyncCheck = new Date();
+      }
       const { reportError } = await import("../utils/error-reporting");
       reportError(err, { tags: { job: "gsc-sync" } });
     }
