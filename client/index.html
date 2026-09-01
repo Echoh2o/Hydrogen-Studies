@@ -22,7 +22,6 @@
       content="Search and explore hydrogen gas research studies and their effects on health, with advanced filtering and categorization."
     />
     <meta property="og:image" content="https://hydrogenstudies.com/logo.png" />
-    <meta property="og:url" content="https://hydrogenstudies.com/" />
     <meta property="og:site_name" content="Hydrogen Studies" />
 
     <!-- Twitter Meta Tags -->
@@ -34,8 +33,12 @@
     />
     <meta name="twitter:image" content="https://hydrogenstudies.com/logo.png" />
 
-    <!-- Canonical URL to prevent duplicate content issues -->
-    <link rel="canonical" href="https://hydrogenstudies.com/" />
+    <!-- NOTE: no static canonical here. The old hardcoded homepage canonical
+         shipped on EVERY SPA-served page (5,522 of 5,523 crawled pages had
+         canonical=homepage — crawl 2026-09), which mis-canonicalizes the whole
+         site for any non-allowlisted fetcher. Bot-SSR injects the correct
+         per-page canonical; pages using Helmet set their own; Phase 3 SSR
+         replaces this entirely. -->
 
     <!-- RSS Feed Discovery -->
     <link rel="alternate" type="application/rss+xml" title="Hydrogen Studies Blog" href="/rss.xml" />
