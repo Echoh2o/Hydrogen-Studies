@@ -121,10 +121,11 @@ async function main() {
   done = 0;
   for (let i = 0; i < byAction.retire.length; i += BATCH) {
     const batch = byAction.retire.slice(i, i + BATCH);
-    const ids = batch.map((r) => r.id);
-    await db.execute(sql`UPDATE blog_articles SET is_published = false WHERE id = ANY(${ids}::int[])`);
+    // Per-row updates: drizzle's sql template expands JS arrays into a
+    // parenthesized param list, which breaks an ANY(...)::int[] cast.
     // 410 rows in the redirect system (middleware serves a real 410 Gone).
     for (const r of batch) {
+      await db.execute(sql`UPDATE blog_articles SET is_published = false WHERE id = ${r.id}`);
       const fromPath = new URL(r.url).pathname;
       await db.execute(sql`
         INSERT INTO redirects (from_path, to_path, status_code, note, is_active)
