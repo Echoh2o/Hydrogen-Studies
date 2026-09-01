@@ -116,6 +116,12 @@ function footer(conditions: { name: string; slug: string }[]): string {
   h += `</ul></section>`;
 
   h += `\n</nav>\n`;
+  // Ownership disclosure (PLAN.md 0.3, Appendix B) — must appear in crawler
+  // output on every page, same as the browser footer.
+  h += `<p>Hydrogen Studies is built and funded by Echo Technologies LLC, the maker of `;
+  h += `<a href="https://echowater.com?utm_source=hydrogenstudies&amp;utm_medium=referral&amp;utm_campaign=footer&amp;utm_content=disclosure" rel="sponsored">Echo Water</a> hydrogen products. `;
+  h += `Our research team selects and summarizes studies independently; Echo does not decide which studies are included or how they are described. `;
+  h += `<a href="/editorial-policy">Editorial policy</a> · <a href="/methodology">Methodology</a> · <a href="/contact">Contact</a></p>\n`;
   h += `<p>&copy; ${new Date().getFullYear()} Hydrogen Studies. Evidence-based hydrogen therapy research database.</p>\n`;
   h += `</footer>`;
   return h;
@@ -299,6 +305,17 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
     ];
 
     let h = breadcrumbs(crumbs);
+    // PLAN.md 0.4: brand/review posts carry an ownership banner until the
+    // Section 12 disposition (replace with measurement data / move to
+    // echowater.com). Match "is X worth it" slugs and review-style titles.
+    const isReviewPost =
+      /(^|-)is-.*-worth-it($|-)|-review($|-)|-vs-/.test(String(b.slug ?? "")) ||
+      /\bworth it\b|\breview\b/i.test(String(b.title ?? ""));
+    if (isReviewPost) {
+      h += `<aside role="note"><p><strong>Disclosure:</strong> This site is owned by Echo Technologies LLC, `;
+      h += `which sells hydrogen water products, including the Echo Flask. `;
+      h += `<a href="/editorial-policy">Read our editorial policy</a>.</p></aside>\n`;
+    }
     h += `<article itemscope itemtype="https://schema.org/Article">\n`;
     h += `<h1 itemprop="headline">${esc(b.title)}</h1>\n`;
     if (b.created_at) h += `<time itemprop="datePublished" datetime="${new Date(b.created_at).toISOString()}">${fmtDate(b.created_at)}</time>\n`;
@@ -336,8 +353,10 @@ async function renderHomepage(): Promise<string> {
   const reviewed = Number((statsR.rows?.[0] as any)?.reviewed || 0);
 
   let h = `<h1>Hydrogen Studies Research Database</h1>\n`;
-  h += `<p>Explore ${total.toLocaleString()} peer-reviewed hydrogen therapy research studies. `;
-  h += `${reviewed.toLocaleString()} are from peer-reviewed journals. `;
+  // One claim, once (the old copy said "peer-reviewed" twice back to back —
+  // PLAN.md 0.5).
+  h += `<p>Explore ${total.toLocaleString()} hydrogen therapy research studies — `;
+  h += `${reviewed.toLocaleString()} from peer-reviewed journals. `;
   h += `Evidence-based insights on molecular hydrogen for health conditions, organized by body system, condition, and mechanism.</p>\n`;
 
   h += `<section><h2>Browse Research</h2><ul>`;

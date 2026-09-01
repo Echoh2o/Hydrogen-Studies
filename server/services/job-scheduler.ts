@@ -529,9 +529,16 @@ export class JobScheduler {
       // the docs/PLAN.md master kill-switch ("Generation is paused") that wins
       // regardless — autonomous article generation must not outrun corpus cleanup.
       if (
-        process.env.ENABLE_BLOG_BACKFILL === "1" &&
-        process.env.GENERATION_ENABLED !== "false"
+        process.env.ENABLE_BLOG_BACKFILL !== "1" ||
+        process.env.GENERATION_ENABLED === "false"
       ) {
+        // PLAN.md 0.1: one-liner when generation is skipped, so "why is
+        // nothing generating" is answerable from the logs.
+        logger.info("Batch blog generation skipped (generation paused)", "JobScheduler", {
+          ENABLE_BLOG_BACKFILL: process.env.ENABLE_BLOG_BACKFILL ?? "(unset)",
+          GENERATION_ENABLED: process.env.GENERATION_ENABLED ?? "(unset)",
+        });
+      } else {
         try {
           const start = Date.now();
           await this.withTimeout(

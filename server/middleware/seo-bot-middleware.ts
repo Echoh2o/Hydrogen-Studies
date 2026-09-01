@@ -317,6 +317,20 @@ function buildBlogMeta(blog: any): PageMeta {
 }
 
 function resolveStaticPageMeta(pathname: string): PageMeta | null {
+  // PLAN.md 0.6 + 1.8: internal-search pages and thin pages carry
+  // noindex,follow until they have real content. Kept in nav; removed from
+  // sitemap-pages in seo-routes.ts (same deploy).
+  const NOINDEX_PATHS = new Set([
+    "/search",
+    "/advanced-search",
+    "/products",
+    "/recommendations",
+  ]);
+  const noindexFor = (p: string): string | undefined =>
+    NOINDEX_PATHS.has(p) || p.startsWith("/learn/") || p === "/learn"
+      ? "noindex, follow"
+      : undefined;
+
   const pages: Record<string, { title: string; description: string }> = {
     "/": {
       title: `Hydrogen Studies | ${SITE_NAME} Research Database`,
@@ -329,6 +343,14 @@ function resolveStaticPageMeta(pathname: string): PageMeta | null {
     "/blog": {
       title: `Hydrogen Health Blog | ${SITE_NAME}`,
       description: "Plain-language articles explaining hydrogen therapy research. Understand the science behind molecular hydrogen and its health benefits."
+    },
+    "/editorial-policy": {
+      title: `Editorial Policy | ${SITE_NAME}`,
+      description: "How Hydrogen Studies selects, summarizes, and reviews research — and how editorial independence from our funder, Echo Technologies LLC, works."
+    },
+    "/methodology": {
+      title: `Methodology | ${SITE_NAME}`,
+      description: "How studies enter the Hydrogen Studies database, how summaries are drafted and reviewed, and how funding and conflicts of interest are recorded."
     },
     "/about": {
       title: `About | ${SITE_NAME}`,
@@ -466,6 +488,7 @@ function resolveStaticPageMeta(pathname: string): PageMeta | null {
   return {
     title: pageMeta.title,
     description: pageMeta.description,
+    robots: noindexFor(pathname),
     canonical: `${SITE_URL}${pathname}`,
     ogType: "website",
     ogImage: `${SITE_URL}/logo.png`,

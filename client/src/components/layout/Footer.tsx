@@ -315,6 +315,37 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Ownership disclosure — PLAN.md 0.3 / Appendix B. Mirrored in the
+            crawler footer (seo-body-renderer.ts); keep the copy in sync. */}
+        <div className="border-t border-gray-800 mt-8 pt-6 text-sm text-gray-400">
+          <p className="max-w-3xl">
+            Hydrogen Studies is built and funded by Echo Technologies LLC, the maker of{" "}
+            <a
+              href={echoHomeUrl}
+              target="_blank"
+              rel="noopener sponsored"
+              onClick={() => trackOutboundClick(echoHomeUrl, "footer-disclosure")}
+              className="text-teal-400 hover:text-teal-300 transition-colors"
+            >
+              Echo Water
+            </a>{" "}
+            hydrogen products. Our research team selects and summarizes studies
+            independently; Echo does not decide which studies are included or how they are
+            described.{" "}
+            <Link href="/editorial-policy" className="text-teal-400 hover:text-teal-300 transition-colors">
+              Editorial policy
+            </Link>{" "}
+            ·{" "}
+            <Link href="/methodology" className="text-teal-400 hover:text-teal-300 transition-colors">
+              Methodology
+            </Link>{" "}
+            ·{" "}
+            <Link href="/contact" className="text-teal-400 hover:text-teal-300 transition-colors">
+              Contact
+            </Link>
+          </p>
+        </div>
+
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
