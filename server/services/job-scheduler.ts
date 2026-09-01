@@ -65,6 +65,10 @@ export class JobScheduler {
   private lastContentQueueCheck: Date | null = null;
   private readonly JOURNAL_DATE_INTERVAL_MS = 24 * 60 * 60 * 1000; // Daily
   private lastJournalDateCheck: Date | null = null;
+  // H2 dosage-field enrichment: daily, 20 studies/run (Haiku extraction —
+  // ~$0 cost). Was script-only before; see Job 25.
+  private readonly H2_ENRICHMENT_INTERVAL_MS = 24 * 60 * 60 * 1000;
+  private lastH2EnrichmentCheck: Date | null = null;
   private readonly STUDY_SCORING_INTERVAL_MS = 24 * 60 * 60 * 1000; // Daily
   private lastStudyScoringCheck: Date | null = null;
   // Scheduled-publish runs every cycle (15m). If a blog is set to publish
@@ -358,6 +362,7 @@ export class JobScheduler {
         { name: "pipeline-processing", lastRun: toISO(this.lastPipelineProcessingCheck), intervalMs: this.CHECK_INTERVAL_MS },
         { name: "tldr-generation", lastRun: toISO(this.lastTldrGenerationCheck), intervalMs: this.CHECK_INTERVAL_MS },
         { name: "summary-enrichment", lastRun: toISO(this.lastSummaryEnrichmentCheck), intervalMs: this.CHECK_INTERVAL_MS },
+        { name: "h2-enrichment", lastRun: toISO(this.lastH2EnrichmentCheck), intervalMs: this.H2_ENRICHMENT_INTERVAL_MS },
         { name: "retraction-check", lastRun: toISO(this.lastRetractionCheck), intervalMs: this.RETRACTION_CHECK_INTERVAL_MS },
         { name: "link-building", lastRun: toISO(this.lastLinkBuildCheck), intervalMs: this.LINK_BUILD_INTERVAL_MS },
         { name: "citation-build", lastRun: toISO(this.lastCitationBuildCheck), intervalMs: this.CITATION_BUILD_INTERVAL_MS },
@@ -520,8 +525,20 @@ export class JobScheduler {
 
       // Job 7: Batch Blog Auto-Generation (runs after pipeline, up to 5 per cycle)
       // Generates blog articles for pipeline-processed studies that don't have one yet.
-      // Gated behind ENABLE_BLOG_BACKFILL=1 pending the demand-ranked generation rework.
-      if (process.env.ENABLE_BLOG_BACKFILL === "1") {
+      // Two gates: ENABLE_BLOG_BACKFILL=1 opts in, and GENERATION_ENABLED=false is
+      // the docs/PLAN.md master kill-switch ("Generation is paused") that wins
+      // regardless — autonomous article generation must not outrun corpus cleanup.
+      if (
+        process.env.ENABLE_BLOG_BACKFILL !== "1" ||
+        process.env.GENERATION_ENABLED === "false"
+      ) {
+        // PLAN.md 0.1: one-liner when generation is skipped, so "why is
+        // nothing generating" is answerable from the logs.
+        logger.info("Batch blog generation skipped (generation paused)", "JobScheduler", {
+          ENABLE_BLOG_BACKFILL: process.env.ENABLE_BLOG_BACKFILL ?? "(unset)",
+          GENERATION_ENABLED: process.env.GENERATION_ENABLED ?? "(unset)",
+        });
+      } else {
         try {
           const start = Date.now();
           await this.withTimeout(
@@ -621,6 +638,26 @@ export class JobScheduler {
       }
 
       // Job 13 (content-generation queue) moved to the fast loop — see runFastJobs().
+
+      // Job 25: H2 dosage-field enrichment (daily, 20 studies/run). Previously
+      // enrichH2Fields was reachable ONLY via the manual `npm run enrich-h2`
+      // script — nothing in the deployed app ever ran it, so H2 delivery/dosage
+      // fields never filled in on their own (audit 2026-08-30 deferred item).
+      try {
+        const start = Date.now();
+        await this.withTimeout(
+          () => this.runH2EnrichmentJob(),
+          10 * 60 * 1000,
+          "h2-enrichment",
+          () => { this.lastH2EnrichmentCheck = new Date(); }
+        );
+        const elapsed = Date.now() - start;
+        if (elapsed > 1000) {
+          logger.info(`Job completed in ${elapsed}ms`, "JobScheduler", { job: "h2-enrichment" });
+        }
+      } catch (error) {
+        logger.error("Job 25 (h2-enrichment) unexpected error", error, "JobScheduler");
+      }
 
       // Job 14: Journal publication-date backfill (runs once per day)
       try {
@@ -1168,6 +1205,34 @@ export class JobScheduler {
    * 100 studies per run. Replaces the deleted JournalDateUpdater admin page —
    * admins no longer need to click a button.
    */
+  /**
+   * Job 25: H2 dosage-field enrichment. Daily, 20 studies/run, Haiku-tier
+   * extraction. enrichH2Fields has its own isRunning guard and stamps
+   * h2ExtractionAttemptedAt per study so failing rows aren't re-selected.
+   */
+  private async runH2EnrichmentJob() {
+    try {
+      if (this.lastH2EnrichmentCheck) {
+        const elapsed = Date.now() - this.lastH2EnrichmentCheck.getTime();
+        if (elapsed < this.H2_ENRICHMENT_INTERVAL_MS) return;
+      }
+
+      const { enrichH2Fields } = await import("./h2-field-enrichment");
+      const stats = await enrichH2Fields(20);
+      this.lastH2EnrichmentCheck = new Date();
+
+      if (stats.totalProcessed > 0) {
+        logger.info("H2 field enrichment complete", "JobScheduler", {
+          processed: stats.totalProcessed,
+          enriched: stats.enriched,
+          errors: stats.errors,
+        });
+      }
+    } catch (error) {
+      logger.error("H2 enrichment job failed", error, "JobScheduler");
+    }
+  }
+
   private async runJournalDateBackfillJob() {
     try {
       if (this.lastJournalDateCheck) {

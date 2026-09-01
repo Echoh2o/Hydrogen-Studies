@@ -48,6 +48,16 @@ async function ensureTableExists(): Promise<boolean> {
  * Start or resume a blog generation job
  */
 export async function startJob(jobId: number): Promise<{ success: boolean; message: string }> {
+  // Master kill-switch from docs/PLAN.md: "Generation is paused.
+  // GENERATION_ENABLED=false". Bulk article generation stays off until the
+  // corpus consolidation lands; flip the env var to resume deliberately.
+  if (process.env.GENERATION_ENABLED === "false") {
+    return {
+      success: false,
+      message: "Content generation is paused (GENERATION_ENABLED=false — see docs/PLAN.md)",
+    };
+  }
+
   if (!(await ensureTableExists())) {
     return { success: false, message: "Job queue table not yet created. Deploy with db:push first." };
   }

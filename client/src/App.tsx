@@ -43,6 +43,8 @@ const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("@/pages/TermsOfServicePage"));
 const CookiePolicyPage = lazy(() => import("@/pages/CookiePolicyPage"));
 const MedicalDisclaimerPage = lazy(() => import("@/pages/MedicalDisclaimerPage"));
+const EditorialPolicyPage = lazy(() => import("@/pages/EditorialPolicyPage"));
+const MethodologyPage = lazy(() => import("@/pages/MethodologyPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const Studies = lazy(() => import("@/pages/studies"));
 const EnhancedSearchPage = lazy(() => import("@/pages/EnhancedSearchPage"));
@@ -240,6 +242,8 @@ function Router() {
         <Route path="/terms" component={TermsOfServicePage} />
         <Route path="/cookies" component={CookiePolicyPage} />
         <Route path="/disclaimer" component={MedicalDisclaimerPage} />
+        <Route path="/editorial-policy" component={EditorialPolicyPage} />
+        <Route path="/methodology" component={MethodologyPage} />
         <Route path="/learn/basics" component={HydrogenBasicsPage} />
         <Route path="/learn/health-benefits" component={HealthBenefitsPage} />
         <Route path="/blog" component={PublicBlogListPage} />

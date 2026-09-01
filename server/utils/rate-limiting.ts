@@ -4,7 +4,7 @@
  */
 
 import { Request, Response } from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 // Custom error message handler
 const rateLimitHandler = (req: Request, res: Response) => {
@@ -33,6 +33,39 @@ const skipRateLimit = (req: Request): boolean =>
   process.env.E2E_DISABLE_RATE_LIMIT === "1" || skipForAdmin(req);
 
 /**
+ * Rate-limit key: the REAL client IP (PLAN.md 0.2a).
+ *
+ * The site sits behind Cloudflare → Railway edge → app, and Express has
+ * `trust proxy = 1` (one hop). That makes `req.ip` the right-most
+ * X-Forwarded-For entry — a CLOUDFLARE COLO IP, not the visitor. Every
+ * visitor routed through the same colo shared one bucket, which is how
+ * Googlebot burned a "per-IP" budget it barely used (5×429 in a 40-request
+ * burst — PLAN.md Appendix D).
+ *
+ * CF-Connecting-IP is set by Cloudflare and cannot be forged THROUGH
+ * Cloudflare; on direct-to-Railway requests it's absent and we fall back to
+ * req.ip (the socket-adjacent address Railway saw — also unforgeable). We
+ * deliberately do NOT raise trust proxy to 2: on the direct path that would
+ * let clients spoof X-Forwarded-For and dodge limits entirely.
+ */
+export const clientIpKey = (req: Request): string => {
+  const ip = (req.headers["cf-connecting-ip"] as string) || req.ip || "";
+  // ipKeyGenerator normalizes IPv6 to its /64 so one visitor can't rotate
+  // through a subnet, and satisfies express-rate-limit v8's validation.
+  return ip ? ipKeyGenerator(ip) : "unknown";
+};
+
+/**
+ * General limiter ceiling — env-tunable (PLAN.md 0.2b), default 300/min.
+ * The old hardcoded 100/min combined with the shared-bucket bug above meant
+ * legitimate crawl bursts exhausted it.
+ */
+export const GENERAL_RATE_LIMIT_MAX = Math.max(
+  1,
+  parseInt(process.env.RATE_LIMIT_MAX || "300", 10) || 300,
+);
+
+/**
  * Strictest rate limit for AI/Generation endpoints
  * 5 requests per minute per IP
  */
@@ -44,6 +77,7 @@ export const aiGenerationRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   handler: rateLimitHandler,
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 
@@ -62,6 +96,7 @@ export const aiSearchRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 
@@ -80,6 +115,7 @@ export const nlSuggestionsRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 
@@ -95,6 +131,7 @@ export const searchRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 
@@ -104,9 +141,9 @@ export const searchRateLimiter = rateLimit({
  */
 export const generalApiRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 requests per window
+  max: GENERAL_RATE_LIMIT_MAX, // env-tunable via RATE_LIMIT_MAX, default 300 (PLAN.md 0.2b)
   message:
-    "General API rate limit exceeded. Maximum 100 requests per minute allowed.",
+    "General API rate limit exceeded. Please wait before trying again.",
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req: Request, res: Response) => {
@@ -118,6 +155,7 @@ export const generalApiRateLimiter = rateLimit({
       retryAfter: res.getHeader("Retry-After"),
     });
   },
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 
@@ -133,6 +171,7 @@ export const imageGenerationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 
@@ -148,6 +187,7 @@ export const blogGenerationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 
@@ -166,6 +206,7 @@ export function createCustomRateLimiter(
     standardHeaders: true,
     legacyHeaders: false,
     handler: rateLimitHandler,
+    keyGenerator: clientIpKey,
     skip: skipRateLimit,
   });
 }
@@ -182,6 +223,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  keyGenerator: clientIpKey,
   skip: skipRateLimit,
 });
 

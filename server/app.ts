@@ -92,6 +92,7 @@ import {
   aiSearchRateLimiter,
   nlSuggestionsRateLimiter,
   skipForAdmin,
+  clientIpKey,
 } from "./utils/rate-limiting";
 
 
@@ -447,6 +448,7 @@ const proxyRateLimiter = rateLimit({
   max: 60, // 60 req/min per IP for HTML pages
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: clientIpKey, // real client IP behind Cloudflare (PLAN.md 0.2a)
   skip: skipRateLimitInE2E,
 });
 const proxyExportRateLimiter = rateLimit({
@@ -454,6 +456,7 @@ const proxyExportRateLimiter = rateLimit({
   max: 5, // 5 CSV downloads per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: clientIpKey, // real client IP behind Cloudflare (PLAN.md 0.2a)
   skip: skipRateLimitInE2E,
 });
 app.use("/proxy/export", proxyExportRateLimiter);
@@ -623,6 +626,7 @@ const chatRateLimiter = rateLimit({
   max: 20, // 20 chat queries per hour per IP
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: clientIpKey, // real client IP behind Cloudflare (PLAN.md 0.2a)
   message: "Chat rate limit exceeded. Please try again later.",
   skip: skipForAdmin,
 });

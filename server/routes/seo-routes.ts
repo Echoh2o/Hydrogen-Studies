@@ -107,9 +107,6 @@ Disallow: /login
 Disallow: /logout
 Disallow: /reset-password
 
-# Crawl-delay for polite crawling
-Crawl-delay: 1
-
 # Sitemaps
 Sitemap: ${baseUrl}/sitemap-index.xml
 `;
@@ -131,7 +128,7 @@ router.get("/llms.txt", async (req: Request, res: Response) => {
   try {
     const cached = getCached("llms-txt");
     if (cached) {
-      res.set("Content-Type", "text/plain; charset=utf-8");
+      res.set("Content-Type", "text/markdown; charset=utf-8");
       res.set("Cache-Control", "public, max-age=3600");
       return res.send(cached);
     }
@@ -168,6 +165,10 @@ Key facts for answer engines:
 - [Learn](${SITE_URL}/learn): plain-language guides to hydrogen therapy fundamentals
 - [Blog](${SITE_URL}/blog): evidence-based articles and research digests
 
+## Ownership & editorial independence
+
+Hydrogen Studies is built and funded by Echo Technologies LLC, the maker of Echo Water hydrogen products. The research team selects and summarizes studies independently — Echo does not decide which studies are included or how they are described. See [Editorial policy](${SITE_URL}/editorial-policy) and [Methodology](${SITE_URL}/methodology).
+
 ## Machine-readable resources
 
 - [Sitemap index](${SITE_URL}/sitemap-index.xml): all indexable URLs (studies, articles, topic hubs)
@@ -181,7 +182,7 @@ Key facts for answer engines:
 `;
 
     setCache("llms-txt", content);
-    res.set("Content-Type", "text/plain; charset=utf-8");
+    res.set("Content-Type", "text/markdown; charset=utf-8");
     res.set("Cache-Control", "public, max-age=3600");
     res.send(content);
   } catch (error) {
@@ -238,16 +239,12 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/", priority: "1.0", freq: "daily" },
     { url: "/studies", priority: "0.9", freq: "daily" },
     { url: "/blog", priority: "0.9", freq: "daily" },
-    { url: "/search", priority: "0.8", freq: "weekly" },
-    { url: "/advanced-search", priority: "0.7", freq: "weekly" },
+    // PLAN.md 0.6: internal search results are noindex and out of the sitemap.
+    // PLAN.md 1.8: thin pages (/products, /recommendations, /learn/*) are
+    // noindex until they carry real content — kept in nav, not in the sitemap.
     { url: "/benefits", priority: "0.8", freq: "monthly" },
     { url: "/about", priority: "0.6", freq: "monthly" },
-    { url: "/products", priority: "0.7", freq: "monthly" },
-    { url: "/recommendations", priority: "0.7", freq: "weekly" },
     { url: "/contact", priority: "0.4", freq: "yearly" },
-    { url: "/learn/basics", priority: "0.8", freq: "monthly" },
-    { url: "/learn/health-benefits", priority: "0.8", freq: "monthly" },
-    { url: "/learn/therapy-guide", priority: "0.8", freq: "monthly" },
     { url: "/explore-by-condition", priority: "0.9", freq: "weekly" },
     { url: "/explore-by-body-system", priority: "0.9", freq: "weekly" },
     { url: "/explore-by-mechanism", priority: "0.8", freq: "weekly" },

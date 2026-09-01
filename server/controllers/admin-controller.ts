@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
 import { db } from "../db";
 import { sql, eq, count } from "drizzle-orm";
-import { studies, categories, blogArticles } from "@shared/schema";
+import { studies, categories, blogArticles, pipelineQueue } from "@shared/schema";
 import { asyncHandler } from "../utils/error-handler";
 import { withRetry } from "../utils/database-wrapper";
 import { DatabaseError } from "../utils/app-errors";
@@ -106,6 +106,21 @@ export class AdminController {
             }
           }
 
+          // Pipeline items parked at awaiting_approval — previously invisible
+          // unless the admin happened to open the Pipeline page, so discovered
+          // studies could sit unreviewed indefinitely (audit 2026-08-30).
+          // Surfaced here so the dashboard can badge it.
+          let pipelineAwaitingApproval = 0;
+          try {
+            const [awaiting] = await db
+              .select({ count: count() })
+              .from(pipelineQueue)
+              .where(eq(pipelineQueue.status, "awaiting_approval"));
+            pipelineAwaitingApproval = Number(awaiting?.count ?? 0);
+          } catch {
+            // pipeline_queue may not exist in a fresh dev DB — not worth failing the dashboard
+          }
+
           return {
             totalBlogs: Number(totalResult.count),
             publishedBlogs: Number(publishedResult.count),
@@ -113,6 +128,7 @@ export class AdminController {
             totalStudies: Number(studiesCount),
             categoriesCount: 8,
             recentImports: 0,
+            pipelineAwaitingApproval,
           };
         },
         { maxRetries: 2, retryDelay: 500 },
