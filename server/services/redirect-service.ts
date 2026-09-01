@@ -175,6 +175,16 @@ export function redirectMiddleware() {
         .where(eq(redirects.id, match.id))
         .catch((err) => logger.error("Failed to update redirect hit count", err, TAG));
 
+      // 410 Gone rows (Phase 2 retirements): not a redirect — the URL is
+      // permanently retired. Serving a real 410 (vs 404) tells Google to drop
+      // it faster and is the PLAN.md 2.2 semantic ("410 the rest").
+      if (match.statusCode === 410) {
+        res.status(410)
+          .set("Cache-Control", "public, max-age=86400")
+          .type("text/html")
+          .send("<!doctype html><title>410 Gone</title><h1>410 Gone</h1><p>This page has been permanently retired. Browse current research at <a href=\"/studies\">hydrogenstudies.com/studies</a>.</p>");
+        return;
+      }
       res.redirect(match.statusCode, match.toPath);
       return;
     }
