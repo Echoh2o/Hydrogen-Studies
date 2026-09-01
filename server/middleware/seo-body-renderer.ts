@@ -8,6 +8,7 @@
 import { db } from "../db";
 import { sql } from "drizzle-orm";
 import { sanitizeArticleHtml } from "../utils/sanitize-html";
+import { marked } from "marked";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -322,8 +323,26 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
 
     // Blog content — DOM-aware allowlist sanitization (DOMPurify), keeps
     // structural HTML while stripping scripts/handlers/dangerous URIs.
+    //
+    // PLAN.md 1.5 stopgap: many generated articles are stored as MARKDOWN, and
+    // crawlers were served the raw source — literal ** and [text](url) with no
+    // real <a> links or heading structure. Render markdown → HTML first (with
+    // slug ids on h2/h3 so anchors work), then sanitize as before.
     if (b.content) {
-      const safeContent = sanitizeArticleHtml(b.content as string);
+      let raw = b.content as string;
+      const looksLikeMarkdown =
+        !/<(p|h\d|div|ul|ol|table)\b/i.test(raw) &&
+        /(\*\*|^#{1,3} |\n#{1,3} |\]\()/m.test(raw);
+      if (looksLikeMarkdown) {
+        try {
+          raw = marked.parse(raw, { async: false }) as string;
+          raw = raw.replace(/<h([23])>([^<]+)<\/h\1>/g,
+            (_m, lvl, text) => `<h${lvl} id="${slugify(text)}">${text}</h${lvl}>`);
+        } catch {
+          // fall through with the original content — sanitizer still applies
+        }
+      }
+      const safeContent = sanitizeArticleHtml(raw);
       h += `<div itemprop="articleBody">${safeContent}</div>\n`;
     } else if (b.summary) {
       h += `<div itemprop="articleBody"><p>${esc(b.summary)}</p></div>\n`;

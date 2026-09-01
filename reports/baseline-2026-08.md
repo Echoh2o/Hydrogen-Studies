@@ -3,10 +3,9 @@
 Generated 2026-09-01 by Claude Code. Items marked **[JOSH]** need UI access I don't have;
 everything else is measured.
 
-## 0.10 GSC Manual Actions + Security Issues — **[JOSH]**
-Not accessible via API from here. Check in Search Console → Manual actions / Security issues
-for BOTH properties (hydrogenstudies.com, echowater.com) and record the result here.
-**If a manual action exists, Phase 2 ends with a reconsideration request** (plan 2.6).
+## 0.10 GSC Manual Actions + Security Issues — ✅ CHECKED (Josh, 2026-09-01)
+Josh confirmed done. Working assumption: no manual action found (flag here if otherwise —
+it would add a reconsideration request to the end of Phase 2 per plan 2.6).
 
 ## 0.11 Spam-update impact (from synced GSC data)
 
@@ -27,16 +26,15 @@ window as real. Directionally consistent either way with the known collapse (~te
 clicks/week sitewide). Expectation per plan: spam-flagged sites don't recover until the next
 spam-update re-evaluation — blog recovery is a Q4 2026 / Q1 2027 event.
 
-## 0.12 Cloudflare bot settings — **[JOSH]**
-Not observable from outside and not exposed by the connected Cloudflare MCP tools (Workers/
-KV/R2 only). In the Cloudflare dashboard → Security → Bots for hydrogenstudies.com: confirm
-"AI Scrapers and Crawlers" blocking is NOT blocking verified OAI-SearchBot, ClaudeBot,
-PerplexityBot, Applebot, bingbot. Plan recommendation: **allow all, including training
-crawlers (GPTBot, CCBot)** — this site exists to be cited.
+## 0.12 Cloudflare bot settings — ✅ CHECKED (Josh, 2026-09-01)
+Not blocking. (The mass-429s seen in the first crawl were OUR OWN mis-scoped 30/min
+limiter — europepmc router root-mount — fixed in PR #56.)
 
 ## 0.13 Authority baseline (Ahrefs) — **[JOSH]**
-Ahrefs API is plan-gated on the connected account (verified: `Insufficient plan` on
-site-explorer-metrics and even the free DR endpoint). Export from the Ahrefs UI:
+Ahrefs API is plan-gated: even the FREE subscription-info endpoint returns
+`Insufficient plan` — the MCP connection works but the Ahrefs subscription tier has NO API
+access (Enterprise feature/paid add-on). Options: 5-min UI export, or add API to the plan.
+Until then the keep-list runs on GSC signal only. Export from the Ahrefs UI:
 DR, referring domains, organic traffic, top pages for: hydrogenstudies.com, echowater.com,
 molecularhydrogeninstitute.org, h2hubb.com, hydrogenwaterstudies.com.
 Also export **"Best by links" for hydrogenstudies.com/blog/** → save as
