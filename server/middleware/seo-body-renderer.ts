@@ -341,6 +341,43 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
   } catch { return null; }
 }
 
+/**
+ * Editorial-policy / methodology stubs for crawlers (PLAN.md 0.3). Content
+ * mirrors the client pages (EditorialPolicyPage.tsx / MethodologyPage.tsx) —
+ * keep in sync until Phase 4.2 replaces both with full pages.
+ */
+async function renderPolicyPage(pathname: string): Promise<string> {
+  const conditions = await getTopConditions();
+  const isEditorial = pathname === "/editorial-policy";
+  let h = breadcrumbs([
+    { label: "Home", href: "/" },
+    { label: isEditorial ? "Editorial Policy" : "Methodology" },
+  ]);
+  if (isEditorial) {
+    h += `<article><h1>Editorial Policy</h1>
+<h2>Who funds this site</h2>
+<p>Hydrogen Studies is built and funded by Echo Technologies LLC, the maker of Echo Water hydrogen products. We state this on every page because sponsored science reporting is only trustworthy when the sponsorship is visible.</p>
+<h2>Editorial independence</h2>
+<p>Our research team selects and summarizes studies independently. Echo does not decide which studies are included, excluded, or how any study is described. Studies with unfavorable, null, or negative findings for hydrogen products are included on the same basis as favorable ones — and studies funded by industry, including any funded by Echo Technologies, are flagged as such.</p>
+<h2>What this site is not</h2>
+<p>Hydrogen Studies is an educational research database, not medical advice and not product marketing. Product mentions appear only in clearly labeled sponsor modules, never inside study summaries, and never on pages about diagnosed medical conditions.</p>
+<p>A fuller version of this policy — including our correction process, reviewer credentials, and update cadence — is being prepared and will replace this page. Questions in the meantime: <a href="/contact">contact us</a>.</p>
+</article>\n`;
+  } else {
+    h += `<article><h1>Methodology</h1>
+<h2>How studies enter the database</h2>
+<p>Studies are discovered from PubMed, Europe PMC, CrossRef, and related indexes using hydrogen-therapy search terms, then screened before publication. Every study page links its primary source (DOI, PubMed, or PMC) so claims can be checked against the original paper. Retractions are monitored and flagged.</p>
+<h2>How summaries are produced</h2>
+<p>Summaries are drafted with AI assistance from the study abstract or full text, then reviewed before publication. We are transparent about this because we believe the review step, not the drafting tool, is what makes a summary trustworthy. Named reviewer credentials and per-study review dates are being rolled out across the database.</p>
+<h2>Funding and conflicts</h2>
+<p>Hydrogen Studies is funded by Echo Technologies LLC. Study funding sources and conflicts of interest are being recorded as structured, filterable data for every study — including studies funded by Echo Technologies or other industry sources, which are flagged as industry-funded.</p>
+<p>A fuller version — inclusion criteria, evidence grading, update cadence, and the corrections process — is being prepared and will replace this page.</p>
+</article>\n`;
+  }
+  h += footer(conditions);
+  return h;
+}
+
 async function renderHomepage(): Promise<string> {
   const [conditions, recent, blogs, statsR] = await Promise.all([
     getTopConditions(),
@@ -777,6 +814,12 @@ function renderStaticPage(pathname: string): string | null {
 // ── Main dispatcher ───────────────────────────────────────────
 
 export async function renderPageBody(pathname: string): Promise<string | null> {
+  // Disclosure/policy pages (PLAN.md 0.3): must be crawlable — the footer
+  // disclosure links here from every page, so a bot 404 would undermine it.
+  if (pathname === "/editorial-policy" || pathname === "/methodology") {
+    return renderPolicyPage(pathname);
+  }
+
   // Study page
   const studyMatch = pathname.match(/^\/stud(?:y|ies)\/([^/]+)$/);
   if (studyMatch) return renderStudy(studyMatch[1]);
