@@ -893,6 +893,10 @@ export class JobScheduler {
 
       // Job 13: Content Generation Queue — heaviest fast-loop job (10-min
       // timeout), so it runs last; see ordering note above.
+      // IMPORTANT: keep maxItems × worst-case-item-duration < 600,000ms.
+      // At 5 items each item has ~120s average headroom for multi-step AI
+      // generation (blogs + image + links + articles). Do not raise maxItems
+      // back to 10 — that left only ~60s/item and caused timeout errors.
       try {
         const start = Date.now();
         await this.withTimeout(
@@ -1883,7 +1887,7 @@ export class JobScheduler {
   /**
    * Job 13: Content Generation Queue
    * Processes pending items from the unified content generation queue.
-   * Runs every 5 minutes, processes 2 studies per cycle to respect API rate limits.
+   * Runs every 5 minutes, processes 5 items per cycle (see maxItems comment above).
    */
   private async runContentQueueJob(signal?: AbortSignal) {
     try {
@@ -1893,7 +1897,7 @@ export class JobScheduler {
       }
 
       const { processContentQueue } = await import("./content-generation-worker");
-      const result = await processContentQueue(10, signal);
+      const result = await processContentQueue(5, signal);
       this.lastContentQueueCheck = new Date();
 
       if (result.processed > 0 || result.failed > 0) {
