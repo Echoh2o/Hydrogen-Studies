@@ -11,16 +11,22 @@ export type CookiePreferences = {
 };
 
 export function getCookieConsent(): string | null {
-  return localStorage.getItem(CONSENT_KEY);
+  try {
+    return localStorage.getItem(CONSENT_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function getCookiePreferences(): CookiePreferences {
-  const prefs = localStorage.getItem("hs_cookie_preferences");
-  if (prefs) {
-    try {
-      return JSON.parse(prefs);
-    } catch {}
-  }
+  try {
+    const prefs = localStorage.getItem("hs_cookie_preferences");
+    if (prefs) {
+      try {
+        return JSON.parse(prefs);
+      } catch {}
+    }
+  } catch {}
   return { necessary: true, analytics: false, functional: false };
 }
 
@@ -43,36 +49,46 @@ export default function CookieConsent() {
   });
 
   useEffect(() => {
-    const consent = localStorage.getItem(CONSENT_KEY);
-    if (!consent) {
-      const timer = setTimeout(() => setIsVisible(true), 800);
-      return () => clearTimeout(timer);
+    try {
+      const consent = localStorage.getItem(CONSENT_KEY);
+      if (!consent) {
+        const timer = setTimeout(() => setIsVisible(true), 800);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // Storage access blocked; leave banner hidden and skip consent tracking
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem(CONSENT_KEY, "accepted");
-    localStorage.setItem(
-      "hs_cookie_preferences",
-      JSON.stringify({ necessary: true, analytics: true, functional: true }),
-    );
+    try {
+      localStorage.setItem(CONSENT_KEY, "accepted");
+      localStorage.setItem(
+        "hs_cookie_preferences",
+        JSON.stringify({ necessary: true, analytics: true, functional: true }),
+      );
+    } catch {}
     setIsVisible(false);
     window.dispatchEvent(new Event("cookie-consent-updated"));
   };
 
   const handleDecline = () => {
-    localStorage.setItem(CONSENT_KEY, "declined");
-    localStorage.setItem(
-      "hs_cookie_preferences",
-      JSON.stringify({ necessary: true, analytics: false, functional: false }),
-    );
+    try {
+      localStorage.setItem(CONSENT_KEY, "declined");
+      localStorage.setItem(
+        "hs_cookie_preferences",
+        JSON.stringify({ necessary: true, analytics: false, functional: false }),
+      );
+    } catch {}
     setIsVisible(false);
     window.dispatchEvent(new Event("cookie-consent-updated"));
   };
 
   const handleSavePreferences = () => {
-    localStorage.setItem(CONSENT_KEY, "customized");
-    localStorage.setItem("hs_cookie_preferences", JSON.stringify(preferences));
+    try {
+      localStorage.setItem(CONSENT_KEY, "customized");
+      localStorage.setItem("hs_cookie_preferences", JSON.stringify(preferences));
+    } catch {}
     setIsVisible(false);
     setShowPreferences(false);
     window.dispatchEvent(new Event("cookie-consent-updated"));
