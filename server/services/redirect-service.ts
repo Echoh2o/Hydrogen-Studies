@@ -442,6 +442,16 @@ export function popularityBonus(viewCount: number | null | undefined): number {
   return Math.min(0.05, Math.log10(v + 1) / 60); // ~0.02 at 10 views, capped at 0.05
 }
 
+/**
+ * Site path of a condition hub. Suggestions must target THIS host's routes:
+ * `/tools/hydrogen-research/condition/<slug>` only exists on echowater.com
+ * (Shopify App Proxy → /proxy/*) and 404s here, so every auto-promoted
+ * condition redirect built with it pointed at a dead page (fixed 2026-09-23).
+ */
+export function conditionHubPath(slug: string): string {
+  return `/explore-by-condition/${slug}`;
+}
+
 /** Public entry point — returns ranked candidates for a 404 path. */
 export async function getRankedSuggestions(path: string): Promise<RedirectSuggestion[]> {
   const { query, tokens, pathHint, lastSegment } = reconstructQuery(path);
@@ -463,7 +473,7 @@ export async function getRankedSuggestions(path: string): Promise<RedirectSugges
       .from(healthConditions).where(eq(healthConditions.slug, lastSegment)).limit(1);
     if (c?.slug) {
       return [{
-        target: `/tools/hydrogen-research/condition/${c.slug}`,
+        target: conditionHubPath(c.slug),
         contentType: "condition",
         title: c.name ?? null,
         score: 1,
@@ -665,7 +675,7 @@ export async function getRankedSuggestions(path: string): Promise<RedirectSugges
       if (prefixBonus > 0) reasons.push("URL path hint: /condition");
 
       candidates.push({
-        target: `/tools/hydrogen-research/condition/${r.slug}`,
+        target: conditionHubPath(r.slug),
         contentType: "condition",
         title: r.name ?? null,
         score,

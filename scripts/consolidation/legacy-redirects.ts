@@ -8,7 +8,9 @@
  *   repoint (previous_to_path set)    an EXISTING row whose target is dead
  *                                     (410 retirement, or a 404 that this map
  *                                     now redirects) gets the live final
- *                                     target, so nothing chains
+ *                                     target, so nothing chains; an optional
+ *                                     status_code column also sets 301/302
+ *                                     (previous_status_code is kept for --revert)
  *
  *   (default)            DRY RUN: re-validates every selected row against the
  *                        DB and the live site, prints the plan. Writes nothing.
@@ -153,8 +155,12 @@ async function main() {
       await log(db, "deactivated", r.from_path, r.to_path, 301, "", `${NOTE} (revert)`);
     }
     for (const r of repointed) {
-      await db.execute(sql`UPDATE redirects SET to_path = ${r.previous_to_path} WHERE from_path = ${r.from_path} AND to_path = ${r.to_path}`);
-      await log(db, "updated", r.from_path, r.previous_to_path, existing.get(r.from_path)!.status, "", `${NOTE} (revert repoint from ${r.to_path})`);
+      const restoreStatus = r.previous_status_code ? Number(r.previous_status_code) : existing.get(r.from_path)!.status;
+      await db.execute(sql`
+        UPDATE redirects SET to_path = ${r.previous_to_path}, status_code = ${restoreStatus}
+        WHERE from_path = ${r.from_path} AND to_path = ${r.to_path}
+      `);
+      await log(db, "updated", r.from_path, r.previous_to_path, restoreStatus, "", `${NOTE} (revert repoint from ${r.to_path})`);
     }
     console.log("revert complete. Redirect cache TTL ≈5 min.");
     process.exit(0);
@@ -189,8 +195,10 @@ async function main() {
       const cur = existing.get(from);
       if (!cur || !cur.active) { refused.push([r, "repoint: row missing or inactive"]); continue; }
       if (cur.status === 410) { refused.push([r, "repoint: 410 rows are never modified"]); continue; }
-      if (cur.to === to) { skipped.push(r); continue; }
-      if (cur.to !== r.previous_to_path) { refused.push([r, `repoint: row now points at ${cur.to}, not ${r.previous_to_path}`]); continue; }
+      const wantStatus = r.status_code ? Number(r.status_code) : cur.status;
+      if (![301, 302].includes(wantStatus)) { refused.push([r, `repoint: status_code ${r.status_code} not 301/302`]); continue; }
+      if (cur.to === to && cur.status === wantStatus) { skipped.push(r); continue; }
+      if (cur.to !== to && cur.to !== r.previous_to_path) { refused.push([r, `repoint: row now points at ${cur.to}, not ${r.previous_to_path}`]); continue; }
     } else {
       const prob = fromPathProblem(from);
       if (prob) { refused.push([r, `from_path ${prob}`]); continue; }
@@ -212,7 +220,11 @@ async function main() {
   console.log(`skip (already done / from_path exists): ${skipped.length}`);
   console.log(`refused: ${refused.length}`);
   for (const r of inserts) console.log(`  + ${r.from_path} → ${r.to_path}  [${r.match_method}/${r.confidence}]`);
-  for (const r of repoints) console.log(`  ~ ${r.from_path}: ${r.previous_to_path} → ${r.to_path}  [${r.match_method}]`);
+  for (const r of repoints) {
+    const cur = existing.get(r.from_path)!;
+    const st = r.status_code && Number(r.status_code) !== cur.status ? ` (status ${cur.status} → ${r.status_code})` : "";
+    console.log(`  ~ ${r.from_path}: ${cur.to} → ${r.to_path}${st}  [${r.match_method}]`);
+  }
   for (const r of skipped) console.log(`  = ${r.from_path} (exists → ${existing.get(r.from_path)?.to})`);
   for (const [r, why] of refused) console.log(`  ! ${r.from_path} → ${r.to_path}: ${why}`);
 
@@ -235,14 +247,17 @@ async function main() {
     inserted++;
   }
   for (const r of repoints) {
+    const cur = existing.get(r.from_path)!;
+    const newStatus = r.status_code ? Number(r.status_code) : cur.status;
     const res = await db.execute(sql`
-      UPDATE redirects SET to_path = ${r.to_path}
-      WHERE from_path = ${r.from_path} AND to_path = ${r.previous_to_path} AND is_active = true AND status_code <> 410
-      RETURNING id, status_code
+      UPDATE redirects SET to_path = ${r.to_path}, status_code = ${newStatus}
+      WHERE from_path = ${r.from_path} AND to_path = ${cur.to} AND status_code = ${cur.status}
+        AND is_active = true AND status_code <> 410
+      RETURNING id
     `);
     if (!res.rows?.length) { console.log(`  = ${r.from_path} (changed concurrently; skipped)`); continue; }
-    const code = Number((res.rows[0] as any).status_code);
-    await log(db, "updated", r.from_path, r.to_path, code, r.confidence, `${NOTE} (${r.match_method}; was ${r.previous_to_path})`);
+    const was = `was ${cur.to}${newStatus !== cur.status ? ` (${cur.status})` : ""}`;
+    await log(db, "updated", r.from_path, r.to_path, newStatus, r.confidence, `${NOTE} (${r.match_method}; ${was})`);
     updated++;
   }
   console.log(`\nAPPLY complete: inserted ${inserted}, repointed ${updated}. Redirect cache TTL ≈5 min before rows serve.`);

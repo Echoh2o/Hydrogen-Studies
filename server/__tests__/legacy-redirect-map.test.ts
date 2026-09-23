@@ -76,10 +76,23 @@ describe("reports/redirects-legacy-2026-09.csv", () => {
     expect(applied.find((r) => key(r.from_path) === "/search")).toBeUndefined();
   });
 
-  it("repoints record the previous target so they can be reverted", () => {
+  it("repoints record the previous target (and status) so they can be reverted", () => {
     for (const r of repoints) {
       expect(r.previous_to_path).not.toBe(r.to_path);
       expect(r.match_method).toMatch(/^repoint-/);
+      if (r.status_code) {
+        expect(["301", "302"]).toContain(r.status_code);
+        expect(r.previous_status_code, r.from_path).toMatch(/^30[12]$/);
+      }
+    }
+  });
+
+  it("no applied row targets the echowater App Proxy path (404s on this host)", () => {
+    for (const r of applied) expect(r.to_path.startsWith("/tools/"), r.from_path).toBe(false);
+    // …and every row that used to point there is now a permanent 301
+    for (const r of repoints.filter((x) => x.previous_to_path.startsWith("/tools/hydrogen-research/condition/"))) {
+      expect(r.to_path, r.from_path).toMatch(/^\/explore-by-condition\/[a-z0-9-]+$/);
+      expect(r.status_code || "301", r.from_path).toBe("301");
     }
   });
 });
