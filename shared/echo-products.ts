@@ -101,29 +101,102 @@ export function productsForDeliveryMethod(method: string | null | undefined): Ec
 
 export const ECHOWATER_ORIGIN = "https://echowater.com";
 
-export interface EchoUrlOptions {
-  /** utm_campaign; defaults to "research". */
-  campaign?: string;
-  /** utm_content — use to identify the CTA placement (e.g. "study-sidebar"). */
-  content?: string;
+/**
+ * UTM attribution context — CLAUDE.md: every link to echowater.com carries
+ * utm_source=hydrogenstudies&utm_medium=referral&utm_campaign=<page_type>&utm_content=<slug>.
+ * `pageType`/`slug` describe the PAGE the link sits on, not the CTA placement
+ * (placement is tracked separately in GA4 by trackOutboundClick).
+ */
+export interface EchoUtmContext {
+  /** e.g. "home", "study", "blog", "hub", "hydrogen-for", "about". */
+  pageType: string;
+  /** The page's own slug ("home" for the homepage). */
+  slug: string;
+}
+
+/** Normalize a UTM value: lowercase, url-safe, bounded. */
+export function normalizeUtmValue(value: string | null | undefined, fallback = "unknown"): string {
+  const v = String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100);
+  return v || fallback;
+}
+
+const ECHO_HOST_RE = /^(?:www\.)?echowater\.com$/i;
+const ABSOLUTE_URL_RE = /^(?:https?:)?\/\//i;
+
+/** Is `href` an absolute (or protocol-relative) link to echowater.com? */
+export function isEchoUrl(href: string | null | undefined): boolean {
+  if (!href) return false;
+  const h = href.trim();
+  if (!ABSOLUTE_URL_RE.test(h)) return false;
+  try {
+    const url = new URL(h.startsWith("//") ? `https:${h}` : h);
+    return ECHO_HOST_RE.test(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Build an echowater.com URL with consistent UTM attribution.
- * Every link this codebase emits to the store must go through this helper so
- * echowater's GA4/Shopify analytics can attribute the traffic (previously all
- * links were untagged and rel="noreferrer" — recorded as Direct).
+ * Build an echowater.com URL with the canonical UTM set. Accepts a store path
+ * ("/products/echo-flask") or an absolute echowater.com URL. Any existing
+ * utm_* params are replaced, so a link can never carry stale placement tags.
+ * Every link this codebase emits to the store must go through this helper
+ * (or, for rendered content, through rewriteEchoLinks* in content-links.ts).
  */
-export function buildEchoUrl(path: string, opts: EchoUrlOptions = {}): string {
-  const url = new URL(path.startsWith("http") ? path : `${ECHOWATER_ORIGIN}${path.startsWith("/") ? "" : "/"}${path}`);
+export function buildEchoUrl(href: string, ctx: EchoUtmContext): string {
+  const raw = (href || "/").trim();
+  const absolute = ABSOLUTE_URL_RE.test(raw)
+    ? (raw.startsWith("//") ? `https:${raw}` : raw)
+    : `${ECHOWATER_ORIGIN}${raw.startsWith("/") ? "" : "/"}${raw}`;
+  const url = new URL(absolute);
+  for (const key of Array.from(url.searchParams.keys())) {
+    if (key.toLowerCase().startsWith("utm_")) url.searchParams.delete(key);
+  }
   url.searchParams.set("utm_source", "hydrogenstudies");
   url.searchParams.set("utm_medium", "referral");
-  url.searchParams.set("utm_campaign", opts.campaign || "research");
-  if (opts.content) url.searchParams.set("utm_content", opts.content);
+  url.searchParams.set("utm_campaign", normalizeUtmValue(ctx.pageType, "page"));
+  url.searchParams.set("utm_content", normalizeUtmValue(ctx.slug, "home"));
   return url.toString();
 }
 
 /** Convenience: tagged product URL. */
-export function echoProductUrl(product: EchoProduct, opts: EchoUrlOptions = {}): string {
-  return buildEchoUrl(`/products/${product.handle}`, opts);
+export function echoProductUrl(product: EchoProduct, ctx: EchoUtmContext): string {
+  return buildEchoUrl(`/products/${product.handle}`, ctx);
+}
+
+/**
+ * Derive the UTM page context from a site pathname so the bot renderer
+ * (server) and the SPA (client) tag links identically:
+ *   /                          → home / home
+ *   /study/<slug>              → study / <slug>
+ *   /blog/<slug>               → blog / <slug>
+ *   /hub/<topic>               → hub / <topic>
+ *   /hydrogen-for/<slug>       → hydrogen-for / <slug>
+ *   /explore-by-condition/<x>  → condition / <x>
+ *   /about                     → about / about
+ */
+export function pageContextFromPath(pathname: string | null | undefined): EchoUtmContext {
+  const clean = String(pathname ?? "/").split(/[?#]/)[0];
+  const segs = clean.split("/").filter(Boolean);
+  if (segs.length === 0) return { pageType: "home", slug: "home" };
+  const first = segs[0].toLowerCase();
+  const TYPE_MAP: Record<string, string> = {
+    study: "study",
+    studies: "study",
+    blog: "blog",
+    hub: "hub",
+    "hydrogen-for": "hydrogen-for",
+    "explore-by-condition": "condition",
+    "explore-by-body-system": "body-system",
+    learn: "learn",
+  };
+  const pageType =
+    TYPE_MAP[first] ?? (first.startsWith("explore-by-") ? first.replace(/^explore-by-/, "explore-") : first);
+  const slug = segs.length > 1 ? segs[segs.length - 1] : first;
+  return { pageType: normalizeUtmValue(pageType, "page"), slug: normalizeUtmValue(slug, "home") };
 }
