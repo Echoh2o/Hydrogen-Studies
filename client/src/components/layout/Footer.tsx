@@ -367,6 +367,15 @@ export default function Footer() {
               >
                 Privacy
               </Link>
+              {/* Opens the consent panel (cookie-consent.tsx listens for
+                  OPEN_PRIVACY_CHOICES_EVENT = "showCookieSettings"). */}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event("showCookieSettings"))}
+                className="text-gray-400 hover:text-teal-400 transition-colors"
+              >
+                Privacy choices
+              </button>
               <Link
                 href="/terms"
                 className="text-gray-400 hover:text-teal-400 transition-colors"

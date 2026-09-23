@@ -3,6 +3,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { openPrivacyChoices } from "@/lib/consent";
 
 export default function CookiePolicyPage() {
   const title = "Cookie Policy - Hydrogen Studies";
@@ -10,11 +11,8 @@ export default function CookiePolicyPage() {
     "Cookie Policy for Hydrogen Studies. Learn about how we use cookies and how to manage your preferences.";
   const url = "https://hydrogenstudies.com/cookies";
 
-  const handleManageCookies = () => {
-    // Trigger cookie consent dialog
-    const event = new CustomEvent('showCookieSettings');
-    window.dispatchEvent(event);
-  };
+  // Opens the privacy-choices panel (components/ui/cookie-consent.tsx).
+  const handleManageCookies = () => openPrivacyChoices();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
@@ -35,12 +33,12 @@ export default function CookiePolicyPage() {
           
           <div className="prose prose-gray max-w-none">
             <p className="text-sm text-gray-600 mb-6">
-              Last Updated: August 4, 2026
+              Last Updated: September 23, 2026
             </p>
 
             <div className="bg-teal-50 border-l-4 border-teal-400 p-4 mb-8">
               <p className="text-gray-700">
-                This Cookie Policy explains how Hydrogen Studies ("we," "us," or "our") uses cookies and similar tracking technologies on our website. By using our website, you consent to the use of cookies in accordance with this policy.
+                This Cookie Policy explains how Hydrogen Studies ("we," "us," or "our") uses cookies and similar technologies on our website, and the choices you have. In short: we use analytics to see which pages are useful, we run no ads, and you can turn analytics off at any time with the <strong>Privacy choices</strong> link in the site footer.
               </p>
             </div>
 
@@ -75,9 +73,30 @@ export default function CookiePolicyPage() {
                 <li>Maintaining security and preventing fraud</li>
               </ul>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">2.2 Performance and Analytics Cookies</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">2.2 Analytics</h3>
               <p className="text-gray-700 mb-4">
-                These cookies allow us to count visits and traffic sources so we can measure and improve the performance of our site. They help us to know which pages are the most and least popular and see how visitors move around the site. The information collected is aggregated and anonymous.
+                We use two analytics tools to count visits, see which pages are most and least useful, and learn where visitors come from:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>
+                  <strong>Google Analytics 4 (GA4) with Google Consent Mode.</strong> GA4 sets its cookies (<code>_ga</code>, <code>_ga_&lt;ID&gt;</code>) only when analytics storage is allowed. When it is not allowed, GA4 still receives basic measurement signals (for example, that a page was viewed) without reading or writing cookies on your device, and Google uses them for aggregated, modeled reports. Google Analytics 4 does not log or store IP addresses. We do not use Google&apos;s advertising features: ad storage, ad user data and ad personalization are always off.
+                </li>
+                <li>
+                  <strong>Ahrefs Web Analytics.</strong> A cookieless tool that counts page views and referrers without setting cookies or storing an identifier on your device.
+                </li>
+              </ul>
+
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Where we ask first</h4>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>
+                  <strong>European Economic Area, United Kingdom and Switzerland:</strong> analytics cookies are off by default. We show a banner and set them only if you choose <em>Accept</em>.
+                </li>
+                <li>
+                  <strong>Everywhere else:</strong> analytics cookies are on by default. You can turn them off at any time with <em>Privacy choices</em> in the site footer or the button in section 5.2.
+                </li>
+              </ul>
+              <p className="text-gray-700 mb-4">
+                We decide whether to show the banner from the country our network provider (Cloudflare) associates with your IP address. We use it only for that decision and do not store it. Google applies the same regional default using its own location detection.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">2.3 Functionality Cookies</h3>
@@ -106,46 +125,34 @@ export default function CookiePolicyPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     <tr>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">sessionId</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">hydrogen.sid</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Essential</td>
-                      <td className="px-4 py-4 text-sm text-gray-700">Maintains user session state</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Session</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">Keeps your session and sign-in secure</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">24 hours (renewed while active)</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">auth-token</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">csrf-token</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Essential</td>
-                      <td className="px-4 py-4 text-sm text-gray-700">Authentication and security</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">7 days</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">Protects forms and account actions from cross-site request forgery</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">24 hours</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">cookie-consent</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Essential</td>
-                      <td className="px-4 py-4 text-sm text-gray-700">Stores your cookie preferences</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">1 year</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">hs_cookie_consent, hs_cookie_preferences</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Essential (browser storage)</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">Remembers your privacy choice</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">Until you clear site data</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">user-preferences</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Functional</td>
-                      <td className="px-4 py-4 text-sm text-gray-700">Remembers your settings and preferences</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">1 year</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">_ga</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Analytics (GA4)</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">Distinguishes visitors. Set only when analytics storage is allowed</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">2 years</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">_ga</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Analytics</td>
-                      <td className="px-4 py-4 text-sm text-gray-700">Google Analytics - distinguishes users</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">2 years</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">_gid</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Analytics</td>
-                      <td className="px-4 py-4 text-sm text-gray-700">Google Analytics - distinguishes users</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">24 hours</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">_gat</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Analytics</td>
-                      <td className="px-4 py-4 text-sm text-gray-700">Google Analytics - throttle request rate</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">1 minute</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">_ga_&lt;ID&gt;</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">Analytics (GA4)</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">Keeps GA4 session state. Set only when analytics storage is allowed</td>
+                      <td className="px-4 py-4 text-sm text-gray-700">2 years</td>
                     </tr>
                   </tbody>
                 </table>
@@ -166,8 +173,8 @@ export default function CookiePolicyPage() {
                 Third-party providers we use include:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
-                <li><strong>Google Analytics:</strong> Website analytics and performance monitoring (loaded only after you grant consent)</li>
-                <li><strong>Ahrefs Web Analytics:</strong> Privacy-friendly traffic analytics (loaded only after you grant consent)</li>
+                <li><strong>Google Analytics 4:</strong> Website analytics, run with Google Consent Mode (cookies only when analytics storage is allowed; see section 2.2)</li>
+                <li><strong>Ahrefs Web Analytics:</strong> Cookieless traffic analytics (not loaded if you opt out or send Global Privacy Control)</li>
                 <li><strong>Sentry:</strong> Application error monitoring</li>
                 <li><strong>Klaviyo:</strong> Newsletter and email engagement</li>
                 <li><strong>Shopify:</strong> Product commerce and checkout</li>
@@ -201,14 +208,14 @@ export default function CookiePolicyPage() {
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">5.2 Cookie Management on Our Website</h3>
               <p className="text-gray-700 mb-4">
-                You can manage your cookie preferences directly on our website:
+                You can change your choice at any time, wherever you are, with <em>Privacy choices</em> in the site footer or this button:
               </p>
               <Button 
                 onClick={handleManageCookies}
                 className="mb-4"
                 data-testid="button-manage-cookies"
               >
-                Manage Cookie Preferences
+                Open Privacy Choices
               </Button>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">5.3 Browser-Specific Instructions</h3>
@@ -228,7 +235,10 @@ export default function CookiePolicyPage() {
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
                 <li>
-                  <strong>Cookie banner:</strong> Decline analytics in our cookie banner — both Google Analytics and Ahrefs are only loaded after you consent, so declining prevents them from running at all.
+                  <strong>Privacy choices:</strong> Turn Analytics off (or choose <em>Reject</em> in the banner). Google Analytics stops using cookies right away and we delete the GA cookies it set on this site; it continues only in its cookieless mode described in section 2.2. Ahrefs Web Analytics stops loading from your next page view.
+                </li>
+                <li>
+                  <strong>Global Privacy Control:</strong> If your browser sends a GPC signal, we treat it as an opt-out (see section 6).
                 </li>
                 <li>
                   <strong>Google Analytics:</strong> Install the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Google Analytics Opt-out Browser Add-on</a>
@@ -240,9 +250,12 @@ export default function CookiePolicyPage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Do Not Track Signals</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Global Privacy Control and Do Not Track</h2>
               <p className="text-gray-700 mb-4">
-                Some browsers include a "Do Not Track" (DNT) feature that signals to websites that you do not want to have your online activity tracked. Currently, our website does not respond to DNT signals, but we respect your cookie preferences as set through our cookie consent tool and your browser settings.
+                We honor <a href="https://globalprivacycontrol.org/" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">Global Privacy Control</a> (GPC). If your browser sends it, analytics cookies stay off, Google Analytics runs only in its cookieless mode, Ahrefs Web Analytics is not loaded, and we do not show the consent banner. GPC takes priority over an earlier <em>Accept</em>.
+              </p>
+              <p className="text-gray-700 mb-4">
+                We do not respond to the older &quot;Do Not Track&quot; (DNT) header, which has no agreed meaning. Your choices in <em>Privacy choices</em> and your browser settings still apply.
               </p>
             </section>
 

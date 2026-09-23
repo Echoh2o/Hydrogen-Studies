@@ -54,6 +54,9 @@ export default defineConfig({
           setupFiles: ["@testing-library/jest-dom/vitest"],
           globals: true,
         },
+        // tsconfig has "jsx": "preserve" (Vite's React plugin handles JSX in
+        // the app build). Tests have no React plugin, so compile JSX here.
+        oxc: { jsx: { runtime: "automatic" } },
         resolve: {
           alias: {
             "@": path.resolve(import.meta.dirname, "client", "src"),

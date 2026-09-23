@@ -126,7 +126,11 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "https://www.googletagmanager.com",
+          // GA4 (gtag.js). Google's documented GA4 CSP uses the wildcard host.
+          // NOTE: no 'unsafe-inline' — the gtag bootstrap lives in the bundle
+          // (client/src/lib/analytics.ts); an inline <script> would be blocked
+          // (the old inline gtag('config') was, so GA4 never sent a hit).
+          "https://*.googletagmanager.com",
           "https://www.google-analytics.com",
           "https://analytics.ahrefs.com",
           // Cloudflare Web Analytics beacon (injected by the CF proxy in front
@@ -138,7 +142,11 @@ app.use(
         imgSrc: ["'self'", "data:", "https:", "blob:"],
         connectSrc: [
           "'self'",
-          "https://www.google-analytics.com",
+          // GA4 collect endpoints: www./region1.google-analytics.com,
+          // *.analytics.google.com (Google signals), googletagmanager.com.
+          "https://*.google-analytics.com",
+          "https://*.analytics.google.com",
+          "https://*.googletagmanager.com",
           "https://api.anthropic.com",
           "https://analytics.ahrefs.com",
           // Sentry browser SDK error/session ingest. Missing here, the frontend
@@ -370,6 +378,11 @@ app.get("/healthz", async (_req, res) => {
   healthCache = { at: Date.now(), out };
   res.status(out.status === "ok" ? 200 : 503).json(out);
 });
+
+// GET /api/geo — visitor country → whether the consent banner applies.
+// Mounted before the session middleware so it never creates a session row.
+import geoRoutes from "./routes/geo-routes";
+app.use(geoRoutes);
 
 // Shopify App Proxy SSR routes — public HTML pages, no CSRF/session needed
 // Mounted at /proxy — Shopify App Proxy forwards echowater.com/tools/hydrogen-research/* → /proxy/*
