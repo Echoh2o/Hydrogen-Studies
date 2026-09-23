@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
           
           <div className="prose prose-gray max-w-none">
             <p className="text-sm text-gray-600 mb-6">
-              Last Updated: August 4, 2026
+              Last Updated: September 23, 2026
             </p>
 
             <section className="mb-8">
@@ -100,9 +100,9 @@ export default function PrivacyPolicyPage() {
                 <li>Preference cookies to remember your settings</li>
               </ul>
 
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Analytics Cookies</h4>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Analytics</h4>
               <p className="text-gray-700 mb-4">
-                We use Google Analytics to understand how visitors interact with our website. These cookies collect information in an aggregated form, including:
+                We use Google Analytics 4 (with Google Consent Mode) and the cookieless Ahrefs Web Analytics to understand, in aggregate, how visitors use the site, including:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
                 <li>Number of visitors</li>
@@ -110,6 +110,9 @@ export default function PrivacyPolicyPage() {
                 <li>Traffic sources</li>
                 <li>User behavior patterns</li>
               </ul>
+              <p className="text-gray-700 mb-4">
+                In the European Economic Area, the United Kingdom and Switzerland, analytics cookies are off unless you accept them in our banner. Elsewhere they are on by default and you can turn them off at any time with <em>Privacy choices</em> in the site footer. We honor Global Privacy Control. Details are in our <a href="/cookies" className="text-blue-600 underline">Cookie Policy</a>.
+              </p>
 
               <h4 className="text-lg font-semibold text-gray-900 mb-2">Functional Cookies</h4>
               <p className="text-gray-700 mb-4">
@@ -152,7 +155,7 @@ export default function PrivacyPolicyPage() {
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Google Analytics</h3>
               <p className="text-gray-700 mb-4">
-                We use Google Analytics to analyze website traffic and usage patterns. Google Analytics collects information about your use of our website using cookies. This information is transmitted to and stored by Google on servers in the United States. Google uses this information to evaluate your use of our website, compile reports on website activity, and provide other services relating to website activity and internet usage. Analytics cookies are only set after you grant consent via our cookie banner.
+                We use Google Analytics 4 to analyze website traffic and usage patterns. It runs with Google Consent Mode: it sets analytics cookies only when analytics storage is allowed (after you accept in the European Economic Area, the United Kingdom and Switzerland; by default elsewhere unless you opt out or send Global Privacy Control). When analytics storage is not allowed, Google Analytics sends cookieless measurement signals that Google uses for aggregated, modeled reports. Google Analytics 4 does not log or store IP addresses, and Google&apos;s advertising features are off. This information is transmitted to and stored by Google, including on servers in the United States.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Other Third-Party Services</h3>
@@ -163,7 +166,7 @@ export default function PrivacyPolicyPage() {
               <ul className="list-disc pl-6 mb-4 text-gray-700">
                 <li><strong>Klaviyo</strong> — newsletter delivery and customer/marketing profiles</li>
                 <li><strong>SendGrid</strong> — transactional email (e.g. account and contact-form messages)</li>
-                <li><strong>Ahrefs Web Analytics</strong> — privacy-friendly site analytics (loaded only after consent)</li>
+                <li><strong>Ahrefs Web Analytics</strong> — cookieless site analytics (not loaded if you opt out or send Global Privacy Control)</li>
                 <li><strong>Sentry</strong> — application error monitoring (client and server)</li>
                 <li><strong>Shopify</strong> — commerce and order fulfilment for product purchases</li>
                 <li><strong>Railway</strong> — application hosting and our PostgreSQL database</li>
@@ -242,8 +245,9 @@ export default function PrivacyPolicyPage() {
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700">
                 <li>Marketing emails by clicking the unsubscribe link</li>
-                <li>Cookies by adjusting your browser settings</li>
-                <li>Analytics tracking by using browser extensions or opt-out tools</li>
+                <li>Analytics cookies, using <em>Privacy choices</em> in the site footer or by enabling Global Privacy Control in your browser</li>
+                <li>Cookies generally, by adjusting your browser settings</li>
+                <li>Google Analytics entirely, with Google&apos;s <a href="https://tools.google.com/dlpage/gaoptout" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">opt-out browser add-on</a></li>
               </ul>
             </section>
 

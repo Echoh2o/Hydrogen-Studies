@@ -44,7 +44,7 @@
     <link rel="alternate" type="application/rss+xml" title="Hydrogen Studies Blog" href="/rss.xml" />
 
     <!-- Site-wide structured data: Organization + WebSite/SearchAction.
-         The bot SSR middleware preserves head <script> tags (extractHeadAssets
+         The bot SSR middleware preserves head script tags (extractHeadAssets
          in seo-bot-middleware.ts), so this ships on every bot-rendered page
          alongside the page-specific schema. The homepage previously had NO
          JSON-LD at all (public/search-schema.json existed but was never
@@ -89,10 +89,14 @@
       }
     </script>
 
-    <!-- Ahrefs Analytics is injected at runtime by src/lib/analytics.ts, and
-         only after the visitor grants analytics consent (see initAhrefs).
-         Do NOT re-add a static <script> tag here — it would fire before
-         consent and bypass the cookie banner. -->
+    <!-- Analytics (GA4 with Consent Mode v2, cookieless Ahrefs) is started
+         from the bundle by src/lib/analytics.ts (initAnalytics in main.tsx),
+         which sets the consent defaults before anything loads. Do not add
+         inline analytics code here: the CSP has no unsafe-inline.
+         Never write a literal script tag inside an HTML comment in this head:
+         extractHeadAssets (seo-bot-middleware.ts) regex-matches it and the
+         bot-rendered page gets a bogus inline script that swallows whatever
+         follows (it hid the Organization JSON-LD from crawlers). -->
 
     <!-- Google Fonts: Montserrat for Echo Water brand alignment + Fraunces/Plus Jakarta Sans for Learn page -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
