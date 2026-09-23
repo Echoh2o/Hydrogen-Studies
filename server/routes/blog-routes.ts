@@ -9,8 +9,25 @@ import {
   generalApiRateLimiter,
 } from "../utils/rate-limiting";
 import { invalidateBotCache } from "../middleware/seo-bot-middleware";
+import { stripDeadBlogLinks } from "../../shared/content-links";
+import { getLiveBlogPredicate } from "../services/live-blog-index";
 
 const router = Router();
+
+/**
+ * Public (non-elevated) shape of a blog row for the SPA detail page: internal
+ * editorNotes removed, and in-body links to retired (410) / unpublished posts
+ * unwrapped to plain text — the same treatment the bot renderer applies, so
+ * browsers and crawlers see the same links. Admins get the raw row (editor).
+ */
+export async function toPublicBlog(blog: any): Promise<any> {
+  const { editorNotes, ...publicBlog } = blog ?? {};
+  if (typeof publicBlog.content === "string" && publicBlog.content) {
+    const isLive = await getLiveBlogPredicate();
+    publicBlog.content = stripDeadBlogLinks(publicBlog.content, isLive);
+  }
+  return publicBlog;
+}
 
 /**
  * Get blog statistics for dashboard
@@ -448,6 +465,7 @@ router.get("/by-category/:category", async (req, res) => {
       .where(
         and(
           eq(blogArticles.isPublished, true),
+          eq(blogArticles.isArchived, false),
           sql`LOWER(${studies.category}) ILIKE LOWER(${categoryPattern})`
         )
       )
@@ -463,6 +481,7 @@ router.get("/by-category/:category", async (req, res) => {
       .where(
         and(
           eq(blogArticles.isPublished, true),
+          eq(blogArticles.isArchived, false),
           sql`LOWER(${studies.category}) ILIKE LOWER(${categoryPattern})`
         )
       );
@@ -500,6 +519,7 @@ router.get("/study-categories", async (req, res) => {
       .where(
         and(
           eq(blogArticles.isPublished, true),
+          eq(blogArticles.isArchived, false),
           isNotNull(studies.category)
         )
       )
@@ -557,10 +577,9 @@ router.get("/slug/:slug", async (req, res) => {
       });
     }
 
-    const { editorNotes, ...publicBlog } = blog as any;
     res.json({
       success: true,
-      data: elevated ? blog : publicBlog,
+      data: elevated ? blog : await toPublicBlog(blog),
     });
   } catch (error) {
     console.error("Error fetching blog by slug:", error);
@@ -599,10 +618,9 @@ router.get("/:id(\\d+)", async (req, res) => {
       });
     }
 
-    const { editorNotes, ...publicBlog } = blog as any;
     res.json({
       success: true,
-      data: elevated ? blog : publicBlog,
+      data: elevated ? blog : await toPublicBlog(blog),
     });
   } catch (error) {
     console.error("Error fetching blog:", error);

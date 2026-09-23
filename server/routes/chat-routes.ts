@@ -6,6 +6,7 @@
 import express from "express";
 import { ai } from "../services/ai-provider";
 import { studyService } from "../services/study-service";
+import { ECHOWATER_ORIGIN, ECHO_PRODUCTS } from "../../shared/echo-products";
 
 const router = express.Router();
 
@@ -241,14 +242,17 @@ function generateProductRecommendations(query: string): any[] {
       name: "Echo H2 Flask",
       description:
         "Portable hydrogen-infusing water bottle for on-the-go hydrogen therapy",
-      url: "https://echowater.com/products/echo-h2-flask",
+      // Handles from shared/echo-products (verified); the old hardcoded
+      // "echo-h2-flask"/"echo-h2-machine" handles 404 on the store. The
+      // client tags these with UTMs via buildEchoUrl.
+      url: `${ECHOWATER_ORIGIN}/products/${ECHO_PRODUCTS.flask.handle}`,
       imageUrl: "/images/echo-flask.jpg",
       relevanceScore: 95,
     },
     {
       name: "Echo H2 Machine",
       description: "Premium hydrogen water generator for home use",
-      url: "https://echowater.com/products/echo-h2-machine",
+      url: `${ECHOWATER_ORIGIN}/products/${ECHO_PRODUCTS.h2Machine.handle}`,
       imageUrl: "/images/echo-machine.jpg",
       relevanceScore: 90,
     },

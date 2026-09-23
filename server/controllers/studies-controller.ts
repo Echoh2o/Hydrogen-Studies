@@ -751,15 +751,29 @@ export class StudiesController {
 
           const { db } = await import("../db");
           const { blogArticles } = await import("../../shared/schema");
-          const { eq, desc } = await import("drizzle-orm");
+          const { eq, desc, and } = await import("drizzle-orm");
+          const { isElevatedRequest } = await import("../auth");
+
+          // Public callers (the /study/id/:id "Related Articles" panel) only
+          // ever see live posts — published AND not archived. Previously this
+          // returned drafts and retired (410) posts to anonymous visitors.
+          // Admins/editors keep the full list for the generate-blogs workflow.
+          const elevated = await isElevatedRequest(req);
+          const where = elevated
+            ? eq(blogArticles.studyId, studyId)
+            : and(
+                eq(blogArticles.studyId, studyId),
+                eq(blogArticles.isPublished, true),
+                eq(blogArticles.isArchived, false),
+              );
 
           const blogs = await db
             .select()
             .from(blogArticles)
-            .where(eq(blogArticles.studyId, studyId))
+            .where(where)
             .orderBy(desc(blogArticles.createdAt));
 
-          res.json(blogs);
+          res.json(elevated ? blogs : blogs.map(({ editorNotes, ...rest }) => rest));
       } catch (error) {
           logger.error("Error fetching study blogs", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch study blogs" });

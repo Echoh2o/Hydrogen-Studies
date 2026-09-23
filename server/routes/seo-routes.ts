@@ -140,7 +140,7 @@ router.get("/llms.txt", async (req: Request, res: Response) => {
       const [b] = await db
         .select({ n: count() })
         .from(blogArticles)
-        .where(eq(blogArticles.isPublished, true));
+        .where(and(eq(blogArticles.isPublished, true), eq(blogArticles.isArchived, false)));
       studyCount = Number(s?.n ?? 0);
       blogCount = Number(b?.n ?? 0);
     } catch {
@@ -536,7 +536,8 @@ router.get("/rss.xml", async (req: Request, res: Response) => {
       summary: blogArticles.summary,
       createdAt: blogArticles.createdAt,
     }).from(blogArticles)
-      .where(eq(blogArticles.isPublished, true))
+      // Live posts only — archived rows 404 on the site.
+      .where(and(eq(blogArticles.isPublished, true), eq(blogArticles.isArchived, false)))
       .orderBy(desc(blogArticles.createdAt))
       .limit(50);
 
@@ -607,7 +608,8 @@ router.get("/rss/blog.xml", async (req: Request, res: Response) => {
       imageUrl: blogArticles.imageUrl,
       createdAt: blogArticles.createdAt,
     }).from(blogArticles)
-      .where(eq(blogArticles.isPublished, true))
+      // Live posts only — archived rows 404 on the site.
+      .where(and(eq(blogArticles.isPublished, true), eq(blogArticles.isArchived, false)))
       .orderBy(desc(blogArticles.createdAt))
       .limit(50);
 
