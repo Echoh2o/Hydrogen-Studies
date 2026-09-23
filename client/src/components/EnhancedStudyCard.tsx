@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -388,9 +389,7 @@ export function EnhancedStudyCard({
 
         {/* Abstract */}
         <p className="text-gray-700 text-sm leading-relaxed mb-4">
-          {study.abstract.length > 300
-            ? `${study.abstract.substring(0, 300)}...`
-            : study.abstract}
+          {abstractExcerpt(study.abstract)}
         </p>
 
         {/* Tags */}

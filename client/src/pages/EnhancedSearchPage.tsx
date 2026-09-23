@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -450,7 +451,7 @@ export default function EnhancedSearchPage() {
                             </div>
 
                             <p className="text-sm text-muted-foreground line-clamp-2">
-                              {study.abstract}
+                              {abstractExcerpt(study.abstract)}
                             </p>
 
                             <div className="flex flex-wrap gap-1">

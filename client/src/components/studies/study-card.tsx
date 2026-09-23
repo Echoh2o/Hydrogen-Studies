@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import { memo } from "react";
 import { Link } from "wouter";
 import { Study } from "@/types";
@@ -77,7 +78,7 @@ const StudyCard = memo(function StudyCard({ study }: StudyCardProps) {
       </h3>
 
       <p className="text-neutral-600 text-sm mb-4 line-clamp-3">
-        {study.abstract}
+        {abstractExcerpt(study.abstract)}
       </p>
 
       <div className="flex items-center text-sm text-neutral-500 mb-4">

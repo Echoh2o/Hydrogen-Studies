@@ -42,25 +42,19 @@ import { cn } from "@/lib/utils";
 import {
   buildEchoUrl,
   echoProductUrl,
+  isEchoUrl,
   ECHO_PRODUCTS,
   type EchoProduct,
+  type EchoUtmContext,
 } from "@shared/echo-products";
 import { trackOutboundClick } from "@/lib/analytics";
+import { useEchoPageContext } from "@/hooks/use-echo-link";
 
 // Route any echowater.com URL (e.g. from server-provided recommendations)
-// through buildEchoUrl so it always carries UTM attribution; leave other
-// hosts untouched.
-const withEchoAttribution = (url: string): string => {
-  try {
-    return new URL(url).hostname.endsWith("echowater.com")
-      ? buildEchoUrl(url, { content: "chat" })
-      : url;
-  } catch {
-    return url;
-  }
-};
-
-const echoChatHomeUrl = buildEchoUrl("/", { content: "chat" });
+// through buildEchoUrl so it always carries the canonical UTM set for the
+// page the widget is on; leave other hosts untouched.
+const withEchoAttribution = (url: string, ctx: EchoUtmContext): string =>
+  isEchoUrl(url) ? buildEchoUrl(url, ctx) : url;
 
 // Types for the chat functionality
 interface ChatMessage {
@@ -101,6 +95,8 @@ interface Conversation {
 }
 
 export const ChatWidget: React.FC = () => {
+  const echoCtx = useEchoPageContext();
+  const echoChatHomeUrl = buildEchoUrl("/", echoCtx);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -423,7 +419,7 @@ export const ChatWidget: React.FC = () => {
     ): ProductRecommendation => ({
       name: product.title,
       description: product.blurb,
-      url: echoProductUrl(product, { content: "chat" }),
+      url: echoProductUrl(product, echoCtx),
       imageUrl,
       relevanceScore,
     });
@@ -897,7 +893,7 @@ export const ChatWidget: React.FC = () => {
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {productRecommendations.map((product, index) => {
-                    const productHref = withEchoAttribution(product.url);
+                    const productHref = withEchoAttribution(product.url, echoCtx);
                     return (
                     <a
                       key={index}

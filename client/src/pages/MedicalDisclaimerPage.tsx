@@ -8,7 +8,7 @@ export default function MedicalDisclaimerPage() {
   const title = "Medical Disclaimer - Hydrogen Studies";
   const description =
     "Important medical disclaimer for Hydrogen Studies. This website provides educational information only and is not a substitute for professional medical advice.";
-  const url = "https://hydrogenstudies.com/medical-disclaimer";
+  const url = "https://hydrogenstudies.com/disclaimer";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">

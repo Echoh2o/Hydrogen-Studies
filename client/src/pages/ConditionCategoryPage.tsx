@@ -143,7 +143,7 @@ const ConditionCategoryPage = () => {
           />
           <link
             rel="canonical"
-            href={`https://hydrogenstudies.com/condition/${encodeURIComponent(decodedName)}`}
+            href={`https://hydrogenstudies.com/explore-by-condition/${encodeURIComponent(decodedName)}`}
           />
 
           {/* Open Graph Tags */}
@@ -158,7 +158,7 @@ const ConditionCategoryPage = () => {
           <meta property="og:type" content="website" />
           <meta
             property="og:url"
-            content={`https://hydrogenstudies.com/condition/${encodeURIComponent(decodedName)}`}
+            content={`https://hydrogenstudies.com/explore-by-condition/${encodeURIComponent(decodedName)}`}
           />
           <meta property="og:image" content="/og-category-image.jpg" />
 
@@ -180,7 +180,7 @@ const ConditionCategoryPage = () => {
               headline: `Hydrogen Therapy Research for ${displayName}`,
               description: `Scientific studies on how hydrogen therapy may benefit and treat ${displayName.toLowerCase()} conditions. Evidence-based research database.`,
               keywords: `hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 treatment`,
-              url: `https://hydrogenstudies.com/condition/${name}`,
+              url: `https://hydrogenstudies.com/explore-by-condition/${encodeURIComponent(decodedName)}`,
               mainEntity: {
                 "@type": "ItemList",
                 itemListElement: studies.map((study, index) => ({

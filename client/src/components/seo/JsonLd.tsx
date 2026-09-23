@@ -38,13 +38,18 @@ const JsonLd: React.FC<JsonLdProps> = ({ type, data }) => {
 };
 
 /**
- * Generate structured data for a medical scholarly article
+ * Generate structured data for a medical scholarly article.
+ *
+ * Deliberately carries NO `abstract` / methods / results / conclusion text:
+ * CLAUDE.md forbids republishing publisher abstracts (≤300-char excerpt only),
+ * and schema must only describe what is visible. Prefer shared/seo-markup
+ * studyJsonLd() (used by SEOStudyPage and the bot renderer) for new code.
  */
 export const generateMedicalArticleSchema = (study: any) => {
+  const category: string = typeof study.category === "string" ? study.category : "";
   return {
     "@type": "MedicalScholarlyArticle",
     headline: study.title,
-    abstract: study.abstract,
     author: {
       "@type": "Person",
       name: study.authors,
@@ -55,10 +60,7 @@ export const generateMedicalArticleSchema = (study: any) => {
       name: study.journal,
     },
     about: [
-      {
-        "@type": "MedicalCondition",
-        name: study.category,
-      },
+      ...(category ? [{ "@type": "MedicalCondition", name: category }] : []),
       {
         "@type": "Thing",
         name: "Hydrogen Therapy",
@@ -67,11 +69,14 @@ export const generateMedicalArticleSchema = (study: any) => {
     url: `https://hydrogenstudies.com/study/${study.slug || `id/${study.id}`}`,
     ...(study.doi && { sameAs: `https://doi.org/${study.doi}` }),
     ...(study.imageUrl && { image: study.imageUrl }),
-    ...(study.methods && { methodDescription: study.methods }),
-    ...(study.results && { resultDescription: study.results }),
-    ...(study.conclusion && { conclusion: study.conclusion }),
-    keywords: `hydrogen therapy, molecular hydrogen, ${study.category.toLowerCase()}, research study, health effects`,
-    articleSection: study.category,
+    keywords: [
+      "hydrogen therapy",
+      "molecular hydrogen",
+      ...(category ? [category.toLowerCase()] : []),
+      "research study",
+      "health effects",
+    ].join(", "),
+    ...(category ? { articleSection: category } : {}),
   };
 };
 

@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Study } from "@shared/schema";
@@ -190,7 +191,7 @@ const RecentStudiesPage = () => {
                         <a className="hover:text-primary">{study.title}</a>
                       </Link>
                     </h2>
-                    <p className="text-neutral-600 mb-4">{study.abstract}</p>
+                    <p className="text-neutral-600 mb-4">{abstractExcerpt(study.abstract)}</p>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex flex-col sm:flex-row sm:items-center mb-3 sm:mb-0">
                         <span className="flex items-center text-neutral-500 text-sm mr-4 mb-2 sm:mb-0">

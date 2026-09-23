@@ -2,8 +2,7 @@ import { FadeInOnScroll } from "@/components/animations/ScrollAnimations";
 import { useQuery } from "@tanstack/react-query";
 import { buildEchoUrl } from "@shared/echo-products";
 import { trackOutboundClick } from "@/lib/analytics";
-
-const echoStoreUrl = buildEchoUrl("/", { content: "learn-dual-cta" });
+import { useEchoPageContext } from "@/hooks/use-echo-link";
 
 const categoryChips = [
   "Brain",
@@ -17,6 +16,8 @@ const categoryChips = [
 ];
 
 export default function DualCtaSection() {
+  // UTM rule: tag with the hosting page's type/slug (placement is GA4-only).
+  const echoStoreUrl = buildEchoUrl("/", useEchoPageContext());
   const { data: stats } = useQuery<{ totalStudies: number; humanTrials: number; healthConditions: number }>({
     queryKey: ["/api/learn-stats"],
   });

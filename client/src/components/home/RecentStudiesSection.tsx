@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Study } from "@shared/schema";
@@ -133,7 +134,7 @@ const RecentStudiesSection = () => {
                   </Link>
                 </h3>
                 <p className="text-neutral-600 text-sm line-clamp-3 mb-3">
-                  {study.abstract}
+                  {abstractExcerpt(study.abstract)}
                 </p>
                 <div className="flex items-center text-sm text-neutral-500">
                   <span className="mr-4 flex items-center">

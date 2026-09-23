@@ -13,12 +13,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
-import React, { Component, type ReactNode } from "react";
-import Markdown from "react-markdown";
+import React, { Component, useMemo, type ReactNode } from "react";
+import Markdown, { type Components } from "react-markdown";
 import { buildEchoUrl } from "@shared/echo-products";
+import { isBridgeAllowed } from "@shared/bridge-policy";
+import {
+  blogArticleJsonLd,
+  blogByline,
+  blogPageTitle,
+  isoDate,
+  realContent,
+} from "@shared/seo-markup";
 import { trackOutboundClick } from "@/lib/analytics";
+import { useEchoPageContext } from "@/hooks/use-echo-link";
+import { buildBlogMarkdownComponents } from "@/components/blog/markdown-components";
 
-const echoStoreUrl = buildEchoUrl("/", { content: "blog-cta" });
+const SITE_URL = "https://hydrogenstudies.com";
 
 // Error boundary for the entire blog page
 class BlogErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
@@ -68,6 +78,15 @@ interface BlogArticle {
     imageUrl?: string;
     imageAlt?: string;
     createdAt: string;
+    updatedAt?: string | null;
+    publishedAt?: string | null;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /** Byline fields. NULL → editorial team / "Updated {updatedAt}". */
+    authorName?: string | null;
+    reviewerName?: string | null;
+    /** Existing blog_articles.last_reviewed; shown only with a named reviewer. */
+    lastReviewed?: string | null;
     viewCount?: number;
     studyId?: number;
     semanticKeywords?: string[];
@@ -84,9 +103,9 @@ function safeDateFormat(dateString: string | null | undefined): string {
   }
 }
 
-function MarkdownContent({ content }: { content: string }) {
+function MarkdownContent({ content, components }: { content: string; components?: Components }) {
   try {
-    return <Markdown>{content}</Markdown>;
+    return <Markdown components={components}>{content}</Markdown>;
   } catch {
     return (
       <div className="prose prose-neutral max-w-none whitespace-pre-wrap">
@@ -101,6 +120,8 @@ function BlogPageContent() {
   const { toast } = useToast();
   const idOrSlug = params.id || params.slug;
   const isId = /^\d+$/.test(idOrSlug || "");
+  const echoCtx = useEchoPageContext();
+  const markdownComponents = useMemo(() => buildBlogMarkdownComponents(echoCtx), [echoCtx]);
 
   // Fetch blog article
   const { data: blog, isLoading, error } = useQuery<BlogArticle>({
@@ -190,61 +211,58 @@ function BlogPageContent() {
     );
   }
 
+  // Title / JSON-LD / byline all come from shared/seo-markup — the bot
+  // renderer (seo-bot-middleware buildBlogMeta, seo-body-renderer renderBlog)
+  // uses the same helpers, so crawlers and browsers see identical markup.
+  const canonicalUrl = `${SITE_URL}/blog/${blog.slug || idOrSlug}`;
+  const pageTitle = blogPageTitle(blog);
+  const metaDescription = realContent(blog.metaDescription) || realContent(blog.summary);
+  const rawImage = blog.imageUrl || "/logo.png";
+  const absoluteImage = /^https?:\/\//i.test(rawImage)
+    ? rawImage
+    : `${SITE_URL}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
+  const articleLd = blogArticleJsonLd(blog, {
+    canonical: canonicalUrl,
+    siteUrl: SITE_URL,
+    description: metaDescription,
+    image: absoluteImage,
+    keywords: blog.semanticKeywords,
+  });
+  const byline = blogByline(blog);
+  // PLAN.md Appendix E: the "Shop Echo Water" CTA is a product bridge and may
+  // only render when the page's primary topic is allowlisted. Blog posts carry
+  // no topic taxonomy yet, so the topic is null → default-deny (hidden) until
+  // blogs get a bridge topic field.
+  const blogBridgeTopic: string | null = null;
+  const showBridge = isBridgeAllowed(blogBridgeTopic);
+  const echoStoreUrl = buildEchoUrl("/", echoCtx);
+
   return (
     <>
       <SiteHeader />
       <Helmet>
-        <title>{blog.title} | Hydrogen Studies Blog</title>
-        <meta name="description" content={blog.summary} />
-        <link rel="canonical" href={`https://hydrogenstudies.com/blog/${blog.slug || idOrSlug}`} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
 
         {/* Open Graph tags */}
-        <meta property="og:title" content={blog.title} />
-        <meta property="og:description" content={blog.summary} />
-        {blog.imageUrl && <meta property="og:image" content={blog.imageUrl} />}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
+        {blog.imageUrl && <meta property="og:image" content={absoluteImage} />}
         <meta property="og:type" content="article" />
         {blog.createdAt && <meta property="article:published_time" content={blog.createdAt} />}
 
         {/* Twitter Card tags */}
         <meta name="twitter:card" content={blog.imageUrl ? "summary_large_image" : "summary"} />
-        <meta name="twitter:title" content={blog.title} />
-        <meta name="twitter:description" content={blog.summary} />
-        {blog.imageUrl && <meta name="twitter:image" content={blog.imageUrl} />}
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        {blog.imageUrl && <meta name="twitter:image" content={absoluteImage} />}
 
         {/* Keywords meta tag */}
         {blog.semanticKeywords?.length ? <meta name="keywords" content={blog.semanticKeywords.join(", ")} /> : null}
 
-        {/* Schema.org markup for article */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Article",
-            headline: blog.title,
-            description: blog.summary,
-            image: blog.imageUrl || "",
-            datePublished: blog.createdAt,
-            dateModified: blog.createdAt,
-            wordCount: Math.round((blog.content || "").split(/\s+/).length),
-            ...(blog.semanticKeywords?.length ? { keywords: blog.semanticKeywords.join(", ") } : {}),
-            articleSection: "Hydrogen Research",
-            author: {
-              "@type": "Organization",
-              name: "Hydrogen Studies Research",
-            },
-            publisher: {
-              "@type": "Organization",
-              name: "Hydrogen Studies Research",
-              logo: {
-                "@type": "ImageObject",
-                url: "/logo.png",
-              },
-            },
-            mainEntityOfPage: {
-              "@type": "WebPage",
-              "@id": `https://hydrogenstudies.com/blog/${blog.slug || idOrSlug}`,
-            },
-          })}
-        </script>
+        {/* Article JSON-LD — author/dateModified/reviewedBy mirror the visible byline */}
+        <script type="application/ld+json">{JSON.stringify(articleLd)}</script>
 
         {/* BreadcrumbList JSON-LD */}
         <script type="application/ld+json">
@@ -300,6 +318,20 @@ function BlogPageContent() {
             <h1 className="text-3xl md:text-4xl font-bold mb-3">
               {blog.title}
             </h1>
+            {/* Byline — same copy as the bot renderer (renderBlogBylineHtml). */}
+            <p className="byline text-sm text-neutral-600 mb-2">
+              By{" "}
+              <Link href={byline.href} className="underline hover:text-teal-700">
+                {byline.author}
+              </Link>
+              {byline.reviewer && <> · Reviewed by {byline.reviewer}</>}
+              {byline.date && (
+                <>
+                  {" "}· {byline.dateLabel}{" "}
+                  <time dateTime={isoDate(byline.date)}>{byline.dateText}</time>
+                </>
+              )}
+            </p>
             <div className="flex items-center text-neutral-500 text-sm mb-6">
               {blog.createdAt && (
                 <span className="flex items-center mr-4">
@@ -358,7 +390,7 @@ function BlogPageContent() {
 
           {/* Article content */}
           <article className="prose prose-neutral max-w-none mb-8">
-            <MarkdownContent content={blog.content || ""} />
+            <MarkdownContent content={blog.content || ""} components={markdownComponents} />
           </article>
 
           {/* Related study box */}
@@ -437,32 +469,35 @@ function BlogPageContent() {
             </div>
           </div>
 
-          {/* Echo Water cross-link CTA */}
-          <div className="bg-teal-50 border border-teal-100 rounded-lg p-6 my-8">
-            <p className="text-sm font-medium text-teal-900 mb-2">
-              Interested in hydrogen water?
-            </p>
-            <p className="text-sm text-teal-700 mb-3">
-              Browse research-backed hydrogen water products from Echo Water.
-            </p>
-            <div className="flex gap-3">
-              <a
-                href={echoStoreUrl}
-                target="_blank"
-                rel="noopener"
-                onClick={() => trackOutboundClick(echoStoreUrl, "blog-cta")}
-              >
-                <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
-                  Shop Echo Water
-                </Button>
-              </a>
-              <Link to="/products">
-                <Button variant="outline" size="sm">
-                  Compare Products
-                </Button>
-              </Link>
+          {/* Echo Water cross-link CTA — product bridge, gated by the
+              Appendix E policy (see showBridge above; blogs default-deny). */}
+          {showBridge && (
+            <div className="bg-teal-50 border border-teal-100 rounded-lg p-6 my-8">
+              <p className="text-sm font-medium text-teal-900 mb-2">
+                From our sponsor, Echo Water
+              </p>
+              <p className="text-sm text-teal-700 mb-3">
+                Hydrogen Studies is funded by Echo Technologies LLC, the maker of Echo Water products.
+              </p>
+              <div className="flex gap-3">
+                <a
+                  href={echoStoreUrl}
+                  target="_blank"
+                  rel="sponsored noopener"
+                  onClick={() => trackOutboundClick(echoStoreUrl, "blog-cta")}
+                >
+                  <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
+                    Shop Echo Water
+                  </Button>
+                </a>
+                <Link to="/products">
+                  <Button variant="outline" size="sm">
+                    Compare Products
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Related Content from Internal Linking Engine */}

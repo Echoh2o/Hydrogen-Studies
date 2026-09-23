@@ -29,7 +29,14 @@ import JsonLd, {
 } from "@/components/seo/JsonLd";
 import SEOHead from "@/components/seo/SEOHead";
 import StructuredData from "@/components/seo/StructuredData";
-import React, { Component, type ReactNode, useEffect, useRef } from "react";
+import React, { Component, type ReactNode, useEffect, useMemo, useRef } from "react";
+import {
+  abstractExcerpt,
+  studyDescription,
+  studySourceLink,
+  withoutPlaceholders,
+} from "@shared/seo-markup";
+import { isBridgeAllowed } from "@shared/bridge-policy";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 
@@ -259,7 +266,7 @@ const StudyPageContent = () => {
   }
 
   const {
-    data: study,
+    data: rawStudy,
     isLoading,
     error,
   } = useQuery<Study>({
@@ -267,6 +274,11 @@ const StudyPageContent = () => {
     // Don't fire GET /api/studies/NaN or /0 for a missing/non-numeric route param.
     enabled: Number.isFinite(studyId) && studyId > 0,
   });
+  // CLAUDE.md: placeholder strings ("__no_content__", N/A…) never render.
+  const study = useMemo(
+    () => (rawStudy ? withoutPlaceholders(rawStudy) : undefined),
+    [rawStudy],
+  );
 
   // Externalized fallback images. These used to be ~1.5KB base64 strings
   // shipped with every render of every study page; now they're cacheable
@@ -444,7 +456,7 @@ const StudyPageContent = () => {
         </title>
         <meta
           name="description"
-          content={(study.abstract || "").substring(0, 160) + "..."}
+          content={studyDescription(study as any, 160)}
         />
         <meta
           name="keywords"
@@ -464,7 +476,7 @@ const StudyPageContent = () => {
         />
         <meta
           property="og:description"
-          content={(study.abstract || "").substring(0, 200) + "..."}
+          content={studyDescription(study as any, 200)}
         />
         <meta property="og:type" content="article" />
         <meta
@@ -490,7 +502,7 @@ const StudyPageContent = () => {
         />
         <meta
           name="twitter:description"
-          content={(study.abstract || "").substring(0, 200) + "..."}
+          content={studyDescription(study as any, 200)}
         />
         <meta
           name="twitter:image"
@@ -513,10 +525,8 @@ const StudyPageContent = () => {
             name: "Research Studies",
             url: "https://hydrogenstudies.com/studies",
           },
-          ...(study.category ? [{
-            name: study.category,
-            url: `https://hydrogenstudies.com/category/${encodeURIComponent(study.category)}`,
-          }] : []),
+          // (A /category/<x> crumb used to sit here — that route does not
+          // exist, so the schema pointed crawlers at a 404.)
           {
             name: study.title,
             url: `https://hydrogenstudies.com/study/${study.slug || study.id}`,
@@ -816,22 +826,33 @@ const StudyPageContent = () => {
                   </section>
                 )}
 
-                <section aria-labelledby="abstract-heading">
-                  <h2
-                    id="abstract-heading"
-                    className="text-xl font-semibold mb-4"
-                  >
-                    Research Abstract
-                  </h2>
-                  <div className="prose max-w-none prose-neutral mb-8" itemProp="abstract">
-                    <div
-                      className="text-lg leading-relaxed"
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(study.abstract || ""),
-                      }}
-                    />
-                  </div>
-                </section>
+                {/* CLAUDE.md: ≤300-char abstract excerpt + link to the
+                    source — never the full abstract (publisher copyright). */}
+                {(() => {
+                  const excerpt = abstractExcerpt(study.abstract);
+                  const source = studySourceLink(study as any);
+                  if (!excerpt && !source) return null;
+                  return (
+                    <section aria-labelledby="abstract-heading">
+                      <h2
+                        id="abstract-heading"
+                        className="text-xl font-semibold mb-4"
+                      >
+                        Abstract (excerpt)
+                      </h2>
+                      <div className="prose max-w-none prose-neutral mb-8">
+                        {excerpt && <p className="text-lg leading-relaxed">{excerpt}</p>}
+                        {source && (
+                          <p>
+                            <a href={source.href} target="_blank" rel="noopener">
+                              {source.label}
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                    </section>
+                  );
+                })()}
 
                 {/* Video Section */}
                 {(study.videoUrl || study.video_url) && (() => {
@@ -900,8 +921,13 @@ const StudyPageContent = () => {
                   </section>
                 )}
 
-                {/* Study-Specific Practical Application Section */}
-                <HowToApplySection study={study} />
+                {/* Study-Specific Practical Application Section — its copy
+                    promotes Echo products ("Explore Echo hydrogen water
+                    machines…", links to /products) on every study, including
+                    disease studies. That is a product bridge, so it is gated
+                    by the Appendix E policy; studies carry no bridge topic
+                    yet → default-deny (hidden). */}
+                {isBridgeAllowed(null) && <HowToApplySection study={study} />}
 
                 {study.conclusion && (
                   <section aria-labelledby="conclusion-heading">
@@ -1030,7 +1056,7 @@ const StudyPageContent = () => {
                             {relatedStudy.title}
                           </h3>
                           <p className="text-xs md:text-sm text-neutral-600 line-clamp-3">
-                            {relatedStudy.abstract}
+                            {abstractExcerpt(relatedStudy.abstract)}
                           </p>
                         </CardContent>
                       </Card>

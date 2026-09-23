@@ -1,8 +1,7 @@
 import { FadeInOnScroll } from "@/components/animations/ScrollAnimations";
 import { buildEchoUrl } from "@shared/echo-products";
 import { trackOutboundClick } from "@/lib/analytics";
-
-const echoStoreUrl = buildEchoUrl("/", { content: "learn-delivery-methods" });
+import { useEchoPageContext } from "@/hooks/use-echo-link";
 
 const deliveryMethods = [
   {
@@ -308,6 +307,8 @@ const comparisonRows = [
 ];
 
 export default function DeliveryMethodsSection() {
+  // UTM rule: tag with the hosting page's type/slug (placement is GA4-only).
+  const echoStoreUrl = buildEchoUrl("/", useEchoPageContext());
   return (
     <section
       style={{

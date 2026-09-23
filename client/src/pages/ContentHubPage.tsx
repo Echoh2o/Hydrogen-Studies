@@ -34,9 +34,10 @@ import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildEchoUrl } from "@shared/echo-products";
+import { isBridgeAllowed } from "@shared/bridge-policy";
+import { abstractExcerpt } from "@shared/seo-markup";
 import { trackOutboundClick } from "@/lib/analytics";
-
-const echoStoreUrl = buildEchoUrl("/", { content: "hub-cta" });
+import { useEchoPageContext } from "@/hooks/use-echo-link";
 
 // Topic configuration mapping slugs to display data
 const TOPIC_CONFIG: Record<
@@ -180,6 +181,12 @@ export default function ContentHubPage() {
   const params = useParams<{ topic: string }>();
   const topic = params.topic || "";
   const config = TOPIC_CONFIG[topic];
+  const echoCtx = useEchoPageContext();
+  const echoStoreUrl = buildEchoUrl("/", echoCtx);
+  // PLAN.md Appendix E: the "Shop Echo Water" CTA is product content — only
+  // on hubs whose primary topic is allowlisted (athletic-performance), never
+  // on disease/gray-area hubs (diabetes, heart, brain, gut, inflammation…).
+  const showBridge = isBridgeAllowed(topic);
 
   // Fetch related studies
   const { data: studyData, isLoading: studiesLoading } = useQuery<{
@@ -409,9 +416,10 @@ export default function ContentHubPage() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    {study.abstract && (
+                    {/* ≤300-char excerpt: line-clamp only hides text visually. */}
+                    {abstractExcerpt(study.abstract) && (
                       <CardDescription className="line-clamp-3 text-sm">
-                        {study.abstract}
+                        {abstractExcerpt(study.abstract)}
                       </CardDescription>
                     )}
                     <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
@@ -608,33 +616,34 @@ export default function ContentHubPage() {
           )}
         </section>
 
-        {/* CTA Section */}
-        <section className="mb-12">
-          <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl p-8 md:p-12 text-white text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              Experience Hydrogen Water
-            </h2>
-            <p className="text-lg text-white/90 max-w-2xl mx-auto mb-6">
-              Discover Echo Water's hydrogen water systems, backed by the
-              research you've explored above. Premium molecular hydrogen
-              technology for your home.
-            </p>
-            <a
-              href={echoStoreUrl}
-              target="_blank"
-              rel="noopener"
-              onClick={() => trackOutboundClick(echoStoreUrl, "hub-cta")}
-            >
-              <Button
-                size="lg"
-                className="bg-white text-teal-700 hover:bg-gray-100"
+        {/* Sponsor CTA — Appendix E allowlisted hubs only (showBridge). */}
+        {showBridge && (
+          <section className="mb-12" aria-label="Sponsor">
+            <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl p-8 md:p-12 text-white text-center">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                From our sponsor, Echo Water
+              </h2>
+              <p className="text-lg text-white/90 max-w-2xl mx-auto mb-6">
+                Hydrogen Studies is funded by Echo Technologies LLC, the maker
+                of Echo Water hydrogen water systems.
+              </p>
+              <a
+                href={echoStoreUrl}
+                target="_blank"
+                rel="sponsored noopener"
+                onClick={() => trackOutboundClick(echoStoreUrl, "hub-cta")}
               >
-                Shop Echo Water Products
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </Button>
-            </a>
-          </div>
-        </section>
+                <Button
+                  size="lg"
+                  className="bg-white text-teal-700 hover:bg-gray-100"
+                >
+                  Shop Echo Water Products
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />

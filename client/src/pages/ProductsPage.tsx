@@ -36,10 +36,13 @@ import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import JsonLd, { generateProductSchema } from "@/components/seo/JsonLd";
-import { buildEchoUrl, echoProductUrl, ECHO_PRODUCTS } from "@shared/echo-products";
+import { buildEchoUrl, echoProductUrl, ECHO_PRODUCTS, pageContextFromPath } from "@shared/echo-products";
 import { trackOutboundClick } from "@/lib/analytics";
 
-const echoContactUrl = buildEchoUrl("/pages/contact", { content: "products-page" });
+// This component only renders at /products → utm_campaign=products&utm_content=products
+// (same derivation as the bot renderer's pageContextFromPath).
+const PRODUCTS_CTX = pageContextFromPath("/products");
+const echoContactUrl = buildEchoUrl("/pages/contact", PRODUCTS_CTX);
 
 // Buyer's Guide email capture modal
 function BuyersGuideModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -202,7 +205,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-flask.webp",
       badge: "Hydrogen Water Bottle",
-      url: echoProductUrl(ECHO_PRODUCTS.flask, { content: "products-page" }),
+      url: echoProductUrl(ECHO_PRODUCTS.flask, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 8 PPM",
       bestFor: "Daily hydration, portability",
@@ -222,7 +225,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-drink-mix.webp",
       badge: "Powdered Drink Mix",
-      url: echoProductUrl(ECHO_PRODUCTS.prebiotic, { content: "products-page" }),
+      url: echoProductUrl(ECHO_PRODUCTS.prebiotic, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 16 PPM",
       bestFor: "Gut health, maximum concentration",
@@ -242,7 +245,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-h2.webp",
       badge: "Hydrogen Water Machine",
-      url: echoProductUrl(ECHO_PRODUCTS.h2Machine, { content: "products-page" }),
+      url: echoProductUrl(ECHO_PRODUCTS.h2Machine, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 1.5 PPM",
       bestFor: "Daily home use, consistent intake",
@@ -262,7 +265,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-forty.webp",
       badge: "Hydrogen Water Bottle",
-      url: echoProductUrl(ECHO_PRODUCTS.forty, { content: "products-page" }),
+      url: echoProductUrl(ECHO_PRODUCTS.forty, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 4.5 PPM",
       bestFor: "On-the-go, large capacity",
@@ -282,7 +285,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-one.webp",
       badge: "Hydrogen Water Machine",
-      url: echoProductUrl(ECHO_PRODUCTS.one, { content: "products-page" }),
+      url: echoProductUrl(ECHO_PRODUCTS.one, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
       h2Concentration: "Up to 1.5 PPM",
       bestFor: "Premium home installation",
@@ -302,7 +305,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-refresh.webp",
       badge: "Inhalation",
-      url: echoProductUrl(ECHO_PRODUCTS.refresh, { content: "products-page" }),
+      url: echoProductUrl(ECHO_PRODUCTS.refresh, PRODUCTS_CTX),
       deliveryMethod: "inhalation",
       h2Concentration: "2% H2 gas",
       bestFor: "Respiratory support, rapid absorption",
@@ -322,7 +325,7 @@ export default function ProductsPage() {
       ],
       image: "/images/products/echo-revive.webp",
       badge: "Bathing",
-      url: echoProductUrl(ECHO_PRODUCTS.revive, { content: "products-page" }),
+      url: echoProductUrl(ECHO_PRODUCTS.revive, PRODUCTS_CTX),
       deliveryMethod: "bathing",
       h2Concentration: "Up to 1.5 PPM",
       bestFor: "Skin health, muscle recovery, relaxation",

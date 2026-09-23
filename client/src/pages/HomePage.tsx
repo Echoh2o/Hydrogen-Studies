@@ -106,11 +106,11 @@ export default function HomePage() {
         <meta property="og:title" content="Hydrogen Studies - Science-Backed Hydrogen Health Research" />
         <meta property="og:description" content="Explore peer-reviewed research on hydrogen therapy, hydrogen water, and molecular hydrogen health benefits. Browse hundreds of scientific studies." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://hydrogenstudies.com" />
+        <meta property="og:url" content="https://hydrogenstudies.com/" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Hydrogen Studies - Science-Backed Hydrogen Health Research" />
         <meta name="twitter:description" content="Explore peer-reviewed research on hydrogen therapy, hydrogen water, and molecular hydrogen health benefits." />
-        <link rel="canonical" href="https://hydrogenstudies.com" />
+        <link rel="canonical" href="https://hydrogenstudies.com/" />
       </Helmet>
       <JsonLd
         type="Organization"

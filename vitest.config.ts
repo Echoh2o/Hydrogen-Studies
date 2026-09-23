@@ -51,7 +51,7 @@ export default defineConfig({
           include: ["client/src/**/*.test.tsx"],
           // Extends `expect` with @testing-library/jest-dom matchers
           // (toBeInTheDocument, etc.). Resolved from node_modules.
-          setupFiles: ["@testing-library/jest-dom/vitest"],
+          setupFiles: ["./client/src/test-setup/jest-dom.ts"],
           globals: true,
         },
         // tsconfig has "jsx": "preserve" (Vite's React plugin handles JSX in

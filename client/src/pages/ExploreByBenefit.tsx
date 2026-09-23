@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AnchorContent from "@/components/AnchorContent";
@@ -430,7 +431,7 @@ const ExploreByBenefit: React.FC = () => {
                               </CardDescription>
                             </CardHeader>
                             <CardContent>
-                              <p className="line-clamp-3">{study.abstract}</p>
+                              <p className="line-clamp-3">{abstractExcerpt(study.abstract)}</p>
                               <div className="mt-4 flex flex-wrap gap-2">
                                 <Badge variant="secondary">
                                   {study.category}
