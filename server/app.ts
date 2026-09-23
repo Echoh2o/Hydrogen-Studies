@@ -1020,6 +1020,7 @@ pool.query("SELECT 1").then(async () => {
     const { addSyndicationFields } = await import("./migrations/add-syndication-fields");
     const { addTaxonomyAndPasswordReset } = await import("./migrations/add-taxonomy-and-password-reset");
     const { addUniquenessAndJobState } = await import("./migrations/add-uniqueness-and-job-state");
+    const { addBlogBylineFields } = await import("./migrations/add-blog-byline-fields");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1043,6 +1044,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "019_add_syndication_fields", up: addSyndicationFields },
       { name: "020_add_taxonomy_and_password_reset", up: addTaxonomyAndPasswordReset },
       { name: "021_add_uniqueness_and_job_state", up: addUniquenessAndJobState },
+      { name: "022_add_blog_byline_fields", up: addBlogBylineFields },
     ]);
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted
