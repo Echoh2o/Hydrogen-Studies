@@ -34,6 +34,7 @@ import {
 import { isBridgeAllowed } from "../../shared/bridge-policy";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
 import { getLiveBlogPredicate } from "../services/live-blog-index";
+import { bodySystemLikePatterns, findBodySystemHub } from "../utils/explore-hubs";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -659,15 +660,20 @@ async function renderConditionPage(slug: string): Promise<string | null> {
 }
 
 async function renderBodySystemPage(slug: string): Promise<string | null> {
-  const displayName = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  // Sitemap hubs resolve via their curated terms (server/utils/explore-hubs.ts);
+  // any other slug keeps the historical words-or-slug match.
+  const displayName = findBodySystemHub(slug)?.label
+    ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   try {
-    const searchTerm = slug.replace(/-/g, " ");
+    const likeAny = sql.join(
+      bodySystemLikePatterns(slug).map((p) => sql`LOWER(array_to_string(body_systems, ' ')) LIKE ${p}`),
+      sql` OR `,
+    );
     const [studiesR, conditions] = await Promise.all([
       db.execute(sql`
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
         FROM studies
-        WHERE (LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
-            OR LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + slug + "%"}))
+        WHERE (${likeAny})
           AND slug IS NOT NULL
         ORDER BY publish_year DESC NULLS LAST LIMIT 100
       `),
@@ -898,6 +904,7 @@ function renderStaticPage(pathname: string): string | null {
     "/recommendations": { title: "Research Recommendations", desc: "Personalized hydrogen therapy research recommendations based on your interests and health conditions." },
     "/privacy": { title: "Privacy Policy", desc: "How we collect, use, and protect your personal information." },
     "/terms": { title: "Terms of Service", desc: "Terms of service for using the Hydrogen Studies research database and website." },
+    "/disclaimer": { title: "Medical Disclaimer", desc: "This website provides educational information only and is not a substitute for professional medical advice." },
     "/search": { title: "Search Research Studies", desc: "Search our database of hydrogen therapy research studies by keyword, condition, body system, or mechanism of action." },
     "/advanced-search": { title: "Advanced Research Search", desc: "Advanced search with filters for study type, outcome, date range, body system, and health condition." },
     "/hydrogen-therapy-guide": { title: "Hydrogen Therapy Guide", desc: "The complete evidence-based guide to hydrogen therapy — methods, research, safety, and practical guidance." },

@@ -46,6 +46,9 @@ const BodySystemCategoryPage = () => {
     "reproductive-system": "Reproductive System",
     "hematological-system": "Hematological System",
     "whole-body": "Whole Body",
+    // Sitemap hub slugs (server/utils/explore-hubs.ts)
+    "brain-nervous-system": "Nervous System",
+    "skin-dermatology": "Integumentary System",
   };
 
   const exactCategoryName = categoryMap[decodedName] || decodedName;

@@ -85,6 +85,7 @@ import {
   performHealthCheck,
 } from "./utils/health-monitoring";
 import { qualityAudit } from "./utils/comprehensive-quality-audit";
+import { redirectMiddleware, resolveRedirect, ensureRedirectIndexes } from "./services/redirect-service";
 import {
   searchRateLimiter,
   generalApiRateLimiter,
@@ -111,9 +112,19 @@ if (process.env.NODE_ENV === "production") {
 // Also fixes a session/CSRF split: the cookie is host-only (no COOKIE_DOMAIN),
 // so a login on www wasn't sent to the apex host, appearing logged-out. Keeping
 // everyone on one host makes the session consistent. Preserves path + query.
-app.use((req, res, next) => {
+// Folds in any permanent path redirect (legacy-URL table row, case/trailing-
+// slash normalization) so `www.` legacy backlinks land in ONE hop instead of
+// www→apex→final. (The http→https hop before this is Cloudflare's, not ours.)
+app.use(async (req, res, next) => {
   if (req.headers.host === "www.hydrogenstudies.com") {
-    return res.redirect(301, `https://hydrogenstudies.com${req.originalUrl}`);
+    let target = req.originalUrl;
+    try {
+      const decision = await resolveRedirect(req);
+      if (decision?.kind === "redirect" && decision.status === 301) target = decision.location;
+    } catch {
+      // Fall back to a plain host redirect; the apex request resolves the rest.
+    }
+    return res.redirect(301, `https://hydrogenstudies.com${target}`);
   }
   next();
 });
@@ -182,7 +193,6 @@ app.use(
 app.use(compression());
 
 // Redirect middleware — must be very early (before routes) to intercept 301/302s
-import { redirectMiddleware, log404, ensureRedirectIndexes } from "./services/redirect-service";
 app.use(redirectMiddleware());
 // Fire-and-forget: enables pg_trgm, creates GIN trigram indexes, and
 // adds not_found_log.suggestions (idempotent). Safe to swallow — the

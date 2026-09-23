@@ -367,6 +367,10 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Privacy Policy | ${SITE_NAME}`,
       description: "Hydrogen Studies privacy policy — how we collect, use, and protect your personal information."
     },
+    "/disclaimer": {
+      title: `Medical Disclaimer | ${SITE_NAME}`,
+      description: "Important medical disclaimer for Hydrogen Studies. This website provides educational information only and is not a substitute for professional medical advice.",
+    },
     "/terms": {
       title: `Terms of Service | ${SITE_NAME}`,
       description: "Terms of service for using the Hydrogen Studies research database and website."
