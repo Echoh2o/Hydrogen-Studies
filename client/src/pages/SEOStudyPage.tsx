@@ -32,11 +32,25 @@ function markdownToSafeHtml(text: string): string {
     .replace(/$/, "</p>");
   return DOMPurify.sanitize(html);
 }
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { StudyInfoPanel } from "@/components/StudyInfoPanel";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
-import JsonLd, { generateMedicalArticleSchema } from "@/components/seo/JsonLd";
+import {
+  EDITORIAL_TEAM,
+  abstractExcerpt,
+  formatLongDate,
+  isoDate,
+  realContent,
+  studyDescription,
+  studyJsonLd,
+  studyPageTitle,
+  studySourceLink,
+  studyUpdatedAt,
+  withoutPlaceholders,
+} from "@shared/seo-markup";
+
+const SITE_URL = "https://hydrogenstudies.com";
 
 interface Study {
   id: number;
@@ -88,6 +102,22 @@ interface Study {
   full_text_html?: string;
   sourcePlatform?: string;
   source_platform?: string;
+  // Our own summary fields (same sections the bot renderer shows).
+  tldr?: string | null;
+  keyFinding?: string | null;
+  plainSummary?: string | null;
+  summary100Words?: string | null;
+  summary50Words?: string | null;
+  practicalTakeaway?: string | null;
+  howToApply?: string | null;
+  // SEO / identifiers / timestamps
+  pmid?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  lastModified?: string | null;
+  createdAt?: string | null;
+  keywords?: string[] | null;
+  ogImage?: string | null;
 }
 
 // Shape returned by GET /api/explorer/study-connections
@@ -121,7 +151,7 @@ export default function SEOStudyPage() {
 
   // Fetch study data based on route type
   const {
-    data: study,
+    data: rawStudy,
     isLoading,
     error,
   } = useQuery<Study>({
@@ -130,6 +160,13 @@ export default function SEOStudyPage() {
       : [`/api/studies/slug/${identifier}`],
     enabled: !!identifier,
   });
+  // CLAUDE.md: empty fields never render; pipeline sentinels such as
+  // key_finding = "__no_content__" (and N/A-style fillers) never reach the
+  // DOM. Null every placeholder string once so all `{field && …}` guards skip.
+  const study = useMemo(
+    () => (rawStudy ? withoutPlaceholders(rawStudy) : undefined),
+    [rawStudy],
+  );
 
   // Redirect to slug-based URL if we loaded by ID and have a slug
   useEffect(() => {
@@ -236,13 +273,34 @@ export default function SEOStudyPage() {
 
   // Get plain language title for SEO
   const plainTitle = study.plainLanguageTitle || study.plain_language_title;
-  const seoTitle = plainTitle ? plainTitle.replace(/["""]/g, "") : study.title;
-  const pageTitle = `${seoTitle} | Hydrogen Studies Research`;
+  // Title, description and JSON-LD come from shared/seo-markup — the bot
+  // renderer (seo-bot-middleware buildStudyMeta) uses the same helpers.
+  const pageTitle = studyPageTitle({ ...study, plainLanguageTitle: plainTitle });
+  const metaDescription = studyDescription(study, 160);
 
   // Generate SEO-friendly URL for canonical link
   const canonicalUrl = study.slug
-    ? `https://hydrogenstudies.com/study/${study.slug}`
-    : `https://hydrogenstudies.com/study/id/${study.id}`;
+    ? `${SITE_URL}/study/${study.slug}`
+    : `${SITE_URL}/study/id/${study.id}`;
+  const rawImage = study.ogImage || study.imageUrl || study.image_url || "/logo.png";
+  const absoluteImage = /^https?:\/\//i.test(rawImage)
+    ? rawImage
+    : `${SITE_URL}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
+  // No `abstract` field and a ≤300-char description (publisher copyright).
+  const studyLd = studyJsonLd(
+    { ...study, plainLanguageTitle: plainTitle },
+    { canonical: canonicalUrl, siteUrl: SITE_URL, image: absoluteImage },
+  );
+
+  // CLAUDE.md: ≤300-char abstract excerpt + a link to PubMed/DOI — never the
+  // full abstract.
+  const excerpt = abstractExcerpt(study.abstract);
+  const sourceLink = studySourceLink(study);
+  const updatedAt = studyUpdatedAt(study);
+  const summaryText =
+    realContent(study.plainSummary) ||
+    realContent(study.summary100Words) ||
+    realContent(study.summary50Words);
 
   // Data-source attribution (Semantic Scholar requires this; Europe PMC/bioRxiv request it)
   const sourcePlatform = study.sourcePlatform || study.source_platform;
@@ -254,22 +312,11 @@ export default function SEOStudyPage() {
     <>
       <SiteHeader />
 
-      {/* Structured Data */}
-      <JsonLd
-        type="MedicalScholarlyArticle"
-        data={generateMedicalArticleSchema(study)}
-      />
       <Helmet>
         <title>{pageTitle}</title>
-        <meta
-          name="description"
-          content={(study.abstract || "").substring(0, 160) + "..."}
-        />
-        <meta property="og:title" content={seoTitle} />
-        <meta
-          property="og:description"
-          content={(study.abstract || "").substring(0, 160) + "..."}
-        />
+        <meta name="description" content={metaDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={canonicalUrl} />
         <link rel="canonical" href={canonicalUrl} />
@@ -284,11 +331,11 @@ export default function SEOStudyPage() {
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta
-          name="twitter:description"
-          content={(study.abstract || "").substring(0, 160) + "..."}
-        />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+
+        {/* Structured data — identical to the bot renderer's (shared studyJsonLd) */}
+        <script type="application/ld+json">{JSON.stringify(studyLd)}</script>
       </Helmet>
 
       <section className="bg-white py-8 md:py-12">
@@ -385,6 +432,21 @@ export default function SEOStudyPage() {
                     </h1>
                   )}
 
+                  {/* Author/reviewer + date line (CLAUDE.md) — same copy as
+                      the bot renderer's renderStudy byline. */}
+                  <p className="byline text-sm text-neutral-600 mb-3">
+                    Summary by{" "}
+                    <Link href="/methodology" className="underline hover:text-primary">
+                      {EDITORIAL_TEAM}
+                    </Link>
+                    {updatedAt && (
+                      <>
+                        {" "}· Updated{" "}
+                        <time dateTime={isoDate(updatedAt)}>{formatLongDate(updatedAt)}</time>
+                      </>
+                    )}
+                  </p>
+
                   {/* Study metadata */}
                   <div className="space-y-2 md:space-y-0 md:flex md:flex-wrap md:items-center text-neutral-600 text-sm">
                     <div className="flex items-center">
@@ -463,13 +525,63 @@ export default function SEOStudyPage() {
                         </section>
                       )}
 
-                    {/* Abstract */}
-                    <section className="mb-8">
-                      <h3 className="text-xl font-semibold mb-4">Abstract</h3>
-                      <p className="text-neutral-700 leading-relaxed">
-                        {study.abstract}
-                      </p>
-                    </section>
+                    {/* Our own summary — same sections, same order as the
+                        bot renderer (renderStudy). Placeholders were nulled
+                        above, so empty/sentinel fields never render. */}
+                    {study.tldr && (
+                      <section className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">TL;DR</h2>
+                        <p className="text-neutral-700 leading-relaxed">{study.tldr}</p>
+                      </section>
+                    )}
+                    {study.keyFinding && (
+                      <section className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">Key Finding</h2>
+                        <p className="text-neutral-700 leading-relaxed">{study.keyFinding}</p>
+                      </section>
+                    )}
+                    {summaryText && (
+                      <section className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">Summary</h2>
+                        <p className="text-neutral-700 leading-relaxed">{summaryText}</p>
+                      </section>
+                    )}
+                    {study.practicalTakeaway && (
+                      <section className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">Practical Takeaway</h2>
+                        <p className="text-neutral-700 leading-relaxed">{study.practicalTakeaway}</p>
+                      </section>
+                    )}
+                    {study.howToApply && (
+                      <section className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">How to Apply This Research</h2>
+                        <p className="text-neutral-700 leading-relaxed">{study.howToApply}</p>
+                      </section>
+                    )}
+
+                    {/* Abstract excerpt — ≤300 chars + link to the source.
+                        Never the full abstract (publisher copyright). */}
+                    {(excerpt || sourceLink) && (
+                      <section className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">Abstract (excerpt)</h2>
+                        {excerpt && (
+                          <p className="text-neutral-700 leading-relaxed">{excerpt}</p>
+                        )}
+                        {sourceLink && (
+                          <p className="mt-3">
+                            <a
+                              href={sourceLink.href}
+                              target="_blank"
+                              rel="noopener"
+                              className="text-primary underline hover:no-underline inline-flex items-center"
+                            >
+                              {sourceLink.label}
+                              <HiExternalLink className="ml-1 w-4 h-4" aria-hidden="true" />
+                            </a>
+                          </p>
+                        )}
+                      </section>
+                    )}
 
                     {/* Enhanced Methods, Results, Conclusion sections */}
                     {study.methods && (
@@ -597,68 +709,10 @@ export default function SEOStudyPage() {
                       </section>
                     )}
 
-                    {(study.fullText || study.full_text) && (
-                      <section className="mb-8">
-                        <h3 className="text-xl font-semibold mb-4 text-primary">
-                          Full Research Text
-                        </h3>
-                        <div className="bg-white border border-neutral-200 rounded-lg shadow-sm">
-                          <div className="p-6">
-                            <div className="prose prose-neutral max-w-none text-neutral-800 leading-relaxed">
-                              <div className="text-base whitespace-pre-line">
-                                {(study.fullText || study.full_text)?.substring(
-                                  0,
-                                  8000,
-                                )}
-                                {((study.fullText || study.full_text)?.length || 0) >
-                                  8000 && (
-                                  <span className="text-neutral-500 italic">
-                                    ... [Content continues in original
-                                    publication]
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {((study.fullText || study.full_text)?.length || 0) >
-                              8000 && (
-                              <div className="mt-6 pt-4 border-t border-neutral-200">
-                                <p className="text-sm text-neutral-600 mb-3">
-                                  This is a preview of the full research text.
-                                  For the complete study including detailed
-                                  methodology, statistical analysis, and
-                                  references:
-                                </p>
-                                <div className="flex gap-3">
-                                  {study.doi && (
-                                    <Button variant="outline" size="sm" asChild>
-                                      <a
-                                        href={`https://doi.org/${study.doi}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        Read Complete Study
-                                      </a>
-                                    </Button>
-                                  )}
-                                  {study.pdfUrl && (
-                                    <Button variant="outline" size="sm" asChild>
-                                      <a
-                                        href={study.pdfUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        Download PDF
-                                      </a>
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </section>
-                    )}
+                    {/* The former "Full Research Text" section (up to 8,000
+                        chars of publisher full text) is removed: same
+                        copyright rule as abstracts. The DOI / PDF / source
+                        buttons below link readers to the original. */}
 
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-3 pt-6 border-t border-neutral-200">

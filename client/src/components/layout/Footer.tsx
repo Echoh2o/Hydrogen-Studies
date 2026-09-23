@@ -9,26 +9,22 @@ import {
   Shield,
   HelpCircle,
   Building2,
-  ShoppingCart,
   CheckCircle2,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { buildEchoUrl, echoProductUrl, ECHO_PRODUCTS } from "@shared/echo-products";
+import { buildEchoUrl } from "@shared/echo-products";
 import { trackOutboundClick } from "@/lib/analytics";
+import { useEchoPageContext } from "@/hooks/use-echo-link";
 
-// Echo Water store links, tagged for attribution (utm_content=footer).
-const echoStoreLinks = [
-  { label: "Shop Hydrogen Water", href: buildEchoUrl("/", { content: "footer" }) },
-  { label: "Echo Flask", href: echoProductUrl(ECHO_PRODUCTS.flask, { content: "footer" }) },
-  { label: "Echo Ultimate", href: echoProductUrl(ECHO_PRODUCTS.ultimate, { content: "footer" }) },
-  { label: "Echo Refresh (Inhalation)", href: echoProductUrl(ECHO_PRODUCTS.refresh, { content: "footer" }) },
-];
-
-const echoHomeUrl = buildEchoUrl("/", { content: "footer-bottom" });
-
+// No product/store links in the global footer: it renders on every page,
+// including disease pages, where PLAN.md Appendix E forbids product content
+// of any kind. Only the ownership disclosure links to echowater.com.
 export default function Footer() {
+  // UTM rule: utm_campaign=<page_type>&utm_content=<slug> of THIS page.
+  const echoCtx = useEchoPageContext();
+  const echoHomeUrl = buildEchoUrl("/", echoCtx);
   const [email, setEmail] = React.useState("");
   const [subscribeStatus, setSubscribeStatus] = React.useState<"idle" | "loading" | "success" | "error">("idle");
   const currentYear = new Date().getFullYear();
@@ -59,7 +55,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white border-t-4 border-teal-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center">
@@ -221,37 +217,6 @@ export default function Footer() {
                   Research Analytics
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/products"
-                  className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
-                >
-                  Products
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Echo Water Section */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-base flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4 text-teal-500" />
-              Echo Water
-            </h3>
-            <ul className="space-y-2 text-sm">
-              {echoStoreLinks.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener"
-                    onClick={() => trackOutboundClick(link.href, "footer")}
-                    className="text-gray-300 hover:text-teal-400 transition-colors inline-block"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
             </ul>
           </div>
         </div>
@@ -351,7 +316,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-400 text-center md:text-left">
               © {currentYear} Hydrogen Studies. Powered by{" "}
-              <a href={echoHomeUrl} target="_blank" rel="noopener" onClick={() => trackOutboundClick(echoHomeUrl, "footer-bottom")} className="text-teal-400 hover:text-teal-300 transition-colors">Echo Water</a>.
+              <a href={echoHomeUrl} target="_blank" rel="noopener sponsored" onClick={() => trackOutboundClick(echoHomeUrl, "footer-bottom")} className="text-teal-400 hover:text-teal-300 transition-colors">Echo Water</a>.
               All rights reserved.
             </div>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">

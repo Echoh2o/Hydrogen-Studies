@@ -1033,7 +1033,7 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
           FROM blog_articles b
           JOIN studies s ON s.id = b.study_id
           JOIN study_health_conditions shc ON shc.study_id = s.id
-          WHERE shc.health_condition_id = $1 AND b.is_published = true
+          WHERE shc.health_condition_id = $1 AND b.is_published = true AND b.is_archived = false
           ORDER BY b.created_at DESC LIMIT 5
         `, [condition.id]);
         if (blogRows.length === 0) return "";

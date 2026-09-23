@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
@@ -29,13 +30,7 @@ import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 import { echoProductUrl, ECHO_PRODUCTS } from "@shared/echo-products";
 import { trackOutboundClick } from "@/lib/analytics";
-
-const flaskPromoUrl = echoProductUrl(ECHO_PRODUCTS.flask, {
-  content: "delivery-method-promo",
-});
-const flaskDetailUrl = echoProductUrl(ECHO_PRODUCTS.flask, {
-  content: "delivery-method-detail",
-});
+import { useEchoPageContext } from "@/hooks/use-echo-link";
 
 const getDeliveryMethodIcon = (slug: string, className: string = "") => {
   switch (slug) {
@@ -102,6 +97,8 @@ const DeliveryMethodGroup: React.FC<{
 };
 
 const ExploreByDeliveryMethodPage: React.FC = () => {
+  // UTM rule: utm_campaign/utm_content = this page's type/slug.
+  const flaskPromoUrl = echoProductUrl(ECHO_PRODUCTS.flask, useEchoPageContext());
   // Fetch all delivery methods
   const { data: deliveryMethods, isLoading: deliveryMethodsLoading } = useQuery<any>(
     {
@@ -279,6 +276,8 @@ export default ExploreByDeliveryMethodPage;
 export const DeliveryMethodDetailPage: React.FC = () => {
   const [, params] = useRoute("/explore-by-delivery-method/:method");
   const slug = params?.method || "";
+  // UTM rule: utm_campaign/utm_content = this page's type/slug.
+  const flaskDetailUrl = echoProductUrl(ECHO_PRODUCTS.flask, useEchoPageContext());
 
   // Fetch delivery method details
   const { data: methodData, isLoading: methodLoading } = useQuery<any>({
@@ -491,7 +490,7 @@ const StudyCard: React.FC<{ study: any }> = ({ study }) => {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm line-clamp-2">{study.abstract}</p>
+          <p className="text-sm line-clamp-2">{abstractExcerpt(study.abstract)}</p>
 
           <div className="mt-4 flex justify-between items-center">
             <div className="flex space-x-2">

@@ -9,6 +9,31 @@ import { db } from "../db";
 import { sql } from "drizzle-orm";
 import { sanitizeArticleHtml } from "../utils/sanitize-html";
 import { marked } from "marked";
+import {
+  ECHOWATER_ORIGIN,
+  ECHO_PRODUCTS,
+  echoProductUrl,
+  pageContextFromPath,
+} from "../../shared/echo-products";
+import {
+  demoteH1InHtml,
+  rewriteEchoLinksInHtml,
+  stripDeadBlogLinksInHtml,
+} from "../../shared/content-links";
+import {
+  EDITORIAL_TEAM,
+  abstractExcerpt,
+  blogByline,
+  formatLongDate,
+  isoDate,
+  normalizeDoi,
+  studySourceLink,
+  studyUpdatedAt,
+  withoutPlaceholders,
+} from "../../shared/seo-markup";
+import { isBridgeAllowed } from "../../shared/bridge-policy";
+import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
+import { getLiveBlogPredicate } from "../services/live-blog-index";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -17,11 +42,6 @@ const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 function esc(str: string | null | undefined): string {
   if (!str) return "";
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-function stripHtml(str: string | null | undefined): string {
-  if (!str) return "";
-  return str.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
 }
 
 function truncate(str: string, max: number): string {
@@ -118,13 +138,43 @@ function footer(conditions: { name: string; slug: string }[]): string {
 
   h += `\n</nav>\n`;
   // Ownership disclosure (PLAN.md 0.3, Appendix B) — must appear in crawler
-  // output on every page, same as the browser footer.
+  // output on every page, same as the browser footer. The href is tagged with
+  // the page's own utm_campaign/utm_content by renderPageBody's UTM rewriter.
+  // No product links here (Appendix E: the footer is on disease pages too).
   h += `<p>Hydrogen Studies is built and funded by Echo Technologies LLC, the maker of `;
-  h += `<a href="https://echowater.com?utm_source=hydrogenstudies&amp;utm_medium=referral&amp;utm_campaign=footer&amp;utm_content=disclosure" rel="sponsored">Echo Water</a> hydrogen products. `;
+  h += `<a href="${ECHOWATER_ORIGIN}/" rel="sponsored noopener">Echo Water</a> hydrogen products. `;
   h += `Our research team selects and summarizes studies independently; Echo does not decide which studies are included or how they are described. `;
   h += `<a href="/editorial-policy">Editorial policy</a> · <a href="/methodology">Methodology</a> · <a href="/contact">Contact</a></p>\n`;
   h += `<p>&copy; ${new Date().getFullYear()} Hydrogen Studies. Evidence-based hydrogen therapy research database.</p>\n`;
   h += `</footer>`;
+  return h;
+}
+
+/**
+ * Visible blog byline, directly under the H1 (CLAUDE.md: author or reviewer +
+ * last-reviewed date on every indexable page). Copy comes from the shared
+ * blogByline() so it matches BlogPage.tsx and the Article JSON-LD exactly.
+ */
+export function renderBlogBylineHtml(b: {
+  author_name?: string | null;
+  reviewer_name?: string | null;
+  last_reviewed?: string | Date | null;
+  updated_at?: string | Date | null;
+  published_at?: string | Date | null;
+  created_at?: string | Date | null;
+}): string {
+  const by = blogByline({
+    authorName: b.author_name,
+    reviewerName: b.reviewer_name,
+    lastReviewed: b.last_reviewed,
+    updatedAt: b.updated_at,
+    publishedAt: b.published_at,
+    createdAt: b.created_at,
+  });
+  let h = `<p class="byline">By <a href="${by.href}">${esc(by.author)}</a>`;
+  if (by.reviewer) h += ` · Reviewed by ${esc(by.reviewer)}`;
+  if (by.date) h += ` · ${by.dateLabel} <time datetime="${isoDate(by.date)}">${esc(by.dateText)}</time>`;
+  h += `</p>\n`;
   return h;
 }
 
@@ -150,7 +200,7 @@ async function getRelatedBlogs(keyword: string, limit = 5): Promise<{ slug: stri
   try {
     const r = await db.execute(sql`
       SELECT slug, title FROM blog_articles
-      WHERE is_published = true AND slug IS NOT NULL
+      WHERE is_published = true AND is_archived = false AND slug IS NOT NULL
         AND title ILIKE ${"%" + keyword + "%"}
       ORDER BY created_at DESC LIMIT ${limit}
     `);
@@ -162,7 +212,7 @@ async function getRelatedBlogsForBlog(blogId: number, category: string | null, l
   try {
     const r = await db.execute(sql`
       SELECT slug, title FROM blog_articles
-      WHERE is_published = true AND slug IS NOT NULL AND id != ${blogId}
+      WHERE is_published = true AND is_archived = false AND slug IS NOT NULL AND id != ${blogId}
         ${category ? sql`AND title ILIKE ${"%" + category + "%"}` : sql``}
       ORDER BY created_at DESC LIMIT ${limit}
     `);
@@ -185,7 +235,7 @@ async function getRecentBlogs(limit = 10): Promise<{ slug: string; title: string
   try {
     const r = await db.execute(sql`
       SELECT slug, title FROM blog_articles
-      WHERE is_published = true AND slug IS NOT NULL
+      WHERE is_published = true AND is_archived = false AND slug IS NOT NULL
       ORDER BY created_at DESC LIMIT ${limit}
     `);
     return (r.rows || []).map((row: any) => ({ slug: row.slug, title: row.title }));
@@ -194,25 +244,29 @@ async function getRecentBlogs(limit = 10): Promise<{ slug: string; title: string
 
 // ── Page renderers ────────────────────────────────────────────
 
-async function renderStudy(slugOrId: string): Promise<string | null> {
+export async function renderStudy(slugOrId: string): Promise<string | null> {
   try {
     const studyCols = sql`id, title, plain_language_title, slug, authors, journal, publish_year,
-      doi, study_type, outcome, peer_reviewed, country, category,
+      doi, pmid, url, study_type, outcome, peer_reviewed, country, category,
       health_conditions, body_systems,
       tldr, key_finding, plain_summary, summary_100_words, summary_50_words,
-      practical_takeaway, how_to_apply, abstract`;
+      practical_takeaway, how_to_apply, abstract, last_modified, created_at`;
     const isNumeric = /^\d+$/.test(slugOrId);
     const r = isNumeric
       ? await db.execute(sql`SELECT ${studyCols} FROM studies WHERE id = ${parseInt(slugOrId)} LIMIT 1`)
       : await db.execute(sql`SELECT ${studyCols} FROM studies WHERE slug = ${slugOrId} LIMIT 1`);
-    const s: any = r.rows?.[0];
-    if (!s) return null;
+    const row: any = r.rows?.[0];
+    if (!row) return null;
+    // CLAUDE.md: empty fields never render; pipeline sentinels such as
+    // key_finding = "__no_content__" never reach HTML. Null them all up front
+    // so every `if (s.x)` guard below skips them.
+    const s: any = withoutPlaceholders(row);
 
     const title = s.plain_language_title || s.title;
     // health_conditions is a text array — use first element for display
-    const conditionsArr: string[] = s.health_conditions || [];
+    const conditionsArr: string[] = (s.health_conditions || []).filter((c: string) => c && c.trim());
     const condition = conditionsArr[0] || s.category || null;
-    const bodySystemsArr: string[] = s.body_systems || [];
+    const bodySystemsArr: string[] = (s.body_systems || []).filter((b: string) => b && b.trim());
     const bodySystem = bodySystemsArr[0] || null;
     const [related, relatedBlogs, conditions] = await Promise.all([
       getRelatedStudies(s.id, condition),
@@ -232,13 +286,20 @@ async function renderStudy(slugOrId: string): Promise<string | null> {
     let h = breadcrumbs(crumbs);
     h += `<article itemscope itemtype="https://schema.org/MedicalScholarlyArticle">\n`;
     h += `<h1 itemprop="headline">${esc(title)}</h1>\n`;
+    // Author/reviewer + date line (CLAUDE.md: every indexable page shows one).
+    // Same copy as SEOStudyPage.tsx.
+    const updated = studyUpdatedAt({ lastModified: s.last_modified, createdAt: s.created_at });
+    h += `<p class="byline">Summary by <a href="/methodology">${esc(EDITORIAL_TEAM)}</a>`;
+    if (updated) h += ` · Updated <time datetime="${isoDate(updated)}">${esc(formatLongDate(updated))}</time>`;
+    h += `</p>\n`;
 
     // Metadata table
+    const doi = normalizeDoi(s.doi);
     h += `<dl>`;
     if (s.authors) h += `<dt>Authors</dt><dd itemprop="author">${esc(s.authors)}</dd>`;
     if (s.journal) h += `<dt>Journal</dt><dd>${esc(s.journal)}</dd>`;
     if (s.publish_year) h += `<dt>Year</dt><dd itemprop="datePublished">${s.publish_year}</dd>`;
-    if (s.doi) h += `<dt>DOI</dt><dd><a href="https://doi.org/${esc(s.doi)}" rel="noopener">${esc(s.doi)}</a></dd>`;
+    if (doi) h += `<dt>DOI</dt><dd><a href="https://doi.org/${esc(doi)}" rel="noopener">${esc(doi)}</a></dd>`;
     if (s.study_type) h += `<dt>Study Type</dt><dd>${esc(s.study_type)}</dd>`;
     if (s.outcome) h += `<dt>Outcome</dt><dd>${esc(s.outcome)}</dd>`;
     if (s.peer_reviewed) h += `<dt>Peer Reviewed</dt><dd>Yes</dd>`;
@@ -259,7 +320,16 @@ async function renderStudy(slugOrId: string): Promise<string | null> {
     }
     if (s.practical_takeaway) h += `<section><h2>Practical Takeaway</h2><p>${esc(s.practical_takeaway)}</p></section>\n`;
     if (s.how_to_apply) h += `<section><h2>How to Apply This Research</h2><p>${esc(s.how_to_apply)}</p></section>\n`;
-    if (s.abstract) h += `<section><h2>Abstract</h2><p>${esc(stripHtml(s.abstract))}</p></section>\n`;
+    // CLAUDE.md: never republish the full abstract (publisher copyright) —
+    // ≤300-char excerpt + a link to the source. Same as SEOStudyPage.tsx.
+    const excerpt = abstractExcerpt(s.abstract);
+    const source = studySourceLink({ pmid: s.pmid, doi: s.doi, url: s.url });
+    if (excerpt || source) {
+      h += `<section><h2>Abstract (excerpt)</h2>`;
+      if (excerpt) h += `<p>${esc(excerpt)}</p>`;
+      if (source) h += `<p><a href="${esc(source.href)}" rel="noopener">${esc(source.label)}</a></p>`;
+      h += `</section>\n`;
+    }
     h += `</article>\n`;
 
     // Related studies
@@ -285,18 +355,21 @@ async function renderStudy(slugOrId: string): Promise<string | null> {
   } catch { return null; }
 }
 
-async function renderBlog(slugOrId: string): Promise<string | null> {
+export async function renderBlog(slugOrId: string): Promise<string | null> {
   try {
+    const blogCols = sql`id, title, slug, content, summary, created_at, updated_at, published_at,
+      author_name, reviewer_name, last_reviewed`;
     const isNumeric = /^\d+$/.test(slugOrId);
     const r = isNumeric
-      ? await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE id = ${parseInt(slugOrId)} AND is_published = true AND is_archived = false LIMIT 1`)
-      : await db.execute(sql`SELECT id, title, slug, content, summary, created_at FROM blog_articles WHERE slug = ${slugOrId} AND is_published = true AND is_archived = false LIMIT 1`);
+      ? await db.execute(sql`SELECT ${blogCols} FROM blog_articles WHERE id = ${parseInt(slugOrId)} AND is_published = true AND is_archived = false LIMIT 1`)
+      : await db.execute(sql`SELECT ${blogCols} FROM blog_articles WHERE slug = ${slugOrId} AND is_published = true AND is_archived = false LIMIT 1`);
     const b: any = r.rows?.[0];
     if (!b) return null;
 
-    const [relatedBlogs, conditions] = await Promise.all([
+    const [relatedBlogs, conditions, isLiveBlog] = await Promise.all([
       getRelatedBlogsForBlog(b.id, null),
       getTopConditions(),
+      getLiveBlogPredicate(),
     ]);
 
     const crumbs = [
@@ -319,6 +392,7 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
     }
     h += `<article itemscope itemtype="https://schema.org/Article">\n`;
     h += `<h1 itemprop="headline">${esc(b.title)}</h1>\n`;
+    h += renderBlogBylineHtml(b);
     if (b.created_at) h += `<time itemprop="datePublished" datetime="${new Date(b.created_at).toISOString()}">${fmtDate(b.created_at)}</time>\n`;
 
     // Blog content — DOM-aware allowlist sanitization (DOMPurify), keeps
@@ -342,7 +416,11 @@ async function renderBlog(slugOrId: string): Promise<string | null> {
           // fall through with the original content — sanitizer still applies
         }
       }
-      const safeContent = sanitizeArticleHtml(raw);
+      // After sanitizing: unwrap links to retired (410) / unpublished posts
+      // (keep the anchor text) and demote any body <h1> — the page's only H1
+      // is the title above. The SPA gets the same treatment (public blog API
+      // + BlogPage markdown components).
+      const safeContent = demoteH1InHtml(stripDeadBlogLinksInHtml(sanitizeArticleHtml(raw), isLiveBlog));
       h += `<div itemprop="articleBody">${safeContent}</div>\n`;
     } else if (b.summary) {
       h += `<div itemprop="articleBody"><p>${esc(b.summary)}</p></div>\n`;
@@ -489,11 +567,15 @@ async function renderStudiesList(): Promise<string> {
   return h;
 }
 
-async function renderBlogList(): Promise<string> {
+export async function renderBlogList(): Promise<string> {
+  // blog_articles has NO `category` column — selecting it threw, the catch-all
+  // in the middleware fell through, and bots got the empty SPA shell for /blog
+  // (audit 2026-09). Live posts only: published AND not archived.
   const [blogsR, conditions] = await Promise.all([
     db.execute(sql`
-      SELECT slug, title, category, created_at
-      FROM blog_articles WHERE is_published = true AND slug IS NOT NULL
+      SELECT slug, title, created_at
+      FROM blog_articles
+      WHERE is_published = true AND is_archived = false AND slug IS NOT NULL
       ORDER BY created_at DESC LIMIT 200
     `),
     getTopConditions(),
@@ -507,7 +589,7 @@ async function renderBlogList(): Promise<string> {
   h += `<ul>`;
   for (const b of rows) {
     h += `<li><a href="/blog/${esc(b.slug)}">${esc(b.title)}</a>`;
-    if (b.category) h += ` — ${esc(b.category)}`;
+    if (b.created_at) h += ` — <time datetime="${isoDate(b.created_at)}">${esc(formatLongDate(b.created_at))}</time>`;
     h += `</li>`;
   }
   h += `</ul>\n`;
@@ -731,8 +813,12 @@ async function renderExploreDetail(type: string, slug: string): Promise<string |
   } catch { return null; }
 }
 
-async function renderHydrogenForPage(slug: string): Promise<string | null> {
-  const displayName = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+export async function renderHydrogenForPage(slug: string): Promise<string | null> {
+  // Same topic record as the SPA (HydrogenForConditionPage.tsx). Unknown
+  // slugs have no page in the SPA either → null → hard 404.
+  const topic = getHydrogenForTopic(slug);
+  if (!topic) return null;
+  const displayName = topic.name;
   const searchTerm = slug.replace(/-/g, " ");
   try {
     const [studiesR, blogsR, conditions] = await Promise.all([
@@ -771,6 +857,32 @@ async function renderHydrogenForPage(slug: string): Promise<string | null> {
       for (const b of blogsR) h += `<li><a href="/blog/${esc(b.slug)}">${esc(b.title)}</a></li>`;
       h += `</ul></section>\n`;
     }
+
+    // Sponsor card — ONLY on Appendix E allowlisted topics (shared policy);
+    // disease/gray-area topics get no product content of any kind.
+    if (isBridgeAllowed(topic.bridgeTopic) && topic.products.length > 0) {
+      const ctx = pageContextFromPath(`/hydrogen-for/${topic.slug}`);
+      h += `<aside aria-label="Sponsor"><h2>From our sponsor, Echo Water</h2>`;
+      h += `<p>Hydrogen Studies is funded by Echo Technologies LLC, which makes these products.</p><ul>`;
+      for (const p of topic.products) {
+        const product = ECHO_PRODUCTS[p.key];
+        if (!product) continue;
+        h += `<li><a href="${esc(echoProductUrl(product, ctx))}" rel="sponsored noopener">${esc(p.name)}</a> — ${esc(p.reason)}</li>`;
+      }
+      h += `</ul></aside>\n`;
+    }
+
+    // Visible FAQ — the page's FAQPage JSON-LD (seo-bot-middleware) is only
+    // legitimate because these questions are rendered here, as in the SPA.
+    if (topic.faqs.length > 0) {
+      h += `<section><h2>Frequently Asked Questions</h2>`;
+      for (const faq of topic.faqs) {
+        h += `<h3>${esc(faq.question)}</h3><p>${esc(faq.answer)}</p>`;
+      }
+      h += `</section>\n`;
+    }
+
+    h += `<p><strong>Disclaimer:</strong> The information on this page is derived from published scientific research and is for educational purposes only. It is not intended to diagnose, treat, cure, or prevent any disease.</p>\n`;
 
     h += footer(conditions);
     return h;
@@ -832,7 +944,18 @@ function renderStaticPage(pathname: string): string | null {
 
 // ── Main dispatcher ───────────────────────────────────────────
 
+/**
+ * Render the crawler body for `pathname`. Every echowater.com link in the
+ * output (footer disclosure, sponsor cards, links inside article bodies) is
+ * normalized to utm_campaign=<page_type>&utm_content=<slug> for THIS page —
+ * the same rule the SPA applies via pageContextFromPath().
+ */
 export async function renderPageBody(pathname: string): Promise<string | null> {
+  const body = await dispatchPageBody(pathname);
+  return body ? rewriteEchoLinksInHtml(body, pageContextFromPath(pathname)) : body;
+}
+
+async function dispatchPageBody(pathname: string): Promise<string | null> {
   // Disclosure/policy pages (PLAN.md 0.3): must be crawlable — the footer
   // disclosure links here from every page, so a bot 404 would undermine it.
   if (pathname === "/editorial-policy" || pathname === "/methodology") {

@@ -112,6 +112,14 @@ async function setupServer() {
       index: false, // Don't serve index.html for directory requests — SPA fallback handles that
     }));
 
+    // A static-asset request that reached this point has no file on disk.
+    // Answer 404 instead of the SPA shell — previously /favicon.ico (and any
+    // missing image/font) returned 200 text/html, which crawlers record as a
+    // broken/soft-404 asset.
+    app.get(/\.(?:ico|png|jpe?g|gif|svg|webp|avif|css|js|mjs|map|woff2?|ttf|eot)$/i, (_req, res) => {
+      res.status(404).type("text/plain").send("Not found");
+    });
+
     // SPA fallback — serve index.html for all non-API GET requests
     // Log 404s only for paths that don't match known SPA routes
     const knownSpaRoutes = /^\/(study|studies|blog|explore-by-|hydrogen-for|learn|admin|search|advanced-search|about|benefits|contact|products|recommendations|privacy|terms|insights|research-analytics|login|register|my-dashboard|this-week|recent)\b/;

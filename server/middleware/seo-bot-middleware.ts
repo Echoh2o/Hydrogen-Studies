@@ -16,6 +16,20 @@ import { eq, and } from "drizzle-orm";
 import { jsonLdSafe } from "../utils/html-safety";
 import { toAbsoluteUrl } from "../utils/absolute-url";
 import { ECHOWATER_ORIGIN } from "../../shared/echo-products";
+import {
+  blogArticleJsonLd,
+  blogPageTitle,
+  excerptAtWord,
+  faqPageJsonLd,
+  faqPairsIfVisible,
+  parseQaPairs,
+  realContent,
+  studyDescription,
+  studyJsonLd,
+  studyPageTitle,
+} from "../../shared/seo-markup";
+import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
+import { marked } from "marked";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -106,17 +120,6 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function truncate(str: string, maxLen: number): string {
-  if (!str) return "";
-  if (str.length <= maxLen) return str;
-  return str.substring(0, maxLen - 3) + "...";
-}
-
-function stripHtml(str: string): string {
-  if (!str) return "";
-  return str.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-}
-
 interface PageMeta {
   title: string;
   description: string;
@@ -187,136 +190,76 @@ async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
   }
 }
 
-function buildStudyMeta(study: any): PageMeta {
-  const title = study.metaTitle
-    || study.plainLanguageTitle
-    || study.title;
-  const description = study.metaDescription
-    || study.summary100Words
-    || study.summary50Words
-    || stripHtml(study.abstract);
+export function buildStudyMeta(study: any): PageMeta {
   const slug = study.slug || `id/${study.id}`;
   const canonical = canonicalForStudy(slug);
   const ogImage = toAbsoluteUrl(study.ogImage || study.imageUrl || "/logo.png", SITE_URL);
 
-  const jsonLd: any = {
-    "@context": "https://schema.org",
-    "@type": "MedicalScholarlyArticle",
-    "headline": truncate(study.title, 110),
-    "description": truncate(stripHtml(description), 300),
-    "url": canonical,
-    "image": ogImage,
-    "datePublished": study.journalPublishDate || study.publishDate,
-    "publisher": {
-      "@type": "Organization",
-      "name": SITE_NAME,
-      "url": SITE_URL,
-      "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` }
-    },
-    "mainEntityOfPage": { "@type": "WebPage", "@id": canonical }
-  };
-
-  if (study.authors) {
-    const authorList = study.authors.split(",").map((a: string) => a.trim()).filter(Boolean);
-    jsonLd.author = authorList.map((name: string) => ({ "@type": "Person", "name": name }));
-  }
-  if (study.journal) jsonLd.isPartOf = { "@type": "Periodical", "name": study.journal };
-  if (study.doi) jsonLd.sameAs = `https://doi.org/${study.doi}`;
-  if (study.keywords?.length) jsonLd.keywords = study.keywords.join(", ");
-
-  // Add FAQ schema if Q&A pairs exist
-  let faqLd: any = null;
-  if (study.questionAnswerPairs) {
-    try {
-      const qaPairs = JSON.parse(study.questionAnswerPairs);
-      if (Array.isArray(qaPairs) && qaPairs.length > 0) {
-        faqLd = {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": qaPairs.slice(0, 5).map((qa: any) => ({
-            "@type": "Question",
-            "name": qa.question || qa.q,
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": qa.answer || qa.a
-            }
-          }))
-        };
-      }
-    } catch {}
-  }
+  // Shared with the SPA (SEOStudyPage) so both paths emit identical schema.
+  // No `abstract` field and a ≤300-char description (publisher copyright).
+  //
+  // No FAQPage: study pages render no visible FAQ, and the hidden
+  // question_answer_pairs column must never become schema (CLAUDE.md: no
+  // FAQPage without a visible FAQ).
+  const jsonLd = studyJsonLd(study, { canonical, siteUrl: SITE_URL, image: ogImage });
 
   return {
-    title: truncate(title, 60) + ` | ${SITE_NAME}`,
-    description: truncate(stripHtml(description), 160),
+    title: studyPageTitle(study),
+    description: excerptAtWord(studyDescription(study, 300), 160),
     canonical,
     ogType: "article",
     ogImage,
-    jsonLd: faqLd ? [jsonLd, faqLd] : jsonLd,
+    jsonLd,
   };
 }
 
-function buildBlogMeta(blog: any): PageMeta {
-  const title = blog.metaTitle || blog.title;
-  const description = blog.metaDescription || blog.summary100Words || blog.summary;
+/**
+ * Text a reader actually sees on a blog page (title, summary, rendered body)
+ * — the FAQPage visibility check runs against this.
+ */
+function visibleBlogText(blog: any): string {
+  let body = String(blog.content || "");
+  if (body && !/<(p|h\d|div|ul|ol|table)\b/i.test(body)) {
+    try {
+      body = marked.parse(body, { async: false }) as string;
+    } catch {
+      // keep the raw source — still text-searchable
+    }
+  }
+  return `${blog.title || ""}\n${blog.summary || ""}\n${body}`;
+}
+
+export function buildBlogMeta(blog: any): PageMeta {
+  const description =
+    realContent(blog.metaDescription) || realContent(blog.summary100Words) || realContent(blog.summary);
   const canonical = `${SITE_URL}/blog/${blog.slug}`;
   const ogImage = toAbsoluteUrl(blog.ogImage || blog.imageUrl || "/logo.png", SITE_URL);
 
-  const jsonLd: any = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": truncate(blog.title, 110),
-    "description": truncate(stripHtml(description), 300),
-    "url": canonical,
-    "image": ogImage,
-    "datePublished": blog.createdAt?.toISOString?.() || new Date().toISOString(),
-    "dateModified": blog.updatedAt?.toISOString?.() || blog.createdAt?.toISOString?.(),
-    "author": {
-      "@type": "Organization",
-      "name": SITE_NAME,
-      "url": SITE_URL
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": SITE_NAME,
-      "url": SITE_URL,
-      "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` }
-    },
-    "mainEntityOfPage": { "@type": "WebPage", "@id": canonical }
-  };
+  // author/dateModified/reviewedBy mirror the visible byline (shared/seo-markup).
+  const article = blogArticleJsonLd(blog, {
+    canonical,
+    siteUrl: SITE_URL,
+    description,
+    image: ogImage,
+    keywords: blog.semanticKeywords,
+  });
 
-  if (blog.semanticKeywords?.length) jsonLd.keywords = blog.semanticKeywords.join(", ");
-
-  // FAQ schema from blog Q&A
-  let faqLd: any = null;
-  if (blog.questionAnswerPairs) {
-    try {
-      const qaPairs = JSON.parse(blog.questionAnswerPairs);
-      if (Array.isArray(qaPairs) && qaPairs.length > 0) {
-        faqLd = {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": qaPairs.slice(0, 5).map((qa: any) => ({
-            "@type": "Question",
-            "name": qa.question || qa.q,
-            "acceptedAnswer": { "@type": "Answer", "text": qa.answer || qa.a }
-          }))
-        };
-      }
-    } catch {}
-  }
+  // FAQPage only when EVERY stored question is visible in the rendered
+  // article. question_answer_pairs is a hidden column; most posts don't show
+  // those Q&As, and schema for invisible content is a spam signal.
+  const visibleFaq = faqPairsIfVisible(parseQaPairs(blog.questionAnswerPairs), visibleBlogText(blog));
 
   return {
-    title: truncate(title, 60) + ` | ${SITE_NAME}`,
-    description: truncate(stripHtml(description), 160),
+    title: blogPageTitle(blog),
+    description: excerptAtWord(description, 160),
     canonical,
     ogType: "article",
     ogImage,
-    jsonLd: faqLd ? [jsonLd, faqLd] : jsonLd,
+    jsonLd: visibleFaq ? [article, faqPageJsonLd(visibleFaq)] : article,
   };
 }
 
-function resolveStaticPageMeta(pathname: string): PageMeta | null {
+export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // PLAN.md 0.6 + 1.8: internal-search pages and thin pages carry
   // noindex,follow until they have real content. Kept in nav; removed from
   // sitemap-pages in seo-routes.ts (same deploy).
@@ -428,7 +371,53 @@ function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Terms of Service | ${SITE_NAME}`,
       description: "Terms of service for using the Hydrogen Studies research database and website."
     },
+    // These three rendered a body for bots but had no meta entry, so they got
+    // the homepage title/description (X-Bot-Cache: FALLBACK) — audit 2026-09.
+    "/insights": {
+      title: `Hydrogen Research Insights | ${SITE_NAME}`,
+      description: "Trends across the hydrogen research database: publication volume by year, study types, conditions studied and where the evidence is strong or still thin."
+    },
+    "/research-analytics": {
+      title: `Hydrogen Research Analytics | ${SITE_NAME}`,
+      description: "Charts and statistics on published molecular hydrogen research: studies per year, human vs animal trials, delivery methods and the conditions most studied."
+    },
+    "/hydrogen-therapy-guide": {
+      title: `Hydrogen Therapy Guide | ${SITE_NAME}`,
+      description: "An evidence-based guide to molecular hydrogen: delivery methods, doses used in studies, safety data, and what the peer-reviewed research does and doesn't show."
+    },
   };
+
+  // /hydrogen-for/:slug — meta derives from the shared topic record (same
+  // source as the SPA page). Unknown slugs have no page: null → hard 404.
+  const hydrogenForMatch = pathname.match(/^\/hydrogen-for\/([^/]+)$/);
+  if (hydrogenForMatch) {
+    const topic = getHydrogenForTopic(hydrogenForMatch[1]);
+    if (!topic) return null;
+    return {
+      title: topic.metaTitle,
+      description: topic.metaDescription,
+      canonical: `${SITE_URL}/hydrogen-for/${topic.slug}`,
+      ogType: "website",
+      ogImage: `${SITE_URL}/logo.png`,
+      // The FAQ is rendered visibly on the page (bot body + SPA), so FAQPage
+      // schema is allowed here.
+      jsonLd: faqPageJsonLd(topic.faqs),
+    };
+  }
+
+  // explore-by-{delivery-method,benefit,demographic}/:slug detail pages also
+  // rendered bodies without meta (homepage FALLBACK).
+  const exploreDetailMatch = pathname.match(/^\/explore-by-(delivery-method|benefit|demographic)\/([^/]+)$/);
+  if (exploreDetailMatch) {
+    const name = exploreDetailMatch[2].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return {
+      title: `${name}: Hydrogen Research | ${SITE_NAME}`,
+      description: `Peer-reviewed molecular hydrogen studies related to ${name.toLowerCase()}, with study types, publication years and links to each study summary and its source.`,
+      canonical: `${SITE_URL}${pathname}`,
+      ogType: "website",
+      ogImage: `${SITE_URL}/logo.png`,
+    };
+  }
 
   // Check explore-by-condition category pages
   const conditionMatch = pathname.match(/^\/explore-by-condition\/([^/]+)$/);
@@ -541,6 +530,8 @@ function injectMeta(html: string, meta: PageMeta): string {
   const newHead = `<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
     <!-- Primary SEO Meta Tags (Server-Injected for Crawlers) -->
     <title>${title}</title>
@@ -766,7 +757,7 @@ export async function prewarmBotCache(staticPath: string): Promise<void> {
     }
 
     // All blog slugs
-    const blogRows = await database.execute(sql`SELECT slug FROM blog_articles WHERE slug IS NOT NULL AND is_published = true`);
+    const blogRows = await database.execute(sql`SELECT slug FROM blog_articles WHERE slug IS NOT NULL AND is_published = true AND is_archived = false`);
     for (const row of (blogRows.rows || []) as any[]) {
       if (row.slug) paths.push(`/blog/${row.slug}`);
     }
@@ -786,12 +777,14 @@ export async function prewarmBotCache(staticPath: string): Promise<void> {
   for (const pagePath of paths) {
     try {
       const meta = await resolvePageMeta(pagePath);
-      const effectiveMeta = meta || resolveStaticPageMeta("/");
-      if (!effectiveMeta) continue;
-
-      let html = injectMeta(template, meta || { ...effectiveMeta, canonical: `${SITE_URL}${pagePath}` });
+      // Mirror the live middleware: never cache homepage-FALLBACK meta (it is
+      // not a first-class page) and never cache a page with no body. Before
+      // this, a transient DB error during boot (e.g. racing a column-adding
+      // migration) pinned homepage meta on content URLs for the 2h TTL.
+      if (!meta) continue;
       const body = await renderPageBody(pagePath);
-      if (body) html = injectBody(html, body);
+      if (!body) continue;
+      const html = injectBody(injectMeta(template, meta), body);
 
       setCachedBotHtml(pagePath, html);
       warmed++;

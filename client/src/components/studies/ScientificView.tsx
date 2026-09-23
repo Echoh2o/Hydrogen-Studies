@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Study {
@@ -28,7 +29,7 @@ export function ScientificView({ study }: ScientificViewProps) {
           <CardTitle>Abstract</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-700 leading-relaxed">{study.abstract}</p>
+          <p className="text-gray-700 leading-relaxed">{abstractExcerpt(study.abstract)}</p>
         </CardContent>
       </Card>
 

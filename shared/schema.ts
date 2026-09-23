@@ -1045,7 +1045,19 @@ export const blogArticles = pgTable(
     schemaOrg: text("schema_org"), // Article schema JSON-LD
     breadcrumbs: text("breadcrumbs"), // Navigation structure JSON
     authorBio: text("author_bio"), // For E-A-T (Expertise, Authority, Trust)
+    // Review date shown in the public byline ("Last reviewed {date}") — but
+    // ONLY together with a named reviewerName: the generator and the SEO
+    // backfill auto-stamp this with new Date(), so alone it is not evidence of
+    // a human review (see blogByline in shared/seo-markup.ts).
     lastReviewed: timestamp("last_reviewed"), // Content freshness indicator
+    /**
+     * Visible byline (migration 022_add_blog_byline_fields). Both nullable:
+     * authorName NULL → "By Hydrogen Studies Editorial Team"; reviewerName NULL
+     * → no "Reviewed by" line, no "Last reviewed" date, no schema reviewedBy.
+     * Only set these for real, named people.
+     */
+    authorName: text("author_name"),
+    reviewerName: text("reviewer_name"),
     faqSchema: text("faq_schema"), // FAQ structured data if applicable
     socialShares: integer("social_shares").default(0), // Track social engagement
     ogTitle: text("og_title"),

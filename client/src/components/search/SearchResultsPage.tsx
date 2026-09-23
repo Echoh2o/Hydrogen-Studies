@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 /**
  * Enhanced Search Results Page with Advanced Filtering
  * Provides comprehensive search results with intelligent ranking and filtering
@@ -435,7 +436,7 @@ export const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                       </p>
 
                       <p className="text-gray-700 mb-3 line-clamp-3">
-                        {study.abstract}
+                        {abstractExcerpt(study.abstract)}
                       </p>
 
                       <div className="flex justify-between items-center">

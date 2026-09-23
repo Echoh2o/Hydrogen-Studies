@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
@@ -329,7 +330,7 @@ const StudyCard: React.FC<{ study: any }> = ({ study }) => {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm line-clamp-2">{study.abstract}</p>
+          <p className="text-sm line-clamp-2">{abstractExcerpt(study.abstract)}</p>
 
           <div className="mt-4 flex justify-between items-center">
             <div className="flex space-x-2">

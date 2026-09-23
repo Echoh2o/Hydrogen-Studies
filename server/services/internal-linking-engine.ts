@@ -81,6 +81,7 @@ export async function generateStudyLinks(studyId: number): Promise<LinkSuggestio
     .where(
       and(
         eq(blogArticles.isPublished, true),
+        eq(blogArticles.isArchived, false),
         or(
           eq(blogArticles.studyId, studyId),
           ilike(blogArticles.title, `%${study.category}%`),
@@ -170,6 +171,7 @@ export async function generateBlogLinks(blogId: number): Promise<LinkSuggestion[
         and(
           ne(blogArticles.id, blogId),
           eq(blogArticles.isPublished, true),
+          eq(blogArticles.isArchived, false),
           topicMatch,
         )
       )
@@ -316,24 +318,32 @@ export async function getLinksFor(contentType: string, contentId: number): Promi
   relevanceScore: number;
   url: string;
 }>> {
-  const links = await db.select()
+  // smart_links rows are generated once and never pruned, so a stored link
+  // can point at a post that was since retired (410) or unpublished. Only
+  // return blog targets that are live (published AND not archived).
+  const rows = await db.select({ link: smartLinks, blogSlug: blogArticles.slug })
     .from(smartLinks)
+    .leftJoin(
+      blogArticles,
+      and(eq(smartLinks.toType, "blog"), eq(blogArticles.id, smartLinks.toId)),
+    )
     .where(
       and(
         eq(smartLinks.fromType, contentType),
         eq(smartLinks.fromId, contentId),
         eq(smartLinks.isActive, true),
+        sql`(${smartLinks.toType} <> 'blog' OR (${blogArticles.isPublished} = true AND ${blogArticles.isArchived} = false))`,
       )
     )
     .orderBy(desc(smartLinks.relevanceScore))
     .limit(10);
 
-  return links.map(link => {
+  return rows.map(({ link, blogSlug }) => {
     let url = "";
     if (link.toType === "study") {
       url = `/study/id/${link.toId}`;
     } else if (link.toType === "blog") {
-      url = `/blog/${link.toId}`;
+      url = blogSlug ? `/blog/${blogSlug}` : `/blog/${link.toId}`;
     }
 
     return {

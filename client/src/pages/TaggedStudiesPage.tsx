@@ -1,3 +1,4 @@
+import { abstractExcerpt } from "@shared/seo-markup";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useRoute, Link } from "wouter";
@@ -463,7 +464,7 @@ export default function TaggedStudiesPage() {
                                 </div>
 
                                 <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {study.abstract}
+                                  {abstractExcerpt(study.abstract)}
                                 </p>
 
                                 <div className="flex flex-wrap gap-1">
