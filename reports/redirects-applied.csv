@@ -3111,3 +3111,9 @@ retire,12247,https://hydrogenstudies.com/blog/hydrogen-water-gut-health-your-que
 retire,12249,https://hydrogenstudies.com/blog/how-to-use-hydrogen-water-for-cell-defense-a-science-backed-guide-664352,410
 retire,12250,https://hydrogenstudies.com/blog/hydrogen-water-and-cell-defense-what-2024-research-shows-670335,410
 retire,12251,https://hydrogenstudies.com/blog/hydrogen-water-general-your-cell-defense-questions-answered-713217,410
+# apply run 2026-09-23T18:00-06:00 (keyword plan wave 1 — approved by Josh in session)
+merge,9853,/blog/hydrogen-water-scam-debunked,/blog/hydrogen-water-real-or-fake
+merge,9861,/blog/does-hydrogen-water-work,/blog/hydrogen-water-real-or-fake
+repoint-410-to-301,,/blog/how-to-use-hydrogen-water-for-fighting-infections-health-benefits-466165,/blog/what-is-hydrogen-water
+repoint-410-to-301,,/blog/how-to-use-hydrogen-water-for-fighting-infections-a-science-backed-guide-926892,/blog/what-is-hydrogen-water
+restore-410,9891,/blog/how-much-hydrogen-water-per-day,(410 deactivated; URL republished with rewritten article)
