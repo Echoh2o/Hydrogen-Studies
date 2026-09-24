@@ -44,5 +44,5 @@ Non-branded GSC clicks / 28d: 135 → 800 · non-branded queries in top 3: 22 �
 ## Open decisions
 - Brand-review posts (Kangen, H2 Tabs, Vital Reaction) — PLAN §12. Recommended: convert the
   tablets posts into the generic guide (wave 2); move or retire the Kangen reviews.
-- Merge candidate: `/blog/hydrogen-water-scientific-evidence` → `/blog/hydrogen-water-real-or-fake`.
+- ~~Merge candidate: `/blog/hydrogen-water-scientific-evidence`~~ → merged into `/blog/hydrogen-water-real-or-fake` (2026-09-23, Josh approved).
 - Named reviewer before wave 3 hubs; counsel sign-off before any sponsor card.
