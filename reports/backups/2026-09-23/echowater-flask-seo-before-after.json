@@ -1,0 +1,23 @@
+{
+  "productId": "gid://shopify/Product/9724690530610",
+  "handle": "echo-flask",
+  "url": "https://echowater.com/products/echo-flask",
+  "current": {
+    "seoTitle": null,
+    "seoTitleRendered": "ECHO Flask Hydrogen Water Bottle – Echo Water",
+    "seoTitleNote": "product.seo.title is null, so the theme falls back to the product title plus the ' – Echo Water' suffix.",
+    "seoDescription": "The Echo Flask: Smart hydrogen water bottle with up to 8 ppm hydrogen concentration. Track hydration, customize settings & fuel your cells. Safe & effective.",
+    "seoDescriptionStorage": "metafield global.description_tag"
+  },
+  "proposed": {
+    "seoTitle": "Echo Flask Hydrogen Water Bottle | Up to 8 ppm",
+    "seoDescription": "Echo Flask hydrogen water bottle: PEM/SPE electrolysis, 12 oz, up to 8.25 ppm in a 20-minute cycle per H2 Analytics lab report. 5-year warranty."
+  },
+  "rationale": [
+    "Keeps the exact leading string 'Echo Flask Hydrogen Water Bottle', which currently ranks #5 for 'hydrogen water bottle', so the change stays low-risk.",
+    "Every fact comes from Echo's published pages: the 8.25 mg/L figure (20-minute cycle) is from H2 Analytics report H2AR-250116-1 dated 2025-01-16, PEM/SPE is from the PDP and support center, and 12 oz and the 5-year warranty are from the PDP.",
+    "Removes 'fuel your cells' and 'Safe & effective' from the current description; 'effective' is an efficacy claim that nothing on the page supports."
+  ],
+  "rollback": "To undo, set seo.title back to null (empty) and seo.description to current.seoDescription, e.g. productUpdate(product:{id, seo:{title:\"\", description:\"<current>\"}}).",
+  "scope": "SEO fields only. This does not change the product title, description or any metafield other than the SEO title_tag/description_tag."
+}
